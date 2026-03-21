@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_export_lead" model="ir.actions.act_window">
+        <field name="name">Pipeline Export</field>
+        <field name="res_model">cf.export.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+    <record id="action_cf_export_sample" model="ir.actions.act_window">
+        <field name="name">Campionature</field>
+        <field name="res_model">cf.export.sample</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_export_stages" model="ir.actions.act_window">
+        <field name="name">Fasi Pipeline</field>
+        <field name="res_model">cf.export.stage</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"/>
+    <menuitem id="menu_cf_export_pipeline" name="Pipeline" parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>
+    <menuitem id="menu_cf_export_samples" name="Campionature" parent="menu_cf_export_root" action="action_cf_export_sample" sequence="2"/>
+    <menuitem id="menu_cf_export_config" name="Configurazione" parent="menu_cf_export_root" sequence="99" groups="base.group_system"/>
+    <menuitem id="menu_cf_export_stages" name="Fasi Pipeline" parent="menu_cf_export_config" action="action_cf_export_stages" sequence="1"/>
+</odoo>
