@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_cf_haccp_receipt" model="ir.sequence">
+        <field name="name">HACCP Ricezione</field>
+        <field name="code">cf.haccp.receipt</field>
+        <field name="prefix">RIC-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="seq_cf_haccp_sp" model="ir.sequence">
+        <field name="name">HACCP Scheda Produzione</field>
+        <field name="code">cf.haccp.sp</field>
+        <field name="prefix">SP-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="seq_cf_haccp_nc" model="ir.sequence">
+        <field name="name">HACCP Non Conformita</field>
+        <field name="code">cf.haccp.nc</field>
+        <field name="prefix">NC-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="seq_cf_haccp_quarantine" model="ir.sequence">
+        <field name="name">HACCP Quarantena</field>
+        <field name="code">cf.haccp.quarantine</field>
+        <field name="prefix">QUA-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+</odoo>

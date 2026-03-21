@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_cf_haccp_calibration_alerts" model="ir.cron">
+        <field name="name">HACCP - Alert Calibrazioni</field>
+        <field name="model_id" ref="model_cf_haccp_calibration"/>
+        <field name="state">code</field>
+        <field name="code">model.send_expiring_alerts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+    <record id="cron_cf_haccp_document_alerts" model="ir.cron">
+        <field name="name">HACCP - Alert Documenti</field>
+        <field name="model_id" ref="model_cf_haccp_document"/>
+        <field name="state">code</field>
+        <field name="code">model.send_expiry_alerts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

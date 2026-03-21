@@ -1,0 +1,18 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_haccp_receipt_user,cf.haccp.receipt user,model_cf_haccp_receipt,base.group_user,1,1,1,0
+access_cf_haccp_receipt_mgr,cf.haccp.receipt manager,model_cf_haccp_receipt,base.group_system,1,1,1,1
+access_cf_haccp_sp_user,cf.haccp.sp user,model_cf_haccp_sp,base.group_user,1,1,1,0
+access_cf_haccp_sp_mgr,cf.haccp.sp manager,model_cf_haccp_sp,base.group_system,1,1,1,1
+access_cf_haccp_ccp_user,cf.haccp.ccp user,model_cf_haccp_ccp,base.group_user,1,1,1,0
+access_cf_haccp_ccp_mgr,cf.haccp.ccp manager,model_cf_haccp_ccp,base.group_system,1,1,1,1
+access_cf_haccp_ccp_tmpl_user,cf.haccp.ccp.template user,model_cf_haccp_ccp_template,base.group_user,1,0,0,0
+access_cf_haccp_ccp_tmpl_mgr,cf.haccp.ccp.template manager,model_cf_haccp_ccp_template,base.group_system,1,1,1,1
+access_cf_haccp_nc_user,cf.haccp.nc user,model_cf_haccp_nc,base.group_user,1,1,1,0
+access_cf_haccp_nc_mgr,cf.haccp.nc manager,model_cf_haccp_nc,base.group_system,1,1,1,1
+access_cf_haccp_quarantine_user,cf.haccp.quarantine user,model_cf_haccp_quarantine,base.group_user,1,1,1,0
+access_cf_haccp_quarantine_mgr,cf.haccp.quarantine manager,model_cf_haccp_quarantine,base.group_system,1,1,1,1
+access_cf_haccp_calibration_user,cf.haccp.calibration user,model_cf_haccp_calibration,base.group_user,1,1,1,0
+access_cf_haccp_calibration_mgr,cf.haccp.calibration manager,model_cf_haccp_calibration,base.group_system,1,1,1,1
+access_cf_haccp_cal_history_user,cf.haccp.calibration.history user,model_cf_haccp_calibration_history,base.group_user,1,1,1,0
+access_cf_haccp_document_user,cf.haccp.document user,model_cf_haccp_document,base.group_user,1,1,1,0
+access_cf_haccp_document_mgr,cf.haccp.document manager,model_cf_haccp_document,base.group_system,1,1,1,1

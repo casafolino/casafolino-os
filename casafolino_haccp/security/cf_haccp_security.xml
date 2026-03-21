@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_cf_haccp" model="ir.module.category">
+        <field name="name">CasaFolino HACCP</field>
+        <field name="sequence">100</field>
+    </record>
+    <record id="group_cf_haccp_raq" model="res.groups">
+        <field name="name">RAQ HACCP</field>
+        <field name="category_id" ref="module_category_cf_haccp"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>
