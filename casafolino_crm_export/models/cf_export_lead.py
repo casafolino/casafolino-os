@@ -86,7 +86,7 @@ class CfExportLead(models.Model):
             rec.rotting_state = "ok" if pct < 50 else "warning" if pct < 80 else "danger" if pct < 100 else "dead"
 
     @api.model
-    def _read_group_stage_ids(self, stages, domain, order):
+    def _read_group_stage_ids(self, stages, domain, order=None):
         return stages.search([], order="sequence asc")
 
     def action_mark_contacted(self):
