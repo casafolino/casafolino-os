@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_kpi" model="ir.actions.act_window">
+        <field name="name">KPI Dashboard</field><field name="res_model">cf.kpi.snapshot</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_kpi_root" name="KPI" sequence="10"/>
+    <menuitem id="menu_cf_kpi_snapshots" name="Snapshots" parent="menu_cf_kpi_root" action="action_cf_kpi" sequence="1"/>
+</odoo>

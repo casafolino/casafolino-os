@@ -1800,3 +1800,650 @@ write('casafolino_recall/views/menus.xml', '''\
 </odoo>
 ''')
 print('✅ casafolino_recall completo')
+
+# =============================================================================
+# CASAFOLINO KPI
+# =============================================================================
+write('casafolino_kpi/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino KPI Dashboard",
+    "version": "18.0.1.0.0",
+    "category": "Reporting",
+    "summary": "Dashboard KPI unificata",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "purchase", "account", "mrp", "stock"],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/cf_kpi_cron.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_kpi/__init__.py', 'from . import models\n')
+write('casafolino_kpi/models/__init__.py', 'from . import cf_kpi_dashboard\n')
+write('casafolino_kpi/models/cf_kpi_dashboard.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import date, timedelta
+
+class CfKpiSnapshot(models.Model):
+    _name = "cf.kpi.snapshot"
+    _description = "Snapshot KPI Giornaliero"
+    _order = "date desc"
+    _rec_name = "date"
+
+    date = fields.Date(required=True, default=fields.Date.today)
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"))
+    sales_today = fields.Monetary(string="Vendite Oggi", currency_field="currency_id")
+    sales_mtd = fields.Monetary(string="Vendite MTD", currency_field="currency_id")
+    sales_ytd = fields.Monetary(string="Vendite YTD", currency_field="currency_id")
+    sales_amazon = fields.Monetary(string="Amazon", currency_field="currency_id")
+    sales_shopify = fields.Monetary(string="Shopify", currency_field="currency_id")
+    sales_b2b = fields.Monetary(string="B2B", currency_field="currency_id")
+    sales_gdo = fields.Monetary(string="GDO", currency_field="currency_id")
+    mo_open = fields.Integer(string="MO Aperti")
+    mo_done = fields.Integer(string="MO Completati MTD")
+    nc_open = fields.Integer(string="NC Aperte")
+    quarantine_active = fields.Integer(string="Quarantene Attive")
+    notes = fields.Text()
+
+    @api.model
+    def create_daily_snapshot(self):
+        today = date.today()
+        if self.search([("date","=",today)]): return
+        first_day_month = today.replace(day=1)
+        first_day_year = today.replace(month=1,day=1)
+
+        def get_sales(domain_extra=[]):
+            domain = [("state","in",("sale","done")),("date_order",">=",str(first_day_year))] + domain_extra
+            orders = self.env["sale.order"].search(domain)
+            return sum(orders.mapped("amount_untaxed"))
+
+        def get_sales_by_tag(tag_name):
+            tag = self.env["res.partner.category"].search([("name","ilike",tag_name)],limit=1)
+            if not tag: return 0.0
+            domain = [("state","in",("sale","done")),("date_order",">=",str(first_day_year)),
+                      ("partner_id.category_id","in",[tag.id])]
+            return sum(self.env["sale.order"].search(domain).mapped("amount_untaxed"))
+
+        mo_open = self.env["mrp.production"].search_count([("state","in",("confirmed","progress"))])
+        mo_done = self.env["mrp.production"].search_count([("state","=","done"),("date_finished",">=",str(first_day_month))])
+
+        nc_open = 0
+        quarantine = 0
+        if "cf.haccp.nc" in self.env:
+            nc_open = self.env["cf.haccp.nc"].search_count([("state","not in",("closed","cancelled"))])
+        if "cf.haccp.quarantine" in self.env:
+            quarantine = self.env["cf.haccp.quarantine"].search_count([("state","=","active")])
+
+        self.create({
+            "date": today,
+            "sales_ytd": get_sales(),
+            "sales_mtd": get_sales([("date_order",">=",str(first_day_month))]),
+            "sales_amazon": get_sales_by_tag("Amazon"),
+            "sales_shopify": get_sales_by_tag("Shopify"),
+            "sales_b2b": get_sales_by_tag("B2B"),
+            "sales_gdo": get_sales_by_tag("GDO"),
+            "mo_open": mo_open,
+            "mo_done": mo_done,
+            "nc_open": nc_open,
+            "quarantine_active": quarantine,
+        })
+''')
+write('casafolino_kpi/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_kpi_user,cf.kpi.snapshot user,model_cf_kpi_snapshot,base.group_user,1,0,0,0
+access_cf_kpi_mgr,cf.kpi.snapshot manager,model_cf_kpi_snapshot,base.group_system,1,1,1,1
+''')
+write('casafolino_kpi/data/cf_kpi_cron.xml', '<?xml version="1.0" encoding="utf-8"?>\n<odoo>\n</odoo>\n')
+write('casafolino_kpi/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_kpi" model="ir.actions.act_window">
+        <field name="name">KPI Dashboard</field><field name="res_model">cf.kpi.snapshot</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_kpi_root" name="KPI" sequence="10"/>
+    <menuitem id="menu_cf_kpi_snapshots" name="Snapshots" parent="menu_cf_kpi_root" action="action_cf_kpi" sequence="1"/>
+</odoo>
+''')
+print('✅ casafolino_kpi completo')
+
+# =============================================================================
+# CASAFOLINO GDO
+# =============================================================================
+write('casafolino_gdo/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino GDO",
+    "version": "18.0.1.0.0",
+    "category": "Sales",
+    "summary": "Pipeline GDO — Listing, Contratti, Forecast",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "product", "account"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_gdo/__init__.py', 'from . import models\n')
+write('casafolino_gdo/models/__init__.py', 'from . import cf_gdo\n')
+write('casafolino_gdo/models/cf_gdo.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class CfGdoRetailer(models.Model):
+    _name = "cf.gdo.retailer"
+    _description = "Retailer GDO"
+    _inherit = ["mail.thread"]
+    _rec_name = "partner_id"
+    partner_id = fields.Many2one("res.partner", required=True, ondelete="cascade")
+    retailer_type = fields.Selection([
+        ("supermarket","Supermercato"),("hypermarket","Ipermercato"),
+        ("discount","Discount"),("specialty","Specialty"),("online","Online"),
+    ], required=True, default="supermarket")
+    country_id = fields.Many2one(related="partner_id.country_id", store=True)
+    num_stores = fields.Integer(string="N° Punti Vendita")
+    buyer_id = fields.Many2one("res.partner", string="Buyer")
+    annual_target = fields.Monetary(string="Target Annuale", currency_field="currency_id")
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"))
+    listing_ids = fields.One2many("cf.gdo.listing", "retailer_id", string="Listing")
+    active = fields.Boolean(default=True)
+    notes = fields.Text()
+
+class CfGdoListing(models.Model):
+    _name = "cf.gdo.listing"
+    _description = "Listing Prodotto GDO"
+    _inherit = ["mail.thread"]
+    _rec_name = "display_name_computed"
+    display_name_computed = fields.Char(compute="_compute_display_name", store=True)
+    retailer_id = fields.Many2one("cf.gdo.retailer", required=True, ondelete="cascade")
+    product_id = fields.Many2one("product.template", required=True)
+    state = fields.Selection([
+        ("draft","Bozza"),("sample","Campione"),("evaluation","Valutazione"),
+        ("approved","Approvato"),("active","Attivo"),("delisted","Delistato"),
+    ], default="draft", tracking=True, required=True)
+    date_submission = fields.Date(string="Data Sottomissione")
+    date_approval = fields.Date(string="Data Approvazione")
+    date_active = fields.Date(string="Data Attivazione")
+    selling_price = fields.Monetary(string="Prezzo Vendita", currency_field="currency_id")
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"))
+    num_stores = fields.Integer(string="N° Store")
+    notes = fields.Text()
+
+    @api.depends("retailer_id","product_id")
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name_computed = f"{rec.retailer_id.partner_id.name or ''} - {rec.product_id.name or ''}"
+
+class ResPartnerGdo(models.Model):
+    _inherit = "res.partner"
+    is_gdo_retailer = fields.Boolean(string="Retailer GDO", default=False)
+''')
+write('casafolino_gdo/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_gdo_retailer_user,cf.gdo.retailer user,model_cf_gdo_retailer,base.group_user,1,1,1,0
+access_cf_gdo_retailer_mgr,cf.gdo.retailer manager,model_cf_gdo_retailer,base.group_system,1,1,1,1
+access_cf_gdo_listing_user,cf.gdo.listing user,model_cf_gdo_listing,base.group_user,1,1,1,0
+access_cf_gdo_listing_mgr,cf.gdo.listing manager,model_cf_gdo_listing,base.group_system,1,1,1,1
+''')
+write('casafolino_gdo/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_gdo_retailers" model="ir.actions.act_window">
+        <field name="name">Retailer GDO</field><field name="res_model">cf.gdo.retailer</field><field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_gdo_listings" model="ir.actions.act_window">
+        <field name="name">Listing Prodotti</field><field name="res_model">cf.gdo.listing</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_gdo_root" name="GDO" sequence="35"/>
+    <menuitem id="menu_cf_gdo_retailers" name="Retailer" parent="menu_cf_gdo_root" action="action_cf_gdo_retailers" sequence="1"/>
+    <menuitem id="menu_cf_gdo_listings" name="Listing" parent="menu_cf_gdo_root" action="action_cf_gdo_listings" sequence="2"/>
+</odoo>
+''')
+print('✅ casafolino_gdo completo')
+
+# =============================================================================
+# CASAFOLINO PRIVATE LABEL
+# =============================================================================
+write('casafolino_private_label/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Private Label",
+    "version": "18.0.1.0.0",
+    "category": "Sales",
+    "summary": "Gestione clienti Private Label",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "product", "account", "purchase"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_private_label/__init__.py', 'from . import models\n')
+write('casafolino_private_label/models/__init__.py', 'from . import cf_private_label\n')
+write('casafolino_private_label/models/cf_private_label.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class CfPlClient(models.Model):
+    _name = "cf.pl.client"
+    _description = "Cliente Private Label"
+    _inherit = ["mail.thread"]
+    _rec_name = "partner_id"
+    partner_id = fields.Many2one("res.partner", required=True, ondelete="cascade")
+    country_id = fields.Many2one(related="partner_id.country_id", store=True)
+    annual_target = fields.Monetary(string="Target Annuale", currency_field="currency_id")
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"))
+    product_ids = fields.One2many("cf.pl.product", "client_id", string="Prodotti PL")
+    active = fields.Boolean(default=True)
+    notes = fields.Text()
+
+class CfPlProduct(models.Model):
+    _name = "cf.pl.product"
+    _description = "Prodotto Private Label"
+    _inherit = ["mail.thread"]
+    _rec_name = "name"
+    name = fields.Char(string="Nome Prodotto PL", required=True)
+    client_id = fields.Many2one("cf.pl.client", required=True, ondelete="cascade")
+    product_id = fields.Many2one("product.template", string="Prodotto Base")
+    state = fields.Selection([
+        ("request","Richiesta"),("development","Sviluppo"),("sampling","Campionatura"),
+        ("approved","Approvato"),("active","Attivo"),
+    ], default="request", tracking=True, required=True)
+    selling_price = fields.Monetary(string="Prezzo PL", currency_field="currency_id")
+    production_cost = fields.Monetary(string="Costo Produzione", currency_field="currency_id")
+    label_cost = fields.Monetary(string="Costo Etichetta", currency_field="currency_id")
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"))
+    margin_pct = fields.Float(string="Margine %", compute="_compute_margin", store=True)
+    min_order_qty = fields.Float(string="MOQ")
+    notes = fields.Text()
+
+    @api.depends("selling_price","production_cost","label_cost")
+    def _compute_margin(self):
+        for rec in self:
+            cost = rec.production_cost + rec.label_cost
+            rec.margin_pct = ((rec.selling_price - cost) / rec.selling_price * 100) if rec.selling_price else 0.0
+
+class ResPartnerPl(models.Model):
+    _inherit = "res.partner"
+    is_pl_client = fields.Boolean(string="Cliente Private Label", default=False)
+''')
+write('casafolino_private_label/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_pl_client_user,cf.pl.client user,model_cf_pl_client,base.group_user,1,1,1,0
+access_cf_pl_client_mgr,cf.pl.client manager,model_cf_pl_client,base.group_system,1,1,1,1
+access_cf_pl_product_user,cf.pl.product user,model_cf_pl_product,base.group_user,1,1,1,0
+access_cf_pl_product_mgr,cf.pl.product manager,model_cf_pl_product,base.group_system,1,1,1,1
+''')
+write('casafolino_private_label/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_pl_clients" model="ir.actions.act_window">
+        <field name="name">Clienti PL</field><field name="res_model">cf.pl.client</field><field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_pl_products" model="ir.actions.act_window">
+        <field name="name">Prodotti PL</field><field name="res_model">cf.pl.product</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_pl_root" name="Private Label" sequence="40"/>
+    <menuitem id="menu_cf_pl_clients" name="Clienti" parent="menu_cf_pl_root" action="action_cf_pl_clients" sequence="1"/>
+    <menuitem id="menu_cf_pl_products" name="Prodotti" parent="menu_cf_pl_root" action="action_cf_pl_products" sequence="2"/>
+</odoo>
+''')
+print('✅ casafolino_private_label completo')
+
+# =============================================================================
+# CASAFOLINO PRODUCTION
+# =============================================================================
+write('casafolino_production/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Production Calendar",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Commesse produzione con calendario",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "project", "mrp", "sale_management"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_production/__init__.py', 'from . import models\n')
+write('casafolino_production/models/__init__.py', 'from . import cf_production_job\n')
+write('casafolino_production/models/cf_production_job.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError
+
+PRODUCTION_LINES = [
+    ("miele","Miele"),("creme","Creme Spalmabili"),("cantucci","Cantucci GF"),
+    ("cioccolato","Cioccolato"),("crispy","Crispy Chili"),
+    ("risotti","Risotti"),("confezionamento","Confezionamento"),
+]
+
+LINE_COLORS = {
+    "miele":"#F59E0B","creme":"#8B5CF6","cantucci":"#10B981",
+    "cioccolato":"#92400E","crispy":"#EF4444","risotti":"#3B82F6","confezionamento":"#6B7280",
+}
+
+class CfProductionJob(models.Model):
+    _name = "cf.production.job"
+    _description = "Commessa Produzione"
+    _inherit = ["mail.thread","mail.activity.mixin"]
+    _order = "date_start asc"
+    _rec_name = "reference"
+
+    reference = fields.Char(required=True, copy=False, readonly=True,
+        default=lambda self: self.env["ir.sequence"].next_by_code("cf.production.job") or "PROD-NUOVO")
+    state = fields.Selection([
+        ("draft","Bozza"),("confirmed","Confermata"),("in_progress","In Produzione"),
+        ("done","Completata"),("cancelled","Annullata"),
+    ], default="draft", tracking=True)
+    production_line = fields.Selection(PRODUCTION_LINES, required=True, tracking=True)
+    line_color = fields.Char(compute="_compute_line_color", store=False)
+    product_id = fields.Many2one("product.template", required=True)
+    quantity_planned = fields.Float(string="Quantita Pianificata", required=True)
+    quantity_done = fields.Float(string="Quantita Prodotta")
+    date_start = fields.Datetime(string="Inizio", required=True)
+    date_end = fields.Datetime(string="Fine", required=True)
+    operator_ids = fields.Many2many("res.users", string="Operatori")
+    production_id = fields.Many2one("mrp.production", string="Ordine Produzione")
+    notes = fields.Text()
+
+    @api.depends("production_line")
+    def _compute_line_color(self):
+        for rec in self:
+            rec.line_color = LINE_COLORS.get(rec.production_line, "#6B7280")
+
+    @api.constrains("date_start","date_end")
+    def _check_dates(self):
+        for rec in self:
+            if rec.date_start and rec.date_end and rec.date_start >= rec.date_end:
+                raise ValidationError("La data di fine deve essere successiva alla data di inizio.")
+
+    def action_confirm(self):
+        self.write({"state":"confirmed"})
+    def action_start(self):
+        self.write({"state":"in_progress"})
+    def action_done(self):
+        self.write({"state":"done"})
+    def action_cancel(self):
+        self.write({"state":"cancelled"})
+
+    def action_create_mo(self):
+        self.ensure_one()
+        mo = self.env["mrp.production"].create({
+            "product_id": self.product_id.product_variant_id.id if self.product_id.product_variant_id else False,
+            "product_qty": self.quantity_planned,
+            "date_start": self.date_start,
+        })
+        self.production_id = mo
+        return {"type":"ir.actions.act_window","name":"Ordine Produzione","res_model":"mrp.production","res_id":mo.id,"view_mode":"form"}
+''')
+write('casafolino_production/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_prod_job_user,cf.production.job user,model_cf_production_job,base.group_user,1,1,1,0
+access_cf_prod_job_mgr,cf.production.job manager,model_cf_production_job,base.group_system,1,1,1,1
+''')
+write('casafolino_production/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_cf_production_job" model="ir.sequence">
+        <field name="name">Commessa Produzione</field>
+        <field name="code">cf.production.job</field>
+        <field name="prefix">PROD-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="action_cf_production_jobs" model="ir.actions.act_window">
+        <field name="name">Commesse Produzione</field><field name="res_model">cf.production.job</field>
+        <field name="view_mode">list,calendar,form</field>
+    </record>
+    <menuitem id="menu_cf_prod_root" name="Produzione CF" sequence="22"/>
+    <menuitem id="menu_cf_prod_jobs" name="Commesse" parent="menu_cf_prod_root" action="action_cf_production_jobs" sequence="1"/>
+</odoo>
+''')
+print('✅ casafolino_production completo')
+
+# =============================================================================
+# CASAFOLINO ALLERGEN
+# =============================================================================
+write('casafolino_allergen/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Allergeni",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Gestione 14 allergeni UE — Reg. 1169/2011",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "product"],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/cf_allergen_14eu.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_allergen/__init__.py', 'from . import models\n')
+write('casafolino_allergen/models/__init__.py', 'from . import cf_allergen\n')
+write('casafolino_allergen/models/cf_allergen.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class CfAllergen(models.Model):
+    _name = "cf.allergen"
+    _description = "Allergene UE"
+    _order = "sequence"
+    _rec_name = "name"
+    name = fields.Char(required=True, translate=True)
+    code = fields.Char(required=True)
+    sequence = fields.Integer(default=10)
+    regulation_ref = fields.Char(string="Rif. Regolamento", default="Reg. 1169/2011")
+    active = fields.Boolean(default=True)
+
+class CfAllergenKeyword(models.Model):
+    _name = "cf.allergen.keyword"
+    _description = "Keyword Allergene"
+    allergen_id = fields.Many2one("cf.allergen", required=True, ondelete="cascade")
+    keyword = fields.Char(required=True)
+    match_type = fields.Selection([("exact","Esatta"),("partial","Parziale"),("starts","Inizia con")], default="partial")
+
+class CfRecipeAllergen(models.Model):
+    _name = "cf.recipe.allergen"
+    _description = "Allergene Ricetta"
+    bom_id = fields.Many2one("mrp.bom", required=True, ondelete="cascade")
+    allergen_id = fields.Many2one("cf.allergen", required=True)
+    status = fields.Selection([
+        ("present","Presente"),("traces","Puo Contenere Tracce"),("absent","Assente"),
+    ], required=True, default="absent")
+    cross_contamination = fields.Boolean(default=False)
+    notes = fields.Text()
+    validated_by = fields.Many2one("res.users", string="Validato da")
+    validation_date = fields.Date(string="Data Validazione")
+
+class MrpBomAllergen(models.Model):
+    _inherit = "mrp.bom"
+    allergen_ids = fields.One2many("cf.recipe.allergen", "bom_id", string="Allergeni")
+    allergen_validated = fields.Boolean(string="Dichiarazione Validata", default=False)
+
+    def action_analyze_allergens(self):
+        self.ensure_one()
+        allergens = self.env["cf.allergen"].search([])
+        keywords = self.env["cf.allergen.keyword"].search([])
+        ingredient_names = " ".join(self.bom_line_ids.mapped("product_id.name")).lower()
+        for allergen in allergens:
+            existing = self.allergen_ids.filtered(lambda a: a.allergen_id.id == allergen.id)
+            if existing: continue
+            kws = keywords.filtered(lambda k: k.allergen_id.id == allergen.id)
+            found = False
+            for kw in kws:
+                k = kw.keyword.lower()
+                if kw.match_type == "exact" and k == ingredient_names: found = True
+                elif kw.match_type == "partial" and k in ingredient_names: found = True
+                elif kw.match_type == "starts" and ingredient_names.startswith(k): found = True
+            self.env["cf.recipe.allergen"].create({
+                "bom_id": self.id,
+                "allergen_id": allergen.id,
+                "status": "present" if found else "absent",
+            })
+''')
+write('casafolino_allergen/data/cf_allergen_14eu.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="allergen_01_gluten" model="cf.allergen"><field name="sequence">1</field><field name="code">01</field><field name="name">Cereali contenenti glutine</field></record>
+    <record id="allergen_02_crustaceans" model="cf.allergen"><field name="sequence">2</field><field name="code">02</field><field name="name">Crostacei</field></record>
+    <record id="allergen_03_eggs" model="cf.allergen"><field name="sequence">3</field><field name="code">03</field><field name="name">Uova</field></record>
+    <record id="allergen_04_fish" model="cf.allergen"><field name="sequence">4</field><field name="code">04</field><field name="name">Pesce</field></record>
+    <record id="allergen_05_peanuts" model="cf.allergen"><field name="sequence">5</field><field name="code">05</field><field name="name">Arachidi</field></record>
+    <record id="allergen_06_soy" model="cf.allergen"><field name="sequence">6</field><field name="code">06</field><field name="name">Soia</field></record>
+    <record id="allergen_07_milk" model="cf.allergen"><field name="sequence">7</field><field name="code">07</field><field name="name">Latte</field></record>
+    <record id="allergen_08_nuts" model="cf.allergen"><field name="sequence">8</field><field name="code">08</field><field name="name">Frutta a guscio</field></record>
+    <record id="allergen_09_celery" model="cf.allergen"><field name="sequence">9</field><field name="code">09</field><field name="name">Sedano</field></record>
+    <record id="allergen_10_mustard" model="cf.allergen"><field name="sequence">10</field><field name="code">10</field><field name="name">Senape</field></record>
+    <record id="allergen_11_sesame" model="cf.allergen"><field name="sequence">11</field><field name="code">11</field><field name="name">Semi di sesamo</field></record>
+    <record id="allergen_12_so2" model="cf.allergen"><field name="sequence">12</field><field name="code">12</field><field name="name">Anidride solforosa e solfiti</field></record>
+    <record id="allergen_13_lupin" model="cf.allergen"><field name="sequence">13</field><field name="code">13</field><field name="name">Lupini</field></record>
+    <record id="allergen_14_molluscs" model="cf.allergen"><field name="sequence">14</field><field name="code">14</field><field name="name">Molluschi</field></record>
+</odoo>
+''')
+write('casafolino_allergen/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_allergen_user,cf.allergen user,model_cf_allergen,base.group_user,1,0,0,0
+access_cf_allergen_mgr,cf.allergen manager,model_cf_allergen,base.group_system,1,1,1,1
+access_cf_allergen_kw_user,cf.allergen.keyword user,model_cf_allergen_keyword,base.group_user,1,0,0,0
+access_cf_allergen_kw_mgr,cf.allergen.keyword manager,model_cf_allergen_keyword,base.group_system,1,1,1,1
+access_cf_recipe_allergen_user,cf.recipe.allergen user,model_cf_recipe_allergen,base.group_user,1,1,1,0
+access_cf_recipe_allergen_mgr,cf.recipe.allergen manager,model_cf_recipe_allergen,base.group_system,1,1,1,1
+''')
+write('casafolino_allergen/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_allergens" model="ir.actions.act_window">
+        <field name="name">Allergeni UE</field><field name="res_model">cf.allergen</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_allergen_root" name="Allergeni" sequence="27"/>
+    <menuitem id="menu_cf_allergens" name="14 Allergeni UE" parent="menu_cf_allergen_root" action="action_cf_allergens" sequence="1"/>
+</odoo>
+''')
+print('✅ casafolino_allergen completo')
+
+# =============================================================================
+# CASAFOLINO NUTRITION
+# =============================================================================
+write('casafolino_nutrition/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Nutrition",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Valori nutrizionali da BoM",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "product"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_nutrition/__init__.py', 'from . import models\n')
+write('casafolino_nutrition/models/__init__.py', 'from . import cf_nutrition\n')
+write('casafolino_nutrition/models/cf_nutrition.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class CfNutritionIngredient(models.Model):
+    _name = "cf.nutrition.ingredient"
+    _description = "Valori Nutrizionali Ingrediente"
+    _rec_name = "product_id"
+    product_id = fields.Many2one("product.template", required=True, ondelete="cascade")
+    energy_kcal = fields.Float(string="Energia (kcal/100g)")
+    energy_kj = fields.Float(string="Energia (kJ/100g)")
+    fat = fields.Float(string="Grassi (g/100g)")
+    saturated_fat = fields.Float(string="Acidi Grassi Saturi (g/100g)")
+    carbs = fields.Float(string="Carboidrati (g/100g)")
+    sugars = fields.Float(string="Zuccheri (g/100g)")
+    fiber = fields.Float(string="Fibra (g/100g)")
+    protein = fields.Float(string="Proteine (g/100g)")
+    salt = fields.Float(string="Sale (g/100g)")
+    sodium = fields.Float(string="Sodio (g/100g)")
+    fdc_id = fields.Char(string="USDA FDC ID")
+    notes = fields.Text()
+
+class CfNutritionBom(models.Model):
+    _name = "cf.nutrition.bom"
+    _description = "Valori Nutrizionali Ricetta"
+    _rec_name = "bom_id"
+    bom_id = fields.Many2one("mrp.bom", required=True, ondelete="cascade")
+    serving_size_g = fields.Float(string="Porzione (g)", default=100.0)
+    energy_kcal = fields.Float(string="Energia (kcal/100g)", readonly=True)
+    energy_kj = fields.Float(string="Energia (kJ/100g)", readonly=True)
+    fat = fields.Float(string="Grassi (g/100g)", readonly=True)
+    saturated_fat = fields.Float(string="Saturi (g/100g)", readonly=True)
+    carbs = fields.Float(string="Carboidrati (g/100g)", readonly=True)
+    sugars = fields.Float(string="Zuccheri (g/100g)", readonly=True)
+    fiber = fields.Float(string="Fibra (g/100g)", readonly=True)
+    protein = fields.Float(string="Proteine (g/100g)", readonly=True)
+    salt = fields.Float(string="Sale (g/100g)", readonly=True)
+    last_computed = fields.Datetime(string="Ultimo Calcolo", readonly=True)
+
+    def action_compute(self):
+        self.ensure_one()
+        bom = self.bom_id
+        total_qty = sum(line.product_qty for line in bom.bom_line_ids)
+        if not total_qty: return
+        fields_map = ["energy_kcal","energy_kj","fat","saturated_fat","carbs","sugars","fiber","protein","salt"]
+        totals = {f: 0.0 for f in fields_map}
+        for line in bom.bom_line_ids:
+            ingredient = self.env["cf.nutrition.ingredient"].search(
+                [("product_id","=",line.product_id.product_tmpl_id.id)], limit=1)
+            if not ingredient: continue
+            ratio = line.product_qty / total_qty
+            for f in fields_map:
+                totals[f] += getattr(ingredient, f) * ratio
+        totals["last_computed"] = fields.Datetime.now()
+        self.write(totals)
+
+class MrpBomNutrition(models.Model):
+    _inherit = "mrp.bom"
+    nutrition_ids = fields.One2many("cf.nutrition.bom", "bom_id", string="Valori Nutrizionali")
+''')
+write('casafolino_nutrition/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_nutrition_ingredient_user,cf.nutrition.ingredient user,model_cf_nutrition_ingredient,base.group_user,1,1,1,0
+access_cf_nutrition_ingredient_mgr,cf.nutrition.ingredient manager,model_cf_nutrition_ingredient,base.group_system,1,1,1,1
+access_cf_nutrition_bom_user,cf.nutrition.bom user,model_cf_nutrition_bom,base.group_user,1,1,1,0
+access_cf_nutrition_bom_mgr,cf.nutrition.bom manager,model_cf_nutrition_bom,base.group_system,1,1,1,1
+''')
+write('casafolino_nutrition/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_nutrition_ingredients" model="ir.actions.act_window">
+        <field name="name">Ingredienti Nutrizionali</field><field name="res_model">cf.nutrition.ingredient</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_nutrition_root" name="Nutrizione" sequence="28"/>
+    <menuitem id="menu_cf_nutrition_ingredients" name="Ingredienti" parent="menu_cf_nutrition_root" action="action_cf_nutrition_ingredients" sequence="1"/>
+</odoo>
+''')
+print('✅ casafolino_nutrition completo')
+print('\n🎉 Build completo — tutti i moduli pronti!')

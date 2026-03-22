@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="allergen_01_gluten" model="cf.allergen"><field name="sequence">1</field><field name="code">01</field><field name="name">Cereali contenenti glutine</field></record>
+    <record id="allergen_02_crustaceans" model="cf.allergen"><field name="sequence">2</field><field name="code">02</field><field name="name">Crostacei</field></record>
+    <record id="allergen_03_eggs" model="cf.allergen"><field name="sequence">3</field><field name="code">03</field><field name="name">Uova</field></record>
+    <record id="allergen_04_fish" model="cf.allergen"><field name="sequence">4</field><field name="code">04</field><field name="name">Pesce</field></record>
+    <record id="allergen_05_peanuts" model="cf.allergen"><field name="sequence">5</field><field name="code">05</field><field name="name">Arachidi</field></record>
+    <record id="allergen_06_soy" model="cf.allergen"><field name="sequence">6</field><field name="code">06</field><field name="name">Soia</field></record>
+    <record id="allergen_07_milk" model="cf.allergen"><field name="sequence">7</field><field name="code">07</field><field name="name">Latte</field></record>
+    <record id="allergen_08_nuts" model="cf.allergen"><field name="sequence">8</field><field name="code">08</field><field name="name">Frutta a guscio</field></record>
+    <record id="allergen_09_celery" model="cf.allergen"><field name="sequence">9</field><field name="code">09</field><field name="name">Sedano</field></record>
+    <record id="allergen_10_mustard" model="cf.allergen"><field name="sequence">10</field><field name="code">10</field><field name="name">Senape</field></record>
+    <record id="allergen_11_sesame" model="cf.allergen"><field name="sequence">11</field><field name="code">11</field><field name="name">Semi di sesamo</field></record>
+    <record id="allergen_12_so2" model="cf.allergen"><field name="sequence">12</field><field name="code">12</field><field name="name">Anidride solforosa e solfiti</field></record>
+    <record id="allergen_13_lupin" model="cf.allergen"><field name="sequence">13</field><field name="code">13</field><field name="name">Lupini</field></record>
+    <record id="allergen_14_molluscs" model="cf.allergen"><field name="sequence">14</field><field name="code">14</field><field name="name">Molluschi</field></record>
+</odoo>

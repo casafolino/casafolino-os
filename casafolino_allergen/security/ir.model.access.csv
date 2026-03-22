@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_allergen_user,cf.allergen user,model_cf_allergen,base.group_user,1,0,0,0
+access_cf_allergen_mgr,cf.allergen manager,model_cf_allergen,base.group_system,1,1,1,1
+access_cf_allergen_kw_user,cf.allergen.keyword user,model_cf_allergen_keyword,base.group_user,1,0,0,0
+access_cf_allergen_kw_mgr,cf.allergen.keyword manager,model_cf_allergen_keyword,base.group_system,1,1,1,1
+access_cf_recipe_allergen_user,cf.recipe.allergen user,model_cf_recipe_allergen,base.group_user,1,1,1,0
+access_cf_recipe_allergen_mgr,cf.recipe.allergen manager,model_cf_recipe_allergen,base.group_system,1,1,1,1

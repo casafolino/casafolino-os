@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_allergens" model="ir.actions.act_window">
+        <field name="name">Allergeni UE</field><field name="res_model">cf.allergen</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_allergen_root" name="Allergeni" sequence="27"/>
+    <menuitem id="menu_cf_allergens" name="14 Allergeni UE" parent="menu_cf_allergen_root" action="action_cf_allergens" sequence="1"/>
+</odoo>
