@@ -927,3 +927,341 @@ write('casafolino_crm_export/views/menus.xml', '''\
 ''')
 
 print('✅ casafolino_crm_export completo')
+
+# =============================================================================
+# CASAFOLINO SUPPLIER QUAL
+# =============================================================================
+write('casafolino_supplier_qual/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Supplier Qualification",
+    "version": "18.0.1.0.0",
+    "category": "Purchase",
+    "summary": "Qualifica fornitori BRC/IFS — Documenti, Valutazioni, Alert scadenze",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "purchase", "stock"],
+    "data": [
+        "security/cf_supplier_qual_security.xml",
+        "security/ir.model.access.csv",
+        "data/cf_supplier_qual_cron.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+
+write('casafolino_supplier_qual/__init__.py', 'from . import models\n')
+write('casafolino_supplier_qual/models/__init__.py', '''\
+from . import cf_supplier_qualification
+from . import cf_supplier_document
+from . import cf_supplier_evaluation
+''')
+
+write('casafolino_supplier_qual/models/cf_supplier_qualification.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import date
+import logging
+_logger = logging.getLogger(__name__)
+
+class CfSupplierQualification(models.Model):
+    _name = "casafolino.supplier.qualification"
+    _description = "Qualifica Fornitore CasaFolino"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "partner_id"
+    _rec_name = "partner_id"
+
+    partner_id = fields.Many2one("res.partner", string="Fornitore", required=True,
+        ondelete="cascade", domain="[(\'supplier_rank\',\'>\',0)]", tracking=True)
+    partner_country_id = fields.Many2one(related="partner_id.country_id", store=True, readonly=True)
+    status = fields.Selection([
+        ("approved","Approvato"),("evaluation","In Valutazione"),
+        ("suspended","Sospeso"),("excluded","Escluso"),
+    ], string="Stato Qualifica", default="evaluation", required=True, tracking=True)
+    traffic_light = fields.Selection([
+        ("green","Verde — Tutto OK"),("yellow","Giallo — Attenzione"),("red","Rosso — Critico"),
+    ], string="Semaforo", compute="_compute_traffic_light", store=True)
+    date_qualification = fields.Date(string="Data Prima Qualifica", default=fields.Date.today)
+    qualified_by = fields.Many2one("res.users", string="Qualificato da", default=lambda self: self.env.user)
+    last_evaluation_date = fields.Date(string="Ultima Valutazione", readonly=True)
+    next_evaluation_date = fields.Date(string="Prossima Valutazione", tracking=True)
+    notes = fields.Text(string="Note")
+    suspension_reason = fields.Text(string="Motivo Sospensione/Esclusione")
+    document_ids = fields.One2many("casafolino.supplier.document", "partner_id", string="Documenti")
+    evaluation_ids = fields.One2many("casafolino.supplier.evaluation", "partner_id", string="Valutazioni")
+    document_count = fields.Integer(compute="_compute_stats")
+    evaluation_count = fields.Integer(compute="_compute_stats")
+    expired_doc_count = fields.Integer(compute="_compute_stats")
+    expiring_doc_count = fields.Integer(compute="_compute_stats")
+    last_score = fields.Float(compute="_compute_stats", store=True)
+
+    @api.depends("document_ids","document_ids.doc_status","evaluation_ids","evaluation_ids.punteggio_totale")
+    def _compute_stats(self):
+        for rec in self:
+            docs = rec.document_ids
+            rec.document_count = len(docs)
+            rec.evaluation_count = len(rec.evaluation_ids)
+            rec.expired_doc_count = len(docs.filtered(lambda d: d.doc_status == "expired"))
+            rec.expiring_doc_count = len(docs.filtered(lambda d: d.doc_status == "expiring"))
+            last_eval = rec.evaluation_ids.sorted("date", reverse=True)[:1]
+            rec.last_score = last_eval.punteggio_totale if last_eval else 0.0
+
+    @api.depends("status","document_ids.doc_status","next_evaluation_date")
+    def _compute_traffic_light(self):
+        today = date.today()
+        for rec in self:
+            if rec.status in ("suspended","excluded"):
+                rec.traffic_light = "red"; continue
+            if any(d.doc_status == "expired" for d in rec.document_ids):
+                rec.traffic_light = "red"; continue
+            if any(d.doc_status == "expiring" for d in rec.document_ids):
+                rec.traffic_light = "yellow"; continue
+            if rec.next_evaluation_date and rec.next_evaluation_date < today:
+                rec.traffic_light = "yellow"; continue
+            rec.traffic_light = "green"
+
+    def action_approve(self):
+        for rec in self:
+            rec.status = "approved"
+            rec.message_post(body=f"Fornitore approvato da {self.env.user.name}.")
+
+    def action_suspend(self):
+        for rec in self:
+            rec.status = "suspended"
+
+    def action_exclude(self):
+        for rec in self:
+            rec.status = "excluded"
+
+class ResPartnerSupplierQual(models.Model):
+    _inherit = "res.partner"
+
+    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification",
+        compute="_compute_supplier_qual", store=False)
+    supplier_qual_status = fields.Selection(related="supplier_qual_id.status", readonly=True)
+    supplier_traffic_light = fields.Selection(related="supplier_qual_id.traffic_light", readonly=True)
+
+    def _compute_supplier_qual(self):
+        for rec in self:
+            qual = self.env["casafolino.supplier.qualification"].search(
+                [("partner_id","=",rec.id)], limit=1)
+            rec.supplier_qual_id = qual
+
+    def action_open_qualification(self):
+        self.ensure_one()
+        qual = self.env["casafolino.supplier.qualification"].search(
+            [("partner_id","=",self.id)], limit=1)
+        if not qual:
+            qual = self.env["casafolino.supplier.qualification"].create({"partner_id": self.id})
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"Qualifica — {self.name}",
+            "res_model": "casafolino.supplier.qualification",
+            "res_id": qual.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+''')
+
+write('casafolino_supplier_qual/models/cf_supplier_document.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import date
+
+DOCUMENT_TYPES = [
+    ("brc_ifs","Certificato BRC/IFS"),("iso_9001","Certificato ISO 9001"),
+    ("microbiological","Analisi Microbiologiche"),("allergen_decl","Dichiarazione Allergeni"),
+    ("kosher","Certificato Kosher"),("halal","Certificato Halal"),
+    ("bio_organic","Certificato Biologico"),("visura","Visura Camerale"),
+    ("contract","Contratto Fornitura"),("tech_sheet","Scheda Tecnica MP"),
+    ("analysis","Certificato Analisi / CoA"),("other","Altro"),
+]
+
+class CfSupplierDocument(models.Model):
+    _name = "casafolino.supplier.document"
+    _description = "Documento Fornitore Qualificato"
+    _inherit = ["mail.thread"]
+    _order = "expiry_date asc, partner_id"
+    _rec_name = "name"
+
+    name = fields.Char(string="Nome Documento", required=True)
+    partner_id = fields.Many2one("res.partner", string="Fornitore", required=True,
+        ondelete="cascade", domain="[(\'supplier_rank\',\'>\',0)]")
+    document_type = fields.Selection(DOCUMENT_TYPES, string="Tipo", required=True, default="other")
+    attachment_id = fields.Many2one("ir.attachment", string="File Allegato")
+    has_file = fields.Boolean(compute="_compute_has_file", store=True)
+    issue_date = fields.Date(string="Data Emissione")
+    expiry_date = fields.Date(string="Data Scadenza", tracking=True)
+    no_expiry = fields.Boolean(string="Nessuna Scadenza", default=False)
+    alert_days_before = fields.Integer(string="Alert Giorni Prima", default=30)
+    doc_status = fields.Selection([
+        ("valid","Valido"),("expiring","In Scadenza"),("expired","Scaduto"),
+        ("no_expiry","Nessuna Scadenza"),("missing","File Mancante"),
+    ], string="Status", compute="_compute_doc_status", store=True, tracking=True)
+    days_to_expiry = fields.Integer(compute="_compute_doc_status", store=False)
+    notes = fields.Text(string="Note")
+    reference_number = fields.Char(string="N° Riferimento")
+
+    @api.depends("attachment_id")
+    def _compute_has_file(self):
+        for rec in self:
+            rec.has_file = bool(rec.attachment_id)
+
+    @api.depends("expiry_date","no_expiry","alert_days_before","attachment_id")
+    def _compute_doc_status(self):
+        today = date.today()
+        for rec in self:
+            if rec.no_expiry:
+                rec.doc_status = "no_expiry"; rec.days_to_expiry = 0; continue
+            if not rec.expiry_date:
+                rec.doc_status = "missing" if not rec.attachment_id else "valid"
+                rec.days_to_expiry = 0; continue
+            days = (rec.expiry_date - today).days
+            rec.days_to_expiry = days
+            rec.doc_status = "expired" if days < 0 else "expiring" if days <= rec.alert_days_before else "valid"
+
+    @api.model
+    def send_expiry_alerts(self):
+        expiring = self.search([("doc_status","in",("expiring","expired")),("no_expiry","=",False)])
+        for doc in expiring:
+            doc.message_post(body=f"Documento {doc.name} scade il {doc.expiry_date}.")
+''')
+
+write('casafolino_supplier_qual/models/cf_supplier_evaluation.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from dateutil.relativedelta import relativedelta
+
+class CfSupplierEvaluation(models.Model):
+    _name = "casafolino.supplier.evaluation"
+    _description = "Valutazione Fornitore"
+    _inherit = ["mail.thread"]
+    _order = "date desc"
+    _rec_name = "display_name_computed"
+
+    display_name_computed = fields.Char(compute="_compute_display_name", store=True)
+    partner_id = fields.Many2one("res.partner", string="Fornitore", required=True,
+        ondelete="cascade", domain="[(\'supplier_rank\',\'>\',0)]", tracking=True)
+    date = fields.Date(string="Data", default=fields.Date.today, required=True)
+    evaluator_id = fields.Many2one("res.users", string="Valutatore", default=lambda self: self.env.user)
+    punteggio_qualita = fields.Selection([
+        ("1","1 - Insufficiente"),("2","2 - Scarso"),("3","3 - Sufficiente"),
+        ("4","4 - Buono"),("5","5 - Eccellente"),
+    ], string="Qualita Prodotti", required=True)
+    punteggio_puntualita = fields.Selection([
+        ("1","1 - Insufficiente"),("2","2 - Scarso"),("3","3 - Sufficiente"),
+        ("4","4 - Buono"),("5","5 - Eccellente"),
+    ], string="Puntualita Consegne", required=True)
+    punteggio_documentazione = fields.Selection([
+        ("1","1 - Insufficiente"),("2","2 - Scarso"),("3","3 - Sufficiente"),
+        ("4","4 - Buono"),("5","5 - Eccellente"),
+    ], string="Documentazione", required=True)
+    punteggio_totale = fields.Float(compute="_compute_punteggio", store=True, digits=(3,2))
+    risultato = fields.Selection([
+        ("confirmed","Confermato"),("observation","In Osservazione"),("excluded","Escluso"),
+    ], string="Risultato", required=True, compute="_compute_risultato", store=True)
+    note = fields.Text(string="Note")
+    corrective_actions = fields.Text(string="Azioni Correttive")
+
+    @api.depends("partner_id","date")
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name_computed = f"{rec.partner_id.name or ''} — {rec.date or ''}"
+
+    @api.depends("punteggio_qualita","punteggio_puntualita","punteggio_documentazione")
+    def _compute_punteggio(self):
+        for rec in self:
+            scores = [int(v) for v in [rec.punteggio_qualita, rec.punteggio_puntualita, rec.punteggio_documentazione] if v]
+            rec.punteggio_totale = sum(scores) / len(scores) if scores else 0.0
+
+    @api.depends("punteggio_totale")
+    def _compute_risultato(self):
+        for rec in self:
+            pt = rec.punteggio_totale
+            rec.risultato = "confirmed" if pt >= 3.5 else "observation" if pt >= 2.0 else "excluded"
+
+    def action_apply_result(self):
+        for rec in self:
+            qual = self.env["casafolino.supplier.qualification"].search(
+                [("partner_id","=",rec.partner_id.id)], limit=1)
+            if not qual:
+                qual = self.env["casafolino.supplier.qualification"].create({"partner_id": rec.partner_id.id})
+            qual.last_evaluation_date = rec.date
+            qual.next_evaluation_date = rec.date + relativedelta(years=1)
+            if rec.risultato == "confirmed": qual.status = "approved"
+            elif rec.risultato == "observation": qual.status = "evaluation"
+            elif rec.risultato == "excluded": qual.status = "excluded"
+''')
+
+write('casafolino_supplier_qual/security/cf_supplier_qual_security.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_cf_supplier_qual" model="ir.module.category">
+        <field name="name">CasaFolino Fornitori Qualificati</field>
+        <field name="sequence">105</field>
+    </record>
+    <record id="group_cf_supplier_raq" model="res.groups">
+        <field name="name">RAQ Qualifica Fornitori</field>
+        <field name="category_id" ref="module_category_cf_supplier_qual"/>
+        <field name="implied_ids" eval="[(4, ref(\'base.group_user\'))]"/>
+    </record>
+</odoo>
+''')
+
+write('casafolino_supplier_qual/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_supplier_qual_user,casafolino.supplier.qualification user,model_casafolino_supplier_qualification,base.group_user,1,1,1,0
+access_cf_supplier_qual_raq,casafolino.supplier.qualification raq,model_casafolino_supplier_qualification,base.group_system,1,1,1,1
+access_cf_supplier_doc_user,casafolino.supplier.document user,model_casafolino_supplier_document,base.group_user,1,1,1,0
+access_cf_supplier_doc_raq,casafolino.supplier.document raq,model_casafolino_supplier_document,base.group_system,1,1,1,1
+access_cf_supplier_eval_user,casafolino.supplier.evaluation user,model_casafolino_supplier_evaluation,base.group_user,1,1,1,0
+access_cf_supplier_eval_raq,casafolino.supplier.evaluation raq,model_casafolino_supplier_evaluation,base.group_system,1,1,1,1
+''')
+
+write('casafolino_supplier_qual/data/cf_supplier_qual_cron.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_cf_supplier_doc_expiry" model="ir.cron">
+        <field name="name">Supplier Qual - Alert Scadenze Documenti</field>
+        <field name="model_id" search="[(\'model\',\'=\',\'casafolino.supplier.document\')]" model="ir.model"/>
+        <field name="state">code</field>
+        <field name="code">model.send_expiry_alerts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_supplier_qual/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_supplier_qual" model="ir.actions.act_window">
+        <field name="name">Fornitori Qualificati</field>
+        <field name="res_model">casafolino.supplier.qualification</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_supplier_documents" model="ir.actions.act_window">
+        <field name="name">Documenti Fornitori</field>
+        <field name="res_model">casafolino.supplier.document</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_supplier_evaluations" model="ir.actions.act_window">
+        <field name="name">Valutazioni Fornitori</field>
+        <field name="res_model">casafolino.supplier.evaluation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_supplier_qual_root" name="Fornitori Qualificati" sequence="32"/>
+    <menuitem id="menu_cf_supplier_dashboard" name="Schede Qualifica"
+              parent="menu_cf_supplier_qual_root" action="action_cf_supplier_qual" sequence="1"/>
+    <menuitem id="menu_cf_supplier_docs" name="Documenti"
+              parent="menu_cf_supplier_qual_root" action="action_cf_supplier_documents" sequence="2"/>
+    <menuitem id="menu_cf_supplier_evals" name="Valutazioni"
+              parent="menu_cf_supplier_qual_root" action="action_cf_supplier_evaluations" sequence="3"/>
+</odoo>
+''')
+
+print('✅ casafolino_supplier_qual completo')

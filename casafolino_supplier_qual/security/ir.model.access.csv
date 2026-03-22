@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_supplier_qual_user,casafolino.supplier.qualification user,model_casafolino_supplier_qualification,base.group_user,1,1,1,0
+access_cf_supplier_qual_raq,casafolino.supplier.qualification raq,model_casafolino_supplier_qualification,base.group_system,1,1,1,1
+access_cf_supplier_doc_user,casafolino.supplier.document user,model_casafolino_supplier_document,base.group_user,1,1,1,0
+access_cf_supplier_doc_raq,casafolino.supplier.document raq,model_casafolino_supplier_document,base.group_system,1,1,1,1
+access_cf_supplier_eval_user,casafolino.supplier.evaluation user,model_casafolino_supplier_evaluation,base.group_user,1,1,1,0
+access_cf_supplier_eval_raq,casafolino.supplier.evaluation raq,model_casafolino_supplier_evaluation,base.group_system,1,1,1,1
