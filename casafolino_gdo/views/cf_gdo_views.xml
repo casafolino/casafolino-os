@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_gdo_retailer_form" model="ir.ui.view">
+        <field name="name">cf.gdo.retailer.form</field>
+        <field name="model">cf.gdo.retailer</field>
+        <field name="arch" type="xml">
+            <form string="Retailer GDO">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="retailer_type"/>
+                            <field name="country_id"/>
+                            <field name="num_stores"/>
+                            <field name="buyer_id"/>
+                        </group>
+                        <group>
+                            <field name="annual_target"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Listing Prodotti">
+                            <field name="listing_ids">
+                                <list editable="bottom" decoration-success="state=='active'" decoration-warning="state=='evaluation'">
+                                    <field name="product_id"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="date_submission"/>
+                                    <field name="date_approval"/>
+                                    <field name="selling_price"/>
+                                    <field name="num_stores"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_gdo_retailer_list" model="ir.ui.view">
+        <field name="name">cf.gdo.retailer.list</field>
+        <field name="model">cf.gdo.retailer</field>
+        <field name="arch" type="xml">
+            <list string="Retailer GDO">
+                <field name="partner_id"/>
+                <field name="retailer_type"/>
+                <field name="country_id"/>
+                <field name="num_stores"/>
+                <field name="annual_target"/>
+                <field name="buyer_id"/>
+            </list>
+        </field>
+    </record>
+</odoo>

@@ -8,6 +8,7 @@
     "depends": ["base", "mail", "project", "mrp", "sale_management"],
     "data": [
         "security/ir.model.access.csv",
+        "views/cf_production_views.xml",
         "views/menus.xml",
     ],
     "installable": True,

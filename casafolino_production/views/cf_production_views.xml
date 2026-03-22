@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_production_job_form" model="ir.ui.view">
+        <field name="name">cf.production.job.form</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <form string="Commessa Produzione">
+                <header>
+                    <button name="action_confirm" type="object" string="Conferma" class="btn-primary" attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_start" type="object" string="Avvia" class="btn-success" attrs="{'invisible': [('state','!=','confirmed')]}"/>
+                    <button name="action_done" type="object" string="Completa" class="btn-success" attrs="{'invisible': [('state','!=','in_progress')]}"/>
+                    <button name="action_create_mo" type="object" string="Crea MO Odoo" class="btn-secondary" attrs="{'invisible': [('production_id','!=',False)]}"/>
+                    <button name="action_cancel" type="object" string="Annulla" class="btn-danger" attrs="{'invisible': [('state','in',('done','cancelled'))]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Produzione">
+                            <field name="production_line"/>
+                            <field name="product_id"/>
+                            <field name="quantity_planned"/>
+                            <field name="quantity_done"/>
+                            <field name="production_id"/>
+                        </group>
+                        <group string="Pianificazione">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="operator_ids" widget="many2many_avatar_user"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_production_job_list" model="ir.ui.view">
+        <field name="name">cf.production.job.list</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <list string="Commesse Produzione" decoration-success="state=='done'" decoration-warning="state=='in_progress'">
+                <field name="reference"/>
+                <field name="production_line"/>
+                <field name="product_id"/>
+                <field name="quantity_planned"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_production_job_calendar" model="ir.ui.view">
+        <field name="name">cf.production.job.calendar</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <calendar string="Calendario Produzione" date_start="date_start" date_stop="date_end" color="production_line" quick_create="false">
+                <field name="reference"/>
+                <field name="product_id"/>
+                <field name="production_line"/>
+            </calendar>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_treasury_form" model="ir.ui.view">
+        <field name="name">cf.treasury.snapshot.form</field>
+        <field name="model">cf.treasury.snapshot</field>
+        <field name="arch" type="xml">
+            <form string="Snapshot Tesoreria">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="date"/></h1>
+                    </div>
+                    <group>
+                        <group string="Saldi">
+                            <field name="total_balance"/>
+                            <field name="receivable_30d"/>
+                            <field name="payable_30d"/>
+                        </group>
+                        <group string="Forecast">
+                            <field name="forecast_30d"/>
+                            <field name="forecast_60d"/>
+                            <field name="forecast_90d"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_treasury_list" model="ir.ui.view">
+        <field name="name">cf.treasury.snapshot.list</field>
+        <field name="model">cf.treasury.snapshot</field>
+        <field name="arch" type="xml">
+            <list string="Tesoreria">
+                <field name="date"/>
+                <field name="total_balance"/>
+                <field name="receivable_30d"/>
+                <field name="payable_30d"/>
+                <field name="forecast_30d"/>
+                <field name="forecast_60d"/>
+                <field name="forecast_90d"/>
+            </list>
+        </field>
+    </record>
+</odoo>

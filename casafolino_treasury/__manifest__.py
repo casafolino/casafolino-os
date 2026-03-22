@@ -8,7 +8,7 @@
     "depends": ["base", "mail", "account", "sale_management", "purchase"],
     "data": [
         "security/ir.model.access.csv",
-        "data/cf_treasury_cron.xml",
+        "views/cf_treasury_views.xml",
         "views/menus.xml",
     ],
     "installable": True,

@@ -3125,3 +3125,420 @@ write('casafolino_crm_export/__manifest__.py', '''\
 }
 ''')
 print('✅ Viste CRM Export complete')
+
+# =============================================================================
+# VISTE FORM — GDO
+# =============================================================================
+write('casafolino_gdo/views/cf_gdo_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_gdo_retailer_form" model="ir.ui.view">
+        <field name="name">cf.gdo.retailer.form</field>
+        <field name="model">cf.gdo.retailer</field>
+        <field name="arch" type="xml">
+            <form string="Retailer GDO">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="retailer_type"/>
+                            <field name="country_id"/>
+                            <field name="num_stores"/>
+                            <field name="buyer_id"/>
+                        </group>
+                        <group>
+                            <field name="annual_target"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Listing Prodotti">
+                            <field name="listing_ids">
+                                <list editable="bottom" decoration-success="state==\'active\'" decoration-warning="state==\'evaluation\'">
+                                    <field name="product_id"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="date_submission"/>
+                                    <field name="date_approval"/>
+                                    <field name="selling_price"/>
+                                    <field name="num_stores"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_gdo_retailer_list" model="ir.ui.view">
+        <field name="name">cf.gdo.retailer.list</field>
+        <field name="model">cf.gdo.retailer</field>
+        <field name="arch" type="xml">
+            <list string="Retailer GDO">
+                <field name="partner_id"/>
+                <field name="retailer_type"/>
+                <field name="country_id"/>
+                <field name="num_stores"/>
+                <field name="annual_target"/>
+                <field name="buyer_id"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_gdo/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino GDO",
+    "version": "18.0.1.0.0",
+    "category": "Sales",
+    "summary": "Pipeline GDO",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "product", "account"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_gdo_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste GDO complete')
+
+# =============================================================================
+# VISTE FORM — PRIVATE LABEL
+# =============================================================================
+write('casafolino_private_label/views/cf_pl_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_pl_client_form" model="ir.ui.view">
+        <field name="name">cf.pl.client.form</field>
+        <field name="model">cf.pl.client</field>
+        <field name="arch" type="xml">
+            <form string="Cliente Private Label">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="country_id"/>
+                            <field name="annual_target"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Prodotti PL">
+                            <field name="product_ids">
+                                <list editable="bottom" decoration-success="state==\'active\'" decoration-warning="state==\'sampling\'">
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="selling_price"/>
+                                    <field name="production_cost"/>
+                                    <field name="margin_pct" string="Margine %"/>
+                                    <field name="min_order_qty"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_private_label/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Private Label",
+    "version": "18.0.1.0.0",
+    "category": "Sales",
+    "summary": "Gestione clienti Private Label",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "product", "account", "purchase"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_pl_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Private Label complete')
+
+# =============================================================================
+# VISTE FORM — PRODUCTION
+# =============================================================================
+write('casafolino_production/views/cf_production_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_production_job_form" model="ir.ui.view">
+        <field name="name">cf.production.job.form</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <form string="Commessa Produzione">
+                <header>
+                    <button name="action_confirm" type="object" string="Conferma" class="btn-primary" attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_start" type="object" string="Avvia" class="btn-success" attrs="{'invisible': [('state','!=','confirmed')]}"/>
+                    <button name="action_done" type="object" string="Completa" class="btn-success" attrs="{'invisible': [('state','!=','in_progress')]}"/>
+                    <button name="action_create_mo" type="object" string="Crea MO Odoo" class="btn-secondary" attrs="{'invisible': [('production_id','!=',False)]}"/>
+                    <button name="action_cancel" type="object" string="Annulla" class="btn-danger" attrs="{'invisible': [('state','in',('done','cancelled'))]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Produzione">
+                            <field name="production_line"/>
+                            <field name="product_id"/>
+                            <field name="quantity_planned"/>
+                            <field name="quantity_done"/>
+                            <field name="production_id"/>
+                        </group>
+                        <group string="Pianificazione">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="operator_ids" widget="many2many_avatar_user"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_production_job_list" model="ir.ui.view">
+        <field name="name">cf.production.job.list</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <list string="Commesse Produzione" decoration-success="state==\'done\'" decoration-warning="state==\'in_progress\'">
+                <field name="reference"/>
+                <field name="production_line"/>
+                <field name="product_id"/>
+                <field name="quantity_planned"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_production_job_calendar" model="ir.ui.view">
+        <field name="name">cf.production.job.calendar</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <calendar string="Calendario Produzione" date_start="date_start" date_stop="date_end" color="production_line" quick_create="false">
+                <field name="reference"/>
+                <field name="product_id"/>
+                <field name="production_line"/>
+            </calendar>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_production/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Production Calendar",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Commesse produzione con calendario",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "project", "mrp", "sale_management"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_production_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Production complete')
+
+# =============================================================================
+# VISTE FORM — RECALL
+# =============================================================================
+write('casafolino_recall/views/cf_recall_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_recall_session_form" model="ir.ui.view">
+        <field name="name">cf.recall.session.form</field>
+        <field name="model">cf.recall.session</field>
+        <field name="arch" type="xml">
+            <form string="Sessione Mock Recall">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Parametri">
+                            <field name="session_type"/>
+                            <field name="lot_id"/>
+                            <field name="direction"/>
+                            <field name="operator_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Risultati">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration_seconds" string="Durata (sec)"/>
+                            <field name="nodes_count"/>
+                        </group>
+                    </group>
+                    <group string="Riepilogo" attrs="{'invisible': [('result_summary','=',False)]}">
+                        <field name="result_summary" nolabel="1" readonly="1"/>
+                    </group>
+                    <notebook attrs="{'invisible': [('state','!=','done')]}">
+                        <page string="MO Coinvolti">
+                            <field name="production_ids">
+                                <list><field name="name"/><field name="product_id"/><field name="state" widget="badge"/></list>
+                            </field>
+                        </page>
+                        <page string="Lotti">
+                            <field name="lot_ids">
+                                <list><field name="name"/><field name="product_id"/></list>
+                            </field>
+                        </page>
+                        <page string="Spedizioni">
+                            <field name="picking_ids">
+                                <list><field name="name"/><field name="partner_id"/><field name="state" widget="badge"/></list>
+                            </field>
+                        </page>
+                        <page string="Partner">
+                            <field name="partner_ids">
+                                <list><field name="name"/><field name="email"/></list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_recall_session_list" model="ir.ui.view">
+        <field name="name">cf.recall.session.list</field>
+        <field name="model">cf.recall.session</field>
+        <field name="arch" type="xml">
+            <list string="Sessioni Recall">
+                <field name="reference"/>
+                <field name="session_type" widget="badge"/>
+                <field name="lot_id"/>
+                <field name="direction"/>
+                <field name="date_start"/>
+                <field name="duration_seconds" string="Durata(s)"/>
+                <field name="nodes_count" string="Nodi"/>
+                <field name="operator_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_recall/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Mock Recall",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Mock Recall BRC/IFS",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "stock", "purchase", "sale_management"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_recall_views.xml",
+        "views/menus.xml",
+        "wizard/cf_recall_wizard_views.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Recall complete')
+
+# =============================================================================
+# VISTE FORM — TREASURY
+# =============================================================================
+write('casafolino_treasury/views/cf_treasury_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_treasury_form" model="ir.ui.view">
+        <field name="name">cf.treasury.snapshot.form</field>
+        <field name="model">cf.treasury.snapshot</field>
+        <field name="arch" type="xml">
+            <form string="Snapshot Tesoreria">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="date"/></h1>
+                    </div>
+                    <group>
+                        <group string="Saldi">
+                            <field name="total_balance"/>
+                            <field name="receivable_30d"/>
+                            <field name="payable_30d"/>
+                        </group>
+                        <group string="Forecast">
+                            <field name="forecast_30d"/>
+                            <field name="forecast_60d"/>
+                            <field name="forecast_90d"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_treasury_list" model="ir.ui.view">
+        <field name="name">cf.treasury.snapshot.list</field>
+        <field name="model">cf.treasury.snapshot</field>
+        <field name="arch" type="xml">
+            <list string="Tesoreria">
+                <field name="date"/>
+                <field name="total_balance"/>
+                <field name="receivable_30d"/>
+                <field name="payable_30d"/>
+                <field name="forecast_30d"/>
+                <field name="forecast_60d"/>
+                <field name="forecast_90d"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_treasury/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Treasury",
+    "version": "18.0.1.0.0",
+    "category": "Accounting",
+    "summary": "Tesoreria e Cash Flow",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "account", "sale_management", "purchase"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_treasury_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Treasury complete')
+
+print('\n🎉 Tutte le viste form complete!')
