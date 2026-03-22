@@ -8,7 +8,7 @@
     "depends": ["base", "mail", "sale_management", "purchase", "account", "mrp", "stock"],
     "data": [
         "security/ir.model.access.csv",
-        "data/cf_kpi_cron.xml",
+        "views/cf_kpi_views.xml",
         "views/menus.xml",
     ],
     "installable": True,

@@ -3542,3 +3542,223 @@ write('casafolino_treasury/__manifest__.py', '''\
 print('✅ Viste Treasury complete')
 
 print('\n🎉 Tutte le viste form complete!')
+
+# =============================================================================
+# VISTE FORM — ALLERGEN
+# =============================================================================
+write('casafolino_allergen/views/cf_allergen_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_allergen_list" model="ir.ui.view">
+        <field name="name">cf.allergen.list</field>
+        <field name="model">cf.allergen</field>
+        <field name="arch" type="xml">
+            <list string="14 Allergeni UE" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="regulation_ref"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_recipe_allergen_list" model="ir.ui.view">
+        <field name="name">cf.recipe.allergen.list</field>
+        <field name="model">cf.recipe.allergen</field>
+        <field name="arch" type="xml">
+            <list string="Allergeni Ricetta" editable="bottom"
+                  decoration-danger="status==\'present\'"
+                  decoration-warning="status==\'traces\'">
+                <field name="allergen_id"/>
+                <field name="status" widget="badge"
+                       decoration-danger="status==\'present\'"
+                       decoration-warning="status==\'traces\'"
+                       decoration-success="status==\'absent\'"/>
+                <field name="cross_contamination"/>
+                <field name="validated_by" widget="many2one_avatar_user"/>
+                <field name="validation_date"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_allergen/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Allergeni",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Gestione 14 allergeni UE",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "product"],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/cf_allergen_14eu.xml",
+        "views/cf_allergen_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Allergen complete')
+
+# =============================================================================
+# VISTE FORM — NUTRITION
+# =============================================================================
+write('casafolino_nutrition/views/cf_nutrition_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_nutrition_ingredient_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.form</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <form string="Valori Nutrizionali Ingrediente">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="product_id"/></h1>
+                    </div>
+                    <group string="Valori per 100g">
+                        <group>
+                            <field name="energy_kcal"/>
+                            <field name="energy_kj"/>
+                            <field name="fat"/>
+                            <field name="saturated_fat"/>
+                            <field name="carbs"/>
+                        </group>
+                        <group>
+                            <field name="sugars"/>
+                            <field name="fiber"/>
+                            <field name="protein"/>
+                            <field name="salt"/>
+                            <field name="fdc_id"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_nutrition_ingredient_list" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.list</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <list string="Ingredienti Nutrizionali">
+                <field name="product_id"/>
+                <field name="energy_kcal"/>
+                <field name="fat"/>
+                <field name="carbs"/>
+                <field name="sugars"/>
+                <field name="protein"/>
+                <field name="salt"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_nutrition/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Nutrition",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Valori nutrizionali da BoM",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "product"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_nutrition_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Nutrition complete')
+
+# =============================================================================
+# VISTE FORM — KPI
+# =============================================================================
+write('casafolino_kpi/views/cf_kpi_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_kpi_list" model="ir.ui.view">
+        <field name="name">cf.kpi.snapshot.list</field>
+        <field name="model">cf.kpi.snapshot</field>
+        <field name="arch" type="xml">
+            <list string="KPI Snapshots">
+                <field name="date"/>
+                <field name="sales_ytd"/>
+                <field name="sales_mtd"/>
+                <field name="sales_amazon"/>
+                <field name="sales_shopify"/>
+                <field name="sales_b2b"/>
+                <field name="sales_gdo"/>
+                <field name="mo_open"/>
+                <field name="mo_done"/>
+                <field name="nc_open" decoration-danger="nc_open &gt; 0"/>
+                <field name="quarantine_active" decoration-warning="quarantine_active &gt; 0"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_kpi_form" model="ir.ui.view">
+        <field name="name">cf.kpi.snapshot.form</field>
+        <field name="model">cf.kpi.snapshot</field>
+        <field name="arch" type="xml">
+            <form string="KPI Dashboard">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="date"/></h1>
+                    </div>
+                    <group string="Vendite">
+                        <group>
+                            <field name="sales_ytd" string="YTD"/>
+                            <field name="sales_mtd" string="MTD"/>
+                        </group>
+                        <group>
+                            <field name="sales_amazon" string="Amazon"/>
+                            <field name="sales_shopify" string="Shopify"/>
+                            <field name="sales_b2b" string="B2B"/>
+                            <field name="sales_gdo" string="GDO"/>
+                        </group>
+                    </group>
+                    <group string="Produzione e Qualita">
+                        <group>
+                            <field name="mo_open"/>
+                            <field name="mo_done"/>
+                        </group>
+                        <group>
+                            <field name="nc_open"/>
+                            <field name="quarantine_active"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
+''')
+write('casafolino_kpi/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino KPI Dashboard",
+    "version": "18.0.1.0.0",
+    "category": "Reporting",
+    "summary": "Dashboard KPI unificata",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "purchase", "account", "mrp", "stock"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/cf_kpi_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste KPI complete')
+print('\n🎉 Tutte le viste complete — CasaFolino OS pronto!')

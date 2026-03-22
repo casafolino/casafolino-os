@@ -8,6 +8,7 @@
     "depends": ["base", "mail", "mrp", "product"],
     "data": [
         "security/ir.model.access.csv",
+        "views/cf_nutrition_views.xml",
         "views/menus.xml",
     ],
     "installable": True,

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_nutrition_ingredient_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.form</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <form string="Valori Nutrizionali Ingrediente">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="product_id"/></h1>
+                    </div>
+                    <group string="Valori per 100g">
+                        <group>
+                            <field name="energy_kcal"/>
+                            <field name="energy_kj"/>
+                            <field name="fat"/>
+                            <field name="saturated_fat"/>
+                            <field name="carbs"/>
+                        </group>
+                        <group>
+                            <field name="sugars"/>
+                            <field name="fiber"/>
+                            <field name="protein"/>
+                            <field name="salt"/>
+                            <field name="fdc_id"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_nutrition_ingredient_list" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.list</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <list string="Ingredienti Nutrizionali">
+                <field name="product_id"/>
+                <field name="energy_kcal"/>
+                <field name="fat"/>
+                <field name="carbs"/>
+                <field name="sugars"/>
+                <field name="protein"/>
+                <field name="salt"/>
+            </list>
+        </field>
+    </record>
+</odoo>

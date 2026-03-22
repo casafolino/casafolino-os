@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_kpi_list" model="ir.ui.view">
+        <field name="name">cf.kpi.snapshot.list</field>
+        <field name="model">cf.kpi.snapshot</field>
+        <field name="arch" type="xml">
+            <list string="KPI Snapshots">
+                <field name="date"/>
+                <field name="sales_ytd"/>
+                <field name="sales_mtd"/>
+                <field name="sales_amazon"/>
+                <field name="sales_shopify"/>
+                <field name="sales_b2b"/>
+                <field name="sales_gdo"/>
+                <field name="mo_open"/>
+                <field name="mo_done"/>
+                <field name="nc_open" decoration-danger="nc_open &gt; 0"/>
+                <field name="quarantine_active" decoration-warning="quarantine_active &gt; 0"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_kpi_form" model="ir.ui.view">
+        <field name="name">cf.kpi.snapshot.form</field>
+        <field name="model">cf.kpi.snapshot</field>
+        <field name="arch" type="xml">
+            <form string="KPI Dashboard">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="date"/></h1>
+                    </div>
+                    <group string="Vendite">
+                        <group>
+                            <field name="sales_ytd" string="YTD"/>
+                            <field name="sales_mtd" string="MTD"/>
+                        </group>
+                        <group>
+                            <field name="sales_amazon" string="Amazon"/>
+                            <field name="sales_shopify" string="Shopify"/>
+                            <field name="sales_b2b" string="B2B"/>
+                            <field name="sales_gdo" string="GDO"/>
+                        </group>
+                    </group>
+                    <group string="Produzione e Qualita">
+                        <group>
+                            <field name="mo_open"/>
+                            <field name="mo_done"/>
+                        </group>
+                        <group>
+                            <field name="nc_open"/>
+                            <field name="quarantine_active"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

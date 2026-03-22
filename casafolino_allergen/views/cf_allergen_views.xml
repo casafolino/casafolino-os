@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_allergen_list" model="ir.ui.view">
+        <field name="name">cf.allergen.list</field>
+        <field name="model">cf.allergen</field>
+        <field name="arch" type="xml">
+            <list string="14 Allergeni UE" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="regulation_ref"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_recipe_allergen_list" model="ir.ui.view">
+        <field name="name">cf.recipe.allergen.list</field>
+        <field name="model">cf.recipe.allergen</field>
+        <field name="arch" type="xml">
+            <list string="Allergeni Ricetta" editable="bottom"
+                  decoration-danger="status=='present'"
+                  decoration-warning="status=='traces'">
+                <field name="allergen_id"/>
+                <field name="status" widget="badge"
+                       decoration-danger="status=='present'"
+                       decoration-warning="status=='traces'"
+                       decoration-success="status=='absent'"/>
+                <field name="cross_contamination"/>
+                <field name="validated_by" widget="many2one_avatar_user"/>
+                <field name="validation_date"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+</odoo>
