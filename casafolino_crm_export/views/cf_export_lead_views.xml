@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_export_lead_form" model="ir.ui.view">
+        <field name="name">cf.export.lead.form</field>
+        <field name="model">cf.export.lead</field>
+        <field name="arch" type="xml">
+            <form string="Trattativa Export">
+                <header>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                        <h3><field name="partner_id"/></h3>
+                    </div>
+                    <group>
+                        <group string="Info">
+                            <field name="pipeline_type"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Forecast">
+                            <field name="expected_revenue"/>
+                            <field name="forecast_probability"/>
+                            <field name="forecast_value"/>
+                            <field name="lead_score"/>
+                            <field name="rotting_state" widget="badge" decoration-success="rotting_state=='ok'" decoration-warning="rotting_state=='warning'" decoration-danger="rotting_state in ('danger','dead')"/>
+                        </group>
+                    </group>
+                    <group string="Follow-up">
+                        <group>
+                            <field name="date_last_contact"/>
+                            <field name="date_next_followup"/>
+                        </group>
+                        <group>
+                            <field name="kanban_state" widget="state_selection"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Campionature">
+                            <field name="sample_ids">
+                                <list editable="bottom">
+                                    <field name="reference" readonly="1"/>
+                                    <field name="product_ids" widget="many2many_tags"/>
+                                    <field name="date_sent"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="feedback_notes"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ordini">
+                            <field name="sale_order_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date_order"/>
+                                    <field name="amount_total"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Note">
+                            <field name="description"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_export_lead_list" model="ir.ui.view">
+        <field name="name">cf.export.lead.list</field>
+        <field name="model">cf.export.lead</field>
+        <field name="arch" type="xml">
+            <list string="Pipeline Export" decoration-danger="rotting_state in ('danger','dead')" decoration-warning="rotting_state=='warning'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="pipeline_type"/>
+                <field name="stage_id"/>
+                <field name="expected_revenue"/>
+                <field name="forecast_value"/>
+                <field name="lead_score"/>
+                <field name="date_last_contact"/>
+                <field name="date_next_followup"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="rotting_state" widget="badge" decoration-success="rotting_state=='ok'" decoration-warning="rotting_state=='warning'" decoration-danger="rotting_state in ('danger','dead')"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_export_lead_kanban" model="ir.ui.view">
+        <field name="name">cf.export.lead.kanban</field>
+        <field name="model">cf.export.lead</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" quick_create="false">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="stage_id"/>
+                <field name="lead_score"/>
+                <field name="forecast_value"/>
+                <field name="rotting_state"/>
+                <field name="priority"/>
+                <templates>
+                    <t t-name="kanban-card">
+                        <div class="oe_kanban_card">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_title">
+                                    <strong><field name="name"/></strong>
+                                </div>
+                                <div><field name="partner_id"/></div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <span>Score: <field name="lead_score"/></span>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="forecast_value" widget="monetary"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

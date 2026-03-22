@@ -2858,3 +2858,270 @@ write('casafolino_haccp/__manifest__.py', '''\
 }
 ''')
 print('✅ Viste HACCP complete')
+
+# =============================================================================
+# VISTE FORM — SUPPLIER QUAL
+# =============================================================================
+write('casafolino_supplier_qual/views/cf_supplier_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_supplier_qual_form" model="ir.ui.view">
+        <field name="name">casafolino.supplier.qualification.form</field>
+        <field name="model">casafolino.supplier.qualification</field>
+        <field name="arch" type="xml">
+            <form string="Qualifica Fornitore">
+                <header>
+                    <button name="action_approve" type="object" string="Approva" class="btn-success" attrs="{'invisible': [('status','=','approved')]}"/>
+                    <button name="action_suspend" type="object" string="Sospendi" class="btn-warning" attrs="{'invisible': [('status','in',('suspended','excluded'))]}"/>
+                    <button name="action_exclude" type="object" string="Escludi" class="btn-danger" attrs="{'invisible': [('status','=','excluded')]}"/>
+                    <field name="status" widget="statusbar" statusbar_visible="evaluation,approved,suspended"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id"/></h1>
+                        <div>
+                            <field name="traffic_light" widget="badge"
+                                   decoration-success="traffic_light==\'green\'"
+                                   decoration-warning="traffic_light==\'yellow\'"
+                                   decoration-danger="traffic_light==\'red\'"/>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Qualifica">
+                            <field name="date_qualification"/>
+                            <field name="qualified_by" widget="many2one_avatar_user"/>
+                            <field name="last_evaluation_date"/>
+                            <field name="next_evaluation_date"/>
+                        </group>
+                        <group string="Statistiche">
+                            <field name="document_count"/>
+                            <field name="expired_doc_count"/>
+                            <field name="last_score"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Documenti">
+                            <field name="document_ids">
+                                <list editable="bottom" decoration-danger="doc_status==\'expired\'" decoration-warning="doc_status==\'expiring\'">
+                                    <field name="name"/>
+                                    <field name="document_type"/>
+                                    <field name="reference_number"/>
+                                    <field name="expiry_date"/>
+                                    <field name="no_expiry"/>
+                                    <field name="doc_status" widget="badge" decoration-success="doc_status==\'valid\'" decoration-warning="doc_status==\'expiring\'" decoration-danger="doc_status==\'expired\'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Valutazioni">
+                            <field name="evaluation_ids">
+                                <list decoration-success="risultato==\'confirmed\'" decoration-warning="risultato==\'observation\'" decoration-danger="risultato==\'excluded\'">
+                                    <field name="date"/>
+                                    <field name="evaluator_id" widget="many2one_avatar_user"/>
+                                    <field name="punteggio_qualita"/>
+                                    <field name="punteggio_puntualita"/>
+                                    <field name="punteggio_documentazione"/>
+                                    <field name="punteggio_totale"/>
+                                    <field name="risultato" widget="badge" decoration-success="risultato==\'confirmed\'" decoration-warning="risultato==\'observation\'" decoration-danger="risultato==\'excluded\'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_supplier_qual_list" model="ir.ui.view">
+        <field name="name">casafolino.supplier.qualification.list</field>
+        <field name="model">casafolino.supplier.qualification</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="traffic_light==\'red\'" decoration-warning="traffic_light==\'yellow\'" decoration-success="traffic_light==\'green\'">
+                <field name="partner_id"/>
+                <field name="traffic_light" widget="badge" decoration-success="traffic_light==\'green\'" decoration-warning="traffic_light==\'yellow\'" decoration-danger="traffic_light==\'red\'"/>
+                <field name="status" widget="badge" decoration-success="status==\'approved\'" decoration-warning="status==\'evaluation\'" decoration-danger="status in (\'suspended\',\'excluded\')"/>
+                <field name="document_count"/>
+                <field name="expired_doc_count" decoration-danger="expired_doc_count &gt; 0"/>
+                <field name="last_score"/>
+                <field name="next_evaluation_date"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+
+# Aggiorna manifest supplier_qual con la nuova vista
+write('casafolino_supplier_qual/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Supplier Qualification",
+    "version": "18.0.1.0.0",
+    "category": "Purchase",
+    "summary": "Qualifica fornitori BRC/IFS",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "purchase", "stock"],
+    "data": [
+        "security/cf_supplier_qual_security.xml",
+        "security/ir.model.access.csv",
+        "views/cf_supplier_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste Supplier Qual complete')
+
+# =============================================================================
+# VISTE FORM — CRM EXPORT
+# =============================================================================
+write('casafolino_crm_export/views/cf_export_lead_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_export_lead_form" model="ir.ui.view">
+        <field name="name">cf.export.lead.form</field>
+        <field name="model">cf.export.lead</field>
+        <field name="arch" type="xml">
+            <form string="Trattativa Export">
+                <header>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                        <h3><field name="partner_id"/></h3>
+                    </div>
+                    <group>
+                        <group string="Info">
+                            <field name="pipeline_type"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Forecast">
+                            <field name="expected_revenue"/>
+                            <field name="forecast_probability"/>
+                            <field name="forecast_value"/>
+                            <field name="lead_score"/>
+                            <field name="rotting_state" widget="badge" decoration-success="rotting_state==\'ok\'" decoration-warning="rotting_state==\'warning\'" decoration-danger="rotting_state in (\'danger\',\'dead\')"/>
+                        </group>
+                    </group>
+                    <group string="Follow-up">
+                        <group>
+                            <field name="date_last_contact"/>
+                            <field name="date_next_followup"/>
+                        </group>
+                        <group>
+                            <field name="kanban_state" widget="state_selection"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Campionature">
+                            <field name="sample_ids">
+                                <list editable="bottom">
+                                    <field name="reference" readonly="1"/>
+                                    <field name="product_ids" widget="many2many_tags"/>
+                                    <field name="date_sent"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="feedback_notes"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ordini">
+                            <field name="sale_order_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date_order"/>
+                                    <field name="amount_total"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Note">
+                            <field name="description"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_export_lead_list" model="ir.ui.view">
+        <field name="name">cf.export.lead.list</field>
+        <field name="model">cf.export.lead</field>
+        <field name="arch" type="xml">
+            <list string="Pipeline Export" decoration-danger="rotting_state in (\'danger\',\'dead\')" decoration-warning="rotting_state==\'warning\'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="pipeline_type"/>
+                <field name="stage_id"/>
+                <field name="expected_revenue"/>
+                <field name="forecast_value"/>
+                <field name="lead_score"/>
+                <field name="date_last_contact"/>
+                <field name="date_next_followup"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="rotting_state" widget="badge" decoration-success="rotting_state==\'ok\'" decoration-warning="rotting_state==\'warning\'" decoration-danger="rotting_state in (\'danger\',\'dead\')"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cf_export_lead_kanban" model="ir.ui.view">
+        <field name="name">cf.export.lead.kanban</field>
+        <field name="model">cf.export.lead</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" quick_create="false">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="stage_id"/>
+                <field name="lead_score"/>
+                <field name="forecast_value"/>
+                <field name="rotting_state"/>
+                <field name="priority"/>
+                <templates>
+                    <t t-name="kanban-card">
+                        <div class="oe_kanban_card">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_title">
+                                    <strong><field name="name"/></strong>
+                                </div>
+                                <div><field name="partner_id"/></div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <span>Score: <field name="lead_score"/></span>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="forecast_value" widget="monetary"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_crm_export/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino CRM Export",
+    "version": "18.0.2.0.0",
+    "category": "Sales/CRM",
+    "summary": "CRM Export B2B — Pipeline, Scoring, Sequenze, Fiere",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "sale_management", "product", "account"],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/cf_export_stages.xml",
+        "views/cf_export_lead_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste CRM Export complete')

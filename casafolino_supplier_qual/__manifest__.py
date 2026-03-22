@@ -9,7 +9,7 @@
     "data": [
         "security/cf_supplier_qual_security.xml",
         "security/ir.model.access.csv",
-        "data/cf_supplier_qual_cron.xml",
+        "views/cf_supplier_views.xml",
         "views/menus.xml",
     ],
     "installable": True,

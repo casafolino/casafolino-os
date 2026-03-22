@@ -9,6 +9,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/cf_export_stages.xml",
+        "views/cf_export_lead_views.xml",
         "views/menus.xml",
     ],
     "installable": True,
