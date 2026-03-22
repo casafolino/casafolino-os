@@ -100,7 +100,7 @@
                 <field name="rotting_state"/>
                 <field name="priority"/>
                 <templates>
-                    <t t-name="kanban-card">
+                    <t t-name="card">
                         <div class="oe_kanban_card">
                             <div class="oe_kanban_content">
                                 <div class="o_kanban_record_title">
