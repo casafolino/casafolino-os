@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_treasury" model="ir.actions.act_window">
+        <field name="name">Tesoreria</field><field name="res_model">cf.treasury.snapshot</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_treasury_root" name="Tesoreria" sequence="30"/>
+    <menuitem id="menu_cf_treasury_snapshots" name="Snapshots" parent="menu_cf_treasury_root" action="action_cf_treasury" sequence="1"/>
+</odoo>

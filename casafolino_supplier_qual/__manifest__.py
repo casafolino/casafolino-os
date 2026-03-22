@@ -3,7 +3,7 @@
     "name": "CasaFolino Supplier Qualification",
     "version": "18.0.1.0.0",
     "category": "Purchase",
-    "summary": "Qualifica fornitori BRC/IFS — Documenti, Valutazioni, Alert scadenze",
+    "summary": "Qualifica fornitori BRC/IFS",
     "author": "CasaFolino Srls",
     "depends": ["base", "mail", "purchase", "stock"],
     "data": [

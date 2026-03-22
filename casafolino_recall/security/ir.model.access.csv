@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_recall_session_user,cf.recall.session user,model_cf_recall_session,base.group_user,1,1,1,0
+access_cf_recall_session_mgr,cf.recall.session manager,model_cf_recall_session,base.group_system,1,1,1,1
+access_cf_recall_wizard_user,cf.recall.wizard user,model_cf_recall_wizard,base.group_user,1,1,1,1

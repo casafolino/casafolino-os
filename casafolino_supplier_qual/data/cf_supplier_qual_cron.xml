@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="cron_cf_supplier_doc_expiry" model="ir.cron">
-        <field name="name">Supplier Qual - Alert Scadenze Documenti</field>
+        <field name="name">Supplier Qual - Alert Scadenze</field>
         <field name="model_id" search="[('model','=','casafolino.supplier.document')]" model="ir.model"/>
         <field name="state">code</field>
         <field name="code">model.send_expiry_alerts()</field>
-        <field name="interval_number">1</field>
-        <field name="interval_type">days</field>
-        <field name="numbercall">-1</field>
-        <field name="active">True</field>
+        <field name="interval_number">1</field><field name="interval_type">days</field>
+        <field name="numbercall">-1</field><field name="active">True</field>
     </record>
 </odoo>

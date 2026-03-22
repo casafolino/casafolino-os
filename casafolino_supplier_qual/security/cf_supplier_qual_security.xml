@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="module_category_cf_supplier_qual" model="ir.module.category">
-        <field name="name">CasaFolino Fornitori Qualificati</field>
-        <field name="sequence">105</field>
+        <field name="name">CasaFolino Fornitori Qualificati</field><field name="sequence">105</field>
     </record>
     <record id="group_cf_supplier_raq" model="res.groups">
         <field name="name">RAQ Qualifica Fornitori</field>

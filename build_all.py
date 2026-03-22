@@ -1265,3 +1265,538 @@ write('casafolino_supplier_qual/views/menus.xml', '''\
 ''')
 
 print('✅ casafolino_supplier_qual completo')
+
+# =============================================================================
+# CASAFOLINO SUPPLIER QUAL
+# =============================================================================
+write('casafolino_supplier_qual/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Supplier Qualification",
+    "version": "18.0.1.0.0",
+    "category": "Purchase",
+    "summary": "Qualifica fornitori BRC/IFS",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "purchase", "stock"],
+    "data": [
+        "security/cf_supplier_qual_security.xml",
+        "security/ir.model.access.csv",
+        "data/cf_supplier_qual_cron.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_supplier_qual/__init__.py', 'from . import models\n')
+write('casafolino_supplier_qual/models/__init__.py', 'from . import cf_supplier_qualification\nfrom . import cf_supplier_document\nfrom . import cf_supplier_evaluation\n')
+write('casafolino_supplier_qual/models/cf_supplier_qualification.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import date
+
+class CfSupplierQualification(models.Model):
+    _name = "casafolino.supplier.qualification"
+    _description = "Qualifica Fornitore"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "partner_id"
+    _rec_name = "partner_id"
+    partner_id = fields.Many2one("res.partner", required=True, ondelete="cascade", domain="[(\'supplier_rank\',\'>\',0)]", tracking=True)
+    partner_country_id = fields.Many2one(related="partner_id.country_id", store=True, readonly=True)
+    status = fields.Selection([("approved","Approvato"),("evaluation","In Valutazione"),("suspended","Sospeso"),("excluded","Escluso")], default="evaluation", required=True, tracking=True)
+    traffic_light = fields.Selection([("green","Verde"),("yellow","Giallo"),("red","Rosso")], compute="_compute_traffic_light", store=True)
+    date_qualification = fields.Date(default=fields.Date.today)
+    qualified_by = fields.Many2one("res.users", default=lambda self: self.env.user)
+    last_evaluation_date = fields.Date(readonly=True)
+    next_evaluation_date = fields.Date(tracking=True)
+    notes = fields.Text()
+    document_ids = fields.One2many("casafolino.supplier.document", "partner_id", string="Documenti")
+    evaluation_ids = fields.One2many("casafolino.supplier.evaluation", "partner_id", string="Valutazioni")
+    document_count = fields.Integer(compute="_compute_stats")
+    evaluation_count = fields.Integer(compute="_compute_stats")
+    expired_doc_count = fields.Integer(compute="_compute_stats")
+    expiring_doc_count = fields.Integer(compute="_compute_stats")
+    last_score = fields.Float(compute="_compute_stats", store=True)
+
+    @api.depends("document_ids","document_ids.doc_status","evaluation_ids","evaluation_ids.punteggio_totale")
+    def _compute_stats(self):
+        for rec in self:
+            docs = rec.document_ids
+            rec.document_count = len(docs)
+            rec.evaluation_count = len(rec.evaluation_ids)
+            rec.expired_doc_count = len(docs.filtered(lambda d: d.doc_status == "expired"))
+            rec.expiring_doc_count = len(docs.filtered(lambda d: d.doc_status == "expiring"))
+            last_eval = rec.evaluation_ids.sorted("date", reverse=True)[:1]
+            rec.last_score = last_eval.punteggio_totale if last_eval else 0.0
+
+    @api.depends("status","document_ids.doc_status","next_evaluation_date")
+    def _compute_traffic_light(self):
+        today = date.today()
+        for rec in self:
+            if rec.status in ("suspended","excluded"): rec.traffic_light = "red"; continue
+            if any(d.doc_status == "expired" for d in rec.document_ids): rec.traffic_light = "red"; continue
+            if any(d.doc_status == "expiring" for d in rec.document_ids): rec.traffic_light = "yellow"; continue
+            if rec.next_evaluation_date and rec.next_evaluation_date < today: rec.traffic_light = "yellow"; continue
+            rec.traffic_light = "green"
+
+    def action_approve(self):
+        self.write({"status": "approved"})
+    def action_suspend(self):
+        self.write({"status": "suspended"})
+    def action_exclude(self):
+        self.write({"status": "excluded"})
+
+class ResPartnerSupplierQual(models.Model):
+    _inherit = "res.partner"
+    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False)
+    supplier_qual_status = fields.Selection(related="supplier_qual_id.status", readonly=True)
+    supplier_traffic_light = fields.Selection(related="supplier_qual_id.traffic_light", readonly=True)
+
+    def _compute_supplier_qual(self):
+        for rec in self:
+            rec.supplier_qual_id = self.env["casafolino.supplier.qualification"].search([("partner_id","=",rec.id)], limit=1)
+
+    def action_open_qualification(self):
+        self.ensure_one()
+        qual = self.env["casafolino.supplier.qualification"].search([("partner_id","=",self.id)], limit=1)
+        if not qual:
+            qual = self.env["casafolino.supplier.qualification"].create({"partner_id": self.id})
+        return {"type":"ir.actions.act_window","name":f"Qualifica {self.name}","res_model":"casafolino.supplier.qualification","res_id":qual.id,"view_mode":"form","target":"current"}
+''')
+write('casafolino_supplier_qual/models/cf_supplier_document.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import date
+
+class CfSupplierDocument(models.Model):
+    _name = "casafolino.supplier.document"
+    _description = "Documento Fornitore"
+    _inherit = ["mail.thread"]
+    _order = "expiry_date asc"
+    _rec_name = "name"
+    name = fields.Char(required=True)
+    partner_id = fields.Many2one("res.partner", required=True, ondelete="cascade")
+    document_type = fields.Selection([
+        ("brc_ifs","BRC/IFS"),("iso_9001","ISO 9001"),("microbiological","Analisi Microbiologiche"),
+        ("allergen_decl","Dichiarazione Allergeni"),("kosher","Kosher"),("halal","Halal"),
+        ("bio_organic","Biologico"),("visura","Visura Camerale"),("contract","Contratto"),
+        ("tech_sheet","Scheda Tecnica"),("analysis","CoA"),("other","Altro"),
+    ], required=True, default="other")
+    attachment_id = fields.Many2one("ir.attachment")
+    has_file = fields.Boolean(compute="_compute_has_file", store=True)
+    issue_date = fields.Date()
+    expiry_date = fields.Date(tracking=True)
+    no_expiry = fields.Boolean(default=False)
+    alert_days_before = fields.Integer(default=30)
+    doc_status = fields.Selection([("valid","Valido"),("expiring","In Scadenza"),("expired","Scaduto"),("no_expiry","Nessuna Scadenza"),("missing","File Mancante")], compute="_compute_doc_status", store=True, tracking=True)
+    days_to_expiry = fields.Integer(compute="_compute_doc_status", store=False)
+    notes = fields.Text()
+    reference_number = fields.Char()
+
+    @api.depends("attachment_id")
+    def _compute_has_file(self):
+        for rec in self:
+            rec.has_file = bool(rec.attachment_id)
+
+    @api.depends("expiry_date","no_expiry","alert_days_before","attachment_id")
+    def _compute_doc_status(self):
+        today = date.today()
+        for rec in self:
+            if rec.no_expiry: rec.doc_status = "no_expiry"; rec.days_to_expiry = 0; continue
+            if not rec.expiry_date: rec.doc_status = "missing" if not rec.attachment_id else "valid"; rec.days_to_expiry = 0; continue
+            days = (rec.expiry_date - today).days
+            rec.days_to_expiry = days
+            rec.doc_status = "expired" if days < 0 else "expiring" if days <= rec.alert_days_before else "valid"
+
+    @api.model
+    def send_expiry_alerts(self):
+        for doc in self.search([("doc_status","in",("expiring","expired")),("no_expiry","=",False)]):
+            doc.message_post(body=f"Documento {doc.name} scade il {doc.expiry_date}.")
+''')
+write('casafolino_supplier_qual/models/cf_supplier_evaluation.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from dateutil.relativedelta import relativedelta
+
+class CfSupplierEvaluation(models.Model):
+    _name = "casafolino.supplier.evaluation"
+    _description = "Valutazione Fornitore"
+    _inherit = ["mail.thread"]
+    _order = "date desc"
+    _rec_name = "display_name_computed"
+    display_name_computed = fields.Char(compute="_compute_display_name", store=True)
+    partner_id = fields.Many2one("res.partner", required=True, ondelete="cascade", tracking=True)
+    date = fields.Date(default=fields.Date.today, required=True)
+    evaluator_id = fields.Many2one("res.users", default=lambda self: self.env.user)
+    punteggio_qualita = fields.Selection([("1","1"),("2","2"),("3","3"),("4","4"),("5","5")], required=True)
+    punteggio_puntualita = fields.Selection([("1","1"),("2","2"),("3","3"),("4","4"),("5","5")], required=True)
+    punteggio_documentazione = fields.Selection([("1","1"),("2","2"),("3","3"),("4","4"),("5","5")], required=True)
+    punteggio_totale = fields.Float(compute="_compute_punteggio", store=True, digits=(3,2))
+    risultato = fields.Selection([("confirmed","Confermato"),("observation","In Osservazione"),("excluded","Escluso")], compute="_compute_risultato", store=True, required=True)
+    note = fields.Text()
+
+    @api.depends("partner_id","date")
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name_computed = f"{rec.partner_id.name or ''} - {rec.date or ''}"
+
+    @api.depends("punteggio_qualita","punteggio_puntualita","punteggio_documentazione")
+    def _compute_punteggio(self):
+        for rec in self:
+            scores = [int(v) for v in [rec.punteggio_qualita,rec.punteggio_puntualita,rec.punteggio_documentazione] if v]
+            rec.punteggio_totale = sum(scores)/len(scores) if scores else 0.0
+
+    @api.depends("punteggio_totale")
+    def _compute_risultato(self):
+        for rec in self:
+            rec.risultato = "confirmed" if rec.punteggio_totale >= 3.5 else "observation" if rec.punteggio_totale >= 2.0 else "excluded"
+
+    def action_apply_result(self):
+        for rec in self:
+            qual = self.env["casafolino.supplier.qualification"].search([("partner_id","=",rec.partner_id.id)],limit=1)
+            if not qual:
+                qual = self.env["casafolino.supplier.qualification"].create({"partner_id":rec.partner_id.id})
+            qual.last_evaluation_date = rec.date
+            qual.next_evaluation_date = rec.date + relativedelta(years=1)
+            qual.status = "approved" if rec.risultato=="confirmed" else "evaluation" if rec.risultato=="observation" else "excluded"
+''')
+write('casafolino_supplier_qual/security/cf_supplier_qual_security.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_cf_supplier_qual" model="ir.module.category">
+        <field name="name">CasaFolino Fornitori Qualificati</field><field name="sequence">105</field>
+    </record>
+    <record id="group_cf_supplier_raq" model="res.groups">
+        <field name="name">RAQ Qualifica Fornitori</field>
+        <field name="category_id" ref="module_category_cf_supplier_qual"/>
+        <field name="implied_ids" eval="[(4, ref(\'base.group_user\'))]"/>
+    </record>
+</odoo>
+''')
+write('casafolino_supplier_qual/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_supplier_qual_user,casafolino.supplier.qualification user,model_casafolino_supplier_qualification,base.group_user,1,1,1,0
+access_cf_supplier_qual_mgr,casafolino.supplier.qualification mgr,model_casafolino_supplier_qualification,base.group_system,1,1,1,1
+access_cf_supplier_doc_user,casafolino.supplier.document user,model_casafolino_supplier_document,base.group_user,1,1,1,0
+access_cf_supplier_doc_mgr,casafolino.supplier.document mgr,model_casafolino_supplier_document,base.group_system,1,1,1,1
+access_cf_supplier_eval_user,casafolino.supplier.evaluation user,model_casafolino_supplier_evaluation,base.group_user,1,1,1,0
+access_cf_supplier_eval_mgr,casafolino.supplier.evaluation mgr,model_casafolino_supplier_evaluation,base.group_system,1,1,1,1
+''')
+write('casafolino_supplier_qual/data/cf_supplier_qual_cron.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_cf_supplier_doc_expiry" model="ir.cron">
+        <field name="name">Supplier Qual - Alert Scadenze</field>
+        <field name="model_id" search="[(\'model\',\'=\',\'casafolino.supplier.document\')]" model="ir.model"/>
+        <field name="state">code</field>
+        <field name="code">model.send_expiry_alerts()</field>
+        <field name="interval_number">1</field><field name="interval_type">days</field>
+        <field name="numbercall">-1</field><field name="active">True</field>
+    </record>
+</odoo>
+''')
+write('casafolino_supplier_qual/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_supplier_qual" model="ir.actions.act_window">
+        <field name="name">Fornitori Qualificati</field><field name="res_model">casafolino.supplier.qualification</field><field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_supplier_documents" model="ir.actions.act_window">
+        <field name="name">Documenti Fornitori</field><field name="res_model">casafolino.supplier.document</field><field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_supplier_evaluations" model="ir.actions.act_window">
+        <field name="name">Valutazioni Fornitori</field><field name="res_model">casafolino.supplier.evaluation</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_supplier_qual_root" name="Fornitori Qualificati" sequence="32"/>
+    <menuitem id="menu_cf_supplier_schede" name="Schede Qualifica" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_qual" sequence="1"/>
+    <menuitem id="menu_cf_supplier_docs" name="Documenti" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_documents" sequence="2"/>
+    <menuitem id="menu_cf_supplier_evals" name="Valutazioni" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_evaluations" sequence="3"/>
+</odoo>
+''')
+print('✅ casafolino_supplier_qual completo')
+
+# =============================================================================
+# CASAFOLINO TREASURY
+# =============================================================================
+write('casafolino_treasury/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Treasury",
+    "version": "18.0.1.0.0",
+    "category": "Accounting",
+    "summary": "Tesoreria e Cash Flow",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "account", "sale_management", "purchase"],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/cf_treasury_cron.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_treasury/__init__.py', 'from . import models\n')
+write('casafolino_treasury/models/__init__.py', 'from . import cf_treasury\n')
+write('casafolino_treasury/models/cf_treasury.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import date, timedelta
+
+class CfTreasury(models.Model):
+    _name = "cf.treasury.snapshot"
+    _description = "Snapshot Tesoreria"
+    _order = "date desc"
+    _rec_name = "date"
+
+    date = fields.Date(string="Data", required=True, default=fields.Date.today)
+    total_balance = fields.Monetary(string="Saldo Totale", currency_field="currency_id")
+    currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"))
+    receivable_30d = fields.Monetary(string="Crediti 30gg", currency_field="currency_id")
+    payable_30d = fields.Monetary(string="Debiti 30gg", currency_field="currency_id")
+    forecast_30d = fields.Monetary(string="Forecast 30gg", currency_field="currency_id", compute="_compute_forecast", store=True)
+    forecast_60d = fields.Monetary(string="Forecast 60gg", currency_field="currency_id", compute="_compute_forecast", store=True)
+    forecast_90d = fields.Monetary(string="Forecast 90gg", currency_field="currency_id", compute="_compute_forecast", store=True)
+    notes = fields.Text(string="Note")
+
+    @api.depends("total_balance","receivable_30d","payable_30d")
+    def _compute_forecast(self):
+        for rec in self:
+            base = rec.total_balance + rec.receivable_30d - rec.payable_30d
+            rec.forecast_30d = base
+            rec.forecast_60d = base * 1.05
+            rec.forecast_90d = base * 1.10
+
+    @api.model
+    def create_daily_snapshot(self):
+        today = date.today()
+        existing = self.search([("date","=",today)])
+        if existing: return
+        journals = self.env["account.journal"].search([("type","in",("bank","cash"))])
+        total = sum(j.default_account_id.current_balance for j in journals if j.default_account_id)
+        domain_recv = [("account_id.account_type","=","asset_receivable"),
+                       ("reconciled","=",False),("date_maturity","<=",str(today+timedelta(days=30)))]
+        domain_pay  = [("account_id.account_type","=","liability_payable"),
+                       ("reconciled","=",False),("date_maturity","<=",str(today+timedelta(days=30)))]
+        recv = sum(self.env["account.move.line"].search(domain_recv).mapped("amount_residual"))
+        pay  = abs(sum(self.env["account.move.line"].search(domain_pay).mapped("amount_residual")))
+        self.create({"date":today,"total_balance":total,"receivable_30d":recv,"payable_30d":pay})
+''')
+write('casafolino_treasury/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_treasury_user,cf.treasury.snapshot user,model_cf_treasury_snapshot,base.group_user,1,0,0,0
+access_cf_treasury_mgr,cf.treasury.snapshot manager,model_cf_treasury_snapshot,base.group_system,1,1,1,1
+''')
+write('casafolino_treasury/data/cf_treasury_cron.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_cf_treasury_snapshot" model="ir.cron">
+        <field name="name">Treasury - Snapshot Giornaliero</field>
+        <field name="model_id" search="[(\'model\',\'=\',\'cf.treasury.snapshot\')]" model="ir.model"/>
+        <field name="state">code</field>
+        <field name="code">model.create_daily_snapshot()</field>
+        <field name="interval_number">1</field><field name="interval_type">days</field>
+        <field name="numbercall">-1</field><field name="active">True</field>
+    </record>
+</odoo>
+''')
+write('casafolino_treasury/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_treasury" model="ir.actions.act_window">
+        <field name="name">Tesoreria</field><field name="res_model">cf.treasury.snapshot</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_treasury_root" name="Tesoreria" sequence="30"/>
+    <menuitem id="menu_cf_treasury_snapshots" name="Snapshots" parent="menu_cf_treasury_root" action="action_cf_treasury" sequence="1"/>
+</odoo>
+''')
+print('✅ casafolino_treasury completo')
+
+# =============================================================================
+# CASAFOLINO RECALL
+# =============================================================================
+write('casafolino_recall/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Mock Recall",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "Mock Recall BRC/IFS - Tracciabilita lotti",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "stock", "purchase", "sale_management"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/menus.xml",
+        "wizard/cf_recall_wizard_views.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+write('casafolino_recall/__init__.py', 'from . import models\nfrom . import wizard\n')
+write('casafolino_recall/models/__init__.py', 'from . import cf_recall_session\n')
+write('casafolino_recall/wizard/__init__.py', 'from . import cf_recall_wizard\n')
+write('casafolino_recall/models/cf_recall_session.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+from datetime import datetime
+
+class CfRecallSession(models.Model):
+    _name = "cf.recall.session"
+    _description = "Sessione Mock Recall"
+    _inherit = ["mail.thread"]
+    _order = "date_start desc"
+    _rec_name = "reference"
+
+    reference = fields.Char(required=True, copy=False, readonly=True,
+        default=lambda self: self.env["ir.sequence"].next_by_code("cf.recall.session") or "RECALL-NUOVO")
+    session_type = fields.Selection([("mock","Mock Recall"),("real","Recall Reale"),("audit","Verifica Audit")], required=True, default="mock")
+    lot_id = fields.Many2one("stock.lot", string="Lotto di Partenza", required=True)
+    direction = fields.Selection([("forward","Avanti"),("backward","Indietro"),("both","Entrambe")], required=True, default="both")
+    date_start = fields.Datetime(default=fields.Datetime.now)
+    date_end = fields.Datetime(readonly=True)
+    duration_seconds = fields.Float(readonly=True)
+    state = fields.Selection([("draft","Bozza"),("running","In Corso"),("done","Completata")], default="draft", tracking=True)
+    operator_id = fields.Many2one("res.users", default=lambda self: self.env.user)
+    result_summary = fields.Text(readonly=True)
+    production_ids = fields.Many2many("mrp.production", string="MO Coinvolti")
+    lot_ids = fields.Many2many("stock.lot", "cf_recall_lot_rel", "session_id", "lot_id", string="Lotti Tracciati")
+    picking_ids = fields.Many2many("stock.picking", string="Spedizioni")
+    partner_ids = fields.Many2many("res.partner", string="Partner Coinvolti")
+    nodes_count = fields.Integer(readonly=True)
+    notes = fields.Text()
+
+    def action_run(self):
+        self.ensure_one()
+        self.state = "running"
+        start = datetime.now()
+        lot = self.lot_id
+        productions, lots, pickings, partners = set(), set(), set(), set()
+        lots.add(lot.id)
+        if self.direction in ("forward","both"):
+            self._trace_forward(lot, productions, lots, pickings, partners)
+        if self.direction in ("backward","both"):
+            self._trace_backward(lot, productions, lots, pickings, partners)
+        end = datetime.now()
+        duration = (end - start).total_seconds()
+        self.write({
+            "state": "done",
+            "date_end": end,
+            "duration_seconds": duration,
+            "production_ids": [(6,0,list(productions))],
+            "lot_ids": [(6,0,list(lots))],
+            "picking_ids": [(6,0,list(pickings))],
+            "partner_ids": [(6,0,list(partners))],
+            "nodes_count": len(productions) + len(lots) + len(pickings),
+            "result_summary": f"Completato in {duration:.1f}s. MO: {len(productions)}, Lotti: {len(lots)}, Spedizioni: {len(pickings)}, Partner: {len(partners)}",
+        })
+
+    def _trace_forward(self, lot, productions, lots, pickings, partners):
+        mos = self.env["mrp.production"].search([("lot_producing_id","=",lot.id)])
+        for mo in mos:
+            productions.add(mo.id)
+            for move_line in mo.move_finished_ids.mapped("move_line_ids"):
+                if move_line.lot_id:
+                    lots.add(move_line.lot_id.id)
+        outgoing = self.env["stock.picking"].search([
+            ("state","=","done"),("picking_type_code","=","outgoing"),
+            ("move_line_ids.lot_id","=",lot.id)])
+        for pick in outgoing:
+            pickings.add(pick.id)
+            if pick.partner_id: partners.add(pick.partner_id.id)
+
+    def _trace_backward(self, lot, productions, lots, pickings, partners):
+        move_lines = self.env["stock.move.line"].search([("lot_id","=",lot.id)])
+        for ml in move_lines:
+            if ml.production_id:
+                productions.add(ml.production_id.id)
+                for comp_line in ml.production_id.move_raw_ids.mapped("move_line_ids"):
+                    if comp_line.lot_id: lots.add(comp_line.lot_id.id)
+        incoming = self.env["stock.picking"].search([
+            ("state","=","done"),("picking_type_code","=","incoming"),
+            ("move_line_ids.lot_id","=",lot.id)])
+        for pick in incoming:
+            pickings.add(pick.id)
+            if pick.partner_id: partners.add(pick.partner_id.id)
+''')
+write('casafolino_recall/wizard/__init__.py', 'from . import cf_recall_wizard\n')
+write('casafolino_recall/wizard/cf_recall_wizard.py', '''\
+# -*- coding: utf-8 -*-
+from odoo import models, fields
+
+class CfRecallWizard(models.TransientModel):
+    _name = "cf.recall.wizard"
+    _description = "Wizard Avvio Mock Recall"
+    lot_id = fields.Many2one("stock.lot", required=True)
+    direction = fields.Selection([("forward","Avanti"),("backward","Indietro"),("both","Entrambe")], required=True, default="both")
+    session_type = fields.Selection([("mock","Mock"),("real","Reale"),("audit","Audit")], required=True, default="mock")
+    notes = fields.Text()
+
+    def action_run_recall(self):
+        session = self.env["cf.recall.session"].create({
+            "lot_id": self.lot_id.id,
+            "direction": self.direction,
+            "session_type": self.session_type,
+            "notes": self.notes,
+        })
+        session.action_run()
+        return {"type":"ir.actions.act_window","name":"Risultato Recall","res_model":"cf.recall.session","res_id":session.id,"view_mode":"form","target":"current"}
+''')
+write('casafolino_recall/wizard/cf_recall_wizard_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_recall_wizard_form" model="ir.ui.view">
+        <field name="name">cf.recall.wizard.form</field>
+        <field name="model">cf.recall.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Avvia Mock Recall">
+                <sheet>
+                    <group>
+                        <field name="lot_id"/>
+                        <field name="direction"/>
+                        <field name="session_type"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_run_recall" type="object" string="Avvia Recall" class="btn-primary"/>
+                    <button special="cancel" string="Annulla" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_cf_recall_wizard" model="ir.actions.act_window">
+        <field name="name">Avvia Mock Recall</field>
+        <field name="res_model">cf.recall.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
+''')
+write('casafolino_recall/security/ir.model.access.csv', '''\
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_recall_session_user,cf.recall.session user,model_cf_recall_session,base.group_user,1,1,1,0
+access_cf_recall_session_mgr,cf.recall.session manager,model_cf_recall_session,base.group_system,1,1,1,1
+access_cf_recall_wizard_user,cf.recall.wizard user,model_cf_recall_wizard,base.group_user,1,1,1,1
+''')
+write('casafolino_recall/views/menus.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_cf_recall_session" model="ir.sequence">
+        <field name="name">Mock Recall</field>
+        <field name="code">cf.recall.session</field>
+        <field name="prefix">RECALL-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+    <record id="action_cf_recall_sessions" model="ir.actions.act_window">
+        <field name="name">Sessioni Recall</field><field name="res_model">cf.recall.session</field><field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_recall_root" name="Mock Recall" sequence="29"/>
+    <menuitem id="menu_cf_recall_new" name="Avvia Recall" parent="menu_cf_recall_root" action="action_cf_recall_wizard" sequence="1"/>
+    <menuitem id="menu_cf_recall_sessions" name="Sessioni" parent="menu_cf_recall_root" action="action_cf_recall_sessions" sequence="2"/>
+</odoo>
+''')
+print('✅ casafolino_recall completo')

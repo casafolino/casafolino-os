@@ -1,25 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_cf_supplier_qual" model="ir.actions.act_window">
-        <field name="name">Fornitori Qualificati</field>
-        <field name="res_model">casafolino.supplier.qualification</field>
-        <field name="view_mode">list,form</field>
+        <field name="name">Fornitori Qualificati</field><field name="res_model">casafolino.supplier.qualification</field><field name="view_mode">list,form</field>
     </record>
     <record id="action_cf_supplier_documents" model="ir.actions.act_window">
-        <field name="name">Documenti Fornitori</field>
-        <field name="res_model">casafolino.supplier.document</field>
-        <field name="view_mode">list,form</field>
+        <field name="name">Documenti Fornitori</field><field name="res_model">casafolino.supplier.document</field><field name="view_mode">list,form</field>
     </record>
     <record id="action_cf_supplier_evaluations" model="ir.actions.act_window">
-        <field name="name">Valutazioni Fornitori</field>
-        <field name="res_model">casafolino.supplier.evaluation</field>
-        <field name="view_mode">list,form</field>
+        <field name="name">Valutazioni Fornitori</field><field name="res_model">casafolino.supplier.evaluation</field><field name="view_mode">list,form</field>
     </record>
     <menuitem id="menu_cf_supplier_qual_root" name="Fornitori Qualificati" sequence="32"/>
-    <menuitem id="menu_cf_supplier_dashboard" name="Schede Qualifica"
-              parent="menu_cf_supplier_qual_root" action="action_cf_supplier_qual" sequence="1"/>
-    <menuitem id="menu_cf_supplier_docs" name="Documenti"
-              parent="menu_cf_supplier_qual_root" action="action_cf_supplier_documents" sequence="2"/>
-    <menuitem id="menu_cf_supplier_evals" name="Valutazioni"
-              parent="menu_cf_supplier_qual_root" action="action_cf_supplier_evaluations" sequence="3"/>
+    <menuitem id="menu_cf_supplier_schede" name="Schede Qualifica" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_qual" sequence="1"/>
+    <menuitem id="menu_cf_supplier_docs" name="Documenti" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_documents" sequence="2"/>
+    <menuitem id="menu_cf_supplier_evals" name="Valutazioni" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_evaluations" sequence="3"/>
 </odoo>
