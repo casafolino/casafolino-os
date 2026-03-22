@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_quarantine_form" model="ir.ui.view">
+        <field name="name">cf.haccp.quarantine.form</field>
+        <field name="model">cf.haccp.quarantine</field>
+        <field name="arch" type="xml">
+            <form string="Quarantena">
+                <header>
+                    <button name="action_release" type="object" string="Rilascia" class="btn-success" attrs="{'invisible': [('state','!=','active')]}"/>
+                    <button name="action_destroy" type="object" string="Distruggi" class="btn-danger" attrs="{'invisible': [('state','!=','active')]}"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="lot_id"/>
+                            <field name="product_id"/>
+                            <field name="receipt_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="operator_id" widget="many2one_avatar_user"/>
+                            <field name="location"/>
+                        </group>
+                    </group>
+                    <group string="Motivo">
+                        <field name="reason" nolabel="1"/>
+                    </group>
+                    <group string="Risoluzione">
+                        <field name="resolution" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+</odoo>

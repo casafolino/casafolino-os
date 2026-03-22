@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_receipt_form" model="ir.ui.view">
+        <field name="name">cf.haccp.receipt.form</field>
+        <field name="model">cf.haccp.receipt</field>
+        <field name="arch" type="xml">
+            <form string="Controllo Ricezione">
+                <header>
+                    <button name="action_accept" type="object" string="Accetta" class="btn-success" attrs="{'invisible': [('state','not in',('draft','in_progress'))]}"/>
+                    <button name="action_quarantine" type="object" string="Quarantena" class="btn-warning" attrs="{'invisible': [('state','not in',('draft','in_progress'))]}"/>
+                    <button name="action_reject" type="object" string="Rifiuta" class="btn-danger" attrs="{'invisible': [('state','not in',('draft','in_progress'))]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,accepted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Prodotto">
+                            <field name="product_id"/>
+                            <field name="lot_id"/>
+                            <field name="partner_id"/>
+                            <field name="quantity_received"/>
+                        </group>
+                        <group string="Controllo">
+                            <field name="date"/>
+                            <field name="operator_id"/>
+                            <field name="temperature_measured"/>
+                        </group>
+                    </group>
+                    <group string="Checklist">
+                        <group>
+                            <field name="appearance_ok"/>
+                            <field name="smell_ok"/>
+                            <field name="color_ok"/>
+                        </group>
+                        <group>
+                            <field name="ddt_present"/>
+                            <field name="cert_present"/>
+                            <field name="packaging_intact"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="general_notes" placeholder="Note..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_receipt_list" model="ir.ui.view">
+        <field name="name">cf.haccp.receipt.list</field>
+        <field name="model">cf.haccp.receipt</field>
+        <field name="arch" type="xml">
+            <list string="Controlli Ricezione" decoration-success="state=='accepted'" decoration-warning="state=='quarantine'" decoration-danger="state=='rejected'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="lot_id"/>
+                <field name="partner_id"/>
+                <field name="quantity_received"/>
+                <field name="operator_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge" decoration-success="state=='accepted'" decoration-warning="state=='quarantine'" decoration-danger="state=='rejected'"/>
+            </list>
+        </field>
+    </record>
+</odoo>

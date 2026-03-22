@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_sp_form" model="ir.ui.view">
+        <field name="name">cf.haccp.sp.form</field>
+        <field name="model">cf.haccp.sp</field>
+        <field name="arch" type="xml">
+            <form string="Scheda Produzione">
+                <header>
+                    <button name="action_start" type="object" string="Avvia" class="btn-primary" attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_complete" type="object" string="Completa" class="btn-success" attrs="{'invisible': [('state','!=','in_progress')]}"/>
+                    <button name="action_release" type="object" string="Rilascia" class="btn-primary" attrs="{'invisible': [('state','!=','completed')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,completed,released"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Produzione">
+                            <field name="product_id"/>
+                            <field name="lot_id"/>
+                            <field name="production_id"/>
+                            <field name="quantity_produced"/>
+                        </group>
+                        <group string="Info">
+                            <field name="date"/>
+                            <field name="date_end"/>
+                            <field name="operator_id"/>
+                        </group>
+                    </group>
+                    <group string="10 Step HACCP">
+                        <group>
+                            <field name="step1_ok" string="Step 1 — Ricevimento MP"/>
+                            <field name="step2_ok" string="Step 2 — Pesatura"/>
+                            <field name="step3_ok" string="Step 3 — Miscelazione"/>
+                            <field name="step4_ok" string="Step 4 — Lavorazione"/>
+                            <field name="step5_ok" string="Step 5 — Controllo Intermedio"/>
+                        </group>
+                        <group>
+                            <field name="step6_ok" string="Step 6 — Confezionamento"/>
+                            <field name="step7_ok" string="Step 7 — Etichettatura"/>
+                            <field name="step8_ok" string="Step 8 — Controllo Finale"/>
+                            <field name="step9_ok" string="Step 9 — Stoccaggio"/>
+                            <field name="step10_ok" string="Step 10 — Spedizione"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="CCP">
+                            <field name="ccp_ids">
+                                <list editable="bottom" decoration-danger="state=='ko'" decoration-success="state=='ok'">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="ccp_type"/>
+                                    <field name="critical_limit_min"/>
+                                    <field name="critical_limit_max"/>
+                                    <field name="unit"/>
+                                    <field name="measured_value"/>
+                                    <field name="measurement_time"/>
+                                    <field name="state" widget="badge" decoration-success="state=='ok'" decoration-danger="state=='ko'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Non Conformita">
+                            <field name="nc_ids">
+                                <list decoration-danger="severity=='critical'" decoration-warning="severity=='high'">
+                                    <field name="reference"/>
+                                    <field name="date"/>
+                                    <field name="severity" widget="badge"/>
+                                    <field name="description"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_sp_list" model="ir.ui.view">
+        <field name="name">cf.haccp.sp.list</field>
+        <field name="model">cf.haccp.sp</field>
+        <field name="arch" type="xml">
+            <list string="Schede Produzione" decoration-danger="state=='blocked'" decoration-success="state=='released'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="lot_id"/>
+                <field name="production_id"/>
+                <field name="quantity_produced"/>
+                <field name="operator_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+</odoo>

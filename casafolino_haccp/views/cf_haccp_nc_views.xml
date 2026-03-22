@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_nc_form" model="ir.ui.view">
+        <field name="name">cf.haccp.nc.form</field>
+        <field name="model">cf.haccp.nc</field>
+        <field name="arch" type="xml">
+            <form string="Non Conformita">
+                <header>
+                    <button name="action_close" type="object" string="Chiudi" class="btn-success" attrs="{'invisible': [('state','=','closed')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="open,analysis,action,verified,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="origin"/>
+                            <field name="severity" widget="badge" decoration-danger="severity in ('high','critical')" decoration-warning="severity=='medium'"/>
+                            <field name="product_id"/>
+                            <field name="lot_id"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="reported_by" widget="many2one_avatar_user"/>
+                            <field name="assigned_to" widget="many2one_avatar_user"/>
+                            <field name="sp_id"/>
+                        </group>
+                    </group>
+                    <group string="Descrizione">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                    <group string="Azione Correttiva">
+                        <field name="corrective_action" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_nc_list" model="ir.ui.view">
+        <field name="name">cf.haccp.nc.list</field>
+        <field name="model">cf.haccp.nc</field>
+        <field name="arch" type="xml">
+            <list string="Non Conformita" decoration-danger="severity in ('high','critical')" decoration-warning="severity=='medium'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="origin"/>
+                <field name="severity" widget="badge" decoration-danger="severity in ('high','critical')"/>
+                <field name="description"/>
+                <field name="assigned_to" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+</odoo>

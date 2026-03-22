@@ -2447,3 +2447,414 @@ write('casafolino_nutrition/views/menus.xml', '''\
 ''')
 print('✅ casafolino_nutrition completo')
 print('\n🎉 Build completo — tutti i moduli pronti!')
+
+# =============================================================================
+# VISTE FORM — CASAFOLINO HACCP
+# =============================================================================
+write('casafolino_haccp/views/cf_haccp_receipt_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_receipt_form" model="ir.ui.view">
+        <field name="name">cf.haccp.receipt.form</field>
+        <field name="model">cf.haccp.receipt</field>
+        <field name="arch" type="xml">
+            <form string="Controllo Ricezione">
+                <header>
+                    <button name="action_accept" type="object" string="Accetta" class="btn-success" attrs="{'invisible': [('state','not in',('draft','in_progress'))]}"/>
+                    <button name="action_quarantine" type="object" string="Quarantena" class="btn-warning" attrs="{'invisible': [('state','not in',('draft','in_progress'))]}"/>
+                    <button name="action_reject" type="object" string="Rifiuta" class="btn-danger" attrs="{'invisible': [('state','not in',('draft','in_progress'))]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,accepted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Prodotto">
+                            <field name="product_id"/>
+                            <field name="lot_id"/>
+                            <field name="partner_id"/>
+                            <field name="quantity_received"/>
+                        </group>
+                        <group string="Controllo">
+                            <field name="date"/>
+                            <field name="operator_id"/>
+                            <field name="temperature_measured"/>
+                        </group>
+                    </group>
+                    <group string="Checklist">
+                        <group>
+                            <field name="appearance_ok"/>
+                            <field name="smell_ok"/>
+                            <field name="color_ok"/>
+                        </group>
+                        <group>
+                            <field name="ddt_present"/>
+                            <field name="cert_present"/>
+                            <field name="packaging_intact"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="general_notes" placeholder="Note..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_receipt_list" model="ir.ui.view">
+        <field name="name">cf.haccp.receipt.list</field>
+        <field name="model">cf.haccp.receipt</field>
+        <field name="arch" type="xml">
+            <list string="Controlli Ricezione" decoration-success="state==\'accepted\'" decoration-warning="state==\'quarantine\'" decoration-danger="state==\'rejected\'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="lot_id"/>
+                <field name="partner_id"/>
+                <field name="quantity_received"/>
+                <field name="operator_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge" decoration-success="state==\'accepted\'" decoration-warning="state==\'quarantine\'" decoration-danger="state==\'rejected\'"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_haccp/views/cf_haccp_sp_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_sp_form" model="ir.ui.view">
+        <field name="name">cf.haccp.sp.form</field>
+        <field name="model">cf.haccp.sp</field>
+        <field name="arch" type="xml">
+            <form string="Scheda Produzione">
+                <header>
+                    <button name="action_start" type="object" string="Avvia" class="btn-primary" attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_complete" type="object" string="Completa" class="btn-success" attrs="{'invisible': [('state','!=','in_progress')]}"/>
+                    <button name="action_release" type="object" string="Rilascia" class="btn-primary" attrs="{'invisible': [('state','!=','completed')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,completed,released"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Produzione">
+                            <field name="product_id"/>
+                            <field name="lot_id"/>
+                            <field name="production_id"/>
+                            <field name="quantity_produced"/>
+                        </group>
+                        <group string="Info">
+                            <field name="date"/>
+                            <field name="date_end"/>
+                            <field name="operator_id"/>
+                        </group>
+                    </group>
+                    <group string="10 Step HACCP">
+                        <group>
+                            <field name="step1_ok" string="Step 1 — Ricevimento MP"/>
+                            <field name="step2_ok" string="Step 2 — Pesatura"/>
+                            <field name="step3_ok" string="Step 3 — Miscelazione"/>
+                            <field name="step4_ok" string="Step 4 — Lavorazione"/>
+                            <field name="step5_ok" string="Step 5 — Controllo Intermedio"/>
+                        </group>
+                        <group>
+                            <field name="step6_ok" string="Step 6 — Confezionamento"/>
+                            <field name="step7_ok" string="Step 7 — Etichettatura"/>
+                            <field name="step8_ok" string="Step 8 — Controllo Finale"/>
+                            <field name="step9_ok" string="Step 9 — Stoccaggio"/>
+                            <field name="step10_ok" string="Step 10 — Spedizione"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="CCP">
+                            <field name="ccp_ids">
+                                <list editable="bottom" decoration-danger="state==\'ko\'" decoration-success="state==\'ok\'">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="ccp_type"/>
+                                    <field name="critical_limit_min"/>
+                                    <field name="critical_limit_max"/>
+                                    <field name="unit"/>
+                                    <field name="measured_value"/>
+                                    <field name="measurement_time"/>
+                                    <field name="state" widget="badge" decoration-success="state==\'ok\'" decoration-danger="state==\'ko\'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Non Conformita">
+                            <field name="nc_ids">
+                                <list decoration-danger="severity==\'critical\'" decoration-warning="severity==\'high\'">
+                                    <field name="reference"/>
+                                    <field name="date"/>
+                                    <field name="severity" widget="badge"/>
+                                    <field name="description"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_sp_list" model="ir.ui.view">
+        <field name="name">cf.haccp.sp.list</field>
+        <field name="model">cf.haccp.sp</field>
+        <field name="arch" type="xml">
+            <list string="Schede Produzione" decoration-danger="state==\'blocked\'" decoration-success="state==\'released\'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="lot_id"/>
+                <field name="production_id"/>
+                <field name="quantity_produced"/>
+                <field name="operator_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_haccp/views/cf_haccp_nc_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_nc_form" model="ir.ui.view">
+        <field name="name">cf.haccp.nc.form</field>
+        <field name="model">cf.haccp.nc</field>
+        <field name="arch" type="xml">
+            <form string="Non Conformita">
+                <header>
+                    <button name="action_close" type="object" string="Chiudi" class="btn-success" attrs="{'invisible': [('state','=','closed')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="open,analysis,action,verified,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="origin"/>
+                            <field name="severity" widget="badge" decoration-danger="severity in (\'high\',\'critical\')" decoration-warning="severity==\'medium\'"/>
+                            <field name="product_id"/>
+                            <field name="lot_id"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="reported_by" widget="many2one_avatar_user"/>
+                            <field name="assigned_to" widget="many2one_avatar_user"/>
+                            <field name="sp_id"/>
+                        </group>
+                    </group>
+                    <group string="Descrizione">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                    <group string="Azione Correttiva">
+                        <field name="corrective_action" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_nc_list" model="ir.ui.view">
+        <field name="name">cf.haccp.nc.list</field>
+        <field name="model">cf.haccp.nc</field>
+        <field name="arch" type="xml">
+            <list string="Non Conformita" decoration-danger="severity in (\'high\',\'critical\')" decoration-warning="severity==\'medium\'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="origin"/>
+                <field name="severity" widget="badge" decoration-danger="severity in (\'high\',\'critical\')"/>
+                <field name="description"/>
+                <field name="assigned_to" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_haccp/views/cf_haccp_calibration_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_calibration_form" model="ir.ui.view">
+        <field name="name">cf.haccp.calibration.form</field>
+        <field name="model">cf.haccp.calibration</field>
+        <field name="arch" type="xml">
+            <form string="Calibrazione Strumento">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="instrument_name"/></h1>
+                        <h3><field name="instrument_code"/></h3>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="instrument_type"/>
+                            <field name="location"/>
+                            <field name="workcenter_id"/>
+                        </group>
+                        <group>
+                            <field name="date_last_calibration"/>
+                            <field name="date_next_calibration"/>
+                            <field name="calibration_interval_months"/>
+                            <field name="calibrated_by" widget="many2one_avatar_user"/>
+                            <field name="certificate_ref"/>
+                            <field name="result_ok"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_calibration_list" model="ir.ui.view">
+        <field name="name">cf.haccp.calibration.list</field>
+        <field name="model">cf.haccp.calibration</field>
+        <field name="arch" type="xml">
+            <list string="Calibrazioni" decoration-danger="state==\'expired\'" decoration-warning="state==\'expiring\'">
+                <field name="instrument_name"/>
+                <field name="instrument_code"/>
+                <field name="instrument_type"/>
+                <field name="location"/>
+                <field name="date_last_calibration"/>
+                <field name="date_next_calibration"/>
+                <field name="calibrated_by" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge" decoration-success="state==\'valid\'" decoration-warning="state==\'expiring\'" decoration-danger="state==\'expired\'"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_haccp/views/cf_haccp_quarantine_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_quarantine_form" model="ir.ui.view">
+        <field name="name">cf.haccp.quarantine.form</field>
+        <field name="model">cf.haccp.quarantine</field>
+        <field name="arch" type="xml">
+            <form string="Quarantena">
+                <header>
+                    <button name="action_release" type="object" string="Rilascia" class="btn-success" attrs="{'invisible': [('state','!=','active')]}"/>
+                    <button name="action_destroy" type="object" string="Distruggi" class="btn-danger" attrs="{'invisible': [('state','!=','active')]}"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="lot_id"/>
+                            <field name="product_id"/>
+                            <field name="receipt_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="operator_id" widget="many2one_avatar_user"/>
+                            <field name="location"/>
+                        </group>
+                    </group>
+                    <group string="Motivo">
+                        <field name="reason" nolabel="1"/>
+                    </group>
+                    <group string="Risoluzione">
+                        <field name="resolution" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+</odoo>
+''')
+
+write('casafolino_haccp/views/cf_haccp_document_views.xml', '''\
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cf_haccp_document_form" model="ir.ui.view">
+        <field name="name">cf.haccp.document.form</field>
+        <field name="model">cf.haccp.document</field>
+        <field name="arch" type="xml">
+            <form string="Documento HACCP">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="doc_type"/>
+                            <field name="partner_id"/>
+                            <field name="product_id"/>
+                            <field name="document_ref"/>
+                        </group>
+                        <group>
+                            <field name="date_issue"/>
+                            <field name="date_expiry"/>
+                        </group>
+                    </group>
+                    <field name="attachment_ids" widget="many2many_binary"/>
+                    <field name="notes" placeholder="Note..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_document_list" model="ir.ui.view">
+        <field name="name">cf.haccp.document.list</field>
+        <field name="model">cf.haccp.document</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state==\'expired\'" decoration-warning="state==\'expiring\'">
+                <field name="name"/>
+                <field name="doc_type"/>
+                <field name="partner_id"/>
+                <field name="date_expiry"/>
+                <field name="state" widget="badge" decoration-success="state==\'valid\'" decoration-warning="state==\'expiring\'" decoration-danger="state==\'expired\'"/>
+            </list>
+        </field>
+    </record>
+</odoo>
+''')
+
+# Aggiorna manifest con le viste
+write('casafolino_haccp/__manifest__.py', '''\
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino HACCP",
+    "version": "18.0.1.0.0",
+    "category": "Manufacturing",
+    "summary": "HACCP Manager nativo Odoo 18",
+    "author": "CasaFolino Srls",
+    "depends": ["base", "mail", "mrp", "stock", "purchase", "product"],
+    "data": [
+        "security/cf_haccp_security.xml",
+        "security/ir.model.access.csv",
+        "data/cf_haccp_sequences.xml",
+        "views/cf_haccp_receipt_views.xml",
+        "views/cf_haccp_sp_views.xml",
+        "views/cf_haccp_nc_views.xml",
+        "views/cf_haccp_quarantine_views.xml",
+        "views/cf_haccp_calibration_views.xml",
+        "views/cf_haccp_document_views.xml",
+        "views/menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+}
+''')
+print('✅ Viste HACCP complete')
