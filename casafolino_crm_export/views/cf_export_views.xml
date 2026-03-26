@@ -254,8 +254,7 @@
                         <group string="Classificazione">
                             <field name="pipeline_type"/>
                             <field name="source"/>
-                            <field name="fair_id"
-                                attrs="{&apos;invisible&apos;:[(&apos;source&apos;,&apos;!=&apos;,&apos;fair&apos;)]}"/>
+                            <field name="fair_id"/>
                             <field name="language"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="priority" widget="priority"/>
@@ -431,8 +430,7 @@
             <form string="Fiera">
                 <header>
                     <button name="action_view_leads" string="Vedi Trattative"
-                        type="object" class="btn-primary"
-                        attrs="{&apos;invisible&apos;: [(&apos;lead_count&apos;,&apos;=&apos;,0)]}"/>
+                        type="object" class="btn-primary"/>
                     <field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
                 </header>
                 <sheet>
@@ -491,8 +489,7 @@
                     </div>
                     <group>
                         <field name="trigger"/>
-                        <field name="trigger_stage_id"
-                            attrs="{&apos;invisible&apos;:[(&apos;trigger&apos;,&apos;!=&apos;,&apos;stage_change&apos;)]}"/>
+                        <field name="trigger_stage_id"/>
                         <field name="active"/>
                         <field name="description"/>
                     </group>
