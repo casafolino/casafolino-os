@@ -1,0 +1,7 @@
+/* CasaFolino Mail — stili inbox */
+.cf_mail_unread td {
+    font-weight: bold !important;
+}
+.cf_mail_unread .o_data_cell {
+    background-color: #f0f7ff;
+}

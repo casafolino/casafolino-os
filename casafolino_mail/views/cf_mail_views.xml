@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ACTIONS -->
+    <record id="action_cf_mail_client" model="ir.actions.act_window">
+        <field name="name">Mail CasaFolino</field>
+        <field name="res_model">cf.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[("is_archived","=",False)]</field>
+        <field name="context">{"search_default_inbox": 1}</field>
+    </record>
+
+    <record id="action_cf_mail_accounts" model="ir.actions.act_window">
+        <field name="name">Account Email</field>
+        <field name="res_model">cf.mail.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_cf_mail_compose" model="ir.actions.act_window">
+        <field name="name">Nuovo Messaggio</field>
+        <field name="res_model">cf.mail.compose</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ACCOUNT LIST -->
+    <record id="view_cf_mail_account_list" model="ir.ui.view">
+        <field name="name">cf.mail.account.list</field>
+        <field name="model">cf.mail.account</field>
+        <field name="arch" type="xml">
+            <list string="Account Email">
+                <field name="display_name_custom"/>
+                <field name="email_address"/>
+                <field name="account_type" widget="badge"
+                    decoration-info="account_type == 'personal'"
+                    decoration-success="account_type == 'shared'"/>
+                <field name="owner_id" widget="many2one_avatar_user"/>
+                <field name="unread_count"/>
+                <field name="last_sync"/>
+                <field name="active" widget="boolean_toggle"/>
+                <button name="action_sync_inbox" string="Sincronizza"
+                    type="object" icon="fa-refresh" class="btn-sm"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ACCOUNT FORM -->
+    <record id="view_cf_mail_account_form" model="ir.ui.view">
+        <field name="name">cf.mail.account.form</field>
+        <field name="model">cf.mail.account</field>
+        <field name="arch" type="xml">
+            <form string="Account Email">
+                <header>
+                    <button name="action_sync_inbox" string="Sincronizza Ora"
+                        type="object" class="btn-primary"/>
+                    <button name="action_mark_all_read" string="Segna tutto letto"
+                        type="object" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box">
+                        <button class="oe_stat_button" icon="fa-envelope"
+                            type="object" name="action_sync_inbox">
+                            <field name="unread_count" widget="statinfo" string="Non lette"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="display_name_custom" placeholder="Nome account..."/></h1>
+                        <h3><field name="email_address" placeholder="email@casafolino.com"/></h3>
+                    </div>
+                    <group>
+                        <group string="Configurazione">
+                            <field name="account_type"/>
+                            <field name="owner_id" widget="many2one_avatar_user"/>
+                            <field name="sequence"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group string="Server Odoo">
+                            <field name="fetchmail_server_id"
+                                domain="[('server_type','=','imap')]"
+                                help="Server IMAP configurato in Impostazioni > Tecnico > Server Posta in Entrata"/>
+                            <field name="outgoing_mail_server_id"
+                                help="Server SMTP configurato in Impostazioni > Tecnico > Server Posta in Uscita"/>
+                        </group>
+                    </group>
+                    <group string="Accesso Condiviso"
+                        invisible="account_type != 'shared'">
+                        <field name="allowed_user_ids" widget="many2many_tags"
+                            options="{'color_field': 'color'}"/>
+                    </group>
+                    <group string="Stato Sincronizzazione">
+                        <field name="last_sync" readonly="1"/>
+                        <field name="email_count" readonly="1"/>
+                        <field name="unread_count" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- MESSAGES LIST — vista principale inbox -->
+    <record id="view_cf_mail_message_list" model="ir.ui.view">
+        <field name="name">cf.mail.message.list</field>
+        <field name="model">cf.mail.message</field>
+        <field name="arch" type="xml">
+            <list string="Inbox"
+                decoration-bf="is_read == False"
+                decoration-muted="is_archived == True">
+                <field name="is_starred" widget="boolean_favorite" nolabel="1" optional="show"/>
+                <field name="account_id" optional="show"/>
+                <field name="from_address"/>
+                <field name="subject"/>
+                <field name="date"/>
+                <field name="is_read" widget="boolean_toggle" string="Letta"/>
+                <field name="replied" widget="boolean" string="Risp." optional="show"/>
+                <field name="attachment_names" optional="show"/>
+                <field name="export_lead_id" optional="show"/>
+                <button name="action_reply" string="Rispondi"
+                    type="object" icon="fa-reply" class="btn-sm"/>
+                <button name="action_mark_read" string="Letta"
+                    type="object" icon="fa-check" class="btn-sm"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- MESSAGES SEARCH -->
+    <record id="view_cf_mail_message_search" model="ir.ui.view">
+        <field name="name">cf.mail.message.search</field>
+        <field name="model">cf.mail.message</field>
+        <field name="arch" type="xml">
+            <search string="Cerca Email">
+                <field name="subject"/>
+                <field name="from_address"/>
+                <field name="to_address"/>
+                <field name="account_id"/>
+                <field name="export_lead_id"/>
+                <separator/>
+                <filter string="Inbox" name="inbox"
+                    domain="[('folder','=','INBOX'),('is_archived','=',False)]"/>
+                <filter string="Inviate" name="sent"
+                    domain="[('folder','=','Sent')]"/>
+                <filter string="Non lette" name="unread"
+                    domain="[('is_read','=',False)]"/>
+                <filter string="Preferite" name="starred"
+                    domain="[('is_starred','=',True)]"/>
+                <filter string="Con allegati" name="attachments"
+                    domain="[('attachment_names','!=',False)]"/>
+                <filter string="Collegate a CRM" name="crm"
+                    domain="[('export_lead_id','!=',False)]"/>
+                <separator/>
+                <filter string="Archiviate" name="archived"
+                    domain="[('is_archived','=',True)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Account" name="group_account"
+                        context="{'group_by':'account_id'}"/>
+                    <filter string="Cartella" name="group_folder"
+                        context="{'group_by':'folder'}"/>
+                    <filter string="Data" name="group_date"
+                        context="{'group_by':'date:day'}"/>
+                    <filter string="Trattativa" name="group_lead"
+                        context="{'group_by':'export_lead_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- MESSAGE FORM -->
+    <record id="view_cf_mail_message_form" model="ir.ui.view">
+        <field name="name">cf.mail.message.form</field>
+        <field name="model">cf.mail.message</field>
+        <field name="arch" type="xml">
+            <form string="Messaggio">
+                <header>
+                    <button name="action_reply" string="Rispondi"
+                        type="object" class="btn-primary"/>
+                    <button name="action_forward" string="Inoltra"
+                        type="object" class="btn-secondary"/>
+                    <button name="action_mark_unread" string="Segna non letto"
+                        type="object" class="btn-secondary"
+                        invisible="is_read == False"/>
+                    <button name="action_star" string="Preferita"
+                        type="object" class="btn-secondary"/>
+                    <button name="action_archive_message" string="Archivia"
+                        type="object" class="btn-secondary"
+                        invisible="is_archived == True"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Intestazione">
+                            <field name="from_address" readonly="1"/>
+                            <field name="to_address" readonly="1"/>
+                            <field name="cc_address" readonly="1" invisible="not cc_address"/>
+                            <field name="date" readonly="1"/>
+                            <field name="account_id" readonly="1"/>
+                        </group>
+                        <group string="Stato e Collegamento">
+                            <field name="is_read"/>
+                            <field name="is_starred"/>
+                            <field name="folder" readonly="1"/>
+                            <field name="export_lead_id"/>
+                            <field name="partner_id"/>
+                        </group>
+                    </group>
+                    <div class="o_field_html">
+                        <h3><field name="subject" readonly="1"/></h3>
+                        <field name="body_html" readonly="1"
+                            invisible="not body_html"/>
+                        <field name="body_plain" readonly="1"
+                            invisible="body_html"/>
+                    </div>
+                    <group string="Allegati" invisible="not attachment_names">
+                        <field name="attachment_names" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- COMPOSE FORM -->
+    <record id="view_cf_mail_compose_form" model="ir.ui.view">
+        <field name="name">cf.mail.compose.form</field>
+        <field name="model">cf.mail.compose</field>
+        <field name="arch" type="xml">
+            <form string="Nuovo Messaggio">
+                <sheet>
+                    <group>
+                        <field name="account_id"
+                            domain="[('active','=',True)]"/>
+                        <field name="to_address" placeholder="destinatario@email.com"/>
+                        <field name="cc_address" placeholder="cc@email.com (opzionale)"/>
+                        <field name="bcc_address" placeholder="bcc@email.com (opzionale)"/>
+                        <field name="subject"/>
+                        <field name="export_lead_id"/>
+                    </group>
+                    <field name="body_html" widget="html"/>
+                </sheet>
+                <footer>
+                    <button name="action_send" string="Invia"
+                        type="object" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary"
+                        special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
