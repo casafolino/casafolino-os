@@ -251,6 +251,18 @@ class CfExportLead(models.Model):
             rec.date_next_followup = date.today() + timedelta(days=7)
             rec.message_post(body=f"📅 Follow-up pianificato per {rec.date_next_followup}.")
 
+
+    def action_view_orders(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Ordini',
+            'res_model': 'sale.order',
+            'view_mode': 'list,form',
+            'domain': [('cf_export_lead_id', '=', self.id)],
+            'context': {'default_cf_export_lead_id': self.id},
+        }
+
     def write(self, vals):
         old_stages = {rec.id: rec.stage_id.id for rec in self}
         result = super().write(vals)
