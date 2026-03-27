@@ -63,10 +63,11 @@
                     <i class="fa fa-search"/>
                     <input type="text" t-att-value="state.search" t-on-input="onSearch" placeholder="Cerca..."/>
                 </div>
-                <select class="cf-mail-sort-select" t-on-change="(e) => this.setSortBy(e.target.value)">
-                    <option value="date">Data</option>
-                    <option value="sender">Mittente</option>
-                    <option value="thread">Thread</option>
+                <select class="cf-mail-sort-select" t-on-change="(e) => { this.state.groupBy = e.target.value; }">
+                    <option value="date">Per data</option>
+                    <option value="sender">Per mittente</option>
+                    <option value="lead">Per trattativa</option>
+                    <option value="pipeline">Per pipeline</option>
                 </select>
                 <button class="cf-mail-toolbar-btn" t-on-click="loadMessages">
                     <i t-att-class="'fa fa-sync' + (state.loading ? ' fa-spin' : '')"/>
@@ -74,7 +75,7 @@
             </div>
             <t t-if="state.selectedIds.length > 0" t-call="cf_mail_client.BulkBar"/>
             <div class="cf-mail-list-header">
-                <input type="checkbox" t-on-change="toggleSelectAll" style="accent-color:#5A6E3A"/>
+                <input type="checkbox" t-on-change="toggleSelectAll" style="accent-color:var(--accent)"/>
                 <span class="cf-mail-list-header-label" t-esc="listHeaderLabel"/>
             </div>
             <div class="cf-mail-email-list">
@@ -85,45 +86,58 @@
                     <div class="cf-mail-empty"><i class="fa fa-inbox"/><span>Nessun messaggio</span></div>
                 </t>
                 <t t-else="">
-                    <t t-foreach="state.messages" t-as="msg" t-key="msg.id">
-                        <div t-att-class="'cf-mail-email-item ' + (msg.is_read ? 'read' : 'unread') + (state.selectedMsg and state.selectedMsg.id === msg.id ? ' selected' : '')"
-                             t-on-click="(ev) => this.selectMsg(msg, ev)">
-                            <input type="checkbox" class="cf-item-cb"
-                                   t-att-checked="state.selectedIds.includes(msg.id)"
-                                   t-on-change="(ev) => this.toggleSelect(msg.id, ev)"
-                                   t-on-click.stop="() => {}"/>
-                            <div class="cf-item-avatar" t-att-style="'background:' + this.avatarColor(msg.from_name || msg.from_address)">
-                                <t t-esc="this.avatarInitial(msg.from_name || msg.from_address)"/>
+                    <t t-foreach="groupedMessages" t-as="group" t-key="group.label || 'all'">
+                        <t t-if="group.label">
+                            <div class="cf-mail-group-header">
+                                <span t-esc="group.label"/>
+                                <span class="cf-mail-group-count" t-esc="group.items.length"/>
                             </div>
-                            <div class="cf-item-body">
-                                <div class="cf-item-row1">
-                                    <span class="cf-item-from" t-esc="msg.from_name || msg.from_address"/>
-                                    <span class="cf-item-date" t-esc="msg.date_short"/>
+                        </t>
+                        <t t-foreach="group.items" t-as="msg" t-key="msg.id">
+                            <div t-att-class="'cf-mail-email-item ' + (msg.is_read ? 'read' : 'unread') + (state.selectedMsg and state.selectedMsg.id === msg.id ? ' selected' : '')"
+                                 t-on-click="(ev) => this.selectMsg(msg, ev)">
+                                <input type="checkbox" class="cf-item-cb"
+                                       t-att-checked="state.selectedIds.includes(msg.id)"
+                                       t-on-change="(ev) => this.toggleSelect(msg.id, ev)"
+                                       t-on-click.stop="() => {}"/>
+                                <div class="cf-item-avatar" t-att-style="'background:' + this.avatarColor(msg.from_name || msg.from_address)">
+                                    <t t-esc="this.avatarInitial(msg.from_name || msg.from_address)"/>
                                 </div>
-                                <div class="cf-item-subject">
-                                    <t t-esc="msg.subject"/>
-                                    <span t-if="msg.thread_count > 0" class="cf-thread-count" t-esc="msg.thread_count + 1"/>
-                                </div>
-                                <div class="cf-item-snippet" t-esc="msg.snippet"/>
-                                <div class="cf-item-footer">
-                                    <t t-if="msg.tags and msg.tags.length > 0">
-                                        <t t-foreach="msg.tags" t-as="tag" t-key="tag.id">
-                                            <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color" t-esc="tag.name"/>
+                                <div class="cf-item-body">
+                                    <div class="cf-item-row1">
+                                        <span class="cf-item-from" t-esc="msg.from_name || msg.from_address"/>
+                                        <span class="cf-item-date" t-esc="msg.date_short"/>
+                                    </div>
+                                    <div class="cf-item-subject">
+                                        <t t-esc="msg.subject"/>
+                                        <span t-if="msg.thread_count > 0" class="cf-thread-count" t-esc="msg.thread_count + 1"/>
+                                    </div>
+                                    <div class="cf-item-snippet" t-esc="msg.snippet"/>
+                                    <div class="cf-item-footer">
+                                        <t t-if="msg.tags and msg.tags.length > 0">
+                                            <t t-foreach="msg.tags" t-as="tag" t-key="tag.id">
+                                                <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color" t-esc="tag.name"/>
+                                            </t>
                                         </t>
-                                    </t>
-                                    <span t-if="msg.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
-                                    <span t-if="msg.assigned_user_name" class="cf-assigned-pill"><i class="fa fa-user"/> <t t-esc="msg.assigned_user_name"/></span>
+                                        <span t-if="msg.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
+                                        <span t-if="msg.lead_name and state.groupBy !== 'lead'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
+                                            <i class="fa fa-handshake"/> <t t-esc="msg.lead_name"/>
+                                        </span>
+                                        <span t-if="msg.assigned_user_name" class="cf-assigned-pill">
+                                            <i class="fa fa-user"/> <t t-esc="msg.assigned_user_name"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="cf-item-actions">
+                                    <button class="cf-item-action-btn" t-on-click.stop="(ev) => this.quickStar(msg.id, ev)">
+                                        <i t-att-class="'fa fa-star' + (msg.is_starred ? '' : '-o')"/>
+                                    </button>
+                                    <button class="cf-item-action-btn" t-on-click.stop="(ev) => this.quickArchive(msg.id, ev)">
+                                        <i class="fa fa-archive"/>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="cf-item-actions">
-                                <button class="cf-item-action-btn" t-on-click.stop="(ev) => this.quickStar(msg.id, ev)">
-                                    <i t-att-class="'fa fa-star' + (msg.is_starred ? '' : '-o')"/>
-                                </button>
-                                <button class="cf-item-action-btn" t-on-click.stop="(ev) => this.quickArchive(msg.id, ev)">
-                                    <i class="fa fa-archive"/>
-                                </button>
-                            </div>
-                        </div>
+                        </t>
                     </t>
                 </t>
             </div>
@@ -185,7 +199,7 @@
                             <div class="cf-mail-sender-email">
                                 <t t-esc="state.msgDetail.from_address"/>
                                 <t t-if="state.msgDetail.to_address">
-                                    <span style="margin-left:8px;color:#80868b">a: <t t-esc="state.msgDetail.to_address"/></span>
+                                    <span style="margin-left:8px;color:var(--text-muted)">→ <t t-esc="state.msgDetail.to_address"/></span>
                                 </t>
                             </div>
                         </div>
@@ -338,7 +352,7 @@
                             </select>
                             <t t-if="state.msgDetail.lead_name">
                                 <div class="cf-mail-ctx-item" style="margin-top:6px">
-                                    <i class="fa fa-check-circle" style="color:#5A6E3A"/>
+                                    <i class="fa fa-check-circle" style="color:var(--accent)"/>
                                     <span style="margin-left:6px" t-esc="state.msgDetail.lead_name"/>
                                 </div>
                             </t>
@@ -355,7 +369,7 @@
             <div class="cf-mail-modal" t-on-click.stop="() => {}">
                 <div class="cf-mail-modal-header">
                     <span>Crea Trattativa CRM</span>
-                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3)" t-on-click="closeLeadModal"><i class="fa fa-times"/></button>
+                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeLeadModal"><i class="fa fa-times"/></button>
                 </div>
                 <div class="cf-mail-modal-body">
                     <div class="cf-mail-modal-field">
@@ -372,7 +386,7 @@
                         </select>
                     </div>
                     <div class="cf-mail-modal-field">
-                        <label>Pipeline / Stage</label>
+                        <label>Stage / Pipeline</label>
                         <select class="cf-mail-modal-input" t-on-change="(e) => this.state.leadForm.stage_id = e.target.value">
                             <option value="">— Seleziona —</option>
                             <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
@@ -422,6 +436,8 @@
                 <div class="cf-mail-fmt-sep"/>
                 <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('insertUnorderedList')"><i class="fa fa-list-ul"/></button>
                 <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('insertOrderedList')"><i class="fa fa-list-ol"/></button>
+                <div class="cf-mail-fmt-sep"/>
+                <button class="cf-mail-fmt-btn"><i class="fa fa-paperclip"/></button>
             </div>
             <div class="cf-mail-composer-body" contenteditable="true" t-ref="composerBody"/>
             <div class="cf-mail-composer-footer">

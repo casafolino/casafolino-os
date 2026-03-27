@@ -26,42 +26,16 @@ class CfMailClient extends Component {
         this._searchTimer = null;
 
         this.state = useState({
-            accounts: [],
-            messages: [],
-            selectedMsg: null,
-            msgDetail: {},
-            loading: false,
-            loadingDetail: false,
-            selectedAccount: null,
-            folder: "INBOX",
-            search: "",
-            selectedIds: [],
-            totalUnread: 0,
-            showComposer: false,
-            composerMode: "reply",
-            composerTo: "",
-            composerSubject: "",
-            users: [],
-            leads: [],
-            allTags: [],
-            showTagDropdown: false,
-            showSnoozeMenu: false,
-            showBulkTagMenu: false,
-            newTagName: "",
-            newTagColor: "#5A6E3A",
-            threadExpanded: false,
-            sortBy: "date",
-            // Lead modal
-            showLeadModal: false,
-            crmPipelines: [],
-            crmPartners: [],
-            leadForm: {
-                name: "",
-                partner_id: "",
-                stage_id: "",
-                expected_revenue: "",
-                description: "",
-            },
+            accounts: [], messages: [], selectedMsg: null, msgDetail: {},
+            loading: false, loadingDetail: false, selectedAccount: null,
+            folder: "INBOX", search: "", selectedIds: [], totalUnread: 0,
+            showComposer: false, composerMode: "reply", composerTo: "", composerSubject: "",
+            users: [], leads: [], allTags: [],
+            showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
+            newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
+            groupBy: "date",
+            showLeadModal: false, crmPipelines: [], crmPartners: [],
+            leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "" },
         });
 
         onMounted(() => { this.init(); });
@@ -83,7 +57,7 @@ class CfMailClient extends Component {
             if (accounts && accounts.length > 0 && !this.state.selectedAccount)
                 this.state.selectedAccount = accounts[0].id;
             this.state.totalUnread = (accounts || []).reduce((s, a) => s + (a.unread || 0), 0);
-        } catch (e) { console.error("loadAccounts error:", e); }
+        } catch (e) { console.error(e); }
     }
 
     async loadMessages() {
@@ -93,34 +67,23 @@ class CfMailClient extends Component {
             const msgs = await this._rpc("cf.mail.message", "get_messages", {
                 account_id: this.state.selectedAccount,
                 folder: this.state.folder,
-                limit: 50,
-                offset: 0,
-                search: this.state.search,
+                limit: 100, offset: 0, search: this.state.search,
             });
-            let result = msgs || [];
-            if (this.state.sortBy === "sender") {
-                result = result.sort((a, b) => (a.from_name || a.from_address).localeCompare(b.from_name || b.from_address));
-            } else if (this.state.sortBy === "thread") {
-                result = result.sort((a, b) => (a.subject || "").localeCompare(b.subject || ""));
-            }
-            this.state.messages = result;
+            this.state.messages = msgs || [];
             this.state.selectedIds = [];
-        } catch (e) { console.error("loadMessages error:", e); }
+        } catch (e) { console.error(e); }
         finally { this.state.loading = false; }
     }
 
     async loadUsers() {
         try { this.state.users = await this._rpc("cf.mail.message", "get_users_list") || []; } catch (e) {}
     }
-
     async loadLeads() {
         try { this.state.leads = await this._rpc("cf.mail.message", "get_leads_list") || []; } catch (e) {}
     }
-
     async loadTags() {
         try { this.state.allTags = await this._rpc("cf.mail.message", "get_tags_list") || []; } catch (e) {}
     }
-
     async loadCrmData() {
         try {
             const data = await this._rpc("cf.mail.message", "get_crm_data");
@@ -128,6 +91,70 @@ class CfMailClient extends Component {
             this.state.crmPartners = data.partners || [];
         } catch (e) {}
     }
+
+    // ── GROUPING ──────────────────────────────────────────────────────────────
+
+    get groupedMessages() {
+        const msgs = this.state.messages;
+        const groupBy = this.state.groupBy;
+
+        if (groupBy === "date") {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+            const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
+
+            const groups = { "Oggi": [], "Ieri": [], "Questa settimana": [], "Prima": [] };
+            for (const m of msgs) {
+                const d = m.date ? new Date(m.date.replace(' ', 'T')) : null;
+                if (!d) { groups["Prima"].push(m); continue; }
+                const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                if (day >= today) groups["Oggi"].push(m);
+                else if (day >= yesterday) groups["Ieri"].push(m);
+                else if (day >= weekAgo) groups["Questa settimana"].push(m);
+                else groups["Prima"].push(m);
+            }
+            return Object.entries(groups).filter(([, v]) => v.length > 0).map(([label, items]) => ({ label, items }));
+        }
+
+        if (groupBy === "sender") {
+            const map = {};
+            for (const m of msgs) {
+                const key = m.from_name || m.from_address || "Sconosciuto";
+                if (!map[key]) map[key] = [];
+                map[key].push(m);
+            }
+            return Object.entries(map).sort((a, b) => b[1].length - a[1].length).map(([label, items]) => ({ label, items, count: items.length }));
+        }
+
+        if (groupBy === "lead") {
+            const map = {};
+            for (const m of msgs) {
+                const key = m.lead_name || "Senza trattativa";
+                if (!map[key]) map[key] = [];
+                map[key].push(m);
+            }
+            return Object.entries(map).sort((a, b) => {
+                if (a[0] === "Senza trattativa") return 1;
+                if (b[0] === "Senza trattativa") return -1;
+                return a[0].localeCompare(b[0]);
+            }).map(([label, items]) => ({ label, items }));
+        }
+
+        if (groupBy === "pipeline") {
+            const map = {};
+            for (const m of msgs) {
+                const key = m.lead_stage || "Senza pipeline";
+                if (!map[key]) map[key] = [];
+                map[key].push(m);
+            }
+            return Object.entries(map).map(([label, items]) => ({ label, items }));
+        }
+
+        return [{ label: null, items: msgs }];
+    }
+
+    // ── NAVIGATION ────────────────────────────────────────────────────────────
 
     async selectMsg(msg, ev) {
         if (ev && ev.target.type === "checkbox") return;
@@ -145,7 +172,7 @@ class CfMailClient extends Component {
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");
-        } catch (e) { console.error("loadDetail error:", e); }
+        } catch (e) { console.error(e); }
         finally { this.state.loadingDetail = false; }
     }
 
@@ -154,7 +181,7 @@ class CfMailClient extends Component {
         if (!el) return;
         el.innerHTML = "";
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:100%;border:none;flex:1;min-height:200px;pointer-events:none;";
+        iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:none;";
         iframe.setAttribute("sandbox", "allow-same-origin");
         el.appendChild(iframe);
         iframe.onload = () => {
@@ -177,11 +204,6 @@ class CfMailClient extends Component {
         this.state.folder = folder;
         this.state.selectedMsg = null;
         this.state.msgDetail = {};
-        await this.loadMessages();
-    }
-
-    async setSortBy(sortBy) {
-        this.state.sortBy = sortBy;
         await this.loadMessages();
     }
 
@@ -209,7 +231,7 @@ class CfMailClient extends Component {
             this.showToast(action === "delete" ? "Email eliminate" : "Azione completata");
             this.state.showBulkTagMenu = false;
             await this.loadMessages();
-        } catch (e) { console.error("bulkAction error:", e); }
+        } catch (e) { console.error(e); }
     }
 
     async quickStar(msgId, ev) {
@@ -294,9 +316,7 @@ class CfMailClient extends Component {
         this.state.showLeadModal = true;
     }
 
-    closeLeadModal() {
-        this.state.showLeadModal = false;
-    }
+    closeLeadModal() { this.state.showLeadModal = false; }
 
     async submitLeadForm() {
         try {
@@ -317,7 +337,7 @@ class CfMailClient extends Component {
             } else {
                 this.showToast("Errore: " + (res.error || "sconosciuto"));
             }
-        } catch (e) { console.error("submitLeadForm error:", e); }
+        } catch (e) { console.error(e); }
     }
 
     async onAssignChange(ev) {
@@ -347,21 +367,18 @@ class CfMailClient extends Component {
         this.state.composerTo = this.state.msgDetail.from_address || "";
         this.state.composerSubject = "Re: " + (this.state.msgDetail.subject || "");
     }
-
     openForward() {
         this.state.showComposer = true;
         this.state.composerMode = "forward";
         this.state.composerTo = "";
         this.state.composerSubject = "Fwd: " + (this.state.msgDetail.subject || "");
     }
-
     openComposer() {
         this.state.showComposer = true;
         this.state.composerMode = "new";
         this.state.composerTo = "";
         this.state.composerSubject = "";
     }
-
     closeComposer() { this.state.showComposer = false; }
 
     async sendEmail() {
@@ -385,12 +402,6 @@ class CfMailClient extends Component {
         const total = this.state.messages.length;
         const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
         return (map[this.state.folder] || this.state.folder) + " — " + total;
-    }
-
-    get currentAccountEmail() {
-        if (!this.state.selectedAccount) return "";
-        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
-        return acc ? acc.email : "";
     }
 
     avatarColor(name) {
