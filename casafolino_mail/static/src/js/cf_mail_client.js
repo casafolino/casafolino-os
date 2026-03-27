@@ -92,7 +92,7 @@ class CfMailClient extends Component {
         } catch (e) {}
     }
 
-        get groupedMessages() {
+    get groupedMessages() {
         const msgs = this.state.messages;
         const groupBy = this.state.groupBy;
 
@@ -100,11 +100,15 @@ class CfMailClient extends Component {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const days = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
-            const months = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+            const months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 
             const getLabel = (dateStr) => {
                 if (!dateStr) return "Senza data";
-                const parts = dateStr.split(/[\/\s:]/); const d = parts.length >= 3 && parts[2].length === 4 ? new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0])) : new Date(dateStr.replace(' ', 'T'));
+                const parts = dateStr.split(/[\/\s:]/);
+                const d = parts.length >= 3 && parts[2].length === 4
+                    ? new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]))
+                    : new Date(dateStr.replace(' ', 'T'));
+                if (isNaN(d.getTime())) return "Senza data";
                 const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                 const diffDays = Math.round((today - day) / 86400000);
                 if (diffDays === 0) return "Oggi";
@@ -132,7 +136,8 @@ class CfMailClient extends Component {
                 if (!map[key]) { map[key] = []; order.push(key); }
                 map[key].push(m);
             }
-            return order.sort((a,b) => map[b].length - map[a].length).map(label => ({ label, items: map[label], count: map[label].length }));
+            return order.sort((a,b) => map[b].length - map[a].length)
+                .map(label => ({ label, items: map[label], count: map[label].length }));
         }
 
         if (groupBy === "lead") {
@@ -163,9 +168,6 @@ class CfMailClient extends Component {
 
         return [{ label: null, items: msgs }];
     }
-
-
-    // ── NAVIGATION ────────────────────────────────────────────────────────────
 
     async selectMsg(msg, ev) {
         if (ev && ev.target.type === "checkbox") return;
@@ -200,7 +202,7 @@ class CfMailClient extends Component {
         };
         const doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
-        doc.write(`<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:16px;margin:0}a{color:#5A6E3A}img{max-width:100%}</style>${html}`);
+        doc.write(`<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:16px;margin:0}a{color:#5A6E3A}img{max-width:100%}ul,ol{margin:8px 0 8px 20px}</style>${html}`);
         doc.close();
     }
 
@@ -413,6 +415,12 @@ class CfMailClient extends Component {
         const total = this.state.messages.length;
         const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
         return (map[this.state.folder] || this.state.folder) + " — " + total;
+    }
+
+    get currentSignature() {
+        if (!this.state.selectedAccount) return "";
+        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
+        return acc ? acc.signature : "";
     }
 
     avatarColor(name) {

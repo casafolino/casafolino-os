@@ -68,6 +68,7 @@ class CfMailMessage(models.Model):
             'assigned_user_id': m.assigned_user_id.id if m.assigned_user_id else False,
             'assigned_user_name': m.assigned_user_id.name if m.assigned_user_id else '',
             'tags': tags,
+            'lead_stage': m.lead_id.stage_id.name if m.lead_id and m.lead_id.stage_id else '',
         }
 
     @api.model
@@ -122,6 +123,15 @@ class CfMailMessage(models.Model):
         partner_orders = []
         partner_leads = []
         partner_other_emails = []
+        # Match partner da email se non già collegato
+        if not msg.partner_id and msg.from_address:
+            partner = self.env['res.partner'].search([('email', 'ilike', msg.from_address)], limit=1)
+            if not partner:
+                user = self.env['res.users'].search([('login', 'ilike', msg.from_address)], limit=1)
+                if user:
+                    partner = user.partner_id
+            if partner:
+                msg.with_context(mail_notrack=True).write({'partner_id': partner.id})
         if msg.partner_id:
             try:
                 leads = self.env['cf.export.lead'].search([('partner_id', '=', msg.partner_id.id)], limit=5)
