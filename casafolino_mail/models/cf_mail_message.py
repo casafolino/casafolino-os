@@ -1,209 +1,342 @@
-# -*- coding: utf-8 -*-
-import logging
 from odoo import models, fields, api
-from odoo.exceptions import UserError
-
+import logging
 _logger = logging.getLogger(__name__)
 
 
 class CfMailMessage(models.Model):
-    _name = "cf.mail.message"
-    _description = "Messaggio Email CasaFolino"
-    _order = "date desc, id desc"
-    _rec_name = "subject"
+    _name = 'cf.mail.message'
+    _description = 'Messaggio Email CasaFolino'
+    _order = 'date desc, id desc'
 
-    account_id = fields.Many2one("cf.mail.account", required=True, ondelete="cascade")
-    imap_uid = fields.Char(string="IMAP UID", index=True)
-    message_id = fields.Char(string="Message-ID", index=True)
-    in_reply_to = fields.Char(string="In-Reply-To")
-    thread_id = fields.Char(string="Thread ID", index=True)
-
-    # ── HEADER ──
-    subject = fields.Char(string="Oggetto")
-    from_address = fields.Char(string="Da")
-    to_address = fields.Char(string="A")
-    cc_address = fields.Char(string="CC")
-    date = fields.Datetime(string="Data")
-
-    # ── CORPO ──
-    body_plain = fields.Text(string="Testo")
-    body_html = fields.Html(string="HTML", sanitize=True)
-    attachment_names = fields.Char(string="Allegati")
-
-    # ── STATO ──
-    folder = fields.Char(string="Cartella", default="INBOX", index=True)
-    is_read = fields.Boolean(string="Letta", default=False, index=True)
-    is_starred = fields.Boolean(string="Preferita", default=False)
-    is_archived = fields.Boolean(string="Archiviata", default=False)
-    direction = fields.Selection([
-        ("in", "Ricevuta"),
-        ("out", "Inviata"),
-    ], default="in")
-
-    # ── COLLEGAMENTO CRM ──
-    export_lead_id = fields.Many2one(
-        "cf.export.lead",
-        string="Trattativa Export",
-        ondelete="set null",
-    )
-    partner_id = fields.Many2one("res.partner", string="Contatto Odoo")
-
-    # ── RISPOSTA ──
-    replied = fields.Boolean(string="Risposto", default=False)
+    account_id = fields.Many2one('cf.mail.account', string='Account', required=True, ondelete='cascade')
+    subject = fields.Char('Oggetto', default='(nessun oggetto)')
+    from_address = fields.Char('Da')
+    from_name = fields.Char('Nome mittente')
+    to_address = fields.Char('A')
+    cc_address = fields.Char('CC')
+    body_html = fields.Html('Corpo HTML', sanitize=False)
+    body_text = fields.Text('Corpo testo')
+    snippet = fields.Char('Anteprima')
+    date = fields.Datetime('Data', default=fields.Datetime.now)
+    is_read = fields.Boolean('Letta', default=False)
+    is_starred = fields.Boolean('Preferita', default=False)
+    is_archived = fields.Boolean('Archiviata', default=False)
+    direction = fields.Selection([('in', 'In entrata'), ('out', 'In uscita')], default='in')
+    folder = fields.Char('Cartella', default='INBOX')
+    message_uid = fields.Char('UID IMAP')
+    thread_id = fields.Char('Thread ID')
+    partner_id = fields.Many2one('res.partner', string='Contatto')
+    lead_id = fields.Many2one('cf.export.lead', string='Trattativa CRM')
+    assigned_user_id = fields.Many2one('res.users', string='Assegnata a')
+    tag_ids = fields.Many2many('cf.mail.tag', string='Tag')
+    snoozed_until = fields.Datetime('Posticipata fino a')
+    has_attachments = fields.Boolean('Ha allegati', default=False)
 
     def action_mark_read(self):
-        for rec in self:
-            rec.is_read = True
-            rec._sync_flag_to_imap("\Seen", add=True)
+        self.write({'is_read': True})
 
     def action_mark_unread(self):
-        for rec in self:
-            rec.is_read = False
-            rec._sync_flag_to_imap("\Seen", add=False)
+        self.write({'is_read': False})
 
-    def action_star(self):
-        for rec in self:
-            rec.is_starred = not rec.is_starred
-            flag = "\Flagged"
-            rec._sync_flag_to_imap(flag, add=rec.is_starred)
+    def action_archive_msg(self):
+        self.write({'is_archived': True})
 
-    def action_archive_message(self):
-        for rec in self:
-            rec.is_archived = True
-            rec._sync_flag_to_imap("\Deleted", add=False)
-
-    def _sync_flag_to_imap(self, flag, add=True):
-        # Sincronizza flag su server IMAP (bidirezionale).
-        if not self.imap_uid or not self.account_id.fetchmail_server_id:
-            return
-        try:
-            conn = self.account_id._get_imap_connection()
-            conn.select(self.folder or "INBOX")
-            op = "+FLAGS" if add else "-FLAGS"
-            conn.store(self.imap_uid, op, flag)
-            conn.logout()
-        except Exception as e:
-            _logger.warning("Sync IMAP flag fallita per msg %s: %s", self.id, e)
-
-    def action_link_to_crm(self):
-        # Apre wizard per collegare email a trattativa Export.
-        self.ensure_one()
+    def _msg_to_dict(self, m):
+        tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in m.tag_ids]
+        thread_count = 0
+        if m.thread_id:
+            thread_count = self.search_count([('thread_id', '=', m.thread_id), ('id', '!=', m.id)])
         return {
-            "type": "ir.actions.act_window",
-            "name": "Collega a Trattativa",
-            "res_model": "cf.export.lead",
-            "view_mode": "list,form",
-            "target": "new",
-        }
-
-    def action_reply(self):
-        # Apre composer per risposta.
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": "Rispondi",
-            "res_model": "cf.mail.compose",
-            "view_mode": "form",
-            "target": "new",
-            "context": {
-                "default_account_id": self.account_id.id,
-                "default_to_address": self.from_address,
-                "default_subject": "Re: %s" % (self.subject or ""),
-                "default_in_reply_to": self.message_id,
-                "default_reply_to_msg_id": self.id,
-            },
-        }
-
-    def action_forward(self):
-        # Apre composer per inoltro.
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": "Inoltra",
-            "res_model": "cf.mail.compose",
-            "view_mode": "form",
-            "target": "new",
-            "context": {
-                "default_account_id": self.account_id.id,
-                "default_subject": "Fwd: %s" % (self.subject or ""),
-                "default_body_html": "<br/><br/>--- Messaggio originale ---<br/>%s" % (self.body_html or self.body_plain or ""),
-            },
+            'id': m.id,
+            'subject': m.subject or '(nessun oggetto)',
+            'from_address': m.from_address or '',
+            'from_name': m.from_name or m.from_address or '',
+            'snippet': m.snippet or '',
+            'date': m.date.strftime('%d/%m/%Y %H:%M') if m.date else '',
+            'date_short': m.date.strftime('%d %b') if m.date else '',
+            'is_read': m.is_read,
+            'is_starred': m.is_starred,
+            'is_archived': m.is_archived,
+            'direction': m.direction,
+            'folder': m.folder or 'INBOX',
+            'has_attachments': m.has_attachments,
+            'thread_count': thread_count,
+            'partner_id': m.partner_id.id if m.partner_id else False,
+            'partner_name': m.partner_id.name if m.partner_id else '',
+            'lead_id': m.lead_id.id if m.lead_id else False,
+            'lead_name': m.lead_id.name if m.lead_id else '',
+            'assigned_user_id': m.assigned_user_id.id if m.assigned_user_id else False,
+            'assigned_user_name': m.assigned_user_id.name if m.assigned_user_id else '',
+            'tags': tags,
         }
 
     @api.model
-    def get_inbox_messages(self, account_id, folder="INBOX", limit=50, offset=0, only_unread=False):
-        # API per UI: ritorna messaggi paginati per account e cartella.
-        domain = [
-            ("account_id", "=", account_id),
-            ("folder", "=", folder),
-            ("is_archived", "=", False),
-        ]
-        if only_unread:
-            domain.append(("is_read", "=", False))
-        messages = self.search(domain, limit=limit, offset=offset)
-        return messages.read([
-            "id", "subject", "from_address", "to_address", "date",
-            "is_read", "is_starred", "replied", "attachment_names",
-            "export_lead_id",
-        ])
+    def get_messages(self, *args, **kw):
+        account_id = kw.get('account_id')
+        folder = kw.get('folder') or 'INBOX'
+        limit = int(kw.get('limit') or 50)
+        offset = int(kw.get('offset') or 0)
+        search = kw.get('search') or ''
+        tag_id = kw.get('tag_id') or False
 
+        domain = [('account_id', '=', account_id), ('is_archived', '=', False)]
+        if folder == 'Starred':
+            domain.append(('is_starred', '=', True))
+        elif folder == 'Sent':
+            domain.append(('direction', '=', 'out'))
+        elif folder == 'Archived':
+            domain = [('account_id', '=', account_id), ('is_archived', '=', True)]
+        elif folder == 'Assigned':
+            domain.append(('assigned_user_id', '=', self.env.uid))
+        elif folder.startswith('TAG_'):
+            try:
+                tid = int(folder.replace('TAG_', ''))
+                domain.append(('tag_ids', 'in', [tid]))
+            except Exception:
+                pass
+        else:
+            domain.append(('folder', '=', folder))
 
-class CfMailCompose(models.TransientModel):
-    _name = "cf.mail.compose"
-    _description = "Composer Email CasaFolino"
+        if search:
+            domain += ['|', '|', '|',
+                ('subject', 'ilike', search),
+                ('from_address', 'ilike', search),
+                ('from_name', 'ilike', search),
+                ('snippet', 'ilike', search),
+            ]
 
-    account_id = fields.Many2one("cf.mail.account", string="Da Account", required=True)
-    to_address = fields.Char(string="A", required=True)
-    cc_address = fields.Char(string="CC")
-    bcc_address = fields.Char(string="BCC")
-    subject = fields.Char(string="Oggetto", required=True)
-    body_html = fields.Html(string="Corpo")
-    in_reply_to = fields.Char(string="In-Reply-To")
-    reply_to_msg_id = fields.Many2one("cf.mail.message", string="Risposta a")
-    export_lead_id = fields.Many2one("cf.export.lead", string="Collega a Trattativa")
+        msgs = self.search(domain, limit=limit, offset=offset)
+        return [self._msg_to_dict(m) for m in msgs]
 
-    def action_send(self):
-        # Invia email usando il server SMTP configurato in Odoo.
-        self.ensure_one()
-        acc = self.account_id
-        if not acc.outgoing_mail_server_id:
-            from odoo.exceptions import UserError
-            raise UserError(
-                "Nessun server SMTP configurato per %s. "
-                "Vai in Impostazioni > Tecnico > Server Posta in Uscita." % acc.display_name_custom
-            )
-        # Usa mail.mail di Odoo per l'invio (gestisce OAuth2 automaticamente)
-        mail_values = {
-            "subject": self.subject,
-            "body_html": self.body_html or "",
-            "email_from": acc.email_address,
-            "email_to": self.to_address,
-            "email_cc": self.cc_address or "",
-            "mail_server_id": acc.outgoing_mail_server_id.id,
+    @api.model
+    def get_message_detail(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return {}
+        msg = self.browse(int(message_id))
+        if not msg.exists():
+            return {}
+        if not msg.is_read:
+            msg.action_mark_read()
+
+        partner_orders = []
+        partner_leads = []
+        partner_other_emails = []
+        if msg.partner_id:
+            try:
+                leads = self.env['cf.export.lead'].search([('partner_id', '=', msg.partner_id.id)], limit=5)
+                for l in leads:
+                    partner_leads.append({'id': l.id, 'name': l.name, 'stage': l.stage_id.name if l.stage_id else ''})
+            except Exception:
+                pass
+            try:
+                orders = self.env['sale.order'].search([('partner_id', '=', msg.partner_id.id)], limit=5, order='date_order desc')
+                for o in orders:
+                    partner_orders.append({'id': o.id, 'name': o.name, 'amount': o.amount_total, 'currency': o.currency_id.symbol or '€'})
+            except Exception:
+                pass
+            other_msgs = self.search([('partner_id', '=', msg.partner_id.id), ('id', '!=', msg.id)], limit=5, order='date desc')
+            for om in other_msgs:
+                partner_other_emails.append({
+                    'id': om.id,
+                    'subject': om.subject or '(nessun oggetto)',
+                    'date_short': om.date.strftime('%d %b') if om.date else '',
+                    'direction': om.direction,
+                })
+
+        tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
+
+        thread_messages = []
+        if msg.thread_id:
+            thread_msgs = self.search([('thread_id', '=', msg.thread_id), ('id', '!=', msg.id)], order='date asc')
+            for tm in thread_msgs:
+                thread_messages.append({
+                    'id': tm.id,
+                    'from_name': tm.from_name or tm.from_address or '',
+                    'from_address': tm.from_address or '',
+                    'date': tm.date.strftime('%d/%m/%Y %H:%M') if tm.date else '',
+                    'body_html': tm.body_html or tm.body_text or '',
+                    'direction': tm.direction,
+                })
+
+        return {
+            'id': msg.id,
+            'subject': msg.subject or '(nessun oggetto)',
+            'from_address': msg.from_address or '',
+            'from_name': msg.from_name or msg.from_address or '',
+            'to_address': msg.to_address or '',
+            'cc_address': msg.cc_address or '',
+            'body_html': msg.body_html or msg.body_text or '',
+            'date': msg.date.strftime('%d/%m/%Y %H:%M') if msg.date else '',
+            'is_read': msg.is_read,
+            'is_starred': msg.is_starred,
+            'direction': msg.direction,
+            'has_attachments': msg.has_attachments,
+            'partner_id': msg.partner_id.id if msg.partner_id else False,
+            'partner_name': msg.partner_id.name if msg.partner_id else '',
+            'partner_email': msg.partner_id.email if msg.partner_id else '',
+            'partner_phone': msg.partner_id.phone if msg.partner_id else '',
+            'partner_company': msg.partner_id.parent_id.name if msg.partner_id and msg.partner_id.parent_id else '',
+            'lead_id': msg.lead_id.id if msg.lead_id else False,
+            'lead_name': msg.lead_id.name if msg.lead_id else '',
+            'assigned_user_id': msg.assigned_user_id.id if msg.assigned_user_id else False,
+            'assigned_user_name': msg.assigned_user_id.name if msg.assigned_user_id else '',
+            'partner_leads': partner_leads,
+            'partner_orders': partner_orders,
+            'partner_other_emails': partner_other_emails,
+            'tags': tags,
+            'thread_messages': thread_messages,
+            'signature': msg.account_id.signature or '',
         }
-        if self.in_reply_to:
-            mail_values["headers"] = {"In-Reply-To": self.in_reply_to}
 
-        mail = self.env["mail.mail"].create(mail_values)
-        mail.send()
+    @api.model
+    def do_bulk_action(self, *args, **kw):
+        ids = kw.get('ids') or []
+        action = kw.get('action') or ''
+        tag_id = kw.get('tag_id') or False
+        if not ids or not action:
+            return False
+        msgs = self.browse([int(i) for i in ids])
+        if action == 'read':
+            msgs.write({'is_read': True})
+        elif action == 'unread':
+            msgs.write({'is_read': False})
+        elif action == 'star':
+            msgs.write({'is_starred': True})
+        elif action == 'unstar':
+            msgs.write({'is_starred': False})
+        elif action == 'archive':
+            msgs.write({'is_archived': True})
+        elif action == 'delete':
+            msgs.unlink()
+        elif action == 'add_tag' and tag_id:
+            for m in msgs:
+                m.tag_ids = [(4, int(tag_id))]
+        elif action == 'remove_tag' and tag_id:
+            for m in msgs:
+                m.tag_ids = [(3, int(tag_id))]
+        return True
 
-        # Salva in DB come messaggio inviato
-        self.env["cf.mail.message"].create({
-            "account_id": acc.id,
-            "subject": self.subject,
-            "from_address": acc.email_address,
-            "to_address": self.to_address,
-            "cc_address": self.cc_address or "",
-            "body_html": self.body_html,
-            "date": fields.Datetime.now(),
-            "folder": "Sent",
-            "is_read": True,
-            "direction": "out",
-            "export_lead_id": self.export_lead_id.id if self.export_lead_id else False,
-        })
+    @api.model
+    def do_assign(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        user_id = kw.get('user_id') or (args[2] if len(args) > 2 else None)
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.write({'assigned_user_id': int(user_id) if user_id else False})
+        return msg.assigned_user_id.name if msg.assigned_user_id else ''
 
-        # Marca come risposto il messaggio originale
-        if self.reply_to_msg_id:
-            self.reply_to_msg_id.replied = True
+    @api.model
+    def do_link_lead(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        lead_id = kw.get('lead_id') or (args[2] if len(args) > 2 else None)
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.write({'lead_id': int(lead_id) if lead_id else False})
+        return True
 
-        return {"type": "ir.actions.act_window_close"}
+    @api.model
+    def do_toggle_star(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.write({'is_starred': not msg.is_starred})
+        return msg.is_starred
+
+    @api.model
+    def do_add_tag(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        tag_id = kw.get('tag_id') or (args[2] if len(args) > 2 else None)
+        if not message_id or not tag_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.tag_ids = [(4, int(tag_id))]
+        return [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
+
+    @api.model
+    def do_remove_tag(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        tag_id = kw.get('tag_id') or (args[2] if len(args) > 2 else None)
+        if not message_id or not tag_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.tag_ids = [(3, int(tag_id))]
+        return [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
+
+    @api.model
+    def do_snooze(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        until = kw.get('until') or (args[2] if len(args) > 2 else None)
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.write({'snoozed_until': until})
+        return True
+
+    @api.model
+    def get_users_list(self, *args, **kw):
+        users = self.env['res.users'].search([('share', '=', False), ('active', '=', True)])
+        return [{'id': u.id, 'name': u.name} for u in users]
+
+    @api.model
+    def get_leads_list(self, *args, **kw):
+        try:
+            leads = self.env['cf.export.lead'].search([('active', '=', True)], limit=100, order='id desc')
+            return [{'id': l.id, 'name': l.name} for l in leads]
+        except Exception:
+            return []
+
+    @api.model
+    def get_tags_list(self, *args, **kw):
+        tags = self.env['cf.mail.tag'].search([])
+        return [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in tags]
+
+    @api.model
+    def create_tag(self, *args, **kw):
+        name = kw.get('name') or (args[1] if len(args) > 1 else None)
+        color = kw.get('color') or '#5A6E3A'
+        if not name:
+            return False
+        tag = self.env['cf.mail.tag'].create({'name': name, 'color': color})
+        return {'id': tag.id, 'name': tag.name, 'color': tag.color}
+
+    @api.model
+    def send_reply(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        to_addr = kw.get('to_address') or ''
+        subject = kw.get('subject') or ''
+        body = kw.get('body') or ''
+        account_id = kw.get('account_id') or None
+        if not to_addr or not body:
+            return {'success': False, 'error': 'Destinatario o corpo mancante'}
+        try:
+            acc = self.env['cf.mail.account'].browse(int(account_id)) if account_id else None
+            from_email = acc.email if acc else self.env.user.email
+            mail = self.env['mail.mail'].create({
+                'subject': subject,
+                'email_to': to_addr,
+                'body_html': body,
+                'email_from': from_email,
+            })
+            mail.send()
+            thread_id = None
+            if message_id:
+                orig = self.browse(int(message_id))
+                thread_id = orig.thread_id or str(orig.id)
+            sent_msg = self.create({
+                'account_id': int(account_id) if account_id else False,
+                'subject': subject,
+                'from_address': from_email,
+                'to_address': to_addr,
+                'body_html': body,
+                'direction': 'out',
+                'folder': 'Sent',
+                'is_read': True,
+                'thread_id': thread_id,
+            })
+            return {'success': True, 'id': sent_msg.id}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}

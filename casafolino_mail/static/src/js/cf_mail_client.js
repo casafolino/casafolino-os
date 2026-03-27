@@ -43,40 +43,35 @@ class CfMailClient extends Component {
             composerSubject: "",
             users: [],
             leads: [],
+            allTags: [],
+            showTagDropdown: false,
+            showSnoozeMenu: false,
+            showBulkTagMenu: false,
+            newTagName: "",
+            newTagColor: "#5A6E3A",
+            threadExpanded: false,
         });
 
-        onMounted(() => {
-            this.init();
-        });
+        onMounted(() => { this.init(); });
     }
 
     async _rpc(model, method, kwargs = {}) {
-        return await rpc("/web/dataset/call_kw", {
-            model,
-            method,
-            args: [],
-            kwargs,
-        });
+        return await rpc("/web/dataset/call_kw", { model, method, args: [], kwargs });
     }
 
     async init() {
-        await this.loadAccounts();
+        await Promise.all([this.loadAccounts(), this.loadUsers(), this.loadLeads(), this.loadTags()]);
         await this.loadMessages();
-        await this.loadUsers();
-        await this.loadLeads();
     }
 
     async loadAccounts() {
         try {
             const accounts = await this._rpc("cf.mail.account", "get_accounts");
             this.state.accounts = accounts || [];
-            if (accounts && accounts.length > 0 && !this.state.selectedAccount) {
+            if (accounts && accounts.length > 0 && !this.state.selectedAccount)
                 this.state.selectedAccount = accounts[0].id;
-            }
             this.state.totalUnread = (accounts || []).reduce((s, a) => s + (a.unread || 0), 0);
-        } catch (e) {
-            console.error("loadAccounts error:", e);
-        }
+        } catch (e) { console.error("loadAccounts error:", e); }
     }
 
     async loadMessages() {
@@ -92,25 +87,20 @@ class CfMailClient extends Component {
             });
             this.state.messages = msgs || [];
             this.state.selectedIds = [];
-        } catch (e) {
-            console.error("loadMessages error:", e);
-        } finally {
-            this.state.loading = false;
-        }
+        } catch (e) { console.error("loadMessages error:", e); }
+        finally { this.state.loading = false; }
     }
 
     async loadUsers() {
-        try {
-            const users = await this._rpc("cf.mail.message", "get_users_list");
-            this.state.users = users || [];
-        } catch (e) {}
+        try { this.state.users = await this._rpc("cf.mail.message", "get_users_list") || []; } catch (e) {}
     }
 
     async loadLeads() {
-        try {
-            const leads = await this._rpc("cf.mail.message", "get_leads_list");
-            this.state.leads = leads || [];
-        } catch (e) {}
+        try { this.state.leads = await this._rpc("cf.mail.message", "get_leads_list") || []; } catch (e) {}
+    }
+
+    async loadTags() {
+        try { this.state.allTags = await this._rpc("cf.mail.message", "get_tags_list") || []; } catch (e) {}
     }
 
     async selectMsg(msg, ev) {
@@ -119,17 +109,17 @@ class CfMailClient extends Component {
         this.state.msgDetail = {};
         this.state.loadingDetail = true;
         this.state.showComposer = false;
+        this.state.showTagDropdown = false;
+        this.state.showSnoozeMenu = false;
+        this.state.threadExpanded = false;
         try {
             const detail = await this._rpc("cf.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");
-        } catch (e) {
-            console.error("loadDetail error:", e);
-        } finally {
-            this.state.loadingDetail = false;
-        }
+        } catch (e) { console.error("loadDetail error:", e); }
+        finally { this.state.loadingDetail = false; }
     }
 
     async _renderEmailBody(html) {
@@ -137,17 +127,15 @@ class CfMailClient extends Component {
         if (!el) return;
         el.innerHTML = "";
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:100%;border:none;flex:1;min-height:300px;";
+        iframe.style.cssText = "width:100%;border:none;flex:1;min-height:200px;";
         iframe.setAttribute("sandbox", "allow-same-origin");
         el.appendChild(iframe);
         iframe.onload = () => {
-            try {
-                iframe.style.height = iframe.contentDocument.body.scrollHeight + 40 + "px";
-            } catch (e) {}
+            try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 40 + "px"; } catch (e) {}
         };
         const doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
-        doc.write("<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:0;margin:0}a{color:#5A6E3A}</style>" + html);
+        doc.write(`<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:16px;margin:0}a{color:#5A6E3A}img{max-width:100%}</style>${html}`);
         doc.close();
     }
 
@@ -174,30 +162,22 @@ class CfMailClient extends Component {
     toggleSelect(id, ev) {
         ev.stopPropagation();
         const idx = this.state.selectedIds.indexOf(id);
-        if (idx === -1) {
-            this.state.selectedIds = [...this.state.selectedIds, id];
-        } else {
-            this.state.selectedIds = this.state.selectedIds.filter(i => i !== id);
-        }
+        if (idx === -1) this.state.selectedIds = [...this.state.selectedIds, id];
+        else this.state.selectedIds = this.state.selectedIds.filter(i => i !== id);
     }
 
     toggleSelectAll(ev) {
-        if (ev.target.checked) {
-            this.state.selectedIds = this.state.messages.map(m => m.id);
-        } else {
-            this.state.selectedIds = [];
-        }
+        this.state.selectedIds = ev.target.checked ? this.state.messages.map(m => m.id) : [];
     }
 
-    async bulkAction(action) {
+    async bulkAction(action, extraKwargs = {}) {
         if (!this.state.selectedIds.length) return;
         try {
-            await this._rpc("cf.mail.message", "do_bulk_action", { ids: this.state.selectedIds, action });
+            await this._rpc("cf.mail.message", "do_bulk_action", { ids: this.state.selectedIds, action, ...extraKwargs });
             this.showToast(action === "delete" ? "Email eliminate" : "Azione completata");
+            this.state.showBulkTagMenu = false;
             await this.loadMessages();
-        } catch (e) {
-            console.error("bulkAction error:", e);
-        }
+        } catch (e) { console.error("bulkAction error:", e); }
     }
 
     async quickStar(msgId, ev) {
@@ -206,9 +186,8 @@ class CfMailClient extends Component {
             const starred = await this._rpc("cf.mail.message", "do_toggle_star", { message_id: msgId });
             const idx = this.state.messages.findIndex(m => m.id === msgId);
             if (idx !== -1) this.state.messages[idx].is_starred = starred;
-            if (this.state.selectedMsg && this.state.selectedMsg.id === msgId) {
+            if (this.state.selectedMsg && this.state.selectedMsg.id === msgId)
                 this.state.selectedMsg.is_starred = starred;
-            }
         } catch (e) {}
     }
 
@@ -225,6 +204,50 @@ class CfMailClient extends Component {
         } catch (e) {}
     }
 
+    async addTag(tagId) {
+        if (!this.state.selectedMsg) return;
+        try {
+            const tags = await this._rpc("cf.mail.message", "do_add_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
+            this.state.msgDetail.tags = tags;
+            const idx = this.state.messages.findIndex(m => m.id === this.state.selectedMsg.id);
+            if (idx !== -1) this.state.messages[idx].tags = tags;
+            this.state.showTagDropdown = false;
+        } catch (e) {}
+    }
+
+    async removeTag(tagId) {
+        if (!this.state.selectedMsg) return;
+        try {
+            const tags = await this._rpc("cf.mail.message", "do_remove_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
+            this.state.msgDetail.tags = tags;
+            const idx = this.state.messages.findIndex(m => m.id === this.state.selectedMsg.id);
+            if (idx !== -1) this.state.messages[idx].tags = tags;
+        } catch (e) {}
+    }
+
+    async createNewTag() {
+        if (!this.state.newTagName.trim()) return;
+        try {
+            const tag = await this._rpc("cf.mail.message", "create_tag", { name: this.state.newTagName.trim(), color: this.state.newTagColor });
+            this.state.allTags = [...this.state.allTags, tag];
+            this.state.newTagName = "";
+            if (this.state.selectedMsg) await this.addTag(tag.id);
+        } catch (e) {}
+    }
+
+    async snooze(minutes) {
+        if (!this.state.selectedMsg) return;
+        const until = new Date(Date.now() + minutes * 60000).toISOString();
+        try {
+            await this._rpc("cf.mail.message", "do_snooze", { message_id: this.state.selectedMsg.id, until });
+            this.state.showSnoozeMenu = false;
+            this.showToast("Email posticipata");
+            this.state.messages = this.state.messages.filter(m => m.id !== this.state.selectedMsg.id);
+            this.state.selectedMsg = null;
+            this.state.msgDetail = {};
+        } catch (e) {}
+    }
+
     async createLead() {
         if (!this.state.selectedMsg) return;
         try {
@@ -237,9 +260,7 @@ class CfMailClient extends Component {
             } else {
                 this.showToast("Errore: " + (res.error || "sconosciuto"));
             }
-        } catch (e) {
-            console.error("createLead error:", e);
-        }
+        } catch (e) { console.error("createLead error:", e); }
     }
 
     async onAssignChange(ev) {
@@ -284,40 +305,29 @@ class CfMailClient extends Component {
         this.state.composerSubject = "";
     }
 
-    closeComposer() {
-        this.state.showComposer = false;
-    }
+    closeComposer() { this.state.showComposer = false; }
 
     async sendEmail() {
         const bodyEl = this.composerBody.el;
         const body = bodyEl ? bodyEl.innerHTML : "";
-        if (!this.state.composerTo || !body) {
-            this.showToast("Compilare destinatario e messaggio");
-            return;
-        }
+        if (!this.state.composerTo || !body) { this.showToast("Compilare destinatario e messaggio"); return; }
         try {
             const res = await this._rpc("cf.mail.message", "send_reply", {
                 message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
                 to_address: this.state.composerTo,
                 subject: this.state.composerSubject,
-                body: body,
+                body,
                 account_id: this.state.selectedAccount,
             });
-            if (res && res.success) {
-                this.showToast("Email inviata!");
-                this.closeComposer();
-            } else {
-                this.showToast("Errore invio: " + (res.error || "sconosciuto"));
-            }
-        } catch (e) {
-            this.showToast("Errore invio email");
-        }
+            if (res && res.success) { this.showToast("Email inviata!"); this.closeComposer(); }
+            else this.showToast("Errore invio: " + (res.error || "sconosciuto"));
+        } catch (e) { this.showToast("Errore invio email"); }
     }
 
     get listHeaderLabel() {
         const total = this.state.messages.length;
-        const folder = this.state.folder === "INBOX" ? "Inbox" : this.state.folder;
-        return folder + " — " + total + " messaggi";
+        const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
+        return (map[this.state.folder] || this.state.folder) + " — " + total;
     }
 
     avatarColor(name) {
