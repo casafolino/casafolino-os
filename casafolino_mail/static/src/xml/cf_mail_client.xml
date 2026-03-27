@@ -49,7 +49,7 @@
             <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
                 <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''" t-on-click="() => this.selectAccount(acc.id)">
                     <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color"/>
-                    <span class="cf-mail-account-email" t-esc="acc.email"/>
+                    <span class="cf-mail-account-email" t-esc="acc.email || acc.name || 'Account'"/>
                     <span t-if="acc.unread > 0" class="cf-mail-account-badge" t-esc="acc.unread"/>
                 </div>
             </t>
