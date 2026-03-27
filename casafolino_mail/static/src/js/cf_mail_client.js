@@ -92,67 +92,78 @@ class CfMailClient extends Component {
         } catch (e) {}
     }
 
-    // ── GROUPING ──────────────────────────────────────────────────────────────
-
-    get groupedMessages() {
+        get groupedMessages() {
         const msgs = this.state.messages;
         const groupBy = this.state.groupBy;
 
         if (groupBy === "date") {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-            const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
+            const days = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+            const months = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
 
-            const groups = { "Oggi": [], "Ieri": [], "Questa settimana": [], "Prima": [] };
-            for (const m of msgs) {
-                const d = m.date ? new Date(m.date.replace(' ', 'T')) : null;
-                if (!d) { groups["Prima"].push(m); continue; }
+            const getLabel = (dateStr) => {
+                if (!dateStr) return "Senza data";
+                const d = new Date(dateStr.replace(' ', 'T'));
                 const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                if (day >= today) groups["Oggi"].push(m);
-                else if (day >= yesterday) groups["Ieri"].push(m);
-                else if (day >= weekAgo) groups["Questa settimana"].push(m);
-                else groups["Prima"].push(m);
+                const diffDays = Math.round((today - day) / 86400000);
+                if (diffDays === 0) return "Oggi";
+                if (diffDays === 1) return "Ieri";
+                if (diffDays < 7) return days[day.getDay()];
+                if (diffDays < 14) return "Settimana scorsa";
+                return months[d.getMonth()] + " " + d.getFullYear();
+            };
+
+            const order = [];
+            const map = {};
+            for (const m of msgs) {
+                const label = getLabel(m.date);
+                if (!map[label]) { map[label] = []; order.push(label); }
+                map[label].push(m);
             }
-            return Object.entries(groups).filter(([, v]) => v.length > 0).map(([label, items]) => ({ label, items }));
+            return order.map(label => ({ label, items: map[label] }));
         }
 
         if (groupBy === "sender") {
             const map = {};
+            const order = [];
             for (const m of msgs) {
                 const key = m.from_name || m.from_address || "Sconosciuto";
-                if (!map[key]) map[key] = [];
+                if (!map[key]) { map[key] = []; order.push(key); }
                 map[key].push(m);
             }
-            return Object.entries(map).sort((a, b) => b[1].length - a[1].length).map(([label, items]) => ({ label, items, count: items.length }));
+            return order.sort((a,b) => map[b].length - map[a].length).map(label => ({ label, items: map[label], count: map[label].length }));
         }
 
         if (groupBy === "lead") {
             const map = {};
+            const order = [];
             for (const m of msgs) {
                 const key = m.lead_name || "Senza trattativa";
-                if (!map[key]) map[key] = [];
+                if (!map[key]) { map[key] = []; order.push(key); }
                 map[key].push(m);
             }
-            return Object.entries(map).sort((a, b) => {
-                if (a[0] === "Senza trattativa") return 1;
-                if (b[0] === "Senza trattativa") return -1;
-                return a[0].localeCompare(b[0]);
-            }).map(([label, items]) => ({ label, items }));
+            return order.sort((a,b) => {
+                if (a === "Senza trattativa") return 1;
+                if (b === "Senza trattativa") return -1;
+                return a.localeCompare(b);
+            }).map(label => ({ label, items: map[label] }));
         }
 
         if (groupBy === "pipeline") {
             const map = {};
+            const order = [];
             for (const m of msgs) {
                 const key = m.lead_stage || "Senza pipeline";
-                if (!map[key]) map[key] = [];
+                if (!map[key]) { map[key] = []; order.push(key); }
                 map[key].push(m);
             }
-            return Object.entries(map).map(([label, items]) => ({ label, items }));
+            return order.map(label => ({ label, items: map[label] }));
         }
 
         return [{ label: null, items: msgs }];
     }
+
 
     // ── NAVIGATION ────────────────────────────────────────────────────────────
 
