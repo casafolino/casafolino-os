@@ -50,6 +50,18 @@ class CfMailClient extends Component {
             newTagName: "",
             newTagColor: "#5A6E3A",
             threadExpanded: false,
+            sortBy: "date",
+            // Lead modal
+            showLeadModal: false,
+            crmPipelines: [],
+            crmPartners: [],
+            leadForm: {
+                name: "",
+                partner_id: "",
+                stage_id: "",
+                expected_revenue: "",
+                description: "",
+            },
         });
 
         onMounted(() => { this.init(); });
@@ -85,7 +97,13 @@ class CfMailClient extends Component {
                 offset: 0,
                 search: this.state.search,
             });
-            this.state.messages = msgs || [];
+            let result = msgs || [];
+            if (this.state.sortBy === "sender") {
+                result = result.sort((a, b) => (a.from_name || a.from_address).localeCompare(b.from_name || b.from_address));
+            } else if (this.state.sortBy === "thread") {
+                result = result.sort((a, b) => (a.subject || "").localeCompare(b.subject || ""));
+            }
+            this.state.messages = result;
             this.state.selectedIds = [];
         } catch (e) { console.error("loadMessages error:", e); }
         finally { this.state.loading = false; }
@@ -103,6 +121,14 @@ class CfMailClient extends Component {
         try { this.state.allTags = await this._rpc("cf.mail.message", "get_tags_list") || []; } catch (e) {}
     }
 
+    async loadCrmData() {
+        try {
+            const data = await this._rpc("cf.mail.message", "get_crm_data");
+            this.state.crmPipelines = data.pipelines || [];
+            this.state.crmPartners = data.partners || [];
+        } catch (e) {}
+    }
+
     async selectMsg(msg, ev) {
         if (ev && ev.target.type === "checkbox") return;
         this.state.selectedMsg = msg;
@@ -112,6 +138,7 @@ class CfMailClient extends Component {
         this.state.showTagDropdown = false;
         this.state.showSnoozeMenu = false;
         this.state.threadExpanded = false;
+        this.state.showLeadModal = false;
         try {
             const detail = await this._rpc("cf.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
@@ -150,6 +177,11 @@ class CfMailClient extends Component {
         this.state.folder = folder;
         this.state.selectedMsg = null;
         this.state.msgDetail = {};
+        await this.loadMessages();
+    }
+
+    async setSortBy(sortBy) {
+        this.state.sortBy = sortBy;
         await this.loadMessages();
     }
 
@@ -248,19 +280,44 @@ class CfMailClient extends Component {
         } catch (e) {}
     }
 
-    async createLead() {
+    async openLeadModal() {
         if (!this.state.selectedMsg) return;
+        await this.loadCrmData();
+        const detail = this.state.msgDetail;
+        this.state.leadForm = {
+            name: detail.subject || "",
+            partner_id: detail.partner_id ? String(detail.partner_id) : "",
+            stage_id: this.state.crmPipelines.length > 0 ? String(this.state.crmPipelines[0].id) : "",
+            expected_revenue: "",
+            description: "",
+        };
+        this.state.showLeadModal = true;
+    }
+
+    closeLeadModal() {
+        this.state.showLeadModal = false;
+    }
+
+    async submitLeadForm() {
         try {
-            const res = await this._rpc("cf.mail.message", "create_lead_from_email", { message_id: this.state.selectedMsg.id });
+            const res = await this._rpc("cf.mail.message", "create_lead_from_form", {
+                message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
+                name: this.state.leadForm.name,
+                partner_id: this.state.leadForm.partner_id || false,
+                stage_id: this.state.leadForm.stage_id || false,
+                expected_revenue: this.state.leadForm.expected_revenue || 0,
+                description: this.state.leadForm.description || "",
+            });
             if (res && res.success) {
                 this.showToast("Trattativa creata: " + res.lead_name);
                 this.state.msgDetail.lead_id = res.lead_id;
                 this.state.msgDetail.lead_name = res.lead_name;
+                this.state.showLeadModal = false;
                 await this.loadLeads();
             } else {
                 this.showToast("Errore: " + (res.error || "sconosciuto"));
             }
-        } catch (e) { console.error("createLead error:", e); }
+        } catch (e) { console.error("submitLeadForm error:", e); }
     }
 
     async onAssignChange(ev) {
@@ -328,6 +385,12 @@ class CfMailClient extends Component {
         const total = this.state.messages.length;
         const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
         return (map[this.state.folder] || this.state.folder) + " — " + total;
+    }
+
+    get currentAccountEmail() {
+        if (!this.state.selectedAccount) return "";
+        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
+        return acc ? acc.email : "";
     }
 
     avatarColor(name) {

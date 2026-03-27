@@ -5,6 +5,7 @@
             <t t-call="cf_mail_client.Sidebar"/>
             <t t-call="cf_mail_client.ListCol"/>
             <t t-call="cf_mail_client.DetailCol"/>
+            <t t-if="state.showLeadModal" t-call="cf_mail_client.LeadModal"/>
         </div>
     </t>
 
@@ -62,6 +63,11 @@
                     <i class="fa fa-search"/>
                     <input type="text" t-att-value="state.search" t-on-input="onSearch" placeholder="Cerca..."/>
                 </div>
+                <select class="cf-mail-sort-select" t-on-change="(e) => this.setSortBy(e.target.value)">
+                    <option value="date">Data</option>
+                    <option value="sender">Mittente</option>
+                    <option value="thread">Thread</option>
+                </select>
                 <button class="cf-mail-toolbar-btn" t-on-click="loadMessages">
                     <i t-att-class="'fa fa-sync' + (state.loading ? ' fa-spin' : '')"/>
                 </button>
@@ -193,7 +199,7 @@
                         </button>
                         <button class="cf-mail-btn-icon" t-on-click="() => this.quickArchive(state.selectedMsg.id, null)"><i class="fa fa-archive"/></button>
                         <div style="position:relative;display:inline-block">
-                            <button class="cf-mail-btn-icon" t-on-click="() => this.state.showTagDropdown = !this.state.showTagDropdown" title="Tag">
+                            <button class="cf-mail-btn-icon" t-on-click="() => { this.state.showTagDropdown = !this.state.showTagDropdown; this.state.showSnoozeMenu = false; }" title="Tag">
                                 <i class="fa fa-tag"/>
                             </button>
                             <div t-if="state.showTagDropdown" class="cf-mail-tag-dropdown">
@@ -211,7 +217,7 @@
                             </div>
                         </div>
                         <div style="position:relative;display:inline-block">
-                            <button class="cf-mail-btn-icon" t-on-click="() => this.state.showSnoozeMenu = !this.state.showSnoozeMenu" title="Posticipa">
+                            <button class="cf-mail-btn-icon" t-on-click="() => { this.state.showSnoozeMenu = !this.state.showSnoozeMenu; this.state.showTagDropdown = false; }" title="Posticipa">
                                 <i class="fa fa-clock"/>
                             </button>
                             <div t-if="state.showSnoozeMenu" class="cf-mail-snooze-menu">
@@ -221,7 +227,7 @@
                                 <div class="cf-snooze-option" t-on-click="() => this.snooze(4320)"><i class="fa fa-calendar-alt"/> Tra 3 giorni</div>
                             </div>
                         </div>
-                        <button class="cf-mail-btn-icon lead" t-on-click="createLead" title="Crea Trattativa CRM"><i class="fa fa-plus-circle"/></button>
+                        <button class="cf-mail-btn-icon lead" t-on-click="openLeadModal" title="Crea Trattativa CRM"><i class="fa fa-plus-circle"/></button>
                     </div>
                 </div>
                 <div class="cf-mail-detail-body">
@@ -344,6 +350,53 @@
         </div>
     </t>
 
+    <t t-name="cf_mail_client.LeadModal">
+        <div class="cf-mail-modal-overlay" t-on-click="closeLeadModal">
+            <div class="cf-mail-modal" t-on-click.stop="() => {}">
+                <div class="cf-mail-modal-header">
+                    <span>Crea Trattativa CRM</span>
+                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3)" t-on-click="closeLeadModal"><i class="fa fa-times"/></button>
+                </div>
+                <div class="cf-mail-modal-body">
+                    <div class="cf-mail-modal-field">
+                        <label>Nome trattativa</label>
+                        <input class="cf-mail-modal-input" t-att-value="state.leadForm.name" t-on-input="(e) => this.state.leadForm.name = e.target.value"/>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Contatto</label>
+                        <select class="cf-mail-modal-input" t-on-change="(e) => this.state.leadForm.partner_id = e.target.value">
+                            <option value="">— Seleziona —</option>
+                            <t t-foreach="state.crmPartners" t-as="p" t-key="p.id">
+                                <option t-att-value="p.id" t-att-selected="state.leadForm.partner_id === String(p.id)" t-esc="p.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Pipeline / Stage</label>
+                        <select class="cf-mail-modal-input" t-on-change="(e) => this.state.leadForm.stage_id = e.target.value">
+                            <option value="">— Seleziona —</option>
+                            <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
+                                <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === String(s.id)" t-esc="s.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Valore stimato (€)</label>
+                        <input class="cf-mail-modal-input" type="number" t-att-value="state.leadForm.expected_revenue" t-on-input="(e) => this.state.leadForm.expected_revenue = e.target.value"/>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Note</label>
+                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.leadForm.description = e.target.value" t-att-value="state.leadForm.description"/>
+                    </div>
+                </div>
+                <div class="cf-mail-modal-footer">
+                    <button class="cf-mail-btn-primary" t-on-click="submitLeadForm"><i class="fa fa-check"/> Crea Trattativa</button>
+                    <button class="cf-mail-btn-secondary" t-on-click="closeLeadModal">Annulla</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
     <t t-name="cf_mail_client.Composer">
         <div class="cf-mail-composer">
             <div class="cf-mail-composer-header">
@@ -369,8 +422,6 @@
                 <div class="cf-mail-fmt-sep"/>
                 <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('insertUnorderedList')"><i class="fa fa-list-ul"/></button>
                 <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('insertOrderedList')"><i class="fa fa-list-ol"/></button>
-                <div class="cf-mail-fmt-sep"/>
-                <button class="cf-mail-fmt-btn"><i class="fa fa-paperclip"/></button>
             </div>
             <div class="cf-mail-composer-body" contenteditable="true" t-ref="composerBody"/>
             <div class="cf-mail-composer-footer">
@@ -379,5 +430,4 @@
             </div>
         </div>
     </t>
-
 </templates>

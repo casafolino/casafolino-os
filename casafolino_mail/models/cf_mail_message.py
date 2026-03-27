@@ -340,3 +340,43 @@ class CfMailMessage(models.Model):
             return {'success': True, 'id': sent_msg.id}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    @api.model
+    def get_crm_data(self, *args, **kw):
+        # Pipeline (stages di cf.export.lead)
+        try:
+            stages = self.env['cf.export.stage'].search([], order='sequence')
+            pipelines = [{'id': s.id, 'name': s.name} for s in stages]
+        except Exception:
+            pipelines = []
+        # Partner list
+        partners = self.env['res.partner'].search([('active', '=', True)], limit=100, order='name')
+        partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
+        return {'pipelines': pipelines, 'partners': partner_list}
+
+    @api.model
+    def create_lead_from_form(self, *args, **kw):
+        name = kw.get('name') or 'Lead da email'
+        partner_id = kw.get('partner_id') or False
+        stage_id = kw.get('stage_id') or False
+        expected_revenue = kw.get('expected_revenue') or 0
+        description = kw.get('description') or ''
+        message_id = kw.get('message_id') or False
+        try:
+            vals = {
+                'name': name,
+                'partner_id': int(partner_id) if partner_id else False,
+                'stage_id': int(stage_id) if stage_id else False,
+                'expected_revenue': float(expected_revenue) if expected_revenue else 0,
+                'description': description,
+            }
+            lead = self.env['cf.export.lead'].create(vals)
+            if message_id:
+                msg = self.browse(int(message_id))
+                if msg.exists():
+                    msg.write({'lead_id': lead.id})
+                    if not msg.partner_id and partner_id:
+                        msg.write({'partner_id': int(partner_id)})
+            return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
