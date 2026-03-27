@@ -104,7 +104,7 @@ class CfMailClient extends Component {
 
             const getLabel = (dateStr) => {
                 if (!dateStr) return "Senza data";
-                const d = new Date(dateStr.replace(' ', 'T'));
+                const parts = dateStr.split(/[\/\s:]/); const d = parts.length >= 3 && parts[2].length === 4 ? new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0])) : new Date(dateStr.replace(' ', 'T'));
                 const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                 const diffDays = Math.round((today - day) / 86400000);
                 if (diffDays === 0) return "Oggi";
