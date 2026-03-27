@@ -36,6 +36,8 @@ class CfMailClient extends Component {
             groupBy: "date",
             showLeadModal: false, crmPipelines: [], crmPartners: [],
             leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "" },
+            showAccountModal: false,
+            accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A" },
         });
 
         onMounted(() => { this.init(); });
@@ -437,7 +439,68 @@ class CfMailClient extends Component {
         return name[0].toUpperCase();
     }
 
-    showToast(msg) {
+    openNewAccount() {
+        this.state.accountForm = { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A" };
+        this.state.showAccountModal = true;
+    }
+
+    async openEditAccount(accountId) {
+        try {
+            const data = await this._rpc("cf.mail.account", "get_account_detail", { account_id: accountId });
+            this.state.accountForm = { ...data, imap_password: "" };
+            this.state.showAccountModal = true;
+        } catch (e) { console.error(e); }
+    }
+
+    closeAccountModal() { this.state.showAccountModal = false; }
+
+    async submitAccountForm() {
+        try {
+            const res = await this._rpc("cf.mail.account", "save_account", { ...this.state.accountForm });
+            if (res && res.success) {
+                this.showToast("Account salvato");
+                this.state.showAccountModal = false;
+                await this.loadAccounts();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async testConnection() {
+        try {
+            this.showToast("Test connessione in corso...");
+            const res = await this._rpc("cf.mail.account", "test_connection", { account_id: this.state.accountForm.id });
+            if (res.success) {
+                this.showToast("Connessione OK ✓");
+                this.state.accountForm.imap_status = "Connessione OK ✓";
+            } else {
+                this.showToast("Errore: " + res.error);
+                this.state.accountForm.imap_status = "Errore: " + res.error;
+            }
+        } catch (e) { this.showToast("Errore connessione"); }
+    }
+
+    async syncNow() {
+        try {
+            this.showToast("Sincronizzazione in corso...");
+            await this._rpc("cf.mail.account", "sync_now", { account_id: this.state.accountForm.id });
+            this.showToast("Sincronizzazione completata");
+            this.state.showAccountModal = false;
+            await this.loadAccounts();
+            await this.loadMessages();
+        } catch (e) { this.showToast("Errore sync"); }
+    }
+
+    async syncAllAccounts() {
+        try {
+            this.showToast("Sincronizzazione in corso...");
+            await this._rpc("cf.mail.account", "sync_now", {});
+            this.showToast("Sincronizzazione completata");
+            await this.loadAccounts();
+            await this.loadMessages();
+        } catch (e) { this.showToast("Errore sync"); }
+    }
+
+        showToast(msg) {
         const el = document.createElement("div");
         el.className = "cf-mail-toast";
         el.textContent = msg;

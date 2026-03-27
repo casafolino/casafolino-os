@@ -6,6 +6,7 @@
             <t t-call="cf_mail_client.ListCol"/>
             <t t-call="cf_mail_client.DetailCol"/>
             <t t-if="state.showLeadModal" t-call="cf_mail_client.LeadModal"/>
+            <t t-if="state.showAccountModal" t-call="cf_mail_client.AccountModal"/>
         </div>
     </t>
 
@@ -45,12 +46,17 @@
                 </div>
             </t>
             <div class="cf-mail-divider"/>
-            <div class="cf-mail-section-title">Account</div>
+            <div style="display:flex;align-items:center;padding:4px 16px 4px">
+                <span class="cf-mail-section-title" style="padding:0;flex:1">Account</span>
+                <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="openNewAccount" title="Aggiungi account"><i class="fa fa-plus"/></button>
+                <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="syncAllAccounts" title="Sincronizza tutto"><i class="fa fa-sync"/></button>
+            </div>
             <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
-                <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''" t-on-click="() => this.selectAccount(acc.id)">
+                <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''">
                     <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color"/>
                     <span class="cf-mail-account-email" t-esc="acc.email || acc.name || 'Account'"/>
-                    <span t-if="acc.unread > 0" class="cf-mail-account-badge" t-esc="acc.unread"/>
+                    <span t-if="acc.unread > 0" class="cf-mail-account-badge" t-on-click="() => this.selectAccount(acc.id)" t-esc="acc.unread"/>
+                    <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:10px;padding:0 2px;margin-left:2px" t-on-click="() => this.openEditAccount(acc.id)" title="Impostazioni"><i class="fa fa-cog"/></button>
                 </div>
             </t>
         </div>
@@ -454,4 +460,87 @@
             </div>
         </div>
     </t>
+
+    <t t-name="cf_mail_client.AccountModal">
+        <div class="cf-mail-modal-overlay" t-on-click="closeAccountModal">
+            <div class="cf-mail-modal" style="width:520px" t-on-click.stop="() => {}">
+                <div class="cf-mail-modal-header">
+                    <span t-esc="state.accountForm.id ? 'Modifica Account' : 'Nuovo Account'"/>
+                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeAccountModal"><i class="fa fa-times"/></button>
+                </div>
+                <div class="cf-mail-modal-body" style="max-height:70vh;overflow-y:auto">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <div class="cf-mail-modal-field">
+                            <label>Nome</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.name" t-on-input="(e) => this.state.accountForm.name = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Email</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.email" t-on-input="(e) => this.state.accountForm.email = e.target.value"/>
+                        </div>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Firma</label>
+                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.accountForm.signature = e.target.value" t-att-value="state.accountForm.signature"/>
+                    </div>
+                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">Configurazione IMAP</div>
+                        <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
+                            <div class="cf-mail-modal-field">
+                                <label>Host IMAP</label>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.imap_host" t-on-input="(e) => this.state.accountForm.imap_host = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field" style="width:80px">
+                                <label>Porta</label>
+                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.imap_port" t-on-input="(e) => this.state.accountForm.imap_port = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field" style="width:60px">
+                                <label>SSL</label>
+                                <input type="checkbox" t-att-checked="state.accountForm.imap_ssl" t-on-change="(e) => this.state.accountForm.imap_ssl = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
+                            </div>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>App Password Gmail</label>
+                            <input class="cf-mail-modal-input" type="password" placeholder="xxxx xxxx xxxx xxxx" t-on-input="(e) => this.state.accountForm.imap_password = e.target.value"/>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                                <input type="checkbox" t-att-checked="state.accountForm.imap_enabled" t-on-change="(e) => this.state.accountForm.imap_enabled = e.target.checked" style="accent-color:var(--accent)"/>
+                                Sincronizzazione IMAP attiva
+                            </label>
+                        </div>
+                        <div t-if="state.accountForm.imap_status" style="margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--text-secondary)">
+                            <i class="fa fa-info-circle"/> <t t-esc="state.accountForm.imap_status"/>
+                        </div>
+                    </div>
+                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">Configurazione SMTP</div>
+                        <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
+                            <div class="cf-mail-modal-field">
+                                <label>Host SMTP</label>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.smtp_host" t-on-input="(e) => this.state.accountForm.smtp_host = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field" style="width:80px">
+                                <label>Porta</label>
+                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.smtp_port" t-on-input="(e) => this.state.accountForm.smtp_port = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field" style="width:60px">
+                                <label>TLS</label>
+                                <input type="checkbox" t-att-checked="state.accountForm.smtp_tls" t-on-change="(e) => this.state.accountForm.smtp_tls = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cf-mail-modal-footer">
+                    <button class="cf-mail-btn-primary" t-on-click="submitAccountForm"><i class="fa fa-save"/> Salva</button>
+                    <t t-if="state.accountForm.id">
+                        <button class="cf-mail-btn-secondary" t-on-click="testConnection"><i class="fa fa-plug"/> Test connessione</button>
+                        <button class="cf-mail-btn-secondary" t-on-click="syncNow"><i class="fa fa-sync"/> Sincronizza ora</button>
+                    </t>
+                    <button class="cf-mail-btn-secondary" t-on-click="closeAccountModal">Annulla</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
 </templates>

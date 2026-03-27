@@ -325,21 +325,77 @@ class CfMailMessage(models.Model):
         try:
             acc = self.env['cf.mail.account'].browse(int(account_id)) if account_id else None
             from_email = acc.email if acc else self.env.user.email
-            mail = self.env['mail.mail'].create({
-                'subject': subject,
-                'email_to': to_addr,
-                'body_html': body,
-                'email_from': from_email,
-            })
-            mail.send()
+
+            # Invia via SMTP reale se account configurato
+            if acc and acc.imap_password and acc.smtp_host:
+                import smtplib
+                from email.mime.multipart import MIMEMultipart
+                from email.mime.text import MIMEText
+                import ssl as ssl_lib
+
+                msg_obj = MIMEMultipart('alternative')
+                msg_obj['Subject'] = subject
+                msg_obj['From'] = f'{acc.name or acc.email} <{acc.email}>'
+                msg_obj['To'] = to_addr
+                if message_id:
+                    orig = self.browse(int(message_id))
+                    if orig.exists() and orig.message_uid:
+                        msg_obj['In-Reply-To'] = orig.message_uid
+
+                msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
+
+                if acc.smtp_tls:
+                    server = smtplib.SMTP(acc.smtp_host, acc.smtp_port)
+                    server.ehlo()
+                    server.starttls(context=ssl_lib.create_default_context())
+                else:
+                    server = smtplib.SMTP_SSL(acc.smtp_host, acc.smtp_port, context=ssl_lib.create_default_context())
+                server.ehlo()
+                server.login(acc.email, acc.imap_password)
+                server.sendmail(acc.email, to_addr.split(','), msg_obj.as_string())
+
+                # Salva in Gmail Sent via IMAP APPEND
+                try:
+                    import imaplib
+                    if acc.imap_ssl:
+                        imap = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port, ssl_context=ssl_lib.create_default_context())
+                    else:
+                        imap = imaplib.IMAP4(acc.imap_host, acc.imap_port)
+                    imap.login(acc.email, acc.imap_password)
+                    sent_folders = ['[Gmail]/Sent Mail', 'Sent', 'Sent Items']
+                    for sf in sent_folders:
+                        try:
+                            imap.append(sf, '\\Seen', None, msg_obj.as_bytes())
+                            break
+                        except Exception:
+                            continue
+                    imap.logout()
+                except Exception as e2:
+                    import logging
+                    logging.getLogger(__name__).warning('Could not append to Sent: %s', e2)
+
+                server.quit()
+            else:
+                # Fallback Odoo mail
+                mail = self.env['mail.mail'].create({
+                    'subject': subject,
+                    'email_to': to_addr,
+                    'body_html': body,
+                    'email_from': from_email,
+                })
+                mail.send()
+
             thread_id = None
             if message_id:
                 orig = self.browse(int(message_id))
-                thread_id = orig.thread_id or str(orig.id)
+                if orig.exists():
+                    thread_id = orig.thread_id or str(orig.id)
+
             sent_msg = self.create({
                 'account_id': int(account_id) if account_id else False,
                 'subject': subject,
                 'from_address': from_email,
+                'from_name': acc.name if acc else '',
                 'to_address': to_addr,
                 'body_html': body,
                 'direction': 'out',

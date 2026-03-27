@@ -1,23 +1,23 @@
-# -*- coding: utf-8 -*-
 {
-    "name": "CasaFolino Mail",
-    "version": "18.0.1.0.0",
-    "category": "Discuss",
-    "summary": "Client email integrato — inbox personali e condivise con Gmail OAuth2",
-    "author": "CasaFolino Srls",
-    "depends": ["base", "mail", "google_gmail"],
-    "data": [
-        "security/ir.model.access.csv",
-        "views/cf_mail_views.xml",
-        "views/menus.xml",
+    'name': 'CasaFolino Mail',
+    'version': '5.0',
+    'summary': 'Client email Gmail-style per CasaFolino',
+    'category': 'CasaFolino',
+    'author': 'CasaFolino',
+    'depends': ['base', 'mail', 'web'],
+    'data': [
+        'security/ir.model.access.csv',
+        'views/cf_mail_views.xml',
+        'data/cf_mail_cron.xml',
     ],
-    "assets": {
-        "web.assets_backend": [
-            "casafolino_mail/static/src/js/cf_mail_client.js",
-            "casafolino_mail/static/src/css/cf_mail_client.css",
+    'assets': {
+        'web.assets_web': [
+            'casafolino_mail/static/src/css/cf_mail_client.css',
+            'casafolino_mail/static/src/xml/cf_mail_client.xml',
+            'casafolino_mail/static/src/js/cf_mail_client.js',
         ],
     },
-    "installable": True,
-    "application": True,
-    "license": "LGPL-3",
+    'installable': True,
+    'application': True,
+    'license': 'OPL-1',
 }
