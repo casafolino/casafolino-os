@@ -63,14 +63,22 @@
                     <i class="fa fa-search"/>
                     <input type="text" t-att-value="state.search" t-on-input="onSearch" placeholder="Cerca..."/>
                 </div>
-                <select class="cf-mail-sort-select" t-on-change="(e) => { this.state.groupBy = e.target.value; }">
-                    <option value="date">Per data</option>
-                    <option value="sender">Per mittente</option>
-                    <option value="lead">Per trattativa</option>
-                    <option value="pipeline">Per pipeline</option>
-                </select>
                 <button class="cf-mail-toolbar-btn" t-on-click="loadMessages">
                     <i t-att-class="'fa fa-sync' + (state.loading ? ' fa-spin' : '')"/>
+                </button>
+            </div>
+            <div class="cf-mail-groupby-bar">
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'date' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'date'">
+                    <i class="fa fa-calendar"/> Data
+                </button>
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'sender' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'sender'">
+                    <i class="fa fa-user"/> Mittente
+                </button>
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'lead' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'lead'">
+                    <i class="fa fa-handshake"/> Trattativa
+                </button>
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'pipeline' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'pipeline'">
+                    <i class="fa fa-filter"/> Pipeline
                 </button>
             </div>
             <t t-if="state.selectedIds.length > 0" t-call="cf_mail_client.BulkBar"/>
