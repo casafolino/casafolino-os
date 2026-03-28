@@ -8,7 +8,6 @@
     'data': [
         'security/ir.model.access.csv',
         'views/cf_mail_views.xml',
-        'data/cf_mail_cron.xml',
     ],
     'assets': {
         'web.assets_web': [
