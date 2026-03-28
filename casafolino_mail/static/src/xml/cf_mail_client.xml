@@ -27,6 +27,10 @@
             </button>
 
             <div class="cf-mail-nav-section">
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'contacts' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'contacts'; this.loadContacts(); }">
+                    <i class="fa fa-address-book nav-icon"/> Rubrica
+                </div>
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'INBOX' ? 'active' : ''"
                      t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('INBOX'); }">
                     <i class="fa fa-inbox nav-icon"/> Inbox
@@ -124,6 +128,17 @@
                 </div>
             </t>
 
+            <div class="cf-mail-inbox-filter">
+                <button t-att-class="'cf-mail-filter-btn' + (state.inboxFilter === 'all' ? ' active' : '')" t-on-click="() => { this.state.inboxFilter = 'all'; this.loadMessages(); }">
+                    Tutte
+                </button>
+                <button t-att-class="'cf-mail-filter-btn' + (state.inboxFilter === 'pipeline' ? ' active' : '')" t-on-click="() => { this.state.inboxFilter = 'pipeline'; this.loadMessages(); }">
+                    <i class="fa fa-handshake"/> Pipeline
+                </button>
+                <button t-att-class="'cf-mail-filter-btn' + (state.inboxFilter === 'contacts' ? ' active' : '')" t-on-click="() => { this.state.inboxFilter = 'contacts'; this.loadMessages(); }">
+                    <i class="fa fa-address-book"/> Rubrica
+                </button>
+            </div>
             <div class="cf-mail-groupby-bar">
                 <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'date' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'date'">
                     <i class="fa fa-calendar"/> Data
@@ -360,6 +375,26 @@
                             </t>
                             <div t-else="" class="cf-mail-ctx-empty">Mittente non in rubrica</div>
                         </div>
+                        <div class="cf-mail-ctx-section">
+                            <div class="cf-mail-ctx-title"><i class="fa fa-tags"/> Tag rapidi contatto</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+                                <t t-foreach="state.contactTags.slice(0,8)" t-as="tag" t-key="tag.id">
+                                    <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color + ';cursor:pointer'"
+                                          t-on-click="() => this.quickTagContact(state.msgDetail.partner_id, tag.id)"
+                                          t-esc="tag.name"/>
+                                </t>
+                            </div>
+                            <t t-if="state.msgDetail.to_address or state.msgDetail.cc_address">
+                                <div style="margin-top:4px">
+                                    <select class="cf-mail-ctx-select" t-on-change="(e) => { if(e.target.value) this.quickTagAllRecipients(parseInt(e.target.value)); e.target.value=''; }">
+                                        <option value="">Tag a tutti i destinatari...</option>
+                                        <t t-foreach="state.contactTags" t-as="tag" t-key="tag.id">
+                                            <option t-att-value="tag.id" t-esc="tag.name"/>
+                                        </t>
+                                    </select>
+                                </div>
+                            </t>
+                        </div>
                         <t t-if="state.msgDetail.partner_other_emails and state.msgDetail.partner_other_emails.length > 0">
                             <div class="cf-mail-ctx-section">
                                 <div class="cf-mail-ctx-title"><i class="fa fa-history"/> Ultimi scambi</div>
@@ -585,7 +620,7 @@
                                 </span>
                             </t>
                         </div>
-                        <select class="cf-mail-modal-input" style="max-width:280px" t-on-change="(e) => { if(e.target.value) this.addContactTag(parseInt(e.target.value)); e.target.value=''; }">
+                        <select class="cf-mail-modal-input" style="max-width:280px" t-on-change="(e) => this.addContactTag(parseInt(e.target.value))">
                             <option value="">+ Aggiungi tag...</option>
                             <t t-foreach="state.contactTags" t-as="tag" t-key="tag.id">
                                 <option t-att-value="tag.id" t-esc="tag.name"/>

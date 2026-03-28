@@ -36,6 +36,7 @@ class CfMailClient extends Component {
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
             groupBy: "date",
+            inboxFilter: "all",
             showLeadModal: false, crmPipelines: [], crmPartners: [],
             leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "" },
             showAccountModal: false,
@@ -142,11 +143,12 @@ class CfMailClient extends Component {
                 if (isNaN(d.getTime())) return "Senza data";
                 const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                 const diffDays = Math.round((today - day) / 86400000);
-                if (diffDays === 0) return "Oggi";
-                if (diffDays === 1) return "Ieri";
-                if (diffDays < 7) return days[day.getDay()];
+                const fullDate = days[day.getDay()] + " " + day.getDate() + " " + months[day.getMonth()] + " " + day.getFullYear();
+                if (diffDays === 0) return "Oggi — " + day.getDate() + " " + months[day.getMonth()];
+                if (diffDays === 1) return "Ieri — " + day.getDate() + " " + months[day.getMonth()];
+                if (diffDays < 7) return fullDate;
                 if (diffDays < 14) return "Settimana scorsa";
-                return months[d.getMonth()] + " " + d.getFullYear();
+                return months[day.getMonth()] + " " + day.getFullYear();
             };
 
             const order = [];
@@ -577,7 +579,43 @@ class CfMailClient extends Component {
         return name[0].toUpperCase();
     }
 
-    showToast(msg) {
+    async quickTagContact(partnerId, tagId) {
+        if (!partnerId || !tagId) return;
+        try {
+            await this._rpc("res.partner", "save_contact", {
+                id: partnerId,
+                tag_ids: [tagId],
+            });
+            this.showToast("Tag aggiunto al contatto");
+        } catch (e) { console.error(e); }
+    }
+
+    async quickTagAllRecipients(tagId) {
+        if (!this.state.msgDetail) return;
+        const partners = [];
+        if (this.state.msgDetail.partner_id) partners.push(this.state.msgDetail.partner_id);
+        // parse altri destinatari
+        const toStr = this.state.msgDetail.to_address || '';
+        const ccStr = this.state.msgDetail.cc_address || '';
+        for (const addr of [...toStr.split(','), ...ccStr.split(',')]) {
+            const email = addr.trim().replace(/.*<(.+)>/, '$1').trim();
+            if (email && email.includes('@')) {
+                try {
+                    const res = await this._rpc("res.partner", "search_read",
+                        [[['email', 'ilike', email]], ['id', 'name', 'email'], 0, 1, 'id desc']);
+                    if (res && res.length > 0) partners.push(res[0].id);
+                } catch(e) {}
+            }
+        }
+        const unique = [...new Set(partners)];
+        for (const pid of unique) {
+            await this._rpc("res.partner", "save_contact", { id: pid, tag_ids: [tagId] });
+        }
+        this.showToast(`Tag applicato a ${unique.length} contatti`);
+        await this.loadContactTags();
+    }
+
+        showToast(msg) {
         const el = document.createElement("div");
         el.className = "cf-mail-toast";
         el.textContent = msg;
