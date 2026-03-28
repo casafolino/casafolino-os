@@ -42,7 +42,6 @@ class ResPartnerMailExt(models.Model):
     cf_gdpr_consent = fields.Boolean('Consenso GDPR', default=False)
     cf_gdpr_date = fields.Date('Data consenso GDPR')
 
-    @api.depends('cf_mail_message_ids.date')
     def _compute_last_contact(self):
         for p in self:
             msgs = self.env['cf.mail.message'].search([
