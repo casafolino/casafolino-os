@@ -2,6 +2,7 @@
 from odoo import models, fields, api
 from datetime import date
 
+
 class CfHaccpCalibration(models.Model):
     _name = "cf.haccp.calibration"
     _description = "Calibrazione Strumento HACCP"
@@ -12,13 +13,19 @@ class CfHaccpCalibration(models.Model):
     instrument_name = fields.Char(string="Nome Strumento", required=True)
     instrument_code = fields.Char(string="Codice")
     instrument_type = fields.Selection([
-        ("thermometer","Termometro"),("scale","Bilancia"),("ph_meter","pH-metro"),
-        ("hygrometer","Igrometro"),("timer","Timer"),("other","Altro"),
+        ("thermometer", "Termometro"),
+        ("scale", "Bilancia"),
+        ("ph_meter", "pH-metro"),
+        ("hygrometer", "Igrometro"),
+        ("timer", "Timer"),
+        ("other", "Altro"),
     ], string="Tipo", required=True)
     location = fields.Char(string="Ubicazione")
     workcenter_id = fields.Many2one("mrp.workcenter", string="Centro di Lavoro")
     state = fields.Selection([
-        ("valid","Valida"),("expiring","In Scadenza"),("expired","Scaduta"),
+        ("valid", "Valida"),
+        ("expiring", "In Scadenza"),
+        ("expired", "Scaduta"),
     ], string="Stato", compute="_compute_state", store=True)
     date_last_calibration = fields.Date(string="Ultima Calibrazione")
     date_next_calibration = fields.Date(string="Prossima Calibrazione", required=True)
@@ -27,6 +34,8 @@ class CfHaccpCalibration(models.Model):
     certificate_ref = fields.Char(string="N° Certificato")
     result_ok = fields.Boolean(string="Superata", default=True)
     notes = fields.Text(string="Note")
+    calibration_history_ids = fields.One2many(
+        "cf.haccp.calibration.history", "calibration_id", string="Storico")
 
     @api.depends("date_next_calibration")
     def _compute_state(self):
@@ -49,12 +58,14 @@ class CfHaccpCalibration(models.Model):
                 user_id=rec.calibrated_by.id if rec.calibrated_by else self.env.uid,
             )
 
+
 class CfHaccpCalibrationHistory(models.Model):
     _name = "cf.haccp.calibration.history"
     _description = "Storico Calibrazione"
     _order = "date desc"
 
-    calibration_id = fields.Many2one("cf.haccp.calibration", required=True, ondelete="cascade")
+    calibration_id = fields.Many2one(
+        "cf.haccp.calibration", required=True, ondelete="cascade")
     date = fields.Date(string="Data", required=True)
     calibrated_by = fields.Many2one("res.users", string="Eseguita da")
     result_ok = fields.Boolean(string="Superata", default=True)

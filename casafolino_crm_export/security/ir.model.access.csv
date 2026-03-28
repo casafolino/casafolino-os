@@ -4,11 +4,6 @@ access_cf_export_lead_mgr,cf.export.lead manager,model_cf_export_lead,base.group
 access_cf_export_stage_user,cf.export.stage user,model_cf_export_stage,base.group_user,1,0,0,0
 access_cf_export_stage_mgr,cf.export.stage manager,model_cf_export_stage,base.group_system,1,1,1,1
 access_cf_export_tag_user,cf.export.tag user,model_cf_export_tag,base.group_user,1,1,1,0
-access_cf_export_tag_mgr,cf.export.tag manager,model_cf_export_tag,base.group_system,1,1,1,1
-access_cf_export_fair_user,cf.export.fair user,model_cf_export_fair,base.group_user,1,1,1,0
-access_cf_export_fair_mgr,cf.export.fair manager,model_cf_export_fair,base.group_system,1,1,1,1
-access_cf_export_cert_user,cf.export.certification user,model_cf_export_certification,base.group_user,1,0,0,0
-access_cf_export_cert_mgr,cf.export.certification manager,model_cf_export_certification,base.group_system,1,1,1,1
 access_cf_export_sample_user,cf.export.sample user,model_cf_export_sample,base.group_user,1,1,1,0
 access_cf_export_sample_mgr,cf.export.sample manager,model_cf_export_sample,base.group_system,1,1,1,1
 access_cf_export_seq_user,cf.export.sequence user,model_cf_export_sequence,base.group_user,1,0,0,0
@@ -17,5 +12,5 @@ access_cf_export_seq_step_user,cf.export.sequence.step user,model_cf_export_sequ
 access_cf_export_seq_step_mgr,cf.export.sequence.step manager,model_cf_export_sequence_step,base.group_system,1,1,1,1
 access_cf_export_seq_log_user,cf.export.sequence.log user,model_cf_export_sequence_log,base.group_user,1,1,1,0
 access_cf_export_seq_log_mgr,cf.export.sequence.log manager,model_cf_export_sequence_log,base.group_system,1,1,1,1
-access_cf_export_seq_log_line_user,cf.export.sequence.log.line user,model_cf_export_sequence_log_line,base.group_user,1,1,1,0
+access_cf_export_seq_log_line_user,cf.export.sequence.log.line user,model_cf_export_sequence_log_line,base.group_user,1,1,0,0
 access_cf_export_seq_log_line_mgr,cf.export.sequence.log.line manager,model_cf_export_sequence_log_line,base.group_system,1,1,1,1

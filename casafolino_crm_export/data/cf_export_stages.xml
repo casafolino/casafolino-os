@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo>
     <record id="stage_prospect" model="cf.export.stage"><field name="name">Prospect</field><field name="sequence">1</field></record>
     <record id="stage_contact" model="cf.export.stage"><field name="name">Contatto Iniziale</field><field name="sequence">2</field></record>
     <record id="stage_sample" model="cf.export.stage"><field name="name">Campionatura Inviata</field><field name="sequence">3</field></record>
@@ -14,11 +14,4 @@
         <field name="prefix">CAMP-%(year)s-</field>
         <field name="padding">4</field>
     </record>
-    <record id="cert_halal" model="cf.export.certification"><field name="name">Halal</field><field name="code">HALAL</field><field name="color">2</field></record>
-    <record id="cert_kosher" model="cf.export.certification"><field name="name">Kosher</field><field name="code">KOSHER</field><field name="color">4</field></record>
-    <record id="cert_bio" model="cf.export.certification"><field name="name">Bio/Organic</field><field name="code">BIO</field><field name="color">10</field></record>
-    <record id="cert_ifs" model="cf.export.certification"><field name="name">IFS Food</field><field name="code">IFS</field><field name="color">1</field></record>
-    <record id="cert_brc" model="cf.export.certification"><field name="name">BRCGS</field><field name="code">BRC</field><field name="color">3</field></record>
-    <record id="cert_gluten_free" model="cf.export.certification"><field name="name">Gluten Free</field><field name="code">GF</field><field name="color">6</field></record>
-    <record id="cert_vegan" model="cf.export.certification"><field name="name">Vegan</field><field name="code">VEGAN</field><field name="color">11</field></record>
 </odoo>

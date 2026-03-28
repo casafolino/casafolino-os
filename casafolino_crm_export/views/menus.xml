@@ -1,34 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Root -->
-    <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
-        web_icon="casafolino_crm_export,static/description/icon.png"/>
-
-    <!-- Pipeline per mercato -->
-    <menuitem id="menu_cf_export_pipeline" name="Tutte le Pipeline"
-        parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>
-    <menuitem id="menu_cf_export_dach" name="DACH / Europa"
-        parent="menu_cf_export_root" action="action_cf_export_lead_dach" sequence="2"/>
-    <menuitem id="menu_cf_export_gulf" name="Gulf / Halal"
-        parent="menu_cf_export_root" action="action_cf_export_lead_gulf" sequence="3"/>
-    <menuitem id="menu_cf_export_gdo" name="GDO"
-        parent="menu_cf_export_root" action="action_cf_export_lead_gdo" sequence="4"/>
-
-    <!-- Operativo -->
-    <menuitem id="menu_cf_export_samples" name="Campionature"
-        parent="menu_cf_export_root" action="action_cf_export_sample" sequence="10"/>
-    <menuitem id="menu_cf_export_fairs" name="Fiere"
-        parent="menu_cf_export_root" action="action_cf_export_fair" sequence="11"/>
-
-    <!-- Configurazione -->
-    <menuitem id="menu_cf_export_config" name="Configurazione"
-        parent="menu_cf_export_root" sequence="99" groups="base.group_system"/>
-    <menuitem id="menu_cf_export_stages" name="Fasi Pipeline"
-        parent="menu_cf_export_config" action="action_cf_export_stages" sequence="1"/>
-    <menuitem id="menu_cf_export_sequences" name="Sequenze Follow-up"
-        parent="menu_cf_export_config" action="action_cf_export_sequence" sequence="2"/>
-    <menuitem id="menu_cf_export_certs" name="Certificazioni"
-        parent="menu_cf_export_config" action="action_cf_export_cert" sequence="3"/>
-    <menuitem id="menu_cf_export_tags" name="Tag"
-        parent="menu_cf_export_config" action="action_cf_export_tag" sequence="4"/>
+    <record id="action_cf_export_lead" model="ir.actions.act_window">
+        <field name="name">Pipeline Export</field>
+        <field name="res_model">cf.export.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+    <record id="action_cf_export_sample" model="ir.actions.act_window">
+        <field name="name">Campionature</field>
+        <field name="res_model">cf.export.sample</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_export_stages" model="ir.actions.act_window">
+        <field name="name">Fasi Pipeline</field>
+        <field name="res_model">cf.export.stage</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"/>
+    <menuitem id="menu_cf_export_pipeline" name="Pipeline" parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>
+    <menuitem id="menu_cf_export_samples" name="Campionature" parent="menu_cf_export_root" action="action_cf_export_sample" sequence="2"/>
+    <menuitem id="menu_cf_export_config" name="Configurazione" parent="menu_cf_export_root" sequence="99" groups="base.group_system"/>
+    <menuitem id="menu_cf_export_stages" name="Fasi Pipeline" parent="menu_cf_export_config" action="action_cf_export_stages" sequence="1"/>
 </odoo>
