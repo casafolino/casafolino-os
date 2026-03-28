@@ -3,10 +3,16 @@
     <t t-name="cf_mail_client.App">
         <div class="cf-mail-app">
             <t t-call="cf_mail_client.Sidebar"/>
-            <t t-call="cf_mail_client.ListCol"/>
-            <t t-call="cf_mail_client.DetailCol"/>
+            <t t-if="state.activeView === 'mail'">
+                <t t-call="cf_mail_client.ListCol"/>
+                <t t-call="cf_mail_client.DetailCol"/>
+            </t>
+            <t t-if="state.activeView === 'contacts'">
+                <t t-call="cf_mail_client.ContactsView"/>
+            </t>
             <t t-if="state.showLeadModal" t-call="cf_mail_client.LeadModal"/>
             <t t-if="state.showAccountModal" t-call="cf_mail_client.AccountModal"/>
+            <t t-if="state.showContactModal" t-call="cf_mail_client.ContactModal"/>
         </div>
     </t>
 
@@ -19,45 +25,62 @@
             <button class="cf-mail-compose-btn" t-on-click="openComposer">
                 <i class="fa fa-pen"/> Nuovo Messaggio
             </button>
+
             <div class="cf-mail-nav-section">
-                <div class="cf-mail-nav-item" t-att-class="state.folder === 'INBOX' ? 'active' : ''" t-on-click="() => this.setFolder('INBOX')">
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'INBOX' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('INBOX'); }">
                     <i class="fa fa-inbox nav-icon"/> Inbox
                     <span t-if="state.totalUnread > 0" class="cf-mail-nav-badge" t-esc="state.totalUnread"/>
                 </div>
-                <div class="cf-mail-nav-item" t-att-class="state.folder === 'Starred' ? 'active' : ''" t-on-click="() => this.setFolder('Starred')">
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Starred' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Starred'); }">
                     <i class="fa fa-star nav-icon"/> Preferiti
                 </div>
-                <div class="cf-mail-nav-item" t-att-class="state.folder === 'Assigned' ? 'active' : ''" t-on-click="() => this.setFolder('Assigned')">
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Assigned' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Assigned'); }">
                     <i class="fa fa-user nav-icon"/> Assegnate a me
                 </div>
-                <div class="cf-mail-nav-item" t-att-class="state.folder === 'Sent' ? 'active' : ''" t-on-click="() => this.setFolder('Sent')">
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Sent' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Sent'); }">
                     <i class="fa fa-paper-plane nav-icon"/> Inviati
                 </div>
-                <div class="cf-mail-nav-item" t-att-class="state.folder === 'Archived' ? 'active' : ''" t-on-click="() => this.setFolder('Archived')">
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Archived' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Archived'); }">
                     <i class="fa fa-archive nav-icon"/> Archivio
                 </div>
+                <div class="cf-mail-nav-item" t-att-class="state.activeView === 'contacts' ? 'active' : ''"
+                     t-on-click="() => { this.state.activeView = 'contacts'; this.loadContacts(); }">
+                    <i class="fa fa-address-book nav-icon"/> Rubrica
+                </div>
             </div>
+
             <div class="cf-mail-divider"/>
-            <div class="cf-mail-section-title">Tag</div>
+            <div class="cf-mail-section-title">Tag Email</div>
             <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
-                <div class="cf-mail-tag-nav" t-on-click="() => this.setFolder('TAG_' + tag.id)">
+                <div class="cf-mail-tag-nav" t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('TAG_' + tag.id); }">
                     <span class="cf-mail-tag-dot" t-att-style="'background:' + tag.color"/>
                     <span t-esc="tag.name"/>
                 </div>
             </t>
+
             <div class="cf-mail-divider"/>
             <div style="display:flex;align-items:center;padding:4px 16px 4px">
                 <span class="cf-mail-section-title" style="padding:0;flex:1">Account</span>
-                <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="openNewAccount" title="Aggiungi account"><i class="fa fa-plus"/></button>
+                <t t-if="state.isAdmin">
+                    <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="openNewAccount" title="Aggiungi account"><i class="fa fa-plus"/></button>
+                </t>
                 <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="syncAllAccounts" title="Sincronizza tutto"><i class="fa fa-sync"/></button>
             </div>
             <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
                 <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''">
-                    <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color"/>
-                    <span class="cf-mail-account-email" t-esc="acc.email || acc.name || 'Account'"/>
+                    <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color" t-on-click="() => this.selectAccount(acc.id)"/>
+                    <span class="cf-mail-account-email" t-on-click="() => this.selectAccount(acc.id)" t-esc="acc.email"/>
                     <span t-if="acc.unread > 0" class="cf-mail-account-badge" t-on-click="() => this.selectAccount(acc.id)" t-esc="acc.unread"/>
-                    <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:10px;padding:0 2px;margin-left:2px" t-on-click="() => this.openEditAccount(acc.id)" title="Impostazioni"><i class="fa fa-cog"/></button>
+                    <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:10px;padding:0 2px" t-on-click="() => this.openEditAccount(acc.id)" title="Impostazioni"><i class="fa fa-cog"/></button>
                 </div>
+                <t t-if="acc.imap_status and acc.imap_enabled">
+                    <div style="padding:2px 12px 4px 28px;font-size:10px;color:var(--text-muted)" t-esc="acc.imap_status"/>
+                </t>
             </t>
         </div>
     </t>
@@ -69,10 +92,38 @@
                     <i class="fa fa-search"/>
                     <input type="text" t-att-value="state.search" t-on-input="onSearch" placeholder="Cerca..."/>
                 </div>
+                <button class="cf-mail-toolbar-btn" t-on-click="() => this.state.showSearchPanel = !this.state.showSearchPanel" title="Ricerca avanzata">
+                    <i class="fa fa-filter"/>
+                </button>
                 <button class="cf-mail-toolbar-btn" t-on-click="loadMessages">
                     <i t-att-class="'fa fa-sync' + (state.loading ? ' fa-spin' : '')"/>
                 </button>
             </div>
+
+            <t t-if="state.showSearchPanel">
+                <div class="cf-mail-search-panel">
+                    <div class="cf-mail-search-panel-title">Ricerca avanzata</div>
+                    <div class="cf-mail-search-panel-fields">
+                        <input class="cf-mail-modal-input" t-att-value="state.searchForm.query" t-on-input="(e) => this.state.searchForm.query = e.target.value" placeholder="Parole chiave..."/>
+                        <div style="display:flex;gap:6px">
+                            <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_from" t-on-input="(e) => this.state.searchForm.date_from = e.target.value" style="flex:1"/>
+                            <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_to" t-on-input="(e) => this.state.searchForm.date_to = e.target.value" style="flex:1"/>
+                        </div>
+                        <select class="cf-mail-modal-input" t-on-change="(e) => this.state.searchForm.tag_id = e.target.value">
+                            <option value="">Tutti i tag</option>
+                            <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
+                                <option t-att-value="tag.id" t-esc="tag.name"/>
+                            </t>
+                        </select>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                            <input type="checkbox" t-att-checked="state.searchForm.has_attachments" t-on-change="(e) => this.state.searchForm.has_attachments = e.target.checked" style="accent-color:var(--accent)"/>
+                            Solo con allegati
+                        </label>
+                        <button class="cf-mail-btn-primary" t-on-click="runAdvancedSearch"><i class="fa fa-search"/> Cerca</button>
+                    </div>
+                </div>
+            </t>
+
             <div class="cf-mail-groupby-bar">
                 <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'date' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'date'">
                     <i class="fa fa-calendar"/> Data
@@ -87,6 +138,7 @@
                     <i class="fa fa-filter"/> Pipeline
                 </button>
             </div>
+
             <t t-if="state.selectedIds.length > 0" t-call="cf_mail_client.BulkBar"/>
             <div class="cf-mail-list-header">
                 <input type="checkbox" t-on-change="toggleSelectAll" style="accent-color:var(--accent)"/>
@@ -291,7 +343,7 @@
                         <div class="cf-mail-ctx-section">
                             <div class="cf-mail-ctx-title"><i class="fa fa-user"/> Contatto</div>
                             <t t-if="state.msgDetail.partner_name">
-                                <div class="cf-mail-contact-card">
+                                <div class="cf-mail-contact-card" style="cursor:pointer" t-on-click="() => this.openContactDetail(state.msgDetail.partner_id)">
                                     <div class="cf-mail-contact-avatar" t-att-style="'background:' + this.avatarColor(state.msgDetail.partner_name)">
                                         <t t-esc="this.avatarInitial(state.msgDetail.partner_name)"/>
                                     </div>
@@ -302,6 +354,9 @@
                                         <div t-if="state.msgDetail.partner_phone" class="cf-mail-contact-detail" t-esc="state.msgDetail.partner_phone"/>
                                     </div>
                                 </div>
+                                <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:6px" t-on-click="() => this.openContactDetail(state.msgDetail.partner_id)">
+                                    <i class="fa fa-edit"/> Modifica contatto
+                                </button>
                             </t>
                             <div t-else="" class="cf-mail-ctx-empty">Mittente non in rubrica</div>
                         </div>
@@ -375,6 +430,304 @@
                 </div>
                 <t t-if="state.showComposer" t-call="cf_mail_client.Composer"/>
             </t>
+        </div>
+    </t>
+
+    <t t-name="cf_mail_client.ContactsView">
+        <div class="cf-mail-contacts-view">
+            <div class="cf-mail-contacts-toolbar">
+                <div class="cf-mail-search-wrap" style="max-width:320px">
+                    <i class="fa fa-search"/>
+                    <input type="text" t-att-value="state.contactSearch" t-on-input="(e) => { this.state.contactSearch = e.target.value; this.loadContacts(); }" placeholder="Cerca contatti..."/>
+                </div>
+                <select class="cf-mail-sort-select" t-on-change="(e) => { this.state.contactTagFilter = e.target.value; this.loadContacts(); }">
+                    <option value="">Tutti i tag</option>
+                    <t t-foreach="state.contactTags" t-as="tag" t-key="tag.id">
+                        <option t-att-value="tag.id" t-esc="tag.name + ' (' + tag.count + ')'"/>
+                    </t>
+                </select>
+                <button class="cf-mail-btn-primary" style="font-size:12px;padding:6px 14px" t-on-click="loadContacts">
+                    <i class="fa fa-sync"/> Aggiorna
+                </button>
+            </div>
+            <div class="cf-mail-contacts-grid">
+                <t t-if="state.contacts.length === 0">
+                    <div class="cf-mail-empty" style="grid-column:1/-1"><i class="fa fa-address-book"/><span>Nessun contatto trovato</span></div>
+                </t>
+                <t t-foreach="state.contacts" t-as="contact" t-key="contact.id">
+                    <div class="cf-mail-contact-card-grid" t-on-click="() => this.openContactDetail(contact.id)">
+                        <div class="cf-mail-contact-card-avatar" t-att-style="'background:' + this.avatarColor(contact.name)">
+                            <t t-esc="this.avatarInitial(contact.name)"/>
+                        </div>
+                        <div class="cf-mail-contact-card-info">
+                            <div class="cf-mail-contact-card-name" t-esc="contact.name"/>
+                            <div class="cf-mail-contact-card-company" t-esc="contact.company"/>
+                            <div class="cf-mail-contact-card-role" t-esc="contact.job_title"/>
+                            <div class="cf-mail-contact-card-email" t-esc="contact.email"/>
+                        </div>
+                        <div class="cf-mail-contact-card-meta">
+                            <t t-if="contact.tags and contact.tags.length > 0">
+                                <t t-foreach="contact.tags.slice(0,3)" t-as="tag" t-key="tag.id">
+                                    <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color" t-esc="tag.name"/>
+                                </t>
+                            </t>
+                            <div t-if="contact.email_count > 0" style="font-size:10px;color:var(--text-muted);margin-top:4px">
+                                <i class="fa fa-envelope"/> <t t-esc="contact.email_count"/> email
+                                <t t-if="contact.last_contact"> · <t t-esc="contact.last_contact"/></t>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="cf_mail_client.ContactModal">
+        <div class="cf-mail-modal-overlay" t-on-click="closeContactModal">
+            <div class="cf-mail-modal" style="width:620px;max-height:90vh" t-on-click.stop="() => {}">
+                <div class="cf-mail-modal-header">
+                    <span t-esc="state.contactDetail.name || 'Contatto'"/>
+                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeContactModal"><i class="fa fa-times"/></button>
+                </div>
+                <div class="cf-mail-modal-body" style="max-height:75vh;overflow-y:auto">
+                    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px">
+                        <div class="cf-mail-contact-avatar" style="width:56px;height:56px;font-size:22px;flex-shrink:0" t-att-style="'background:' + this.avatarColor(state.contactDetail.name || '') + ';width:56px;height:56px;font-size:22px'">
+                            <t t-esc="this.avatarInitial(state.contactDetail.name || '')"/>
+                        </div>
+                        <div style="flex:1">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                <div class="cf-mail-modal-field">
+                                    <label>Nome completo</label>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.name" t-on-input="(e) => this.state.contactDetail.name = e.target.value"/>
+                                </div>
+                                <div class="cf-mail-modal-field">
+                                    <label>Email</label>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.email" t-on-input="(e) => this.state.contactDetail.email = e.target.value"/>
+                                </div>
+                                <div class="cf-mail-modal-field">
+                                    <label>Telefono</label>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.phone" t-on-input="(e) => this.state.contactDetail.phone = e.target.value"/>
+                                </div>
+                                <div class="cf-mail-modal-field">
+                                    <label>Mobile / WhatsApp</label>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.whatsapp || state.contactDetail.mobile" t-on-input="(e) => this.state.contactDetail.whatsapp = e.target.value"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                        <div class="cf-mail-modal-field">
+                            <label>Azienda</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.company" t-on-input="(e) => this.state.contactDetail.company = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Ruolo / Posizione</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.job_title" t-on-input="(e) => this.state.contactDetail.job_title = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Reparto</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.department" t-on-input="(e) => this.state.contactDetail.department = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Paese</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.country" t-on-input="(e) => this.state.contactDetail.country = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Lingua</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.language" t-on-input="(e) => this.state.contactDetail.language = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>LinkedIn</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.linkedin" t-on-input="(e) => this.state.contactDetail.linkedin = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Fiere frequentate</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.fairs" t-on-input="(e) => this.state.contactDetail.fairs = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Fonte contatto</label>
+                            <select class="cf-mail-modal-input" t-on-change="(e) => this.state.contactDetail.source = e.target.value">
+                                <option value="">— Seleziona —</option>
+                                <option value="fiera" t-att-selected="state.contactDetail.source === 'fiera'">Fiera</option>
+                                <option value="email" t-att-selected="state.contactDetail.source === 'email'">Email</option>
+                                <option value="referral" t-att-selected="state.contactDetail.source === 'referral'">Referral</option>
+                                <option value="web" t-att-selected="state.contactDetail.source === 'web'">Web</option>
+                                <option value="cold" t-att-selected="state.contactDetail.source === 'cold'">Cold outreach</option>
+                                <option value="altro" t-att-selected="state.contactDetail.source === 'altro'">Altro</option>
+                            </select>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Valutazione</label>
+                            <select class="cf-mail-modal-input" t-on-change="(e) => this.state.contactDetail.rating = e.target.value">
+                                <option value="">—</option>
+                                <option value="1" t-att-selected="state.contactDetail.rating === '1'">★ Bassa</option>
+                                <option value="2" t-att-selected="state.contactDetail.rating === '2'">★★</option>
+                                <option value="3" t-att-selected="state.contactDetail.rating === '3'">★★★ Media</option>
+                                <option value="4" t-att-selected="state.contactDetail.rating === '4'">★★★★</option>
+                                <option value="5" t-att-selected="state.contactDetail.rating === '5'">★★★★★ Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cf-mail-modal-field" style="margin-top:8px">
+                        <label>Note private</label>
+                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.contactDetail.notes = e.target.value" t-att-value="state.contactDetail.notes"/>
+                    </div>
+
+                    <div style="margin-top:12px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px">Tag segmentazione</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                            <t t-foreach="state.contactDetail.tags || []" t-as="tag" t-key="tag.id">
+                                <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color">
+                                    <t t-esc="tag.name"/>
+                                    <i class="fa fa-times" style="margin-left:4px;cursor:pointer" t-on-click="() => this.removeContactTag(tag.id)"/>
+                                </span>
+                            </t>
+                        </div>
+                        <select class="cf-mail-modal-input" style="max-width:280px" t-on-change="(e) => { if(e.target.value) this.addContactTag(parseInt(e.target.value)); e.target.value=''; }">
+                            <option value="">+ Aggiungi tag...</option>
+                            <t t-foreach="state.contactTags" t-as="tag" t-key="tag.id">
+                                <option t-att-value="tag.id" t-esc="tag.name"/>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div style="display:flex;gap:16px;margin-top:12px">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                            <input type="checkbox" t-att-checked="state.contactDetail.gdpr_consent" t-on-change="(e) => this.state.contactDetail.gdpr_consent = e.target.checked" style="accent-color:var(--accent)"/>
+                            Consenso GDPR
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                            <input type="checkbox" t-att-checked="state.contactDetail.opt_out" t-on-change="(e) => this.state.contactDetail.opt_out = e.target.checked" style="accent-color:#d32f2f"/>
+                            Opt-out marketing
+                        </label>
+                    </div>
+
+                    <t t-if="state.contactDetail.email_count">
+                        <div style="margin-top:12px;padding:8px 12px;background:var(--bg);border-radius:var(--radius);font-size:12px;color:var(--text-secondary)">
+                            <i class="fa fa-envelope"/> <t t-esc="state.contactDetail.email_count"/> email totali
+                            <t t-if="state.contactDetail.last_contact"> · Ultimo contatto: <t t-esc="state.contactDetail.last_contact"/></t>
+                        </div>
+                    </t>
+                </div>
+                <div class="cf-mail-modal-footer">
+                    <button class="cf-mail-btn-primary" t-on-click="saveContact"><i class="fa fa-save"/> Salva</button>
+                    <button class="cf-mail-btn-secondary" t-on-click="closeContactModal">Annulla</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="cf_mail_client.AccountModal">
+        <div class="cf-mail-modal-overlay" t-on-click="closeAccountModal">
+            <div class="cf-mail-modal" style="width:520px" t-on-click.stop="() => {}">
+                <div class="cf-mail-modal-header">
+                    <span t-esc="state.accountForm.id ? 'Impostazioni Account' : 'Nuovo Account'"/>
+                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeAccountModal"><i class="fa fa-times"/></button>
+                </div>
+                <div class="cf-mail-modal-body" style="max-height:80vh;overflow-y:auto">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <div class="cf-mail-modal-field">
+                            <label>Nome</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.name" t-on-input="(e) => this.state.accountForm.name = e.target.value"/>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>Email</label>
+                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.email" t-on-input="(e) => this.state.accountForm.email = e.target.value"/>
+                        </div>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Firma email</label>
+                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.accountForm.signature = e.target.value" t-att-value="state.accountForm.signature"/>
+                    </div>
+
+                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">Out of Office</div>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-bottom:8px">
+                            <input type="checkbox" t-att-checked="state.accountForm.ooo_enabled" t-on-change="(e) => this.state.accountForm.ooo_enabled = e.target.checked" style="accent-color:var(--accent)"/>
+                            Risposta automatica attiva
+                        </label>
+                        <t t-if="state.accountForm.ooo_enabled">
+                            <div class="cf-mail-modal-field">
+                                <label>Oggetto risposta</label>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.ooo_subject" t-on-input="(e) => this.state.accountForm.ooo_subject = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field">
+                                <label>Messaggio</label>
+                                <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.accountForm.ooo_message = e.target.value" t-att-value="state.accountForm.ooo_message"/>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                <div class="cf-mail-modal-field">
+                                    <label>Data inizio</label>
+                                    <input class="cf-mail-modal-input" type="date" t-att-value="state.accountForm.ooo_start" t-on-input="(e) => this.state.accountForm.ooo_start = e.target.value"/>
+                                </div>
+                                <div class="cf-mail-modal-field">
+                                    <label>Data fine</label>
+                                    <input class="cf-mail-modal-input" type="date" t-att-value="state.accountForm.ooo_end" t-on-input="(e) => this.state.accountForm.ooo_end = e.target.value"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">IMAP — Ricezione</div>
+                        <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:8px;align-items:end">
+                            <div class="cf-mail-modal-field">
+                                <label>Host</label>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.imap_host" t-on-input="(e) => this.state.accountForm.imap_host = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field">
+                                <label>Porta</label>
+                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.imap_port" t-on-input="(e) => this.state.accountForm.imap_port = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field">
+                                <label>SSL</label>
+                                <input type="checkbox" t-att-checked="state.accountForm.imap_ssl" t-on-change="(e) => this.state.accountForm.imap_ssl = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
+                            </div>
+                        </div>
+                        <div class="cf-mail-modal-field">
+                            <label>App Password Gmail</label>
+                            <input class="cf-mail-modal-input" type="password" placeholder="xxxx xxxx xxxx xxxx" t-on-input="(e) => this.state.accountForm.imap_password = e.target.value"/>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-top:6px">
+                            <input type="checkbox" t-att-checked="state.accountForm.imap_enabled" t-on-change="(e) => this.state.accountForm.imap_enabled = e.target.checked" style="accent-color:var(--accent)"/>
+                            Sincronizzazione IMAP attiva
+                        </label>
+                        <t t-if="state.accountForm.imap_status">
+                            <div style="margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--text-secondary)">
+                                <i class="fa fa-info-circle"/> <t t-esc="state.accountForm.imap_status"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">SMTP — Invio</div>
+                        <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:8px;align-items:end">
+                            <div class="cf-mail-modal-field">
+                                <label>Host</label>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.smtp_host" t-on-input="(e) => this.state.accountForm.smtp_host = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field">
+                                <label>Porta</label>
+                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.smtp_port" t-on-input="(e) => this.state.accountForm.smtp_port = e.target.value"/>
+                            </div>
+                            <div class="cf-mail-modal-field">
+                                <label>TLS</label>
+                                <input type="checkbox" t-att-checked="state.accountForm.smtp_tls" t-on-change="(e) => this.state.accountForm.smtp_tls = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cf-mail-modal-footer">
+                    <button class="cf-mail-btn-primary" t-on-click="submitAccountForm"><i class="fa fa-save"/> Salva</button>
+                    <t t-if="state.accountForm.id">
+                        <button class="cf-mail-btn-secondary" t-on-click="testConnection"><i class="fa fa-plug"/> Test</button>
+                        <button class="cf-mail-btn-secondary" t-on-click="syncNow"><i class="fa fa-sync"/> Sync ora</button>
+                    </t>
+                    <button class="cf-mail-btn-secondary" t-on-click="closeAccountModal">Annulla</button>
+                </div>
+            </div>
         </div>
     </t>
 
@@ -454,93 +807,13 @@
                 <button class="cf-mail-fmt-btn"><i class="fa fa-paperclip"/></button>
             </div>
             <div class="cf-mail-composer-body" contenteditable="true" t-ref="composerBody"/>
+            <t t-if="currentSignature">
+                <div style="padding:0 14px 4px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border)" t-out="currentSignature"/>
+            </t>
             <div class="cf-mail-composer-footer">
                 <button class="cf-mail-btn-primary" t-on-click="sendEmail"><i class="fa fa-paper-plane"/> Invia</button>
                 <button class="cf-mail-btn-secondary" t-on-click="closeComposer">Annulla</button>
             </div>
         </div>
     </t>
-
-    <t t-name="cf_mail_client.AccountModal">
-        <div class="cf-mail-modal-overlay" t-on-click="closeAccountModal">
-            <div class="cf-mail-modal" style="width:520px" t-on-click.stop="() => {}">
-                <div class="cf-mail-modal-header">
-                    <span t-esc="state.accountForm.id ? 'Modifica Account' : 'Nuovo Account'"/>
-                    <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeAccountModal"><i class="fa fa-times"/></button>
-                </div>
-                <div class="cf-mail-modal-body" style="max-height:70vh;overflow-y:auto">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                        <div class="cf-mail-modal-field">
-                            <label>Nome</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.name" t-on-input="(e) => this.state.accountForm.name = e.target.value"/>
-                        </div>
-                        <div class="cf-mail-modal-field">
-                            <label>Email</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.email" t-on-input="(e) => this.state.accountForm.email = e.target.value"/>
-                        </div>
-                    </div>
-                    <div class="cf-mail-modal-field">
-                        <label>Firma</label>
-                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.accountForm.signature = e.target.value" t-att-value="state.accountForm.signature"/>
-                    </div>
-                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
-                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">Configurazione IMAP</div>
-                        <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
-                            <div class="cf-mail-modal-field">
-                                <label>Host IMAP</label>
-                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.imap_host" t-on-input="(e) => this.state.accountForm.imap_host = e.target.value"/>
-                            </div>
-                            <div class="cf-mail-modal-field" style="width:80px">
-                                <label>Porta</label>
-                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.imap_port" t-on-input="(e) => this.state.accountForm.imap_port = e.target.value"/>
-                            </div>
-                            <div class="cf-mail-modal-field" style="width:60px">
-                                <label>SSL</label>
-                                <input type="checkbox" t-att-checked="state.accountForm.imap_ssl" t-on-change="(e) => this.state.accountForm.imap_ssl = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
-                            </div>
-                        </div>
-                        <div class="cf-mail-modal-field">
-                            <label>App Password Gmail</label>
-                            <input class="cf-mail-modal-input" type="password" placeholder="xxxx xxxx xxxx xxxx" t-on-input="(e) => this.state.accountForm.imap_password = e.target.value"/>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-                                <input type="checkbox" t-att-checked="state.accountForm.imap_enabled" t-on-change="(e) => this.state.accountForm.imap_enabled = e.target.checked" style="accent-color:var(--accent)"/>
-                                Sincronizzazione IMAP attiva
-                            </label>
-                        </div>
-                        <div t-if="state.accountForm.imap_status" style="margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;font-size:12px;color:var(--text-secondary)">
-                            <i class="fa fa-info-circle"/> <t t-esc="state.accountForm.imap_status"/>
-                        </div>
-                    </div>
-                    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
-                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">Configurazione SMTP</div>
-                        <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
-                            <div class="cf-mail-modal-field">
-                                <label>Host SMTP</label>
-                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.smtp_host" t-on-input="(e) => this.state.accountForm.smtp_host = e.target.value"/>
-                            </div>
-                            <div class="cf-mail-modal-field" style="width:80px">
-                                <label>Porta</label>
-                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.smtp_port" t-on-input="(e) => this.state.accountForm.smtp_port = e.target.value"/>
-                            </div>
-                            <div class="cf-mail-modal-field" style="width:60px">
-                                <label>TLS</label>
-                                <input type="checkbox" t-att-checked="state.accountForm.smtp_tls" t-on-change="(e) => this.state.accountForm.smtp_tls = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="cf-mail-modal-footer">
-                    <button class="cf-mail-btn-primary" t-on-click="submitAccountForm"><i class="fa fa-save"/> Salva</button>
-                    <t t-if="state.accountForm.id">
-                        <button class="cf-mail-btn-secondary" t-on-click="testConnection"><i class="fa fa-plug"/> Test connessione</button>
-                        <button class="cf-mail-btn-secondary" t-on-click="syncNow"><i class="fa fa-sync"/> Sincronizza ora</button>
-                    </t>
-                    <button class="cf-mail-btn-secondary" t-on-click="closeAccountModal">Annulla</button>
-                </div>
-            </div>
-        </div>
-    </t>
-
 </templates>

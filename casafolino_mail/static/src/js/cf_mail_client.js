@@ -15,6 +15,8 @@ const AVATAR_COLORS = [
     "linear-gradient(135deg,#558b2f,#1b5e20)",
 ];
 
+const RATING_STARS = { '1': '★', '2': '★★', '3': '★★★', '4': '★★★★', '5': '★★★★★' };
+
 class CfMailClient extends Component {
     static template = "cf_mail_client.App";
     static components = {};
@@ -30,14 +32,21 @@ class CfMailClient extends Component {
             loading: false, loadingDetail: false, selectedAccount: null,
             folder: "INBOX", search: "", selectedIds: [], totalUnread: 0,
             showComposer: false, composerMode: "reply", composerTo: "", composerSubject: "",
-            users: [], leads: [], allTags: [],
+            users: [], leads: [], allTags: [], contactTags: [],
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
             groupBy: "date",
             showLeadModal: false, crmPipelines: [], crmPartners: [],
             leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "" },
             showAccountModal: false,
-            accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A" },
+            accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
+            showContactModal: false,
+            contactDetail: {},
+            showSearchPanel: false,
+            searchForm: { query: "", date_from: "", date_to: "", tag_id: "", has_attachments: false },
+            isAdmin: false,
+            activeView: "mail",
+            contacts: [], contactSearch: "", contactTagFilter: "",
         });
 
         onMounted(() => { this.init(); });
@@ -48,8 +57,15 @@ class CfMailClient extends Component {
     }
 
     async init() {
-        await Promise.all([this.loadAccounts(), this.loadUsers(), this.loadLeads(), this.loadTags()]);
+        await Promise.all([this.loadAccounts(), this.loadUsers(), this.loadLeads(), this.loadTags(), this.loadContactTags(), this.checkAdmin()]);
         await this.loadMessages();
+    }
+
+    async checkAdmin() {
+        try {
+            const result = await this._rpc("cf.mail.account", "is_admin");
+            this.state.isAdmin = result || false;
+        } catch (e) { this.state.isAdmin = false; }
     }
 
     async loadAccounts() {
@@ -86,12 +102,25 @@ class CfMailClient extends Component {
     async loadTags() {
         try { this.state.allTags = await this._rpc("cf.mail.message", "get_tags_list") || []; } catch (e) {}
     }
+    async loadContactTags() {
+        try { this.state.contactTags = await this._rpc("cf.contact.tag", "get_all_tags") || []; } catch (e) {}
+    }
     async loadCrmData() {
         try {
             const data = await this._rpc("cf.mail.message", "get_crm_data");
             this.state.crmPipelines = data.pipelines || [];
             this.state.crmPartners = data.partners || [];
         } catch (e) {}
+    }
+
+    async loadContacts() {
+        try {
+            const contacts = await this._rpc("res.partner", "search_contacts", {
+                query: this.state.contactSearch,
+                tag_ids: this.state.contactTagFilter ? [this.state.contactTagFilter] : [],
+            });
+            this.state.contacts = contacts || [];
+        } catch (e) { console.error(e); }
     }
 
     get groupedMessages() {
@@ -228,6 +257,20 @@ class CfMailClient extends Component {
         this._searchTimer = setTimeout(() => this.loadMessages(), 400);
     }
 
+    async runAdvancedSearch() {
+        this.state.loading = true;
+        try {
+            const msgs = await this._rpc("cf.mail.message", "advanced_search", {
+                ...this.state.searchForm,
+                account_id: this.state.selectedAccount,
+                folder: this.state.folder,
+            });
+            this.state.messages = msgs || [];
+            this.state.showSearchPanel = false;
+        } catch (e) { console.error(e); }
+        finally { this.state.loading = false; }
+    }
+
     toggleSelect(id, ev) {
         ev.stopPropagation();
         const idx = this.state.selectedIds.indexOf(id);
@@ -315,6 +358,40 @@ class CfMailClient extends Component {
             this.state.selectedMsg = null;
             this.state.msgDetail = {};
         } catch (e) {}
+    }
+
+    async openContactDetail(partnerId) {
+        if (!partnerId) return;
+        try {
+            const data = await this._rpc("res.partner", "get_contact_detail", { partner_id: partnerId });
+            this.state.contactDetail = data || {};
+            this.state.showContactModal = true;
+        } catch (e) { console.error(e); }
+    }
+
+    closeContactModal() { this.state.showContactModal = false; }
+
+    async saveContact() {
+        try {
+            const res = await this._rpc("res.partner", "save_contact", { ...this.state.contactDetail });
+            if (res && res.success) {
+                this.showToast("Contatto salvato");
+                this.state.showContactModal = false;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async addContactTag(tagId) {
+        if (!this.state.contactDetail.id) return;
+        const current = this.state.contactDetail.tags || [];
+        if (!current.find(t => t.id === tagId)) {
+            const tag = this.state.contactTags.find(t => t.id === tagId);
+            if (tag) this.state.contactDetail.tags = [...current, tag];
+        }
+    }
+
+    async removeContactTag(tagId) {
+        this.state.contactDetail.tags = (this.state.contactDetail.tags || []).filter(t => t.id !== tagId);
     }
 
     async openLeadModal() {
@@ -413,34 +490,8 @@ class CfMailClient extends Component {
         } catch (e) { this.showToast("Errore invio email"); }
     }
 
-    get listHeaderLabel() {
-        const total = this.state.messages.length;
-        const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
-        return (map[this.state.folder] || this.state.folder) + " — " + total;
-    }
-
-    get currentSignature() {
-        if (!this.state.selectedAccount) return "";
-        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
-        return acc ? acc.signature : "";
-    }
-
-    avatarColor(name) {
-        if (!name) return AVATAR_COLORS[0];
-        let h = 0;
-        for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
-    }
-
-    avatarInitial(name) {
-        if (!name) return "?";
-        const parts = name.trim().split(/\s+/);
-        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-        return name[0].toUpperCase();
-    }
-
     openNewAccount() {
-        this.state.accountForm = { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A" };
+        this.state.accountForm = { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" };
         this.state.showAccountModal = true;
     }
 
@@ -467,7 +518,7 @@ class CfMailClient extends Component {
 
     async testConnection() {
         try {
-            this.showToast("Test connessione in corso...");
+            this.showToast("Test connessione...");
             const res = await this._rpc("cf.mail.account", "test_connection", { account_id: this.state.accountForm.id });
             if (res.success) {
                 this.showToast("Connessione OK ✓");
@@ -500,7 +551,33 @@ class CfMailClient extends Component {
         } catch (e) { this.showToast("Errore sync"); }
     }
 
-        showToast(msg) {
+    get listHeaderLabel() {
+        const total = this.state.messages.length;
+        const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
+        return (map[this.state.folder] || this.state.folder) + " — " + total;
+    }
+
+    get currentSignature() {
+        if (!this.state.selectedAccount) return "";
+        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
+        return acc ? (acc.signature || "") : "";
+    }
+
+    avatarColor(name) {
+        if (!name) return AVATAR_COLORS[0];
+        let h = 0;
+        for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+    }
+
+    avatarInitial(name) {
+        if (!name) return "?";
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name[0].toUpperCase();
+    }
+
+    showToast(msg) {
         const el = document.createElement("div");
         el.className = "cf-mail-toast";
         el.textContent = msg;

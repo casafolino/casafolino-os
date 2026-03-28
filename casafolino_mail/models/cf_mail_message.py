@@ -72,7 +72,56 @@ class CfMailMessage(models.Model):
         }
 
     @api.model
+    def advanced_search(self, *args, **kw):
+        query = kw.get('query') or ''
+        folder = kw.get('folder') or 'INBOX'
+        date_from = kw.get('date_from') or False
+        date_to = kw.get('date_to') or False
+        tag_id = kw.get('tag_id') or False
+        has_attachments = kw.get('has_attachments') or False
+        account_id = kw.get('account_id') or False
+        is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
+
+        domain = []
+        if not is_admin:
+            user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
+            domain.append(('account_id', 'in', user_accounts.ids))
+        elif account_id:
+            domain.append(('account_id', '=', int(account_id)))
+
+        if folder and folder != 'ALL':
+            if folder == 'Starred':
+                domain.append(('is_starred', '=', True))
+            elif folder == 'Sent':
+                domain.append(('direction', '=', 'out'))
+            elif folder == 'Archived':
+                domain.append(('is_archived', '=', True))
+            else:
+                domain += [('folder', '=', folder), ('is_archived', '=', False)]
+
+        if query:
+            domain += ['|', '|', '|', '|',
+                ('subject', 'ilike', query),
+                ('from_address', 'ilike', query),
+                ('from_name', 'ilike', query),
+                ('snippet', 'ilike', query),
+                ('body_text', 'ilike', query),
+            ]
+        if date_from:
+            domain.append(('date', '>=', date_from))
+        if date_to:
+            domain.append(('date', '<=', date_to + ' 23:59:59'))
+        if tag_id:
+            domain.append(('tag_ids', 'in', [int(tag_id)]))
+        if has_attachments:
+            domain.append(('has_attachments', '=', True))
+
+        msgs = self.search(domain, limit=100, order='date desc')
+        return [self._msg_to_dict(m) for m in msgs]
+
+    @api.model
     def get_messages(self, *args, **kw):
+
         account_id = kw.get('account_id')
         folder = kw.get('folder') or 'INBOX'
         limit = int(kw.get('limit') or 50)
@@ -80,6 +129,11 @@ class CfMailMessage(models.Model):
         search = kw.get('search') or ''
         tag_id = kw.get('tag_id') or False
 
+        is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
+        if not is_admin:
+            user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
+            if account_id not in user_accounts.ids:
+                return []
         domain = [('account_id', '=', account_id), ('is_archived', '=', False)]
         if folder == 'Starred':
             domain.append(('is_starred', '=', True))
