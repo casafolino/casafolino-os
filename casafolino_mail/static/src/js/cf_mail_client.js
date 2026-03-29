@@ -3,6 +3,7 @@
 import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { rpc } from "@web/core/network/rpc";
 
 const AVATAR_COLORS = [
     "linear-gradient(135deg,#5A6E3A,#3d4d27)",
@@ -20,7 +21,7 @@ class CfMailClient extends Component {
     static components = {};
 
     setup() {
-        this.rpc = useService("rpc");
+
         this.emailContent = useRef("emailContent");
         this.composerBody = useRef("composerBody");
         this._searchTimer = null;
@@ -59,7 +60,7 @@ class CfMailClient extends Component {
 
     async loadAccounts() {
         try {
-            const accounts = await this.rpc("/web/dataset/call_kw", {
+            const accounts = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.account",
                 method: "get_accounts",
                 args: [],
@@ -79,7 +80,7 @@ class CfMailClient extends Component {
         if (!this.state.selectedAccount) return;
         this.state.loading = true;
         try {
-            const msgs = await this.rpc("/web/dataset/call_kw", {
+            const msgs = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "get_messages",
                 args: [],
@@ -102,7 +103,7 @@ class CfMailClient extends Component {
 
     async loadUsers() {
         try {
-            const users = await this.rpc("/web/dataset/call_kw", {
+            const users = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "get_users_list",
                 args: [],
@@ -114,7 +115,7 @@ class CfMailClient extends Component {
 
     async loadLeads() {
         try {
-            const leads = await this.rpc("/web/dataset/call_kw", {
+            const leads = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "get_leads_list",
                 args: [],
@@ -131,7 +132,7 @@ class CfMailClient extends Component {
         this.state.loadingDetail = true;
         this.state.showComposer = false;
         try {
-            const detail = await this.rpc("/web/dataset/call_kw", {
+            const detail = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "get_message_detail",
                 args: [],
@@ -208,7 +209,7 @@ class CfMailClient extends Component {
     async bulkAction(action) {
         if (!this.state.selectedIds.length) return;
         try {
-            await this.rpc("/web/dataset/call_kw", {
+            await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "do_bulk_action",
                 args: [],
@@ -224,7 +225,7 @@ class CfMailClient extends Component {
     async quickStar(msgId, ev) {
         if (ev) ev.stopPropagation();
         try {
-            const starred = await this.rpc("/web/dataset/call_kw", {
+            const starred = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "do_toggle_star",
                 args: [],
@@ -241,7 +242,7 @@ class CfMailClient extends Component {
     async quickArchive(msgId, ev) {
         if (ev) ev.stopPropagation();
         try {
-            await this.rpc("/web/dataset/call_kw", {
+            await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "do_bulk_action",
                 args: [],
@@ -259,7 +260,7 @@ class CfMailClient extends Component {
     async createLead() {
         if (!this.state.selectedMsg) return;
         try {
-            const res = await this.rpc("/web/dataset/call_kw", {
+            const res = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "create_lead_from_email",
                 args: [],
@@ -282,7 +283,7 @@ class CfMailClient extends Component {
         const userId = ev.target.value;
         if (!this.state.selectedMsg) return;
         try {
-            const name = await this.rpc("/web/dataset/call_kw", {
+            const name = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "do_assign",
                 args: [],
@@ -298,7 +299,7 @@ class CfMailClient extends Component {
         const leadId = ev.target.value;
         if (!this.state.selectedMsg) return;
         try {
-            await this.rpc("/web/dataset/call_kw", {
+            await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "do_link_lead",
                 args: [],
@@ -342,7 +343,7 @@ class CfMailClient extends Component {
             return;
         }
         try {
-            const res = await this.rpc("/web/dataset/call_kw", {
+            const res = await rpc("/web/dataset/call_kw", {
                 model: "cf.mail.message",
                 method: "send_reply",
                 args: [],
