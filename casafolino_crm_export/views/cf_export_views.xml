@@ -93,8 +93,6 @@
                 <field name="pipeline_type"/>
                 <field name="sample_count"/>
                 <field name="date_next_followup"/>
-                <progressbar field="rotting_state"
-                    colors="{&apos;ok&apos;:&apos;success&apos;,&apos;warning&apos;:&apos;warning&apos;,&apos;danger&apos;:&apos;danger&apos;,&apos;dead&apos;:&apos;danger&apos;}"/>
                 <templates>
                     <t t-name="card">
                         <div t-attf-class="oe_kanban_card #{record.rotting_state.raw_value == &apos;dead&apos; ? &apos;oe_kanban_color_2&apos; : record.rotting_state.raw_value == &apos;danger&apos; ? &apos;oe_kanban_color_3&apos; : record.rotting_state.raw_value == &apos;warning&apos; ? &apos;oe_kanban_color_4&apos; : &apos;&apos;}">
