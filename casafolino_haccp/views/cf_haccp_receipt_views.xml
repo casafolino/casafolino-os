@@ -6,9 +6,9 @@
         <field name="arch" type="xml">
             <form string="Controllo Ricezione">
                 <header>
-                    <button name="action_accept" type="object" string="Accetta" class="btn-success" invisible="state not in ('draft','in_progress')"/>
-                    <button name="action_quarantine" type="object" string="Quarantena" class="btn-warning" invisible="state not in ('draft','in_progress')"/>
-                    <button name="action_reject" type="object" string="Rifiuta" class="btn-danger" invisible="state not in ('draft','in_progress')"/>
+                    <button name="action_accept" type="object" string="Accetta" class="btn-success" invisible="state not in ['draft','in_progress']"/>
+                    <button name="action_quarantine" type="object" string="Quarantena" class="btn-warning" invisible="state not in ['draft','in_progress']"/>
+                    <button name="action_reject" type="object" string="Rifiuta" class="btn-danger" invisible="state not in ['draft','in_progress']"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,accepted"/>
                 </header>
                 <sheet>

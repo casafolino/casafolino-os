@@ -7,7 +7,7 @@
             <form string="Qualifica Fornitore">
                 <header>
                     <button name="action_approve" type="object" string="Approva" class="btn-success" invisible="status == 'approved'"/>
-                    <button name="action_suspend" type="object" string="Sospendi" class="btn-warning" invisible="status in ('suspended','excluded')"/>
+                    <button name="action_suspend" type="object" string="Sospendi" class="btn-warning" invisible="status in ['suspended','excluded']"/>
                     <button name="action_exclude" type="object" string="Escludi" class="btn-danger" invisible="status == 'excluded'"/>
                     <field name="status" widget="statusbar" statusbar_visible="evaluation,approved,suspended"/>
                 </header>

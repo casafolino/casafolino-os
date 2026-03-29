@@ -1,224 +1,468 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="action_cf_haccp_sp" model="ir.actions.act_window">
-        <field name="name">Schede Produzione</field>
-        <field name="res_model">cf.haccp.sp</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-    <record id="action_cf_haccp_receipt" model="ir.actions.act_window">
-        <field name="name">Controlli Ricezione</field>
-        <field name="res_model">cf.haccp.receipt</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-    <record id="action_cf_haccp_nc" model="ir.actions.act_window">
-        <field name="name">Non Conformità</field>
-        <field name="res_model">cf.haccp.nc</field>
-        <field name="view_mode">kanban,tree,form</field>
-    </record>
-    <record id="action_cf_haccp_quarantine" model="ir.actions.act_window">
-        <field name="name">Quarantena</field>
-        <field name="res_model">cf.haccp.quarantine</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-    <record id="action_cf_haccp_calibration" model="ir.actions.act_window">
-        <field name="name">Calibrazioni</field>
-        <field name="res_model">cf.haccp.calibration</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-    <record id="action_cf_haccp_document" model="ir.actions.act_window">
-        <field name="name">Documenti HACCP</field>
-        <field name="res_model">cf.haccp.document</field>
-        <field name="view_mode">tree,form</field>
+    <record id="cf_haccp_mrp_list" model="ir.ui.view">
+        <field name="name">mrp.production.haccp.list</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="haccp_state" widget="badge"
+                       decoration-success="haccp_state == 'compliant'"
+                       decoration-danger="haccp_state == 'nc'"
+                       decoration-warning="haccp_state == 'partial'"
+                       decoration-muted="haccp_state == 'na'"
+                       optional="show"/>
+            </field>
+        </field>
     </record>
 
-    <!-- SP FORM -->
-    <record id="cf_haccp_sp_form" model="ir.ui.view">
-        <field name="name">cf.haccp.sp.form</field>
-        <field name="model">cf.haccp.sp</field>
+    <record id="cf_haccp_mrp_form" model="ir.ui.view">
+        <field name="name">mrp.production.haccp.form</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
         <field name="arch" type="xml">
-            <form string="Scheda di Produzione">
-                <header>
-                    <button name="action_start" string="Avvia" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_complete" string="Completa" type="object" class="btn-success" invisible="state != 'in_progress'"/>
-                    <button name="action_release" string="Rilascia" type="object" class="btn-info" invisible="state != 'completed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,completed,released"/>
-                </header>
-                <sheet>
-                    <div class="oe_title"><h1><field name="reference" readonly="1"/></h1></div>
-                    <group>
-                        <group string="Produzione">
-                            <field name="production_id"/>
-                            <field name="product_id" required="1"/>
-                            <field name="lot_id"/>
-                            <field name="quantity_produced"/>
+            <notebook position="inside">
+                <page string="HACCP" name="haccp_tab">
+                    <group string="Operatore e Date">
+                        <group>
+                            <field name="haccp_operator_id"/>
+                            <field name="haccp_lot_id"/>
                         </group>
-                        <group string="Operatore">
-                            <field name="operator_id"/>
-                            <field name="date" required="1"/>
-                            <field name="date_end"/>
+                        <group>
+                            <field name="haccp_date_start"/>
+                            <field name="haccp_date_end"/>
+                        </group>
+                    </group>
+                    <group string="Temperature">
+                        <group>
+                            <field name="temp_ambiente"/>
+                            <field name="temp_prodotto_inizio"/>
+                        </group>
+                        <group>
+                            <field name="temp_prodotto_fine"/>
+                            <field name="temp_stoccaggio"/>
+                            <field name="temp_ok"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="10 Step HACCP">
-                            <group col="2">
-                                <field name="step1_ok" string="1 - Verifica Materie Prime"/>
-                                <field name="step2_ok" string="2 - Controllo Temperatura"/>
-                                <field name="step3_ok" string="3 - Igiene Operatore"/>
-                                <field name="step4_ok" string="4 - Pulizia Strumenti"/>
-                                <field name="step5_ok" string="5 - Tracciabilità Inizio"/>
-                                <field name="step6_ok" string="6 - Monitoraggio CCP"/>
-                                <field name="step7_ok" string="7 - Controllo Intermedio"/>
-                                <field name="step8_ok" string="8 - Analisi Finale"/>
-                                <field name="step9_ok" string="9 - Tracciabilità Fine"/>
-                                <field name="step10_ok" string="10 - Archiviazione"/>
+                        <page string="Igiene Personale">
+                            <group col="4">
+                                <field name="step_igiene_mani"/>
+                                <field name="step_igiene_mani_note" placeholder="Note..."/>
+                                <field name="step_abbigliamento"/>
+                                <field name="step_abbigliamento_note" placeholder="Note..."/>
+                                <field name="step_stato_salute"/>
+                                <field name="step_stato_salute_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Pulizia e Sanificazione">
+                            <group col="4">
+                                <field name="step_pulizia_linea"/>
+                                <field name="step_pulizia_linea_note" placeholder="Note..."/>
+                                <field name="step_sanificazione"/>
+                                <field name="step_sanificazione_note" placeholder="Note..."/>
+                                <field name="step_pest_control"/>
+                                <field name="step_pest_control_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Materie Prime">
+                            <group col="4">
+                                <field name="step_mp_conformi"/>
+                                <field name="step_mp_conformi_note" placeholder="Note..."/>
+                                <field name="step_mp_temp"/>
+                                <field name="step_mp_temp_note" placeholder="Note..."/>
+                                <field name="step_mp_scadenze"/>
+                                <field name="step_mp_scadenze_note" placeholder="Note..."/>
+                                <field name="step_allergeni"/>
+                                <field name="step_allergeni_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Processo Produttivo">
+                            <group col="4">
+                                <field name="step_parametri_processo"/>
+                                <field name="step_parametri_processo_note" placeholder="Note..."/>
+                                <field name="step_tempi_cottura"/>
+                                <field name="step_tempi_cottura_note" placeholder="Note..."/>
+                                <field name="step_raffreddamento"/>
+                                <field name="step_raffreddamento_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Confezionamento">
+                            <group col="4">
+                                <field name="step_imballaggio"/>
+                                <field name="step_imballaggio_note" placeholder="Note..."/>
+                                <field name="step_etichettatura"/>
+                                <field name="step_etichettatura_note" placeholder="Note..."/>
+                                <field name="step_peso_netto"/>
+                                <field name="step_peso_netto_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Tracciabilita e Rilascio">
+                            <group col="4">
+                                <field name="step_lotto_assegnato"/>
+                                <field name="step_lotto_assegnato_note" placeholder="Note..."/>
+                                <field name="step_campione_conservato"/>
+                                <field name="step_campione_conservato_note" placeholder="Note..."/>
+                                <field name="step_doc_completa"/>
+                                <field name="step_doc_completa_note" placeholder="Note..."/>
+                                <field name="step_controllo_finale"/>
+                                <field name="step_controllo_finale_note" placeholder="Note..."/>
+                                <field name="step_rilascio"/>
+                                <field name="step_rilascio_note" placeholder="Note..."/>
                             </group>
                         </page>
                         <page string="CCP">
-                            <field name="ccp_ids" nolabel="1">
-                                <tree editable="bottom" decoration-success="state == 'ok'" decoration-danger="state == 'ko'" decoration-warning="state == 'pending'">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="name"/>
-                                    <field name="ccp_type"/>
-                                    <field name="critical_limit_min"/>
-                                    <field name="critical_limit_max"/>
-                                    <field name="unit"/>
-                                    <field name="measured_value"/>
-                                    <field name="measurement_time"/>
-                                    <field name="measured_by"/>
-                                    <field name="state" widget="badge"/>
-                                </tree>
-                            </field>
+                            <group string="CCP 1" col="6">
+                                <field name="ccp1_name"/>
+                                <field name="ccp1_limite_min"/>
+                                <field name="ccp1_limite_max"/>
+                                <field name="ccp1_valore"/>
+                                <field name="ccp1_esito"/>
+                                <field name="ccp1_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 2" col="6">
+                                <field name="ccp2_name"/>
+                                <field name="ccp2_limite_min"/>
+                                <field name="ccp2_limite_max"/>
+                                <field name="ccp2_valore"/>
+                                <field name="ccp2_esito"/>
+                                <field name="ccp2_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 3" col="6">
+                                <field name="ccp3_name"/>
+                                <field name="ccp3_limite_min"/>
+                                <field name="ccp3_limite_max"/>
+                                <field name="ccp3_valore"/>
+                                <field name="ccp3_esito"/>
+                                <field name="ccp3_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 4" col="6">
+                                <field name="ccp4_name"/>
+                                <field name="ccp4_limite_min"/>
+                                <field name="ccp4_limite_max"/>
+                                <field name="ccp4_valore"/>
+                                <field name="ccp4_esito"/>
+                                <field name="ccp4_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 5" col="6">
+                                <field name="ccp5_name"/>
+                                <field name="ccp5_limite_min"/>
+                                <field name="ccp5_limite_max"/>
+                                <field name="ccp5_valore"/>
+                                <field name="ccp5_esito"/>
+                                <field name="ccp5_note" placeholder="Note..."/>
+                            </group>
                         </page>
-                        <page string="Non Conformità">
-                            <field name="nc_ids" nolabel="1">
-                                <tree decoration-danger="severity == 'critical'" decoration-warning="severity == 'high'">
-                                    <field name="reference"/>
-                                    <field name="severity" widget="badge"/>
-                                    <field name="description"/>
-                                    <field name="state" widget="badge"/>
-                                </tree>
-                            </field>
-                        </page>
-                        <page string="Note">
-                            <field name="notes" nolabel="1"/>
+                        <page string="Note Generali">
+                            <field name="haccp_notes" nolabel="1"/>
                         </page>
                     </notebook>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </form>
+                    <group string="Stato HACCP">
+                        <field name="haccp_state" widget="badge"/>
+                        <button name="action_haccp_compliant" string="Rilascia HACCP"
+                                type="object" class="btn-success"/>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+<record id="cf_haccp_mrp_list" model="ir.ui.view">
+        <field name="name">mrp.production.haccp.list</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="haccp_state" widget="badge" optional="show"/>
+            </field>
         </field>
     </record>
 
-    <!-- SP TREE -->
-    <record id="cf_haccp_sp_tree" model="ir.ui.view">
-        <field name="name">cf.haccp.sp.tree</field>
-        <field name="model">cf.haccp.sp</field>
+    <record id="cf_haccp_mrp_form" model="ir.ui.view">
+        <field name="name">mrp.production.haccp.form</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
         <field name="arch" type="xml">
-            <tree decoration-success="state == 'released'" decoration-info="state == 'completed'" decoration-warning="state == 'in_progress'" decoration-danger="state == 'blocked'">
-                <field name="reference"/>
-                <field name="product_id"/>
-                <field name="production_id"/>
-                <field name="date"/>
-                <field name="operator_id"/>
-                <field name="quantity_produced"/>
-                <field name="state" widget="badge"/>
-            </tree>
-        </field>
-    </record>
-
-    <!-- SP SEARCH -->
-    <record id="cf_haccp_sp_search" model="ir.ui.view">
-        <field name="name">cf.haccp.sp.search</field>
-        <field name="model">cf.haccp.sp</field>
-        <field name="arch" type="xml">
-            <search>
-                <field name="reference"/>
-                <field name="product_id"/>
-                <filter string="In Produzione" name="in_progress" domain="[('state','=','in_progress')]"/>
-                <filter string="Bloccate" name="blocked" domain="[('state','=','blocked')]"/>
-                <filter string="Rilasciate" name="released" domain="[('state','=','released')]"/>
-                <group expand="0" string="Raggruppa per">
-                    <filter string="Prodotto" name="grp_product" context="{'group_by':'product_id'}"/>
-                    <filter string="Stato" name="grp_state" context="{'group_by':'state'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-    <!-- RECEIPT FORM -->
-    <record id="cf_haccp_receipt_form" model="ir.ui.view">
-        <field name="name">cf.haccp.receipt.form</field>
-        <field name="model">cf.haccp.receipt</field>
-        <field name="arch" type="xml">
-            <form string="Controllo Ricezione">
-                <header>
-                    <button name="action_approve" string="Approva" type="object" class="btn-success" invisible="state != 'draft'"/>
-                    <button name="action_reject" string="Rifiuta" type="object" class="btn-danger" invisible="state != 'draft'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,rejected"/>
-                </header>
-                <sheet>
-                    <div class="oe_title"><h2><field name="name" readonly="1"/></h2></div>
-                    <group>
-                        <group string="Fornitore">
-                            <field name="supplier_id" required="1"/>
-                            <field name="purchase_order_id"/>
-                            <field name="receipt_date" required="1"/>
+            <notebook position="inside">
+                <page string="HACCP" name="haccp_tab">
+                    <group string="Operatore e Date">
+                        <group>
+                            <field name="haccp_operator_id"/>
+                            <field name="haccp_lot_id"/>
                         </group>
-                        <group string="Prodotto">
-                            <field name="product_id" required="1"/>
-                            <field name="quantity_received" required="1"/>
-                            <field name="lot_id"/>
+                        <group>
+                            <field name="haccp_date_start"/>
+                            <field name="haccp_date_end"/>
+                        </group>
+                    </group>
+                    <group string="Temperature">
+                        <group>
+                            <field name="temp_ambiente"/>
+                            <field name="temp_prodotto_inizio"/>
+                        </group>
+                        <group>
+                            <field name="temp_prodotto_fine"/>
+                            <field name="temp_stoccaggio"/>
+                            <field name="temp_ok"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Controlli">
-                            <group col="2">
-                                <field name="check_appearance" string="Aspetto OK"/>
-                                <field name="check_smell" string="Odore OK"/>
-                                <field name="check_temperature" string="Temperatura OK"/>
-                                <field name="check_packaging" string="Imballaggio OK"/>
+                        <page string="Igiene Personale">
+                            <group col="4">
+                                <field name="step_igiene_mani"/>
+                                <field name="step_igiene_mani_note" placeholder="Note..."/>
+                                <field name="step_abbigliamento"/>
+                                <field name="step_abbigliamento_note" placeholder="Note..."/>
+                                <field name="step_stato_salute"/>
+                                <field name="step_stato_salute_note" placeholder="Note..."/>
                             </group>
                         </page>
-                        <page string="Note"><field name="notes" nolabel="1"/></page>
+                        <page string="Pulizia e Sanificazione">
+                            <group col="4">
+                                <field name="step_pulizia_linea"/>
+                                <field name="step_pulizia_linea_note" placeholder="Note..."/>
+                                <field name="step_sanificazione"/>
+                                <field name="step_sanificazione_note" placeholder="Note..."/>
+                                <field name="step_pest_control"/>
+                                <field name="step_pest_control_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Materie Prime">
+                            <group col="4">
+                                <field name="step_mp_conformi"/>
+                                <field name="step_mp_conformi_note" placeholder="Note..."/>
+                                <field name="step_mp_temp"/>
+                                <field name="step_mp_temp_note" placeholder="Note..."/>
+                                <field name="step_mp_scadenze"/>
+                                <field name="step_mp_scadenze_note" placeholder="Note..."/>
+                                <field name="step_allergeni"/>
+                                <field name="step_allergeni_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Processo Produttivo">
+                            <group col="4">
+                                <field name="step_parametri_processo"/>
+                                <field name="step_parametri_processo_note" placeholder="Note..."/>
+                                <field name="step_tempi_cottura"/>
+                                <field name="step_tempi_cottura_note" placeholder="Note..."/>
+                                <field name="step_raffreddamento"/>
+                                <field name="step_raffreddamento_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Confezionamento">
+                            <group col="4">
+                                <field name="step_imballaggio"/>
+                                <field name="step_imballaggio_note" placeholder="Note..."/>
+                                <field name="step_etichettatura"/>
+                                <field name="step_etichettatura_note" placeholder="Note..."/>
+                                <field name="step_peso_netto"/>
+                                <field name="step_peso_netto_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Tracciabilita e Rilascio">
+                            <group col="4">
+                                <field name="step_lotto_assegnato"/>
+                                <field name="step_lotto_assegnato_note" placeholder="Note..."/>
+                                <field name="step_campione_conservato"/>
+                                <field name="step_campione_conservato_note" placeholder="Note..."/>
+                                <field name="step_doc_completa"/>
+                                <field name="step_doc_completa_note" placeholder="Note..."/>
+                                <field name="step_controllo_finale"/>
+                                <field name="step_controllo_finale_note" placeholder="Note..."/>
+                                <field name="step_rilascio"/>
+                                <field name="step_rilascio_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="CCP">
+                            <group string="CCP 1" col="6">
+                                <field name="ccp1_name"/>
+                                <field name="ccp1_limite_min"/>
+                                <field name="ccp1_limite_max"/>
+                                <field name="ccp1_valore"/>
+                                <field name="ccp1_esito"/>
+                                <field name="ccp1_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 2" col="6">
+                                <field name="ccp2_name"/>
+                                <field name="ccp2_limite_min"/>
+                                <field name="ccp2_limite_max"/>
+                                <field name="ccp2_valore"/>
+                                <field name="ccp2_esito"/>
+                                <field name="ccp2_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 3" col="6">
+                                <field name="ccp3_name"/>
+                                <field name="ccp3_limite_min"/>
+                                <field name="ccp3_limite_max"/>
+                                <field name="ccp3_valore"/>
+                                <field name="ccp3_esito"/>
+                                <field name="ccp3_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 4" col="6">
+                                <field name="ccp4_name"/>
+                                <field name="ccp4_limite_min"/>
+                                <field name="ccp4_limite_max"/>
+                                <field name="ccp4_valore"/>
+                                <field name="ccp4_esito"/>
+                                <field name="ccp4_note" placeholder="Note..."/>
+                            </group>
+                            <group string="CCP 5" col="6">
+                                <field name="ccp5_name"/>
+                                <field name="ccp5_limite_min"/>
+                                <field name="ccp5_limite_max"/>
+                                <field name="ccp5_valore"/>
+                                <field name="ccp5_esito"/>
+                                <field name="ccp5_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Note Generali">
+                            <field name="haccp_notes" nolabel="1"/>
+                        </page>
                     </notebook>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </form>
+                    <group string="Stato HACCP">
+                        <field name="haccp_state" widget="badge"/>
+                        <button name="action_haccp_compliant" string="Rilascia HACCP"
+                                type="object" class="btn-success"/>
+                    </group>
+                </page>
+            </notebook>
         </field>
     </record>
 
-    <!-- RECEIPT TREE -->
-    <record id="cf_haccp_receipt_tree" model="ir.ui.view">
-        <field name="name">cf.haccp.receipt.tree</field>
-        <field name="model">cf.haccp.receipt</field>
+    <record id="cf_haccp_picking_form" model="ir.ui.view">
+        <field name="name">stock.picking.haccp.form</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
-            <tree decoration-success="state == 'approved'" decoration-danger="state == 'rejected'">
-                <field name="name"/>
-                <field name="supplier_id"/>
-                <field name="product_id"/>
-                <field name="receipt_date"/>
-                <field name="quantity_received"/>
-                <field name="state" widget="badge"/>
-            </tree>
+            <notebook position="inside">
+                <page string="Controllo HACCP Ricezione" name="haccp_receipt_tab"
+                      invisible="picking_type_code != 'incoming'">
+                    <group string="Operatore e Data">
+                        <group>
+                            <field name="haccp_operator_id"/>
+                            <field name="haccp_date"/>
+                        </group>
+                        <group>
+                            <field name="check_lotto_fornitore"/>
+                            <field name="haccp_decisione"/>
+                        </group>
+                    </group>
+                    <group string="Temperature">
+                        <group>
+                            <field name="temp_prodotto"/>
+                            <field name="temp_veicolo"/>
+                        </group>
+                        <group>
+                            <field name="temp_ok"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Controlli Organolettici">
+                            <group col="4">
+                                <field name="check_aspetto"/>
+                                <field name="check_aspetto_note" placeholder="Note..."/>
+                                <field name="check_odore"/>
+                                <field name="check_odore_note" placeholder="Note..."/>
+                                <field name="check_colore"/>
+                                <field name="check_colore_note" placeholder="Note..."/>
+                                <field name="check_consistenza"/>
+                                <field name="check_consistenza_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Documentazione">
+                            <group col="4">
+                                <field name="check_ddt"/>
+                                <field name="check_ddt_note" placeholder="Note..."/>
+                                <field name="check_coa"/>
+                                <field name="check_coa_note" placeholder="Note..."/>
+                                <field name="check_scadenza"/>
+                                <field name="check_scadenza_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Imballaggio e Veicolo">
+                            <group col="4">
+                                <field name="check_packaging"/>
+                                <field name="check_packaging_note" placeholder="Note..."/>
+                                <field name="check_etichetta"/>
+                                <field name="check_etichetta_note" placeholder="Note..."/>
+                                <field name="check_veicolo_pulizia"/>
+                                <field name="check_veicolo_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Allergeni">
+                            <group col="4">
+                                <field name="check_allergeni"/>
+                                <field name="check_allergeni_note" placeholder="Note..."/>
+                            </group>
+                        </page>
+                        <page string="Note"><field name="haccp_notes" nolabel="1"/></page>
+                    </notebook>
+                    <group string="Stato HACCP">
+                        <field name="haccp_receipt_state" widget="badge"/>
+                    </group>
+                </page>
+            </notebook>
         </field>
     </record>
 
-    <!-- NC FORM -->
+    <record id="cf_haccp_purchase_form" model="ir.ui.view">
+        <field name="name">purchase.order.haccp.form</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="HACCP Fornitore" name="haccp_purchase_tab">
+                    <group col="4">
+                        <field name="haccp_fornitore_approvato"/>
+                        <field name="haccp_fornitore_note" placeholder="Note..."/>
+                        <field name="haccp_spec_tecniche"/>
+                        <field name="haccp_spec_note" placeholder="Note..."/>
+                        <field name="haccp_certificazioni"/>
+                        <field name="haccp_cert_note" placeholder="Note..."/>
+                        <field name="haccp_allergeni_dichiarati"/>
+                        <field name="haccp_allergeni_note" placeholder="Note..."/>
+                    </group>
+                    <group string="Note HACCP">
+                        <field name="haccp_notes" nolabel="1"/>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <record id="cf_haccp_picking_list" model="ir.ui.view">
+        <field name="name">stock.picking.haccp.list</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="haccp_receipt_state" widget="badge" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="cf_haccp_nc_list" model="ir.ui.view">
+        <field name="name">cf.haccp.nc.list</field>
+        <field name="model">cf.haccp.nc</field>
+        <field name="arch" type="xml">
+            <list string="Non Conformita">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="origin"/>
+                <field name="product_id"/>
+                <field name="severity" widget="badge"/>
+                <field name="assigned_to"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
     <record id="cf_haccp_nc_form" model="ir.ui.view">
         <field name="name">cf.haccp.nc.form</field>
         <field name="model">cf.haccp.nc</field>
         <field name="arch" type="xml">
-            <form string="Non Conformità">
+            <form string="Non Conformita">
                 <header>
-                    <button name="action_close" string="Chiudi NC" type="object" class="btn-success" invisible="state in ('closed','cancelled')"/>
+                    <button name="action_close" string="Chiudi NC" type="object" class="btn-success"/>
                     <field name="state" widget="statusbar" statusbar_visible="open,analysis,action,verified,closed"/>
                 </header>
                 <sheet>
@@ -239,7 +483,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Descrizione"><field name="description" nolabel="1" required="1"/></page>
+                        <page string="Descrizione"><field name="description" nolabel="1"/></page>
                         <page string="Azione Correttiva"><field name="corrective_action" nolabel="1"/></page>
                         <page string="Note"><field name="notes" nolabel="1"/></page>
                     </notebook>
@@ -253,61 +497,28 @@
         </field>
     </record>
 
-    <!-- NC TREE -->
-    <record id="cf_haccp_nc_tree" model="ir.ui.view">
-        <field name="name">cf.haccp.nc.tree</field>
-        <field name="model">cf.haccp.nc</field>
+    <record id="cf_haccp_quarantine_list" model="ir.ui.view">
+        <field name="name">cf.haccp.quarantine.list</field>
+        <field name="model">cf.haccp.quarantine</field>
         <field name="arch" type="xml">
-            <tree decoration-danger="severity == 'critical'" decoration-warning="severity == 'high'" decoration-success="state == 'closed'">
+            <list string="Quarantena">
                 <field name="reference"/>
-                <field name="date"/>
-                <field name="origin"/>
+                <field name="lot_id"/>
                 <field name="product_id"/>
-                <field name="severity" widget="badge"/>
-                <field name="assigned_to"/>
+                <field name="date_start"/>
+                <field name="location"/>
                 <field name="state" widget="badge"/>
-            </tree>
+            </list>
         </field>
     </record>
-
-    <!-- NC KANBAN -->
-    <record id="cf_haccp_nc_kanban" model="ir.ui.view">
-        <field name="name">cf.haccp.nc.kanban</field>
-        <field name="model">cf.haccp.nc</field>
-        <field name="arch" type="xml">
-            <kanban default_group_by="state" quick_create="false">
-                <field name="reference"/>
-                <field name="severity"/>
-                <field name="state"/>
-                <field name="product_id"/>
-                <field name="assigned_to"/>
-                <templates>
-                    <t t-name="kanban-box">
-                        <div class="oe_kanban_card oe_kanban_global_click">
-                            <div class="o_kanban_record_top">
-                                <strong><field name="reference"/></strong>
-                                <field name="severity" widget="badge"/>
-                            </div>
-                            <div><field name="product_id"/></div>
-                            <div class="o_kanban_record_bottom">
-                                <field name="assigned_to" widget="many2one_avatar_user"/>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
-        </field>
-    </record>
-
-    <!-- QUARANTINE FORM -->
     <record id="cf_haccp_quarantine_form" model="ir.ui.view">
         <field name="name">cf.haccp.quarantine.form</field>
         <field name="model">cf.haccp.quarantine</field>
         <field name="arch" type="xml">
             <form string="Quarantena">
                 <header>
-                    <button name="action_release" string="Rilascia" type="object" class="btn-success" invisible="state != 'active'"/>
-                    <button name="action_destroy" string="Distruggi" type="object" class="btn-danger" invisible="state != 'active'"/>
+                    <button name="action_release" string="Rilascia" type="object" class="btn-success"/>
+                    <button name="action_destroy" string="Distruggi" type="object" class="btn-danger"/>
                     <field name="state" widget="statusbar" statusbar_visible="active,released,destroyed"/>
                 </header>
                 <sheet>
@@ -335,25 +546,21 @@
             </form>
         </field>
     </record>
-
-    <!-- QUARANTINE TREE -->
-    <record id="cf_haccp_quarantine_tree" model="ir.ui.view">
-        <field name="name">cf.haccp.quarantine.tree</field>
-        <field name="model">cf.haccp.quarantine</field>
+    <record id="cf_haccp_calibration_list" model="ir.ui.view">
+        <field name="name">cf.haccp.calibration.list</field>
+        <field name="model">cf.haccp.calibration</field>
         <field name="arch" type="xml">
-            <tree decoration-danger="state == 'active'" decoration-success="state == 'released'">
-                <field name="reference"/>
-                <field name="lot_id"/>
-                <field name="product_id"/>
-                <field name="date_start"/>
-                <field name="date_end"/>
+            <list string="Calibrazioni">
+                <field name="instrument_name"/>
+                <field name="instrument_code"/>
+                <field name="instrument_type"/>
                 <field name="location"/>
+                <field name="date_next_calibration"/>
+                <field name="calibrated_by"/>
                 <field name="state" widget="badge"/>
-            </tree>
+            </list>
         </field>
     </record>
-
-    <!-- CALIBRATION FORM -->
     <record id="cf_haccp_calibration_form" model="ir.ui.view">
         <field name="name">cf.haccp.calibration.form</field>
         <field name="model">cf.haccp.calibration</field>
@@ -363,12 +570,10 @@
                     <field name="state" widget="statusbar" statusbar_visible="valid,expiring,expired"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="instrument_name"/></h1>
-                        <h2><field name="instrument_code"/></h2>
-                    </div>
+                    <div class="oe_title"><h1><field name="instrument_name"/></h1></div>
                     <group>
                         <group string="Strumento">
+                            <field name="instrument_code"/>
                             <field name="instrument_type"/>
                             <field name="location"/>
                             <field name="workcenter_id"/>
@@ -383,16 +588,6 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Storico">
-                            <field name="calibration_history_ids" nolabel="1">
-                                <tree editable="bottom">
-                                    <field name="date"/>
-                                    <field name="calibrated_by"/>
-                                    <field name="result_ok"/>
-                                    <field name="notes"/>
-                                </tree>
-                            </field>
-                        </page>
                         <page string="Note"><field name="notes" nolabel="1"/></page>
                     </notebook>
                 </sheet>
@@ -403,27 +598,19 @@
             </form>
         </field>
     </record>
-
-    <!-- CALIBRATION TREE -->
-    <record id="cf_haccp_calibration_tree" model="ir.ui.view">
-        <field name="name">cf.haccp.calibration.tree</field>
-        <field name="model">cf.haccp.calibration</field>
+    <record id="cf_haccp_document_list" model="ir.ui.view">
+        <field name="name">cf.haccp.document.list</field>
+        <field name="model">cf.haccp.document</field>
         <field name="arch" type="xml">
-            <tree decoration-success="state == 'valid'" decoration-warning="state == 'expiring'" decoration-danger="state == 'expired'">
-                <field name="instrument_name"/>
-                <field name="instrument_code"/>
-                <field name="instrument_type"/>
-                <field name="location"/>
-                <field name="date_last_calibration"/>
-                <field name="date_next_calibration"/>
-                <field name="calibrated_by"/>
-                <field name="result_ok"/>
+            <list string="Documenti HACCP">
+                <field name="name"/>
+                <field name="doc_type"/>
+                <field name="partner_id"/>
+                <field name="date_expiry"/>
                 <field name="state" widget="badge"/>
-            </tree>
+            </list>
         </field>
     </record>
-
-    <!-- DOCUMENT FORM -->
     <record id="cf_haccp_document_form" model="ir.ui.view">
         <field name="name">cf.haccp.document.form</field>
         <field name="model">cf.haccp.document</field>
@@ -441,7 +628,7 @@
                             <field name="partner_id"/>
                             <field name="product_id"/>
                         </group>
-                        <group string="Validità">
+                        <group string="Validita">
                             <field name="date_issue"/>
                             <field name="date_expiry"/>
                         </group>
@@ -458,38 +645,4 @@
             </form>
         </field>
     </record>
-
-    <!-- DOCUMENT TREE -->
-    <record id="cf_haccp_document_tree" model="ir.ui.view">
-        <field name="name">cf.haccp.document.tree</field>
-        <field name="model">cf.haccp.document</field>
-        <field name="arch" type="xml">
-            <tree decoration-success="state == 'valid'" decoration-warning="state == 'expiring'" decoration-danger="state == 'expired'">
-                <field name="name"/>
-                <field name="doc_type"/>
-                <field name="partner_id"/>
-                <field name="document_ref"/>
-                <field name="date_issue"/>
-                <field name="date_expiry"/>
-                <field name="state" widget="badge"/>
-            </tree>
-        </field>
-    </record>
-
-    <!-- MENUS -->
-    <menuitem id="menu_cf_haccp_root" name="HACCP" sequence="25"
-              web_icon="casafolino_haccp,static/description/icon.png"/>
-    <menuitem id="menu_cf_haccp_sp" name="Schede Produzione"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_sp" sequence="1"/>
-    <menuitem id="menu_cf_haccp_receipt" name="Controlli Ricezione"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_receipt" sequence="2"/>
-    <menuitem id="menu_cf_haccp_nc" name="Non Conformità"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_nc" sequence="3"/>
-    <menuitem id="menu_cf_haccp_quarantine" name="Quarantena"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_quarantine" sequence="4"/>
-    <menuitem id="menu_cf_haccp_calibration" name="Calibrazioni"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_calibration" sequence="5"/>
-    <menuitem id="menu_cf_haccp_document" name="Documenti"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_document" sequence="6"/>
-
 </odoo>

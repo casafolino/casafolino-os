@@ -9,8 +9,8 @@
                     <button name="action_confirm" type="object" string="Conferma" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_start" type="object" string="Avvia" class="btn-success" invisible="state != 'confirmed'"/>
                     <button name="action_done" type="object" string="Completa" class="btn-success" invisible="state != 'in_progress'"/>
-                    <button name="action_create_mo" type="object" string="Crea MO Odoo" class="btn-secondary" invisible="production_id"/>
-                    <button name="action_cancel" type="object" string="Annulla" class="btn-danger" invisible="state in ('done','cancelled')"/>
+                    <button name="action_create_mo" type="object" string="Crea MO Odoo" class="btn-secondary" invisible="production_id == False"/>
+                    <button name="action_cancel" type="object" string="Annulla" class="btn-danger" invisible="state in ['done','cancelled']"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
                 </header>
                 <sheet>

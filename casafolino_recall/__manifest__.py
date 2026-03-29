@@ -9,8 +9,8 @@
     "data": [
         "security/ir.model.access.csv",
         "views/cf_recall_views.xml",
-        "views/menus.xml",
         "wizard/cf_recall_wizard_views.xml",
+        "views/menus.xml",
     ],
     "installable": True,
     "application": True,
