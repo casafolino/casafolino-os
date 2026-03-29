@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <form string="Non Conformita">
                 <header>
-                    <button name="action_close" type="object" string="Chiudi" class="btn-success" attrs="{'invisible': [('state','=','closed')]}"/>
+                    <button name="action_close" type="object" string="Chiudi" class="btn-success" invisible="state == 'closed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="open,analysis,action,verified,closed"/>
                 </header>
                 <sheet>

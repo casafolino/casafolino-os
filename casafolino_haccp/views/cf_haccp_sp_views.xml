@@ -6,9 +6,9 @@
         <field name="arch" type="xml">
             <form string="Scheda Produzione">
                 <header>
-                    <button name="action_start" type="object" string="Avvia" class="btn-primary" attrs="{'invisible': [('state','!=','draft')]}"/>
-                    <button name="action_complete" type="object" string="Completa" class="btn-success" attrs="{'invisible': [('state','!=','in_progress')]}"/>
-                    <button name="action_release" type="object" string="Rilascia" class="btn-primary" attrs="{'invisible': [('state','!=','completed')]}"/>
+                    <button name="action_start" type="object" string="Avvia" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_complete" type="object" string="Completa" class="btn-success" invisible="state != 'in_progress'"/>
+                    <button name="action_release" type="object" string="Rilascia" class="btn-primary" invisible="state != 'completed'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,completed,released"/>
                 </header>
                 <sheet>
