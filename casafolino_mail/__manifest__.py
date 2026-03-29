@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail',
-    'version': '5.0',
+    'version': '4.0',
     'summary': 'Client email Gmail-style per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -10,7 +10,7 @@
         'views/cf_mail_views.xml',
     ],
     'assets': {
-        'web.assets_web': [
+        'web.assets_backend': [
             'casafolino_mail/static/src/css/cf_mail_client.css',
             'casafolino_mail/static/src/xml/cf_mail_client.xml',
             'casafolino_mail/static/src/js/cf_mail_client.js',

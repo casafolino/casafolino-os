@@ -24,13 +24,10 @@ class CfMailMessage(models.Model):
     direction = fields.Selection([('in', 'In entrata'), ('out', 'In uscita')], default='in')
     folder = fields.Char('Cartella', default='INBOX')
     message_uid = fields.Char('UID IMAP')
-    thread_id = fields.Char('Thread ID')
     partner_id = fields.Many2one('res.partner', string='Contatto')
     lead_id = fields.Many2one('cf.export.lead', string='Trattativa CRM')
     assigned_user_id = fields.Many2one('res.users', string='Assegnata a')
     tag_ids = fields.Many2many('cf.mail.tag', string='Tag')
-    snoozed_until = fields.Datetime('Posticipata fino a')
-    has_attachments = fields.Boolean('Ha allegati', default=False)
 
     def action_mark_read(self):
         self.write({'is_read': True})
@@ -38,102 +35,20 @@ class CfMailMessage(models.Model):
     def action_mark_unread(self):
         self.write({'is_read': False})
 
+    def action_star(self):
+        self.write({'is_starred': not self.is_starred})
+
     def action_archive_msg(self):
         self.write({'is_archived': True})
 
-    def _msg_to_dict(self, m):
-        tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in m.tag_ids]
-        thread_count = 0
-        if m.thread_id:
-            thread_count = self.search_count([('thread_id', '=', m.thread_id), ('id', '!=', m.id)])
-        return {
-            'id': m.id,
-            'subject': m.subject or '(nessun oggetto)',
-            'from_address': m.from_address or '',
-            'from_name': m.from_name or m.from_address or '',
-            'snippet': m.snippet or '',
-            'date': m.date.strftime('%d/%m/%Y %H:%M') if m.date else '',
-            'date_short': m.date.strftime('%d %b') if m.date else '',
-            'is_read': m.is_read,
-            'is_starred': m.is_starred,
-            'is_archived': m.is_archived,
-            'direction': m.direction,
-            'folder': m.folder or 'INBOX',
-            'has_attachments': m.has_attachments,
-            'thread_count': thread_count,
-            'partner_id': m.partner_id.id if m.partner_id else False,
-            'partner_name': m.partner_id.name if m.partner_id else '',
-            'lead_id': m.lead_id.id if m.lead_id else False,
-            'lead_name': m.lead_id.name if m.lead_id else '',
-            'assigned_user_id': m.assigned_user_id.id if m.assigned_user_id else False,
-            'assigned_user_name': m.assigned_user_id.name if m.assigned_user_id else '',
-            'tags': tags,
-            'lead_stage': m.lead_id.stage_id.name if m.lead_id and m.lead_id.stage_id else '',
-        }
-
-    @api.model
-    def advanced_search(self, *args, **kw):
-        query = kw.get('query') or ''
-        folder = kw.get('folder') or 'INBOX'
-        date_from = kw.get('date_from') or False
-        date_to = kw.get('date_to') or False
-        tag_id = kw.get('tag_id') or False
-        has_attachments = kw.get('has_attachments') or False
-        account_id = kw.get('account_id') or False
-        is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
-
-        domain = []
-        if not is_admin:
-            user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
-            domain.append(('account_id', 'in', user_accounts.ids))
-        elif account_id:
-            domain.append(('account_id', '=', int(account_id)))
-
-        if folder and folder != 'ALL':
-            if folder == 'Starred':
-                domain.append(('is_starred', '=', True))
-            elif folder == 'Sent':
-                domain.append(('direction', '=', 'out'))
-            elif folder == 'Archived':
-                domain.append(('is_archived', '=', True))
-            else:
-                domain += [('folder', '=', folder), ('is_archived', '=', False)]
-
-        if query:
-            domain += ['|', '|', '|', '|',
-                ('subject', 'ilike', query),
-                ('from_address', 'ilike', query),
-                ('from_name', 'ilike', query),
-                ('snippet', 'ilike', query),
-                ('body_text', 'ilike', query),
-            ]
-        if date_from:
-            domain.append(('date', '>=', date_from))
-        if date_to:
-            domain.append(('date', '<=', date_to + ' 23:59:59'))
-        if tag_id:
-            domain.append(('tag_ids', 'in', [int(tag_id)]))
-        if has_attachments:
-            domain.append(('has_attachments', '=', True))
-
-        msgs = self.search(domain, limit=100, order='date desc')
-        return [self._msg_to_dict(m) for m in msgs]
-
     @api.model
     def get_messages(self, *args, **kw):
+        account_id = kw.get('account_id') or (args[1] if len(args) > 1 else None)
+        folder = kw.get('folder') or (args[2] if len(args) > 2 else 'INBOX')
+        limit = int(kw.get('limit') or (args[3] if len(args) > 3 else 50))
+        offset = int(kw.get('offset') or (args[4] if len(args) > 4 else 0))
+        search = kw.get('search') or (args[5] if len(args) > 5 else '')
 
-        account_id = kw.get('account_id')
-        folder = kw.get('folder') or 'INBOX'
-        limit = int(kw.get('limit') or 50)
-        offset = int(kw.get('offset') or 0)
-        search = kw.get('search') or ''
-        tag_id = kw.get('tag_id') or False
-
-        is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
-        if not is_admin:
-            user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
-            if account_id not in user_accounts.ids:
-                return []
         domain = [('account_id', '=', account_id), ('is_archived', '=', False)]
         if folder == 'Starred':
             domain.append(('is_starred', '=', True))
@@ -141,27 +56,42 @@ class CfMailMessage(models.Model):
             domain.append(('direction', '=', 'out'))
         elif folder == 'Archived':
             domain = [('account_id', '=', account_id), ('is_archived', '=', True)]
-        elif folder == 'Assigned':
-            domain.append(('assigned_user_id', '=', self.env.uid))
-        elif folder.startswith('TAG_'):
-            try:
-                tid = int(folder.replace('TAG_', ''))
-                domain.append(('tag_ids', 'in', [tid]))
-            except Exception:
-                pass
         else:
             domain.append(('folder', '=', folder))
 
         if search:
-            domain += ['|', '|', '|',
+            domain += ['|', '|',
                 ('subject', 'ilike', search),
                 ('from_address', 'ilike', search),
-                ('from_name', 'ilike', search),
                 ('snippet', 'ilike', search),
             ]
 
         msgs = self.search(domain, limit=limit, offset=offset)
-        return [self._msg_to_dict(m) for m in msgs]
+        result = []
+        for m in msgs:
+            tags = []
+            for t in m.tag_ids:
+                tags.append({'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'})
+            result.append({
+                'id': m.id,
+                'subject': m.subject or '(nessun oggetto)',
+                'from_address': m.from_address or '',
+                'from_name': m.from_name or m.from_address or '',
+                'snippet': m.snippet or '',
+                'date': m.date.strftime('%d/%m/%Y %H:%M') if m.date else '',
+                'date_short': m.date.strftime('%d %b') if m.date else '',
+                'is_read': m.is_read,
+                'is_starred': m.is_starred,
+                'direction': m.direction,
+                'partner_id': m.partner_id.id if m.partner_id else False,
+                'partner_name': m.partner_id.name if m.partner_id else '',
+                'lead_id': m.lead_id.id if m.lead_id else False,
+                'lead_name': m.lead_id.name if m.lead_id else '',
+                'assigned_user_id': m.assigned_user_id.id if m.assigned_user_id else False,
+                'assigned_user_name': m.assigned_user_id.name if m.assigned_user_id else '',
+                'tags': tags,
+            })
+        return result
 
     @api.model
     def get_message_detail(self, *args, **kw):
@@ -176,16 +106,6 @@ class CfMailMessage(models.Model):
 
         partner_orders = []
         partner_leads = []
-        partner_other_emails = []
-        # Match partner da email se non già collegato
-        if not msg.partner_id and msg.from_address:
-            partner = self.env['res.partner'].search([('email', 'ilike', msg.from_address)], limit=1)
-            if not partner:
-                user = self.env['res.users'].search([('login', 'ilike', msg.from_address)], limit=1)
-                if user:
-                    partner = user.partner_id
-            if partner:
-                msg.with_context(mail_notrack=True).write({'partner_id': partner.id})
         if msg.partner_id:
             try:
                 leads = self.env['cf.export.lead'].search([('partner_id', '=', msg.partner_id.id)], limit=5)
@@ -199,29 +119,10 @@ class CfMailMessage(models.Model):
                     partner_orders.append({'id': o.id, 'name': o.name, 'amount': o.amount_total, 'currency': o.currency_id.symbol or '€'})
             except Exception:
                 pass
-            other_msgs = self.search([('partner_id', '=', msg.partner_id.id), ('id', '!=', msg.id)], limit=5, order='date desc')
-            for om in other_msgs:
-                partner_other_emails.append({
-                    'id': om.id,
-                    'subject': om.subject or '(nessun oggetto)',
-                    'date_short': om.date.strftime('%d %b') if om.date else '',
-                    'direction': om.direction,
-                })
 
-        tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
-
-        thread_messages = []
-        if msg.thread_id:
-            thread_msgs = self.search([('thread_id', '=', msg.thread_id), ('id', '!=', msg.id)], order='date asc')
-            for tm in thread_msgs:
-                thread_messages.append({
-                    'id': tm.id,
-                    'from_name': tm.from_name or tm.from_address or '',
-                    'from_address': tm.from_address or '',
-                    'date': tm.date.strftime('%d/%m/%Y %H:%M') if tm.date else '',
-                    'body_html': tm.body_html or tm.body_text or '',
-                    'direction': tm.direction,
-                })
+        tags = []
+        for t in msg.tag_ids:
+            tags.append({'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'})
 
         return {
             'id': msg.id,
@@ -235,29 +136,23 @@ class CfMailMessage(models.Model):
             'is_read': msg.is_read,
             'is_starred': msg.is_starred,
             'direction': msg.direction,
-            'has_attachments': msg.has_attachments,
             'partner_id': msg.partner_id.id if msg.partner_id else False,
             'partner_name': msg.partner_id.name if msg.partner_id else '',
             'partner_email': msg.partner_id.email if msg.partner_id else '',
-            'partner_phone': msg.partner_id.phone if msg.partner_id else '',
-            'partner_company': msg.partner_id.parent_id.name if msg.partner_id and msg.partner_id.parent_id else '',
             'lead_id': msg.lead_id.id if msg.lead_id else False,
             'lead_name': msg.lead_id.name if msg.lead_id else '',
             'assigned_user_id': msg.assigned_user_id.id if msg.assigned_user_id else False,
             'assigned_user_name': msg.assigned_user_id.name if msg.assigned_user_id else '',
             'partner_leads': partner_leads,
             'partner_orders': partner_orders,
-            'partner_other_emails': partner_other_emails,
             'tags': tags,
-            'thread_messages': thread_messages,
             'signature': msg.account_id.signature or '',
         }
 
     @api.model
     def do_bulk_action(self, *args, **kw):
-        ids = kw.get('ids') or []
-        action = kw.get('action') or ''
-        tag_id = kw.get('tag_id') or False
+        ids = kw.get('ids') or (args[1] if len(args) > 1 else [])
+        action = kw.get('action') or (args[2] if len(args) > 2 else '')
         if not ids or not action:
             return False
         msgs = self.browse([int(i) for i in ids])
@@ -267,18 +162,10 @@ class CfMailMessage(models.Model):
             msgs.write({'is_read': False})
         elif action == 'star':
             msgs.write({'is_starred': True})
-        elif action == 'unstar':
-            msgs.write({'is_starred': False})
         elif action == 'archive':
             msgs.write({'is_archived': True})
         elif action == 'delete':
             msgs.unlink()
-        elif action == 'add_tag' and tag_id:
-            for m in msgs:
-                m.tag_ids = [(4, int(tag_id))]
-        elif action == 'remove_tag' and tag_id:
-            for m in msgs:
-                m.tag_ids = [(3, int(tag_id))]
         return True
 
     @api.model
@@ -311,36 +198,6 @@ class CfMailMessage(models.Model):
         return msg.is_starred
 
     @api.model
-    def do_add_tag(self, *args, **kw):
-        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
-        tag_id = kw.get('tag_id') or (args[2] if len(args) > 2 else None)
-        if not message_id or not tag_id:
-            return False
-        msg = self.browse(int(message_id))
-        msg.tag_ids = [(4, int(tag_id))]
-        return [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
-
-    @api.model
-    def do_remove_tag(self, *args, **kw):
-        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
-        tag_id = kw.get('tag_id') or (args[2] if len(args) > 2 else None)
-        if not message_id or not tag_id:
-            return False
-        msg = self.browse(int(message_id))
-        msg.tag_ids = [(3, int(tag_id))]
-        return [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
-
-    @api.model
-    def do_snooze(self, *args, **kw):
-        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
-        until = kw.get('until') or (args[2] if len(args) > 2 else None)
-        if not message_id:
-            return False
-        msg = self.browse(int(message_id))
-        msg.write({'snoozed_until': until})
-        return True
-
-    @api.model
     def get_users_list(self, *args, **kw):
         users = self.env['res.users'].search([('share', '=', False), ('active', '=', True)])
         return [{'id': u.id, 'name': u.name} for u in users]
@@ -348,155 +205,40 @@ class CfMailMessage(models.Model):
     @api.model
     def get_leads_list(self, *args, **kw):
         try:
-            leads = self.env['cf.export.lead'].search([('active', '=', True)], limit=100, order='id desc')
+            leads = self.env['cf.export.lead'].search([('active', '=', True)], limit=50, order='id desc')
             return [{'id': l.id, 'name': l.name} for l in leads]
         except Exception:
             return []
 
     @api.model
-    def get_tags_list(self, *args, **kw):
-        tags = self.env['cf.mail.tag'].search([])
-        return [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in tags]
-
-    @api.model
-    def create_tag(self, *args, **kw):
-        name = kw.get('name') or (args[1] if len(args) > 1 else None)
-        color = kw.get('color') or '#5A6E3A'
-        if not name:
-            return False
-        tag = self.env['cf.mail.tag'].create({'name': name, 'color': color})
-        return {'id': tag.id, 'name': tag.name, 'color': tag.color}
-
-    @api.model
     def send_reply(self, *args, **kw):
         message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
-        to_addr = kw.get('to_address') or ''
-        subject = kw.get('subject') or ''
-        body = kw.get('body') or ''
-        account_id = kw.get('account_id') or None
+        to_addr = kw.get('to_address') or (args[2] if len(args) > 2 else '')
+        subject = kw.get('subject') or (args[3] if len(args) > 3 else '')
+        body = kw.get('body') or (args[4] if len(args) > 4 else '')
+        account_id = kw.get('account_id') or (args[5] if len(args) > 5 else None)
         if not to_addr or not body:
             return {'success': False, 'error': 'Destinatario o corpo mancante'}
         try:
             acc = self.env['cf.mail.account'].browse(int(account_id)) if account_id else None
             from_email = acc.email if acc else self.env.user.email
-
-            # Invia via SMTP reale se account configurato
-            if acc and acc.imap_password and acc.smtp_host:
-                import smtplib
-                from email.mime.multipart import MIMEMultipart
-                from email.mime.text import MIMEText
-                import ssl as ssl_lib
-
-                msg_obj = MIMEMultipart('alternative')
-                msg_obj['Subject'] = subject
-                msg_obj['From'] = f'{acc.name or acc.email} <{acc.email}>'
-                msg_obj['To'] = to_addr
-                if message_id:
-                    orig = self.browse(int(message_id))
-                    if orig.exists() and orig.message_uid:
-                        msg_obj['In-Reply-To'] = orig.message_uid
-
-                msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
-
-                if acc.smtp_tls:
-                    server = smtplib.SMTP(acc.smtp_host, acc.smtp_port)
-                    server.ehlo()
-                    server.starttls(context=ssl_lib.create_default_context())
-                else:
-                    server = smtplib.SMTP_SSL(acc.smtp_host, acc.smtp_port, context=ssl_lib.create_default_context())
-                server.ehlo()
-                server.login(acc.email, acc.imap_password)
-                server.sendmail(acc.email, to_addr.split(','), msg_obj.as_string())
-
-                # Salva in Gmail Sent via IMAP APPEND
-                try:
-                    import imaplib
-                    if acc.imap_ssl:
-                        imap = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port, ssl_context=ssl_lib.create_default_context())
-                    else:
-                        imap = imaplib.IMAP4(acc.imap_host, acc.imap_port)
-                    imap.login(acc.email, acc.imap_password)
-                    sent_folders = ['[Gmail]/Sent Mail', 'Sent', 'Sent Items']
-                    for sf in sent_folders:
-                        try:
-                            imap.append(sf, '\\Seen', None, msg_obj.as_bytes())
-                            break
-                        except Exception:
-                            continue
-                    imap.logout()
-                except Exception as e2:
-                    import logging
-                    logging.getLogger(__name__).warning('Could not append to Sent: %s', e2)
-
-                server.quit()
-            else:
-                # Fallback Odoo mail
-                mail = self.env['mail.mail'].create({
-                    'subject': subject,
-                    'email_to': to_addr,
-                    'body_html': body,
-                    'email_from': from_email,
-                })
-                mail.send()
-
-            thread_id = None
-            if message_id:
-                orig = self.browse(int(message_id))
-                if orig.exists():
-                    thread_id = orig.thread_id or str(orig.id)
-
+            mail = self.env['mail.mail'].create({
+                'subject': subject,
+                'email_to': to_addr,
+                'body_html': body,
+                'email_from': from_email,
+            })
+            mail.send()
             sent_msg = self.create({
                 'account_id': int(account_id) if account_id else False,
                 'subject': subject,
                 'from_address': from_email,
-                'from_name': acc.name if acc else '',
                 'to_address': to_addr,
                 'body_html': body,
                 'direction': 'out',
                 'folder': 'Sent',
                 'is_read': True,
-                'thread_id': thread_id,
             })
             return {'success': True, 'id': sent_msg.id}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-
-    @api.model
-    def get_crm_data(self, *args, **kw):
-        # Pipeline (stages di cf.export.lead)
-        try:
-            stages = self.env['cf.export.stage'].search([], order='sequence')
-            pipelines = [{'id': s.id, 'name': s.name} for s in stages]
-        except Exception:
-            pipelines = []
-        # Partner list
-        partners = self.env['res.partner'].search([('active', '=', True)], limit=100, order='name')
-        partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
-        return {'pipelines': pipelines, 'partners': partner_list}
-
-    @api.model
-    def create_lead_from_form(self, *args, **kw):
-        name = kw.get('name') or 'Lead da email'
-        partner_id = kw.get('partner_id') or False
-        stage_id = kw.get('stage_id') or False
-        expected_revenue = kw.get('expected_revenue') or 0
-        description = kw.get('description') or ''
-        message_id = kw.get('message_id') or False
-        try:
-            vals = {
-                'name': name,
-                'partner_id': int(partner_id) if partner_id else False,
-                'stage_id': int(stage_id) if stage_id else False,
-                'expected_revenue': float(expected_revenue) if expected_revenue else 0,
-                'description': description,
-            }
-            lead = self.env['cf.export.lead'].create(vals)
-            if message_id:
-                msg = self.browse(int(message_id))
-                if msg.exists():
-                    msg.write({'lead_id': lead.id})
-                    if not msg.partner_id and partner_id:
-                        msg.write({'partner_id': int(partner_id)})
-            return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
         except Exception as e:
             return {'success': False, 'error': str(e)}
