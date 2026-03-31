@@ -33,6 +33,9 @@ class CfMailClient extends Component {
             folder: "INBOX", search: "", selectedIds: [], totalUnread: 0,
             quickFilter: "all",
             showComposer: false, composerMode: "reply", composerTo: "", composerSubject: "",
+            composerFrom: null, composerCc: "", composerBcc: "",
+            composerShowCc: false, composerShowBcc: false,
+            composerMinimized: false, composerMaximized: false,
             users: [], leads: [], allTags: [], contactTags: [],
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
@@ -479,37 +482,134 @@ class CfMailClient extends Component {
         } catch (e) {}
     }
 
+    _resetComposerState() {
+        this.state.composerFrom = this.state.selectedAccount;
+        this.state.composerCc = "";
+        this.state.composerBcc = "";
+        this.state.composerShowCc = false;
+        this.state.composerShowBcc = false;
+        this.state.composerMinimized = false;
+        this.state.composerMaximized = false;
+    }
+
     openReply() {
         this.state.showComposer = true;
         this.state.composerMode = "reply";
         this.state.composerTo = this.state.msgDetail.from_address || "";
         this.state.composerSubject = "Re: " + (this.state.msgDetail.subject || "");
+        this._resetComposerState();
+        this._initComposerBody();
     }
     openForward() {
         this.state.showComposer = true;
         this.state.composerMode = "forward";
         this.state.composerTo = "";
         this.state.composerSubject = "Fwd: " + (this.state.msgDetail.subject || "");
+        this._resetComposerState();
+        this._initComposerBody();
     }
     openComposer() {
         this.state.showComposer = true;
         this.state.composerMode = "new";
         this.state.composerTo = "";
         this.state.composerSubject = "";
+        this._resetComposerState();
+        this._initComposerBody();
     }
     closeComposer() { this.state.showComposer = false; }
+
+    // ── Composer v2 helpers ─────────────────────────────────────────────────
+
+    onComposerFromChange(ev) {
+        const val = ev.target.value;
+        this.state.composerFrom = val ? parseInt(val) : null;
+    }
+
+    toggleComposerCc() {
+        this.state.composerShowCc = !this.state.composerShowCc;
+        if (!this.state.composerShowCc) this.state.composerCc = "";
+    }
+
+    toggleComposerBcc() {
+        this.state.composerShowBcc = !this.state.composerShowBcc;
+        if (!this.state.composerShowBcc) this.state.composerBcc = "";
+    }
+
+    toggleComposerMinimized() {
+        this.state.composerMinimized = !this.state.composerMinimized;
+    }
+
+    toggleComposerMaximized() {
+        this.state.composerMaximized = !this.state.composerMaximized;
+        if (this.state.composerMaximized) this.state.composerMinimized = false;
+    }
+
+    execFormat(cmd) {
+        document.execCommand(cmd, false, null);
+        const el = this.composerBody.el;
+        if (el) el.focus();
+    }
+
+    async insertLink() {
+        const url = window.prompt("Inserisci URL:");
+        if (url) {
+            document.execCommand("createLink", false, url);
+            const el = this.composerBody.el;
+            if (el) el.focus();
+        }
+    }
+
+    async saveDraft() {
+        const bodyEl = this.composerBody.el;
+        const body = bodyEl ? bodyEl.innerHTML : "";
+        try {
+            const res = await this._rpc("cf.mail.message", "save_draft", {
+                account_id: this.state.composerFrom || this.state.selectedAccount,
+                to_address: this.state.composerTo || "",
+                cc_address: this.state.composerCc || "",
+                bcc_address: this.state.composerBcc || "",
+                subject: this.state.composerSubject || "",
+                body,
+            });
+            if (res && res.success) this.showToast("Bozza salvata");
+            else this.showToast("Bozza salvata in locale");
+        } catch (e) { this.showToast("Bozza salvata in locale"); }
+    }
+
+    _initComposerBody() {
+        requestAnimationFrame(() => {
+            const el = this.composerBody.el;
+            if (!el) return;
+            const sig = this.currentSignature;
+            const sigHtml = sig
+                ? '<br><div class="cf-composer-sig-divider">—</div><div class="cf-composer-sig">' + sig + "</div>"
+                : "";
+            const quotedHtml = (this.state.composerMode === "reply" && this.state.msgDetail.body_html)
+                ? '<br><blockquote class="cf-composer-quote">' + this.state.msgDetail.body_html + "</blockquote>"
+                : "";
+            el.innerHTML = sigHtml + quotedHtml;
+            el.focus();
+            const range = document.createRange();
+            range.setStart(el, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+        });
+    }
 
     async sendEmail() {
         const bodyEl = this.composerBody.el;
         const body = bodyEl ? bodyEl.innerHTML : "";
-        if (!this.state.composerTo || !body) { this.showToast("Compilare destinatario e messaggio"); return; }
+        if (!this.state.composerTo || !body.trim()) { this.showToast("Compilare destinatario e messaggio"); return; }
         try {
             const res = await this._rpc("cf.mail.message", "send_reply", {
                 message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
                 to_address: this.state.composerTo,
+                cc_address: this.state.composerCc || "",
+                bcc_address: this.state.composerBcc || "",
                 subject: this.state.composerSubject,
                 body,
-                account_id: this.state.selectedAccount,
+                account_id: this.state.composerFrom || this.state.selectedAccount,
             });
             if (res && res.success) { this.showToast("Email inviata!"); this.closeComposer(); }
             else this.showToast("Errore invio: " + (res.error || "sconosciuto"));
@@ -584,8 +684,9 @@ class CfMailClient extends Component {
     }
 
     get currentSignature() {
-        if (!this.state.selectedAccount) return "";
-        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
+        const accountId = this.state.composerFrom || this.state.selectedAccount;
+        if (!accountId) return "";
+        const acc = this.state.accounts.find(a => a.id === accountId);
         return acc ? (acc.signature || "") : "";
     }
 
