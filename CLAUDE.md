@@ -162,3 +162,11 @@ cf_job_title, cf_department, cf_linkedin, cf_instagram, cf_whatsapp,
 cf_language, cf_country_origin, cf_birthday, cf_fairs, cf_notes,
 cf_last_contact, cf_email_count, cf_opt_out, cf_gdpr_consent,
 cf_gdpr_date, cf_source, cf_rating
+
+## Deploy con update modulo (necessario per nuovi campi o cron)
+```bash
+# Quando ci sono nuovi campi o cron da registrare:
+docker exec odoo-app odoo -d folinofood_stage -u casafolino_mail --stop-after-init --no-http
+# I campi OOO vengono aggiunti automaticamente al DB
+# Il cron parte alla prima sincronizzazione del modulo
+```
