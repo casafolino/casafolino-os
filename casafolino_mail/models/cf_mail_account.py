@@ -31,6 +31,19 @@ class CfMailAccount(models.Model):
     smtp_port = fields.Integer('SMTP Port', default=587)
     smtp_tls = fields.Boolean('SMTP TLS', default=True)
 
+    ooo_enabled = fields.Boolean('OOO attivo', default=False)
+    ooo_subject = fields.Char('Oggetto OOO', default='Sono fuori ufficio')
+    ooo_message = fields.Text('Messaggio OOO')
+    ooo_start = fields.Date('OOO inizio')
+    ooo_end = fields.Date('OOO fine')
+
+    @api.model
+    def is_admin(self, *args, **kw):
+        return (
+            self.env.user.has_group('base.group_system') or
+            self.env.user.login in ('antonio@casafolino.com',)
+        )
+
     @api.model
     def get_accounts(self, *args, **kw):
         accounts = self.search([('active', '=', True)], order='sequence, is_team, id')
@@ -85,6 +98,11 @@ class CfMailAccount(models.Model):
             'smtp_host': acc.smtp_host or 'smtp.gmail.com',
             'smtp_port': acc.smtp_port or 587,
             'smtp_tls': acc.smtp_tls,
+            'ooo_enabled': acc.ooo_enabled,
+            'ooo_subject': acc.ooo_subject or 'Sono fuori ufficio',
+            'ooo_message': acc.ooo_message or '',
+            'ooo_start': acc.ooo_start.strftime('%Y-%m-%d') if acc.ooo_start else '',
+            'ooo_end': acc.ooo_end.strftime('%Y-%m-%d') if acc.ooo_end else '',
         }
 
     @api.model
@@ -102,6 +120,11 @@ class CfMailAccount(models.Model):
             'smtp_host': kw.get('smtp_host') or 'smtp.gmail.com',
             'smtp_port': int(kw.get('smtp_port') or 587),
             'smtp_tls': bool(kw.get('smtp_tls')),
+            'ooo_enabled': bool(kw.get('ooo_enabled')),
+            'ooo_subject': kw.get('ooo_subject') or 'Sono fuori ufficio',
+            'ooo_message': kw.get('ooo_message') or '',
+            'ooo_start': kw.get('ooo_start') or False,
+            'ooo_end': kw.get('ooo_end') or False,
         }
         if kw.get('imap_password'):
             vals['imap_password'] = kw.get('imap_password')
@@ -126,20 +149,96 @@ class CfMailAccount(models.Model):
         if not account_id:
             return {'success': False, 'error': 'Account non trovato'}
         acc = self.browse(int(account_id))
+        if not acc.exists():
+            return {'success': False, 'error': 'Account non trovato'}
+
+        imap_ok = False
+        smtp_ok = False
+        errors = []
+
+        # ── Test IMAP ──────────────────────────────────────────────────────
         try:
             import imaplib, ssl as ssl_lib
             if acc.imap_ssl:
-                mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port, ssl_context=ssl_lib.create_default_context())
+                mail = imaplib.IMAP4_SSL(
+                    acc.imap_host, acc.imap_port,
+                    ssl_context=ssl_lib.create_default_context()
+                )
             else:
                 mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
                 mail.starttls()
             mail.login(acc.email, acc.imap_password)
             mail.logout()
-            acc.write({'imap_status': 'Connessione OK ✓'})
-            return {'success': True}
+            imap_ok = True
         except Exception as e:
-            acc.write({'imap_status': f'Errore: {str(e)[:100]}'})
-            return {'success': False, 'error': str(e)}
+            errors.append(f'IMAP: {str(e)[:80]}')
+
+        # ── Test SMTP ──────────────────────────────────────────────────────
+        try:
+            import smtplib, ssl as ssl_lib
+            if acc.smtp_tls:
+                server = smtplib.SMTP(acc.smtp_host, acc.smtp_port, timeout=10)
+                server.ehlo()
+                server.starttls(context=ssl_lib.create_default_context())
+            else:
+                server = smtplib.SMTP_SSL(
+                    acc.smtp_host, acc.smtp_port,
+                    context=ssl_lib.create_default_context(), timeout=10
+                )
+            server.ehlo()
+            server.login(acc.email, acc.imap_password)
+            server.quit()
+            smtp_ok = True
+        except Exception as e:
+            errors.append(f'SMTP: {str(e)[:80]}')
+
+        if imap_ok and smtp_ok:
+            status = 'IMAP + SMTP OK ✓'
+            acc.write({'imap_status': status})
+            return {'success': True, 'message': status}
+        elif imap_ok:
+            status = f'IMAP OK ✓ | {errors[0]}'
+            acc.write({'imap_status': status})
+            return {'success': True, 'message': status}
+        else:
+            status = ' | '.join(errors)
+            acc.write({'imap_status': f'Errore: {status[:100]}'})
+            return {'success': False, 'error': status}
+
+    @api.model
+    def get_imap_folders(self, *args, **kw):
+        """Restituisce lista cartelle IMAP dell'account."""
+        account_id = kw.get('account_id')
+        if not account_id:
+            return []
+        acc = self.browse(int(account_id))
+        if not acc.exists() or not acc.imap_enabled or not acc.imap_password:
+            return []
+        try:
+            import imaplib, ssl as ssl_lib, re
+            if acc.imap_ssl:
+                mail = imaplib.IMAP4_SSL(
+                    acc.imap_host, acc.imap_port,
+                    ssl_context=ssl_lib.create_default_context()
+                )
+            else:
+                mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
+                mail.starttls()
+            mail.login(acc.email, acc.imap_password)
+            status, folder_list = mail.list()
+            mail.logout()
+            folders = []
+            if status == 'OK':
+                for item in folder_list:
+                    decoded = item.decode() if isinstance(item, bytes) else item
+                    m = re.search(r'"/" (.+)', decoded) or re.search(r'"\." (.+)', decoded)
+                    if m:
+                        name = m.group(1).strip().strip('"')
+                        folders.append(name)
+            return folders
+        except Exception as e:
+            _logger.warning('get_imap_folders error: %s', e)
+            return []
 
     @api.model
     def sync_now(self, *args, **kw):
