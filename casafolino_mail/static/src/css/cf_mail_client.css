@@ -1,6 +1,6 @@
 :root {
   --bg: #f3f5f0;
-  --sidebar-bg: #1a2317;
+  --sidebar-bg: #1e2432;
   --sidebar-width: 220px;
   --list-width: 340px;
   --accent: #5A6E3A;
@@ -94,16 +94,27 @@
   border-radius: 8px;
   margin: 1px 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
   gap: 10px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255,255,255,0.60);
   position: relative;
+  border-left: 3px solid transparent;
 }
-.cf-mail-nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-.cf-mail-nav-item.active { background: rgba(90,110,58,0.4); color: #c8dba0; font-weight: 700; }
-.cf-mail-nav-item .fa, .nav-icon { width: 16px; text-align: center; font-size: 13px; opacity: 0.75; }
+.cf-mail-nav-item:hover {
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.95);
+  border-left-color: rgba(255,255,255,0.15);
+}
+.cf-mail-nav-item.active {
+  background: rgba(90,110,58,0.30);
+  color: #c8dba0;
+  font-weight: 700;
+  border-left-color: #5A6E3A;
+}
+.cf-mail-nav-item .fa, .nav-icon { width: 16px; text-align: center; font-size: 13px; opacity: 0.70; }
+.cf-mail-nav-item:hover .fa, .cf-mail-nav-item:hover .nav-icon { opacity: 1; }
 .cf-mail-nav-item.active .fa, .cf-mail-nav-item.active .nav-icon { opacity: 1; }
 .cf-mail-nav-badge {
   margin-left: auto;
@@ -213,10 +224,11 @@
 .cf-qf-btn .fa { font-size: 10px; opacity: 0.7; }
 .cf-qf-btn:hover { background: var(--hover); border-color: #c8d0be; color: var(--text-primary); }
 .cf-qf-btn.active {
-  background: var(--accent-light);
-  color: var(--accent-dark);
-  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent-dark);
   font-weight: 700;
+  box-shadow: 0 2px 6px rgba(90,110,58,0.30);
 }
 .cf-qf-btn.active .fa { opacity: 1; }
 
@@ -333,19 +345,29 @@
 .cf-mail-email-item {
   display: flex;
   align-items: flex-start;
-  padding: 9px 12px;
+  padding: 9px 12px 9px 15px;
   border-bottom: 1px solid #edf0e9;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.13s, box-shadow 0.13s;
   gap: 9px;
   position: relative;
   background: white;
+  border-left: 3px solid transparent;
 }
-.cf-mail-email-item:hover { background: var(--hover); }
+.cf-mail-email-item:hover {
+  background: var(--hover);
+  box-shadow: inset 0 -1px 0 #e0e4da;
+}
 .cf-mail-email-item:hover .cf-item-actions { opacity: 1; }
 .cf-mail-email-item:hover .cf-item-cb { opacity: 1; }
-.cf-mail-email-item.selected { background: var(--selected); border-left: 3px solid var(--accent); padding-left: 9px; }
-.cf-mail-email-item.unread { background: var(--unread-bg); }
+.cf-mail-email-item.selected {
+  background: var(--selected);
+  border-left-color: var(--accent);
+}
+.cf-mail-email-item.unread {
+  background: #ffffff;
+  border-left-color: var(--accent);
+}
 .cf-mail-email-item.unread .cf-item-from { font-weight: 700; color: var(--text-primary); }
 .cf-mail-email-item.unread .cf-item-subject { font-weight: 600; color: var(--text-primary); }
 .cf-mail-email-item.unread .cf-item-date { color: var(--accent); font-weight: 600; }
@@ -361,7 +383,8 @@
   border-radius: 0 2px 2px 0;
 }
 .cf-mail-email-item.selected::before { display: none; }
-.cf-mail-email-item.read { background: var(--read-bg); }
+.cf-mail-email-item.unread::before { display: none; }
+.cf-mail-email-item.read { background: var(--read-bg); border-left-color: transparent; }
 .cf-mail-email-item.read .cf-item-from,
 .cf-mail-email-item.read .cf-item-subject { font-weight: 400; color: var(--text-secondary); }
 .cf-item-cb {
@@ -375,18 +398,20 @@
   transition: opacity 0.12s;
 }
 .cf-item-avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   color: white;
   flex-shrink: 0;
   margin-top: 1px;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
 }
 .cf-item-body { flex: 1; min-width: 0; }
 .cf-item-row1 { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1px; }
@@ -419,10 +444,12 @@
   align-items: center;
   gap: 3px;
   font-size: 10px;
-  font-weight: 600;
-  padding: 2px 7px;
+  font-weight: 700;
+  padding: 2px 8px;
   border-radius: 10px;
-  letter-spacing: 0.1px;
+  letter-spacing: 0.2px;
+  border: 1px solid currentColor;
+  opacity: 0.9;
 }
 .cf-attach-icon { font-size: 10px; color: var(--text-muted); }
 .cf-assigned-pill { font-size: 10px; color: var(--accent); font-weight: 600; }
