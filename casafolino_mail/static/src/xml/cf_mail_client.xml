@@ -515,7 +515,7 @@
 
     <t t-name="cf_mail_client.ContactModal">
         <div class="cf-mail-modal-overlay" t-on-click="closeContactModal">
-            <div class="cf-mail-modal" style="width:620px;max-height:90vh" t-on-click.stop="() => {}">
+            <div class="cf-mail-modal" style="width:620px;max-height:90vh" t-on-click.stop="noop">
                 <div class="cf-mail-modal-header">
                     <span t-esc="state.contactDetail.name || 'Contatto'"/>
                     <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeContactModal"><i class="fa fa-times"/></button>
@@ -652,7 +652,7 @@
 
     <t t-name="cf_mail_client.AccountModal">
         <div class="cf-mail-modal-overlay" t-on-click="closeAccountModal">
-            <div class="cf-mail-modal" style="width:520px" t-on-click.stop="() => {}">
+            <div class="cf-mail-modal" style="width:520px" t-on-click.stop="noop">
                 <div class="cf-mail-modal-header">
                     <span t-esc="state.accountForm.id ? 'Impostazioni Account' : 'Nuovo Account'"/>
                     <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeAccountModal"><i class="fa fa-times"/></button>
@@ -764,7 +764,7 @@
 
     <t t-name="cf_mail_client.LeadModal">
         <div class="cf-mail-modal-overlay" t-on-click="closeLeadModal">
-            <div class="cf-mail-modal" t-on-click.stop="() => {}">
+            <div class="cf-mail-modal" t-on-click.stop="noop">
                 <div class="cf-mail-modal-header">
                     <span>Crea Trattativa CRM</span>
                     <button class="cf-mail-btn-icon" style="color:white;border-color:rgba(255,255,255,.3);width:28px;height:28px" t-on-click="closeLeadModal"><i class="fa fa-times"/></button>
