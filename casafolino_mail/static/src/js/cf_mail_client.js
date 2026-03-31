@@ -31,6 +31,7 @@ class CfMailClient extends Component {
             accounts: [], messages: [], selectedMsg: null, msgDetail: {},
             loading: false, loadingDetail: false, selectedAccount: null,
             folder: "INBOX", search: "", selectedIds: [], totalUnread: 0,
+            quickFilter: "all",
             showComposer: false, composerMode: "reply", composerTo: "", composerSubject: "",
             users: [], leads: [], allTags: [], contactTags: [],
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
@@ -123,8 +124,22 @@ class CfMailClient extends Component {
         } catch (e) { console.error(e); }
     }
 
-    get groupedMessages() {
+    get filteredMessages() {
         const msgs = this.state.messages;
+        const f = this.state.quickFilter;
+        if (f === 'unread') return msgs.filter(m => !m.is_read);
+        if (f === 'starred') return msgs.filter(m => m.is_starred);
+        if (f === 'inbox') return msgs.filter(m => m.direction !== 'out');
+        if (f === 'sent') return msgs.filter(m => m.direction === 'out');
+        return msgs;
+    }
+
+    setQuickFilter(filter) {
+        this.state.quickFilter = filter;
+    }
+
+    get groupedMessages() {
+        const msgs = this.filteredMessages;
         const groupBy = this.state.groupBy;
 
         if (groupBy === "date") {
@@ -563,7 +578,7 @@ class CfMailClient extends Component {
     }
 
     get listHeaderLabel() {
-        const total = this.state.messages.length;
+        const total = this.filteredMessages.length;
         const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
         return (map[this.state.folder] || this.state.folder) + " — " + total;
     }

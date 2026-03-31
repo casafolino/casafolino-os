@@ -128,6 +128,29 @@
                 </div>
             </t>
 
+            <div class="cf-mail-quickfilter-bar">
+                <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'all' ? ' active' : '')"
+                        t-on-click="() => this.setQuickFilter('all')">
+                    <i class="fa fa-list"/> Tutti
+                </button>
+                <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'unread' ? ' active' : '')"
+                        t-on-click="() => this.setQuickFilter('unread')">
+                    <i class="fa fa-circle"/> Non letti
+                </button>
+                <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'starred' ? ' active' : '')"
+                        t-on-click="() => this.setQuickFilter('starred')">
+                    <i class="fa fa-star"/> Preferiti
+                </button>
+                <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'inbox' ? ' active' : '')"
+                        t-on-click="() => this.setQuickFilter('inbox')">
+                    <i class="fa fa-inbox"/> In arrivo
+                </button>
+                <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'sent' ? ' active' : '')"
+                        t-on-click="() => this.setQuickFilter('sent')">
+                    <i class="fa fa-paper-plane"/> Inviati
+                </button>
+            </div>
+
             <div class="cf-mail-groupby-bar">
                 <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'date' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'date'">
                     <i class="fa fa-calendar"/> Data
