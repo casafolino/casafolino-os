@@ -585,7 +585,7 @@
                                 </span>
                             </t>
                         </div>
-                        <select class="cf-mail-modal-input" style="max-width:280px" t-on-change="(e) => { if(e.target.value) this.addContactTag(parseInt(e.target.value)); e.target.value=''; }">
+                        <select class="cf-mail-modal-input" style="max-width:280px" t-on-change="onAddContactTag">
                             <option value="">+ Aggiungi tag...</option>
                             <t t-foreach="state.contactTags" t-as="tag" t-key="tag.id">
                                 <option t-att-value="tag.id" t-esc="tag.name"/>

@@ -390,6 +390,12 @@ class CfMailClient extends Component {
         }
     }
 
+    onAddContactTag(ev) {
+        const val = parseInt(ev.target.value);
+        if (val) this.addContactTag(val);
+        ev.target.value = "";
+    }
+
     async removeContactTag(tagId) {
         this.state.contactDetail.tags = (this.state.contactDetail.tags || []).filter(t => t.id !== tagId);
     }
