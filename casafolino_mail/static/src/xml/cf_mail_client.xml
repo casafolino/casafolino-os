@@ -809,41 +809,136 @@
     </t>
 
     <t t-name="cf_mail_client.Composer">
-        <div class="cf-mail-composer">
-            <div class="cf-mail-composer-header">
-                <span class="cf-mail-composer-title" t-esc="state.composerMode === 'reply' ? 'Rispondi' : state.composerMode === 'forward' ? 'Inoltra' : 'Nuovo messaggio'"/>
-                <button class="cf-mail-btn-icon" style="width:28px;height:28px;font-size:11px;border-color:rgba(255,255,255,.3);color:white" t-on-click="closeComposer">
-                    <i class="fa fa-times"/>
-                </button>
-            </div>
-            <div class="cf-mail-composer-fields">
-                <div class="cf-mail-composer-field">
-                    <span class="cf-mail-composer-label">A:</span>
-                    <input class="cf-mail-composer-input" t-att-value="state.composerTo" t-on-input="(e) => this.state.composerTo = e.target.value"/>
+        <div t-att-class="'cf-mail-composer' + (state.composerMinimized ? ' cf-composer-minimized' : '') + (state.composerMaximized ? ' cf-composer-maximized' : '')">
+
+            <!-- ── Header ─────────────────────────────────────────── -->
+            <div class="cf-composer-header" t-on-click="() => state.composerMinimized and this.toggleComposerMinimized()">
+                <i class="fa fa-pen cf-composer-hdr-icon"/>
+                <span class="cf-composer-hdr-title" t-esc="state.composerMode === 'reply' ? 'Rispondi' : state.composerMode === 'forward' ? 'Inoltra' : 'Nuovo Messaggio'"/>
+                <div class="cf-composer-hdr-actions">
+                    <button class="cf-composer-hdr-btn" t-on-click.stop="toggleComposerMinimized"
+                            t-att-title="state.composerMinimized ? 'Espandi' : 'Minimizza'">
+                        <i t-att-class="'fa fa-' + (state.composerMinimized ? 'chevron-up' : 'minus')"/>
+                    </button>
+                    <button class="cf-composer-hdr-btn" t-on-click.stop="toggleComposerMaximized"
+                            t-att-title="state.composerMaximized ? 'Riduci' : 'Espandi'">
+                        <i t-att-class="'fa fa-' + (state.composerMaximized ? 'compress' : 'expand')"/>
+                    </button>
+                    <button class="cf-composer-hdr-btn cf-composer-hdr-btn-close" t-on-click.stop="closeComposer" title="Chiudi">
+                        <i class="fa fa-times"/>
+                    </button>
                 </div>
-                <div class="cf-mail-composer-field">
-                    <span class="cf-mail-composer-label">Ogg:</span>
-                    <input class="cf-mail-composer-input" t-att-value="state.composerSubject" t-on-input="(e) => this.state.composerSubject = e.target.value"/>
+            </div>
+
+            <!-- ── Campi (nascosti se minimizzato) ───────────────── -->
+            <t t-if="!state.composerMinimized">
+
+                <!-- Da -->
+                <div class="cf-composer-field">
+                    <span class="cf-composer-label">Da:</span>
+                    <select class="cf-composer-from-select" t-on-change="onComposerFromChange">
+                        <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
+                            <option t-att-value="acc.id"
+                                    t-att-selected="state.composerFrom === acc.id"
+                                    t-esc="acc.email"/>
+                        </t>
+                    </select>
                 </div>
-            </div>
-            <div class="cf-mail-composer-toolbar">
-                <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('bold')"><b>B</b></button>
-                <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('italic')"><i>I</i></button>
-                <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('underline')"><u>U</u></button>
-                <div class="cf-mail-fmt-sep"/>
-                <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('insertUnorderedList')"><i class="fa fa-list-ul"/></button>
-                <button class="cf-mail-fmt-btn" t-on-click="() => document.execCommand('insertOrderedList')"><i class="fa fa-list-ol"/></button>
-                <div class="cf-mail-fmt-sep"/>
-                <button class="cf-mail-fmt-btn"><i class="fa fa-paperclip"/></button>
-            </div>
-            <div class="cf-mail-composer-body" contenteditable="true" t-ref="composerBody"/>
-            <t t-if="currentSignature">
-                <div style="padding:0 14px 4px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border)" t-out="currentSignature"/>
+
+                <!-- A -->
+                <div class="cf-composer-field">
+                    <span class="cf-composer-label">A:</span>
+                    <input class="cf-composer-input" type="text"
+                           t-att-value="state.composerTo"
+                           t-on-input="(e) => this.state.composerTo = e.target.value"
+                           placeholder="destinatari@email.com"/>
+                    <div class="cf-composer-cc-btns">
+                        <button t-att-class="'cf-composer-cc-btn' + (state.composerShowCc ? ' active' : '')"
+                                t-on-click="toggleComposerCc">Cc</button>
+                        <button t-att-class="'cf-composer-cc-btn' + (state.composerShowBcc ? ' active' : '')"
+                                t-on-click="toggleComposerBcc">Bcc</button>
+                    </div>
+                </div>
+
+                <!-- Cc -->
+                <t t-if="state.composerShowCc">
+                    <div class="cf-composer-field">
+                        <span class="cf-composer-label">Cc:</span>
+                        <input class="cf-composer-input" type="text"
+                               t-att-value="state.composerCc"
+                               t-on-input="(e) => this.state.composerCc = e.target.value"
+                               placeholder="cc@email.com"/>
+                    </div>
+                </t>
+
+                <!-- Bcc -->
+                <t t-if="state.composerShowBcc">
+                    <div class="cf-composer-field">
+                        <span class="cf-composer-label">Bcc:</span>
+                        <input class="cf-composer-input" type="text"
+                               t-att-value="state.composerBcc"
+                               t-on-input="(e) => this.state.composerBcc = e.target.value"
+                               placeholder="bcc@email.com"/>
+                    </div>
+                </t>
+
+                <!-- Oggetto -->
+                <div class="cf-composer-field cf-composer-field-subject">
+                    <span class="cf-composer-label">Ogg:</span>
+                    <input class="cf-composer-input cf-composer-subject-input"
+                           t-att-value="state.composerSubject"
+                           t-on-input="(e) => this.state.composerSubject = e.target.value"
+                           placeholder="Oggetto..."/>
+                </div>
+
+                <!-- ── Toolbar formattazione ──────────────────────── -->
+                <div class="cf-composer-toolbar">
+                    <div class="cf-composer-tb-group">
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('bold')" title="Grassetto"><b>B</b></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('italic')" title="Corsivo"><em>I</em></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('underline')" title="Sottolineato"><u>U</u></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('strikeThrough')" title="Barrato"><s>S</s></button>
+                    </div>
+                    <div class="cf-composer-tb-sep"/>
+                    <div class="cf-composer-tb-group">
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('insertUnorderedList')" title="Lista puntata"><i class="fa fa-list-ul"/></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('insertOrderedList')" title="Lista numerata"><i class="fa fa-list-ol"/></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('indent')" title="Rientra"><i class="fa fa-indent"/></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('outdent')" title="Togli rientro"><i class="fa fa-outdent"/></button>
+                    </div>
+                    <div class="cf-composer-tb-sep"/>
+                    <div class="cf-composer-tb-group">
+                        <button class="cf-fmt-btn" t-on-click="insertLink" title="Inserisci link"><i class="fa fa-link"/></button>
+                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('removeFormat')" title="Rimuovi formattazione"><i class="fa fa-eraser"/></button>
+                    </div>
+                </div>
+
+                <!-- ── Corpo ──────────────────────────────────────── -->
+                <div class="cf-composer-body" contenteditable="true" t-ref="composerBody"/>
+
+                <!-- ── Firma (separata, visibile se presente) ─────── -->
+                <t t-if="currentSignature">
+                    <div class="cf-composer-sig-area">
+                        <div class="cf-composer-sig-divider">—</div>
+                        <div class="cf-composer-sig-content" t-out="currentSignature"/>
+                    </div>
+                </t>
+
+                <!-- ── Footer ────────────────────────────────────── -->
+                <div class="cf-composer-footer">
+                    <button class="cf-mail-btn-primary" t-on-click="sendEmail">
+                        <i class="fa fa-paper-plane"/> Invia
+                    </button>
+                    <button class="cf-mail-btn-secondary" t-on-click="saveDraft">
+                        <i class="fa fa-floppy-o"/> Bozza
+                    </button>
+                    <div style="flex:1"/>
+                    <button class="cf-composer-del-btn" t-on-click="closeComposer" title="Elimina bozza">
+                        <i class="fa fa-trash-o"/>
+                    </button>
+                </div>
+
             </t>
-            <div class="cf-mail-composer-footer">
-                <button class="cf-mail-btn-primary" t-on-click="sendEmail"><i class="fa fa-paper-plane"/> Invia</button>
-                <button class="cf-mail-btn-secondary" t-on-click="closeComposer">Annulla</button>
-            </div>
         </div>
     </t>
 </templates>
