@@ -369,6 +369,11 @@ class CfMailClient extends Component {
         } catch (e) { console.error(e); }
     }
 
+
+    openNewContact() {
+        this.state.contactDetail = { name: "", email: "", phone: "", tags: [] };
+        this.state.showContactModal = true;
+    }
     closeContactModal() { this.state.showContactModal = false; }
 
     async saveContact() {

@@ -52,6 +52,12 @@
                      t-on-click="() => { this.state.activeView = 'contacts'; this.loadContacts(); }">
                     <i class="fa fa-address-book nav-icon"/> Rubrica
                 </div>
+                <div class="cf-mail-nav-item" t-on-click="openNewContact">
+                    <i class="fa fa-user-plus nav-icon"/> Nuovo Contatto
+                </div>
+                <div class="cf-mail-nav-item" t-on-click="openNewContact">
+                    <i class="fa fa-user-plus nav-icon"/> Nuovo Contatto
+                </div>
             </div>
 
             <div class="cf-mail-divider"/>
@@ -70,6 +76,14 @@
                     <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="openNewAccount" title="Aggiungi account"><i class="fa fa-plus"/></button>
                 </t>
                 <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="syncAllAccounts" title="Sincronizza tutto"><i class="fa fa-sync"/></button>
+            </div>
+            <div class="cf-mail-divider"/>
+            <div class="cf-mail-nav-item" t-on-click="openNewAccount">
+                <i class="fa fa-cog nav-icon"/> Impostazioni Account
+            </div>
+            <div class="cf-mail-divider"/>
+            <div class="cf-mail-nav-item" t-on-click="openNewAccount">
+                <i class="fa fa-cog nav-icon"/> Impostazioni Account
             </div>
             <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
                 <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''">
