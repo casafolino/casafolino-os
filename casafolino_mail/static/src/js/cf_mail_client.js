@@ -1,6 +1,5 @@
-
 /** @odoo-module **/
-import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
+import { Component, useState, useRef, onMounted } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { rpc } from "@web/core/network/rpc";
@@ -16,113 +15,189 @@ const AVATAR_COLORS = [
     "linear-gradient(135deg,#558b2f,#1b5e20)",
 ];
 
+const RATING_STARS = { '1': '★', '2': '★★', '3': '★★★', '4': '★★★★', '5': '★★★★★' };
+
 class CfMailClient extends Component {
     static template = "cf_mail_client.App";
     static components = {};
 
     setup() {
-
+        this.notification = useService("notification");
         this.emailContent = useRef("emailContent");
         this.composerBody = useRef("composerBody");
         this._searchTimer = null;
 
         this.state = useState({
-            accounts: [],
-            messages: [],
-            selectedMsg: null,
-            msgDetail: {},
-            loading: false,
-            loadingDetail: false,
-            selectedAccount: null,
-            folder: "INBOX",
-            search: "",
-            selectedIds: [],
-            totalUnread: 0,
-            showComposer: false,
-            composerMode: "reply",
-            composerTo: "",
-            composerSubject: "",
-            users: [],
-            leads: [],
+            accounts: [], messages: [], selectedMsg: null, msgDetail: {},
+            loading: false, loadingDetail: false, selectedAccount: null,
+            folder: "INBOX", search: "", selectedIds: [], totalUnread: 0,
+            showComposer: false, composerMode: "reply", composerTo: "", composerSubject: "",
+            users: [], leads: [], allTags: [], contactTags: [],
+            showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
+            newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
+            groupBy: "date",
+            showLeadModal: false, crmPipelines: [], crmPartners: [],
+            leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "" },
+            showAccountModal: false,
+            accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
+            showContactModal: false,
+            contactDetail: {},
+            showSearchPanel: false,
+            searchForm: { query: "", date_from: "", date_to: "", tag_id: "", has_attachments: false },
+            isAdmin: false,
+            activeView: "mail",
+            contacts: [], contactSearch: "", contactTagFilter: "",
         });
 
-        onMounted(() => {
-            this.init();
-        });
+        onMounted(() => { this.init(); });
+    }
+
+    async _rpc(model, method, kwargs = {}) {
+        return await rpc("/web/dataset/call_kw", { model, method, args: [], kwargs });
     }
 
     async init() {
-        await this.loadAccounts();
+        await Promise.all([this.loadAccounts(), this.loadUsers(), this.loadLeads(), this.loadTags(), this.loadContactTags(), this.checkAdmin()]);
         await this.loadMessages();
-        await this.loadUsers();
-        await this.loadLeads();
+    }
+
+    async checkAdmin() {
+        try {
+            const result = await this._rpc("cf.mail.account", "is_admin");
+            this.state.isAdmin = result || false;
+        } catch (e) { this.state.isAdmin = false; }
     }
 
     async loadAccounts() {
         try {
-            const accounts = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.account",
-                method: "get_accounts",
-                args: [],
-                kwargs: {},
-            });
+            const accounts = await this._rpc("cf.mail.account", "get_accounts");
             this.state.accounts = accounts || [];
-            if (accounts && accounts.length > 0 && !this.state.selectedAccount) {
+            if (accounts && accounts.length > 0 && !this.state.selectedAccount)
                 this.state.selectedAccount = accounts[0].id;
-            }
             this.state.totalUnread = (accounts || []).reduce((s, a) => s + (a.unread || 0), 0);
-        } catch (e) {
-            console.error("loadAccounts error:", e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     async loadMessages() {
         if (!this.state.selectedAccount) return;
         this.state.loading = true;
         try {
-            const msgs = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "get_messages",
-                args: [],
-                kwargs: {
-                    account_id: this.state.selectedAccount,
-                    folder: this.state.folder,
-                    limit: 50,
-                    offset: 0,
-                    search: this.state.search,
-                },
+            const msgs = await this._rpc("cf.mail.message", "get_messages", {
+                account_id: this.state.selectedAccount,
+                folder: this.state.folder,
+                limit: 100, offset: 0, search: this.state.search,
             });
             this.state.messages = msgs || [];
             this.state.selectedIds = [];
-        } catch (e) {
-            console.error("loadMessages error:", e);
-        } finally {
-            this.state.loading = false;
-        }
+        } catch (e) { console.error(e); }
+        finally { this.state.loading = false; }
     }
 
     async loadUsers() {
+        try { this.state.users = await this._rpc("cf.mail.message", "get_users_list") || []; } catch (e) {}
+    }
+    async loadLeads() {
+        try { this.state.leads = await this._rpc("cf.mail.message", "get_leads_list") || []; } catch (e) {}
+    }
+    async loadTags() {
+        try { this.state.allTags = await this._rpc("cf.mail.message", "get_tags_list") || []; } catch (e) {}
+    }
+    async loadContactTags() {
+        try { this.state.contactTags = await this._rpc("cf.contact.tag", "get_all_tags") || []; } catch (e) {}
+    }
+    async loadCrmData() {
         try {
-            const users = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "get_users_list",
-                args: [],
-                kwargs: {},
-            });
-            this.state.users = users || [];
+            const data = await this._rpc("cf.mail.message", "get_crm_data");
+            this.state.crmPipelines = data.pipelines || [];
+            this.state.crmPartners = data.partners || [];
         } catch (e) {}
     }
 
-    async loadLeads() {
+    async loadContacts() {
         try {
-            const leads = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "get_leads_list",
-                args: [],
-                kwargs: {},
+            const contacts = await this._rpc("res.partner", "search_contacts", {
+                query: this.state.contactSearch,
+                tag_ids: this.state.contactTagFilter ? [this.state.contactTagFilter] : [],
             });
-            this.state.leads = leads || [];
-        } catch (e) {}
+            this.state.contacts = contacts || [];
+        } catch (e) { console.error(e); }
+    }
+
+    get groupedMessages() {
+        const msgs = this.state.messages;
+        const groupBy = this.state.groupBy;
+
+        if (groupBy === "date") {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const days = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+            const months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+
+            const getLabel = (dateStr) => {
+                if (!dateStr) return "Senza data";
+                const parts = dateStr.split(/[\/\s:]/);
+                const d = parts.length >= 3 && parts[2].length === 4
+                    ? new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]))
+                    : new Date(dateStr.replace(' ', 'T'));
+                if (isNaN(d.getTime())) return "Senza data";
+                const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                const diffDays = Math.round((today - day) / 86400000);
+                if (diffDays === 0) return "Oggi";
+                if (diffDays === 1) return "Ieri";
+                if (diffDays < 7) return days[day.getDay()];
+                if (diffDays < 14) return "Settimana scorsa";
+                return months[d.getMonth()] + " " + d.getFullYear();
+            };
+
+            const order = [];
+            const map = {};
+            for (const m of msgs) {
+                const label = getLabel(m.date);
+                if (!map[label]) { map[label] = []; order.push(label); }
+                map[label].push(m);
+            }
+            return order.map(label => ({ label, items: map[label] }));
+        }
+
+        if (groupBy === "sender") {
+            const map = {};
+            const order = [];
+            for (const m of msgs) {
+                const key = m.from_name || m.from_address || "Sconosciuto";
+                if (!map[key]) { map[key] = []; order.push(key); }
+                map[key].push(m);
+            }
+            return order.sort((a,b) => map[b].length - map[a].length)
+                .map(label => ({ label, items: map[label], count: map[label].length }));
+        }
+
+        if (groupBy === "lead") {
+            const map = {};
+            const order = [];
+            for (const m of msgs) {
+                const key = m.lead_name || "Senza trattativa";
+                if (!map[key]) { map[key] = []; order.push(key); }
+                map[key].push(m);
+            }
+            return order.sort((a,b) => {
+                if (a === "Senza trattativa") return 1;
+                if (b === "Senza trattativa") return -1;
+                return a.localeCompare(b);
+            }).map(label => ({ label, items: map[label] }));
+        }
+
+        if (groupBy === "pipeline") {
+            const map = {};
+            const order = [];
+            for (const m of msgs) {
+                const key = m.lead_stage || "Senza pipeline";
+                if (!map[key]) { map[key] = []; order.push(key); }
+                map[key].push(m);
+            }
+            return order.map(label => ({ label, items: map[label] }));
+        }
+
+        return [{ label: null, items: msgs }];
     }
 
     async selectMsg(msg, ev) {
@@ -131,22 +206,18 @@ class CfMailClient extends Component {
         this.state.msgDetail = {};
         this.state.loadingDetail = true;
         this.state.showComposer = false;
+        this.state.showTagDropdown = false;
+        this.state.showSnoozeMenu = false;
+        this.state.threadExpanded = false;
+        this.state.showLeadModal = false;
         try {
-            const detail = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "get_message_detail",
-                args: [],
-                kwargs: { message_id: msg.id },
-            });
+            const detail = await this._rpc("cf.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");
-        } catch (e) {
-            console.error("loadDetail error:", e);
-        } finally {
-            this.state.loadingDetail = false;
-        }
+        } catch (e) { console.error(e); }
+        finally { this.state.loadingDetail = false; }
     }
 
     async _renderEmailBody(html) {
@@ -154,17 +225,15 @@ class CfMailClient extends Component {
         if (!el) return;
         el.innerHTML = "";
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:100%;border:none;flex:1;min-height:300px;";
+        iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:none;";
         iframe.setAttribute("sandbox", "allow-same-origin");
         el.appendChild(iframe);
         iframe.onload = () => {
-            try {
-                iframe.style.height = iframe.contentDocument.body.scrollHeight + 40 + "px";
-            } catch (e) {}
+            try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 40 + "px"; } catch (e) {}
         };
         const doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
-        doc.write("<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:0;margin:0}a{color:#5A6E3A}</style>" + html);
+        doc.write(`<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:16px;margin:0}a{color:#5A6E3A}img{max-width:100%}ul,ol{margin:8px 0 8px 20px}</style>${html}`);
         doc.close();
     }
 
@@ -188,66 +257,56 @@ class CfMailClient extends Component {
         this._searchTimer = setTimeout(() => this.loadMessages(), 400);
     }
 
+    async runAdvancedSearch() {
+        this.state.loading = true;
+        try {
+            const msgs = await this._rpc("cf.mail.message", "advanced_search", {
+                ...this.state.searchForm,
+                account_id: this.state.selectedAccount,
+                folder: this.state.folder,
+            });
+            this.state.messages = msgs || [];
+            this.state.showSearchPanel = false;
+        } catch (e) { console.error(e); }
+        finally { this.state.loading = false; }
+    }
+
     toggleSelect(id, ev) {
         ev.stopPropagation();
         const idx = this.state.selectedIds.indexOf(id);
-        if (idx === -1) {
-            this.state.selectedIds = [...this.state.selectedIds, id];
-        } else {
-            this.state.selectedIds = this.state.selectedIds.filter(i => i !== id);
-        }
+        if (idx === -1) this.state.selectedIds = [...this.state.selectedIds, id];
+        else this.state.selectedIds = this.state.selectedIds.filter(i => i !== id);
     }
 
     toggleSelectAll(ev) {
-        if (ev.target.checked) {
-            this.state.selectedIds = this.state.messages.map(m => m.id);
-        } else {
-            this.state.selectedIds = [];
-        }
+        this.state.selectedIds = ev.target.checked ? this.state.messages.map(m => m.id) : [];
     }
 
-    async bulkAction(action) {
+    async bulkAction(action, extraKwargs = {}) {
         if (!this.state.selectedIds.length) return;
         try {
-            await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "do_bulk_action",
-                args: [],
-                kwargs: { ids: this.state.selectedIds, action },
-            });
+            await this._rpc("cf.mail.message", "do_bulk_action", { ids: this.state.selectedIds, action, ...extraKwargs });
             this.showToast(action === "delete" ? "Email eliminate" : "Azione completata");
+            this.state.showBulkTagMenu = false;
             await this.loadMessages();
-        } catch (e) {
-            console.error("bulkAction error:", e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     async quickStar(msgId, ev) {
         if (ev) ev.stopPropagation();
         try {
-            const starred = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "do_toggle_star",
-                args: [],
-                kwargs: { message_id: msgId },
-            });
+            const starred = await this._rpc("cf.mail.message", "do_toggle_star", { message_id: msgId });
             const idx = this.state.messages.findIndex(m => m.id === msgId);
             if (idx !== -1) this.state.messages[idx].is_starred = starred;
-            if (this.state.selectedMsg && this.state.selectedMsg.id === msgId) {
+            if (this.state.selectedMsg && this.state.selectedMsg.id === msgId)
                 this.state.selectedMsg.is_starred = starred;
-            }
         } catch (e) {}
     }
 
     async quickArchive(msgId, ev) {
         if (ev) ev.stopPropagation();
         try {
-            await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "do_bulk_action",
-                args: [],
-                kwargs: { ids: [msgId], action: "archive" },
-            });
+            await this._rpc("cf.mail.message", "do_bulk_action", { ids: [msgId], action: "archive" });
             this.state.messages = this.state.messages.filter(m => m.id !== msgId);
             if (this.state.selectedMsg && this.state.selectedMsg.id === msgId) {
                 this.state.selectedMsg = null;
@@ -257,38 +316,127 @@ class CfMailClient extends Component {
         } catch (e) {}
     }
 
-    async createLead() {
+    async addTag(tagId) {
         if (!this.state.selectedMsg) return;
         try {
-            const res = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "create_lead_from_email",
-                args: [],
-                kwargs: { message_id: this.state.selectedMsg.id },
+            const tags = await this._rpc("cf.mail.message", "do_add_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
+            this.state.msgDetail.tags = tags;
+            const idx = this.state.messages.findIndex(m => m.id === this.state.selectedMsg.id);
+            if (idx !== -1) this.state.messages[idx].tags = tags;
+            this.state.showTagDropdown = false;
+        } catch (e) {}
+    }
+
+    async removeTag(tagId) {
+        if (!this.state.selectedMsg) return;
+        try {
+            const tags = await this._rpc("cf.mail.message", "do_remove_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
+            this.state.msgDetail.tags = tags;
+            const idx = this.state.messages.findIndex(m => m.id === this.state.selectedMsg.id);
+            if (idx !== -1) this.state.messages[idx].tags = tags;
+        } catch (e) {}
+    }
+
+    async createNewTag() {
+        if (!this.state.newTagName.trim()) return;
+        try {
+            const tag = await this._rpc("cf.mail.message", "create_tag", { name: this.state.newTagName.trim(), color: this.state.newTagColor });
+            this.state.allTags = [...this.state.allTags, tag];
+            this.state.newTagName = "";
+            if (this.state.selectedMsg) await this.addTag(tag.id);
+        } catch (e) {}
+    }
+
+    async snooze(minutes) {
+        if (!this.state.selectedMsg) return;
+        const until = new Date(Date.now() + minutes * 60000).toISOString();
+        try {
+            await this._rpc("cf.mail.message", "do_snooze", { message_id: this.state.selectedMsg.id, until });
+            this.state.showSnoozeMenu = false;
+            this.showToast("Email posticipata");
+            this.state.messages = this.state.messages.filter(m => m.id !== this.state.selectedMsg.id);
+            this.state.selectedMsg = null;
+            this.state.msgDetail = {};
+        } catch (e) {}
+    }
+
+    async openContactDetail(partnerId) {
+        if (!partnerId) return;
+        try {
+            const data = await this._rpc("res.partner", "get_contact_detail", { partner_id: partnerId });
+            this.state.contactDetail = data || {};
+            this.state.showContactModal = true;
+        } catch (e) { console.error(e); }
+    }
+
+    closeContactModal() { this.state.showContactModal = false; }
+
+    async saveContact() {
+        try {
+            const res = await this._rpc("res.partner", "save_contact", { ...this.state.contactDetail });
+            if (res && res.success) {
+                this.showToast("Contatto salvato");
+                this.state.showContactModal = false;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async addContactTag(tagId) {
+        if (!this.state.contactDetail.id) return;
+        const current = this.state.contactDetail.tags || [];
+        if (!current.find(t => t.id === tagId)) {
+            const tag = this.state.contactTags.find(t => t.id === tagId);
+            if (tag) this.state.contactDetail.tags = [...current, tag];
+        }
+    }
+
+    async removeContactTag(tagId) {
+        this.state.contactDetail.tags = (this.state.contactDetail.tags || []).filter(t => t.id !== tagId);
+    }
+
+    async openLeadModal() {
+        if (!this.state.selectedMsg) return;
+        await this.loadCrmData();
+        const detail = this.state.msgDetail;
+        this.state.leadForm = {
+            name: detail.subject || "",
+            partner_id: detail.partner_id ? String(detail.partner_id) : "",
+            stage_id: this.state.crmPipelines.length > 0 ? String(this.state.crmPipelines[0].id) : "",
+            expected_revenue: "",
+            description: "",
+        };
+        this.state.showLeadModal = true;
+    }
+
+    closeLeadModal() { this.state.showLeadModal = false; }
+
+    async submitLeadForm() {
+        try {
+            const res = await this._rpc("cf.mail.message", "create_lead_from_form", {
+                message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
+                name: this.state.leadForm.name,
+                partner_id: this.state.leadForm.partner_id || false,
+                stage_id: this.state.leadForm.stage_id || false,
+                expected_revenue: this.state.leadForm.expected_revenue || 0,
+                description: this.state.leadForm.description || "",
             });
             if (res && res.success) {
                 this.showToast("Trattativa creata: " + res.lead_name);
                 this.state.msgDetail.lead_id = res.lead_id;
                 this.state.msgDetail.lead_name = res.lead_name;
+                this.state.showLeadModal = false;
                 await this.loadLeads();
             } else {
                 this.showToast("Errore: " + (res.error || "sconosciuto"));
             }
-        } catch (e) {
-            console.error("createLead error:", e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     async onAssignChange(ev) {
         const userId = ev.target.value;
         if (!this.state.selectedMsg) return;
         try {
-            const name = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "do_assign",
-                args: [],
-                kwargs: { message_id: this.state.selectedMsg.id, user_id: userId || false },
-            });
+            const name = await this._rpc("cf.mail.message", "do_assign", { message_id: this.state.selectedMsg.id, user_id: userId || false });
             this.state.msgDetail.assigned_user_name = name || "";
             this.state.msgDetail.assigned_user_id = userId ? parseInt(userId) : false;
             this.showToast(name ? "Assegnata a " + name : "Assegnazione rimossa");
@@ -299,12 +447,7 @@ class CfMailClient extends Component {
         const leadId = ev.target.value;
         if (!this.state.selectedMsg) return;
         try {
-            await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "do_link_lead",
-                args: [],
-                kwargs: { message_id: this.state.selectedMsg.id, lead_id: leadId || false },
-            });
+            await this._rpc("cf.mail.message", "do_link_lead", { message_id: this.state.selectedMsg.id, lead_id: leadId || false });
             this.state.msgDetail.lead_id = leadId ? parseInt(leadId) : false;
             this.showToast("Trattativa collegata");
         } catch (e) {}
@@ -316,60 +459,108 @@ class CfMailClient extends Component {
         this.state.composerTo = this.state.msgDetail.from_address || "";
         this.state.composerSubject = "Re: " + (this.state.msgDetail.subject || "");
     }
-
     openForward() {
         this.state.showComposer = true;
         this.state.composerMode = "forward";
         this.state.composerTo = "";
         this.state.composerSubject = "Fwd: " + (this.state.msgDetail.subject || "");
     }
-
     openComposer() {
         this.state.showComposer = true;
         this.state.composerMode = "new";
         this.state.composerTo = "";
         this.state.composerSubject = "";
     }
-
-    closeComposer() {
-        this.state.showComposer = false;
-    }
+    closeComposer() { this.state.showComposer = false; }
 
     async sendEmail() {
         const bodyEl = this.composerBody.el;
         const body = bodyEl ? bodyEl.innerHTML : "";
-        if (!this.state.composerTo || !body) {
-            this.showToast("Compilare destinatario e messaggio");
-            return;
-        }
+        if (!this.state.composerTo || !body) { this.showToast("Compilare destinatario e messaggio"); return; }
         try {
-            const res = await rpc("/web/dataset/call_kw", {
-                model: "cf.mail.message",
-                method: "send_reply",
-                args: [],
-                kwargs: {
-                    message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
-                    to_address: this.state.composerTo,
-                    subject: this.state.composerSubject,
-                    body: body,
-                    account_id: this.state.selectedAccount,
-                },
+            const res = await this._rpc("cf.mail.message", "send_reply", {
+                message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
+                to_address: this.state.composerTo,
+                subject: this.state.composerSubject,
+                body,
+                account_id: this.state.selectedAccount,
             });
+            if (res && res.success) { this.showToast("Email inviata!"); this.closeComposer(); }
+            else this.showToast("Errore invio: " + (res.error || "sconosciuto"));
+        } catch (e) { this.showToast("Errore invio email"); }
+    }
+
+    openNewAccount() {
+        this.state.accountForm = { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" };
+        this.state.showAccountModal = true;
+    }
+
+    async openEditAccount(accountId) {
+        try {
+            const data = await this._rpc("cf.mail.account", "get_account_detail", { account_id: accountId });
+            this.state.accountForm = { ...data, imap_password: "" };
+            this.state.showAccountModal = true;
+        } catch (e) { console.error(e); }
+    }
+
+    closeAccountModal() { this.state.showAccountModal = false; }
+
+    async submitAccountForm() {
+        try {
+            const res = await this._rpc("cf.mail.account", "save_account", { ...this.state.accountForm });
             if (res && res.success) {
-                this.showToast("Email inviata!");
-                this.closeComposer();
-            } else {
-                this.showToast("Errore invio: " + (res.error || "sconosciuto"));
+                this.showToast("Account salvato");
+                this.state.showAccountModal = false;
+                await this.loadAccounts();
             }
-        } catch (e) {
-            this.showToast("Errore invio email");
-        }
+        } catch (e) { console.error(e); }
+    }
+
+    async testConnection() {
+        try {
+            this.showToast("Test connessione...");
+            const res = await this._rpc("cf.mail.account", "test_connection", { account_id: this.state.accountForm.id });
+            if (res.success) {
+                this.showToast("Connessione OK ✓");
+                this.state.accountForm.imap_status = "Connessione OK ✓";
+            } else {
+                this.showToast("Errore: " + res.error);
+                this.state.accountForm.imap_status = "Errore: " + res.error;
+            }
+        } catch (e) { this.showToast("Errore connessione"); }
+    }
+
+    async syncNow() {
+        try {
+            this.showToast("Sincronizzazione in corso...");
+            await this._rpc("cf.mail.account", "sync_now", { account_id: this.state.accountForm.id });
+            this.showToast("Sincronizzazione completata");
+            this.state.showAccountModal = false;
+            await this.loadAccounts();
+            await this.loadMessages();
+        } catch (e) { this.showToast("Errore sync"); }
+    }
+
+    async syncAllAccounts() {
+        try {
+            this.showToast("Sincronizzazione in corso...");
+            await this._rpc("cf.mail.account", "sync_now", {});
+            this.showToast("Sincronizzazione completata");
+            await this.loadAccounts();
+            await this.loadMessages();
+        } catch (e) { this.showToast("Errore sync"); }
     }
 
     get listHeaderLabel() {
         const total = this.state.messages.length;
-        const folder = this.state.folder === "INBOX" ? "Inbox" : this.state.folder;
-        return folder + " — " + total + " messaggi";
+        const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
+        return (map[this.state.folder] || this.state.folder) + " — " + total;
+    }
+
+    get currentSignature() {
+        if (!this.state.selectedAccount) return "";
+        const acc = this.state.accounts.find(a => a.id === this.state.selectedAccount);
+        return acc ? (acc.signature || "") : "";
     }
 
     avatarColor(name) {

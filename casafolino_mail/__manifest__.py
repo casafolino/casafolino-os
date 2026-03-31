@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail',
-    'version': '4.0',
+    'version': '5.0',
     'summary': 'Client email Gmail-style per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',

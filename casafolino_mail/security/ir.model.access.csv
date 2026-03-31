@@ -1,4 +1,9 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cf_mail_account,cf.mail.account,model_cf_mail_account,,1,1,1,1
-access_cf_mail_message,cf.mail.message,model_cf_mail_message,,1,1,1,1
-access_cf_mail_tag,cf.mail.tag,model_cf_mail_tag,,1,1,1,1
+access_cf_mail_account_user,cf.mail.account user,model_cf_mail_account,,1,1,1,0
+access_cf_mail_account_admin,cf.mail.account admin,model_cf_mail_account,base.group_system,1,1,1,1
+access_cf_mail_message_user,cf.mail.message user,model_cf_mail_message,,1,1,1,0
+access_cf_mail_message_admin,cf.mail.message admin,model_cf_mail_message,base.group_system,1,1,1,1
+access_cf_mail_tag_user,cf.mail.tag user,model_cf_mail_tag,,1,1,1,0
+access_cf_mail_tag_admin,cf.mail.tag admin,model_cf_mail_tag,base.group_system,1,1,1,1
+access_cf_contact_tag_user,cf.contact.tag user,model_cf_contact_tag,,1,1,1,0
+access_cf_contact_tag_admin,cf.contact.tag admin,model_cf_contact_tag,base.group_system,1,1,1,1

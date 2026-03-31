@@ -3,11 +3,15 @@
     <menuitem id="menu_cf_mail_root" name="Mail" sequence="15"
         web_icon="casafolino_mail,static/description/icon.png"/>
     <menuitem id="menu_cf_mail_inbox" name="Inbox"
-        parent="menu_cf_mail_root" action="action_cf_mail_client" sequence="1"/>
+        parent="menu_cf_mail_root"
+        action="action_cf_mail_client" sequence="1"/>
+    <menuitem id="menu_cf_mail_compose" name="Nuovo Messaggio"
+        parent="menu_cf_mail_root"
+        action="action_cf_mail_compose" sequence="2"/>
     <menuitem id="menu_cf_mail_config" name="Configurazione"
-        parent="menu_cf_mail_root" sequence="99" groups="base.group_system"/>
+        parent="menu_cf_mail_root" sequence="99"
+        groups="base.group_system"/>
     <menuitem id="menu_cf_mail_accounts" name="Account Email"
-        parent="menu_cf_mail_config" action="action_cf_mail_accounts" sequence="1"/>
-    <menuitem id="menu_cf_mail_tags" name="Tag"
-        parent="menu_cf_mail_config" action="action_cf_mail_tags" sequence="2"/>
+        parent="menu_cf_mail_config"
+        action="action_cf_mail_accounts" sequence="1"/>
 </odoo>
