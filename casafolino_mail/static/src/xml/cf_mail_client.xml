@@ -52,12 +52,7 @@
                      t-on-click="() => { this.state.activeView = 'contacts'; this.loadContacts(); }">
                     <i class="fa fa-address-book nav-icon"/> Rubrica
                 </div>
-                <div class="cf-mail-nav-item" t-on-click="openNewContact">
-                    <i class="fa fa-user-plus nav-icon"/> Nuovo Contatto
-                </div>
-                <div class="cf-mail-nav-item" t-on-click="openNewContact">
-                    <i class="fa fa-user-plus nav-icon"/> Nuovo Contatto
-                </div>
+
             </div>
 
             <div class="cf-mail-divider"/>
@@ -77,11 +72,6 @@
                 </t>
                 <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px" t-on-click="syncAllAccounts" title="Sincronizza tutto"><i class="fa fa-sync"/></button>
             </div>
-            <div class="cf-mail-divider"/>
-            <div class="cf-mail-nav-item" t-on-click="openNewAccount">
-                <i class="fa fa-cog nav-icon"/> Impostazioni Account
-            </div>
-            <div class="cf-mail-divider"/>
             <div class="cf-mail-nav-item" t-on-click="openNewAccount">
                 <i class="fa fa-cog nav-icon"/> Impostazioni Account
             </div>
@@ -460,7 +450,10 @@
                         <option t-att-value="tag.id" t-esc="tag.name + ' (' + tag.count + ')'"/>
                     </t>
                 </select>
-                <button class="cf-mail-btn-primary" style="font-size:12px;padding:6px 14px" t-on-click="loadContacts">
+                <button class="cf-mail-btn-primary" style="font-size:12px;padding:6px 14px" t-on-click="openNewContact">
+                    <i class="fa fa-user-plus"/> Nuovo Contatto
+                </button>
+                <button class="cf-mail-btn-secondary" style="font-size:12px;padding:6px 14px" t-on-click="loadContacts">
                     <i class="fa fa-sync"/> Aggiorna
                 </button>
             </div>
