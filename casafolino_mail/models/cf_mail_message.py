@@ -368,9 +368,28 @@ class CfMailMessage(models.Model):
         return {'id': tag.id, 'name': tag.name, 'color': tag.color}
 
     @api.model
+    def save_draft(self, *args, **kw):
+        account_id = kw.get('account_id') or None
+        if not account_id:
+            return {'success': False, 'error': 'Account mancante'}
+        draft = self.create({
+            'account_id': int(account_id),
+            'subject': kw.get('subject') or '(bozza)',
+            'to_address': kw.get('to_address') or '',
+            'cc_address': kw.get('cc_address') or '',
+            'body_html': kw.get('body') or '',
+            'direction': 'out',
+            'folder': 'Drafts',
+            'is_read': True,
+        })
+        return {'success': True, 'id': draft.id}
+
+    @api.model
     def send_reply(self, *args, **kw):
         message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
         to_addr = kw.get('to_address') or ''
+        cc_addr = kw.get('cc_address') or ''
+        bcc_addr = kw.get('bcc_address') or ''
         subject = kw.get('subject') or ''
         body = kw.get('body') or ''
         account_id = kw.get('account_id') or None
@@ -380,7 +399,7 @@ class CfMailMessage(models.Model):
             acc = self.env['cf.mail.account'].browse(int(account_id)) if account_id else None
             from_email = acc.email if acc else self.env.user.email
 
-            # Invia via SMTP reale se account configurato
+            # ── Invio via SMTP reale ────────────────────────────────────────
             if acc and acc.imap_password and acc.smtp_host:
                 import smtplib
                 from email.mime.multipart import MIMEMultipart
@@ -391,33 +410,49 @@ class CfMailMessage(models.Model):
                 msg_obj['Subject'] = subject
                 msg_obj['From'] = f'{acc.name or acc.email} <{acc.email}>'
                 msg_obj['To'] = to_addr
+                if cc_addr:
+                    msg_obj['Cc'] = cc_addr
+                # BCC non va negli header (destinatari nascosti)
                 if message_id:
                     orig = self.browse(int(message_id))
                     if orig.exists() and orig.message_uid:
                         msg_obj['In-Reply-To'] = orig.message_uid
+                        msg_obj['References'] = orig.message_uid
 
                 msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
 
+                # Costruisce lista completa destinatari (To + Cc + Bcc)
+                recipients = [r.strip() for r in to_addr.split(',') if r.strip()]
+                if cc_addr:
+                    recipients += [r.strip() for r in cc_addr.split(',') if r.strip()]
+                if bcc_addr:
+                    recipients += [r.strip() for r in bcc_addr.split(',') if r.strip()]
+
                 if acc.smtp_tls:
-                    server = smtplib.SMTP(acc.smtp_host, acc.smtp_port)
+                    server = smtplib.SMTP(acc.smtp_host, acc.smtp_port, timeout=30)
                     server.ehlo()
                     server.starttls(context=ssl_lib.create_default_context())
                 else:
-                    server = smtplib.SMTP_SSL(acc.smtp_host, acc.smtp_port, context=ssl_lib.create_default_context())
+                    server = smtplib.SMTP_SSL(
+                        acc.smtp_host, acc.smtp_port,
+                        context=ssl_lib.create_default_context(), timeout=30
+                    )
                 server.ehlo()
                 server.login(acc.email, acc.imap_password)
-                server.sendmail(acc.email, to_addr.split(','), msg_obj.as_string())
+                server.sendmail(acc.email, recipients, msg_obj.as_string())
 
-                # Salva in Gmail Sent via IMAP APPEND
+                # Append in Gmail Sent via IMAP
                 try:
                     import imaplib
                     if acc.imap_ssl:
-                        imap = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port, ssl_context=ssl_lib.create_default_context())
+                        imap = imaplib.IMAP4_SSL(
+                            acc.imap_host, acc.imap_port,
+                            ssl_context=ssl_lib.create_default_context()
+                        )
                     else:
                         imap = imaplib.IMAP4(acc.imap_host, acc.imap_port)
                     imap.login(acc.email, acc.imap_password)
-                    sent_folders = ['[Gmail]/Sent Mail', 'Sent', 'Sent Items']
-                    for sf in sent_folders:
+                    for sf in ['[Gmail]/Sent Mail', 'Sent', 'Sent Items']:
                         try:
                             imap.append(sf, '\\Seen', None, msg_obj.as_bytes())
                             break
@@ -425,15 +460,15 @@ class CfMailMessage(models.Model):
                             continue
                     imap.logout()
                 except Exception as e2:
-                    import logging
-                    logging.getLogger(__name__).warning('Could not append to Sent: %s', e2)
+                    _logger.warning('Could not append to Sent folder: %s', e2)
 
                 server.quit()
             else:
-                # Fallback Odoo mail
+                # ── Fallback Odoo mail.mail ─────────────────────────────────
                 mail = self.env['mail.mail'].create({
                     'subject': subject,
                     'email_to': to_addr,
+                    'email_cc': cc_addr,
                     'body_html': body,
                     'email_from': from_email,
                 })
@@ -451,6 +486,7 @@ class CfMailMessage(models.Model):
                 'from_address': from_email,
                 'from_name': acc.name if acc else '',
                 'to_address': to_addr,
+                'cc_address': cc_addr,
                 'body_html': body,
                 'direction': 'out',
                 'folder': 'Sent',
@@ -459,6 +495,7 @@ class CfMailMessage(models.Model):
             })
             return {'success': True, 'id': sent_msg.id}
         except Exception as e:
+            _logger.error('send_reply error: %s', e)
             return {'success': False, 'error': str(e)}
 
     @api.model
