@@ -141,6 +141,50 @@ class CfMailClient extends Component {
         this.state.quickFilter = filter;
     }
 
+    // Navigation methods (replace sidebar block {} arrows)
+    navInbox()    { this.state.activeView = 'mail'; this.setFolder('INBOX'); }
+    navStarred()  { this.state.activeView = 'mail'; this.setFolder('Starred'); }
+    navAssigned() { this.state.activeView = 'mail'; this.setFolder('Assigned'); }
+    navSent()     { this.state.activeView = 'mail'; this.setFolder('Sent'); }
+    navArchived() { this.state.activeView = 'mail'; this.setFolder('Archived'); }
+    navContacts() { this.state.activeView = 'contacts'; this.loadContacts(); }
+    navTag(tagId) { this.state.activeView = 'mail'; this.setFolder('TAG_' + tagId); }
+
+    // Quick filter dedicated methods
+    onQfAll()      { this.setQuickFilter('all'); }
+    onQfUnread()   { this.setQuickFilter('unread'); }
+    onQfStarred()  { this.setQuickFilter('starred'); }
+    onQfIncoming() { this.setQuickFilter('inbox'); }
+    onQfOutgoing() { this.setQuickFilter('sent'); }
+
+    // Groupby dedicated methods
+    setGroupByDate()     { this.state.groupBy = 'date'; }
+    setGroupBySender()   { this.state.groupBy = 'sender'; }
+    setGroupByLead()     { this.state.groupBy = 'lead'; }
+    setGroupByPipeline() { this.state.groupBy = 'pipeline'; }
+
+    // UI state toggle methods
+    toggleTagDropdown()    { this.state.showTagDropdown = !this.state.showTagDropdown; this.state.showSnoozeMenu = false; }
+    toggleSnoozeMenu()     { this.state.showSnoozeMenu = !this.state.showSnoozeMenu; this.state.showTagDropdown = false; }
+    toggleThreadExpanded() { this.state.threadExpanded = !this.state.threadExpanded; }
+    toggleSearchPanel()    { this.state.showSearchPanel = !this.state.showSearchPanel; }
+    toggleBulkTagMenu()    { this.state.showBulkTagMenu = !this.state.showBulkTagMenu; }
+    noop() {}
+
+    // Search panel t-on-change handlers (no arrows allowed in t-on-change)
+    onSearchTagChange(ev)         { this.state.searchForm.tag_id = ev.target.value; }
+    onSearchAttachmentsChange(ev) { this.state.searchForm.has_attachments = ev.target.checked; }
+
+    // Contacts handlers
+    onContactSearchInput(ev)     { this.state.contactSearch = ev.target.value; this.loadContacts(); }
+    onContactTagFilterChange(ev) { this.state.contactTagFilter = ev.target.value; this.loadContacts(); }
+
+    // Item checkbox t-on-change via data attribute (no inline arrow with msg.id)
+    onItemCheckChange(ev) {
+        const msgId = parseInt(ev.currentTarget.dataset.msgId);
+        if (msgId) this.toggleSelect(msgId, ev);
+    }
+
     get groupedMessages() {
         const msgs = this.filteredMessages;
         const groupBy = this.state.groupBy;
