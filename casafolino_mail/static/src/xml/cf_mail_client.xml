@@ -28,28 +28,28 @@
 
             <div class="cf-mail-nav-section">
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'INBOX' ? 'active' : ''"
-                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('INBOX'); }">
+                     t-on-click="navInbox">
                     <i class="fa fa-inbox nav-icon"/> Inbox
                     <span t-if="state.totalUnread > 0" class="cf-mail-nav-badge" t-esc="state.totalUnread"/>
                 </div>
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Starred' ? 'active' : ''"
-                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Starred'); }">
+                     t-on-click="navStarred">
                     <i class="fa fa-star nav-icon"/> Preferiti
                 </div>
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Assigned' ? 'active' : ''"
-                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Assigned'); }">
+                     t-on-click="navAssigned">
                     <i class="fa fa-user nav-icon"/> Assegnate a me
                 </div>
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Sent' ? 'active' : ''"
-                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Sent'); }">
+                     t-on-click="navSent">
                     <i class="fa fa-paper-plane nav-icon"/> Inviati
                 </div>
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'mail' and state.folder === 'Archived' ? 'active' : ''"
-                     t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('Archived'); }">
+                     t-on-click="navArchived">
                     <i class="fa fa-archive nav-icon"/> Archivio
                 </div>
                 <div class="cf-mail-nav-item" t-att-class="state.activeView === 'contacts' ? 'active' : ''"
-                     t-on-click="() => { this.state.activeView = 'contacts'; this.loadContacts(); }">
+                     t-on-click="navContacts">
                     <i class="fa fa-address-book nav-icon"/> Rubrica
                 </div>
 
@@ -58,7 +58,7 @@
             <div class="cf-mail-divider"/>
             <div class="cf-mail-section-title">Tag Email</div>
             <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
-                <div class="cf-mail-tag-nav" t-on-click="() => { this.state.activeView = 'mail'; this.setFolder('TAG_' + tag.id); }">
+                <div class="cf-mail-tag-nav" t-on-click="() => this.navTag(tag.id)">
                     <span class="cf-mail-tag-dot" t-att-style="'background:' + tag.color"/>
                     <span t-esc="tag.name"/>
                 </div>
@@ -96,7 +96,7 @@
                     <i class="fa fa-search"/>
                     <input type="text" t-att-value="state.search" t-on-input="onSearch" placeholder="Cerca..."/>
                 </div>
-                <button class="cf-mail-toolbar-btn" t-on-click="() => this.state.showSearchPanel = !this.state.showSearchPanel" title="Ricerca avanzata">
+                <button class="cf-mail-toolbar-btn" t-on-click="toggleSearchPanel" title="Ricerca avanzata">
                     <i class="fa fa-filter"/>
                 </button>
                 <button class="cf-mail-toolbar-btn" t-on-click="loadMessages">
@@ -113,14 +113,14 @@
                             <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_from" t-on-input="(e) => this.state.searchForm.date_from = e.target.value" style="flex:1"/>
                             <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_to" t-on-input="(e) => this.state.searchForm.date_to = e.target.value" style="flex:1"/>
                         </div>
-                        <select class="cf-mail-modal-input" t-on-change="(e) => this.state.searchForm.tag_id = e.target.value">
+                        <select class="cf-mail-modal-input" t-on-change="onSearchTagChange">
                             <option value="">Tutti i tag</option>
                             <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
                                 <option t-att-value="tag.id" t-esc="tag.name"/>
                             </t>
                         </select>
                         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-                            <input type="checkbox" t-att-checked="state.searchForm.has_attachments" t-on-change="(e) => this.state.searchForm.has_attachments = e.target.checked" style="accent-color:var(--accent)"/>
+                            <input type="checkbox" t-att-checked="state.searchForm.has_attachments" t-on-change="onSearchAttachmentsChange" style="accent-color:var(--accent)"/>
                             Solo con allegati
                         </label>
                         <button class="cf-mail-btn-primary" t-on-click="runAdvancedSearch"><i class="fa fa-search"/> Cerca</button>
@@ -128,40 +128,40 @@
                 </div>
             </t>
 
-            <div class="cf-mail-quickfilter-bar">
+            <div class="cf-mail-quick-filters">
                 <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'all' ? ' active' : '')"
-                        t-on-click="() => this.setQuickFilter('all')">
+                        t-on-click="onQfAll">
                     <i class="fa fa-list"/> Tutti
                 </button>
                 <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'unread' ? ' active' : '')"
-                        t-on-click="() => this.setQuickFilter('unread')">
+                        t-on-click="onQfUnread">
                     <i class="fa fa-circle"/> Non letti
                 </button>
                 <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'starred' ? ' active' : '')"
-                        t-on-click="() => this.setQuickFilter('starred')">
+                        t-on-click="onQfStarred">
                     <i class="fa fa-star"/> Preferiti
                 </button>
                 <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'inbox' ? ' active' : '')"
-                        t-on-click="() => this.setQuickFilter('inbox')">
+                        t-on-click="onQfIncoming">
                     <i class="fa fa-inbox"/> In arrivo
                 </button>
                 <button t-att-class="'cf-qf-btn' + (state.quickFilter === 'sent' ? ' active' : '')"
-                        t-on-click="() => this.setQuickFilter('sent')">
+                        t-on-click="onQfOutgoing">
                     <i class="fa fa-paper-plane"/> Inviati
                 </button>
             </div>
 
             <div class="cf-mail-groupby-bar">
-                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'date' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'date'">
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'date' ? ' active' : '')" t-on-click="setGroupByDate">
                     <i class="fa fa-calendar"/> Data
                 </button>
-                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'sender' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'sender'">
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'sender' ? ' active' : '')" t-on-click="setGroupBySender">
                     <i class="fa fa-user"/> Mittente
                 </button>
-                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'lead' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'lead'">
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'lead' ? ' active' : '')" t-on-click="setGroupByLead">
                     <i class="fa fa-handshake"/> Trattativa
                 </button>
-                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'pipeline' ? ' active' : '')" t-on-click="() => this.state.groupBy = 'pipeline'">
+                <button t-att-class="'cf-mail-groupby-btn' + (state.groupBy === 'pipeline' ? ' active' : '')" t-on-click="setGroupByPipeline">
                     <i class="fa fa-filter"/> Pipeline
                 </button>
             </div>
@@ -191,8 +191,9 @@
                                  t-on-click="(ev) => this.selectMsg(msg, ev)">
                                 <input type="checkbox" class="cf-item-cb"
                                        t-att-checked="state.selectedIds.includes(msg.id)"
-                                       t-on-change="(ev) => this.toggleSelect(msg.id, ev)"
-                                       t-on-click.stop="() => {}"/>
+                                       t-att-data-msg-id="msg.id"
+                                       t-on-change="onItemCheckChange"
+                                       t-on-click.stop="noop"/>
                                 <div class="cf-item-avatar" t-att-style="'background:' + this.avatarColor(msg.from_name || msg.from_address)">
                                     <t t-esc="this.avatarInitial(msg.from_name || msg.from_address)"/>
                                 </div>
@@ -246,7 +247,7 @@
             <button class="cf-mail-bulk-btn" t-on-click="() => this.bulkAction('star')"><i class="fa fa-star"/></button>
             <button class="cf-mail-bulk-btn" t-on-click="() => this.bulkAction('archive')"><i class="fa fa-archive"/></button>
             <div class="cf-mail-bulk-tag-wrap">
-                <button class="cf-mail-bulk-btn" t-on-click="() => this.state.showBulkTagMenu = !this.state.showBulkTagMenu">
+                <button class="cf-mail-bulk-btn" t-on-click="toggleBulkTagMenu">
                     <i class="fa fa-tag"/> Tag
                 </button>
                 <div t-if="state.showBulkTagMenu" class="cf-mail-tag-dropdown">
@@ -306,7 +307,7 @@
                         </button>
                         <button class="cf-mail-btn-icon" t-on-click="() => this.quickArchive(state.selectedMsg.id, null)"><i class="fa fa-archive"/></button>
                         <div style="position:relative;display:inline-block">
-                            <button class="cf-mail-btn-icon" t-on-click="() => { this.state.showTagDropdown = !this.state.showTagDropdown; this.state.showSnoozeMenu = false; }" title="Tag">
+                            <button class="cf-mail-btn-icon" t-on-click="toggleTagDropdown" title="Tag">
                                 <i class="fa fa-tag"/>
                             </button>
                             <div t-if="state.showTagDropdown" class="cf-mail-tag-dropdown">
@@ -324,7 +325,7 @@
                             </div>
                         </div>
                         <div style="position:relative;display:inline-block">
-                            <button class="cf-mail-btn-icon" t-on-click="() => { this.state.showSnoozeMenu = !this.state.showSnoozeMenu; this.state.showTagDropdown = false; }" title="Posticipa">
+                            <button class="cf-mail-btn-icon" t-on-click="toggleSnoozeMenu" title="Posticipa">
                                 <i class="fa fa-clock"/>
                             </button>
                             <div t-if="state.showSnoozeMenu" class="cf-mail-snooze-menu">
@@ -345,7 +346,7 @@
                             </t>
                         </div>
                         <t t-if="state.msgDetail.thread_messages and state.msgDetail.thread_messages.length > 0">
-                            <div class="cf-mail-thread-toggle" t-on-click="() => this.state.threadExpanded = !this.state.threadExpanded">
+                            <div class="cf-mail-thread-toggle" t-on-click="toggleThreadExpanded">
                                 <i t-att-class="'fa fa-' + (state.threadExpanded ? 'chevron-up' : 'chevron-down')"/>
                                 <span t-esc="state.msgDetail.thread_messages.length"/> messaggi nel thread
                             </div>
@@ -465,9 +466,9 @@
             <div class="cf-mail-contacts-toolbar">
                 <div class="cf-mail-search-wrap" style="max-width:320px">
                     <i class="fa fa-search"/>
-                    <input type="text" t-att-value="state.contactSearch" t-on-input="(e) => { this.state.contactSearch = e.target.value; this.loadContacts(); }" placeholder="Cerca contatti..."/>
+                    <input type="text" t-att-value="state.contactSearch" t-on-input="onContactSearchInput" placeholder="Cerca contatti..."/>
                 </div>
-                <select class="cf-mail-sort-select" t-on-change="(e) => { this.state.contactTagFilter = e.target.value; this.loadContacts(); }">
+                <select class="cf-mail-sort-select" t-on-change="onContactTagFilterChange">
                     <option value="">Tutti i tag</option>
                     <t t-foreach="state.contactTags" t-as="tag" t-key="tag.id">
                         <option t-att-value="tag.id" t-esc="tag.name + ' (' + tag.count + ')'"/>

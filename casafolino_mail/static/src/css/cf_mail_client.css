@@ -181,7 +181,7 @@
 }
 
 /* QUICK FILTER BAR */
-.cf-mail-quickfilter-bar {
+.cf-mail-quick-filters {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -192,7 +192,7 @@
   scrollbar-width: none;
   flex-shrink: 0;
 }
-.cf-mail-quickfilter-bar::-webkit-scrollbar { display: none; }
+.cf-mail-quick-filters::-webkit-scrollbar { display: none; }
 .cf-qf-btn {
   display: inline-flex;
   align-items: center;
