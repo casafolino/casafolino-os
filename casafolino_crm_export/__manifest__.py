@@ -12,6 +12,11 @@
         "views/cf_export_views.xml",
         "views/menus.xml",
         ],
+    "assets": {
+        "web.assets_backend": [
+            "casafolino_crm_export/static/src/css/cf_crm_style.css",
+        ],
+    },
     "installable": True,
     "application": True,
     "license": "LGPL-3",
