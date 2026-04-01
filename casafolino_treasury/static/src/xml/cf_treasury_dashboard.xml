@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_treasury.CfTreasuryDashboard">
+    <div class="cf-dashboard o_action">
+        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
+             style="background:#1e2432;color:#fff;min-height:56px;">
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size:20px;">💰</span>
+                <h4 class="mb-0 fw-bold" style="font-size:16px;">Dashboard Tesoreria</h4>
+                <t t-if="state.data and state.data.has_data">
+                    <span class="badge bg-secondary ms-2" style="font-size:11px;">
+                        <t t-esc="state.data.date"/>
+                    </span>
+                </t>
+            </div>
+            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+        </div>
+
+        <t t-if="state.loading">
+            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+                <div class="spinner-border text-secondary"/>
+            </div>
+        </t>
+        <t t-elif="state.error">
+            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+        </t>
+        <t t-elif="!state.data or !state.data.has_data">
+            <div class="alert alert-info m-4">Nessun dato tesoreria. Creare uno snapshot prima.</div>
+        </t>
+        <t t-elif="state.data">
+            <div class="cf-dash-body px-4 py-3">
+
+                <!-- Saldo prominente -->
+                <div class="cf-dash-panel mb-4">
+                    <div class="text-center py-3">
+                        <div class="text-muted" style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;">
+                            Saldo Cassa Attuale
+                        </div>
+                        <div t-attf-class="fw-black #{balanceClass(state.data.total_balance)}"
+                             style="font-size:42px;font-weight:900;line-height:1.1;">
+                            <t t-esc="formatAmount(state.data.total_balance)"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Forecast cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-4">
+                        <div class="cf-kpi-card" style="border-top:3px solid #5A6E3A;">
+                            <div class="cf-kpi-label">Forecast 30gg</div>
+                            <div t-attf-class="cf-kpi-value #{balanceClass(state.data.forecast_30d)}" style="font-size:20px;">
+                                <t t-esc="formatAmount(state.data.forecast_30d)"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="cf-kpi-card" style="border-top:3px solid #3d4d28;">
+                            <div class="cf-kpi-label">Forecast 60gg</div>
+                            <div t-attf-class="cf-kpi-value #{balanceClass(state.data.forecast_60d)}" style="font-size:20px;">
+                                <t t-esc="formatAmount(state.data.forecast_60d)"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="cf-kpi-card" style="border-top:3px solid #17a2b8;">
+                            <div class="cf-kpi-label">Forecast 90gg</div>
+                            <div t-attf-class="cf-kpi-value #{balanceClass(state.data.forecast_90d)}" style="font-size:20px;">
+                                <t t-esc="formatAmount(state.data.forecast_90d)"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Crediti / Debiti + Sparkline -->
+                <div class="row g-3">
+                    <div class="col-lg-4">
+                        <div class="cf-dash-panel">
+                            <div class="cf-dash-panel-title">📋 Posizione a 30gg</div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Crediti in scadenza</span>
+                                <span class="fw-bold text-success">
+                                    <t t-esc="formatAmount(state.data.receivable_30d)"/>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted small">Debiti in scadenza</span>
+                                <span class="fw-bold text-danger">
+                                    <t t-esc="formatAmount(state.data.payable_30d)"/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="cf-dash-panel">
+                            <div class="cf-dash-panel-title">📊 Andamento Saldo (30 giorni)</div>
+                            <div class="d-flex align-items-flex-end gap-1" style="height:60px;">
+                                <t t-foreach="sparkBars()" t-as="bar" t-key="bar.date">
+                                    <div t-attf-style="height:#{bar.pct}%;flex:1;border-radius:2px;background:#{bar.positive ? '#5A6E3A' : '#dc3545'};min-height:4px;"
+                                         t-att-title="bar.date"/>
+                                </t>
+                                <t t-if="!sparkBars().length">
+                                    <span class="text-muted small">Dati insufficienti per il grafico.</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+</templates>

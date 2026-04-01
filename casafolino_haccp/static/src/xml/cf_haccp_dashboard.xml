@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_haccp.CfHaccpDashboard">
+    <div class="cf-dashboard o_action">
+        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
+             style="background:#1e2432;color:#fff;min-height:56px;">
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size:20px;">🔬</span>
+                <h4 class="mb-0 fw-bold" style="font-size:16px;">Dashboard HACCP</h4>
+            </div>
+            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+        </div>
+
+        <t t-if="state.loading">
+            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+                <div class="spinner-border text-secondary"/>
+            </div>
+        </t>
+        <t t-elif="state.error">
+            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+        </t>
+        <t t-elif="state.data">
+            <div class="cf-dash-body px-4 py-3">
+
+                <!-- Semaforo generale -->
+                <div class="cf-haccp-semaforo mb-4"
+                     t-attf-style="border-left: 5px solid #{state.data.overall_state == 'red' ? '#dc3545' : state.data.overall_state == 'yellow' ? '#ffc107' : '#28a745'};">
+                    <span class="fw-bold" style="font-size:14px;">Stato HACCP generale:</span>
+                    <span t-attf-class="ms-2 badge #{state.data.overall_state == 'red' ? 'bg-danger' : state.data.overall_state == 'yellow' ? 'bg-warning text-dark' : 'bg-success'}"
+                          style="font-size:13px;">
+                        <t t-esc="state.data.overall_state == 'red' ? '🔴 Critico' : state.data.overall_state == 'yellow' ? '🟡 Attenzione' : '🟢 OK'"/>
+                    </span>
+                </div>
+
+                <!-- NC KPI cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenNcOpen"
+                             t-attf-style="border-top: 3px solid #{state.data.nc_open > 0 ? '#fd7e14' : '#28a745'};">
+                            <div class="cf-kpi-label">NC Aperte</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.nc_open > 0 ? 'text-warning' : 'text-success'}">
+                                <t t-esc="state.data.nc_open"/>
+                            </div>
+                            <div class="cf-kpi-sub">in stato "Aperta"</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenNcCritical"
+                             t-attf-style="border-top: 3px solid #{state.data.nc_critical_open > 0 ? '#dc3545' : '#28a745'};">
+                            <div class="cf-kpi-label">NC Critiche / Alte</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.nc_critical_open > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.data.nc_critical_open"/>
+                            </div>
+                            <div class="cf-kpi-sub">gravità alta + critica aperte</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenCalibExpiring"
+                             t-attf-style="border-top: 3px solid #{state.data.instruments_expired > 0 ? '#dc3545' : state.data.instruments_expiring > 0 ? '#ffc107' : '#28a745'};">
+                            <div class="cf-kpi-label">Strumenti Scaduti</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.instruments_expired > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.data.instruments_expired"/>
+                            </div>
+                            <div class="cf-kpi-sub">
+                                + <t t-esc="state.data.instruments_expiring"/> in scadenza
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenDocsExpiring"
+                             t-attf-style="border-top: 3px solid #{state.data.docs_expired > 0 ? '#dc3545' : state.data.docs_expiring > 0 ? '#ffc107' : '#28a745'};">
+                            <div class="cf-kpi-label">Documenti Scaduti</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.docs_expired > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.data.docs_expired"/>
+                            </div>
+                            <div class="cf-kpi-sub">
+                                + <t t-esc="state.data.docs_expiring"/> in scadenza
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NC pipeline -->
+                <div class="cf-dash-panel">
+                    <div class="cf-dash-panel-title">📋 Flusso Non Conformità</div>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <div class="cf-nc-stage-box" style="border-color:#fd7e14;">
+                            <div class="cf-nc-stage-label">Aperte</div>
+                            <div class="cf-nc-stage-count" style="color:#fd7e14;">
+                                <t t-esc="state.data.nc_open"/>
+                            </div>
+                        </div>
+                        <div class="cf-nc-arrow">→</div>
+                        <div class="cf-nc-stage-box" style="border-color:#0d6efd;">
+                            <div class="cf-nc-stage-label">In Analisi</div>
+                            <div class="cf-nc-stage-count" style="color:#0d6efd;">
+                                <t t-esc="state.data.nc_analysis"/>
+                            </div>
+                        </div>
+                        <div class="cf-nc-arrow">→</div>
+                        <div class="cf-nc-stage-box" style="border-color:#6f42c1;">
+                            <div class="cf-nc-stage-label">Azione Correttiva</div>
+                            <div class="cf-nc-stage-count" style="color:#6f42c1;">
+                                <t t-esc="state.data.nc_action"/>
+                            </div>
+                        </div>
+                        <div class="cf-nc-arrow">→</div>
+                        <div class="cf-nc-stage-box" style="border-color:#28a745;">
+                            <div class="cf-nc-stage-label">Chiuse</div>
+                            <div class="cf-nc-stage-count" style="color:#28a745;">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+</templates>

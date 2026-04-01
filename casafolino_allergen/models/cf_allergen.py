@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
 
+ALLERGEN_ICONS = {
+    "gluten": "🌾", "crustaceans": "🦞", "eggs": "🥚", "fish": "🐟",
+    "peanuts": "🥜", "soybeans": "🫘", "milk": "🥛", "nuts": "🌰",
+    "celery": "🥬", "mustard": "🌿", "sesame": "🌱", "sulphites": "🍇",
+    "lupin": "🌼", "molluscs": "🦑",
+}
+
 class CfAllergen(models.Model):
     _name = "cf.allergen"
     _description = "Allergene UE"
@@ -11,6 +18,16 @@ class CfAllergen(models.Model):
     sequence = fields.Integer(default=10)
     regulation_ref = fields.Char(string="Rif. Regolamento", default="Reg. 1169/2011")
     active = fields.Boolean(default=True)
+    products_count = fields.Integer(
+        string="Prodotti", compute="_compute_products_count", store=False
+    )
+
+    def _compute_products_count(self):
+        for rec in self:
+            rec.products_count = self.env["cf.recipe.allergen"].search_count([
+                ("allergen_id", "=", rec.id),
+                ("status", "in", ("present", "traces")),
+            ])
 
 class CfAllergenKeyword(models.Model):
     _name = "cf.allergen.keyword"

@@ -6,53 +6,90 @@
         <field name="arch" type="xml">
             <form string="Sessione Mock Recall">
                 <header>
-                    <field name="state" widget="statusbar"/>
+                    <button name="action_run" type="object" string="▶ Avvia Tracciabilità"
+                        class="btn-primary" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,running,done"/>
                 </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-sitemap" type="object"
+                            name="action_run" invisible="state == 'done'">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="nodes_count"/></span>
+                                <span class="o_stat_text">Nodi</span>
+                            </div>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1><field name="reference" readonly="1"/></h1>
+                        <div invisible="state != 'done'">
+                            <span class="fw-bold me-2">Tracciabilità:</span>
+                            <field name="traceability_pct" widget="percentpie"/>
+                            <span t-if="traceability_pct >= 99"
+                                class="badge bg-success ms-2">✅ BRC OK (≥99%)</span>
+                            <span t-else=""
+                                class="badge bg-danger ms-2" invisible="state != 'done'">⚠ BRC KO (&lt;99%)</span>
+                        </div>
                     </div>
                     <group>
-                        <group string="Parametri">
-                            <field name="session_type"/>
+                        <group string="Parametri Recall">
+                            <field name="session_type" widget="badge"/>
                             <field name="lot_id"/>
                             <field name="direction"/>
                             <field name="operator_id" widget="many2one_avatar_user"/>
                         </group>
                         <group string="Risultati">
                             <field name="date_start"/>
-                            <field name="date_end"/>
-                            <field name="duration_seconds" string="Durata (sec)"/>
-                            <field name="nodes_count"/>
+                            <field name="date_end" invisible="state != 'done'"/>
+                            <field name="duration_seconds" string="Durata (sec)"
+                                invisible="state != 'done'"/>
+                            <field name="nodes_count" invisible="state != 'done'"/>
+                            <field name="traceability_pct" string="Tracciabilità %"
+                                invisible="state != 'done'"/>
                         </group>
                     </group>
-                    <group string="Riepilogo" invisible="not result_summary">
+                    <group string="Riepilogo BRC" invisible="not result_summary">
                         <field name="result_summary" nolabel="1" readonly="1"/>
                     </group>
                     <notebook invisible="state != 'done'">
                         <page string="MO Coinvolti">
                             <field name="production_ids">
-                                <list><field name="name"/><field name="product_id"/><field name="state" widget="badge"/></list>
+                                <list>
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
                             </field>
                         </page>
-                        <page string="Lotti">
+                        <page string="Lotti Tracciati">
                             <field name="lot_ids">
-                                <list><field name="name"/><field name="product_id"/></list>
+                                <list>
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                </list>
                             </field>
                         </page>
                         <page string="Spedizioni">
                             <field name="picking_ids">
-                                <list><field name="name"/><field name="partner_id"/><field name="state" widget="badge"/></list>
+                                <list>
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
                             </field>
                         </page>
-                        <page string="Partner">
+                        <page string="Partner Coinvolti">
                             <field name="partner_ids">
-                                <list><field name="name"/><field name="email"/></list>
+                                <list>
+                                    <field name="name"/>
+                                    <field name="email"/>
+                                    <field name="phone"/>
+                                </list>
                             </field>
                         </page>
                     </notebook>
-                    <field name="notes" placeholder="Note..."/>
+                    <field name="notes" placeholder="Note aggiuntive..."/>
                 </sheet>
                 <chatter/>
             </form>

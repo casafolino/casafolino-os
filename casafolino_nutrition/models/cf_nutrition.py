@@ -35,6 +35,27 @@ class CfNutritionBom(models.Model):
     protein = fields.Float(string="Proteine (g/100g)", readonly=True)
     salt = fields.Float(string="Sale (g/100g)", readonly=True)
     last_computed = fields.Datetime(string="Ultimo Calcolo", readonly=True)
+    nutri_score = fields.Selection([
+        ("A", "A"), ("B", "B"), ("C", "C"), ("D", "D"), ("E", "E"),
+    ], compute="_compute_nutri_score", store=True, string="Nutri-Score")
+
+    @api.depends("energy_kcal", "sugars", "saturated_fat", "salt", "fiber", "protein")
+    def _compute_nutri_score(self):
+        """Simplified Nutri-Score estimate (A=best, E=worst)."""
+        for rec in self:
+            if not rec.energy_kcal:
+                rec.nutri_score = False
+                continue
+            # Negative points (higher = worse)
+            neg = 0
+            neg += 0 if rec.energy_kcal <= 335 else 1 if rec.energy_kcal <= 670 else 2 if rec.energy_kcal <= 1005 else 3 if rec.energy_kcal <= 1340 else 4 if rec.energy_kcal <= 1675 else 5 if rec.energy_kcal <= 2010 else 6 if rec.energy_kcal <= 2345 else 7 if rec.energy_kcal <= 2680 else 8 if rec.energy_kcal <= 3015 else 9 if rec.energy_kcal <= 3350 else 10
+            neg += 0 if rec.sugars <= 4.5 else 1 if rec.sugars <= 9 else 2 if rec.sugars <= 13.5 else 3 if rec.sugars <= 18 else 4 if rec.sugars <= 22.5 else 5 if rec.sugars <= 27 else 6 if rec.sugars <= 31 else 7 if rec.sugars <= 36 else 8 if rec.sugars <= 40 else 9 if rec.sugars <= 45 else 10
+            neg += 0 if rec.saturated_fat <= 1 else 1 if rec.saturated_fat <= 2 else 2 if rec.saturated_fat <= 3 else 3 if rec.saturated_fat <= 4 else 4 if rec.saturated_fat <= 5 else 5 if rec.saturated_fat <= 6 else 6 if rec.saturated_fat <= 7 else 7 if rec.saturated_fat <= 8 else 8 if rec.saturated_fat <= 9 else 9 if rec.saturated_fat <= 10 else 10
+            neg += 0 if rec.salt <= 0.2 else 1 if rec.salt <= 0.4 else 2 if rec.salt <= 0.6 else 3 if rec.salt <= 0.8 else 4 if rec.salt <= 1.0 else 5 if rec.salt <= 1.2 else 6 if rec.salt <= 1.4 else 7 if rec.salt <= 1.6 else 8 if rec.salt <= 1.8 else 9 if rec.salt <= 2.0 else 10
+            # Positive points
+            pos = min(5, int(rec.fiber / 0.9)) + min(5, int(rec.protein / 1.6))
+            score = neg - pos
+            rec.nutri_score = "A" if score <= -1 else "B" if score <= 2 else "C" if score <= 10 else "D" if score <= 18 else "E"
 
     def action_compute(self):
         self.ensure_one()

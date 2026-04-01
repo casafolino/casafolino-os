@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_supplier_qual.CfSupplierDashboard">
+    <div class="cf-dashboard o_action">
+        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
+             style="background:#1e2432;color:#fff;min-height:56px;">
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size:20px;">🏭</span>
+                <h4 class="mb-0 fw-bold" style="font-size:16px;">Dashboard Fornitori</h4>
+            </div>
+            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+        </div>
+
+        <t t-if="state.loading">
+            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+                <div class="spinner-border text-secondary"/>
+            </div>
+        </t>
+        <t t-elif="state.error">
+            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+        </t>
+        <t t-elif="state.data">
+            <div class="cf-dash-body px-4 py-3">
+                <!-- Stato semaforo counts -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenApproved"
+                             style="border-top: 3px solid #28a745;">
+                            <div class="cf-kpi-label">✅ Approvati</div>
+                            <div class="cf-kpi-value text-success">
+                                <t t-esc="state.data.by_status.approved"/>
+                            </div>
+                            <div class="cf-kpi-sub">di <t t-esc="state.data.total"/> totali</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenEvaluation"
+                             style="border-top: 3px solid #ffc107;">
+                            <div class="cf-kpi-label">🔄 In Valutazione</div>
+                            <div class="cf-kpi-value text-warning">
+                                <t t-esc="state.data.by_status.evaluation"/>
+                            </div>
+                            <div class="cf-kpi-sub">da qualificare</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenSuspended"
+                             style="border-top: 3px solid #dc3545;">
+                            <div class="cf-kpi-label">🚫 Sospesi / Esclusi</div>
+                            <div class="cf-kpi-value text-danger">
+                                <t t-esc="state.data.by_status.suspended + state.data.by_status.excluded"/>
+                            </div>
+                            <div class="cf-kpi-sub">non operativi</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onOpenDocsExpiring"
+                             t-attf-style="border-top: 3px solid #{state.data.docs_expired > 0 ? '#dc3545' : state.data.docs_expiring > 0 ? '#ffc107' : '#28a745'};">
+                            <div class="cf-kpi-label">📄 Documenti Scaduti</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.docs_expired > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.data.docs_expired"/>
+                            </div>
+                            <div class="cf-kpi-sub">
+                                + <t t-esc="state.data.docs_expiring"/> in scadenza
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Semaforo breakdown -->
+                <div class="cf-dash-panel">
+                    <div class="cf-dash-panel-title">🚦 Semaforo Fornitori</div>
+                    <div class="d-flex gap-4 flex-wrap">
+                        <div class="cf-nc-stage-box" style="border-color:#28a745; cursor:pointer;" t-on-click="onOpenApproved">
+                            <div class="cf-nc-stage-label">🟢 Verde</div>
+                            <div class="cf-nc-stage-count" style="color:#28a745;">
+                                <t t-esc="state.data.by_light.green"/>
+                            </div>
+                        </div>
+                        <div class="cf-nc-stage-box" style="border-color:#ffc107; cursor:pointer;" t-on-click="onOpenEvaluation">
+                            <div class="cf-nc-stage-label">🟡 Giallo</div>
+                            <div class="cf-nc-stage-count" style="color:#ffc107;">
+                                <t t-esc="state.data.by_light.yellow"/>
+                            </div>
+                        </div>
+                        <div class="cf-nc-stage-box" style="border-color:#dc3545; cursor:pointer;" t-on-click="onOpenRed">
+                            <div class="cf-nc-stage-label">🔴 Rosso</div>
+                            <div class="cf-nc-stage-count" style="color:#dc3545;">
+                                <t t-esc="state.data.by_light.red"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+</templates>

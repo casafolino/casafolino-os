@@ -12,6 +12,12 @@
         "views/cf_supplier_views.xml",
         "views/menus.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "casafolino_supplier_qual/static/src/xml/cf_supplier_dashboard.xml",
+            "casafolino_supplier_qual/static/src/js/cf_supplier_dashboard.js",
+        ],
+    },
     "installable": True,
     "application": True,
     "license": "LGPL-3",
