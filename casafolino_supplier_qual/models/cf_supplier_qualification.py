@@ -19,20 +19,24 @@ class CfSupplierQualification(models.Model):
     notes = fields.Text()
     document_ids = fields.One2many("casafolino.supplier.document", "partner_id", string="Documenti")
     evaluation_ids = fields.One2many("casafolino.supplier.evaluation", "partner_id", string="Valutazioni")
-    document_count = fields.Integer(compute="_compute_stats")
-    evaluation_count = fields.Integer(compute="_compute_stats")
-    expired_doc_count = fields.Integer(compute="_compute_stats")
-    expiring_doc_count = fields.Integer(compute="_compute_stats")
-    last_score = fields.Float(compute="_compute_stats", store=True)
+    document_count = fields.Integer(compute="_compute_stats_counts")
+    evaluation_count = fields.Integer(compute="_compute_stats_counts")
+    expired_doc_count = fields.Integer(compute="_compute_stats_counts")
+    expiring_doc_count = fields.Integer(compute="_compute_stats_counts")
+    last_score = fields.Float(compute="_compute_last_score", store=True)
 
-    @api.depends("document_ids","document_ids.doc_status","evaluation_ids","evaluation_ids.punteggio_totale")
-    def _compute_stats(self):
+    @api.depends("document_ids", "document_ids.doc_status", "evaluation_ids")
+    def _compute_stats_counts(self):
         for rec in self:
             docs = rec.document_ids
             rec.document_count = len(docs)
             rec.evaluation_count = len(rec.evaluation_ids)
             rec.expired_doc_count = len(docs.filtered(lambda d: d.doc_status == "expired"))
             rec.expiring_doc_count = len(docs.filtered(lambda d: d.doc_status == "expiring"))
+
+    @api.depends("evaluation_ids", "evaluation_ids.punteggio_totale")
+    def _compute_last_score(self):
+        for rec in self:
             last_eval = rec.evaluation_ids.sorted("date", reverse=True)[:1]
             rec.last_score = last_eval.punteggio_totale if last_eval else 0.0
 

@@ -23,7 +23,7 @@ class CfSupplierDocument(models.Model):
     no_expiry = fields.Boolean(default=False)
     alert_days_before = fields.Integer(default=30)
     doc_status = fields.Selection([("valid","Valido"),("expiring","In Scadenza"),("expired","Scaduto"),("no_expiry","Nessuna Scadenza"),("missing","File Mancante")], compute="_compute_doc_status", store=True, tracking=True)
-    days_to_expiry = fields.Integer(compute="_compute_doc_status", store=False)
+    days_to_expiry = fields.Integer(compute="_compute_days_to_expiry", store=False)
     notes = fields.Text()
     reference_number = fields.Char()
 
@@ -32,15 +32,27 @@ class CfSupplierDocument(models.Model):
         for rec in self:
             rec.has_file = bool(rec.attachment_id)
 
-    @api.depends("expiry_date","no_expiry","alert_days_before","attachment_id")
+    @api.depends("expiry_date", "no_expiry", "alert_days_before", "attachment_id")
     def _compute_doc_status(self):
         today = date.today()
         for rec in self:
-            if rec.no_expiry: rec.doc_status = "no_expiry"; rec.days_to_expiry = 0; continue
-            if not rec.expiry_date: rec.doc_status = "missing" if not rec.attachment_id else "valid"; rec.days_to_expiry = 0; continue
+            if rec.no_expiry:
+                rec.doc_status = "no_expiry"
+                continue
+            if not rec.expiry_date:
+                rec.doc_status = "missing" if not rec.attachment_id else "valid"
+                continue
             days = (rec.expiry_date - today).days
-            rec.days_to_expiry = days
             rec.doc_status = "expired" if days < 0 else "expiring" if days <= rec.alert_days_before else "valid"
+
+    @api.depends("expiry_date", "no_expiry", "alert_days_before")
+    def _compute_days_to_expiry(self):
+        today = date.today()
+        for rec in self:
+            if rec.no_expiry or not rec.expiry_date:
+                rec.days_to_expiry = 0
+            else:
+                rec.days_to_expiry = (rec.expiry_date - today).days
 
     @api.model
     def send_expiry_alerts(self):
