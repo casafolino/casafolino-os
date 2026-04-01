@@ -29,17 +29,11 @@
         <field name="model">cf.mail.account</field>
         <field name="arch" type="xml">
             <list string="Account Email">
-                <field name="display_name_custom"/>
-                <field name="email_address"/>
-                <field name="account_type" widget="badge"
-                    decoration-info="account_type == 'personal'"
-                    decoration-success="account_type == 'shared'"/>
-                <field name="owner_id" widget="many2one_avatar_user"/>
-                <field name="unread_count"/>
-                <field name="last_sync"/>
+                <field name="name"/>
+                <field name="email"/>
+                <field name="is_team" widget="boolean_toggle"/>
+                <field name="imap_status"/>
                 <field name="active" widget="boolean_toggle"/>
-                <button name="action_sync_inbox" string="Sincronizza"
-                    type="object" icon="fa-refresh" class="btn-sm"/>
             </list>
         </field>
     </record>
@@ -132,7 +126,7 @@
                 <field name="from_address"/>
                 <field name="to_address"/>
                 <field name="account_id"/>
-                <field name="export_lead_id"/>
+                <field name="lead_id"/>
                 <separator/>
                 <filter string="Inbox" name="inbox"
                     domain="[('folder','=','INBOX'),('is_archived','=',False)]"/>
@@ -145,7 +139,7 @@
                 <filter string="Con allegati" name="attachments"
                     domain="[('attachment_names','!=',False)]"/>
                 <filter string="Collegate a CRM" name="crm"
-                    domain="[('export_lead_id','!=',False)]"/>
+                    domain="[('lead_id','!=',False)]"/>
                 <separator/>
                 <filter string="Archiviate" name="archived"
                     domain="[('is_archived','=',True)]"/>

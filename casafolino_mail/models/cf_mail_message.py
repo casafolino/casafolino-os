@@ -16,21 +16,45 @@ class CfMailMessage(models.Model):
     cc_address = fields.Char('CC')
     body_html = fields.Html('Corpo HTML', sanitize=False)
     body_text = fields.Text('Corpo testo')
+    body_plain = fields.Text(string='Corpo plain',
+        compute='_compute_body_plain', inverse='_inverse_body_plain')
     snippet = fields.Char('Anteprima')
     date = fields.Datetime('Data', default=fields.Datetime.now)
     is_read = fields.Boolean('Letta', default=False)
     is_starred = fields.Boolean('Preferita', default=False)
     is_archived = fields.Boolean('Archiviata', default=False)
+    replied = fields.Boolean('Risposta inviata', default=False)
     direction = fields.Selection([('in', 'In entrata'), ('out', 'In uscita')], default='in')
     folder = fields.Char('Cartella', default='INBOX')
     message_uid = fields.Char('UID IMAP')
     thread_id = fields.Char('Thread ID')
     partner_id = fields.Many2one('res.partner', string='Contatto')
     lead_id = fields.Many2one('cf.export.lead', string='Trattativa CRM')
+    export_lead_id = fields.Many2one('cf.export.lead', string='Trattativa',
+        compute='_compute_export_lead_id', inverse='_inverse_export_lead_id', store=False)
     assigned_user_id = fields.Many2one('res.users', string='Assegnata a')
     tag_ids = fields.Many2many('cf.mail.tag', string='Tag')
     snoozed_until = fields.Datetime('Posticipata fino a')
     has_attachments = fields.Boolean('Ha allegati', default=False)
+    attachment_names = fields.Char('Allegati')
+
+    @api.depends('body_text')
+    def _compute_body_plain(self):
+        for rec in self:
+            rec.body_plain = rec.body_text
+
+    def _inverse_body_plain(self):
+        for rec in self:
+            rec.body_text = rec.body_plain
+
+    @api.depends('lead_id')
+    def _compute_export_lead_id(self):
+        for rec in self:
+            rec.export_lead_id = rec.lead_id
+
+    def _inverse_export_lead_id(self):
+        for rec in self:
+            rec.lead_id = rec.export_lead_id
 
     def action_mark_read(self):
         self.write({'is_read': True})
@@ -40,6 +64,19 @@ class CfMailMessage(models.Model):
 
     def action_archive_msg(self):
         self.write({'is_archived': True})
+
+    def action_archive_message(self):
+        self.write({'is_archived': True})
+
+    def action_star(self):
+        for rec in self:
+            rec.write({'is_starred': not rec.is_starred})
+
+    def action_reply(self):
+        return True
+
+    def action_forward(self):
+        return True
 
     def _msg_to_dict(self, m):
         tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in m.tag_ids]
@@ -57,9 +94,11 @@ class CfMailMessage(models.Model):
             'is_read': m.is_read,
             'is_starred': m.is_starred,
             'is_archived': m.is_archived,
+            'replied': m.replied,
             'direction': m.direction,
             'folder': m.folder or 'INBOX',
             'has_attachments': m.has_attachments,
+            'attachment_names': m.attachment_names or '',
             'thread_count': thread_count,
             'partner_id': m.partner_id.id if m.partner_id else False,
             'partner_name': m.partner_id.name if m.partner_id else '',
@@ -81,14 +120,12 @@ class CfMailMessage(models.Model):
         has_attachments = kw.get('has_attachments') or False
         account_id = kw.get('account_id') or False
         is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
-
         domain = []
         if not is_admin:
             user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
             domain.append(('account_id', 'in', user_accounts.ids))
         elif account_id:
             domain.append(('account_id', '=', int(account_id)))
-
         if folder and folder != 'ALL':
             if folder == 'Starred':
                 domain.append(('is_starred', '=', True))
@@ -98,7 +135,6 @@ class CfMailMessage(models.Model):
                 domain.append(('is_archived', '=', True))
             else:
                 domain += [('folder', '=', folder), ('is_archived', '=', False)]
-
         if query:
             domain += ['|', '|', '|', '|',
                 ('subject', 'ilike', query),
@@ -115,20 +151,17 @@ class CfMailMessage(models.Model):
             domain.append(('tag_ids', 'in', [int(tag_id)]))
         if has_attachments:
             domain.append(('has_attachments', '=', True))
-
         msgs = self.search(domain, limit=100, order='date desc')
         return [self._msg_to_dict(m) for m in msgs]
 
     @api.model
     def get_messages(self, *args, **kw):
-
         account_id = kw.get('account_id')
         folder = kw.get('folder') or 'INBOX'
         limit = int(kw.get('limit') or 50)
         offset = int(kw.get('offset') or 0)
         search = kw.get('search') or ''
         tag_id = kw.get('tag_id') or False
-
         is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
         if not is_admin:
             user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
@@ -151,7 +184,6 @@ class CfMailMessage(models.Model):
                 pass
         else:
             domain.append(('folder', '=', folder))
-
         if search:
             domain += ['|', '|', '|',
                 ('subject', 'ilike', search),
@@ -159,7 +191,6 @@ class CfMailMessage(models.Model):
                 ('from_name', 'ilike', search),
                 ('snippet', 'ilike', search),
             ]
-
         msgs = self.search(domain, limit=limit, offset=offset)
         return [self._msg_to_dict(m) for m in msgs]
 
@@ -173,11 +204,9 @@ class CfMailMessage(models.Model):
             return {}
         if not msg.is_read:
             msg.action_mark_read()
-
         partner_orders = []
         partner_leads = []
         partner_other_emails = []
-        # Match partner da email se non già collegato
         if not msg.partner_id and msg.from_address:
             partner = self.env['res.partner'].search([('email', 'ilike', msg.from_address)], limit=1)
             if not partner:
@@ -207,9 +236,7 @@ class CfMailMessage(models.Model):
                     'date_short': om.date.strftime('%d %b') if om.date else '',
                     'direction': om.direction,
                 })
-
         tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
-
         thread_messages = []
         if msg.thread_id:
             thread_msgs = self.search([('thread_id', '=', msg.thread_id), ('id', '!=', msg.id)], order='date asc')
@@ -222,7 +249,6 @@ class CfMailMessage(models.Model):
                     'body_html': tm.body_html or tm.body_text or '',
                     'direction': tm.direction,
                 })
-
         return {
             'id': msg.id,
             'subject': msg.subject or '(nessun oggetto)',
@@ -234,8 +260,10 @@ class CfMailMessage(models.Model):
             'date': msg.date.strftime('%d/%m/%Y %H:%M') if msg.date else '',
             'is_read': msg.is_read,
             'is_starred': msg.is_starred,
+            'replied': msg.replied,
             'direction': msg.direction,
             'has_attachments': msg.has_attachments,
+            'attachment_names': msg.attachment_names or '',
             'partner_id': msg.partner_id.id if msg.partner_id else False,
             'partner_name': msg.partner_id.name if msg.partner_id else '',
             'partner_email': msg.partner_id.email if msg.partner_id else '',
@@ -398,57 +426,43 @@ class CfMailMessage(models.Model):
         try:
             acc = self.env['cf.mail.account'].browse(int(account_id)) if account_id else None
             from_email = acc.email if acc else self.env.user.email
-
-            # ── Invio via SMTP reale ────────────────────────────────────────
             if acc and acc.imap_password and acc.smtp_host:
                 import smtplib
                 from email.mime.multipart import MIMEMultipart
                 from email.mime.text import MIMEText
                 import ssl as ssl_lib
-
                 msg_obj = MIMEMultipart('alternative')
                 msg_obj['Subject'] = subject
                 msg_obj['From'] = f'{acc.name or acc.email} <{acc.email}>'
                 msg_obj['To'] = to_addr
                 if cc_addr:
                     msg_obj['Cc'] = cc_addr
-                # BCC non va negli header (destinatari nascosti)
                 if message_id:
                     orig = self.browse(int(message_id))
                     if orig.exists() and orig.message_uid:
                         msg_obj['In-Reply-To'] = orig.message_uid
                         msg_obj['References'] = orig.message_uid
-
                 msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
-
-                # Costruisce lista completa destinatari (To + Cc + Bcc)
                 recipients = [r.strip() for r in to_addr.split(',') if r.strip()]
                 if cc_addr:
                     recipients += [r.strip() for r in cc_addr.split(',') if r.strip()]
                 if bcc_addr:
                     recipients += [r.strip() for r in bcc_addr.split(',') if r.strip()]
-
                 if acc.smtp_tls:
                     server = smtplib.SMTP(acc.smtp_host, acc.smtp_port, timeout=30)
                     server.ehlo()
                     server.starttls(context=ssl_lib.create_default_context())
                 else:
-                    server = smtplib.SMTP_SSL(
-                        acc.smtp_host, acc.smtp_port,
-                        context=ssl_lib.create_default_context(), timeout=30
-                    )
+                    server = smtplib.SMTP_SSL(acc.smtp_host, acc.smtp_port,
+                        context=ssl_lib.create_default_context(), timeout=30)
                 server.ehlo()
                 server.login(acc.email, acc.imap_password)
                 server.sendmail(acc.email, recipients, msg_obj.as_string())
-
-                # Append in Gmail Sent via IMAP
                 try:
                     import imaplib
                     if acc.imap_ssl:
-                        imap = imaplib.IMAP4_SSL(
-                            acc.imap_host, acc.imap_port,
-                            ssl_context=ssl_lib.create_default_context()
-                        )
+                        imap = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port,
+                            ssl_context=ssl_lib.create_default_context())
                     else:
                         imap = imaplib.IMAP4(acc.imap_host, acc.imap_port)
                     imap.login(acc.email, acc.imap_password)
@@ -461,10 +475,8 @@ class CfMailMessage(models.Model):
                     imap.logout()
                 except Exception as e2:
                     _logger.warning('Could not append to Sent folder: %s', e2)
-
                 server.quit()
             else:
-                # ── Fallback Odoo mail.mail ─────────────────────────────────
                 mail = self.env['mail.mail'].create({
                     'subject': subject,
                     'email_to': to_addr,
@@ -473,13 +485,12 @@ class CfMailMessage(models.Model):
                     'email_from': from_email,
                 })
                 mail.send()
-
             thread_id = None
             if message_id:
                 orig = self.browse(int(message_id))
                 if orig.exists():
                     thread_id = orig.thread_id or str(orig.id)
-
+                    orig.write({'replied': True})
             sent_msg = self.create({
                 'account_id': int(account_id) if account_id else False,
                 'subject': subject,
@@ -491,6 +502,7 @@ class CfMailMessage(models.Model):
                 'direction': 'out',
                 'folder': 'Sent',
                 'is_read': True,
+                'replied': False,
                 'thread_id': thread_id,
             })
             return {'success': True, 'id': sent_msg.id}
@@ -500,13 +512,11 @@ class CfMailMessage(models.Model):
 
     @api.model
     def get_crm_data(self, *args, **kw):
-        # Pipeline (stages di cf.export.lead)
         try:
             stages = self.env['cf.export.stage'].search([], order='sequence')
             pipelines = [{'id': s.id, 'name': s.name} for s in stages]
         except Exception:
             pipelines = []
-        # Partner list
         partners = self.env['res.partner'].search([('active', '=', True)], limit=100, order='name')
         partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
         return {'pipelines': pipelines, 'partners': partner_list}
