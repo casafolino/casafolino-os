@@ -69,8 +69,7 @@
                             <div style="display:flex; align-items:center; gap:16px; padding:12px 16px; background:#f8f9fa; border-radius:8px; border:1px solid #dee2e6;">
                                 <span style="font-size:13px; color:#6c757d; font-weight:600;">NUTRI-SCORE</span>
                                 <div style="display:flex; gap:4px; align-items:center;">
-                                    <span style="padding:6px 14px; border-radius:20px; font-weight:800; font-size:18px; background:#1a7e3c; color:#fff;"
-                                          t-attf-style="background:#{record.nutri_score.raw_value == 'A' and '#1a7e3c' or record.nutri_score.raw_value == 'B' and '#85bb2f' or record.nutri_score.raw_value == 'C' and '#f7c325' or record.nutri_score.raw_value == 'D' and '#e8821e' or '#e63312'};">
+                                    <span t-att-style="'padding:6px 14px; border-radius:20px; font-weight:800; font-size:18px; color:#fff; background:' + record.nutri_score_color.raw_value">
                                         <field name="nutri_score" nolabel="1"/>
                                     </span>
                                 </div>

@@ -38,6 +38,7 @@ class CfNutritionBom(models.Model):
     nutri_score = fields.Selection([
         ("A", "A"), ("B", "B"), ("C", "C"), ("D", "D"), ("E", "E"),
     ], compute="_compute_nutri_score", store=True, string="Nutri-Score")
+    nutri_score_color = fields.Char(compute="_compute_nutri_score_color")
 
     @api.depends("energy_kcal", "sugars", "saturated_fat", "salt", "fiber", "protein")
     def _compute_nutri_score(self):
@@ -56,6 +57,12 @@ class CfNutritionBom(models.Model):
             pos = min(5, int(rec.fiber / 0.9)) + min(5, int(rec.protein / 1.6))
             score = neg - pos
             rec.nutri_score = "A" if score <= -1 else "B" if score <= 2 else "C" if score <= 10 else "D" if score <= 18 else "E"
+
+    @api.depends("nutri_score")
+    def _compute_nutri_score_color(self):
+        colors = {"A": "#1a7e3c", "B": "#85bb2f", "C": "#f7c325", "D": "#e8821e", "E": "#e63312"}
+        for rec in self:
+            rec.nutri_score_color = colors.get(rec.nutri_score, "#6c757d")
 
     def action_compute(self):
         self.ensure_one()
