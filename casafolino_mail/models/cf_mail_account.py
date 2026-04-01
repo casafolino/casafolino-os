@@ -48,9 +48,6 @@ class CfMailAccount(models.Model):
         string='Server posta in entrata',
         domain=[('server_type', '=', 'imap')])
 
-    outgoing_mail_server_id = fields.Many2one('ir.mail.server',
-        string='Server posta in uscita')
-
     imap_host = fields.Char('IMAP Host', default='imap.gmail.com')
     imap_port = fields.Integer('IMAP Port', default=993)
     imap_ssl = fields.Boolean('SSL', default=True)
@@ -408,6 +405,22 @@ class CfMailAccount(models.Model):
                     user = self.env['res.users'].search([('login', 'ilike', from_address)], limit=1)
                     if user:
                         partner = user.partner_id
+
+                # Filtro INBOX: importa solo email da contatti con tag "Validato"
+                # Per la cartella Sent (direction='out') non filtrare
+                if direction == 'in':
+                    validato_tag = self.env['res.partner.category'].search(
+                        [('name', 'ilike', 'Validato')], limit=1
+                    )
+                    if not partner:
+                        # Mittente non in Odoo — skip silenzioso
+                        max_uid = max(max_uid, uid_int)
+                        continue
+                    if validato_tag and validato_tag not in partner.category_id:
+                        # Mittente presente ma senza tag Validato — skip
+                        max_uid = max(max_uid, uid_int)
+                        continue
+
                 thread_id = None
                 clean_subject = subject.replace('Re: ', '').replace('Fwd: ', '').strip()
                 existing_thread = self.env['cf.mail.message'].search([

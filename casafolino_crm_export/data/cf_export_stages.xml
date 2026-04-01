@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo>
+<data noupdate="1">
     <!-- ══════════════════════════════════════════════
          Pipeline trattative Standard (seq 1-8)
     ══════════════════════════════════════════════ -->
@@ -122,4 +123,5 @@
     <record id="cert_brc" model="cf.export.certification"><field name="name">BRCGS</field><field name="code">BRC</field><field name="color">3</field></record>
     <record id="cert_gluten_free" model="cf.export.certification"><field name="name">Gluten Free</field><field name="code">GF</field><field name="color">6</field></record>
     <record id="cert_vegan" model="cf.export.certification"><field name="name">Vegan</field><field name="code">VEGAN</field><field name="color">11</field></record>
+</data>
 </odoo>

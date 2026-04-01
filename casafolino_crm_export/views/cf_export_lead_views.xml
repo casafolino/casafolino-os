@@ -62,6 +62,11 @@
                         <page string="Note">
                             <field name="description"/>
                         </page>
+                        <page string="Chiusura Persa" invisible="not stage_id or not stage_id.is_lost">
+                            <group>
+                                <field name="lost_reason_id"/>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
