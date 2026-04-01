@@ -5,8 +5,8 @@ import logging
 _logger = logging.getLogger(__name__)
 
 ROTTING_THRESHOLDS = {
-    "dach": 10, "france": 10, "spain": 10, "europe_other": 14,
-    "gulf_halal": 14, "usa_canada": 14, "gdo": 21, "other": 14,
+    "standard": 14,
+    "premium": 10,
 }
 
 CERT_OPTIONS = [
@@ -55,10 +55,9 @@ class CfExportFair(models.Model):
     location = fields.Char(string="Luogo")
     country_id = fields.Many2one("res.country", string="Paese")
     pipeline_type = fields.Selection([
-        ("dach", "DACH"), ("france", "Francia"), ("spain", "Spagna"),
-        ("europe_other", "Europa Altro"), ("gulf_halal", "Gulf/Halal"),
-        ("usa_canada", "USA/Canada"), ("gdo", "GDO"), ("other", "Altro"),
-    ], string="Mercato Target")
+        ("standard", "Pipeline trattative Standard"),
+        ("premium", "Premium - Josefina"),
+    ], string="Pipeline")
     lead_ids = fields.One2many("cf.export.lead", "fair_id", string="Trattative")
     lead_count = fields.Integer(string="N° Contatti", compute="_compute_lead_count")
     notes = fields.Text(string="Note")
@@ -107,10 +106,9 @@ class CfExportLead(models.Model):
 
     # ── PIPELINE & MERCATO ──
     pipeline_type = fields.Selection([
-        ("dach", "DACH"), ("france", "Francia"), ("spain", "Spagna"),
-        ("europe_other", "Europa Altro"), ("gulf_halal", "Gulf/Halal"),
-        ("usa_canada", "USA/Canada"), ("gdo", "GDO"), ("other", "Altro"),
-    ], string="Pipeline", required=True, default="dach", tracking=True)
+        ("standard", "Pipeline trattative Standard"),
+        ("premium", "Premium - Josefina"),
+    ], string="Pipeline", required=True, default="standard", tracking=True)
     country_id = fields.Many2one(related="partner_id.country_id", store=True, readonly=True)
     language = fields.Selection([
         ("it", "Italiano"), ("en", "Inglese"), ("de", "Tedesco"),
@@ -159,6 +157,30 @@ class CfExportLead(models.Model):
     sample_ids = fields.One2many("cf.export.sample", "lead_id", string="Campionature")
     sale_order_ids = fields.One2many("sale.order", "cf_export_lead_id", string="Ordini")
     sequence_log_ids = fields.One2many("cf.export.sequence.log", "lead_id", string="Sequenze Attive")
+
+    # ── CONTATTO DIRETTO ──
+    contact_name = fields.Char(string="Nome Contatto")
+    function = fields.Char(string="Ruolo/Funzione")
+    email_from = fields.Char(string="Email Contatto")
+    phone = fields.Char(string="Telefono")
+    mobile = fields.Char(string="Mobile")
+    website = fields.Char(string="Sito Web")
+
+    # ── INDIRIZZO ──
+    street = fields.Char(string="Via")
+    street2 = fields.Char(string="Via 2")
+    zip = fields.Char(string="CAP")
+    city = fields.Char(string="Città")
+
+    # ── DATE ──
+    date_deadline = fields.Date(string="Scadenza")
+    date_closed = fields.Date(string="Data Chiusura", readonly=True)
+
+    # ── KANBAN ──
+    color = fields.Integer(string="Colore", default=0)
+
+    # ── PERDITA ──
+    lost_reason_id = fields.Many2one("cf.export.lost.reason", string="Motivo Perdita")
 
     # ── NOTE ──
     description = fields.Html(string="Note")
@@ -263,8 +285,17 @@ class CfExportLead(models.Model):
             'context': {'default_cf_export_lead_id': self.id},
         }
 
+    @api.onchange("stage_id")
+    def _onchange_stage_id(self):
+        if self.stage_id and (self.stage_id.is_won or self.stage_id.is_lost):
+            self.date_closed = fields.Date.today()
+
     def write(self, vals):
         old_stages = {rec.id: rec.stage_id.id for rec in self}
+        if "stage_id" in vals:
+            stage = self.env["cf.export.stage"].browse(vals["stage_id"])
+            if stage.is_won or stage.is_lost:
+                vals["date_closed"] = fields.Date.today()
         result = super().write(vals)
         if "stage_id" in vals:
             for rec in self:
@@ -279,6 +310,14 @@ class CfExportLead(models.Model):
         ])
         for seq in sequences:
             seq.start_for_lead(self)
+
+
+class CfExportLostReason(models.Model):
+    _name = "cf.export.lost.reason"
+    _description = "Motivo Perdita Trattativa"
+
+    name = fields.Char(string="Motivo", required=True)
+    active = fields.Boolean(default=True)
 
 
 class CfExportCertification(models.Model):
