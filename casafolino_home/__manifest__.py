@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino Home Dashboard",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Extra Tools",
     "summary": "Home page OWL con KPI consolidati di tutti i moduli CasaFolino",
     "author": "CasaFolino Srls",
