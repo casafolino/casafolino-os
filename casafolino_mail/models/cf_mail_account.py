@@ -408,6 +408,12 @@ class CfMailAccount(models.Model):
                     user = self.env['res.users'].search([('login', 'ilike', from_address)], limit=1)
                     if user:
                         partner = user.partner_id
+                # Filtro: sync solo email da contatti con tag Validato
+                validato_tag = self.env['res.partner.category'].search([('name', 'ilike', 'Validato')], limit=1)
+                if validato_tag:
+                    if not partner or validato_tag.id not in partner.category_id.ids:
+                        max_uid = max(max_uid, uid_int)
+                        continue
                 thread_id = None
                 clean_subject = subject.replace('Re: ', '').replace('Fwd: ', '').strip()
                 existing_thread = self.env['cf.mail.message'].search([
