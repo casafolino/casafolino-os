@@ -187,8 +187,7 @@
                             <field name="is_read"/>
                             <field name="is_starred"/>
                             <field name="folder" readonly="1"/>
-                            <field name="export_lead_id"/>
-                            <field name="partner_id"/>
+                                <field name="partner_id"/>
                         </group>
                     </group>
                     <div class="o_field_html">
@@ -220,7 +219,6 @@
                         <field name="cc_address" placeholder="cc@email.com (opzionale)"/>
                         <field name="bcc_address" placeholder="bcc@email.com (opzionale)"/>
                         <field name="subject"/>
-                        <field name="export_lead_id"/>
                     </group>
                     <field name="body_html" widget="html"/>
                 </sheet>
