@@ -14,4 +14,5 @@
     "installable": True,
     "application": True,
     "license": "LGPL-3",
+    "icon": "casafolino_nutrition/static/description/icon.png",
 }

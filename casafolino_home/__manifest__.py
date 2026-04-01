@@ -19,4 +19,5 @@
     "installable": True,
     "application": True,
     "license": "LGPL-3",
+    "icon": "casafolino_home/static/description/icon.png",
 }

@@ -15,4 +15,5 @@
     "installable": True,
     "application": True,
     "license": "LGPL-3",
+    "icon": "casafolino_recall/static/description/icon.png",
 }
