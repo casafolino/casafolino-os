@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CasaFolino CRM Export — Mockup</title>
+<style>
+  :root {
+    --accent: #5A6E3A;
+    --accent-dark: #3d4d27;
+    --accent-light: #eef2e6;
+    --sidebar: #1e2432;
+    --bg: #f3f5f0;
+    --border: #e4e8df;
+    --text: #1a1d1b;
+    --muted: #90968b;
+    --secondary: #5f6368;
+    --white: #ffffff;
+    --radius: 10px;
+    --shadow: 0 2px 8px rgba(26,35,23,.09);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Inter, system-ui, sans-serif; font-size: 13px; background: var(--bg); color: var(--text); display:flex; height:100vh; overflow:hidden; }
+  .sidebar { width:220px;min-width:220px;background:var(--sidebar);display:flex;flex-direction:column;color:rgba(255,255,255,.7);overflow-y:auto; }
+  .logo { padding:18px 14px 12px;display:flex;align-items:center;gap:10px; }
+  .logo-mark { width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;box-shadow:0 2px 8px rgba(90,110,58,.5); }
+  .logo-name { font-size:13px;font-weight:700;color:#fff;line-height:1.2; }
+  .logo-name span { display:block;font-size:10px;font-weight:400;color:rgba(255,255,255,.35); }
+  .sidebar-section { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3);padding:10px 14px 4px; }
+  .nav-item { display:flex;align-items:center;gap:10px;padding:7px 12px;margin:1px 8px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);border-left:3px solid transparent;transition:all .15s; }
+  .nav-item:hover { background:rgba(255,255,255,.08);color:rgba(255,255,255,.95); }
+  .nav-item.active { background:rgba(90,110,58,.28);color:#c8dba0;font-weight:700;border-left-color:var(--accent); }
+  .nav-item .icon { width:16px;text-align:center;font-size:13px;opacity:.7; }
+  .nav-badge { margin-left:auto;background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700; }
+  .divider { height:1px;background:rgba(255,255,255,.07);margin:6px 12px; }
+  .main { flex:1;display:flex;flex-direction:column;overflow:hidden; }
+  .topbar { background:var(--white);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0; }
+  .topbar-title { font-size:16px;font-weight:700;color:var(--text); }
+  .topbar-sub { font-size:12px;color:var(--muted);margin-left:4px; }
+  .spacer { flex:1; }
+  .view-btns { display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px; }
+  .view-btn { padding:5px 10px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12px;color:var(--secondary);font-family:inherit;transition:all .13s; }
+  .view-btn.active { background:var(--white);color:var(--accent);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  .btn-primary { background:var(--accent);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px; }
+  .btn-primary:hover { background:var(--accent-dark); }
+  .search-box { display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted); }
+  .search-box input { border:none;background:transparent;outline:none;font-size:12px;font-family:inherit;color:var(--text);width:160px; }
+  .filterbar { background:var(--white);border-bottom:1px solid var(--border);padding:7px 20px;display:flex;align-items:center;gap:8px;flex-shrink:0; }
+  .filter-pill { display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:11px;font-weight:500;color:var(--secondary);cursor:pointer;transition:all .13s;white-space:nowrap; }
+  .filter-pill:hover { background:var(--bg); }
+  .filter-pill.active { background:var(--accent);color:#fff;border-color:var(--accent-dark);font-weight:700;box-shadow:0 2px 5px rgba(90,110,58,.28); }
+  .filter-sep { width:1px;height:16px;background:var(--border);margin:0 4px; }
+  .kanban { flex:1;overflow-x:auto;overflow-y:hidden;display:flex;gap:12px;padding:14px 20px;align-items:flex-start; }
+  .kanban-col { width:270px;min-width:270px;display:flex;flex-direction:column;gap:8px; }
+  .col-header { display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);background:var(--white);border:1px solid var(--border);font-weight:700;font-size:12px;flex-shrink:0; }
+  .col-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+  .col-count { margin-left:auto;background:var(--bg);color:var(--muted);border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700; }
+  .col-euro { font-size:10px;color:var(--muted);font-weight:500; }
+  .col-cards { display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:calc(100vh - 210px);padding-bottom:4px; }
+  .lead-card { background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:all .15s;border-left:3px solid transparent; }
+  .lead-card:hover { box-shadow:var(--shadow);border-color:#c8d0be;transform:translateY(-1px); }
+  .lead-card.rotting-warning { border-left-color:#f9ab00; }
+  .lead-card.rotting-danger  { border-left-color:#e65c00; }
+  .lead-card.rotting-dead    { border-left-color:#d93025; }
+  .lead-card.won             { border-left-color:var(--accent); }
+  .card-header { display:flex;align-items:flex-start;gap:8px;margin-bottom:8px; }
+  .card-avatar { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.18); }
+  .card-info { flex:1;min-width:0; }
+  .card-name { font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .card-company { font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .card-body { display:flex;flex-direction:column;gap:5px; }
+  .card-row { display:flex;align-items:center;justify-content:space-between;gap:6px; }
+  .card-label { font-size:10px;color:var(--muted); }
+  .card-value { font-size:12px;font-weight:600;color:var(--text); }
+  .card-euro { font-size:13px;font-weight:700;color:var(--accent); }
+  .card-footer { display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border); }
+  .tag-pill { display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;border:1px solid currentColor; }
+  .score-bar { display:flex;align-items:center;gap:6px;margin-top:6px; }
+  .score-track { flex:1;height:4px;background:#e8ede0;border-radius:2px;overflow:hidden; }
+  .score-fill { height:100%;border-radius:2px;background:var(--accent); }
+  .score-label { font-size:10px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:28px;text-align:right; }
+  .rotting-badge { display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px; }
+  .rotting-ok { background:#e8f5e9;color:#2e7d32; }
+  .rotting-warning { background:#fff8e1;color:#f9a800; }
+  .rotting-danger { background:#fff3e0;color:#e65100; }
+  .rotting-dead { background:#fce8e6;color:#c62828; }
+  .kanban-add { padding:8px 12px;border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-size:12px;cursor:pointer;text-align:center;transition:all .13s; }
+  .kanban-add:hover { border-color:var(--accent);color:var(--accent);background:var(--accent-light); }
+  .stats-row { display:flex;gap:10px;padding:0 20px 14px;flex-shrink:0; }
+  .stat-card { flex:1;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px; }
+  .stat-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px; }
+  .stat-value { font-size:22px;font-weight:800;color:var(--text);line-height:1; }
+  .stat-sub { font-size:11px;color:var(--muted);margin-top:3px; }
+  .delta-up { color:#2e7d32; }
+  .delta-down { color:#c62828; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">CF</div>
+    <div class="logo-name">CasaFolino <span>CRM Export</span></div>
+  </div>
+  <div class="sidebar-section">Pipeline</div>
+  <div class="nav-item active"><span class="icon">&#128203;</span> Tutte le trattative <span class="nav-badge">38</span></div>
+  <div class="nav-item"><span class="icon">&#127807;</span> Standard <span class="nav-badge">26</span></div>
+  <div class="nav-item"><span class="icon">&#11088;</span> Premium &#8211; Josefina <span class="nav-badge">12</span></div>
+  <div class="divider"></div>
+  <div class="sidebar-section">Viste rapide</div>
+  <div class="nav-item"><span class="icon">&#128308;</span> Stagnanti</div>
+  <div class="nav-item"><span class="icon">&#128197;</span> Follow-up oggi</div>
+  <div class="nav-item"><span class="icon">&#127942;</span> Vinte questo mese</div>
+  <div class="nav-item"><span class="icon">&#128230;</span> Campionature attive</div>
+  <div class="nav-item"><span class="icon">&#127963;</span> Fiere</div>
+  <div class="divider"></div>
+  <div class="sidebar-section">Config</div>
+  <div class="nav-item"><span class="icon">&#9881;</span> Sequenze</div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <div><span class="topbar-title">Pipeline Export</span><span class="topbar-sub">&#8212; 38 trattative attive</span></div>
+    <div class="spacer"></div>
+    <div class="search-box">&#128269; <input placeholder="Cerca azienda, contatto..."/></div>
+    <div class="view-btns">
+      <button class="view-btn active">&#9646; Kanban</button>
+      <button class="view-btn">&#9776; Lista</button>
+      <button class="view-btn">&#128202; Forecast</button>
+    </div>
+    <button class="btn-primary">&#43; Nuova Trattativa</button>
+  </div>
+  <div class="filterbar">
+    <button class="filter-pill active">Tutte</button>
+    <button class="filter-pill">&#127807; Standard</button>
+    <button class="filter-pill">&#11088; Premium</button>
+    <div class="filter-sep"></div>
+    <button class="filter-pill">&#128308; Stagnanti</button>
+    <button class="filter-pill">&#11088; Alta priorit&#224;</button>
+    <button class="filter-pill">&#127942; Vinte</button>
+    <div class="filter-sep"></div>
+    <button class="filter-pill">&#127758; Responsabile</button>
+    <button class="filter-pill">&#127991; Tag</button>
+    <div class="spacer"></div>
+    <button class="filter-pill">&#8597; Ordina: Score &#8595;</button>
+  </div>
+  <div class="stats-row" style="margin-top:14px;">
+    <div class="stat-card"><div class="stat-label">Forecast Totale</div><div class="stat-value">&#8364; 284K</div><div class="stat-sub delta-up">&#8593; +12% vs mese scorso</div></div>
+    <div class="stat-card"><div class="stat-label">Trattative Attive</div><div class="stat-value">38</div><div class="stat-sub">di cui 5 stagnanti</div></div>
+    <div class="stat-card"><div class="stat-label">Vinte (30gg)</div><div class="stat-value">7</div><div class="stat-sub delta-up">&#8593; +3 vs periodo prec.</div></div>
+    <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value">34%</div><div class="stat-sub delta-down">&#8595; -4% vs media</div></div>
+    <div class="stat-card"><div class="stat-label">Campionature attive</div><div class="stat-value">11</div><div class="stat-sub">4 in attesa feedback</div></div>
+  </div>
+  <div class="kanban">
+    <div class="kanban-col">
+      <div class="col-header"><div class="col-dot" style="background:#90968b"></div>Rimprendere<span class="col-count">5</span><span class="col-euro">&#8364; 18K</span></div>
+      <div class="col-cards">
+        <div class="lead-card rotting-dead">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#9c27b0,#6a1b9a)">HF</div><div class="card-info"><div class="card-name">Halal Foods GmbH</div><div class="card-company">Berlino, Germania</div></div><div>&#128308;</div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 8.400</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:22%;background:#d93025"></div></div><span class="score-label" style="color:#d93025">22</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-dead">&#128128; 32gg stagnante</span><span class="tag-pill" style="color:#1a73e8">Halal</span></div>
+        </div>
+        <div class="lead-card rotting-warning">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#1a73e8,#1557b0)">BM</div><div class="card-info"><div class="card-name">Boucherie Moderne</div><div class="card-company">Lione, Francia</div></div><div>&#128993;</div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 3.200</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:45%;background:#f9ab00"></div></div><span class="score-label" style="color:#f9ab00">45</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-warning">&#9888; 11gg</span><span class="tag-pill" style="color:#5A6E3A">Bio</span></div>
+        </div>
+      </div>
+      <div class="kanban-add">&#43; Aggiungi trattativa</div>
+    </div>
+    <div class="kanban-col">
+      <div class="col-header"><div class="col-dot" style="background:#1a73e8"></div>Primo contatto<span class="col-count">8</span><span class="col-euro">&#8364; 52K</span></div>
+      <div class="col-cards">
+        <div class="lead-card">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#5A6E3A,#3d4d27)">GF</div><div class="card-info"><div class="card-name">Gulf Fresh Trading</div><div class="card-company">Dubai, UAE</div></div><div>&#128308;</div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 22.000</span></div><div class="card-row"><span class="card-label">Responsabile</span><span class="card-value">Josefina R.</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:68%"></div></div><span class="score-label">68</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-ok">&#10003; 3gg</span><span class="tag-pill" style="color:#1a73e8">Halal</span><span class="tag-pill" style="color:#5A6E3A">Kosher</span></div>
+        </div>
+        <div class="lead-card">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#e65c00,#bf360c)">SC</div><div class="card-info"><div class="card-name">Saveurs du Castillon</div><div class="card-company">Bordeaux, Francia</div></div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 9.600</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:55%"></div></div><span class="score-label">55</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-ok">&#10003; 5gg</span><span class="tag-pill" style="color:#5A6E3A">Bio</span></div>
+        </div>
+      </div>
+      <div class="kanban-add">&#43; Aggiungi trattativa</div>
+    </div>
+    <div class="kanban-col">
+      <div class="col-header"><div class="col-dot" style="background:#f9ab00"></div>Campionatura<span class="col-count">7</span><span class="col-euro">&#8364; 76K</span></div>
+      <div class="col-cards">
+        <div class="lead-card">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#9c27b0,#6a1b9a)">MF</div><div class="card-info"><div class="card-name">Maison Folini SA</div><div class="card-company">Ginevra, Svizzera</div></div><div>&#128308;</div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 34.000</span></div><div class="card-row"><span class="card-label">Campionatura</span><span class="card-value" style="color:#f9ab00">&#8987; In attesa feedback</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:72%"></div></div><span class="score-label">72</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-ok">&#10003; 2gg</span><span class="tag-pill" style="color:#5A6E3A">IFS</span></div>
+        </div>
+        <div class="lead-card">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#d32f2f,#b71c1c)">EB</div><div class="card-info"><div class="card-name">El Buen Sabor S.L.</div><div class="card-company">Madrid, Spagna</div></div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 18.500</span></div><div class="card-row"><span class="card-label">Campionatura</span><span class="card-value" style="color:#2e7d32">&#10003; Feedback positivo</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:85%"></div></div><span class="score-label">85</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-ok">&#10003; 1gg</span><span class="tag-pill" style="color:#5A6E3A">Bio</span></div>
+        </div>
+      </div>
+      <div class="kanban-add">&#43; Aggiungi trattativa</div>
+    </div>
+    <div class="kanban-col">
+      <div class="col-header"><div class="col-dot" style="background:#e65c00"></div>Negoziazione Ordine<span class="col-count">6</span><span class="col-euro">&#8364; 94K</span></div>
+      <div class="col-cards">
+        <div class="lead-card">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#1a73e8,#1557b0)">DF</div><div class="card-info"><div class="card-name">Deutsche Feinkost AG</div><div class="card-company">Monaco, Germania</div></div><div>&#128308;</div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Fatturato atteso</span><span class="card-euro">&#8364; 48.000</span></div><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:88%"></div></div><span class="score-label">88</span></div></div>
+          <div class="card-footer"><span class="rotting-badge rotting-ok">&#10003; oggi</span><span class="tag-pill" style="color:#1a73e8">IFS</span><span class="tag-pill" style="color:#5A6E3A">BRC</span></div>
+        </div>
+      </div>
+      <div class="kanban-add">&#43; Aggiungi trattativa</div>
+    </div>
+    <div class="kanban-col">
+      <div class="col-header" style="background:#eef2e6;border-color:#c8d0be;"><div class="col-dot" style="background:#5A6E3A"></div><span style="color:#3d4d27">Chiusa acquisita</span><span class="col-count" style="background:#c8d0be;color:#3d4d27">4</span><span class="col-euro" style="color:#5A6E3A;font-weight:700">&#8364; 112K &#10003;</span></div>
+      <div class="col-cards">
+        <div class="lead-card won">
+          <div class="card-header"><div class="card-avatar" style="background:linear-gradient(135deg,#5A6E3A,#3d4d27)">AP</div><div class="card-info"><div class="card-name">Alimentari Primo SRL</div><div class="card-company">Milano, Italia</div></div><div style="font-size:16px">&#127942;</div></div>
+          <div class="card-body"><div class="card-row"><span class="card-label">Ordine chiuso</span><span class="card-euro">&#8364; 62.000</span></div></div>
+          <div class="card-footer"><span class="tag-pill" style="color:#2e7d32">&#127942; Vinta</span><span class="tag-pill" style="color:#5A6E3A">IFS</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.filter-pill').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }); });
+  document.querySelectorAll('.view-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }); });
+  document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }); });
+</script>
+</body>
+</html>

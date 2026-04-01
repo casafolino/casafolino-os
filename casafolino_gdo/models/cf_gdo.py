@@ -25,7 +25,7 @@ class CfGdoListing(models.Model):
     _description = "Listing Prodotto GDO"
     _inherit = ["mail.thread"]
     _rec_name = "display_name_computed"
-    display_name_computed = fields.Char(compute="_compute_display_name", store=True)
+    display_name_computed = fields.Char(compute="_compute_display_name", store=True, compute_sudo=False)
     retailer_id = fields.Many2one("cf.gdo.retailer", required=True, ondelete="cascade")
     product_id = fields.Many2one("product.template", required=True)
     state = fields.Selection([

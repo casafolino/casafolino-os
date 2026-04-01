@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_activity_type_todo" model="mail.activity.type">
+        <field name="name">To-Do</field>
+        <field name="icon">fa-check-square-o</field>
+        <field name="delay_count">1</field>
+        <field name="delay_unit">days</field>
+        <field name="res_model">cf.export.lead</field>
+    </record>
+</odoo>
