@@ -4,15 +4,13 @@
     <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
         web_icon="casafolino_crm_export,static/description/icon.png"/>
 
-    <!-- Pipeline per mercato -->
+    <!-- Pipeline per tipo -->
     <menuitem id="menu_cf_export_pipeline" name="Tutte le Pipeline"
         parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>
-    <menuitem id="menu_cf_export_dach" name="DACH / Europa"
+    <menuitem id="menu_cf_export_dach" name="Pipeline Standard"
         parent="menu_cf_export_root" action="action_cf_export_lead_dach" sequence="2"/>
-    <menuitem id="menu_cf_export_gulf" name="Gulf / Halal"
+    <menuitem id="menu_cf_export_gulf" name="Premium - Josefina"
         parent="menu_cf_export_root" action="action_cf_export_lead_gulf" sequence="3"/>
-    <menuitem id="menu_cf_export_gdo" name="GDO"
-        parent="menu_cf_export_root" action="action_cf_export_lead_gdo" sequence="4"/>
 
     <!-- Operativo -->
     <menuitem id="menu_cf_export_samples" name="Campionature"
