@@ -13,7 +13,7 @@ class CfCrmDashboard extends Component {
 
     setup() {
         this.state = useState({ kpis: null, loading: true, error: null });
-        this.actionService = useService("action");
+        this.action = useService("action");
         onWillStart(async () => {
             await this._loadKpis();
         });
@@ -71,13 +71,15 @@ class CfCrmDashboard extends Component {
         this._loadKpis();
     }
 
-    _openLeads(domain) {
-        this.actionService.doAction({
+    async _openLeads(domain) {
+        await this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Trattative Export",
+            name: "Trattative",
             res_model: "cf.export.lead",
             view_mode: "kanban,list,form",
+            views: [[false, "kanban"], [false, "list"], [false, "form"]],
             domain: domain,
+            context: {},
         });
     }
 }
