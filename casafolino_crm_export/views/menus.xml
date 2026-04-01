@@ -4,6 +4,10 @@
     <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
         web_icon="casafolino_crm_export,static/description/icon.png"/>
 
+    <!-- Dashboard -->
+    <menuitem id="menu_cf_export_dashboard" name="Dashboard"
+        parent="menu_cf_export_root" action="action_cf_crm_dashboard" sequence="0"/>
+
     <!-- Pipeline per mercato -->
     <menuitem id="menu_cf_export_pipeline" name="Tutte le Pipeline"
         parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>

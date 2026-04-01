@@ -219,3 +219,128 @@
     min-width: 36px;
     text-align: center;
 }
+
+/* ─────────────────────────────────────────
+   DASHBOARD KPI
+───────────────────────────────────────── */
+
+.cf-dashboard {
+    background: #f4f6f8;
+    min-height: 100%;
+}
+
+/* KPI card */
+.cf-kpi-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    height: 100%;
+}
+
+.cf-kpi-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.cf-kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #8a9b6d;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.cf-kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1e2432;
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+
+.cf-kpi-sub {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+/* Panel (stage/pipeline breakdown) */
+.cf-dash-panel {
+    background: #fff;
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    height: 100%;
+}
+
+.cf-dash-panel-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #5A6E3A;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(90,110,58,0.12);
+}
+
+/* Stage row */
+.cf-stage-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 9px;
+}
+
+.cf-stage-name {
+    min-width: 140px;
+    font-size: 12px;
+    color: #3d3d3d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cf-stage-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.cf-stage-dot.dot-open { background: #5A6E3A; }
+.cf-stage-dot.dot-won  { background: #28a745; }
+.cf-stage-dot.dot-lost { background: #6c757d; }
+
+.cf-stage-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cf-stage-bar {
+    height: 100%;
+    background: #5A6E3A;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    min-width: 4px;
+}
+
+.cf-bar-pipeline {
+    background: #3d4d28;
+}
+
+.cf-stage-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e2432;
+    min-width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+}

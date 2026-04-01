@@ -263,6 +263,58 @@ class CfExportLead(models.Model):
             'context': {'default_cf_export_lead_id': self.id},
         }
 
+    @api.model
+    def get_dashboard_kpis(self):
+        """Restituisce i KPI per la Dashboard OWL."""
+        today = date.today()
+        leads = self.search([])
+        total = len(leads)
+
+        total_forecast = sum(leads.mapped("forecast_value"))
+        avg_score = round(sum(leads.mapped("lead_score")) / total, 1) if total else 0.0
+        rotting = leads.filtered(lambda l: l.rotting_state in ("danger", "dead"))
+        followup_today = leads.filtered(
+            lambda l: l.date_next_followup and l.date_next_followup <= today
+        )
+
+        # Per fase
+        stages = self.env["cf.export.stage"].search([], order="sequence asc")
+        by_stage = []
+        for stage in stages:
+            cnt = len(leads.filtered(lambda l, s=stage: l.stage_id.id == s.id))
+            if cnt:
+                by_stage.append({
+                    "name": stage.name,
+                    "count": cnt,
+                    "is_won": stage.is_won,
+                    "is_lost": stage.is_lost,
+                })
+
+        # Per pipeline
+        PIPELINE_LABELS = {
+            "dach": "DACH", "france": "Francia", "spain": "Spagna",
+            "europe_other": "Europa Altro", "gulf_halal": "Gulf/Halal",
+            "usa_canada": "USA/Canada", "gdo": "GDO", "other": "Altro",
+        }
+        pipeline_counts = {}
+        for lead in leads:
+            key = lead.pipeline_type or "other"
+            pipeline_counts[key] = pipeline_counts.get(key, 0) + 1
+        by_pipeline = [
+            {"key": k, "label": PIPELINE_LABELS.get(k, k), "count": v}
+            for k, v in sorted(pipeline_counts.items(), key=lambda x: -x[1])
+        ]
+
+        return {
+            "total": total,
+            "total_forecast": total_forecast,
+            "avg_score": avg_score,
+            "rotting_count": len(rotting),
+            "followup_today_count": len(followup_today),
+            "by_stage": by_stage,
+            "by_pipeline": by_pipeline,
+        }
+
     def write(self, vals):
         old_stages = {rec.id: rec.stage_id.id for rec in self}
         result = super().write(vals)

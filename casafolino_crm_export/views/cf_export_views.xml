@@ -5,6 +5,11 @@
          ACTIONS  (sempre prima delle viste)
     ═══════════════════════════════════════════ -->
 
+    <record id="action_cf_crm_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard Export</field>
+        <field name="tag">cf_crm_dashboard</field>
+    </record>
+
     <record id="action_cf_export_lead" model="ir.actions.act_window">
         <field name="name">Pipeline Export</field>
         <field name="res_model">cf.export.lead</field>
