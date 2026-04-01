@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino CRM Export",
-    "version": "18.0.3.1.0",
+    "version": "18.0.3.2.0",
     "category": "Sales/CRM",
     "summary": "CRM Export B2B — Pipeline, Scoring, Sequenze, Fiere, Campionature",
     "author": "CasaFolino Srls",
