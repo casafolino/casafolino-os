@@ -69,9 +69,11 @@
                             <div style="display:flex; align-items:center; gap:16px; padding:12px 16px; background:#f8f9fa; border-radius:8px; border:1px solid #dee2e6;">
                                 <span style="font-size:13px; color:#6c757d; font-weight:600;">NUTRI-SCORE</span>
                                 <div style="display:flex; gap:4px; align-items:center;">
-                                    <span t-att-style="'padding:6px 14px; border-radius:20px; font-weight:800; font-size:18px; color:#fff; background:' + record.nutri_score_color.raw_value">
-                                        <field name="nutri_score" nolabel="1"/>
-                                    </span>
+                                    <field name="nutri_score" nolabel="1" widget="badge"
+                                        decoration-success="nutri_score == 'A'"
+                                        decoration-info="nutri_score == 'B'"
+                                        decoration-warning="nutri_score == 'C' or nutri_score == 'D'"
+                                        decoration-danger="nutri_score == 'E'"/>
                                 </div>
                                 <span style="font-size:12px; color:#6c757d;">
                                     Ultimo calcolo: <field name="last_computed" nolabel="1"/>
