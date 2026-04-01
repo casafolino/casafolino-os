@@ -5,8 +5,8 @@ import logging
 _logger = logging.getLogger(__name__)
 
 ROTTING_THRESHOLDS = {
-    "standard": 14,
-    "premium": 10,
+    "dach": 10, "france": 10, "spain": 10, "europe_other": 14,
+    "gulf_halal": 14, "usa_canada": 14, "gdo": 21, "other": 14,
 }
 
 CERT_OPTIONS = [
@@ -55,11 +55,12 @@ class CfExportFair(models.Model):
     location = fields.Char(string="Luogo")
     country_id = fields.Many2one("res.country", string="Paese")
     pipeline_type = fields.Selection([
-        ("standard", "Pipeline trattative Standard"),
-        ("premium", "Premium - Josefina"),
-    ], string="Pipeline")
+        ("dach", "DACH"), ("france", "Francia"), ("spain", "Spagna"),
+        ("europe_other", "Europa Altro"), ("gulf_halal", "Gulf/Halal"),
+        ("usa_canada", "USA/Canada"), ("gdo", "GDO"), ("other", "Altro"),
+    ], string="Mercato Target")
     lead_ids = fields.One2many("cf.export.lead", "fair_id", string="Trattative")
-    lead_count = fields.Integer(string="N\u00b0 Contatti", compute="_compute_lead_count")
+    lead_count = fields.Integer(string="N° Contatti", compute="_compute_lead_count")
     notes = fields.Text(string="Note")
     state = fields.Selection([
         ("planned", "Pianificata"), ("active", "In corso"),
@@ -89,7 +90,7 @@ class CfExportLead(models.Model):
     _order = "priority desc, lead_score desc, date_last_contact desc, id desc"
     _rec_name = "name"
 
-    # \u2500\u2500 BASE \u2500\u2500
+    # ── BASE ──
     name = fields.Char(string="Nome Trattativa", required=True, tracking=True)
     partner_id = fields.Many2one("res.partner", string="Azienda/Contatto", required=True, tracking=True)
     stage_id = fields.Many2one(
@@ -104,16 +105,12 @@ class CfExportLead(models.Model):
         ("normal", "In corso"), ("done", "Pronto"), ("blocked", "Bloccato")
     ], default="normal", tracking=True)
 
-    # \u2500\u2500 PIPELINE & MERCATO \u2500\u2500
+    # ── PIPELINE & MERCATO ──
     pipeline_type = fields.Selection([
-        ("standard", "Pipeline trattative Standard"),
-        ("premium", "Premium - Josefina"),
-    ], string="Pipeline", required=True, default="standard", tracking=True)
-    pipeline_name = fields.Char(
-        string="Nome Pipeline",
-        compute="_compute_pipeline_name",
-        store=True,
-    )
+        ("dach", "DACH"), ("france", "Francia"), ("spain", "Spagna"),
+        ("europe_other", "Europa Altro"), ("gulf_halal", "Gulf/Halal"),
+        ("usa_canada", "USA/Canada"), ("gdo", "GDO"), ("other", "Altro"),
+    ], string="Pipeline", required=True, default="dach", tracking=True)
     country_id = fields.Many2one(related="partner_id.country_id", store=True, readonly=True)
     language = fields.Selection([
         ("it", "Italiano"), ("en", "Inglese"), ("de", "Tedesco"),
@@ -132,21 +129,21 @@ class CfExportLead(models.Model):
         help="Certificazioni che il buyer richiede (Halal, Kosher, Bio...)",
     )
 
-    # \u2500\u2500 CONTATTI MULTIPLI \u2500\u2500
+    # ── CONTATTI MULTIPLI ──
     contact_ids = fields.Many2many(
         "res.partner", "cf_export_lead_contact_rel",
         "lead_id", "partner_id",
         string="Contatti Aggiuntivi",
     )
 
-    # \u2500\u2500 FORECAST \u2500\u2500
+    # ── FORECAST ──
     expected_revenue = fields.Monetary(string="Fatturato Atteso", currency_field="currency_id", tracking=True)
     currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.EUR"), readonly=True)
     lead_score = fields.Integer(string="Score", compute="_compute_lead_score", store=True)
     forecast_probability = fields.Float(string="Prob. Chiusura %", compute="_compute_lead_score", store=True)
     forecast_value = fields.Monetary(string="Forecast", compute="_compute_forecast_value", store=True, currency_field="currency_id")
 
-    # \u2500\u2500 FOLLOW-UP \u2500\u2500
+    # ── FOLLOW-UP ──
     date_open = fields.Date(string="Data Apertura", default=fields.Date.today, readonly=True)
     date_last_contact = fields.Date(string="Ultimo Contatto", tracking=True)
     date_next_followup = fields.Date(string="Prossimo Follow-up", tracking=True)
@@ -155,54 +152,21 @@ class CfExportLead(models.Model):
         ("ok", "OK"), ("warning", "Attenzione"), ("danger", "Urgente"), ("dead", "Stagnante"),
     ], compute="_compute_rotting", store=True)
 
-    # \u2500\u2500 PRICELIST ODOO \u2500\u2500
+    # ── PRICELIST ODOO ──
     pricelist_id = fields.Many2one("product.pricelist", string="Listino Prezzi", tracking=True)
 
-    # \u2500\u2500 RELAZIONI \u2500\u2500
+    # ── RELAZIONI ──
     sample_ids = fields.One2many("cf.export.sample", "lead_id", string="Campionature")
     sale_order_ids = fields.One2many("sale.order", "cf_export_lead_id", string="Ordini")
     sequence_log_ids = fields.One2many("cf.export.sequence.log", "lead_id", string="Sequenze Attive")
 
-    # \u2500\u2500 CONTATTO DIRETTO \u2500\u2500
-    contact_name = fields.Char(string="Nome Contatto")
-    function = fields.Char(string="Ruolo/Funzione")
-    email_from = fields.Char(string="Email Contatto")
-    phone = fields.Char(string="Telefono")
-    mobile = fields.Char(string="Mobile")
-    website = fields.Char(string="Sito Web")
-
-    # \u2500\u2500 INDIRIZZO \u2500\u2500
-    street = fields.Char(string="Via")
-    street2 = fields.Char(string="Via 2")
-    zip = fields.Char(string="CAP")
-    city = fields.Char(string="Citt\u00e0")
-
-    # \u2500\u2500 DATE \u2500\u2500
-    date_deadline = fields.Date(string="Scadenza")
-    date_closed = fields.Date(string="Data Chiusura", readonly=True)
-
-    # \u2500\u2500 KANBAN \u2500\u2500
-    color = fields.Integer(string="Colore", default=0)
-
-    # \u2500\u2500 PERDITA \u2500\u2500
-    lost_reason_id = fields.Many2one("cf.export.lost.reason", string="Motivo Perdita")
-
-    # \u2500\u2500 NOTE \u2500\u2500
+    # ── NOTE ──
     description = fields.Html(string="Note")
 
-    # \u2500\u2500 COMPUTED \u2500\u2500
+    # ── COMPUTED ──
     sample_count = fields.Integer(compute="_compute_counts")
     order_count = fields.Integer(compute="_compute_counts")
     order_total = fields.Monetary(compute="_compute_counts", currency_field="currency_id")
-
-    @api.depends("pipeline_type")
-    def _compute_pipeline_name(self):
-        names = {
-            "standard": "Pipeline trattative Standard",
-            "premium": "Premium - Josefina",
-        }
-        for rec in self:
-            rec.pipeline_name = names.get(rec.pipeline_type, rec.pipeline_type or "")
 
     @api.depends("sample_ids", "sale_order_ids")
     def _compute_counts(self):
@@ -280,12 +244,12 @@ class CfExportLead(models.Model):
     def action_mark_contacted(self):
         for rec in self:
             rec.date_last_contact = date.today()
-            rec.message_post(body="\u2705 Contatto registrato oggi.")
+            rec.message_post(body="✅ Contatto registrato oggi.")
 
     def action_schedule_followup(self):
         for rec in self:
             rec.date_next_followup = date.today() + timedelta(days=7)
-            rec.message_post(body=f"\U0001f4c5 Follow-up pianificato per {rec.date_next_followup}.")
+            rec.message_post(body=f"📅 Follow-up pianificato per {rec.date_next_followup}.")
 
 
     def action_view_orders(self):
@@ -299,17 +263,60 @@ class CfExportLead(models.Model):
             'context': {'default_cf_export_lead_id': self.id},
         }
 
-    @api.onchange("stage_id")
-    def _onchange_stage_id(self):
-        if self.stage_id and (self.stage_id.is_won or self.stage_id.is_lost):
-            self.date_closed = fields.Date.today()
+    @api.model
+    def get_dashboard_kpis(self):
+        """Restituisce i KPI per la Dashboard OWL."""
+        today = date.today()
+        leads = self.search([])
+        total = len(leads)
+
+        total_forecast = sum(leads.mapped("forecast_value"))
+        avg_score = round(sum(leads.mapped("lead_score")) / total, 1) if total else 0.0
+        rotting = leads.filtered(lambda l: l.rotting_state in ("danger", "dead"))
+        followup_today = leads.filtered(
+            lambda l: l.date_next_followup and l.date_next_followup <= today
+        )
+
+        # Per fase
+        stages = self.env["cf.export.stage"].search([], order="sequence asc")
+        by_stage = []
+        for stage in stages:
+            cnt = len(leads.filtered(lambda l, s=stage: l.stage_id.id == s.id))
+            if cnt:
+                by_stage.append({
+                    "name": stage.name,
+                    "count": cnt,
+                    "is_won": stage.is_won,
+                    "is_lost": stage.is_lost,
+                })
+
+        # Per pipeline
+        PIPELINE_LABELS = {
+            "dach": "DACH", "france": "Francia", "spain": "Spagna",
+            "europe_other": "Europa Altro", "gulf_halal": "Gulf/Halal",
+            "usa_canada": "USA/Canada", "gdo": "GDO", "other": "Altro",
+        }
+        pipeline_counts = {}
+        for lead in leads:
+            key = lead.pipeline_type or "other"
+            pipeline_counts[key] = pipeline_counts.get(key, 0) + 1
+        by_pipeline = [
+            {"key": k, "label": PIPELINE_LABELS.get(k, k), "count": v}
+            for k, v in sorted(pipeline_counts.items(), key=lambda x: -x[1])
+        ]
+
+        return {
+            "total": total,
+            "total_forecast": total_forecast,
+            "avg_score": avg_score,
+            "rotting_count": len(rotting),
+            "followup_today_count": len(followup_today),
+            "by_stage": by_stage,
+            "by_pipeline": by_pipeline,
+        }
 
     def write(self, vals):
         old_stages = {rec.id: rec.stage_id.id for rec in self}
-        if "stage_id" in vals:
-            stage = self.env["cf.export.stage"].browse(vals["stage_id"])
-            if stage.is_won or stage.is_lost:
-                vals["date_closed"] = fields.Date.today()
         result = super().write(vals)
         if "stage_id" in vals:
             for rec in self:
@@ -324,14 +331,6 @@ class CfExportLead(models.Model):
         ])
         for seq in sequences:
             seq.start_for_lead(self)
-
-
-class CfExportLostReason(models.Model):
-    _name = "cf.export.lost.reason"
-    _description = "Motivo Perdita Trattativa"
-
-    name = fields.Char(string="Motivo", required=True)
-    active = fields.Boolean(default=True)
 
 
 class CfExportCertification(models.Model):
@@ -367,7 +366,7 @@ class CfExportSample(models.Model):
     tracking_number = fields.Char(string="Tracking Spedizione")
     feedback_notes = fields.Text(string="Note Feedback")
     feedback_score = fields.Selection([
-        ("1", "\u2b50"), ("2", "\u2b50\u2b50"), ("3", "\u2b50\u2b50\u2b50"), ("4", "\u2b50\u2b50\u2b50\u2b50"), ("5", "\u2b50\u2b50\u2b50\u2b50\u2b50"),
+        ("1", "⭐"), ("2", "⭐⭐"), ("3", "⭐⭐⭐"), ("4", "⭐⭐⭐⭐"), ("5", "⭐⭐⭐⭐⭐"),
     ], string="Valutazione")
 
 

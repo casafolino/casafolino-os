@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ═══════════════════════════════════════════
+         ACTIONS  (sempre prima delle viste)
+    ═══════════════════════════════════════════ -->
+
+    <record id="action_cf_crm_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard Export</field>
+        <field name="tag">cf_crm_dashboard</field>
+    </record>
+
     <record id="action_cf_export_lead" model="ir.actions.act_window">
         <field name="name">Pipeline Export</field>
         <field name="res_model">cf.export.lead</field>
@@ -9,17 +18,24 @@
     </record>
 
     <record id="action_cf_export_lead_dach" model="ir.actions.act_window">
-        <field name="name">Pipeline Standard</field>
+        <field name="name">Pipeline DACH</field>
         <field name="res_model">cf.export.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","=","standard")]</field>
+        <field name="domain">[("pipeline_type","in",["dach","france","spain","europe_other"])]</field>
     </record>
 
     <record id="action_cf_export_lead_gulf" model="ir.actions.act_window">
-        <field name="name">Pipeline Premium - Josefina</field>
+        <field name="name">Pipeline Gulf/Halal</field>
         <field name="res_model">cf.export.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","=","premium")]</field>
+        <field name="domain">[("pipeline_type","=","gulf_halal")]</field>
+    </record>
+
+    <record id="action_cf_export_lead_gdo" model="ir.actions.act_window">
+        <field name="name">Pipeline GDO</field>
+        <field name="res_model">cf.export.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[("pipeline_type","=","gdo")]</field>
     </record>
 
     <record id="action_cf_export_sample" model="ir.actions.act_window">
@@ -58,11 +74,17 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <!-- ═══════════════════════════════════════════
+         LEAD — KANBAN
+    ═══════════════════════════════════════════ -->
+
     <record id="view_cf_export_lead_kanban" model="ir.ui.view">
         <field name="name">cf.export.lead.kanban</field>
         <field name="model">cf.export.lead</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="stage_id" quick_create="false" group_create="false" records_draggable="true">
+            <kanban default_group_by="stage_id" quick_create="false"
+                    group_create="false"
+                    records_draggable="true">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="stage_id"/>
@@ -70,6 +92,7 @@
                 <field name="forecast_value"/>
                 <field name="expected_revenue"/>
                 <field name="rotting_state"/>
+                <field name="rotting_days"/>
                 <field name="priority"/>
                 <field name="user_id"/>
                 <field name="kanban_state"/>
@@ -78,31 +101,58 @@
                 <field name="date_next_followup"/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="oe_kanban_card #{record.rotting_state.raw_value == &apos;dead&apos; ? &apos;oe_kanban_color_2&apos; : record.rotting_state.raw_value == &apos;danger&apos; ? &apos;oe_kanban_color_3&apos; : record.rotting_state.raw_value == &apos;warning&apos; ? &apos;oe_kanban_color_4&apos; : &apos;&apos;}">
-                            <div class="oe_kanban_content">
-                                <div class="o_kanban_record_top">
-                                    <div class="o_kanban_record_headings">
-                                        <strong class="o_kanban_record_title"><field name="name"/></strong>
-                                        <span class="o_kanban_record_subtitle"><field name="partner_id"/></span>
-                                    </div>
-                                    <field name="priority" widget="priority"/>
+                        <div t-attf-class="cf-crm-card #{record.rotting_state.raw_value == 'dead' ? 'card-rotting-dead' : record.rotting_state.raw_value == 'danger' ? 'card-rotting-danger' : record.rotting_state.raw_value == 'warning' ? 'card-rotting-warn' : 'card-rotting-ok'}">
+
+                            <!-- Header: title + score badge -->
+                            <div class="cf-card-header">
+                                <span class="cf-card-title">
+                                    <field name="name"/>
+                                </span>
+                                <span t-attf-class="cf-score-badge #{record.lead_score.raw_value >= 70 ? 'score-high' : record.lead_score.raw_value >= 40 ? 'score-medium' : 'score-low'}">
+                                    <t t-esc="record.lead_score.raw_value"/>
+                                </span>
+                            </div>
+
+                            <!-- Partner name -->
+                            <div class="cf-card-partner">
+                                <field name="partner_id"/>
+                            </div>
+
+                            <!-- Meta: forecast value + rotting indicator + priority -->
+                            <div class="cf-card-meta">
+                                <span class="cf-card-value">
+                                    <field name="forecast_value" widget="monetary"/>
+                                </span>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span t-attf-class="cf-rotting-dot #{record.rotting_state.raw_value == 'ok' ? 'dot-ok' : record.rotting_state.raw_value == 'warning' ? 'dot-warning' : record.rotting_state.raw_value == 'danger' ? 'dot-danger' : 'dot-dead'}"/>
+                                    <field name="kanban_state" widget="state_selection"/>
+                                    <field name="user_id" widget="many2one_avatar_user"/>
                                 </div>
-                                <div class="o_kanban_record_body">
-                                    <span class="badge bg-secondary"><field name="pipeline_type"/></span>
-                                    <t t-if="record.sample_count.raw_value > 0">
-                                        <span class="badge bg-info ms-1"><field name="sample_count"/> camp.</span>
-                                    </t>
+                            </div>
+
+                            <!-- Follow-up date -->
+                            <t t-if="record.date_next_followup.raw_value">
+                                <div class="cf-card-followup">
+                                    📅 <field name="date_next_followup"/>
                                 </div>
-                                <div class="o_kanban_record_bottom">
-                                    <div class="oe_kanban_bottom_left">
-                                        <span class="fw-bold"><field name="forecast_value" widget="monetary"/></span>
-                                        <span class="text-muted ms-1 small">(<field name="lead_score"/>pts)</span>
-                                    </div>
-                                    <div class="oe_kanban_bottom_right">
-                                        <field name="kanban_state" widget="state_selection"/>
-                                        <field name="user_id" widget="many2one_avatar_user"/>
-                                    </div>
-                                </div>
+                            </t>
+
+                            <!-- Badges row -->
+                            <div class="mt-1 d-flex gap-1 flex-wrap">
+                                <field name="priority" widget="priority"/>
+                                <t t-if="record.sample_count.raw_value > 0">
+                                    <span class="badge bg-info" style="font-size:10px;">
+                                        🧪 <t t-esc="record.sample_count.raw_value"/> camp.
+                                    </span>
+                                </t>
+                            </div>
+
+                            <!-- Quick action buttons -->
+                            <div class="cf-card-actions">
+                                <button name="action_mark_contacted" type="object"
+                                    class="btn-cf-action">✅ Contatto</button>
+                                <button name="action_schedule_followup" type="object"
+                                    class="btn-cf-action">📅 +7gg</button>
                             </div>
                         </div>
                     </t>
@@ -111,60 +161,110 @@
         </field>
     </record>
 
+    <!-- ═══════════════════════════════════════════
+         LEAD — LIST
+    ═══════════════════════════════════════════ -->
+
     <record id="view_cf_export_lead_list" model="ir.ui.view">
         <field name="name">cf.export.lead.list</field>
         <field name="model">cf.export.lead</field>
         <field name="arch" type="xml">
             <list string="Pipeline Export"
-                  decoration-danger="rotting_state in (&apos;danger&apos;,&apos;dead&apos;)"
-                  decoration-warning="rotting_state == &apos;warning&apos;">
+                  decoration-danger="rotting_state in ('danger','dead')"
+                  decoration-warning="rotting_state == 'warning'">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="pipeline_type"/>
                 <field name="stage_id"/>
                 <field name="expected_revenue" sum="Totale Atteso"/>
                 <field name="forecast_value" sum="Totale Forecast"/>
-                <field name="lead_score"/>
-                <field name="date_last_contact"/>
-                <field name="date_next_followup"/>
+                <field name="lead_score" widget="badge"
+                    decoration-success="lead_score >= 70"
+                    decoration-warning="lead_score >= 40 and lead_score &lt; 70"
+                    decoration-danger="lead_score &lt; 40"/>
+                <field name="date_last_contact"
+                    decoration-danger="date_last_contact and (context_today() - date_last_contact).days &gt; 14"
+                    optional="show"/>
+                <field name="date_next_followup"
+                    decoration-danger="date_next_followup and date_next_followup &lt; context_today()"
+                    optional="show"/>
                 <field name="rotting_state" widget="badge"
-                    decoration-success="rotting_state == &apos;ok&apos;"
-                    decoration-warning="rotting_state == &apos;warning&apos;"
-                    decoration-danger="rotting_state in (&apos;danger&apos;,&apos;dead&apos;)"/>
+                    decoration-success="rotting_state == 'ok'"
+                    decoration-warning="rotting_state == 'warning'"
+                    decoration-danger="rotting_state in ('danger','dead')"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
                 <field name="kanban_state" widget="state_selection"/>
+                <field name="priority" widget="priority" optional="hide"/>
             </list>
         </field>
     </record>
+
+    <!-- ═══════════════════════════════════════════
+         LEAD — SEARCH
+    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_lead_search" model="ir.ui.view">
         <field name="name">cf.export.lead.search</field>
         <field name="model">cf.export.lead</field>
         <field name="arch" type="xml">
             <search string="Cerca Trattative">
-                <field name="name"/>
-                <field name="partner_id"/>
-                <field name="user_id"/>
-                <field name="tag_ids"/>
+                <field name="name" string="Nome trattativa"/>
+                <field name="partner_id" string="Azienda"/>
+                <field name="user_id" string="Responsabile"/>
+                <field name="tag_ids" string="Tag"/>
+                <field name="stage_id" string="Fase"/>
                 <separator/>
-                <filter string="Le mie trattative" name="my_leads" domain="[(&apos;user_id&apos;,&apos;=&apos;,uid)]"/>
-                <filter string="Follow-up oggi" name="followup_today" domain="[(&apos;date_next_followup&apos;,&apos;&lt;=&apos;,context_today().strftime(&apos;%Y-%m-%d&apos;))]"/>
-                <filter string="Stagnanti" name="rotting" domain="[(&apos;rotting_state&apos;,&apos;in&apos;,[&apos;danger&apos;,&apos;dead&apos;])]"/>
-                <filter string="Alta Priorit&#224;" name="high_priority" domain="[(&apos;priority&apos;,&apos;in&apos;,[&apos;1&apos;,&apos;2&apos;])]"/>
+                <!-- Quick filters — personali -->
+                <filter string="Le mie trattative" name="my_leads"
+                    domain="[('user_id','=',uid)]"/>
+                <filter string="Da contattare oggi" name="followup_today"
+                    domain="[('date_next_followup','&lt;=',context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Nuove questa settimana" name="new_this_week"
+                    domain="[('date_open','&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
-                <filter string="Standard" name="pipeline_standard" domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;standard&apos;)]"/>
-                <filter string="Premium Josefina" name="pipeline_premium" domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;premium&apos;)]"/>
+                <!-- Stato salute trattativa -->
+                <filter string="Stagnanti" name="rotting"
+                    domain="[('rotting_state','in',['danger','dead'])]"/>
+                <filter string="Score alto (≥70)" name="score_high"
+                    domain="[('lead_score','&gt;=',70)]"/>
+                <filter string="Alta Priorità" name="high_priority"
+                    domain="[('priority','in',['1','2'])]"/>
                 <separator/>
-                <filter string="Archiviate" name="inactive" domain="[(&apos;active&apos;,&apos;=&apos;,False)]"/>
+                <!-- Pipeline per mercato -->
+                <filter string="DACH" name="pipe_dach"
+                    domain="[('pipeline_type','in',['dach','france','spain','europe_other'])]"/>
+                <filter string="Gulf/Halal" name="pipe_gulf"
+                    domain="[('pipeline_type','=','gulf_halal')]"/>
+                <filter string="GDO" name="pipe_gdo"
+                    domain="[('pipeline_type','=','gdo')]"/>
+                <filter string="USA/Canada" name="pipe_usa"
+                    domain="[('pipeline_type','=','usa_canada')]"/>
+                <separator/>
+                <filter string="Archiviate" name="inactive"
+                    domain="[('active','=',False)]"/>
                 <group expand="0" string="Raggruppa per">
-                    <filter string="Fase" name="group_stage" context="{&apos;group_by&apos;:&apos;stage_id&apos;}"/>
-                    <filter string="Pipeline" name="group_pipeline" context="{&apos;group_by&apos;:&apos;pipeline_type&apos;}"/>
-                    <filter string="Responsabile" name="group_user" context="{&apos;group_by&apos;:&apos;user_id&apos;}"/>
-                    <filter string="Fiera" name="group_fair" context="{&apos;group_by&apos;:&apos;fair_id&apos;}"/>
+                    <filter string="Fase" name="group_stage"
+                        context="{'group_by':'stage_id'}"/>
+                    <filter string="Pipeline" name="group_pipeline"
+                        context="{'group_by':'pipeline_type'}"/>
+                    <filter string="Responsabile" name="group_user"
+                        context="{'group_by':'user_id'}"/>
+                    <filter string="Paese" name="group_country"
+                        context="{'group_by':'country_id'}"/>
+                    <filter string="Fonte" name="group_source"
+                        context="{'group_by':'source'}"/>
+                    <filter string="Fiera" name="group_fair"
+                        context="{'group_by':'fair_id'}"/>
+                    <filter string="Mese apertura" name="group_month"
+                        context="{'group_by':'date_open:month'}"/>
                 </group>
             </search>
         </field>
     </record>
+
+    <!-- ═══════════════════════════════════════════
+         LEAD — FORM
+    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_lead_form" model="ir.ui.view">
         <field name="name">cf.export.lead.form</field>
@@ -172,120 +272,185 @@
         <field name="arch" type="xml">
             <form string="Trattativa Export">
                 <header>
-                    <button name="action_mark_contacted" string="Registra Contatto" type="object" class="btn-secondary"/>
-                    <button name="action_schedule_followup" string="Follow-up +7gg" type="object" class="btn-secondary"/>
-                    <field name="stage_id" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
+                    <button name="action_mark_contacted" string="✅ Registra Contatto"
+                        type="object" class="btn-secondary"/>
+                    <button name="action_schedule_followup" string="📅 Follow-up +7gg"
+                        type="object" class="btn-secondary"/>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="%(action_cf_export_sample)d" type="action" class="oe_stat_button" icon="fa-flask">
+                        <button name="%(action_cf_export_sample)d" type="action"
+                            class="oe_stat_button" icon="fa-flask">
                             <field name="sample_count" widget="statinfo" string="Campionature"/>
                         </button>
-                        <button class="oe_stat_button" icon="fa-shopping-cart" type="object" name="action_view_orders">
+                        <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
+                            name="action_view_orders">
                             <field name="order_count" widget="statinfo" string="Ordini"/>
                         </button>
                     </div>
+
+                    <!-- Title area -->
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Nome trattativa..."/></h1>
                         <h3><field name="partner_id" placeholder="Azienda/Contatto"/></h3>
                     </div>
-                    <group>
-                        <group string="Classificazione">
-                            <field name="pipeline_type"/>
-                            <field name="source"/>
-                            <field name="fair_id"/>
-                            <field name="language"/>
-                            <field name="user_id" widget="many2one_avatar_user"/>
-                            <field name="priority" widget="priority"/>
-                        </group>
-                        <group string="Certificazioni &amp; Tag">
-                            <field name="certifications_required" widget="many2many_tags"/>
-                            <field name="tag_ids" widget="many2many_tags" options="{&apos;color_field&apos;: &apos;color&apos;}"/>
-                            <field name="pricelist_id"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group string="Forecast">
-                            <field name="expected_revenue"/>
-                            <field name="lead_score" widget="percentpie"/>
-                            <field name="forecast_probability"/>
-                            <field name="forecast_value"/>
-                            <field name="order_total" string="Ordinato Totale"/>
-                        </group>
-                        <group string="Follow-up">
-                            <field name="date_last_contact"/>
-                            <field name="date_next_followup"/>
-                            <field name="rotting_days"/>
-                            <field name="rotting_state" widget="badge"
-                                decoration-success="rotting_state == &apos;ok&apos;"
-                                decoration-warning="rotting_state == &apos;warning&apos;"
-                                decoration-danger="rotting_state in (&apos;danger&apos;,&apos;dead&apos;)"/>
-                            <field name="kanban_state" widget="state_selection"/>
-                        </group>
-                    </group>
-                    <notebook>
-                        <page string="Campionature" name="samples">
-                            <field name="sample_ids">
-                                <list editable="bottom">
-                                    <field name="reference" readonly="1"/>
-                                    <field name="product_ids" widget="many2many_tags"/>
-                                    <field name="date_sent"/>
-                                    <field name="date_feedback_expected"/>
-                                    <field name="tracking_number"/>
-                                    <field name="state" widget="badge"/>
-                                    <field name="feedback_score"/>
-                                    <field name="feedback_notes"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Ordini" name="orders">
-                            <field name="sale_order_ids">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="date_order"/>
-                                    <field name="amount_total" sum="Totale"/>
-                                    <field name="state" widget="badge"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Contatti" name="contacts">
-                            <field name="contact_ids">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="function"/>
-                                    <field name="email"/>
-                                    <field name="phone"/>
-                                    <field name="lang"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Sequenze Attive" name="sequences">
-                            <field name="sequence_log_ids">
-                                <list>
-                                    <field name="sequence_id"/>
-                                    <field name="state" widget="badge"
-                                        decoration-success="state == &apos;completed&apos;"
-                                        decoration-info="state == &apos;running&apos;"
-                                        decoration-muted="state == &apos;cancelled&apos;"/>
-                                    <field name="date_started"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Note" name="notes">
-                            <field name="description"/>
-                        </page>
-                    </notebook>
+
+                    <!-- 2-column layout: main (col-8) + sidebar (col-4) -->
+                    <div class="row">
+
+                        <!-- ── MAIN COLUMN ── -->
+                        <div class="col-lg-8">
+                            <!-- Score banner -->
+                            <div class="cf-score-banner">
+                                <div>
+                                    <div class="cf-sbn-value">
+                                        <field name="lead_score"/>
+                                    </div>
+                                    <div class="cf-sbn-label">Score</div>
+                                </div>
+                                <div class="cf-sbn-bar"/>
+                                <div>
+                                    <div class="fw-bold" style="font-size:15px;">
+                                        <field name="forecast_value" widget="monetary"/>
+                                    </div>
+                                    <div class="cf-sbn-label">Forecast</div>
+                                </div>
+                                <div>
+                                    <field name="rotting_state" widget="badge"
+                                        decoration-success="rotting_state == 'ok'"
+                                        decoration-warning="rotting_state == 'warning'"
+                                        decoration-danger="rotting_state in ('danger','dead')"/>
+                                    <div class="cf-sbn-label mt-1">Stato</div>
+                                </div>
+                            </div>
+
+                            <!-- Classificazione + Certificazioni -->
+                            <group>
+                                <group string="Classificazione">
+                                    <field name="pipeline_type"/>
+                                    <field name="source"/>
+                                    <field name="fair_id"/>
+                                    <field name="language"/>
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                    <field name="priority" widget="priority"/>
+                                </group>
+                                <group string="Certificazioni &amp; Tag">
+                                    <field name="certifications_required" widget="many2many_tags"/>
+                                    <field name="tag_ids" widget="many2many_tags"
+                                        options="{'color_field': 'color'}"/>
+                                    <field name="pricelist_id"/>
+                                </group>
+                            </group>
+
+                            <!-- Tabs -->
+                            <notebook>
+                                <page string="Campionature" name="samples">
+                                    <field name="sample_ids">
+                                        <list editable="bottom">
+                                            <field name="reference" readonly="1"/>
+                                            <field name="product_ids" widget="many2many_tags"/>
+                                            <field name="date_sent"/>
+                                            <field name="date_feedback_expected"/>
+                                            <field name="tracking_number"/>
+                                            <field name="state" widget="badge"/>
+                                            <field name="feedback_score"/>
+                                            <field name="feedback_notes"/>
+                                        </list>
+                                    </field>
+                                </page>
+                                <page string="Ordini" name="orders">
+                                    <field name="sale_order_ids">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="date_order"/>
+                                            <field name="amount_total" sum="Totale"/>
+                                            <field name="state" widget="badge"/>
+                                        </list>
+                                    </field>
+                                </page>
+                                <page string="Contatti" name="contacts">
+                                    <field name="contact_ids">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="function"/>
+                                            <field name="email"/>
+                                            <field name="phone"/>
+                                            <field name="lang"/>
+                                        </list>
+                                    </field>
+                                </page>
+                                <page string="Sequenze Attive" name="sequences">
+                                    <field name="sequence_log_ids">
+                                        <list>
+                                            <field name="sequence_id"/>
+                                            <field name="state" widget="badge"
+                                                decoration-success="state == 'completed'"
+                                                decoration-info="state == 'running'"
+                                                decoration-muted="state == 'cancelled'"/>
+                                            <field name="date_started"/>
+                                        </list>
+                                    </field>
+                                </page>
+                                <page string="Note" name="notes">
+                                    <field name="description"/>
+                                </page>
+                            </notebook>
+                        </div>
+
+                        <!-- ── SIDEBAR ── -->
+                        <div class="col-lg-4 cf-form-sidebar-col">
+
+                            <!-- Forecast widget -->
+                            <div class="cf-sidebar-widget">
+                                <div class="cf-sw-title">💰 Forecast</div>
+                                <group col="1">
+                                    <field name="expected_revenue" string="Atteso"/>
+                                    <field name="forecast_probability" string="Probabilità %"/>
+                                    <field name="forecast_value" string="Forecast"/>
+                                    <field name="order_total" string="Ordinato"/>
+                                </group>
+                            </div>
+
+                            <!-- Follow-up widget -->
+                            <div class="cf-sidebar-widget">
+                                <div class="cf-sw-title">📅 Follow-up</div>
+                                <group col="1">
+                                    <field name="date_last_contact"/>
+                                    <field name="date_next_followup"/>
+                                    <field name="rotting_days" string="Giorni stagnazione"/>
+                                    <field name="kanban_state" widget="state_selection"/>
+                                </group>
+                            </div>
+
+                            <!-- Score detail widget -->
+                            <div class="cf-sidebar-widget">
+                                <div class="cf-sw-title">🎯 Score dettaglio</div>
+                                <group col="1">
+                                    <field name="lead_score" widget="percentpie"
+                                        string="Score totale"/>
+                                </group>
+                            </div>
+
+                        </div>
+                    </div>
                 </sheet>
                 <chatter/>
             </form>
         </field>
     </record>
 
+    <!-- ═══════════════════════════════════════════
+         CAMPIONATURE — LIST + FORM
+    ═══════════════════════════════════════════ -->
+
     <record id="view_cf_export_sample_list" model="ir.ui.view">
         <field name="name">cf.export.sample.list</field>
         <field name="model">cf.export.sample</field>
         <field name="arch" type="xml">
-            <list string="Campionature" decoration-success="state == &apos;feedback_ok&apos;" decoration-danger="state == &apos;feedback_ko&apos;">
+            <list string="Campionature"
+                  decoration-success="state == &apos;feedback_ok&apos;"
+                  decoration-danger="state == &apos;feedback_ko&apos;">
                 <field name="reference"/>
                 <field name="partner_id"/>
                 <field name="product_ids" widget="many2many_tags"/>
@@ -303,9 +468,13 @@
         <field name="model">cf.export.sample</field>
         <field name="arch" type="xml">
             <form string="Campionatura">
-                <header><field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/></header>
+                <header>
+                    <field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
+                </header>
                 <sheet>
-                    <div class="oe_title"><h1><field name="reference" readonly="1"/></h1></div>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
                     <group>
                         <group>
                             <field name="lead_id"/>
@@ -319,12 +488,18 @@
                             <field name="feedback_score"/>
                         </group>
                     </group>
-                    <group string="Feedback"><field name="feedback_notes" nolabel="1"/></group>
+                    <group string="Feedback">
+                        <field name="feedback_notes" nolabel="1"/>
+                    </group>
                 </sheet>
                 <chatter/>
             </form>
         </field>
     </record>
+
+    <!-- ═══════════════════════════════════════════
+         FIERE — LIST + FORM
+    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_fair_list" model="ir.ui.view">
         <field name="name">cf.export.fair.list</field>
@@ -352,16 +527,20 @@
         <field name="arch" type="xml">
             <form string="Fiera">
                 <header>
-                    <button name="action_view_leads" string="Vedi Trattative" type="object" class="btn-primary"/>
+                    <button name="action_view_leads" string="Vedi Trattative"
+                        type="object" class="btn-primary"/>
                     <field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box">
-                        <button name="action_view_leads" type="object" class="oe_stat_button" icon="fa-handshake-o">
+                        <button name="action_view_leads" type="object"
+                            class="oe_stat_button" icon="fa-handshake-o">
                             <field name="lead_count" widget="statinfo" string="Trattative"/>
                         </button>
                     </div>
-                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
                     <group>
                         <group>
                             <field name="date_start"/>
@@ -369,7 +548,9 @@
                             <field name="location"/>
                             <field name="country_id"/>
                         </group>
-                        <group><field name="pipeline_type"/></group>
+                        <group>
+                            <field name="pipeline_type"/>
+                        </group>
                     </group>
                     <field name="notes" placeholder="Note sulla fiera..."/>
                 </sheet>
@@ -377,6 +558,10 @@
             </form>
         </field>
     </record>
+
+    <!-- ═══════════════════════════════════════════
+         SEQUENZE — LIST + FORM
+    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_sequence_list" model="ir.ui.view">
         <field name="name">cf.export.sequence.list</field>
@@ -397,7 +582,9 @@
         <field name="arch" type="xml">
             <form string="Sequenza Follow-up">
                 <sheet>
-                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
                     <group>
                         <field name="trigger"/>
                         <field name="trigger_stage_id"/>
