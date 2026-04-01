@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══════════════════════════════════════════
-         ACTIONS  (sempre prima delle viste)
-    ═══════════════════════════════════════════ -->
-
     <record id="action_cf_export_lead" model="ir.actions.act_window">
         <field name="name">Pipeline Export</field>
         <field name="res_model">cf.export.lead</field>
@@ -13,24 +9,17 @@
     </record>
 
     <record id="action_cf_export_lead_dach" model="ir.actions.act_window">
-        <field name="name">Pipeline DACH</field>
+        <field name="name">Pipeline Standard</field>
         <field name="res_model">cf.export.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","in",["dach","france","spain","europe_other"])]</field>
+        <field name="domain">[("pipeline_type","=","standard")]</field>
     </record>
 
     <record id="action_cf_export_lead_gulf" model="ir.actions.act_window">
-        <field name="name">Pipeline Gulf/Halal</field>
+        <field name="name">Pipeline Premium - Josefina</field>
         <field name="res_model">cf.export.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","=","gulf_halal")]</field>
-    </record>
-
-    <record id="action_cf_export_lead_gdo" model="ir.actions.act_window">
-        <field name="name">Pipeline GDO</field>
-        <field name="res_model">cf.export.lead</field>
-        <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","=","gdo")]</field>
+        <field name="domain">[("pipeline_type","=","premium")]</field>
     </record>
 
     <record id="action_cf_export_sample" model="ir.actions.act_window">
@@ -69,17 +58,11 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         LEAD — KANBAN  (con valore aggregato colonna)
-    ═══════════════════════════════════════════ -->
-
     <record id="view_cf_export_lead_kanban" model="ir.ui.view">
         <field name="name">cf.export.lead.kanban</field>
         <field name="model">cf.export.lead</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="stage_id" quick_create="false"
-                    group_create="false"
-                    records_draggable="true">
+            <kanban default_group_by="stage_id" quick_create="false" group_create="false" records_draggable="true">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="stage_id"/>
@@ -99,38 +82,21 @@
                             <div class="oe_kanban_content">
                                 <div class="o_kanban_record_top">
                                     <div class="o_kanban_record_headings">
-                                        <strong class="o_kanban_record_title">
-                                            <field name="name"/>
-                                        </strong>
-                                        <span class="o_kanban_record_subtitle">
-                                            <field name="partner_id"/>
-                                        </span>
+                                        <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                        <span class="o_kanban_record_subtitle"><field name="partner_id"/></span>
                                     </div>
                                     <field name="priority" widget="priority"/>
                                 </div>
                                 <div class="o_kanban_record_body">
-                                    <span class="badge bg-secondary">
-                                        <field name="pipeline_type"/>
-                                    </span>
+                                    <span class="badge bg-secondary"><field name="pipeline_type"/></span>
                                     <t t-if="record.sample_count.raw_value > 0">
-                                        <span class="badge bg-info ms-1">
-                                            <field name="sample_count"/> camp.
-                                        </span>
-                                    </t>
-                                    <t t-if="record.date_next_followup.raw_value">
-                                        <div class="mt-1 small text-muted">
-                                            📅 <field name="date_next_followup"/>
-                                        </div>
+                                        <span class="badge bg-info ms-1"><field name="sample_count"/> camp.</span>
                                     </t>
                                 </div>
                                 <div class="o_kanban_record_bottom">
                                     <div class="oe_kanban_bottom_left">
-                                        <span class="fw-bold">
-                                            <field name="forecast_value" widget="monetary"/>
-                                        </span>
-                                        <span class="text-muted ms-1 small">
-                                            (<field name="lead_score"/>pts)
-                                        </span>
+                                        <span class="fw-bold"><field name="forecast_value" widget="monetary"/></span>
+                                        <span class="text-muted ms-1 small">(<field name="lead_score"/>pts)</span>
                                     </div>
                                     <div class="oe_kanban_bottom_right">
                                         <field name="kanban_state" widget="state_selection"/>
@@ -144,10 +110,6 @@
             </kanban>
         </field>
     </record>
-
-    <!-- ═══════════════════════════════════════════
-         LEAD — LIST
-    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_lead_list" model="ir.ui.view">
         <field name="name">cf.export.lead.list</field>
@@ -175,10 +137,6 @@
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         LEAD — SEARCH
-    ═══════════════════════════════════════════ -->
-
     <record id="view_cf_export_lead_search" model="ir.ui.view">
         <field name="name">cf.export.lead.search</field>
         <field name="model">cf.export.lead</field>
@@ -190,21 +148,12 @@
                 <field name="tag_ids"/>
                 <separator/>
                 <filter string="Le mie trattative" name="my_leads" domain="[(&apos;user_id&apos;,&apos;=&apos;,uid)]"/>
-                <filter string="Follow-up oggi" name="followup_today"
-                    domain="[(&apos;date_next_followup&apos;,&apos;&lt;=&apos;,context_today().strftime(&apos;%Y-%m-%d&apos;))]"/>
-                <filter string="Stagnanti" name="rotting"
-                    domain="[(&apos;rotting_state&apos;,&apos;in&apos;,[&apos;danger&apos;,&apos;dead&apos;])]"/>
-                <filter string="Alta Priorità" name="high_priority"
-                    domain="[(&apos;priority&apos;,&apos;in&apos;,[&apos;1&apos;,&apos;2&apos;])]"/>
+                <filter string="Follow-up oggi" name="followup_today" domain="[(&apos;date_next_followup&apos;,&apos;&lt;=&apos;,context_today().strftime(&apos;%Y-%m-%d&apos;))]"/>
+                <filter string="Stagnanti" name="rotting" domain="[(&apos;rotting_state&apos;,&apos;in&apos;,[&apos;danger&apos;,&apos;dead&apos;])]"/>
+                <filter string="Alta Priorit&#224;" name="high_priority" domain="[(&apos;priority&apos;,&apos;in&apos;,[&apos;1&apos;,&apos;2&apos;])]"/>
                 <separator/>
-                <filter string="DACH" name="pipe_dach"
-                    domain="[(&apos;pipeline_type&apos;,&apos;in&apos;,[&apos;dach&apos;,&apos;france&apos;,&apos;spain&apos;,&apos;europe_other&apos;])]"/>
-                <filter string="Gulf/Halal" name="pipe_gulf"
-                    domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;gulf_halal&apos;)]"/>
-                <filter string="GDO" name="pipe_gdo"
-                    domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;gdo&apos;)]"/>
-                <filter string="USA/Canada" name="pipe_usa"
-                    domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;usa_canada&apos;)]"/>
+                <filter string="Standard" name="pipeline_standard" domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;standard&apos;)]"/>
+                <filter string="Premium Josefina" name="pipeline_premium" domain="[(&apos;pipeline_type&apos;,&apos;=&apos;,&apos;premium&apos;)]"/>
                 <separator/>
                 <filter string="Archiviate" name="inactive" domain="[(&apos;active&apos;,&apos;=&apos;,False)]"/>
                 <group expand="0" string="Raggruppa per">
@@ -217,30 +166,22 @@
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         LEAD — FORM
-    ═══════════════════════════════════════════ -->
-
     <record id="view_cf_export_lead_form" model="ir.ui.view">
         <field name="name">cf.export.lead.form</field>
         <field name="model">cf.export.lead</field>
         <field name="arch" type="xml">
             <form string="Trattativa Export">
                 <header>
-                    <button name="action_mark_contacted" string="✅ Registra Contatto"
-                        type="object" class="btn-secondary"/>
-                    <button name="action_schedule_followup" string="📅 Follow-up +7gg"
-                        type="object" class="btn-secondary"/>
+                    <button name="action_mark_contacted" string="Registra Contatto" type="object" class="btn-secondary"/>
+                    <button name="action_schedule_followup" string="Follow-up +7gg" type="object" class="btn-secondary"/>
                     <field name="stage_id" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="%(action_cf_export_sample)d" type="action"
-                            class="oe_stat_button" icon="fa-flask">
+                        <button name="%(action_cf_export_sample)d" type="action" class="oe_stat_button" icon="fa-flask">
                             <field name="sample_count" widget="statinfo" string="Campionature"/>
                         </button>
-                        <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
-                            name="action_view_orders">
+                        <button class="oe_stat_button" icon="fa-shopping-cart" type="object" name="action_view_orders">
                             <field name="order_count" widget="statinfo" string="Ordini"/>
                         </button>
                     </div>
@@ -340,17 +281,11 @@
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         CAMPIONATURE — LIST + FORM
-    ═══════════════════════════════════════════ -->
-
     <record id="view_cf_export_sample_list" model="ir.ui.view">
         <field name="name">cf.export.sample.list</field>
         <field name="model">cf.export.sample</field>
         <field name="arch" type="xml">
-            <list string="Campionature"
-                  decoration-success="state == &apos;feedback_ok&apos;"
-                  decoration-danger="state == &apos;feedback_ko&apos;">
+            <list string="Campionature" decoration-success="state == &apos;feedback_ok&apos;" decoration-danger="state == &apos;feedback_ko&apos;">
                 <field name="reference"/>
                 <field name="partner_id"/>
                 <field name="product_ids" widget="many2many_tags"/>
@@ -368,13 +303,9 @@
         <field name="model">cf.export.sample</field>
         <field name="arch" type="xml">
             <form string="Campionatura">
-                <header>
-                    <field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
-                </header>
+                <header><field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/></header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="reference" readonly="1"/></h1>
-                    </div>
+                    <div class="oe_title"><h1><field name="reference" readonly="1"/></h1></div>
                     <group>
                         <group>
                             <field name="lead_id"/>
@@ -388,18 +319,12 @@
                             <field name="feedback_score"/>
                         </group>
                     </group>
-                    <group string="Feedback">
-                        <field name="feedback_notes" nolabel="1"/>
-                    </group>
+                    <group string="Feedback"><field name="feedback_notes" nolabel="1"/></group>
                 </sheet>
                 <chatter/>
             </form>
         </field>
     </record>
-
-    <!-- ═══════════════════════════════════════════
-         FIERE — LIST + FORM
-    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_fair_list" model="ir.ui.view">
         <field name="name">cf.export.fair.list</field>
@@ -427,20 +352,16 @@
         <field name="arch" type="xml">
             <form string="Fiera">
                 <header>
-                    <button name="action_view_leads" string="Vedi Trattative"
-                        type="object" class="btn-primary"/>
+                    <button name="action_view_leads" string="Vedi Trattative" type="object" class="btn-primary"/>
                     <field name="state" widget="statusbar" options="{&apos;clickable&apos;: &apos;1&apos;}"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box">
-                        <button name="action_view_leads" type="object"
-                            class="oe_stat_button" icon="fa-handshake-o">
+                        <button name="action_view_leads" type="object" class="oe_stat_button" icon="fa-handshake-o">
                             <field name="lead_count" widget="statinfo" string="Trattative"/>
                         </button>
                     </div>
-                    <div class="oe_title">
-                        <h1><field name="name"/></h1>
-                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
                     <group>
                         <group>
                             <field name="date_start"/>
@@ -448,9 +369,7 @@
                             <field name="location"/>
                             <field name="country_id"/>
                         </group>
-                        <group>
-                            <field name="pipeline_type"/>
-                        </group>
+                        <group><field name="pipeline_type"/></group>
                     </group>
                     <field name="notes" placeholder="Note sulla fiera..."/>
                 </sheet>
@@ -458,10 +377,6 @@
             </form>
         </field>
     </record>
-
-    <!-- ═══════════════════════════════════════════
-         SEQUENZE — LIST + FORM
-    ═══════════════════════════════════════════ -->
 
     <record id="view_cf_export_sequence_list" model="ir.ui.view">
         <field name="name">cf.export.sequence.list</field>
@@ -482,9 +397,7 @@
         <field name="arch" type="xml">
             <form string="Sequenza Follow-up">
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name"/></h1>
-                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
                     <group>
                         <field name="trigger"/>
                         <field name="trigger_stage_id"/>
