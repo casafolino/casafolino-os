@@ -1,19 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <record id="stage_prospect" model="cf.export.stage"><field name="name">Prospect</field><field name="sequence">1</field></record>
-    <record id="stage_contact" model="cf.export.stage"><field name="name">Contatto Iniziale</field><field name="sequence">2</field></record>
-    <record id="stage_sample" model="cf.export.stage"><field name="name">Campionatura Inviata</field><field name="sequence">3</field></record>
-    <record id="stage_offer" model="cf.export.stage"><field name="name">Offerta Inviata</field><field name="sequence">4</field></record>
-    <record id="stage_negotiation" model="cf.export.stage"><field name="name">Negoziazione</field><field name="sequence">5</field></record>
-    <record id="stage_contract" model="cf.export.stage"><field name="name">Contratto Firmato</field><field name="sequence">6</field><field name="is_won">True</field></record>
-    <record id="stage_active" model="cf.export.stage"><field name="name">Cliente Attivo</field><field name="sequence">7</field><field name="is_won">True</field></record>
-    <record id="stage_lost" model="cf.export.stage"><field name="name">Perso</field><field name="sequence">99</field><field name="fold">True</field><field name="is_lost">True</field></record>
+    <!-- ══════════════════════════════════════════════
+         Pipeline trattative Standard (seq 1-8)
+    ══════════════════════════════════════════════ -->
+    <record id="stage_std_1" model="cf.export.stage">
+        <field name="name">Rimprendere</field>
+        <field name="sequence">1</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_std_2" model="cf.export.stage">
+        <field name="name">Primo contatto</field>
+        <field name="sequence">2</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_std_3" model="cf.export.stage">
+        <field name="name">Qualificazione Cliente</field>
+        <field name="sequence">3</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_std_4" model="cf.export.stage">
+        <field name="name">Negoziazione prezzi</field>
+        <field name="sequence">4</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_std_5" model="cf.export.stage">
+        <field name="name">Campionatura</field>
+        <field name="sequence">5</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_std_6" model="cf.export.stage">
+        <field name="name">Negoziazione Ordine</field>
+        <field name="sequence">6</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_std_7" model="cf.export.stage">
+        <field name="name">Chiusa acquisita</field>
+        <field name="sequence">7</field>
+        <field name="is_won" eval="True"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="True"/>
+    </record>
+    <record id="stage_std_8" model="cf.export.stage">
+        <field name="name">Chiusa persa</field>
+        <field name="sequence">8</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="True"/>
+        <field name="fold" eval="True"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════
+         Pipeline Premium - Josefina (seq 11-16)
+    ══════════════════════════════════════════════ -->
+    <record id="stage_prm_11" model="cf.export.stage">
+        <field name="name">Negoziazione prezzi</field>
+        <field name="sequence">11</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_prm_12" model="cf.export.stage">
+        <field name="name">Negoziazione Ordine</field>
+        <field name="sequence">12</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_prm_13" model="cf.export.stage">
+        <field name="name">Operazioni Intermedie</field>
+        <field name="sequence">13</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_prm_14" model="cf.export.stage">
+        <field name="name">Preparazione ordine</field>
+        <field name="sequence">14</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="False"/>
+    </record>
+    <record id="stage_prm_15" model="cf.export.stage">
+        <field name="name">Vinta</field>
+        <field name="sequence">15</field>
+        <field name="is_won" eval="True"/>
+        <field name="is_lost" eval="False"/>
+        <field name="fold" eval="True"/>
+    </record>
+    <record id="stage_prm_16" model="cf.export.stage">
+        <field name="name">Persa</field>
+        <field name="sequence">16</field>
+        <field name="is_won" eval="False"/>
+        <field name="is_lost" eval="True"/>
+        <field name="fold" eval="True"/>
+    </record>
+
+    <!-- Sequenza numerazione campionature -->
     <record id="seq_cf_export_sample" model="ir.sequence">
         <field name="name">Campionatura Export</field>
         <field name="code">cf.export.sample</field>
         <field name="prefix">CAMP-%(year)s-</field>
         <field name="padding">4</field>
     </record>
+
+    <!-- Certificazioni -->
     <record id="cert_halal" model="cf.export.certification"><field name="name">Halal</field><field name="code">HALAL</field><field name="color">2</field></record>
     <record id="cert_kosher" model="cf.export.certification"><field name="name">Kosher</field><field name="code">KOSHER</field><field name="color">4</field></record>
     <record id="cert_bio" model="cf.export.certification"><field name="name">Bio/Organic</field><field name="code">BIO</field><field name="color">10</field></record>
