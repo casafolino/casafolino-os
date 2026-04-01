@@ -25,11 +25,7 @@
                         <h1><field name="reference" readonly="1"/></h1>
                         <div invisible="state != 'done'">
                             <span class="fw-bold me-2">Tracciabilità:</span>
-                            <field name="traceability_pct" widget="percentpie"/>
-                            <span t-if="traceability_pct >= 99"
-                                class="badge bg-success ms-2">✅ BRC OK (≥99%)</span>
-                            <span t-else=""
-                                class="badge bg-danger ms-2" invisible="state != 'done'">⚠ BRC KO (&lt;99%)</span>
+                            <field name="traceability_pct" widget="progressbar"/>
                         </div>
                     </div>
                     <group>
