@@ -1,5 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- PRODUCTS PL — KANBAN workflow -->
+    <record id="view_cf_pl_product_kanban" model="ir.ui.view">
+        <field name="name">cf.pl.product.kanban</field>
+        <field name="model">cf.pl.product</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false" group_create="false">
+                <field name="name"/>
+                <field name="client_id"/>
+                <field name="product_id"/>
+                <field name="selling_price"/>
+                <field name="margin_pct"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="cf-crm-card card-rotting-ok">
+                            <div class="cf-card-header">
+                                <span class="cf-card-title"><field name="name"/></span>
+                            </div>
+                            <div class="cf-card-partner">
+                                <field name="client_id"/>
+                            </div>
+                            <div class="cf-card-meta">
+                                <span class="fw-bold"><field name="selling_price" widget="monetary"/></span>
+                                <span t-attf-class="badge #{record.margin_pct.raw_value >= 30 ? 'bg-success' : record.margin_pct.raw_value >= 15 ? 'bg-warning text-dark' : 'bg-danger'}"
+                                      style="font-size:10px;">
+                                    <t t-esc="record.margin_pct.raw_value.toFixed(1)"/>%
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- CLIENT LIST -->
+    <record id="view_cf_pl_client_list" model="ir.ui.view">
+        <field name="name">cf.pl.client.list</field>
+        <field name="model">cf.pl.client</field>
+        <field name="arch" type="xml">
+            <list string="Clienti Private Label">
+                <field name="partner_id"/>
+                <field name="country_id"/>
+                <field name="annual_target" sum="Totale Target"/>
+            </list>
+        </field>
+    </record>
+
     <record id="view_cf_pl_client_form" model="ir.ui.view">
         <field name="name">cf.pl.client.form</field>
         <field name="model">cf.pl.client</field>

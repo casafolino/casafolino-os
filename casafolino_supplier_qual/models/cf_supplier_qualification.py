@@ -52,14 +52,35 @@ class CfSupplierQualification(models.Model):
 
     def action_approve(self):
         self.write({"status": "approved"})
+
     def action_suspend(self):
         self.write({"status": "suspended"})
+
     def action_exclude(self):
         self.write({"status": "excluded"})
 
+    @api.model
+    def get_dashboard_data(self):
+        all_quals = self.search([])
+        by_status = {}
+        for key in ("approved", "evaluation", "suspended", "excluded"):
+            by_status[key] = len(all_quals.filtered(lambda r, k=key: r.status == k))
+        by_light = {}
+        for key in ("green", "yellow", "red"):
+            by_light[key] = len(all_quals.filtered(lambda r, k=key: r.traffic_light == k))
+
+        docs = self.env["casafolino.supplier.document"].search([])
+        return {
+            "total": len(all_quals),
+            "by_status": by_status,
+            "by_light": by_light,
+            "docs_expiring": len(docs.filtered(lambda d: d.doc_status == "expiring")),
+            "docs_expired": len(docs.filtered(lambda d: d.doc_status == "expired")),
+        }
+
 class ResPartnerSupplierQual(models.Model):
     _inherit = "res.partner"
-    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False)
+    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False, compute_sudo=True)
     supplier_qual_status = fields.Selection(related="supplier_qual_id.status", readonly=True)
     supplier_traffic_light = fields.Selection(related="supplier_qual_id.traffic_light", readonly=True)
 

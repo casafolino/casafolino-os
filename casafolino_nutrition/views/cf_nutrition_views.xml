@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- INGREDIENT FORM -->
     <record id="view_cf_nutrition_ingredient_form" model="ir.ui.view">
         <field name="name">cf.nutrition.ingredient.form</field>
         <field name="model">cf.nutrition.ingredient</field>
@@ -30,6 +31,8 @@
             </form>
         </field>
     </record>
+
+    <!-- INGREDIENT LIST -->
     <record id="view_cf_nutrition_ingredient_list" model="ir.ui.view">
         <field name="name">cf.nutrition.ingredient.list</field>
         <field name="model">cf.nutrition.ingredient</field>
@@ -43,6 +46,197 @@
                 <field name="protein"/>
                 <field name="salt"/>
             </list>
+        </field>
+    </record>
+
+    <!-- BOM NUTRITION FORM — EU label style -->
+    <record id="view_cf_nutrition_bom_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.bom.form</field>
+        <field name="model">cf.nutrition.bom</field>
+        <field name="arch" type="xml">
+            <form string="Etichetta Nutrizionale Ricetta">
+                <header>
+                    <button name="action_compute" type="object" string="▶ Ricalcola Valori" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="bom_id"/></h1>
+                    </div>
+
+                    <!-- Nutri-Score banner -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div style="display:flex; align-items:center; gap:16px; padding:12px 16px; background:#f8f9fa; border-radius:8px; border:1px solid #dee2e6;">
+                                <span style="font-size:13px; color:#6c757d; font-weight:600;">NUTRI-SCORE</span>
+                                <div style="display:flex; gap:4px; align-items:center;">
+                                    <span style="padding:6px 14px; border-radius:20px; font-weight:800; font-size:18px; background:#1a7e3c; color:#fff;"
+                                          t-attf-style="background:#{record.nutri_score.raw_value == 'A' and '#1a7e3c' or record.nutri_score.raw_value == 'B' and '#85bb2f' or record.nutri_score.raw_value == 'C' and '#f7c325' or record.nutri_score.raw_value == 'D' and '#e8821e' or '#e63312'};">
+                                        <field name="nutri_score" nolabel="1"/>
+                                    </span>
+                                </div>
+                                <span style="font-size:12px; color:#6c757d;">
+                                    Ultimo calcolo: <field name="last_computed" nolabel="1"/>
+                                </span>
+                                <div class="ms-auto">
+                                    <field name="serving_size_g" string="Porzione (g)"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EU Nutrition Label Table -->
+                    <div class="row">
+                        <div class="col-lg-7">
+                            <div style="border:2px solid #000; border-radius:4px; overflow:hidden; font-family: Arial, sans-serif;">
+                                <div style="background:#000; color:#fff; padding:8px 12px; font-size:16px; font-weight:800; letter-spacing:1px;">
+                                    DICHIARAZIONE NUTRIZIONALE
+                                </div>
+                                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                                    <thead>
+                                        <tr style="background:#f0f0f0; font-weight:700; font-size:11px; text-transform:uppercase;">
+                                            <th style="padding:6px 10px; border-bottom:1px solid #ccc; text-align:left;">Nutriente</th>
+                                            <th style="padding:6px 10px; border-bottom:1px solid #ccc; text-align:right;">Per 100g</th>
+                                            <th style="padding:6px 10px; border-bottom:1px solid #ccc; text-align:right;">Per porzione</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="border-bottom:2px solid #000;">
+                                            <td style="padding:7px 10px; font-weight:700;">Energia</td>
+                                            <td style="padding:7px 10px; text-align:right;">
+                                                <field name="energy_kj" nolabel="1"/> kJ /
+                                                <field name="energy_kcal" nolabel="1"/> kcal
+                                            </td>
+                                            <td style="padding:7px 10px; text-align:right; color:#6c757d; font-size:11px;">
+                                                —
+                                            </td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #ddd;">
+                                            <td style="padding:7px 10px; font-weight:700;">Grassi</td>
+                                            <td style="padding:7px 10px; text-align:right;"><field name="fat" nolabel="1"/> g</td>
+                                            <td style="padding:7px 10px; text-align:right; color:#6c757d; font-size:11px;">—</td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #ddd; background:#fafafa;">
+                                            <td style="padding:5px 10px 5px 22px; color:#555; font-style:italic;">di cui saturi</td>
+                                            <td style="padding:5px 10px; text-align:right; color:#555;"><field name="saturated_fat" nolabel="1"/> g</td>
+                                            <td style="padding:5px 10px; text-align:right; color:#aaa; font-size:11px;">—</td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #ddd;">
+                                            <td style="padding:7px 10px; font-weight:700;">Carboidrati</td>
+                                            <td style="padding:7px 10px; text-align:right;"><field name="carbs" nolabel="1"/> g</td>
+                                            <td style="padding:7px 10px; text-align:right; color:#6c757d; font-size:11px;">—</td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #ddd; background:#fafafa;">
+                                            <td style="padding:5px 10px 5px 22px; color:#555; font-style:italic;">di cui zuccheri</td>
+                                            <td style="padding:5px 10px; text-align:right; color:#555;"><field name="sugars" nolabel="1"/> g</td>
+                                            <td style="padding:5px 10px; text-align:right; color:#aaa; font-size:11px;">—</td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #ddd;">
+                                            <td style="padding:7px 10px; font-weight:700;">Fibre</td>
+                                            <td style="padding:7px 10px; text-align:right;"><field name="fiber" nolabel="1"/> g</td>
+                                            <td style="padding:7px 10px; text-align:right; color:#6c757d; font-size:11px;">—</td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #ddd;">
+                                            <td style="padding:7px 10px; font-weight:700;">Proteine</td>
+                                            <td style="padding:7px 10px; text-align:right;"><field name="protein" nolabel="1"/> g</td>
+                                            <td style="padding:7px 10px; text-align:right; color:#6c757d; font-size:11px;">—</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:7px 10px; font-weight:700;">Sale</td>
+                                            <td style="padding:7px 10px; text-align:right;"><field name="salt" nolabel="1"/> g</td>
+                                            <td style="padding:7px 10px; text-align:right; color:#6c757d; font-size:11px;">—</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div style="padding:6px 10px; font-size:10px; color:#888; background:#f8f8f8; border-top:1px solid #ddd;">
+                                    Valori calcolati dalla distinta base. Reg. UE 1169/2011.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <!-- Nutri-Score visual legend -->
+                            <div style="padding:16px; background:#f8f9fa; border-radius:8px; border:1px solid #dee2e6; height:100%;">
+                                <div style="font-size:12px; font-weight:700; color:#495057; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
+                                    Scala Nutri-Score
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="width:36px; height:28px; background:#1a7e3c; color:#fff; font-weight:800; font-size:14px; border-radius:14px; display:flex; align-items:center; justify-content:center;">A</span>
+                                        <span style="font-size:12px; color:#555;">Eccellente qualità nutrizionale</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="width:36px; height:28px; background:#85bb2f; color:#fff; font-weight:800; font-size:14px; border-radius:14px; display:flex; align-items:center; justify-content:center;">B</span>
+                                        <span style="font-size:12px; color:#555;">Buona qualità nutrizionale</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="width:36px; height:28px; background:#f7c325; color:#fff; font-weight:800; font-size:14px; border-radius:14px; display:flex; align-items:center; justify-content:center;">C</span>
+                                        <span style="font-size:12px; color:#555;">Qualità media</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="width:36px; height:28px; background:#e8821e; color:#fff; font-weight:800; font-size:14px; border-radius:14px; display:flex; align-items:center; justify-content:center;">D</span>
+                                        <span style="font-size:12px; color:#555;">Qualità scarsa</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="width:36px; height:28px; background:#e63312; color:#fff; font-weight:800; font-size:14px; border-radius:14px; display:flex; align-items:center; justify-content:center;">E</span>
+                                        <span style="font-size:12px; color:#555;">Qualità molto scarsa</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- BOM NUTRITION LIST -->
+    <record id="view_cf_nutrition_bom_list" model="ir.ui.view">
+        <field name="name">cf.nutrition.bom.list</field>
+        <field name="model">cf.nutrition.bom</field>
+        <field name="arch" type="xml">
+            <list string="Etichette Nutrizionali Ricette">
+                <field name="bom_id"/>
+                <field name="energy_kcal"/>
+                <field name="fat"/>
+                <field name="carbs"/>
+                <field name="protein"/>
+                <field name="salt"/>
+                <field name="nutri_score" widget="badge"
+                       decoration-success="nutri_score in ('A','B')"
+                       decoration-warning="nutri_score == 'C'"
+                       decoration-danger="nutri_score in ('D','E')"/>
+                <field name="last_computed"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- MRP BOM — inline nutrition tab -->
+    <record id="view_mrp_bom_nutrition_inline" model="ir.ui.view">
+        <field name="name">mrp.bom.nutrition.inline</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Nutrizione" name="nutrition_tab">
+                    <field name="nutrition_ids">
+                        <list editable="bottom">
+                            <field name="energy_kcal"/>
+                            <field name="energy_kj"/>
+                            <field name="fat"/>
+                            <field name="saturated_fat"/>
+                            <field name="carbs"/>
+                            <field name="sugars"/>
+                            <field name="fiber"/>
+                            <field name="protein"/>
+                            <field name="salt"/>
+                            <field name="nutri_score" widget="badge"
+                                   decoration-success="nutri_score in ('A','B')"
+                                   decoration-warning="nutri_score == 'C'"
+                                   decoration-danger="nutri_score in ('D','E')"/>
+                            <button name="action_compute" type="object" string="Ricalcola" icon="fa-refresh"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
         </field>
     </record>
 </odoo>

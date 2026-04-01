@@ -18,6 +18,13 @@
         "views/cf_haccp_document_views.xml",
         "views/menus.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "casafolino_haccp/static/src/css/cf_haccp.css",
+            "casafolino_haccp/static/src/xml/cf_haccp_dashboard.xml",
+            "casafolino_haccp/static/src/js/cf_haccp_dashboard.js",
+        ],
+    },
     "installable": True,
     "application": True,
     "license": "LGPL-3",

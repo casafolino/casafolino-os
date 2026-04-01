@@ -27,6 +27,27 @@ class CfTreasury(models.Model):
             rec.forecast_90d = base * 1.10
 
     @api.model
+    def get_dashboard_data(self):
+        snapshots = self.search([], limit=90, order="date desc")
+        if not snapshots:
+            return {"has_data": False}
+        latest = snapshots[0]
+        history = [{"date": str(s.date), "balance": s.total_balance} for s in reversed(snapshots)]
+        currency_symbol = self.env.ref("base.EUR").symbol
+        return {
+            "has_data": True,
+            "date": str(latest.date),
+            "total_balance": latest.total_balance,
+            "receivable_30d": latest.receivable_30d,
+            "payable_30d": latest.payable_30d,
+            "forecast_30d": latest.forecast_30d,
+            "forecast_60d": latest.forecast_60d,
+            "forecast_90d": latest.forecast_90d,
+            "currency_symbol": currency_symbol,
+            "history": history[-30:],
+        }
+
+    @api.model
     def create_daily_snapshot(self):
         today = date.today()
         existing = self.search([("date","=",today)])

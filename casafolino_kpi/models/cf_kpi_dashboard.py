@@ -24,6 +24,36 @@ class CfKpiSnapshot(models.Model):
     notes = fields.Text()
 
     @api.model
+    def get_dashboard_data(self):
+        latest = self.search([], limit=1)
+        prev = self.search([], limit=1, offset=1)
+        if not latest:
+            return {"has_data": False}
+
+        def delta(a, b):
+            if not b or not b:
+                return None
+            return round((a - b) / b * 100, 1) if b else None
+
+        return {
+            "has_data": True,
+            "date": str(latest.date),
+            "sales_ytd": latest.sales_ytd,
+            "sales_mtd": latest.sales_mtd,
+            "sales_b2b": latest.sales_b2b,
+            "sales_gdo": latest.sales_gdo,
+            "sales_amazon": latest.sales_amazon,
+            "sales_shopify": latest.sales_shopify,
+            "mo_open": latest.mo_open,
+            "mo_done": latest.mo_done,
+            "nc_open": latest.nc_open,
+            "quarantine_active": latest.quarantine_active,
+            "delta_ytd": delta(latest.sales_ytd, prev.sales_ytd) if prev else None,
+            "delta_mtd": delta(latest.sales_mtd, prev.sales_mtd) if prev else None,
+            "currency_symbol": self.env.ref("base.EUR").symbol,
+        }
+
+    @api.model
     def create_daily_snapshot(self):
         today = date.today()
         if self.search([("date","=",today)]): return

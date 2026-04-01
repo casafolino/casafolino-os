@@ -33,5 +33,47 @@ class CfHaccpNc(models.Model):
     corrective_action = fields.Text(string="Azione Correttiva")
     notes = fields.Text(string="Note")
 
+    def action_to_analysis(self):
+        self.write({"state": "analysis"})
+
+    def action_to_corrective(self):
+        self.write({"state": "action"})
+
+    def action_to_verified(self):
+        self.write({"state": "verified"})
+
     def action_close(self):
         self.write({"state": "closed"})
+
+    def action_cancel(self):
+        self.write({"state": "cancelled"})
+
+    @api.model
+    def get_dashboard_data(self):
+        nc_counts = {}
+        for key in ("open", "analysis", "action", "verified", "closed", "cancelled"):
+            nc_counts[key] = self.search_count([("state", "=", key)])
+
+        critical_open = self.search_count([
+            ("state", "not in", ("closed", "cancelled")),
+            ("severity", "in", ("high", "critical")),
+        ])
+
+        calib = self.env["cf.haccp.calibration"]
+        docs = self.env["cf.haccp.document"]
+
+        return {
+            "nc_open": nc_counts.get("open", 0),
+            "nc_analysis": nc_counts.get("analysis", 0),
+            "nc_action": nc_counts.get("action", 0),
+            "nc_critical_open": critical_open,
+            "instruments_expiring": calib.search_count([("state", "=", "expiring")]),
+            "instruments_expired": calib.search_count([("state", "=", "expired")]),
+            "docs_expiring": docs.search_count([("state", "=", "expiring")]),
+            "docs_expired": docs.search_count([("state", "=", "expired")]),
+            "overall_state": (
+                "red" if (critical_open > 0 or calib.search_count([("state", "=", "expired")]) > 0)
+                else "yellow" if (nc_counts.get("open", 0) > 0 or calib.search_count([("state", "=", "expiring")]) > 0)
+                else "green"
+            ),
+        }

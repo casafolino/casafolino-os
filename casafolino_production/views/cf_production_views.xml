@@ -52,6 +52,57 @@
             </list>
         </field>
     </record>
+    <record id="view_cf_production_job_kanban" model="ir.ui.view">
+        <field name="name">cf.production.job.kanban</field>
+        <field name="model">cf.production.job</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false">
+                <field name="reference"/>
+                <field name="state"/>
+                <field name="production_line"/>
+                <field name="line_color"/>
+                <field name="product_id"/>
+                <field name="quantity_planned"/>
+                <field name="quantity_done"/>
+                <field name="progress"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="cf-crm-card card-rotting-ok" style="min-height:110px;">
+                            <!-- Line color strip -->
+                            <div t-attf-style="height:4px; background:#{record.line_color.raw_value}; border-radius:3px 3px 0 0; margin:-8px -8px 8px -8px;"/>
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span class="fw-bold" style="font-size:13px;">
+                                    <field name="reference"/>
+                                </span>
+                                <span t-attf-class="badge #{record.state.raw_value == 'in_progress' and 'bg-warning text-dark' or record.state.raw_value == 'done' and 'bg-success' or record.state.raw_value == 'confirmed' and 'bg-primary' or record.state.raw_value == 'cancelled' and 'bg-secondary' or 'bg-light text-dark'}"
+                                      style="font-size:10px;">
+                                    <field name="state"/>
+                                </span>
+                            </div>
+                            <div style="font-size:12px; color:#555; margin-bottom:4px;">
+                                <field name="product_id"/>
+                            </div>
+                            <div style="font-size:11px; color:#888; margin-bottom:8px;">
+                                <field name="production_line"/>
+                                · <field name="quantity_planned"/> →
+                                <field name="quantity_done"/>
+                            </div>
+                            <!-- Progress bar -->
+                            <div style="background:#e9ecef; border-radius:4px; height:6px; overflow:hidden;">
+                                <div t-attf-style="width:#{record.progress.raw_value}%; height:6px; background:#{record.progress.raw_value >= 100 and '#198754' or record.progress.raw_value >= 50 and '#0d6efd' or '#fd7e14'}; transition:width .3s;"/>
+                            </div>
+                            <div style="font-size:10px; color:#888; text-align:right; margin-top:2px;">
+                                <field name="progress"/>%
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <record id="view_cf_production_job_calendar" model="ir.ui.view">
         <field name="name">cf.production.job.calendar</field>
         <field name="model">cf.production.job</field>

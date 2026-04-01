@@ -1,5 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ALLERGEN KANBAN -->
+    <record id="view_cf_allergen_kanban" model="ir.ui.view">
+        <field name="name">cf.allergen.kanban</field>
+        <field name="model">cf.allergen</field>
+        <field name="arch" type="xml">
+            <kanban quick_create="false">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="products_count"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="cf-crm-card card-rotting-ok text-center" style="min-height:80px;">
+                            <div style="font-size:28px; line-height:1;">
+                                <field name="code"/>
+                            </div>
+                            <div class="fw-bold mt-1" style="font-size:13px;">
+                                <field name="name"/>
+                            </div>
+                            <div class="mt-1">
+                                <span t-attf-class="badge #{record.products_count.raw_value > 0 ? 'bg-warning text-dark' : 'bg-success'}"
+                                      style="font-size:10px;">
+                                    <t t-esc="record.products_count.raw_value"/> prodotti
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <record id="view_cf_allergen_list" model="ir.ui.view">
         <field name="name">cf.allergen.list</field>
         <field name="model">cf.allergen</field>
@@ -8,6 +39,7 @@
                 <field name="sequence" widget="handle"/>
                 <field name="code"/>
                 <field name="name"/>
+                <field name="products_count" string="Prodotti con allergene"/>
                 <field name="regulation_ref"/>
             </list>
         </field>

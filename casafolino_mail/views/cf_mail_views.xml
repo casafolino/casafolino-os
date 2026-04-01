@@ -69,8 +69,6 @@
                             <field name="fetchmail_server_id"
                                 domain="[('server_type','=','imap')]"
                                 help="Server IMAP configurato in Impostazioni > Tecnico > Server Posta in Entrata"/>
-                            <field name="outgoing_mail_server_id"
-                                help="Server SMTP configurato in Impostazioni > Tecnico > Server Posta in Uscita"/>
                         </group>
                     </group>
                     <group string="Accesso Condiviso"

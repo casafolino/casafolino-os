@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_kpi.CfKpiDashboard">
+    <div class="cf-dashboard o_action">
+        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
+             style="background:#1e2432;color:#fff;min-height:56px;">
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size:20px;">📈</span>
+                <h4 class="mb-0 fw-bold" style="font-size:16px;">KPI Dashboard</h4>
+                <t t-if="state.data and state.data.has_data">
+                    <span class="badge bg-secondary ms-2" style="font-size:11px;">
+                        Aggiornato: <t t-esc="state.data.date"/>
+                    </span>
+                </t>
+            </div>
+            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+        </div>
+
+        <t t-if="state.loading">
+            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+                <div class="spinner-border text-secondary"/>
+            </div>
+        </t>
+        <t t-elif="state.error">
+            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+        </t>
+        <t t-elif="!state.data or !state.data.has_data">
+            <div class="alert alert-info m-4">
+                Nessun dato disponibile. Creare uno snapshot KPI prima.
+            </div>
+        </t>
+        <t t-elif="state.data">
+            <div class="cf-dash-body px-4 py-3">
+
+                <!-- Vendite -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" style="border-top: 3px solid #5A6E3A;">
+                            <div class="cf-kpi-label">Vendite YTD</div>
+                            <div class="cf-kpi-value" style="font-size:22px;">
+                                <t t-esc="formatAmount(state.data.sales_ytd)"/>
+                            </div>
+                            <div t-attf-class="cf-kpi-sub #{deltaClass(state.data.delta_ytd)}">
+                                <t t-esc="deltaIcon(state.data.delta_ytd)"/> vs snapshot prec.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" style="border-top: 3px solid #3d4d28;">
+                            <div class="cf-kpi-label">Vendite MTD</div>
+                            <div class="cf-kpi-value" style="font-size:22px;">
+                                <t t-esc="formatAmount(state.data.sales_mtd)"/>
+                            </div>
+                            <div t-attf-class="cf-kpi-sub #{deltaClass(state.data.delta_mtd)}">
+                                <t t-esc="deltaIcon(state.data.delta_mtd)"/> vs snapshot prec.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" style="border-top: 3px solid #17a2b8;">
+                            <div class="cf-kpi-label">MO Aperti</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.mo_open > 0 ? 'text-warning' : 'text-success'}">
+                                <t t-esc="state.data.mo_open"/>
+                            </div>
+                            <div class="cf-kpi-sub">Completati MTD: <t t-esc="state.data.mo_done"/></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card"
+                             t-attf-style="border-top: 3px solid #{state.data.nc_open > 0 ? '#dc3545' : '#28a745'};">
+                            <div class="cf-kpi-label">NC Aperte</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.nc_open > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.data.nc_open"/>
+                            </div>
+                            <div class="cf-kpi-sub">Quarantene: <t t-esc="state.data.quarantine_active"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canali vendita -->
+                <div class="cf-dash-panel">
+                    <div class="cf-dash-panel-title">🛒 Vendite per Canale</div>
+                    <div class="row g-3">
+                        <t t-foreach="[['B2B', state.data.sales_b2b], ['GDO', state.data.sales_gdo], ['Amazon', state.data.sales_amazon], ['Shopify', state.data.sales_shopify]]" t-as="ch" t-key="ch[0]">
+                            <div class="col-6 col-lg-3">
+                                <div class="text-center">
+                                    <div class="fw-bold" style="font-size:18px; color:#1e2432;">
+                                        <t t-esc="formatAmount(ch[1])"/>
+                                    </div>
+                                    <div class="text-muted" style="font-size:12px;"><t t-esc="ch[0]"/></div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+</templates>
