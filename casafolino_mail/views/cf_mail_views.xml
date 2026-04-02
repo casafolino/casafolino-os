@@ -159,8 +159,6 @@
         <field name="arch" type="xml">
             <form string="Messaggio">
                 <header>
-                    <button name="action_keep_sender" type="object" string="✅ Tieni mittente" class="btn-success" invisible="direction == 'out'"/>
-                    <button name="action_exclude_sender" type="object" string="🚫 Escludi mittente" class="btn-danger" invisible="direction == 'out'"/>
                     <button name="action_reply" string="Rispondi"
                         type="object" class="btn-primary"/>
                     <button name="action_forward" string="Inoltra"
@@ -175,10 +173,10 @@
                         invisible="is_archived == True"/>
                     <button name="action_keep_sender" string="Tieni mittente"
                         type="object" class="btn-success"
-                        invisible="direction == 'out'"/>
+                        invisible="direction != 'in'"/>
                     <button name="action_exclude_sender" string="Escludi mittente"
                         type="object" class="btn-danger"
-                        invisible="direction == 'out'"
+                        invisible="direction != 'in'"
                         confirm="Eliminare tutte le email di questo mittente e escluderlo dalle sync future?"/>
                 </header>
                 <sheet>
