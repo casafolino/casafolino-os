@@ -114,24 +114,5 @@ raise UserError('Mittenti esclusi: %d. Tutte le loro email sono state eliminate.
         </field>
     </record>
 
-    <!-- ── Pulsanti nella form singola email ──────────────────────────── -->
-    <record id="view_cf_mail_message_form_sender_btns" model="ir.ui.view">
-        <field name="name">cf.mail.message.form.sender.btns</field>
-        <field name="model">cf.mail.message</field>
-        <field name="inherit_id" ref="casafolino_mail.view_cf_mail_message_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <button name="action_keep_sender" type="object"
-                        string="Tieni mittente"
-                        class="btn-success"
-                        invisible="direction == 'out'"/>
-                <button name="action_exclude_sender" type="object"
-                        string="Escludi mittente"
-                        class="btn-danger"
-                        invisible="direction == 'out'"
-                        confirm="Eliminare tutte le email di questo mittente e escluderlo dalle sync future?"/>
-            </xpath>
-        </field>
-    </record>
 
 </odoo>
