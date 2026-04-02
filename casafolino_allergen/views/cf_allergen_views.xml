@@ -108,7 +108,7 @@
 
                     <!-- Matrice allergeni -->
                     <field name="allergen_ids" widget="one2many"
-                           context="{'default_bom_id': active_id}">
+                           context="{}">
                         <list editable="bottom"
                               decoration-danger="status == 'present'"
                               decoration-warning="status == 'traces'">
