@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino Allergeni",
-    "version": "18.0.1.0.0",
+    "version": "18.0.2.0.0",
     "category": "Manufacturing",
-    "summary": "Gestione 14 allergeni UE",
+    "summary": "Allergeni da distinta base — 14 EU + USA/Canada/AUS, match automatico, testo etichetta",
     "author": "CasaFolino Srls",
     "depends": ["base", "mail", "mrp", "product"],
     "data": [
         "security/ir.model.access.csv",
         "data/cf_allergen_14eu.xml",
+        "data/cf_allergen_keywords.xml",
+        "data/cf_allergen_extra.xml",
         "views/cf_allergen_views.xml",
         "views/menus.xml",
     ],
