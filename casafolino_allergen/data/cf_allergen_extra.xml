@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ══ USA (FDA) — Sesamo dal 2023 è 9° allergene maggiore ══ -->
+    <record id="allergen_usa_sesame" model="cf.allergen">
+        <field name="sequence">21</field>
+        <field name="code">US-01</field>
+        <field name="name">Sesamo (USA — FDA FASTER Act 2023)</field>
+        <field name="market">usa</field>
+        <field name="regulation_ref">FDA FASTER Act 2021 (eff. 2023)</field>
+        <field name="description">Dal 1° gennaio 2023 il sesamo è il 9° allergene maggiore negli USA.</field>
+    </record>
+    <record id="kw_usa_ses_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_usa_sesame"/><field name="keyword">sesamo</field></record>
+    <record id="kw_usa_ses_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_usa_sesame"/><field name="keyword">tahini</field></record>
+
+    <!-- ══ Canada (Health Canada) ══════════════════════════════ -->
+    <record id="allergen_ca_sesame" model="cf.allergen">
+        <field name="sequence">31</field>
+        <field name="code">CA-01</field>
+        <field name="name">Sesamo (Canada)</field>
+        <field name="market">canada</field>
+        <field name="regulation_ref">Health Canada — Food and Drug Regulations</field>
+    </record>
+    <record id="kw_ca_ses_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_ca_sesame"/><field name="keyword">sesamo</field></record>
+    <record id="kw_ca_ses_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_ca_sesame"/><field name="keyword">tahini</field></record>
+
+    <record id="allergen_ca_mustard" model="cf.allergen">
+        <field name="sequence">32</field>
+        <field name="code">CA-02</field>
+        <field name="name">Senape (Canada)</field>
+        <field name="market">canada</field>
+        <field name="regulation_ref">Health Canada — Food and Drug Regulations</field>
+    </record>
+    <record id="kw_ca_must_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_ca_mustard"/><field name="keyword">senape</field></record>
+
+    <!-- ══ Australia / NZ (FSANZ) ══════════════════════════════ -->
+    <record id="allergen_aus_propolis" model="cf.allergen">
+        <field name="sequence">41</field>
+        <field name="code">AU-01</field>
+        <field name="name">Propoli (Australia/NZ)</field>
+        <field name="market">australia</field>
+        <field name="regulation_ref">FSANZ Standard 1.2.3</field>
+    </record>
+    <record id="kw_aus_prop_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_aus_propolis"/><field name="keyword">propoli</field></record>
+
+    <record id="allergen_aus_gelatin" model="cf.allergen">
+        <field name="sequence">42</field>
+        <field name="code">AU-02</field>
+        <field name="name">Gelatina (Australia/NZ)</field>
+        <field name="market">australia</field>
+        <field name="regulation_ref">FSANZ Standard 1.2.3</field>
+    </record>
+    <record id="kw_aus_gel_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_aus_gelatin"/><field name="keyword">gelatina</field></record>
+    <record id="kw_aus_gel_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_aus_gelatin"/><field name="keyword">colla di pesce</field></record>
+</odoo>
