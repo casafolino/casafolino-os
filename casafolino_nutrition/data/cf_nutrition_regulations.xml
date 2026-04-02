@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ─── EU: Regolamento 1169/2011 ────────────────────────────────────── -->
+    <record id="regulation_eu" model="cf.nutrition.regulation">
+        <field name="name">UE — Reg. 1169/2011 (etichettatura alimenti)</field>
+        <field name="market">eu</field>
+        <field name="sequence">1</field>
+        <field name="reference_url">https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX%3A32011R1169</field>
+        <field name="last_updated">2014-12-13</field>
+        <field name="mandatory_nutrients">Energia (kJ + kcal), Grassi, Acidi grassi saturi, Carboidrati, Zuccheri, Proteine, Sale</field>
+        <field name="notes">Valori obbligatori per 100g o 100ml. Per porzione opzionale ma raccomandato. Fibre opzionali. %RI (Valori di riferimento) da indicare se i valori sono forniti per porzione. Annesso XIII: RI = 2000 kcal / 8400 kJ.</field>
+    </record>
+
+    <!-- ─── USA: FDA 21 CFR 101.9 (2020 update) ─────────────────────────── -->
+    <record id="regulation_usa" model="cf.nutrition.regulation">
+        <field name="name">USA — FDA 21 CFR 101.9 (Nutrition Facts, 2020)</field>
+        <field name="market">usa</field>
+        <field name="sequence">2</field>
+        <field name="reference_url">https://www.ecfr.gov/current/title-21/chapter-I/part-101/section-101.9</field>
+        <field name="last_updated">2020-01-01</field>
+        <field name="mandatory_nutrients">Calorie, Grassi totali, Acidi grassi saturi, Grassi trans, Colesterolo, Sodio, Carboidrati totali, Fibre alimentari, Zuccheri totali (incl. Zuccheri aggiunti), Proteine, Vitamina D, Calcio, Ferro, Potassio</field>
+        <field name="notes">Valori obbligatori per porzione (serving size). %DV obbligatorio. DV di riferimento: energia 2000 kcal, grassi 78g, saturi 20g, colesterolo 300mg, sodio 2300mg, carboidrati 275g, fibre 28g, zuccheri aggiunti 50g, proteine 50g, Vit. D 20mcg, calcio 1300mg, ferro 18mg, potassio 4700mg.</field>
+    </record>
+
+    <!-- ─── Canada: Health Canada SOR/2003-11 ───────────────────────────── -->
+    <record id="regulation_canada" model="cf.nutrition.regulation">
+        <field name="name">Canada — Health Canada SOR/2003-11 (Nutrition Facts)</field>
+        <field name="market">canada</field>
+        <field name="sequence">3</field>
+        <field name="reference_url">https://laws-lois.justice.gc.ca/eng/regulations/SOR-2003-11/</field>
+        <field name="last_updated">2022-01-01</field>
+        <field name="mandatory_nutrients">Calorie, Lipidi, Acidi grassi saturi+trans, Colesterolo, Sodio, Carboidrati totali, Fibre alimentari, Zuccheri, Proteine, Vitamina D, Calcio, Ferro, Potassio</field>
+        <field name="notes">Formato bilingue EN/FR obbligatorio. Potassio obbligatorio dal 2022. Valori per porzione. %DV come FDA ma con alcune variazioni (es. lipidi 65g, sodio 2300mg). Acidi grassi saturi e trans unificati in un'unica riga.</field>
+    </record>
+
+    <!-- ─── Australia/NZ: FSANZ Standard 1.2.8 ──────────────────────────── -->
+    <record id="regulation_australia" model="cf.nutrition.regulation">
+        <field name="name">Australia / N. Zelanda — FSANZ Standard 1.2.8</field>
+        <field name="market">australia</field>
+        <field name="sequence">4</field>
+        <field name="reference_url">https://www.foodstandards.gov.au/consumer/labelling/panels/Pages/default.aspx</field>
+        <field name="last_updated">2016-03-01</field>
+        <field name="mandatory_nutrients">Energia (kJ), Proteine, Grassi totali, Grassi saturi, Carboidrati, Zuccheri, Sodio (Fibre se dichiarate)</field>
+        <field name="notes">Valori obbligatori PER PORZIONE e PER 100g (entrambi). Energia in kJ (kcal opzionale). Proteine in seconda posizione (dopo energia). Sodio in mg. Fibre obbligatorie solo se dichiarate in etichetta. %DV non previsto.</field>
+    </record>
+
+    <!-- ─── UK: FIR 2014 + traffic light ────────────────────────────────── -->
+    <record id="regulation_uk" model="cf.nutrition.regulation">
+        <field name="name">UK — Food Information Regulations 2014 + Traffic Light</field>
+        <field name="market">uk</field>
+        <field name="sequence">5</field>
+        <field name="reference_url">https://www.gov.uk/guidance/nutrition-labelling-for-food-and-drink</field>
+        <field name="last_updated">2021-01-01</field>
+        <field name="mandatory_nutrients">Energia (kJ + kcal), Grassi, Acidi grassi saturi, Carboidrati, Zuccheri, Proteine, Sale</field>
+        <field name="notes">Stesso formato EU (post-Brexit mantenuto). Semaforo colori (Front of Pack) volontario ma adottato dalla grande distribuzione: VERDE ≤ soglia bassa, ARANCIO tra soglie, ROSSO oltre soglia alta. Soglie per 100g: Grassi (3/17.5g), Saturi (1.5/5g), Zuccheri (5/22.5g), Sale (0.3/1.5g). Da gennaio 2021 normativa UK autonoma ma invariata rispetto EU.</field>
+    </record>
+</odoo>
