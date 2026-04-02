@@ -41,6 +41,47 @@
         <field name="view_mode">list,form</field>
         <field name="domain">[("is_raw_material","=",True)]</field>
     </record>
+    <!-- v2 actions -->
+    <record id="action_cf_haccp_temperature" model="ir.actions.act_window">
+        <field name="name">Registro Temperature</field>
+        <field name="res_model">cf.haccp.temperature.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_sanification" model="ir.actions.act_window">
+        <field name="name">Registro Sanificazione</field>
+        <field name="res_model">cf.haccp.sanification.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_ccp_log" model="ir.actions.act_window">
+        <field name="name">Registro CCP</field>
+        <field name="res_model">cf.haccp.ccp.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_etichettatura" model="ir.actions.act_window">
+        <field name="name">Check Etichettatura</field>
+        <field name="res_model">cf.haccp.etichettatura.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_tracciabilita" model="ir.actions.act_window">
+        <field name="name">Tracciabilita</field>
+        <field name="res_model">cf.haccp.tracciabilita</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_pest" model="ir.actions.act_window">
+        <field name="name">Pest Control</field>
+        <field name="res_model">cf.haccp.pest.control</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_formazione" model="ir.actions.act_window">
+        <field name="name">Registro Formazione</field>
+        <field name="res_model">cf.haccp.formazione</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_igiene" model="ir.actions.act_window">
+        <field name="name">Igiene Personale</field>
+        <field name="res_model">cf.haccp.igiene.personale</field>
+        <field name="view_mode">list,form</field>
+    </record>
     <menuitem id="menu_cf_haccp_root" name="HACCP" sequence="25"
               web_icon="casafolino_haccp,static/description/icon.png"/>
     <menuitem id="menu_cf_haccp_dashboard" name="Dashboard"
@@ -57,6 +98,25 @@
               parent="menu_cf_haccp_root" action="action_cf_haccp_calibration" sequence="5"/>
     <menuitem id="menu_cf_haccp_documents" name="Documenti"
               parent="menu_cf_haccp_root" action="action_cf_haccp_document" sequence="6"/>
+    <!-- v2 registri submenu -->
+    <menuitem id="menu_cf_haccp_registri" name="Registri v2"
+              parent="menu_cf_haccp_root" sequence="10"/>
+    <menuitem id="menu_cf_haccp_temperature" name="Temperature"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_temperature" sequence="1"/>
+    <menuitem id="menu_cf_haccp_sanification" name="Sanificazione"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_sanification" sequence="2"/>
+    <menuitem id="menu_cf_haccp_ccp_log" name="Log CCP"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_ccp_log" sequence="3"/>
+    <menuitem id="menu_cf_haccp_etichettatura" name="Etichettatura"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_etichettatura" sequence="4"/>
+    <menuitem id="menu_cf_haccp_tracciabilita" name="Tracciabilita"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_tracciabilita" sequence="5"/>
+    <menuitem id="menu_cf_haccp_pest" name="Pest Control"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_pest" sequence="6"/>
+    <menuitem id="menu_cf_haccp_formazione" name="Formazione"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_formazione" sequence="7"/>
+    <menuitem id="menu_cf_haccp_igiene" name="Igiene Personale"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_igiene" sequence="8"/>
     <menuitem id="menu_cf_haccp_config" name="Configurazione"
               parent="menu_cf_haccp_root" sequence="99" groups="base.group_system"/>
     <menuitem id="menu_cf_haccp_raw_materials" name="Materie Prime"

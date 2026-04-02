@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========== TEMPERATURE LOG ========== -->
+    <record id="view_cf_haccp_temperature_form" model="ir.ui.view">
+        <field name="name">cf.haccp.temperature.log.form</field>
+        <field name="model">cf.haccp.temperature.log</field>
+        <field name="arch" type="xml">
+            <form string="Rilevazione Temperature">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="esito" widget="badge"
+                                decoration-success="esito == 'ok'"
+                                decoration-danger="esito == 'ko'"
+                                nolabel="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Temperature Rilevate">
+                            <field name="date"/>
+                            <field name="frigo1_temp"/>
+                            <field name="frigo2_temp"/>
+                            <field name="ambiente_temp"/>
+                        </group>
+                        <group string="Operatore">
+                            <field name="operatore_id" widget="many2one_avatar_user"/>
+                        </group>
+                    </group>
+                    <group string="Note / Azioni Correttive" invisible="esito == 'ok'">
+                        <field name="note" nolabel="1" placeholder="Descrivere le azioni correttive adottate..."/>
+                    </group>
+                    <group string="Note">
+                        <field name="note" nolabel="1" invisible="esito != 'ok'"/>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_temperature_list" model="ir.ui.view">
+        <field name="name">cf.haccp.temperature.log.list</field>
+        <field name="model">cf.haccp.temperature.log</field>
+        <field name="arch" type="xml">
+            <list string="Registro Temperature"
+                  decoration-danger="esito == 'ko'"
+                  decoration-success="esito == 'ok'">
+                <field name="date"/>
+                <field name="frigo1_temp"/>
+                <field name="frigo2_temp"/>
+                <field name="ambiente_temp"/>
+                <field name="esito" widget="badge"
+                    decoration-success="esito == 'ok'"
+                    decoration-danger="esito == 'ko'"/>
+                <field name="operatore_id" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== SANIFICATION LOG ========== -->
+    <record id="view_cf_haccp_sanification_form" model="ir.ui.view">
+        <field name="name">cf.haccp.sanification.log.form</field>
+        <field name="model">cf.haccp.sanification.log</field>
+        <field name="arch" type="xml">
+            <form string="Registro Sanificazione">
+                <sheet>
+                    <group>
+                        <group string="Sanificazione">
+                            <field name="date"/>
+                            <field name="area"/>
+                            <field name="frequenza"/>
+                            <field name="prodotto_usato"/>
+                            <field name="eseguita"/>
+                        </group>
+                        <group string="Operatore">
+                            <field name="operatore_id" widget="many2one_avatar_user"/>
+                        </group>
+                    </group>
+                    <group string="Note">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_sanification_list" model="ir.ui.view">
+        <field name="name">cf.haccp.sanification.log.list</field>
+        <field name="model">cf.haccp.sanification.log</field>
+        <field name="arch" type="xml">
+            <list string="Registro Sanificazione"
+                  decoration-success="eseguita == True"
+                  decoration-warning="eseguita == False">
+                <field name="date"/>
+                <field name="area"/>
+                <field name="frequenza"/>
+                <field name="prodotto_usato"/>
+                <field name="eseguita" widget="boolean_toggle"/>
+                <field name="operatore_id" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== CCP LOG ========== -->
+    <record id="view_cf_haccp_ccp_log_form" model="ir.ui.view">
+        <field name="name">cf.haccp.ccp.log.form</field>
+        <field name="model">cf.haccp.ccp.log</field>
+        <field name="arch" type="xml">
+            <form string="Registro CCP">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="esito" widget="badge"
+                                decoration-success="esito == 'ok'"
+                                decoration-danger="esito == 'fuori_limite'"
+                                nolabel="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Dati CCP">
+                            <field name="date"/>
+                            <field name="ccp_type"/>
+                            <field name="production_id"/>
+                            <field name="operatore_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Misure Temperature">
+                            <field name="temperatura_ingresso"/>
+                            <field name="temperatura_min"/>
+                            <field name="temperatura_max"/>
+                            <field name="temperatura_uscita"/>
+                        </group>
+                    </group>
+                    <group string="Azione Correttiva" invisible="esito == 'ok'">
+                        <field name="azione_correttiva" nolabel="1"
+                            placeholder="Descrivere l'azione correttiva adottata..."/>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_ccp_log_list" model="ir.ui.view">
+        <field name="name">cf.haccp.ccp.log.list</field>
+        <field name="model">cf.haccp.ccp.log</field>
+        <field name="arch" type="xml">
+            <list string="Registro CCP"
+                  decoration-danger="esito == 'fuori_limite'"
+                  decoration-success="esito == 'ok'">
+                <field name="date"/>
+                <field name="ccp_type"/>
+                <field name="temperatura_ingresso"/>
+                <field name="temperatura_uscita"/>
+                <field name="temperatura_min"/>
+                <field name="temperatura_max"/>
+                <field name="esito" widget="badge"
+                    decoration-success="esito == 'ok'"
+                    decoration-danger="esito == 'fuori_limite'"/>
+                <field name="operatore_id" widget="many2one_avatar_user"/>
+                <field name="production_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== ETICHETTATURA LOG ========== -->
+    <record id="view_cf_haccp_etichettatura_form" model="ir.ui.view">
+        <field name="name">cf.haccp.etichettatura.log.form</field>
+        <field name="model">cf.haccp.etichettatura.log</field>
+        <field name="arch" type="xml">
+            <form string="Check Etichettatura">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="esito" widget="badge"
+                                decoration-success="esito == 'ok'"
+                                decoration-danger="esito == 'ko'"
+                                nolabel="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Prodotto">
+                            <field name="date"/>
+                            <field name="lot_id"/>
+                            <field name="product_id" readonly="1"/>
+                        </group>
+                        <group string="Operatore">
+                            <field name="operatore_id" widget="many2one_avatar_user"/>
+                        </group>
+                    </group>
+                    <group string="Checklist Etichetta">
+                        <field name="allergeni_ok" widget="boolean_toggle"/>
+                        <field name="lingue_ok" widget="boolean_toggle"/>
+                        <field name="lotto_presente" widget="boolean_toggle"/>
+                        <field name="scadenza_presente" widget="boolean_toggle"/>
+                    </group>
+                    <group string="Note">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_etichettatura_list" model="ir.ui.view">
+        <field name="name">cf.haccp.etichettatura.log.list</field>
+        <field name="model">cf.haccp.etichettatura.log</field>
+        <field name="arch" type="xml">
+            <list string="Check Etichettatura"
+                  decoration-danger="esito == 'ko'"
+                  decoration-success="esito == 'ok'">
+                <field name="date"/>
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="allergeni_ok"/>
+                <field name="lotto_presente"/>
+                <field name="scadenza_presente"/>
+                <field name="esito" widget="badge"
+                    decoration-success="esito == 'ok'"
+                    decoration-danger="esito == 'ko'"/>
+                <field name="operatore_id" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== TRACCIABILITA ========== -->
+    <record id="view_cf_haccp_tracciabilita_form" model="ir.ui.view">
+        <field name="name">cf.haccp.tracciabilita.form</field>
+        <field name="model">cf.haccp.tracciabilita</field>
+        <field name="arch" type="xml">
+            <form string="Scheda Tracciabilita">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="lotto_pf"/>
+                        <h1><field name="lotto_pf"/></h1>
+                    </div>
+                    <group>
+                        <group string="Lotti">
+                            <field name="date"/>
+                            <field name="lotto_mp"/>
+                            <field name="lotto_pf"/>
+                            <field name="production_id"/>
+                        </group>
+                        <group string="Destinatari">
+                            <field name="partner_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Note">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_tracciabilita_list" model="ir.ui.view">
+        <field name="name">cf.haccp.tracciabilita.list</field>
+        <field name="model">cf.haccp.tracciabilita</field>
+        <field name="arch" type="xml">
+            <list string="Tracciabilita">
+                <field name="date"/>
+                <field name="lotto_mp"/>
+                <field name="lotto_pf"/>
+                <field name="production_id"/>
+                <field name="partner_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== PEST CONTROL ========== -->
+    <record id="view_cf_haccp_pest_form" model="ir.ui.view">
+        <field name="name">cf.haccp.pest.control.form</field>
+        <field name="model">cf.haccp.pest.control</field>
+        <field name="arch" type="xml">
+            <form string="Pest Control">
+                <sheet>
+                    <group>
+                        <group string="Ispezione">
+                            <field name="date"/>
+                            <field name="azienda_esterna"/>
+                            <field name="prossima_visita"/>
+                            <field name="operatore_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Checklist">
+                            <field name="esche_integre" widget="boolean_toggle"/>
+                            <field name="tracce_infestanti" widget="boolean_toggle"/>
+                            <field name="mappa_aggiornata" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Note / Osservazioni">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_pest_list" model="ir.ui.view">
+        <field name="name">cf.haccp.pest.control.list</field>
+        <field name="model">cf.haccp.pest.control</field>
+        <field name="arch" type="xml">
+            <list string="Pest Control"
+                  decoration-warning="tracce_infestanti == True">
+                <field name="date"/>
+                <field name="esche_integre"/>
+                <field name="tracce_infestanti"/>
+                <field name="mappa_aggiornata"/>
+                <field name="azienda_esterna"/>
+                <field name="prossima_visita"/>
+                <field name="operatore_id" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== FORMAZIONE ========== -->
+    <record id="view_cf_haccp_formazione_form" model="ir.ui.view">
+        <field name="name">cf.haccp.formazione.form</field>
+        <field name="model">cf.haccp.formazione</field>
+        <field name="arch" type="xml">
+            <form string="Registro Formazione">
+                <sheet>
+                    <group>
+                        <group string="Sessione Formativa">
+                            <field name="date"/>
+                            <field name="argomento"/>
+                            <field name="docente"/>
+                            <field name="durata_ore"/>
+                            <field name="esito" widget="badge"
+                                decoration-success="esito == 'superato'"
+                                decoration-danger="esito == 'non_superato'"/>
+                        </group>
+                        <group string="Partecipanti">
+                            <field name="partecipanti_ids" widget="many2many_tags"
+                                nolabel="1"/>
+                        </group>
+                    </group>
+                    <group string="Note">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_formazione_list" model="ir.ui.view">
+        <field name="name">cf.haccp.formazione.list</field>
+        <field name="model">cf.haccp.formazione</field>
+        <field name="arch" type="xml">
+            <list string="Registro Formazione">
+                <field name="date"/>
+                <field name="argomento"/>
+                <field name="docente"/>
+                <field name="durata_ore"/>
+                <field name="partecipanti_ids" widget="many2many_tags"/>
+                <field name="esito" widget="badge"
+                    decoration-success="esito == 'superato'"
+                    decoration-danger="esito == 'non_superato'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== IGIENE PERSONALE ========== -->
+    <record id="view_cf_haccp_igiene_form" model="ir.ui.view">
+        <field name="name">cf.haccp.igiene.personale.form</field>
+        <field name="model">cf.haccp.igiene.personale</field>
+        <field name="arch" type="xml">
+            <form string="Check Igiene Personale">
+                <sheet>
+                    <group>
+                        <group string="Dati">
+                            <field name="date"/>
+                            <field name="operatore_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Checklist Igiene">
+                            <field name="mani_lavate" widget="boolean_toggle"/>
+                            <field name="dpi_ok" widget="boolean_toggle"/>
+                            <field name="no_gioielli" widget="boolean_toggle"/>
+                            <field name="stato_salute_ok" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_igiene_list" model="ir.ui.view">
+        <field name="name">cf.haccp.igiene.personale.list</field>
+        <field name="model">cf.haccp.igiene.personale</field>
+        <field name="arch" type="xml">
+            <list string="Check Igiene Personale">
+                <field name="date"/>
+                <field name="operatore_id" widget="many2one_avatar_user"/>
+                <field name="mani_lavate"/>
+                <field name="dpi_ok"/>
+                <field name="no_gioielli"/>
+                <field name="stato_salute_ok"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>
