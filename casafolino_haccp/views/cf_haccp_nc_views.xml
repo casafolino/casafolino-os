@@ -77,7 +77,7 @@
                 <field name="state"/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="cf-crm-card #{record.severity.raw_value == 'critical' ? 'card-rotting-dead' : record.severity.raw_value == 'high' ? 'card-rotting-danger' : record.severity.raw_value == 'medium' ? 'card-rotting-warn' : 'card-rotting-ok'}">
+                        <div class="cf-crm-card card-rotting-warn">
                             <div class="cf-card-header">
                                 <span class="cf-card-title"><field name="reference"/></span>
                                 <field name="severity" widget="badge"

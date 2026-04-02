@@ -19,7 +19,7 @@
                                 <field name="name"/>
                             </div>
                             <div class="mt-1">
-                                <span t-attf-class="badge #{record.products_count.raw_value > 0 ? 'bg-warning text-dark' : 'bg-success'}"
+                                <span class="badge bg-warning text-dark"
                                       style="font-size:10px;">
                                     <t t-esc="record.products_count.raw_value"/> prodotti
                                 </span>
