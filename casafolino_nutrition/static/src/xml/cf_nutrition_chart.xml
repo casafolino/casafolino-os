@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <t t-name="casafolino_nutrition.CfNutritionChart">
+        <div class="cf-nutrition-chart">
+            <t t-if="hasData">
+                <div class="cf-chart-container" style="display:flex; align-items:center; gap:16px;">
+                    <canvas t-ref="canvas" width="140" height="140"/>
+                    <div class="cf-chart-legend">
+                        <t t-foreach="legendItems" t-as="item" t-key="item.key">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:12px;">
+                                <span t-attf-style="width:12px; height:12px; border-radius:2px; background:{{ item.color }}; display:inline-block; flex-shrink:0;"/>
+                                <span style="color:#495057;">
+                                    <t t-esc="item.label"/>: <strong><t t-esc="item.pct"/>%</strong>
+                                </span>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </t>
+            <t t-else="">
+                <div style="text-align:center; color:#adb5bd; font-size:12px; padding:16px;">
+                    Calcola i valori per visualizzare il grafico
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

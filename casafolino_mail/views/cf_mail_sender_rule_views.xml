@@ -124,11 +124,11 @@ raise UserError('Mittenti esclusi: %d. Tutte le loro email sono state eliminate.
                 <button name="action_keep_sender" type="object"
                         string="Tieni mittente"
                         class="btn-success"
-                        invisible="not from_address"/>
+                        invisible="direction == 'out'"/>
                 <button name="action_exclude_sender" type="object"
                         string="Escludi mittente"
                         class="btn-danger"
-                        invisible="not from_address"
+                        invisible="direction == 'out'"
                         confirm="Eliminare tutte le email di questo mittente e escluderlo dalle sync future?"/>
             </xpath>
         </field>
