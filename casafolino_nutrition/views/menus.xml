@@ -7,24 +7,25 @@
     </record>
 
     <record id="action_cf_nutrition_ingredients" model="ir.actions.act_window">
-        <field name="name">Ingredienti Nutrizionali</field>
+        <field name="name">Database Ingredienti</field>
         <field name="res_model">cf.nutrition.ingredient</field>
         <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_source': 0}</field>
     </record>
 
     <record id="action_cf_nutrition_boms" model="ir.actions.act_window">
-        <field name="name">Etichette Nutrizionali</field>
+        <field name="name">Etichette Ricette</field>
         <field name="res_model">cf.nutrition.bom</field>
         <field name="view_mode">list,form</field>
     </record>
 
     <menuitem id="menu_cf_nutrition_root" name="Nutrizione" sequence="28"/>
-    <menuitem id="menu_cf_nutrition_ingredients" name="Ingredienti"
+    <menuitem id="menu_cf_nutrition_boms" name="Ricette"
               parent="menu_cf_nutrition_root"
-              action="action_cf_nutrition_ingredients" sequence="1"/>
-    <menuitem id="menu_cf_nutrition_boms" name="Etichette Ricette"
+              action="action_cf_nutrition_boms" sequence="1"/>
+    <menuitem id="menu_cf_nutrition_ingredients" name="Database Ingredienti"
               parent="menu_cf_nutrition_root"
-              action="action_cf_nutrition_boms" sequence="2"/>
+              action="action_cf_nutrition_ingredients" sequence="2"/>
     <menuitem id="menu_cf_nutrition_regulations" name="Normative"
               parent="menu_cf_nutrition_root"
               action="action_cf_nutrition_regulations" sequence="3"/>

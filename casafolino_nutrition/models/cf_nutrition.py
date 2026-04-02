@@ -1,40 +1,43 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
+from datetime import timedelta
+
+import requests
+
 from odoo import models, fields, api
 
+_logger = logging.getLogger(__name__)
 
-class CfNutritionIngredient(models.Model):
-    _name = "cf.nutrition.ingredient"
-    _description = "Valori Nutrizionali Ingrediente"
-    _rec_name = "product_id"
+# ─── API constants ────────────────────────────────────────────────────────────
+_USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
+_USDA_API_KEY = "DEMO_KEY"  # Replace with real key in production
+_OFF_API_URL = "https://world.openfoodfacts.org/cgi/search.pl"
+_API_TIMEOUT = 8  # seconds
 
-    product_id = fields.Many2one("product.template", required=True, ondelete="cascade")
-    # Core EU nutrients (per 100g)
-    energy_kcal = fields.Float(string="Energia (kcal/100g)")
-    energy_kj = fields.Float(string="Energia (kJ/100g)")
-    fat = fields.Float(string="Grassi (g/100g)")
-    saturated_fat = fields.Float(string="Saturi (g/100g)")
-    trans_fat_g = fields.Float(string="Grassi Trans (g/100g)")
-    carbs = fields.Float(string="Carboidrati (g/100g)")
-    sugars = fields.Float(string="Zuccheri (g/100g)")
-    added_sugars_g = fields.Float(string="Zuccheri Aggiunti (g/100g)")
-    fiber = fields.Float(string="Fibra (g/100g)")
-    protein = fields.Float(string="Proteine (g/100g)")
-    salt = fields.Float(string="Sale (g/100g)")
-    # Extended (mg per 100g — US/Canada/AUS mandatory)
-    sodium_mg = fields.Float(string="Sodio (mg/100g)")
-    cholesterol_mg = fields.Float(string="Colesterolo (mg/100g)")
-    potassium_mg = fields.Float(string="Potassio (mg/100g)")
-    calcium_mg = fields.Float(string="Calcio (mg/100g)")
-    iron_mg = fields.Float(string="Ferro (mg/100g)")
-    vitamin_d_mcg = fields.Float(string="Vitamina D (mcg/100g)")
-    fdc_id = fields.Char(string="USDA FDC ID")
-    notes = fields.Text()
+# USDA nutrient IDs we care about
+_USDA_NUTRIENT_IDS = {
+    1008: 'energy_kcal',   # Energy kcal
+    1062: 'energy_kj',     # Energy kJ
+    1004: 'fat',           # Total lipid (fat)
+    1258: 'saturated_fat', # Fatty acids, total saturated
+    1257: 'trans_fat_g',   # Fatty acids, total trans
+    1005: 'carbs',         # Carbohydrate, by difference
+    2000: 'sugars',        # Sugars, total including NLEA
+    1079: 'fiber',         # Fiber, total dietary
+    1003: 'protein',       # Protein
+    1093: '_sodium_mg_raw',# Sodium, Na (mg) — converted to salt separately
+    1253: 'cholesterol_mg',# Cholesterol
+    1092: 'potassium_mg',  # Potassium, K
+    1087: 'calcium_mg',    # Calcium, Ca
+    1089: 'iron_mg',       # Iron, Fe
+    1110: 'vitamin_d_mcg', # Vitamin D (D2 + D3)
+    1162: '_vitc_mg_raw',  # Vitamin C (mg)
+}
 
 
-# ─── Reference constants ────────────────────────────────────────────────────
+# ─── Reference constants ─────────────────────────────────────────────────────
 
-# EU Reference Intakes (Reg. UE 1169/2011, Annex XIII)
 _EU_RI = {
     'energy_kcal': 2000.0,
     'energy_kj': 8400.0,
@@ -47,7 +50,6 @@ _EU_RI = {
     'fiber': 25.0,
 }
 
-# FDA Daily Values (21 CFR 101.9, 2020 update) — per serving
 _US_DV = {
     'fat': 78.0,
     'saturated_fat': 20.0,
@@ -63,7 +65,6 @@ _US_DV = {
     'potassium_mg': 4700.0,
 }
 
-# UK traffic light thresholds (per 100g): (green_max, amber_max)
 _UK_TL = {
     'fat': (3.0, 17.5),
     'saturated_fat': (1.5, 5.0),
@@ -81,6 +82,236 @@ def _tl_color(value, thresholds):
         return 'amber'
     return 'red'
 
+
+# ─── Ingredient ──────────────────────────────────────────────────────────────
+
+class CfNutritionIngredient(models.Model):
+    _name = "cf.nutrition.ingredient"
+    _description = "Valori Nutrizionali Ingrediente"
+    _rec_name = "product_id"
+
+    product_id = fields.Many2one("product.template", required=True,
+                                  ondelete="cascade")
+    # ── sync metadata ─────────────────────────────────────────────────────────
+    data_source = fields.Selection([
+        ('usda', 'USDA FoodData Central'),
+        ('openfoodfacts', 'Open Food Facts'),
+        ('crea', 'CREA / Alimentinutrizione'),
+        ('manuale', 'Inserimento Manuale'),
+    ], string="Fonte Dati", default='manuale')
+    external_id = fields.Char(string="ID Esterno (fonte)")
+    last_sync = fields.Datetime(string="Ultima Sincronizzazione")
+    sync_name = fields.Char(string="Nome usato per ricerca esterna",
+                             help="Lascia vuoto per usare il nome del prodotto Odoo")
+
+    # ── Core EU nutrients (per 100g) ──────────────────────────────────────────
+    energy_kcal = fields.Float(string="Energia (kcal/100g)")
+    energy_kj = fields.Float(string="Energia (kJ/100g)")
+    fat = fields.Float(string="Grassi (g/100g)")
+    saturated_fat = fields.Float(string="Saturi (g/100g)")
+    trans_fat_g = fields.Float(string="Grassi Trans (g/100g)")
+    carbs = fields.Float(string="Carboidrati (g/100g)")
+    sugars = fields.Float(string="Zuccheri (g/100g)")
+    added_sugars_g = fields.Float(string="Zuccheri Aggiunti (g/100g)")
+    fiber = fields.Float(string="Fibra (g/100g)")
+    protein = fields.Float(string="Proteine (g/100g)")
+    salt = fields.Float(string="Sale (g/100g)")
+
+    # ── Extended (mg per 100g — US/Canada/AUS mandatory) ─────────────────────
+    sodium_mg = fields.Float(string="Sodio (mg/100g)")
+    cholesterol_mg = fields.Float(string="Colesterolo (mg/100g)")
+    potassium_mg = fields.Float(string="Potassio (mg/100g)")
+    calcium_mg = fields.Float(string="Calcio (mg/100g)")
+    iron_mg = fields.Float(string="Ferro (mg/100g)")
+    vitamin_d_mcg = fields.Float(string="Vitamina D (mcg/100g)")
+    vitamina_c = fields.Float(string="Vitamina C (mg/100g)")
+
+    # ── Legacy USDA reference ─────────────────────────────────────────────────
+    fdc_id = fields.Char(string="USDA FDC ID")
+    notes = fields.Text()
+
+    # ── API helpers ───────────────────────────────────────────────────────────
+
+    def _get_search_name(self):
+        return self.sync_name or (self.product_id.name if self.product_id else '')
+
+    def _apply_nutrients(self, data):
+        """Write nutrient dict to self, set last_sync."""
+        writable = {k: v for k, v in data.items() if hasattr(self, k) and v is not None}
+        writable['last_sync'] = fields.Datetime.now()
+        self.write(writable)
+
+    def _fetch_openfoodfacts(self, name):
+        """Call Open Food Facts API. Returns nutrient dict or {}."""
+        try:
+            resp = requests.get(_OFF_API_URL, params={
+                'search_terms': name,
+                'search_simple': 1,
+                'action': 'process',
+                'json': 1,
+                'page_size': 1,
+                'fields': 'nutriments,product_name,id',
+            }, timeout=_API_TIMEOUT)
+            resp.raise_for_status()
+            data = resp.json()
+            products = data.get('products', [])
+            if not products:
+                return {}
+            n = products[0].get('nutriments', {})
+            product_id_off = products[0].get('id', '')
+            sodium_g = n.get('sodium_100g', 0) or 0
+            result = {
+                'energy_kcal': n.get('energy-kcal_100g') or 0,
+                'energy_kj': n.get('energy-kj_100g') or n.get('energy_100g') or 0,
+                'fat': n.get('fat_100g') or 0,
+                'saturated_fat': n.get('saturated-fat_100g') or 0,
+                'trans_fat_g': n.get('trans-fat_100g') or 0,
+                'carbs': n.get('carbohydrates_100g') or 0,
+                'sugars': n.get('sugars_100g') or 0,
+                'fiber': n.get('fiber_100g') or 0,
+                'protein': n.get('proteins_100g') or 0,
+                'salt': n.get('salt_100g') or 0,
+                'sodium_mg': round(sodium_g * 1000, 1),
+                'cholesterol_mg': round((n.get('cholesterol_100g') or 0) * 1000, 1),
+                'calcium_mg': round((n.get('calcium_100g') or 0) * 1000, 1),
+                'iron_mg': round((n.get('iron_100g') or 0) * 1000, 1),
+                'vitamin_d_mcg': round((n.get('vitamin-d_100g') or 0) * 1000000, 2),
+                'vitamina_c': round((n.get('vitamin-c_100g') or 0) * 1000, 1),
+                'data_source': 'openfoodfacts',
+                'external_id': product_id_off,
+            }
+            return result
+        except Exception as e:
+            _logger.warning("Open Food Facts API error for '%s': %s", name, e)
+            return {}
+
+    def _fetch_usda(self, name):
+        """Call USDA FoodData Central API. Returns nutrient dict or {}."""
+        try:
+            resp = requests.get(_USDA_API_URL, params={
+                'query': name,
+                'api_key': _USDA_API_KEY,
+                'pageSize': 1,
+                'dataType': 'SR Legacy,Foundation',
+            }, timeout=_API_TIMEOUT)
+            resp.raise_for_status()
+            data = resp.json()
+            foods = data.get('foods', [])
+            if not foods:
+                return {}
+            food = foods[0]
+            fdc_id = str(food.get('fdcId', ''))
+            nutrients = {n['nutrientId']: n.get('value', 0)
+                         for n in food.get('foodNutrients', [])
+                         if 'nutrientId' in n}
+            result = {}
+            for nid, field in _USDA_NUTRIENT_IDS.items():
+                val = nutrients.get(nid, 0) or 0
+                if field == '_sodium_mg_raw':
+                    result['sodium_mg'] = val
+                    result['salt'] = round(val * 2.5 / 1000, 3)
+                elif field == '_vitc_mg_raw':
+                    result['vitamina_c'] = val
+                else:
+                    result[field] = val
+            result['data_source'] = 'usda'
+            result['external_id'] = fdc_id
+            result['fdc_id'] = fdc_id
+            return result
+        except Exception as e:
+            _logger.warning("USDA API error for '%s': %s", name, e)
+            return {}
+
+    def action_sync_openfoodfacts(self):
+        self.ensure_one()
+        name = self._get_search_name()
+        if not name:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {'title': 'Attenzione', 'message': 'Imposta un prodotto o sync_name prima di sincronizzare.', 'type': 'warning'},
+            }
+        data = self._fetch_openfoodfacts(name)
+        if not data:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {'title': 'Open Food Facts', 'message': f'Nessun risultato per "{name}".', 'type': 'warning'},
+            }
+        self._apply_nutrients(data)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': 'Open Food Facts', 'message': f'Valori aggiornati da Open Food Facts (ID: {data.get("external_id","")}).', 'type': 'success'},
+        }
+
+    def action_sync_usda(self):
+        self.ensure_one()
+        name = self._get_search_name()
+        if not name:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {'title': 'Attenzione', 'message': 'Imposta un prodotto o sync_name prima di sincronizzare.', 'type': 'warning'},
+            }
+        data = self._fetch_usda(name)
+        if not data:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {'title': 'USDA FDC', 'message': f'Nessun risultato per "{name}".', 'type': 'warning'},
+            }
+        self._apply_nutrients(data)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': 'USDA FDC', 'message': f'Valori aggiornati da USDA (FDC ID: {data.get("fdc_id","")}).', 'type': 'success'},
+        }
+
+    def action_resync(self):
+        self.ensure_one()
+        if self.data_source == 'openfoodfacts':
+            return self.action_sync_openfoodfacts()
+        elif self.data_source == 'usda':
+            return self.action_sync_usda()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': 'Resync', 'message': 'Fonte dati manuale — scegli Open Food Facts o USDA.', 'type': 'info'},
+        }
+
+    def action_sync_all_stale(self):
+        """Pulsante massivo: sincronizza tutti gli ingredienti con last_sync > 30gg o mai sincronizzati."""
+        self._cron_sync_ingredients()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': 'Sincronizzazione completata', 'message': 'Aggiornamento completato per tutti gli ingredienti scaduti.', 'type': 'success'},
+        }
+
+    @api.model
+    def _cron_sync_ingredients(self):
+        """Cron giornaliero: aggiorna ingredienti con last_sync > 30 giorni o mai sincronizzati."""
+        cutoff = fields.Datetime.now() - timedelta(days=30)
+        stale = self.search([
+            '|',
+            ('last_sync', '=', False),
+            ('last_sync', '<', cutoff),
+            ('data_source', '!=', 'manuale'),
+        ])
+        _logger.info("CRON nutrition sync: %d ingredienti da aggiornare", len(stale))
+        for ingredient in stale:
+            try:
+                if ingredient.data_source == 'openfoodfacts':
+                    ingredient.action_sync_openfoodfacts()
+                elif ingredient.data_source == 'usda':
+                    ingredient.action_sync_usda()
+            except Exception as e:
+                _logger.error("Sync fallita per ingrediente %s: %s",
+                              ingredient.product_id.name, e)
+
+
+# ─── Reference constants (exported for bom model) ────────────────────────────
 
 class CfNutritionBom(models.Model):
     _name = "cf.nutrition.bom"
@@ -268,7 +499,6 @@ class CfNutritionBom(models.Model):
             if not rec.energy_kcal:
                 rec.nutri_score = False
                 continue
-            # Negative points (OFCOM model, simplified)
             e = rec.energy_kcal
             neg = (0 if e <= 335 else 1 if e <= 670 else 2 if e <= 1005 else
                    3 if e <= 1340 else 4 if e <= 1675 else 5 if e <= 2010 else
@@ -289,7 +519,6 @@ class CfNutritionBom(models.Model):
                     3 if sl <= 0.8 else 4 if sl <= 1.0 else 5 if sl <= 1.2 else
                     6 if sl <= 1.4 else 7 if sl <= 1.6 else 8 if sl <= 1.8 else
                     9 if sl <= 2.0 else 10)
-            # Positive points
             pos = min(5, int((rec.fiber or 0) / 0.9)) + min(5, int((rec.protein or 0) / 1.6))
             score = neg - pos
             rec.nutri_score = ("A" if score <= -1 else "B" if score <= 2
@@ -319,11 +548,11 @@ class CfNutritionBom(models.Model):
             else:
                 rec.macro_chart_data = '{}'
 
-    # ── Related BoM lines for Tab 3 ───────────────────────────────────────────
+    # ── Related BoM lines for Tab BOM ─────────────────────────────────────────
     bom_line_ids = fields.One2many(related='bom_id.bom_line_ids',
                                     string="Ingredienti BoM")
 
-    # ── Regulation display fields for Tab 2 ───────────────────────────────────
+    # ── Regulation display fields ──────────────────────────────────────────────
     regulation_notes = fields.Text(related='regulation_id.notes',
                                     string="Note Normativa")
     regulation_ref_url = fields.Char(related='regulation_id.reference_url',
@@ -342,58 +571,128 @@ class CfNutritionBom(models.Model):
     ]
 
     def _compute_from_bom(self, bom):
-        """Calcola media pesata dei valori nutrizionali dalle righe BoM."""
+        """Calcola media pesata dei valori nutrizionali dalle righe BoM.
+        Restituisce (totals_dict, missing_names_list).
+        """
         total_qty = sum(line.product_qty for line in bom.bom_line_ids)
         if not total_qty:
-            return {}
+            return {}, []
         totals = {f: 0.0 for f in self._NUTRIENT_FIELDS}
+        missing = []
         for line in bom.bom_line_ids:
             ingredient = self.env['cf.nutrition.ingredient'].search(
                 [('product_id', '=', line.product_id.product_tmpl_id.id)],
                 limit=1)
-            if not ingredient:
+            if not ingredient or not ingredient.energy_kcal:
+                missing.append(line.product_id.display_name)
                 continue
             ratio = line.product_qty / total_qty
             for f in self._NUTRIENT_FIELDS:
                 totals[f] += getattr(ingredient, f, 0.0) * ratio
-        return totals
+        return totals, missing
 
-    # ── onchange: seleziona prodotto → trova BoM → calcola ───────────────────
     @api.onchange('product_id')
     def _onchange_product_id(self):
         if not self.product_id:
             return
-        # Cerca la BoM principale per questo prodotto
         bom = self.env['mrp.bom'].search(
             [('product_tmpl_id', '=', self.product_id.id),
              ('active', '=', True)], limit=1)
         if bom:
             self.bom_id = bom
-            totals = self._compute_from_bom(bom)
+            # Auto-crea ingredienti mancanti nella BoM
+            cutoff = fields.Datetime.now() - timedelta(days=30)
+            for line in bom.bom_line_ids:
+                tmpl_id = line.product_id.product_tmpl_id.id
+                ingredient = self.env['cf.nutrition.ingredient'].search(
+                    [('product_id', '=', tmpl_id)], limit=1)
+                if not ingredient:
+                    self.env['cf.nutrition.ingredient'].create({
+                        'product_id': tmpl_id,
+                        'sync_name': line.product_id.display_name,
+                        'data_source': 'manuale',
+                    })
+            totals, missing = self._compute_from_bom(bom)
             for f, v in totals.items():
                 setattr(self, f, round(v, 3))
+            if missing:
+                return {'warning': {
+                    'title': 'Valori nutrizionali mancanti',
+                    'message': 'Mancano valori per: ' + ', '.join(missing),
+                }}
             return
-        # Nessuna BoM: prova da scheda ingrediente singolo
         ingredient = self.env['cf.nutrition.ingredient'].search(
             [('product_id', '=', self.product_id.id)], limit=1)
         if ingredient:
             for f in self._NUTRIENT_FIELDS:
                 setattr(self, f, getattr(ingredient, f, 0.0))
 
-    # ── action: ricalcola da BoM (pulsante manuale) ───────────────────────────
     def action_compute(self):
         self.ensure_one()
         bom = self.bom_id
         if not bom:
             return
-        totals = self._compute_from_bom(bom)
+        totals, missing = self._compute_from_bom(bom)
         if not totals:
             return
         totals['last_computed'] = fields.Datetime.now()
         self.write(totals)
+        if missing:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Attenzione — valori mancanti',
+                    'message': 'Mancano valori per: ' + ', '.join(missing),
+                    'type': 'warning',
+                },
+            }
 
+
+# ─── mrp.bom inherit ─────────────────────────────────────────────────────────
 
 class MrpBomNutrition(models.Model):
     _inherit = "mrp.bom"
+
     nutrition_ids = fields.One2many("cf.nutrition.bom", "bom_id",
                                      string="Etichette Nutrizionali")
+
+
+# ─── product.template inherit ─────────────────────────────────────────────────
+
+class ProductTemplateNutrition(models.Model):
+    _inherit = "product.template"
+
+    nutrition_bom_ids = fields.Many2many(
+        "cf.nutrition.bom",
+        compute="_compute_nutrition_bom_ids",
+        string="Etichette Nutrizionali",
+    )
+
+    def _compute_nutrition_bom_ids(self):
+        for rec in self:
+            boms = self.env["mrp.bom"].search(
+                [("product_tmpl_id", "=", rec.id)])
+            nutrition = self.env["cf.nutrition.bom"].search([
+                '|',
+                ("bom_id", "in", boms.ids),
+                ("product_id", "=", rec.id),
+            ])
+            rec.nutrition_bom_ids = nutrition
+
+    def action_create_nutrition(self):
+        """Crea una nuova etichetta nutrizionale per questo prodotto."""
+        self.ensure_one()
+        bom = self.env["mrp.bom"].search(
+            [("product_tmpl_id", "=", self.id), ("active", "=", True)], limit=1)
+        vals = {'product_id': self.id}
+        if bom:
+            vals['bom_id'] = bom.id
+        nutrition = self.env["cf.nutrition.bom"].create(vals)
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'cf.nutrition.bom',
+            'view_mode': 'form',
+            'res_id': nutrition.id,
+            'target': 'current',
+        }

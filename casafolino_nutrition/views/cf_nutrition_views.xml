@@ -61,17 +61,52 @@
         <field name="name">cf.nutrition.ingredient.list</field>
         <field name="model">cf.nutrition.ingredient</field>
         <field name="arch" type="xml">
-            <list string="Ingredienti Nutrizionali">
+            <list string="Database Ingredienti Nutrizionali"
+                  decoration-warning="not last_sync"
+                  decoration-muted="data_source == 'manuale'">
                 <field name="product_id"/>
                 <field name="energy_kcal"/>
-                <field name="fat"/>
-                <field name="saturated_fat"/>
-                <field name="carbs"/>
-                <field name="sugars"/>
                 <field name="protein"/>
+                <field name="fat"/>
+                <field name="carbs"/>
                 <field name="salt"/>
-                <field name="fdc_id" optional="show"/>
+                <field name="data_source" widget="badge"
+                    decoration-info="data_source == 'openfoodfacts'"
+                    decoration-success="data_source == 'usda'"
+                    decoration-warning="data_source == 'manuale'"
+                    decoration-primary="data_source == 'crea'"/>
+                <field name="last_sync" optional="show"/>
+                <field name="external_id" optional="hide"/>
+                <field name="fdc_id" optional="hide"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_cf_nutrition_ingredient_search" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.search</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <search string="Cerca ingrediente">
+                <field name="product_id"/>
+                <field name="sync_name"/>
+                <field name="external_id"/>
+                <separator/>
+                <filter string="Open Food Facts" name="filter_off"
+                        domain="[('data_source','=','openfoodfacts')]"/>
+                <filter string="USDA" name="filter_usda"
+                        domain="[('data_source','=','usda')]"/>
+                <filter string="Manuale" name="filter_manuale"
+                        domain="[('data_source','=','manuale')]"/>
+                <separator/>
+                <filter string="Mai sincronizzati" name="filter_never_synced"
+                        domain="[('last_sync','=',False)]"/>
+                <filter string="Senza energia (kcal)" name="filter_no_kcal"
+                        domain="[('energy_kcal','=',0)]"/>
+                <group string="Raggruppa per" expand="0">
+                    <filter string="Fonte dati" name="group_source"
+                            context="{'group_by':'data_source'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -80,10 +115,38 @@
         <field name="model">cf.nutrition.ingredient</field>
         <field name="arch" type="xml">
             <form string="Valori Nutrizionali Ingrediente">
+                <header>
+                    <button name="action_sync_openfoodfacts" type="object"
+                            string="Cerca in Open Food Facts" class="btn-primary"/>
+                    <button name="action_sync_usda" type="object"
+                            string="Cerca in USDA" class="btn-primary"/>
+                    <button name="action_resync" type="object"
+                            string="Aggiorna valori" class="btn-secondary"
+                            invisible="data_source == 'manuale'"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="product_id"/></h1>
+                        <div>
+                            <field name="data_source" widget="badge"
+                                decoration-info="data_source == 'openfoodfacts'"
+                                decoration-success="data_source == 'usda'"
+                                decoration-warning="data_source == 'manuale'"
+                                decoration-primary="data_source == 'crea'"
+                                nolabel="1"/>
+                        </div>
                     </div>
+                    <group>
+                        <group string="Sincronizzazione">
+                            <field name="sync_name"
+                                placeholder="Nome ricerca (lascia vuoto = nome prodotto)"/>
+                            <field name="external_id" readonly="1"/>
+                            <field name="last_sync" readonly="1"/>
+                        </group>
+                        <group string="Riferimento">
+                            <field name="fdc_id"/>
+                        </group>
+                    </group>
                     <group string="Valori base per 100g (EU obbligatori)">
                         <group>
                             <field name="energy_kcal"/>
@@ -101,11 +164,12 @@
                             <field name="salt"/>
                         </group>
                     </group>
-                    <group string="Valori estesi per 100g (US/Canada/AUS)">
+                    <group string="Valori estesi per 100g (US/Canada/AUS/micronutrienti)">
                         <group>
                             <field name="sodium_mg"/>
                             <field name="cholesterol_mg"/>
                             <field name="potassium_mg"/>
+                            <field name="vitamina_c"/>
                         </group>
                         <group>
                             <field name="calcium_mg"/>
@@ -113,9 +177,8 @@
                             <field name="vitamin_d_mcg"/>
                         </group>
                     </group>
-                    <group string="Riferimento USDA">
-                        <field name="fdc_id"/>
-                        <field name="notes" placeholder="Note..."/>
+                    <group string="Note">
+                        <field name="notes" nolabel="1" placeholder="Note..."/>
                     </group>
                 </sheet>
             </form>
