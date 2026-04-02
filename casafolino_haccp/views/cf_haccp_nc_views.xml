@@ -42,6 +42,7 @@
                             <field name="date"/>
                             <field name="reported_by" widget="many2one_avatar_user"/>
                             <field name="assigned_to" widget="many2one_avatar_user"/>
+                            <field name="responsabile_id" widget="many2one_avatar_user"/>
                         </group>
                     </group>
                     <notebook>
@@ -53,9 +54,19 @@
                             invisible="state not in ('action','verified','closed')">
                             <field name="corrective_action" nolabel="1"
                                 placeholder="Descrivere l'azione correttiva intrapresa..."/>
+                            <separator string="Azione Correttiva Dettagliata"/>
+                            <field name="azione_correttiva" nolabel="1"/>
+                            <separator string="Verifica Efficacia"/>
+                            <field name="verifica_efficacia" nolabel="1"/>
+                            <group>
+                                <field name="data_chiusura"/>
+                            </group>
                         </page>
                         <page string="Note" name="notes">
                             <field name="notes" nolabel="1"/>
+                            <group>
+                                <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
