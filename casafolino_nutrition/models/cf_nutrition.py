@@ -333,49 +333,20 @@ class CfNutritionBom(models.Model):
     regulation_updated = fields.Date(related='regulation_id.last_updated',
                                       string="Normativa aggiornata al")
 
-    # ── onchange: auto-fill from single product ────────────────────────────────
-    @api.onchange('product_id')
-    def _onchange_product_id(self):
-        if not self.product_id:
-            return
-        ingredient = self.env['cf.nutrition.ingredient'].search(
-            [('product_id', '=', self.product_id.id)], limit=1)
-        if not ingredient:
-            return
-        self.energy_kcal = ingredient.energy_kcal
-        self.energy_kj = ingredient.energy_kj
-        self.fat = ingredient.fat
-        self.saturated_fat = ingredient.saturated_fat
-        self.trans_fat_g = ingredient.trans_fat_g
-        self.carbs = ingredient.carbs
-        self.sugars = ingredient.sugars
-        self.added_sugars_g = ingredient.added_sugars_g
-        self.fiber = ingredient.fiber
-        self.protein = ingredient.protein
-        self.salt = ingredient.salt
-        self.sodium_mg = ingredient.sodium_mg
-        self.cholesterol_mg = ingredient.cholesterol_mg
-        self.potassium_mg = ingredient.potassium_mg
-        self.calcium_mg = ingredient.calcium_mg
-        self.iron_mg = ingredient.iron_mg
-        self.vitamin_d_mcg = ingredient.vitamin_d_mcg
+    # ── helper: calcola valori nutrizionali dalla BoM ─────────────────────────
+    _NUTRIENT_FIELDS = [
+        'energy_kcal', 'energy_kj', 'fat', 'saturated_fat', 'trans_fat_g',
+        'carbs', 'sugars', 'added_sugars_g', 'fiber', 'protein', 'salt',
+        'sodium_mg', 'cholesterol_mg', 'potassium_mg', 'calcium_mg',
+        'iron_mg', 'vitamin_d_mcg',
+    ]
 
-    # ── action: compute from BoM (weighted average) ───────────────────────────
-    def action_compute(self):
-        self.ensure_one()
-        bom = self.bom_id
-        if not bom:
-            return
+    def _compute_from_bom(self, bom):
+        """Calcola media pesata dei valori nutrizionali dalle righe BoM."""
         total_qty = sum(line.product_qty for line in bom.bom_line_ids)
         if not total_qty:
-            return
-        nutrient_fields = [
-            'energy_kcal', 'energy_kj', 'fat', 'saturated_fat', 'trans_fat_g',
-            'carbs', 'sugars', 'added_sugars_g', 'fiber', 'protein', 'salt',
-            'sodium_mg', 'cholesterol_mg', 'potassium_mg', 'calcium_mg',
-            'iron_mg', 'vitamin_d_mcg',
-        ]
-        totals = {f: 0.0 for f in nutrient_fields}
+            return {}
+        totals = {f: 0.0 for f in self._NUTRIENT_FIELDS}
         for line in bom.bom_line_ids:
             ingredient = self.env['cf.nutrition.ingredient'].search(
                 [('product_id', '=', line.product_id.product_tmpl_id.id)],
@@ -383,8 +354,41 @@ class CfNutritionBom(models.Model):
             if not ingredient:
                 continue
             ratio = line.product_qty / total_qty
-            for f in nutrient_fields:
+            for f in self._NUTRIENT_FIELDS:
                 totals[f] += getattr(ingredient, f, 0.0) * ratio
+        return totals
+
+    # ── onchange: seleziona prodotto → trova BoM → calcola ───────────────────
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        if not self.product_id:
+            return
+        # Cerca la BoM principale per questo prodotto
+        bom = self.env['mrp.bom'].search(
+            [('product_tmpl_id', '=', self.product_id.id),
+             ('active', '=', True)], limit=1)
+        if bom:
+            self.bom_id = bom
+            totals = self._compute_from_bom(bom)
+            for f, v in totals.items():
+                setattr(self, f, round(v, 3))
+            return
+        # Nessuna BoM: prova da scheda ingrediente singolo
+        ingredient = self.env['cf.nutrition.ingredient'].search(
+            [('product_id', '=', self.product_id.id)], limit=1)
+        if ingredient:
+            for f in self._NUTRIENT_FIELDS:
+                setattr(self, f, getattr(ingredient, f, 0.0))
+
+    # ── action: ricalcola da BoM (pulsante manuale) ───────────────────────────
+    def action_compute(self):
+        self.ensure_one()
+        bom = self.bom_id
+        if not bom:
+            return
+        totals = self._compute_from_bom(bom)
+        if not totals:
+            return
         totals['last_computed'] = fields.Datetime.now()
         self.write(totals)
 
