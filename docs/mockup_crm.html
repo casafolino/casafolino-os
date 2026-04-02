@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CasaFolino CRM Export — Mockup</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f2f5; color: #1a2332; min-height: 100vh; }
+
+/* ── TOP BAR ── */
+.topbar {
+    background: #1a2332;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.topbar .logo { color: #d4f0a0; font-size: 15px; font-weight: 800; letter-spacing: .5px; }
+.topbar .logo span { color: #5A6E3A; }
+.topbar nav { display: flex; gap: 4px; margin-left: 24px; }
+.topbar nav a {
+    color: rgba(255,255,255,.6); text-decoration: none;
+    padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .12s;
+}
+.topbar nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
+.topbar nav a.active { color: #d4f0a0; background: rgba(90,110,58,.35); }
+.topbar .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.topbar .btn-new {
+    background: #5A6E3A; color: #fff; border: none; border-radius: 7px;
+    padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: #5A6E3A; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+
+/* ── INNER LAYOUT ── */
+.app { display: flex; }
+.sidebar {
+    width: 220px; flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid #e5e9ef;
+    min-height: calc(100vh - 52px);
+    padding: 16px 0;
+}
+.sb-section { padding: 0 12px; margin-bottom: 20px; }
+.sb-section-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #9ca3af; margin-bottom: 6px; padding: 0 4px;
+}
+.sb-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-radius: 7px; font-size: 13px;
+    color: #4b5563; cursor: pointer; transition: background .1s;
+}
+.sb-item:hover { background: #f3f4f6; }
+.sb-item.active { background: rgba(90,110,58,.1); color: #3d4d28; font-weight: 600; }
+.sb-item .sb-icon { font-size: 15px; width: 20px; text-align: center; }
+.sb-badge { margin-left: auto; background: #dc3545; color: #fff; border-radius: 10px;
+    padding: 1px 7px; font-size: 10px; font-weight: 700; }
+.sb-badge.green { background: #5A6E3A; }
+
+/* ── MAIN ── */
+.main { flex: 1; overflow: hidden; }
+
+/* ── VIEW TOGGLE AREA ── */
+.view-header {
+    background: #fff;
+    border-bottom: 1px solid #e5e9ef;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.view-header h2 { font-size: 17px; font-weight: 700; color: #1a2332; }
+.view-tabs { display: flex; gap: 2px; background: #f3f4f6; border-radius: 8px; padding: 3px; }
+.view-tab {
+    padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    color: #6b7280; cursor: pointer; transition: all .1s;
+}
+.view-tab.active { background: #fff; color: #1a2332; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.view-filters { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.filter-btn {
+    background: #f3f4f6; border: 1px solid #e5e9ef; border-radius: 7px;
+    padding: 6px 12px; font-size: 12px; color: #6b7280; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+}
+.filter-btn:hover { border-color: #5A6E3A; color: #3d4d28; }
+
+/* ── KANBAN ── */
+.kanban-wrap { padding: 20px 24px; overflow-x: auto; }
+.kanban-board {
+    display: flex;
+    gap: 14px;
+    min-width: max-content;
+}
+.kanban-col { width: 270px; flex-shrink: 0; }
+.col-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 4px 12px;
+}
+.col-name { font-size: 12px; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: .4px; }
+.col-count {
+    background: #e5e9ef; border-radius: 12px; padding: 1px 8px;
+    font-size: 11px; font-weight: 700; color: #6b7280;
+}
+.col-total { margin-left: auto; font-size: 11px; color: #9ca3af; font-weight: 600; }
+
+/* deal card */
+.deal-card {
+    background: #fff;
+    border: 1px solid #e5e9ef;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: box-shadow .12s, transform .12s;
+    position: relative;
+    overflow: hidden;
+}
+.deal-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); transform: translateY(-1px); }
+.deal-card .rotting-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.rotting-ok    { background: #22c55e; }
+.rotting-warn  { background: #f59e0b; }
+.rotting-danger{ background: #ef4444; }
+.rotting-dead  { background: #7f1d1d; }
+
+.deal-name { font-size: 13px; font-weight: 700; color: #1a2332; margin-bottom: 4px; margin-top: 4px; }
+.deal-company { font-size: 12px; color: #6b7280; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+.deal-company .flag { font-size: 14px; }
+
+.deal-footer { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.deal-value { font-size: 13px; font-weight: 700; color: #1a2332; flex: 1; }
+.score-badge {
+    padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700;
+}
+.score-high   { background: #d1fae5; color: #065f46; }
+.score-medium { background: #fef3c7; color: #92400e; }
+.score-low    { background: #fee2e2; color: #991b1b; }
+.deal-date { font-size: 10px; color: #9ca3af; }
+
+.deal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.deal-tag {
+    padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600;
+    background: #f3f4f6; color: #6b7280;
+}
+.deal-tag.halal { background: #fef9c3; color: #713f12; }
+.deal-tag.bio   { background: #dcfce7; color: #14532d; }
+
+/* add card button */
+.add-card {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 12px; border-radius: 8px; font-size: 12px; color: #9ca3af;
+    cursor: pointer; transition: background .1s;
+    border: 1.5px dashed #e5e9ef;
+    margin-top: 4px;
+}
+.add-card:hover { background: #f3f4f6; border-color: #5A6E3A; color: #5A6E3A; }
+
+/* ── DEAL FORM (destra) ── */
+.form-panel {
+    width: 400px;
+    background: #fff;
+    border-left: 1px solid #e5e9ef;
+    min-height: calc(100vh - 52px);
+    padding: 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.form-panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e9ef;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-panel-header h3 { font-size: 15px; font-weight: 700; flex: 1; }
+.form-close { font-size: 18px; color: #9ca3af; cursor: pointer; background: none; border: none; }
+
+.stage-bar { display: flex; gap: 3px; padding: 0 20px 16px; border-bottom: 1px solid #e5e9ef; }
+.stage-step {
+    flex: 1; height: 5px; border-radius: 3px; background: #e5e9ef;
+    cursor: pointer; transition: background .1s;
+}
+.stage-step.active   { background: #5A6E3A; }
+.stage-step.past     { background: #a3c26e; }
+.stage-step.won      { background: #22c55e; }
+
+.form-section { padding: 16px 20px; border-bottom: 1px solid #f3f4f6; }
+.form-section h4 { font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: #9ca3af; margin-bottom: 10px; }
+.form-row { display: flex; gap: 12px; margin-bottom: 8px; }
+.form-field { flex: 1; }
+.form-field label { font-size: 11px; color: #9ca3af; font-weight: 600; display: block; margin-bottom: 3px; }
+.form-field .val { font-size: 13px; color: #1a2332; font-weight: 500; }
+.form-field .val.money { font-size: 16px; font-weight: 800; color: #5A6E3A; }
+.form-field .val.score-big {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    font-size: 15px; font-weight: 800;
+    background: #d1fae5; color: #065f46;
+}
+
+.score-bar-wrap { margin-top: 4px; background: #e5e9ef; border-radius: 3px; height: 5px; overflow: hidden; }
+.score-bar { height: 5px; background: linear-gradient(90deg, #5A6E3A, #a3c26e); border-radius: 3px; }
+
+/* action buttons */
+.form-actions { padding: 14px 20px; display: flex; gap: 8px; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; }
+.btn-action {
+    padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: none; display: flex; align-items: center; gap: 5px;
+    transition: opacity .1s;
+}
+.btn-action:hover { opacity: .85; }
+.btn-primary { background: #5A6E3A; color: #fff; }
+.btn-secondary { background: #f3f4f6; color: #4b5563; }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+
+/* chatter */
+.chatter { padding: 16px 20px; flex: 1; }
+.chatter h4 { font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: #9ca3af; margin-bottom: 12px; }
+.msg { display: flex; gap: 10px; margin-bottom: 14px; }
+.msg-avatar { width: 28px; height: 28px; border-radius: 50%; background: #5A6E3A;
+    color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.msg-bubble { background: #f8faf4; border: 1px solid #e5e9ef; border-radius: 0 8px 8px 8px; padding: 8px 12px; font-size: 12px; color: #4b5563; line-height: 1.45; }
+.msg-meta { font-size: 10px; color: #9ca3af; margin-bottom: 4px; }
+.msg-input { background: #f3f4f6; border: 1px solid #e5e9ef; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #9ca3af; margin-top: 8px; }
+
+/* ── OUTER LAYOUT with form panel ── */
+.view-with-panel { display: flex; }
+.view-with-panel .kanban-wrap { flex: 1; min-width: 0; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="logo">Casa<span>Folino</span> OS</div>
+    <nav>
+        <a>🏠</a>
+        <a>📧 Mail</a>
+        <a class="active">🤝 CRM Export</a>
+        <a>🦠 HACCP</a>
+        <a>💰 Treasury</a>
+        <a>🏭 Produzione</a>
+        <a>📊 KPI</a>
+    </nav>
+    <div class="topbar-right">
+        <button class="btn-new">+ Nuova Trattativa</button>
+        <div class="avatar">AC</div>
+    </div>
+</div>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sb-section">
+            <div class="sb-section-title">Pipeline</div>
+            <div class="sb-item active"><span class="sb-icon">🌍</span> Tutte le trattative <span class="sb-badge green">24</span></div>
+            <div class="sb-item"><span class="sb-icon">🇩🇪</span> Pipeline Europa</div>
+            <div class="sb-item"><span class="sb-icon">🌙</span> Pipeline Gulf/Halal</div>
+            <div class="sb-item"><span class="sb-icon">🇺🇸</span> USA/Canada</div>
+        </div>
+        <div class="sb-section">
+            <div class="sb-section-title">Azioni</div>
+            <div class="sb-item"><span class="sb-icon">📅</span> Follow-up oggi <span class="sb-badge">3</span></div>
+            <div class="sb-item"><span class="sb-icon">⚠️</span> Rotting <span class="sb-badge">4</span></div>
+            <div class="sb-item"><span class="sb-icon">⭐</span> Alta priorità</div>
+            <div class="sb-item"><span class="sb-icon">🎪</span> Fiere</div>
+        </div>
+        <div class="sb-section">
+            <div class="sb-section-title">Configurazione</div>
+            <div class="sb-item"><span class="sb-icon">🏷</span> Certificazioni</div>
+            <div class="sb-item"><span class="sb-icon">📦</span> Campionature</div>
+            <div class="sb-item"><span class="sb-icon">⚙️</span> Fasi pipeline</div>
+        </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+        <!-- VIEW HEADER -->
+        <div class="view-header">
+            <h2>Pipeline Export</h2>
+            <div class="view-tabs">
+                <div class="view-tab active">📋 Kanban</div>
+                <div class="view-tab">☰ Lista</div>
+                <div class="view-tab">📊 Dashboard</div>
+            </div>
+            <div class="view-filters">
+                <div class="filter-btn">🔍 Cerca...</div>
+                <div class="filter-btn">⚙ Filtri</div>
+                <div class="filter-btn">⇅ Raggruppa</div>
+            </div>
+        </div>
+
+        <!-- KANBAN + FORM PANEL -->
+        <div class="view-with-panel">
+
+            <!-- KANBAN BOARD -->
+            <div class="kanban-wrap">
+                <div class="kanban-board">
+
+                    <!-- Col 1: Rimprendere -->
+                    <div class="kanban-col">
+                        <div class="col-header">
+                            <div class="col-name">Rimprendere</div>
+                            <div class="col-count">2</div>
+                            <div class="col-total">€ 38k</div>
+                        </div>
+
+                        <div class="deal-card">
+                            <div class="rotting-bar rotting-warn"></div>
+                            <div class="deal-name">Olive Oil Range GmbH</div>
+                            <div class="deal-company"><span class="flag">🇩🇪</span> München — DACH</div>
+                            <div class="deal-tags">
+                                <span class="deal-tag">Bio</span>
+                                <span class="deal-tag">Fiera Anuga</span>
+                            </div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 22.000</div>
+                                <span class="score-badge score-medium">Score 55</span>
+                            </div>
+                        </div>
+
+                        <div class="deal-card">
+                            <div class="rotting-bar rotting-danger"></div>
+                            <div class="deal-name">Aldi Süd Einkauf</div>
+                            <div class="deal-company"><span class="flag">🇩🇪</span> Mülheim — DACH</div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 16.000</div>
+                                <span class="score-badge score-low">Score 28</span>
+                            </div>
+                        </div>
+
+                        <div class="add-card">＋ Aggiungi trattativa</div>
+                    </div>
+
+                    <!-- Col 2: Primo contatto -->
+                    <div class="kanban-col">
+                        <div class="col-header">
+                            <div class="col-name">Primo contatto</div>
+                            <div class="col-count">4</div>
+                            <div class="col-total">€ 89k</div>
+                        </div>
+
+                        <div class="deal-card">
+                            <div class="rotting-bar rotting-ok"></div>
+                            <div class="deal-name">Carrefour France SA</div>
+                            <div class="deal-company"><span class="flag">🇫🇷</span> Paris — Francia</div>
+                            <div class="deal-tags">
+                                <span class="deal-tag bio">Bio</span>
+                                <span class="deal-tag">Gluten Free</span>
+                            </div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 45.000</div>
+                                <span class="score-badge score-high">Score 82</span>
+                            </div>
+                        </div>
+
+                        <div class="deal-card">
+                            <div class="rotting-bar rotting-ok"></div>
+                            <div class="deal-name">Al Meera Consumer</div>
+                            <div class="deal-company"><span class="flag">🇶🇦</span> Doha — Gulf/Halal</div>
+                            <div class="deal-tags">
+                                <span class="deal-tag halal">Halal</span>
+                            </div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 28.000</div>
+                                <span class="score-badge score-high">Score 76</span>
+                            </div>
+                        </div>
+
+                        <div class="deal-card">
+                            <div class="rotting-bar rotting-warn"></div>
+                            <div class="deal-name">Spar International BV</div>
+                            <div class="deal-company"><span class="flag">🇳🇱</span> Amsterdam — Europa</div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 16.000</div>
+                                <span class="score-badge score-medium">Score 61</span>
+                            </div>
+                        </div>
+
+                        <div class="add-card">＋ Aggiungi trattativa</div>
+                    </div>
+
+                    <!-- Col 3: Qualificazione -->
+                    <div class="kanban-col">
+                        <div class="col-header">
+                            <div class="col-name">Qualificazione Cliente</div>
+                            <div class="col-count">3</div>
+                            <div class="col-total">€ 124k</div>
+                        </div>
+
+                        <div class="deal-card" style="border: 2px solid #5A6E3A;">
+                            <div class="rotting-bar rotting-ok"></div>
+                            <div class="deal-name">Edeka Zentrale AG</div>
+                            <div class="deal-company"><span class="flag">🇩🇪</span> Hamburg — DACH</div>
+                            <div class="deal-tags">
+                                <span class="deal-tag bio">Bio</span>
+                                <span class="deal-tag">IFS</span>
+                                <span class="deal-tag">BRCGS</span>
+                            </div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 78.000</div>
+                                <span class="score-badge score-high">Score 91</span>
+                            </div>
+                        </div>
+
+                        <div class="add-card">＋ Aggiungi trattativa</div>
+                    </div>
+
+                    <!-- Col 4: Campionatura -->
+                    <div class="kanban-col">
+                        <div class="col-header">
+                            <div class="col-name">Campionatura</div>
+                            <div class="col-count">2</div>
+                            <div class="col-total">€ 55k</div>
+                        </div>
+
+                        <div class="deal-card">
+                            <div class="rotting-bar rotting-ok"></div>
+                            <div class="deal-name">Marks &amp; Spencer PLC</div>
+                            <div class="deal-company"><span class="flag">🇬🇧</span> London — Europa</div>
+                            <div class="deal-footer">
+                                <div class="deal-value">€ 38.000</div>
+                                <span class="score-badge score-high">Score 88</span>
+                            </div>
+                        </div>
+
+                        <div class="add-card">＋ Aggiungi trattativa</div>
+                    </div>
+
+                    <!-- Col 5: Chiusa acquisita -->
+                    <div class="kanban-col">
+                        <div class="col-header">
+                            <div class="col-name" style="color:#16a34a;">✅ Chiusa acquisita</div>
+                            <div class="col-count" style="background:#d1fae5; color:#065f46;">1</div>
+                            <div class="col-total" style="color:#16a34a;">€ 96k</div>
+                        </div>
+
+                        <div class="deal-card" style="border-color:#d1fae5;">
+                            <div class="rotting-bar" style="background:#22c55e;"></div>
+                            <div class="deal-name">Kaufland SE &amp; Co. KG</div>
+                            <div class="deal-company"><span class="flag">🇩🇪</span> Neckarsulm — DACH</div>
+                            <div class="deal-footer">
+                                <div class="deal-value" style="color:#16a34a;">€ 96.000</div>
+                                <span class="score-badge score-high">Won 🎉</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- FORM PANEL: Deal Detail -->
+            <div class="form-panel">
+                <div class="form-panel-header">
+                    <div>
+                        <div style="font-size:11px; color:#9ca3af; margin-bottom:2px;">QUALIFICAZIONE CLIENTE</div>
+                        <h3>Edeka Zentrale AG</h3>
+                    </div>
+                    <button class="form-close">×</button>
+                </div>
+
+                <!-- Stage bar -->
+                <div style="padding: 12px 20px 0;">
+                    <div style="font-size:10px; color:#9ca3af; margin-bottom:6px; font-weight:600; letter-spacing:.5px;">AVANZAMENTO PIPELINE</div>
+                    <div class="stage-bar">
+                        <div class="stage-step past" title="Rimprendere"></div>
+                        <div class="stage-step past" title="Primo contatto"></div>
+                        <div class="stage-step active" title="Qualificazione"></div>
+                        <div class="stage-step" title="Negoziazione prezzi"></div>
+                        <div class="stage-step" title="Campionatura"></div>
+                        <div class="stage-step" title="Negoziazione Ordine"></div>
+                        <div class="stage-step won" title="Chiusa acquisita"></div>
+                    </div>
+                    <div style="font-size:10px; color:#9ca3af; text-align:right; margin-top:3px;">3 / 8</div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="form-actions">
+                    <button class="btn-action btn-primary">✉ Email</button>
+                    <button class="btn-action btn-secondary">📅 Follow-up</button>
+                    <button class="btn-action btn-secondary">📦 Campionatura</button>
+                    <button class="btn-action btn-danger">✗ Chiudi persa</button>
+                </div>
+
+                <!-- Deal info -->
+                <div class="form-section">
+                    <h4>Informazioni Deal</h4>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Pipeline</label>
+                            <div class="val">🇩🇪 DACH</div>
+                        </div>
+                        <div class="form-field">
+                            <label>Responsabile</label>
+                            <div class="val">Antonio C.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Fatturato Atteso</label>
+                            <div class="val money">€ 78.000</div>
+                        </div>
+                        <div class="form-field">
+                            <label>Forecast (91%)</label>
+                            <div class="val money">€ 70.980</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Ultimo contatto</label>
+                            <div class="val">2 giorni fa</div>
+                        </div>
+                        <div class="form-field">
+                            <label>Prossimo follow-up</label>
+                            <div class="val" style="color:#f59e0b; font-weight:700;">📅 Domani</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Score -->
+                <div class="form-section">
+                    <h4>Score &amp; Rotting</h4>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Lead Score</label>
+                            <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+                                <div class="val score-big">91</div>
+                                <div style="flex:1;">
+                                    <div class="score-bar-wrap">
+                                        <div class="score-bar" style="width:91%;"></div>
+                                    </div>
+                                    <div style="font-size:10px; color:#9ca3af; margin-top:3px;">Alta qualità ✅</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>Rotting State</label>
+                            <div class="val" style="margin-top:4px;">
+                                <span style="background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700;">● OK</span>
+                            </div>
+                            <div style="font-size:10px; color:#9ca3af; margin-top:4px;">0 di 10 giorni</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certificazioni -->
+                <div class="form-section">
+                    <h4>Certificazioni Richieste</h4>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <span style="background:#dcfce7; color:#14532d; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;">🌿 Bio/Organic</span>
+                        <span style="background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;">🏭 IFS Food</span>
+                        <span style="background:#dbeafe; color:#1e40af; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;">✅ BRCGS</span>
+                    </div>
+                </div>
+
+                <!-- Chatter -->
+                <div class="chatter">
+                    <h4>Attività &amp; Note</h4>
+                    <div class="msg">
+                        <div class="msg-avatar">AC</div>
+                        <div>
+                            <div class="msg-meta">Antonio — 2 giorni fa</div>
+                            <div class="msg-bubble">✅ Contatto registrato. Il buyer conferma interesse per la linea Cantucci GF. Richiede campioni entro 15/04.</div>
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar" style="background:#2563eb;">📅</div>
+                        <div>
+                            <div class="msg-meta">Sistema — 3 giorni fa</div>
+                            <div class="msg-bubble">Follow-up pianificato per <strong>domani</strong> (sequenza automatica Stage 3).</div>
+                        </div>
+                    </div>
+                    <div class="msg-input">Scrivi una nota...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

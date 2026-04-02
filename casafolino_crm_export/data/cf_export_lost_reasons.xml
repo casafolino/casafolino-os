@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo>
+<data noupdate="1">
     <record id="lost_reason_price" model="cf.export.lost.reason">
         <field name="name">Prezzo non competitivo</field>
     </record>
@@ -18,4 +19,5 @@
     <record id="lost_reason_other" model="cf.export.lost.reason">
         <field name="name">Altro</field>
     </record>
+</data>
 </odoo>

@@ -9,6 +9,7 @@
         'security/ir.model.access.csv',
         'views/cf_mail_views.xml',
         'views/cf_mail_partner_views.xml',
+        'views/cf_mail_sender_rule_views.xml',
         'views/menus.xml',
         'data/cf_mail_cron.xml',
     ],

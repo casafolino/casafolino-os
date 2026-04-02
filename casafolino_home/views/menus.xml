@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_home_dashboard" model="ir.actions.client">
+        <field name="name">Home CasaFolino</field>
+        <field name="tag">cf_home_dashboard</field>
+    </record>
+
+    <!-- Home come primo menu principale (sequence 1 = prima di tutto) -->
+    <menuitem
+        id="menu_cf_home"
+        name="🏠 Home"
+        action="action_cf_home_dashboard"
+        sequence="1"
+        web_icon="casafolino_home,static/description/icon.png"
+    />
+</odoo>

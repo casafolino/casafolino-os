@@ -160,6 +160,13 @@ class CfExportLead(models.Model):
     sale_order_ids = fields.One2many("sale.order", "cf_export_lead_id", string="Ordini")
     sequence_log_ids = fields.One2many("cf.export.sequence.log", "lead_id", string="Sequenze Attive")
 
+    # ── CHIUSURA PERSA ──
+    lost_reason_id = fields.Many2one(
+        "cf.export.lost.reason", string="Motivo Chiusura Persa",
+        tracking=True,
+        help="Compilare quando la trattativa viene chiusa come Persa",
+    )
+
     # ── NOTE ──
     description = fields.Html(string="Note")
 
@@ -340,6 +347,16 @@ class CfExportCertification(models.Model):
     name = fields.Char(string="Certificazione", required=True)
     code = fields.Char(string="Codice")
     color = fields.Integer(default=0)
+
+
+class CfExportLostReason(models.Model):
+    _name = "cf.export.lost.reason"
+    _description = "Motivo Chiusura Persa"
+    _order = "sequence asc, id asc"
+
+    name = fields.Char(string="Motivo", required=True, translate=True)
+    sequence = fields.Integer(default=10)
+    active = fields.Boolean(default=True)
 
 
 class CfExportSample(models.Model):

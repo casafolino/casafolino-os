@@ -547,3 +547,69 @@ class CfMailMessage(models.Model):
             return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    # ── Sender rule actions ────────────────────────────────────────────────
+
+    def action_keep_sender(self):
+        """Tieni mittente: crea regola keep e triggera sync storica."""
+        self.ensure_one()
+        addr = (self.from_address or '').strip().lower()
+        if not addr:
+            return
+        self.env['cf.mail.sender.rule'].set_rule(addr, 'keep', trigger_sync=True)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Mittente mantenuto',
+                'message': f'Sync storica avviata per {addr}.',
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_exclude_sender(self):
+        """Escludi mittente: crea regola exclude ed elimina tutte le sue email."""
+        self.ensure_one()
+        addr = (self.from_address or '').strip().lower()
+        if not addr:
+            return
+        self.env['cf.mail.sender.rule'].set_rule(addr, 'exclude', trigger_sync=False)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Mittente escluso',
+                'message': f'Tutte le email da {addr} sono state eliminate.',
+                'type': 'warning',
+                'sticky': False,
+            }
+        }
+
+    @api.model
+    def bulk_keep_senders(self, message_ids):
+        """Azione massiva: tieni mittenti delle email selezionate."""
+        msgs = self.browse([int(i) for i in message_ids])
+        addresses = list({(m.from_address or '').strip().lower() for m in msgs if m.from_address})
+        for addr in addresses:
+            self.env['cf.mail.sender.rule'].set_rule(addr, 'keep', trigger_sync=True)
+        return {
+            'success': True,
+            'message': f'Regola KEEP applicata a {len(addresses)} mittenti. Sync storica in avvio.'
+        }
+
+    @api.model
+    def bulk_exclude_senders(self, message_ids):
+        """Azione massiva: escludi mittenti delle email selezionate."""
+        msgs = self.browse([int(i) for i in message_ids])
+        addresses = list({(m.from_address or '').strip().lower() for m in msgs if m.from_address})
+        total_deleted = 0
+        for addr in addresses:
+            result = self.env['cf.mail.sender.rule'].set_rule(addr, 'exclude', trigger_sync=False)
+            if result.get('success'):
+                total_deleted += 1
+        return {
+            'success': True,
+            'message': f'{len(addresses)} mittenti esclusi. Email eliminate.'
+        }
+
