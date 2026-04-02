@@ -9,7 +9,9 @@
     "data": [
         "security/ir.model.access.csv",
         "data/cf_nutrition_regulations.xml",
+        "data/cf_nutrition_cron.xml",
         "views/cf_nutrition_views.xml",
+        "views/cf_nutrition_inherit_views.xml",
         "views/menus.xml",
     ],
     "assets": {

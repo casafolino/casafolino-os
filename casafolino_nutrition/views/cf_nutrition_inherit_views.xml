@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         mrp.bom — tab Nutrizione
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_mrp_bom_nutrition_tab" model="ir.ui.view">
+        <field name="name">mrp.bom.form.nutrition</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Nutrizione" name="cf_nutrition">
+                    <group>
+                        <group>
+                            <div class="alert alert-info" role="alert"
+                                 invisible="nutrition_ids">
+                                Nessuna etichetta nutrizionale collegata a questa BoM.
+                                Aprire "Etichette Ricette" per crearne una.
+                            </div>
+                        </group>
+                    </group>
+                    <field name="nutrition_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="regulation_id"/>
+                            <field name="serving_size_g"/>
+                            <field name="energy_kcal"/>
+                            <field name="fat"/>
+                            <field name="carbs"/>
+                            <field name="protein"/>
+                            <field name="salt"/>
+                            <field name="nutri_score" widget="badge"
+                                decoration-success="nutri_score == 'A'"
+                                decoration-info="nutri_score == 'B'"
+                                decoration-warning="nutri_score in ('C','D')"
+                                decoration-danger="nutri_score == 'E'"/>
+                            <field name="last_computed" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         product.template — tab Nutrizione
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_product_template_nutrition_tab" model="ir.ui.view">
+        <field name="name">product.template.form.nutrition</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Nutrizione" name="cf_nutrition_product">
+                    <group>
+                        <group>
+                            <button name="action_create_nutrition" type="object"
+                                    string="Calcola da BoM"
+                                    class="btn-primary"
+                                    invisible="nutrition_bom_ids"/>
+                        </group>
+                    </group>
+                    <field name="nutrition_bom_ids" nolabel="1">
+                        <list>
+                            <field name="bom_id"/>
+                            <field name="serving_size_g"/>
+                            <field name="energy_kcal"/>
+                            <field name="fat"/>
+                            <field name="carbs"/>
+                            <field name="protein"/>
+                            <field name="salt"/>
+                            <field name="nutri_score" widget="badge"
+                                decoration-success="nutri_score == 'A'"
+                                decoration-info="nutri_score == 'B'"
+                                decoration-warning="nutri_score in ('C','D')"
+                                decoration-danger="nutri_score == 'E'"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+</odoo>
