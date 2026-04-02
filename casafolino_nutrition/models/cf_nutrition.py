@@ -572,17 +572,22 @@ class CfNutritionBom(models.Model):
 
     def _compute_from_bom(self, bom):
         """Calcola media pesata dei valori nutrizionali dalle righe BoM.
+        Salta componenti con is_food_ingredient=False (imballaggi, overhead).
+        Usa nutrition_ingredient_id (link diretto) se presente, altrimenti cerca per product_id.
         Restituisce (totals_dict, missing_names_list).
         """
-        total_qty = sum(line.product_qty for line in bom.bom_line_ids)
+        food_lines = [l for l in bom.bom_line_ids if l.product_id.product_tmpl_id.is_food_ingredient]
+        total_qty = sum(line.product_qty for line in food_lines)
         if not total_qty:
             return {}, []
         totals = {f: 0.0 for f in self._NUTRIENT_FIELDS}
         missing = []
-        for line in bom.bom_line_ids:
-            ingredient = self.env['cf.nutrition.ingredient'].search(
-                [('product_id', '=', line.product_id.product_tmpl_id.id)],
-                limit=1)
+        for line in food_lines:
+            tmpl = line.product_id.product_tmpl_id
+            ingredient = tmpl.nutrition_ingredient_id
+            if not ingredient:
+                ingredient = self.env['cf.nutrition.ingredient'].search(
+                    [('product_id', '=', tmpl.id)], limit=1)
             if not ingredient or not ingredient.energy_kcal:
                 missing.append(line.product_id.display_name)
                 continue
@@ -663,6 +668,20 @@ class MrpBomNutrition(models.Model):
 class ProductTemplateNutrition(models.Model):
     _inherit = "product.template"
 
+    is_food_ingredient = fields.Boolean(
+        string="E un ingrediente alimentare",
+        default=False,
+        help="Attiva per includere questo prodotto nel calcolo nutrizionale. "
+             "Lascia disattivato per imballaggi, overhead, materiali non food."
+    )
+
+    nutrition_ingredient_id = fields.Many2one(
+        "cf.nutrition.ingredient",
+        string="Dati Nutrizionali",
+        help="Collega manualmente il record nutrizionale a questo prodotto. "
+             "Prioritario rispetto alla ricerca automatica per nome."
+    )
+
     nutrition_bom_ids = fields.Many2many(
         "cf.nutrition.bom",
         compute="_compute_nutrition_bom_ids",
@@ -681,7 +700,6 @@ class ProductTemplateNutrition(models.Model):
             rec.nutrition_bom_ids = nutrition
 
     def action_create_nutrition(self):
-        """Crea una nuova etichetta nutrizionale per questo prodotto."""
         self.ensure_one()
         bom = self.env["mrp.bom"].search(
             [("product_tmpl_id", "=", self.id), ("active", "=", True)], limit=1)
@@ -696,3 +714,29 @@ class ProductTemplateNutrition(models.Model):
             'res_id': nutrition.id,
             'target': 'current',
         }
+
+    def _get_or_create_ingredient(self):
+        """Recupera o crea il record nutrizionale per questo prodotto."""
+        self.ensure_one()
+        ingredient = self.nutrition_ingredient_id
+        if not ingredient:
+            ingredient = self.env['cf.nutrition.ingredient'].search(
+                [('product_id', '=', self.id)], limit=1)
+        if not ingredient:
+            ingredient = self.env['cf.nutrition.ingredient'].create({
+                'product_id': self.id,
+                'sync_name': self.name,
+                'data_source': 'manuale',
+            })
+        self.nutrition_ingredient_id = ingredient
+        return ingredient
+
+    def action_sync_ingredient_usda(self):
+        self.ensure_one()
+        ingredient = self._get_or_create_ingredient()
+        return ingredient.action_sync_usda()
+
+    def action_sync_ingredient_off(self):
+        self.ensure_one()
+        ingredient = self._get_or_create_ingredient()
+        return ingredient.action_sync_openfoodfacts()
