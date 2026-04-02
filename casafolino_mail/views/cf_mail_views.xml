@@ -171,6 +171,13 @@
                     <button name="action_archive_message" string="Archivia"
                         type="object" class="btn-secondary"
                         invisible="is_archived == True"/>
+                    <button name="action_keep_sender" string="Tieni mittente"
+                        type="object" class="btn-success"
+                        invisible="direction == 'out'"/>
+                    <button name="action_exclude_sender" string="Escludi mittente"
+                        type="object" class="btn-danger"
+                        invisible="direction == 'out'"
+                        confirm="Eliminare tutte le email di questo mittente e escluderlo dalle sync future?"/>
                 </header>
                 <sheet>
                     <group>
