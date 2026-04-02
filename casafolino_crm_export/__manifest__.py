@@ -12,7 +12,6 @@
         "data/cf_export_lost_reasons.xml",
         "views/cf_export_views.xml",
         "views/cf_export_lead_views.xml",
-        "views/cf_crm_mail_views.xml",
         "views/menus.xml",
     ],
     "assets": {
