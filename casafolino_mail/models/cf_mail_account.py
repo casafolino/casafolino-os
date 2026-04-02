@@ -295,11 +295,74 @@ class CfMailAccount(models.Model):
         acc.sync_imap()
         return {'success': True}
 
-    def _sync_folder(self, mail, acc, folder_name, direction, last_uid_field):
+    # ── Sender-rule helpers ────────────────────────────────────────────────
+
+    def _get_sender_rules(self):
+        """Ritorna dict {email_lower: action} per tutti i mittenti con regola."""
+        rules = self.env['cf.mail.sender.rule'].search([])
+        return {r.email.lower(): r.action for r in rules}
+
+    def _should_import(self, from_address, sender_rules, cutoff_date, msg_date):
+        """
+        Fase 1 (nessuna regola): importa solo ultimi 4 mesi.
+        Fase 2 (regole presenti):
+          - keep  → importa sempre (tutta la storia)
+          - exclude → mai
+          - nessuna regola → solo ultimi 4 mesi
+        Ritorna True se il messaggio va importato.
+        """
+        addr = (from_address or '').lower().strip()
+        if not sender_rules:
+            # Fase 1: nessuna regola → solo 4 mesi
+            return msg_date >= cutoff_date
+        rule = sender_rules.get(addr)
+        if rule == 'exclude':
+            return False
+        if rule == 'keep':
+            return True
+        # Nessuna regola → 4 mesi
+        return msg_date >= cutoff_date
+
+    def _sync_sender_history(self, sender_email):
+        """Sync storica completa per un mittente specifico (regola keep)."""
+        import imaplib, ssl as ssl_lib
+        for acc in self:
+            if not acc.imap_enabled or not acc.email or not acc.imap_password:
+                continue
+            try:
+                if acc.imap_ssl:
+                    mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port,
+                                             ssl_context=ssl_lib.create_default_context())
+                else:
+                    mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
+                    mail.starttls()
+                mail.login(acc.email, acc.imap_password)
+
+                # Cerca tutte le email da quel mittente in INBOX
+                self._sync_folder(mail, acc, 'INBOX', 'in', 'imap_last_uid',
+                                   sender_filter=sender_email, ignore_cutoff=True)
+                # E nella cartella Sent
+                for sent_folder in ['[Gmail]/Sent Mail', 'Sent', 'Sent Items', 'SENT']:
+                    try:
+                        status, _ = mail.select(sent_folder)
+                        if status == 'OK':
+                            self._sync_folder(mail, acc, sent_folder, 'out', 'imap_sent_last_uid',
+                                              sender_filter=sender_email, ignore_cutoff=True)
+                            break
+                    except Exception:
+                        continue
+                mail.logout()
+            except Exception as e:
+                _logger.error('History sync error for %s / %s: %s', acc.email, sender_email, e)
+
+    # ── Core sync ─────────────────────────────────────────────────────────
+
+    def _sync_folder(self, mail, acc, folder_name, direction, last_uid_field,
+                     sender_filter=None, ignore_cutoff=False):
         import email as email_lib
         from email.header import decode_header
         from email.utils import parsedate_to_datetime
-        from datetime import datetime
+        from datetime import datetime, timedelta
         import pytz
         try:
             status, _ = mail.select(folder_name)
@@ -307,26 +370,51 @@ class CfMailAccount(models.Model):
                 return 0
         except Exception:
             return 0
-        last_uid = getattr(acc, last_uid_field) or 0
-        status, messages = mail.uid('search', None, f'UID {last_uid + 1}:*' if last_uid > 0 else 'ALL')
+
+        # Determina il criterio di ricerca IMAP
+        if sender_filter:
+            # Sync storica per un mittente specifico: cerca per FROM
+            safe_sender = sender_filter.replace('"', '')
+            status, messages = mail.uid('search', None, f'FROM "{safe_sender}"')
+        else:
+            last_uid = getattr(acc, last_uid_field) or 0
+            if last_uid > 0:
+                status, messages = mail.uid('search', None, f'UID {last_uid + 1}:*')
+            else:
+                # Prima sync: limita agli ultimi 4 mesi via SINCE
+                from datetime import date
+                cutoff = date.today() - timedelta(days=120)
+                since_str = cutoff.strftime('%d-%b-%Y')
+                status, messages = mail.uid('search', None, f'SINCE {since_str}')
+
         if status != 'OK':
             return 0
         uids = messages[0].split()
         if not uids or uids == [b'']:
             return 0
-        uids = uids[-100:]
+
+        # Limite di 100 uid per ciclo normale; nessun limite per sync storica
+        if not sender_filter:
+            uids = uids[-100:]
+
+        # Regole mittenti per il filtro intelligente
+        sender_rules = {} if sender_filter else self._get_sender_rules()
+        cutoff_dt = datetime.now() - timedelta(days=120)
+
+        last_uid = getattr(acc, last_uid_field) or 0
         max_uid = last_uid
         count = 0
         for uid in uids:
             uid_int = int(uid)
-            if uid_int <= last_uid:
+            if not sender_filter and uid_int <= last_uid:
                 continue
             existing = self.env['cf.mail.message'].search([
                 ('account_id', '=', acc.id),
                 ('message_uid', '=', f'{folder_name}_{uid_int}'),
             ], limit=1)
             if existing:
-                max_uid = max(max_uid, uid_int)
+                if not sender_filter:
+                    max_uid = max(max_uid, uid_int)
                 continue
             try:
                 status2, msg_data = mail.uid('fetch', uid, '(RFC822)')
@@ -361,6 +449,14 @@ class CfMailAccount(models.Model):
                         dt = dt.astimezone(pytz.utc).replace(tzinfo=None)
                 except Exception:
                     dt = datetime.now()
+
+                # ── Filtro mittente intelligente (sender rules) ───────────
+                if not ignore_cutoff and not self._should_import(
+                        from_address, sender_rules, cutoff_dt, dt):
+                    if not sender_filter:
+                        max_uid = max(max_uid, uid_int)
+                    continue
+
                 body_html = ''
                 body_text = ''
                 has_attachments = False
@@ -452,12 +548,15 @@ class CfMailAccount(models.Model):
                     'attachment_names': ', '.join(attachment_names) if attachment_names else False,
                     'thread_id': thread_id,
                 })
-                max_uid = max(max_uid, uid_int)
+                if not sender_filter:
+                    max_uid = max(max_uid, uid_int)
                 count += 1
             except Exception as e:
                 _logger.warning('Error fetching UID %s: %s', uid_int, e)
                 continue
-        acc.write({last_uid_field: max_uid})
+
+        if not sender_filter:
+            acc.write({last_uid_field: max_uid})
         return count
 
     def sync_imap(self):
