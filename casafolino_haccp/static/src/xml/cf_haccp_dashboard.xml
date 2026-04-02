@@ -80,6 +80,41 @@
                     </div>
                 </div>
 
+                <!-- v2 KPI cards: Temperature / CCP / Pest -->
+                <div class="cf-dash-panel-title mt-4 mb-2">🌡️ Monitoraggio Continuo (v2)</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="cf-kpi-card" t-on-click="onOpenTempKo"
+                             t-attf-style="border-top: 3px solid #{state.data.temp_ko_today > 0 ? '#dc3545' : '#28a745'};">
+                            <div class="cf-kpi-label">🌡️ Temp. Frigo KO oggi</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.temp_ko_today > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.data.temp_ko_today"/>
+                            </div>
+                            <div class="cf-kpi-sub">rilevazioni &gt; 4°C oggi</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="cf-kpi-card" t-on-click="onOpenCcpKo"
+                             t-attf-style="border-top: 3px solid #{state.data.ccp_ko_total > 0 ? '#fd7e14' : '#28a745'};">
+                            <div class="cf-kpi-label">⚠️ CCP Fuori Limite</div>
+                            <div t-attf-class="cf-kpi-value #{state.data.ccp_ko_total > 0 ? 'text-warning' : 'text-success'}">
+                                <t t-esc="state.data.ccp_ko_total"/>
+                            </div>
+                            <div class="cf-kpi-sub">totale non risolti</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="cf-kpi-card" t-on-click="onOpenPestControl"
+                             style="border-top: 3px solid #0d6efd;">
+                            <div class="cf-kpi-label">🐛 Prossima Visita Pest</div>
+                            <div class="cf-kpi-value" style="font-size:18px; color:#0d6efd;">
+                                <t t-esc="state.data.pest_next_visit || '—'"/>
+                            </div>
+                            <div class="cf-kpi-sub">data prossimo intervento</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- NC pipeline -->
                 <div class="cf-dash-panel">
                     <div class="cf-dash-panel-title">📋 Flusso Non Conformità</div>

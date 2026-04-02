@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TEMPERATURE LOG
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_temperature_log" model="ir.actions.report">
+        <field name="name">Registro Temperature</field>
+        <field name="model">cf.haccp.temperature.log</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_temperature_log</field>
+        <field name="binding_model_id" ref="model_cf_haccp_temperature_log"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_temperature_log">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Registro Temperature HACCP</h2>
+                        <h4>Rilevazione del <span t-field="doc.date"/></h4>
+                        <table class="table table-bordered table-sm mt-3">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Punto di Misura</th>
+                                    <th>Temperatura (°C)</th>
+                                    <th>Limite Critico</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Frigo 1</td>
+                                    <td><span t-field="doc.frigo1_temp"/> °C</td>
+                                    <td>≤ 4°C</td>
+                                </tr>
+                                <tr>
+                                    <td>Frigo 2</td>
+                                    <td><span t-field="doc.frigo2_temp"/> °C</td>
+                                    <td>≤ 4°C</td>
+                                </tr>
+                                <tr>
+                                    <td>Ambiente</td>
+                                    <td><span t-field="doc.ambiente_temp"/> °C</td>
+                                    <td>—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <strong>Esito:</strong>
+                                <span t-field="doc.esito"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Operatore:</strong>
+                                <span t-field="doc.operatore_id"/>
+                            </div>
+                        </div>
+                        <div class="mt-3" t-if="doc.note">
+                            <strong>Note / Azioni correttive:</strong>
+                            <p t-field="doc.note"/>
+                        </div>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>Firma operatore: _____________________________</p>
+                            </div>
+                            <div class="col-6">
+                                <p>Firma responsabile: _____________________________</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SANIFICATION LOG
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_sanification_log" model="ir.actions.report">
+        <field name="name">Registro Sanificazione</field>
+        <field name="model">cf.haccp.sanification.log</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_sanification_log</field>
+        <field name="binding_model_id" ref="model_cf_haccp_sanification_log"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_sanification_log">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Registro Sanificazione HACCP</h2>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Data</th>
+                                    <td><span t-field="doc.date"/></td>
+                                    <th>Area</th>
+                                    <td><span t-field="doc.area"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Frequenza</th>
+                                    <td><span t-field="doc.frequenza"/></td>
+                                    <th>Prodotto Usato</th>
+                                    <td><span t-field="doc.prodotto_usato"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Eseguita</th>
+                                    <td><span t-field="doc.eseguita"/></td>
+                                    <th>Operatore</th>
+                                    <td><span t-field="doc.operatore_id"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-3" t-if="doc.note">
+                            <strong>Note:</strong>
+                            <p t-field="doc.note"/>
+                        </div>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>Firma operatore: _____________________________</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CCP LOG
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_ccp_log" model="ir.actions.report">
+        <field name="name">Registro CCP</field>
+        <field name="model">cf.haccp.ccp.log</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_ccp_log</field>
+        <field name="binding_model_id" ref="model_cf_haccp_ccp_log"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_ccp_log">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Registro CCP — Punti di Controllo Critico</h2>
+                        <h4><span t-field="doc.date"/></h4>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Tipo CCP</th>
+                                    <td><span t-field="doc.ccp_type"/></td>
+                                    <th>Ordine Produzione</th>
+                                    <td><span t-field="doc.production_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>T° Ingresso</th>
+                                    <td><span t-field="doc.temperatura_ingresso"/> °C</td>
+                                    <th>T° Uscita</th>
+                                    <td><span t-field="doc.temperatura_uscita"/> °C</td>
+                                </tr>
+                                <tr>
+                                    <th>Limite Min</th>
+                                    <td><span t-field="doc.temperatura_min"/> °C</td>
+                                    <th>Limite Max</th>
+                                    <td><span t-field="doc.temperatura_max"/> °C</td>
+                                </tr>
+                                <tr>
+                                    <th>Esito</th>
+                                    <td colspan="3"><strong><span t-field="doc.esito"/></strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-3" t-if="doc.azione_correttiva">
+                            <strong>Azione Correttiva:</strong>
+                            <p t-field="doc.azione_correttiva"/>
+                        </div>
+                        <div class="mt-2">
+                            <strong>Operatore:</strong> <span t-field="doc.operatore_id"/>
+                        </div>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>Firma operatore: _____________________________</p>
+                            </div>
+                            <div class="col-6">
+                                <p>Firma responsabile CCP: _____________________________</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ETICHETTATURA LOG
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_etichettatura_log" model="ir.actions.report">
+        <field name="name">Check Etichettatura</field>
+        <field name="model">cf.haccp.etichettatura.log</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_etichettatura_log</field>
+        <field name="binding_model_id" ref="model_cf_haccp_etichettatura_log"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_etichettatura_log">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Check Etichettatura HACCP</h2>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Data</th>
+                                    <td><span t-field="doc.date"/></td>
+                                    <th>Lotto</th>
+                                    <td><span t-field="doc.lot_id"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Prodotto</th>
+                                    <td colspan="3"><span t-field="doc.product_id"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h5 class="mt-3">Checklist Conformità</h5>
+                        <table class="table table-bordered table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Allergeni dichiarati</td>
+                                    <td><span t-field="doc.allergeni_ok"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Lingue richieste presenti</td>
+                                    <td><span t-field="doc.lingue_ok"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Numero lotto presente</td>
+                                    <td><span t-field="doc.lotto_presente"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Data scadenza presente</td>
+                                    <td><span t-field="doc.scadenza_presente"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-3">
+                            <strong>Esito:</strong> <span t-field="doc.esito"/>
+                            <strong class="ms-3">Operatore:</strong> <span t-field="doc.operatore_id"/>
+                        </div>
+                        <div class="mt-3" t-if="doc.note">
+                            <strong>Note:</strong> <p t-field="doc.note"/>
+                        </div>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>Firma operatore: _____________________________</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TRACCIABILITA
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_tracciabilita" model="ir.actions.report">
+        <field name="name">Scheda Tracciabilita</field>
+        <field name="model">cf.haccp.tracciabilita</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_tracciabilita</field>
+        <field name="binding_model_id" ref="model_cf_haccp_tracciabilita"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_tracciabilita">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Scheda Tracciabilità HACCP</h2>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Data</th>
+                                    <td><span t-field="doc.date"/></td>
+                                    <th>Lotto Prodotto Finito</th>
+                                    <td><span t-field="doc.lotto_pf"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Lotto Materia Prima</th>
+                                    <td><span t-field="doc.lotto_mp"/></td>
+                                    <th>Ordine Produzione</th>
+                                    <td><span t-field="doc.production_id"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h5 class="mt-3">Clienti / Destinatari</h5>
+                        <ul>
+                            <t t-foreach="doc.partner_ids" t-as="p">
+                                <li><span t-esc="p.name"/> — <span t-esc="p.street or ''"/></li>
+                            </t>
+                        </ul>
+                        <div class="mt-3" t-if="doc.note">
+                            <strong>Note:</strong> <p t-field="doc.note"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         PEST CONTROL
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_pest_control" model="ir.actions.report">
+        <field name="name">Registro Pest Control</field>
+        <field name="model">cf.haccp.pest.control</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_pest_control</field>
+        <field name="binding_model_id" ref="model_cf_haccp_pest_control"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_pest_control">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Registro Pest Control HACCP</h2>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Data ispezione</th>
+                                    <td><span t-field="doc.date"/></td>
+                                    <th>Prossima visita</th>
+                                    <td><span t-field="doc.prossima_visita"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Azienda Esterna</th>
+                                    <td colspan="3"><span t-field="doc.azienda_esterna"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h5 class="mt-3">Checklist Ispezione</h5>
+                        <table class="table table-bordered table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Esche integre</td>
+                                    <td><span t-field="doc.esche_integre"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Tracce infestanti rilevate</td>
+                                    <td><span t-field="doc.tracce_infestanti"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Mappa aggiornata</td>
+                                    <td><span t-field="doc.mappa_aggiornata"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-3" t-if="doc.note">
+                            <strong>Note / Osservazioni:</strong>
+                            <p t-field="doc.note"/>
+                        </div>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>Firma operatore: _____________________________</p>
+                            </div>
+                            <div class="col-6">
+                                <p>Firma ditta esterna: _____________________________</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FORMAZIONE
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_formazione" model="ir.actions.report">
+        <field name="name">Attestato Formazione HACCP</field>
+        <field name="model">cf.haccp.formazione</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_formazione</field>
+        <field name="binding_model_id" ref="model_cf_haccp_formazione"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_formazione">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Registro Formazione HACCP</h2>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Data</th>
+                                    <td><span t-field="doc.date"/></td>
+                                    <th>Durata</th>
+                                    <td><span t-field="doc.durata_ore"/> ore</td>
+                                </tr>
+                                <tr>
+                                    <th>Argomento</th>
+                                    <td><span t-field="doc.argomento"/></td>
+                                    <th>Docente</th>
+                                    <td><span t-field="doc.docente"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Esito</th>
+                                    <td colspan="3"><span t-field="doc.esito"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h5 class="mt-3">Elenco Partecipanti</h5>
+                        <table class="table table-bordered table-sm">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nome partecipante</th>
+                                    <th>Firma</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.partecipanti_ids" t-as="p">
+                                    <tr>
+                                        <td><t t-esc="p_index + 1"/></td>
+                                        <td><t t-esc="p.name"/></td>
+                                        <td style="min-width:120px;">_____________</td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        <div class="mt-3" t-if="doc.note">
+                            <strong>Note:</strong> <p t-field="doc.note"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════
+         IGIENE PERSONALE
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_report_igiene_personale" model="ir.actions.report">
+        <field name="name">Check Igiene Personale</field>
+        <field name="model">cf.haccp.igiene.personale</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_igiene_personale</field>
+        <field name="binding_model_id" ref="model_cf_haccp_igiene_personale"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_igiene_personale">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Check Igiene Personale HACCP</h2>
+                        <table class="table table-bordered table-sm mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Data</th>
+                                    <td><span t-field="doc.date"/></td>
+                                    <th>Operatore</th>
+                                    <td><span t-field="doc.operatore_id"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h5 class="mt-3">Checklist Igiene</h5>
+                        <table class="table table-bordered table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Mani lavate correttamente</td>
+                                    <td><span t-field="doc.mani_lavate"/></td>
+                                </tr>
+                                <tr>
+                                    <td>DPI indossati correttamente</td>
+                                    <td><span t-field="doc.dpi_ok"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Assenza gioielli / orologi</td>
+                                    <td><span t-field="doc.no_gioielli"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Stato di salute OK (no sintomi)</td>
+                                    <td><span t-field="doc.stato_salute_ok"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>Firma operatore: _____________________________</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

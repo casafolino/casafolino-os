@@ -17,6 +17,7 @@
         "views/cf_haccp_calibration_views.xml",
         "views/cf_haccp_document_views.xml",
         "views/cf_haccp_v2_views.xml",
+        "views/cf_haccp_v2_reports.xml",
         "views/menus.xml",
     ],
     "assets": {

@@ -55,6 +55,19 @@ class CfHaccpDashboard extends Component {
         this._openModel("cf.haccp.document", [["state", "in", ["expiring", "expired"]]]);
     }
 
+    onOpenTempKo() {
+        const today = new Date().toISOString().split("T")[0];
+        this._openModel("cf.haccp.temperature.log", [["esito", "=", "ko"], ["date", "=", today]]);
+    }
+
+    onOpenCcpKo() {
+        this._openModel("cf.haccp.ccp.log", [["esito", "=", "fuori_limite"]]);
+    }
+
+    onOpenPestControl() {
+        this._openModel("cf.haccp.pest.control", []);
+    }
+
     async _openModel(model, domain) {
         await this.action.doAction({
             type: "ir.actions.act_window",
