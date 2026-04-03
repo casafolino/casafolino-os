@@ -5,7 +5,7 @@
         <!-- Sync IMAP ogni 15 minuti per tutti gli account abilitati -->
         <record id="ir_cron_cf_mail_sync" model="ir.cron">
             <field name="name">CasaFolino Mail: Sync IMAP (15 min)</field>
-            <field name="model_id" ref="model_cf_mail_account"/>
+            <field name="model_id" search="[('model','=','cf.mail.account')]" model="ir.model"/>
             <field name="state">code</field>
             <field name="code">model.search([('imap_enabled','=',True)]).sync_imap()</field>
             <field name="interval_number">15</field>

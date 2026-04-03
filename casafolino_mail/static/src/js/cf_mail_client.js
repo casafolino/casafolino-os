@@ -185,6 +185,57 @@ class CfMailClient extends Component {
         if (msgId) this.toggleSelect(msgId, ev);
     }
 
+    // ── Generic form handlers (data-form + data-field pattern) ──
+    onFormInput(ev) {
+        const { form, field } = ev.target.dataset;
+        if (form && field) this.state[form][field] = ev.target.value;
+    }
+    onFormChange(ev) {
+        const { form, field } = ev.target.dataset;
+        const isChecked = ev.target.dataset.type === 'checked';
+        if (form && field) this.state[form][field] = isChecked ? ev.target.checked : ev.target.value;
+    }
+    onStateInput(ev) {
+        const key = ev.target.dataset.stateKey;
+        if (key) this.state[key] = ev.target.value;
+    }
+
+    // ── Data-driven click handlers ──
+    onNavTag(ev) { this.navTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onSelectAccount(ev) { this.selectAccount(parseInt(ev.currentTarget.dataset.accountId)); }
+    onOpenEditAccount(ev) { this.openEditAccount(parseInt(ev.currentTarget.dataset.accountId)); }
+    onSelectMsg(ev) {
+        const msgId = parseInt(ev.currentTarget.dataset.msgId);
+        const msg = this.state.messages.find(m => m.id === msgId);
+        if (msg) this.selectMsg(msg, ev);
+    }
+    onQuickStar(ev) { this.quickStar(parseInt(ev.currentTarget.dataset.msgId), ev); }
+    onQuickArchive(ev) { this.quickArchive(parseInt(ev.currentTarget.dataset.msgId), ev); }
+    onDetailStar() { if (this.state.selectedMsg) this.quickStar(this.state.selectedMsg.id, null); }
+    onDetailArchive() { if (this.state.selectedMsg) this.quickArchive(this.state.selectedMsg.id, null); }
+    onAddTag(ev) { this.addTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onRemoveTag(ev) { this.removeTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onNewTagNameInput(ev) { this.state.newTagName = ev.target.value; }
+    onNewTagColorInput(ev) { this.state.newTagColor = ev.target.value; }
+    onSearchQueryInput(ev) { this.state.searchForm.query = ev.target.value; }
+    onSearchDateFromInput(ev) { this.state.searchForm.date_from = ev.target.value; }
+    onSearchDateToInput(ev) { this.state.searchForm.date_to = ev.target.value; }
+
+    // Bulk actions
+    onBulkRead() { this.bulkAction('read'); }
+    onBulkUnread() { this.bulkAction('unread'); }
+    onBulkStar() { this.bulkAction('star'); }
+    onBulkArchive() { this.bulkAction('archive'); }
+    onBulkDelete() { this.bulkAction('delete'); }
+    onBulkAddTag(ev) { this.bulkAction('add_tag', { tag_id: parseInt(ev.currentTarget.dataset.tagId) }); }
+
+    // Snooze, contact, format
+    onSnooze(ev) { this.snooze(parseInt(ev.currentTarget.dataset.minutes)); }
+    onOpenContactDetail(ev) { this.openContactDetail(parseInt(ev.currentTarget.dataset.contactId)); }
+    onRemoveContactTag(ev) { this.removeContactTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onExecFormat(ev) { this.execFormat(ev.currentTarget.dataset.command); }
+    onComposerHeaderClick() { if (this.state.composerMinimized) this.toggleComposerMinimized(); }
+
     get groupedMessages() {
         const msgs = this.filteredMessages;
         const groupBy = this.state.groupBy;

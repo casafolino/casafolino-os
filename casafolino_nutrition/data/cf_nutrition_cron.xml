@@ -2,7 +2,7 @@
 <odoo>
     <record id="ir_cron_sync_nutrition_ingredients" model="ir.cron">
         <field name="name">Nutrition — Sincronizza ingredienti da fonti esterne</field>
-        <field name="model_id" ref="casafolino_nutrition.model_cf_nutrition_ingredient"/>
+        <field name="model_id" search="[('model','=','cf.nutrition.ingredient')]" model="ir.model"/>
         <field name="state">code</field>
         <field name="code">model._cron_sync_ingredients()</field>
         <field name="interval_number">1</field>
