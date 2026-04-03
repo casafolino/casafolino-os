@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══ Report Action: Verbale Ricezione ═══ -->
+    <!-- Report Action: Verbale Ricezione -->
     <record id="report_haccp_ricezione" model="ir.actions.report">
         <field name="name">Verbale Controllo Ricezione HACCP</field>
         <field name="model">stock.picking</field>
@@ -12,7 +12,7 @@
         <field name="binding_type">report</field>
     </record>
 
-    <!-- ═══ Report Action: Scheda Produzione ═══ -->
+    <!-- Report Action: Scheda Produzione -->
     <record id="report_haccp_produzione" model="ir.actions.report">
         <field name="name">Scheda HACCP Produzione</field>
         <field name="model">mrp.production</field>
@@ -23,7 +23,7 @@
         <field name="binding_type">report</field>
     </record>
 
-    <!-- ═══ Template QWeb: Verbale Ricezione ═══ -->
+    <!-- Template QWeb: Verbale Ricezione -->
     <template id="report_haccp_ricezione_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
@@ -110,7 +110,7 @@
         </t>
     </template>
 
-    <!-- ═══ Template QWeb: Scheda Produzione ═══ -->
+    <!-- Template QWeb: Scheda Produzione -->
     <template id="report_haccp_produzione_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">

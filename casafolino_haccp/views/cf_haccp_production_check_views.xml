@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══ Lista produzione HACCP (mrp.production) ═══ -->
+    <!-- Lista produzione HACCP (mrp.production) -->
     <record id="cf_haccp_production_list" model="ir.ui.view">
         <field name="name">cf.haccp.production.list</field>
         <field name="model">mrp.production</field>
@@ -28,7 +28,7 @@
         </field>
     </record>
 
-    <!-- ═══ Search produzione HACCP ═══ -->
+    <!-- Search produzione HACCP -->
     <record id="cf_haccp_production_search" model="ir.ui.view">
         <field name="name">cf.haccp.production.search</field>
         <field name="model">mrp.production</field>
@@ -53,7 +53,7 @@
         </field>
     </record>
 
-    <!-- ═══ Tab HACCP in mrp.production form ═══ -->
+    <!-- Tab HACCP in mrp.production form -->
     <record id="cf_haccp_production_form_inherit" model="ir.ui.view">
         <field name="name">mrp.production.haccp.production.form</field>
         <field name="model">mrp.production</field>

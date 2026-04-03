@@ -86,7 +86,7 @@
         </field>
     </record>
 
-    <!-- MESSAGES LIST — vista principale inbox -->
+    <!-- MESSAGES LIST - vista principale inbox -->
     <record id="view_cf_mail_message_list" model="ir.ui.view">
         <field name="name">cf.mail.message.list</field>
         <field name="model">cf.mail.message</field>

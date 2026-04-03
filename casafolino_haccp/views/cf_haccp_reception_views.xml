@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══ Lista ricezioni HACCP (stock.picking incoming) ═══ -->
+    <!-- Lista ricezioni HACCP (stock.picking incoming) -->
     <record id="cf_haccp_reception_list" model="ir.ui.view">
         <field name="name">cf.haccp.reception.list</field>
         <field name="model">stock.picking</field>
@@ -27,7 +27,7 @@
         </field>
     </record>
 
-    <!-- ═══ Search ricezioni HACCP ═══ -->
+    <!-- Search ricezioni HACCP -->
     <record id="cf_haccp_reception_search" model="ir.ui.view">
         <field name="name">cf.haccp.reception.search</field>
         <field name="model">stock.picking</field>
@@ -57,7 +57,7 @@
         </field>
     </record>
 
-    <!-- ═══ Tab HACCP in stock.picking form (solo incoming) ═══ -->
+    <!-- Tab HACCP in stock.picking form (solo incoming) -->
     <record id="cf_haccp_reception_form_inherit" model="ir.ui.view">
         <field name="name">stock.picking.haccp.reception.form</field>
         <field name="model">stock.picking</field>

@@ -812,7 +812,7 @@
     <t t-name="cf_mail_client.Composer">
         <div t-att-class="'cf-mail-composer' + (state.composerMinimized ? ' cf-composer-minimized' : '') + (state.composerMaximized ? ' cf-composer-maximized' : '')">
 
-            <!-- ── Header ─────────────────────────────────────────── -->
+            <!-- Header -->
             <div class="cf-composer-header" t-on-click="onComposerHeaderClick">
                 <i class="fa fa-pen cf-composer-hdr-icon"/>
                 <span class="cf-composer-hdr-title" t-esc="state.composerMode === 'reply' ? 'Rispondi' : state.composerMode === 'forward' ? 'Inoltra' : 'Nuovo Messaggio'"/>
@@ -831,7 +831,7 @@
                 </div>
             </div>
 
-            <!-- ── Campi (nascosti se minimizzato) ───────────────── -->
+            <!-- Campi (nascosti se minimizzato) -->
             <t t-if="!state.composerMinimized">
 
                 <!-- Da -->
@@ -892,7 +892,7 @@
                            placeholder="Oggetto..."/>
                 </div>
 
-                <!-- ── Toolbar formattazione ──────────────────────── -->
+                <!-- Toolbar formattazione -->
                 <div class="cf-composer-toolbar">
                     <div class="cf-composer-tb-group">
                         <button class="cf-fmt-btn" data-command="bold" t-on-click="onExecFormat" title="Grassetto"><b>B</b></button>
@@ -914,10 +914,10 @@
                     </div>
                 </div>
 
-                <!-- ── Corpo ──────────────────────────────────────── -->
+                <!-- Corpo -->
                 <div class="cf-composer-body" contenteditable="true" t-ref="composerBody"/>
 
-                <!-- ── Firma (separata, visibile se presente) ─────── -->
+                <!-- Firma (separata, visibile se presente) -->
                 <t t-if="currentSignature">
                     <div class="cf-composer-sig-area">
                         <div class="cf-composer-sig-divider">—</div>
@@ -925,7 +925,7 @@
                     </div>
                 </t>
 
-                <!-- ── Footer ────────────────────────────────────── -->
+                <!-- Footer -->
                 <div class="cf-composer-footer">
                     <button class="cf-mail-btn-primary" t-on-click="sendEmail">
                         <i class="fa fa-paper-plane"/> Invia

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ── List view ──────────────────────────────────────────────────── -->
+    <!-- List view -->
     <record id="view_cf_mail_sender_rule_list" model="ir.ui.view">
         <field name="name">cf.mail.sender.rule.list</field>
         <field name="model">cf.mail.sender.rule</field>
@@ -20,7 +20,7 @@
         </field>
     </record>
 
-    <!-- ── Form view ──────────────────────────────────────────────────── -->
+    <!-- Form view -->
     <record id="view_cf_mail_sender_rule_form" model="ir.ui.view">
         <field name="name">cf.mail.sender.rule.form</field>
         <field name="model">cf.mail.sender.rule</field>
@@ -45,7 +45,7 @@
         </field>
     </record>
 
-    <!-- ── Search view ────────────────────────────────────────────────── -->
+    <!-- Search view -->
     <record id="view_cf_mail_sender_rule_search" model="ir.ui.view">
         <field name="name">cf.mail.sender.rule.search</field>
         <field name="model">cf.mail.sender.rule</field>
@@ -65,7 +65,7 @@
         </field>
     </record>
 
-    <!-- ── Action ─────────────────────────────────────────────────────── -->
+    <!-- Action -->
     <record id="action_cf_mail_sender_rules" model="ir.actions.act_window">
         <field name="name">Regole Mittenti</field>
         <field name="res_model">cf.mail.sender.rule</field>
@@ -83,7 +83,7 @@
         </field>
     </record>
 
-    <!-- ── Server actions per azioni massive ──────────────────────────── -->
+    <!-- Server actions per azioni massive -->
     <record id="action_keep_senders_bulk" model="ir.actions.server">
         <field name="name">Tieni mittenti selezionati</field>
         <field name="model_id" ref="model_cf_mail_message"/>
