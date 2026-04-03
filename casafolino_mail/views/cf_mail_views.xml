@@ -44,6 +44,8 @@
                 <header>
                     <button name="action_sync_inbox" string="Sincronizza Ora"
                         type="object" class="btn-primary"/>
+                    <button name="action_import_history" string="Importa Storico"
+                        type="object" class="btn-secondary"/>
                     <button name="action_mark_all_read" string="Segna tutto letto"
                         type="object" class="btn-secondary"/>
                 </header>
