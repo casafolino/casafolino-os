@@ -213,6 +213,12 @@
                                                 <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color" t-esc="tag.name"/>
                                             </t>
                                         </t>
+                                        <span t-if="msg.sender_action === 'keep'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
+                                            <i class="fa fa-check-circle"/> Tenuto
+                                        </span>
+                                        <span t-if="msg.sender_action === 'exclude'" class="cf-mail-tag-pill" style="background:#ffebee;color:#c62828">
+                                            <i class="fa fa-ban"/> Escluso
+                                        </span>
                                         <span t-if="msg.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
                                         <span t-if="msg.lead_name and state.groupBy !== 'lead'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
                                             <i class="fa fa-handshake"/> <t t-esc="msg.lead_name"/>
@@ -298,6 +304,26 @@
                             </div>
                         </div>
                         <div class="cf-mail-detail-date" t-esc="state.msgDetail.date"/>
+                    </div>
+                    <div class="cf-mail-sender-actions" style="display:flex;gap:6px;margin-bottom:8px">
+                        <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;background:#e8f5e9;color:#2e7d32;border-color:#c8e6c9"
+                                t-on-click="onKeepSender">
+                            <i class="fa fa-check"/> Tieni Mittente
+                        </button>
+                        <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;background:#ffebee;color:#c62828;border-color:#ffcdd2"
+                                t-on-click="onExcludeSender">
+                            <i class="fa fa-ban"/> Escludi Mittente
+                        </button>
+                        <t t-if="state.msgDetail.sender_action === 'keep'">
+                            <span style="font-size:11px;padding:4px 10px;background:#e8f5e9;color:#2e7d32;border-radius:12px;display:inline-flex;align-items:center;gap:4px">
+                                <i class="fa fa-check-circle"/> Tenuto
+                            </span>
+                        </t>
+                        <t t-if="state.msgDetail.sender_action === 'exclude'">
+                            <span style="font-size:11px;padding:4px 10px;background:#ffebee;color:#c62828;border-radius:12px;display:inline-flex;align-items:center;gap:4px">
+                                <i class="fa fa-ban"/> Escluso
+                            </span>
+                        </t>
                     </div>
                     <div class="cf-mail-detail-actions">
                         <button class="cf-mail-btn-primary" t-on-click="openReply"><i class="fa fa-reply"/> Rispondi</button>

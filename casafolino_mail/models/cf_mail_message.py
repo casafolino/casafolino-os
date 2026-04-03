@@ -80,6 +80,8 @@ class CfMailMessage(models.Model):
 
     def _msg_to_dict(self, m):
         tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in m.tag_ids]
+        sender_rule = self.env['cf.mail.sender.rule'].sudo().search(
+            [('email', '=', (m.from_address or '').strip().lower())], limit=1)
         thread_count = 0
         if m.thread_id:
             thread_count = self.search_count([('thread_id', '=', m.thread_id), ('id', '!=', m.id)])
@@ -108,6 +110,7 @@ class CfMailMessage(models.Model):
             'assigned_user_name': m.assigned_user_id.name if m.assigned_user_id else '',
             'tags': tags,
             'lead_stage': m.lead_id.stage_id.name if m.lead_id and m.lead_id.stage_id else '',
+            'sender_action': sender_rule.action if sender_rule else False,
         }
 
     @api.model
@@ -245,6 +248,8 @@ class CfMailMessage(models.Model):
                     'direction': om.direction,
                 })
         tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in msg.tag_ids]
+        sender_rule = self.env['cf.mail.sender.rule'].sudo().search(
+            [('email', '=', (msg.from_address or '').strip().lower())], limit=1)
         thread_messages = []
         if msg.thread_id:
             thread_msgs = self.search([('thread_id', '=', msg.thread_id), ('id', '!=', msg.id)], order='date asc')
@@ -287,6 +292,7 @@ class CfMailMessage(models.Model):
             'tags': tags,
             'thread_messages': thread_messages,
             'signature': msg.account_id.signature or '',
+            'sender_action': sender_rule.action if sender_rule else False,
         }
 
     @api.model
@@ -620,4 +626,34 @@ class CfMailMessage(models.Model):
             'success': True,
             'message': f'{len(addresses)} mittenti esclusi. Email eliminate.'
         }
+
+    @api.model
+    def rpc_keep_sender(self, *args, **kw):
+        """OWL RPC: tieni mittente per message_id."""
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return {'success': False}
+        msg = self.browse(int(message_id))
+        if not msg.exists():
+            return {'success': False}
+        addr = (msg.from_address or '').strip().lower()
+        if not addr:
+            return {'success': False}
+        self.env['cf.mail.sender.rule'].set_rule(addr, 'keep', trigger_sync=True)
+        return {'success': True, 'action': 'keep', 'email': addr}
+
+    @api.model
+    def rpc_exclude_sender(self, *args, **kw):
+        """OWL RPC: escludi mittente per message_id. Elimina tutte le sue email."""
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return {'success': False}
+        msg = self.browse(int(message_id))
+        if not msg.exists():
+            return {'success': False}
+        addr = (msg.from_address or '').strip().lower()
+        if not addr:
+            return {'success': False}
+        self.env['cf.mail.sender.rule'].set_rule(addr, 'exclude', trigger_sync=False)
+        return {'success': True, 'action': 'exclude', 'email': addr}
 

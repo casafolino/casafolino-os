@@ -213,6 +213,32 @@ class CfMailClient extends Component {
     onQuickArchive(ev) { this.quickArchive(parseInt(ev.currentTarget.dataset.msgId), ev); }
     onDetailStar() { if (this.state.selectedMsg) this.quickStar(this.state.selectedMsg.id, null); }
     onDetailArchive() { if (this.state.selectedMsg) this.quickArchive(this.state.selectedMsg.id, null); }
+    async onKeepSender() {
+        if (!this.state.selectedMsg) return;
+        const res = await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_keep_sender",
+            args: [[], this.state.selectedMsg.id], kwargs: { message_id: this.state.selectedMsg.id },
+        });
+        if (res && res.success) {
+            this.state.msgDetail.sender_action = "keep";
+            const msg = this.state.messages.find(m => m.id === this.state.selectedMsg.id);
+            if (msg) msg.sender_action = "keep";
+        }
+    }
+    async onExcludeSender() {
+        if (!this.state.selectedMsg) return;
+        const from = this.state.msgDetail.from_name || this.state.msgDetail.from_address || "";
+        if (!confirm("Escludi mittente " + from + "?\nTutte le sue email verranno eliminate.")) return;
+        const res = await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_exclude_sender",
+            args: [[], this.state.selectedMsg.id], kwargs: { message_id: this.state.selectedMsg.id },
+        });
+        if (res && res.success) {
+            this.state.selectedMsg = null;
+            this.state.msgDetail = {};
+            await this.loadMessages();
+        }
+    }
     onAddTag(ev) { this.addTag(parseInt(ev.currentTarget.dataset.tagId)); }
     onRemoveTag(ev) { this.removeTag(parseInt(ev.currentTarget.dataset.tagId)); }
     onNewTagNameInput(ev) { this.state.newTagName = ev.target.value; }
