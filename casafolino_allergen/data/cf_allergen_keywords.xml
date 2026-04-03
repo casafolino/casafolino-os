@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <!-- ── Glutine ──────────────────────────────────────────────── -->
+    <!-- Glutine -->
     <record id="kw_gluten_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_01_gluten"/><field name="keyword">grano</field></record>
     <record id="kw_gluten_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_01_gluten"/><field name="keyword">frumento</field></record>
     <record id="kw_gluten_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_01_gluten"/><field name="keyword">farro</field></record>
@@ -12,14 +12,14 @@
     <record id="kw_gluten_09" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_01_gluten"/><field name="keyword">glutine</field></record>
     <record id="kw_gluten_10" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_01_gluten"/><field name="keyword">kamut</field></record>
 
-    <!-- ── Crostacei ────────────────────────────────────────────── -->
+    <!-- Crostacei -->
     <record id="kw_crust_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_02_crustaceans"/><field name="keyword">gambero</field></record>
     <record id="kw_crust_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_02_crustaceans"/><field name="keyword">granchio</field></record>
     <record id="kw_crust_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_02_crustaceans"/><field name="keyword">aragosta</field></record>
     <record id="kw_crust_04" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_02_crustaceans"/><field name="keyword">astice</field></record>
     <record id="kw_crust_05" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_02_crustaceans"/><field name="keyword">scampo</field></record>
 
-    <!-- ── Uova ─────────────────────────────────────────────────── -->
+    <!-- Uova -->
     <record id="kw_egg_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_03_eggs"/><field name="keyword">uovo</field></record>
     <record id="kw_egg_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_03_eggs"/><field name="keyword">uova</field></record>
     <record id="kw_egg_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_03_eggs"/><field name="keyword">albume</field></record>
@@ -28,7 +28,7 @@
     <record id="kw_egg_06" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_03_eggs"/><field name="keyword">maionese</field></record>
     <record id="kw_egg_07" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_03_eggs"/><field name="keyword">ovoprodotto</field></record>
 
-    <!-- ── Pesce ─────────────────────────────────────────────────── -->
+    <!-- Pesce -->
     <record id="kw_fish_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_04_fish"/><field name="keyword">merluzzo</field></record>
     <record id="kw_fish_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_04_fish"/><field name="keyword">salmone</field></record>
     <record id="kw_fish_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_04_fish"/><field name="keyword">tonno</field></record>
@@ -37,14 +37,14 @@
     <record id="kw_fish_06" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_04_fish"/><field name="keyword">pesce</field></record>
     <record id="kw_fish_07" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_04_fish"/><field name="keyword">alice</field></record>
 
-    <!-- ── Arachidi ──────────────────────────────────────────────── -->
+    <!-- Arachidi -->
     <record id="kw_pnt_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">arachide</field></record>
     <record id="kw_pnt_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">arachidi</field></record>
     <record id="kw_pnt_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">groundnut</field></record>
     <record id="kw_pnt_04" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">monkey nut</field></record>
     <record id="kw_pnt_05" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">burro di arachidi</field></record>
 
-    <!-- ── Soia ──────────────────────────────────────────────────── -->
+    <!-- Soia -->
     <record id="kw_soy_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">soia</field></record>
     <record id="kw_soy_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">tofu</field></record>
     <record id="kw_soy_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">edamame</field></record>
@@ -52,7 +52,7 @@
     <record id="kw_soy_05" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">tempeh</field></record>
     <record id="kw_soy_06" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">lecitina di soia</field></record>
 
-    <!-- ── Latte ─────────────────────────────────────────────────── -->
+    <!-- Latte -->
     <record id="kw_milk_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">latte</field></record>
     <record id="kw_milk_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">lattosio</field></record>
     <record id="kw_milk_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">burro</field></record>
@@ -66,7 +66,7 @@
     <record id="kw_milk_11" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">latte intero</field></record>
     <record id="kw_milk_12" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">latte scremato</field></record>
 
-    <!-- ── Frutta a guscio ───────────────────────────────────────── -->
+    <!-- Frutta a guscio -->
     <record id="kw_nuts_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">nocciola</field></record>
     <record id="kw_nuts_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">mandorla</field></record>
     <record id="kw_nuts_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">noce</field></record>
@@ -80,31 +80,31 @@
     <record id="kw_nuts_11" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">gianduia</field></record>
     <record id="kw_nuts_12" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">noci del brasile</field></record>
 
-    <!-- ── Sedano ────────────────────────────────────────────────── -->
+    <!-- Sedano -->
     <record id="kw_cel_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_09_celery"/><field name="keyword">sedano</field></record>
     <record id="kw_cel_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_09_celery"/><field name="keyword">celeriac</field></record>
 
-    <!-- ── Senape ────────────────────────────────────────────────── -->
+    <!-- Senape -->
     <record id="kw_must_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_10_mustard"/><field name="keyword">senape</field></record>
     <record id="kw_must_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_10_mustard"/><field name="keyword">mustard</field></record>
 
-    <!-- ── Sesamo ────────────────────────────────────────────────── -->
+    <!-- Sesamo -->
     <record id="kw_ses_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_11_sesame"/><field name="keyword">sesamo</field></record>
     <record id="kw_ses_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_11_sesame"/><field name="keyword">tahini</field></record>
     <record id="kw_ses_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_11_sesame"/><field name="keyword">tahina</field></record>
 
-    <!-- ── Solfiti ───────────────────────────────────────────────── -->
+    <!-- Solfiti -->
     <record id="kw_so2_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_12_so2"/><field name="keyword">solfito</field></record>
     <record id="kw_so2_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_12_so2"/><field name="keyword">anidride solforosa</field></record>
     <record id="kw_so2_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_12_so2"/><field name="keyword">so2</field></record>
     <record id="kw_so2_04" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_12_so2"/><field name="keyword">metabisolfito</field></record>
 
-    <!-- ── Lupini ────────────────────────────────────────────────── -->
+    <!-- Lupini -->
     <record id="kw_lup_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_13_lupin"/><field name="keyword">lupino</field></record>
     <record id="kw_lup_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_13_lupin"/><field name="keyword">lupini</field></record>
     <record id="kw_lup_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_13_lupin"/><field name="keyword">farina di lupino</field></record>
 
-    <!-- ── Molluschi ─────────────────────────────────────────────── -->
+    <!-- Molluschi -->
     <record id="kw_mol_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_14_molluscs"/><field name="keyword">mollusco</field></record>
     <record id="kw_mol_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_14_molluscs"/><field name="keyword">polpo</field></record>
     <record id="kw_mol_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_14_molluscs"/><field name="keyword">calamaro</field></record>

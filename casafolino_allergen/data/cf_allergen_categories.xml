@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Categoria: Cereali con glutine -->
+    <record id="cat_gluten" model="cf.allergen.category">
+        <field name="name">Cereali contenenti glutine</field>
+        <field name="code">GLUTEN</field><field name="sequence">1</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Crostacei -->
+    <record id="cat_crustaceans" model="cf.allergen.category">
+        <field name="name">Crostacei</field>
+        <field name="code">CRUSTACEANS</field><field name="sequence">2</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Uova -->
+    <record id="cat_eggs" model="cf.allergen.category">
+        <field name="name">Uova</field>
+        <field name="code">EGGS</field><field name="sequence">3</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Pesce -->
+    <record id="cat_fish" model="cf.allergen.category">
+        <field name="name">Pesce</field>
+        <field name="code">FISH</field><field name="sequence">4</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Arachidi -->
+    <record id="cat_peanuts" model="cf.allergen.category">
+        <field name="name">Arachidi</field>
+        <field name="code">PEANUTS</field><field name="sequence">5</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Soia -->
+    <record id="cat_soy" model="cf.allergen.category">
+        <field name="name">Soia</field>
+        <field name="code">SOY</field><field name="sequence">6</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Latte -->
+    <record id="cat_milk" model="cf.allergen.category">
+        <field name="name">Latte</field>
+        <field name="code">MILK</field><field name="sequence">7</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Frutta a guscio -->
+    <record id="cat_nuts" model="cf.allergen.category">
+        <field name="name">Frutta a guscio</field>
+        <field name="code">NUTS</field><field name="sequence">8</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/><field name="is_codex" eval="True"/>
+    </record>
+
+    <!-- Categoria: Sedano -->
+    <record id="cat_celery" model="cf.allergen.category">
+        <field name="name">Sedano</field>
+        <field name="code">CELERY</field><field name="sequence">9</field>
+        <field name="is_eu" eval="True"/>
+    </record>
+
+    <!-- Categoria: Senape -->
+    <record id="cat_mustard" model="cf.allergen.category">
+        <field name="name">Senape</field>
+        <field name="code">MUSTARD</field><field name="sequence">10</field>
+        <field name="is_eu" eval="True"/><field name="is_canada" eval="True"/>
+    </record>
+
+    <!-- Categoria: Sesamo -->
+    <record id="cat_sesame" model="cf.allergen.category">
+        <field name="name">Semi di sesamo</field>
+        <field name="code">SESAME</field><field name="sequence">11</field>
+        <field name="is_eu" eval="True"/><field name="is_usa" eval="True"/>
+        <field name="is_canada" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_japan" eval="True"/>
+    </record>
+
+    <!-- Categoria: Solfiti -->
+    <record id="cat_sulphites" model="cf.allergen.category">
+        <field name="name">Anidride solforosa e solfiti</field>
+        <field name="code">SO2</field><field name="sequence">12</field>
+        <field name="is_eu" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_canada" eval="True"/>
+    </record>
+
+    <!-- Categoria: Lupino -->
+    <record id="cat_lupin" model="cf.allergen.category">
+        <field name="name">Lupino</field>
+        <field name="code">LUPIN</field><field name="sequence">13</field>
+        <field name="is_eu" eval="True"/><field name="is_australia" eval="True"/>
+    </record>
+
+    <!-- Categoria: Molluschi -->
+    <record id="cat_molluscs" model="cf.allergen.category">
+        <field name="name">Molluschi</field>
+        <field name="code">MOLLUSCS</field><field name="sequence">14</field>
+        <field name="is_eu" eval="True"/><field name="is_australia" eval="True"/>
+        <field name="is_usa" eval="True"/>
+    </record>
+
+    <!-- Categoria: Grano saraceno (Giappone) -->
+    <record id="cat_buckwheat" model="cf.allergen.category">
+        <field name="name">Grano saraceno</field>
+        <field name="code">BUCKWHEAT</field><field name="sequence">15</field>
+        <field name="is_japan" eval="True"/>
+    </record>
+
+    <!-- Categoria: Carne (Giappone raccomandato) -->
+    <record id="cat_meat" model="cf.allergen.category">
+        <field name="name">Carne</field>
+        <field name="code">MEAT</field><field name="sequence">16</field>
+        <field name="is_japan" eval="True"/>
+    </record>
+
+    <!-- Categoria: Prodotti delle api -->
+    <record id="cat_bee" model="cf.allergen.category">
+        <field name="name">Prodotti delle api</field>
+        <field name="code">BEE</field><field name="sequence">17</field>
+        <field name="is_australia" eval="True"/>
+    </record>
+
+    <!-- Categoria: Frutta -->
+    <record id="cat_fruit" model="cf.allergen.category">
+        <field name="name">Frutta</field>
+        <field name="code">FRUIT</field><field name="sequence">18</field>
+        <field name="is_japan" eval="True"/>
+    </record>
+
+    <!-- Categoria: Gelatina -->
+    <record id="cat_gelatin" model="cf.allergen.category">
+        <field name="name">Gelatina</field>
+        <field name="code">GELATIN</field><field name="sequence">19</field>
+        <field name="is_australia" eval="True"/>
+    </record>
+
+</odoo>
