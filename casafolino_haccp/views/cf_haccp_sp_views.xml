@@ -30,18 +30,18 @@
                     </group>
                     <group string="10 Step HACCP">
                         <group>
-                            <field name="step1_ok" string="Step 1 — Ricevimento MP"/>
-                            <field name="step2_ok" string="Step 2 — Pesatura"/>
-                            <field name="step3_ok" string="Step 3 — Miscelazione"/>
-                            <field name="step4_ok" string="Step 4 — Lavorazione"/>
-                            <field name="step5_ok" string="Step 5 — Controllo Intermedio"/>
+                            <field name="step1_ok" string="Step 1 - Ricevimento MP"/>
+                            <field name="step2_ok" string="Step 2 - Pesatura"/>
+                            <field name="step3_ok" string="Step 3 - Miscelazione"/>
+                            <field name="step4_ok" string="Step 4 - Lavorazione"/>
+                            <field name="step5_ok" string="Step 5 - Controllo Intermedio"/>
                         </group>
                         <group>
-                            <field name="step6_ok" string="Step 6 — Confezionamento"/>
-                            <field name="step7_ok" string="Step 7 — Etichettatura"/>
-                            <field name="step8_ok" string="Step 8 — Controllo Finale"/>
-                            <field name="step9_ok" string="Step 9 — Stoccaggio"/>
-                            <field name="step10_ok" string="Step 10 — Spedizione"/>
+                            <field name="step6_ok" string="Step 6 - Confezionamento"/>
+                            <field name="step7_ok" string="Step 7 - Etichettatura"/>
+                            <field name="step8_ok" string="Step 8 - Controllo Finale"/>
+                            <field name="step9_ok" string="Step 9 - Stoccaggio"/>
+                            <field name="step10_ok" string="Step 10 - Spedizione"/>
                         </group>
                     </group>
                     <notebook>

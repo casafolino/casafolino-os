@@ -30,38 +30,33 @@
                 <t t-call="web.external_layout">
                     <div class="page">
                         <h2>Verbale Controllo Ricezione HACCP</h2>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <strong>Riferimento:</strong> <t t-esc="doc.name"/><br/>
-                                <strong>Data:</strong> <t t-esc="doc.scheduled_date"/><br/>
-                                <strong>Fornitore:</strong> <t t-esc="doc.partner_id.name"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Esito:</strong> <t t-esc="doc.haccp_esito"/><br/>
-                                <strong>Operatore:</strong> <t t-esc="doc.haccp_operatore_id.name"/><br/>
-                                <strong>Data Controllo:</strong> <t t-esc="doc.haccp_data_controllo"/>
-                            </div>
-                        </div>
+                        <table class="table table-sm">
+                            <tr><td><strong>Riferimento:</strong></td><td><t t-esc="doc.name"/></td></tr>
+                            <tr><td><strong>Data:</strong></td><td><t t-esc="doc.scheduled_date"/></td></tr>
+                            <tr><td><strong>Fornitore:</strong></td><td><t t-esc="doc.partner_id.name"/></td></tr>
+                            <tr><td><strong>Esito:</strong></td><td><t t-esc="doc.haccp_esito"/></td></tr>
+                            <tr><td><strong>Operatore:</strong></td><td><t t-esc="doc.haccp_operatore_id.name"/></td></tr>
+                        </table>
 
                         <h4>Trasporto</h4>
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Tipo:</strong> <t t-esc="doc.haccp_trasporto_tipo"/></td>
                                 <td><strong>Targa:</strong> <t t-esc="doc.haccp_targa"/></td>
-                                <td><strong>Temp. Vano:</strong> <t t-esc="doc.haccp_temp_trasporto"/>°C</td>
+                                <td><strong>Temp. Vano:</strong> <t t-esc="doc.haccp_temp_trasporto"/> C</td>
                                 <td><strong>Temp. OK:</strong> <t t-if="doc.haccp_temp_trasporto_ok">Si</t><t t-else="">No</t></td>
                             </tr>
                         </table>
 
-                        <h4>Prodotti Controllati</h4>
-                        <table class="table table-sm">
+                        <h4>Prodotti Ricevuti</h4>
+                        <table class="table table-sm table-bordered">
                             <thead>
                                 <tr>
                                     <th>Prodotto</th>
                                     <th>Lotto</th>
                                     <th>Quantita</th>
                                     <th>Scadenza</th>
-                                    <th>Temp. °C</th>
+                                    <th>Temperatura</th>
                                     <th>Esito</th>
                                 </tr>
                             </thead>
@@ -72,7 +67,7 @@
                                         <td><t t-esc="line.lot_id.name"/></td>
                                         <td><t t-esc="line.qty"/></td>
                                         <td><t t-esc="line.expiry_date"/></td>
-                                        <td><t t-esc="line.temp_prodotto"/></td>
+                                        <td><t t-esc="line.temp_prodotto"/> C</td>
                                         <td><t t-esc="line.esito_riga"/></td>
                                     </tr>
                                 </t>
@@ -84,23 +79,26 @@
                             <p><t t-esc="doc.haccp_note"/></p>
                         </t>
 
-                        <div class="mt-4 border-top pt-3" style="font-size: 9px;">
+                        <!-- Sezione firma digitale -->
+                        <div style="margin-top:30px; border-top:1px solid #ccc; padding-top:15px; font-size:9px;">
                             <t t-if="doc.haccp_firma_operatore">
-                                <strong>Firma Operatore:</strong>
-                                <t t-esc="doc.haccp_operatore_id.name"/> —
-                                <t t-esc="doc.haccp_data_controllo"/> —
-                                Codice: <t t-esc="(doc.haccp_firma_operatore or '')[-12:]"/>
-                                <br/>
+                                <p>
+                                    <strong>Firma Digitale Operatore:</strong>
+                                    <t t-esc="doc.haccp_operatore_id.name"/> -
+                                    <t t-esc="doc.haccp_data_firma"/> -
+                                    Codice: <t t-esc="(doc.haccp_firma_operatore or '')[-12:]"/>
+                                </p>
                             </t>
                             <t t-if="doc.haccp_firma_responsabile">
-                                <strong>Approvazione:</strong>
-                                <t t-esc="doc.haccp_responsabile_id.name"/> —
-                                <t t-esc="doc.haccp_data_approvazione"/> —
-                                Codice: <t t-esc="(doc.haccp_firma_responsabile or '')[-12:]"/>
-                                <br/>
+                                <p>
+                                    <strong>Approvazione Responsabile:</strong>
+                                    <t t-esc="doc.haccp_responsabile_id.name"/> -
+                                    <t t-esc="doc.haccp_data_approvazione"/> -
+                                    Codice: <t t-esc="(doc.haccp_firma_responsabile or '')[-12:]"/>
+                                </p>
                             </t>
-                            <p class="text-muted">
-                                Documento generato da CasaFolino OS — HACCP Module.
+                            <p style="color:#999;">
+                                Documento generato da CasaFolino OS.
                                 Firma digitale SHA-256 verificabile nel sistema.
                             </p>
                         </div>
@@ -117,20 +115,16 @@
                 <t t-call="web.external_layout">
                     <div class="page">
                         <h2>Scheda HACCP Produzione</h2>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <strong>Ordine:</strong> <t t-esc="doc.name"/><br/>
-                                <strong>Prodotto:</strong> <t t-esc="doc.product_id.name"/><br/>
-                                <strong>Lotto:</strong> <t t-esc="doc.lot_producing_id.name"/><br/>
-                                <strong>Quantita:</strong> <t t-esc="doc.product_qty"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Esito:</strong> <t t-esc="doc.haccp_esito"/><br/>
-                                <strong>Operatore:</strong> <t t-esc="doc.haccp_operatore_id.name"/><br/>
-                                <strong>Resa:</strong> <t t-esc="'%.1f' % doc.haccp_resa"/>%<br/>
-                                <strong>Scarti:</strong> <t t-esc="doc.haccp_scarti"/> kg
-                            </div>
-                        </div>
+                        <table class="table table-sm">
+                            <tr><td><strong>Ordine:</strong></td><td><t t-esc="doc.name"/></td></tr>
+                            <tr><td><strong>Prodotto:</strong></td><td><t t-esc="doc.product_id.name"/></td></tr>
+                            <tr><td><strong>Lotto:</strong></td><td><t t-esc="doc.lot_producing_id.name"/></td></tr>
+                            <tr><td><strong>Quantita:</strong></td><td><t t-esc="doc.product_qty"/></td></tr>
+                            <tr><td><strong>Esito:</strong></td><td><t t-esc="doc.haccp_esito"/></td></tr>
+                            <tr><td><strong>Operatore:</strong></td><td><t t-esc="doc.haccp_operatore_id.name"/></td></tr>
+                            <tr><td><strong>Resa:</strong></td><td><t t-esc="'%.1f' % doc.haccp_resa"/>%</td></tr>
+                            <tr><td><strong>Scarti:</strong></td><td><t t-esc="doc.haccp_scarti"/> kg</td></tr>
+                        </table>
 
                         <h4>Prerequisiti</h4>
                         <table class="table table-sm">
@@ -142,15 +136,27 @@
                             </tr>
                         </table>
 
+                        <h4>Temperature</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Fusione: <t t-esc="doc.haccp_temp_fusione"/> C</td>
+                                <td>T1: <t t-esc="doc.haccp_temp_t1"/> C</td>
+                                <td>T2: <t t-esc="doc.haccp_temp_t2"/> C</td>
+                                <td>T3: <t t-esc="doc.haccp_temp_t3"/> C</td>
+                                <td>Curva OK: <t t-if="doc.haccp_curva_ok">Si</t><t t-else="">No</t></td>
+                            </tr>
+                        </table>
+
                         <t t-if="doc.haccp_ccp_ids">
                             <h4>Monitoraggio CCP</h4>
-                            <table class="table table-sm">
+                            <table class="table table-sm table-bordered">
                                 <thead>
                                     <tr>
                                         <th>CCP</th>
                                         <th>Descrizione</th>
                                         <th>Limite</th>
                                         <th>Valore</th>
+                                        <th>Unita</th>
                                         <th>OK</th>
                                     </tr>
                                 </thead>
@@ -160,7 +166,8 @@
                                             <td><t t-esc="ccp.ccp_id"/></td>
                                             <td><t t-esc="ccp.descrizione"/></td>
                                             <td><t t-esc="ccp.limite_critico"/></td>
-                                            <td><t t-esc="ccp.valore_misurato"/> <t t-esc="ccp.unita"/></td>
+                                            <td><t t-esc="ccp.valore_misurato"/></td>
+                                            <td><t t-esc="ccp.unita"/></td>
                                             <td><t t-if="ccp.ccp_ok">Si</t><t t-else="">No</t></td>
                                         </tr>
                                     </t>
@@ -168,26 +175,48 @@
                             </table>
                         </t>
 
+                        <h4>Controlli</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Peso OK: <t t-if="doc.haccp_peso_ok">Si</t><t t-else="">No</t></td>
+                                <td>Peso Medio: <t t-esc="doc.haccp_peso_medio"/> g</td>
+                                <td>Metalli OK: <t t-if="doc.haccp_metalli_ok">Si</t><t t-else="">No</t></td>
+                                <td>Campione: <t t-if="doc.haccp_campione">Si</t><t t-else="">No</t></td>
+                            </tr>
+                            <tr>
+                                <td>Imballo OK: <t t-if="doc.haccp_imballo_ok">Si</t><t t-else="">No</t></td>
+                                <td>Etichetta OK: <t t-if="doc.haccp_etichetta_ok">Si</t><t t-else="">No</t></td>
+                                <td>Lotto su etichetta: <t t-if="doc.haccp_lotto_etichetta_ok">Si</t><t t-else="">No</t></td>
+                                <td/>
+                            </tr>
+                        </table>
+
                         <t t-if="doc.haccp_note">
                             <h4>Note</h4>
                             <p><t t-esc="doc.haccp_note"/></p>
                         </t>
 
-                        <div class="mt-4 border-top pt-3" style="font-size: 9px;">
+                        <!-- Sezione firma digitale -->
+                        <div style="margin-top:30px; border-top:1px solid #ccc; padding-top:15px; font-size:9px;">
                             <t t-if="doc.haccp_firma_operatore">
-                                <strong>Firma Operatore:</strong>
-                                <t t-esc="doc.haccp_operatore_id.name"/> —
-                                Codice: <t t-esc="(doc.haccp_firma_operatore or '')[-12:]"/>
-                                <br/>
+                                <p>
+                                    <strong>Firma Digitale Operatore:</strong>
+                                    <t t-esc="doc.haccp_operatore_id.name"/> -
+                                    <t t-esc="doc.haccp_data_firma"/> -
+                                    Codice: <t t-esc="(doc.haccp_firma_operatore or '')[-12:]"/>
+                                </p>
                             </t>
                             <t t-if="doc.haccp_firma_responsabile">
-                                <strong>Approvazione:</strong>
-                                <t t-esc="doc.haccp_responsabile_id.name"/> —
-                                Codice: <t t-esc="(doc.haccp_firma_responsabile or '')[-12:]"/>
-                                <br/>
+                                <p>
+                                    <strong>Approvazione Responsabile:</strong>
+                                    <t t-esc="doc.haccp_responsabile_id.name"/> -
+                                    <t t-esc="doc.haccp_data_approvazione"/> -
+                                    Codice: <t t-esc="(doc.haccp_firma_responsabile or '')[-12:]"/>
+                                </p>
                             </t>
-                            <p class="text-muted">
-                                Documento generato da CasaFolino OS — HACCP Module.
+                            <p style="color:#999;">
+                                Documento generato da CasaFolino OS.
+                                Firma digitale SHA-256 verificabile nel sistema.
                             </p>
                         </div>
                     </div>

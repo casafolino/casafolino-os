@@ -46,6 +46,8 @@ class CfMailClient extends Component {
             accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
             showContactModal: false,
             contactDetail: {},
+            showEnrichment: false, enrichPartnerSearch: "", enrichPartnerResults: [],
+            enrichNote: "", enrichSaved: false,
             showSearchPanel: false,
             searchForm: { query: "", date_from: "", date_to: "", tag_id: "", has_attachments: false },
             isAdmin: false,
@@ -239,6 +241,44 @@ class CfMailClient extends Component {
             await this.loadMessages();
         }
     }
+    toggleEnrichment() { this.state.showEnrichment = !this.state.showEnrichment; }
+    async onEnrichPartnerSearch(ev) {
+        const q = ev.target.value;
+        this.state.enrichPartnerSearch = q;
+        if (q.length < 2) { this.state.enrichPartnerResults = []; return; }
+        const res = await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_search_partners",
+            args: [[], q], kwargs: { query: q },
+        });
+        this.state.enrichPartnerResults = res || [];
+    }
+    onEnrichSelectPartner(ev) {
+        const pid = parseInt(ev.currentTarget.dataset.partnerId);
+        const p = this.state.enrichPartnerResults.find(x => x.id === pid);
+        if (p) {
+            this.state.msgDetail.partner_id = p.id;
+            this.state.msgDetail.partner_name = p.name;
+        }
+        this.state.enrichPartnerResults = [];
+        this.state.enrichPartnerSearch = "";
+    }
+    async onSaveEnrichment() {
+        if (!this.state.selectedMsg) return;
+        this.state.enrichSaved = false;
+        const d = this.state.msgDetail;
+        await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_save_enrichment",
+            args: [[]], kwargs: {
+                message_id: this.state.selectedMsg.id,
+                partner_id: d.partner_id || false,
+                tag_ids: (d.tags || []).map(t => t.id),
+                assigned_user_id: d.assigned_user_id || false,
+                lead_id: d.lead_id || false,
+                note: this.state.enrichNote || "",
+            },
+        });
+        this.state.enrichSaved = true;
+    }
     onAddTag(ev) { this.addTag(parseInt(ev.currentTarget.dataset.tagId)); }
     onRemoveTag(ev) { this.removeTag(parseInt(ev.currentTarget.dataset.tagId)); }
     onNewTagNameInput(ev) { this.state.newTagName = ev.target.value; }
@@ -352,6 +392,10 @@ class CfMailClient extends Component {
         try {
             const detail = await this._rpc("cf.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
+            this.state.enrichNote = detail.note || "";
+            this.state.enrichPartnerSearch = "";
+            this.state.enrichPartnerResults = [];
+            this.state.enrichSaved = false;
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");

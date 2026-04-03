@@ -34,6 +34,7 @@ class CfMailMessage(models.Model):
         compute='_compute_export_lead_id', inverse='_inverse_export_lead_id', store=False)
     assigned_user_id = fields.Many2one('res.users', string='Assegnata a')
     tag_ids = fields.Many2many('cf.mail.tag', string='Tag')
+    note = fields.Text('Note interne')
     snoozed_until = fields.Datetime('Posticipata fino a')
     has_attachments = fields.Boolean('Ha allegati', default=False)
     attachment_names = fields.Char('Allegati')
@@ -293,6 +294,7 @@ class CfMailMessage(models.Model):
             'thread_messages': thread_messages,
             'signature': msg.account_id.signature or '',
             'sender_action': sender_rule.action if sender_rule else False,
+            'note': msg.note or '',
         }
 
     @api.model
@@ -562,7 +564,57 @@ class CfMailMessage(models.Model):
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    # ── Sender rule actions ────────────────────────────────────────────────
+    # Enrichment RPC
+
+    @api.model
+    def rpc_save_enrichment(self, *args, **kw):
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        if not msg.exists():
+            return False
+        vals = {}
+        if 'note' in kw:
+            vals['note'] = kw['note'] or ''
+        if 'partner_id' in kw:
+            vals['partner_id'] = int(kw['partner_id']) if kw['partner_id'] else False
+        if 'tag_ids' in kw:
+            vals['tag_ids'] = [(6, 0, [int(t) for t in (kw['tag_ids'] or [])])]
+        if 'assigned_user_id' in kw:
+            vals['assigned_user_id'] = int(kw['assigned_user_id']) if kw['assigned_user_id'] else False
+        if 'lead_id' in kw:
+            vals['lead_id'] = int(kw['lead_id']) if kw['lead_id'] else False
+        if vals:
+            msg.write(vals)
+        return True
+
+    @api.model
+    def rpc_search_partners(self, *args, **kw):
+        query = kw.get('query') or (args[1] if len(args) > 1 else '')
+        if not query:
+            return []
+        partners = self.env['res.partner'].search([
+            '|',
+            ('name', 'ilike', query),
+            ('email', 'ilike', query),
+        ], limit=10)
+        return [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
+
+    @api.model
+    def rpc_search_leads(self, *args, **kw):
+        query = kw.get('query') or (args[1] if len(args) > 1 else '')
+        if not query:
+            return []
+        try:
+            leads = self.env['cf.export.lead'].search([
+                ('name', 'ilike', query),
+            ], limit=10)
+            return [{'id': l.id, 'name': l.name} for l in leads]
+        except Exception:
+            return []
+
+    # Sender rule actions
 
     def action_keep_sender(self):
         """Tieni mittente: crea regola keep e triggera sync storica."""

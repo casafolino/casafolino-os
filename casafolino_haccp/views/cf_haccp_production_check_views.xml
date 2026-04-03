@@ -179,9 +179,14 @@
                     <!-- FIRMA -->
                     <group string="Firma Digitale"
                            invisible="haccp_stato_firma == 'bozza'">
-                        <field name="haccp_firma_operatore" readonly="1"/>
-                        <field name="haccp_firma_responsabile" readonly="1"
-                            invisible="haccp_stato_firma != 'approvato'"/>
+                        <group>
+                            <field name="haccp_firma_operatore" readonly="1"/>
+                            <field name="haccp_data_firma" readonly="1"/>
+                        </group>
+                        <group invisible="haccp_stato_firma != 'approvato'">
+                            <field name="haccp_firma_responsabile" readonly="1"/>
+                            <field name="haccp_data_approvazione" readonly="1"/>
+                        </group>
                     </group>
                 </page>
             </xpath>

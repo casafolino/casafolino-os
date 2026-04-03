@@ -71,6 +71,7 @@ class StockPickingHaccpExtend(models.Model):
         [("bozza", "Bozza"), ("firmato", "Firmato Operatore"), ("approvato", "Approvato")],
         default="bozza", string="Stato Firma",
     )
+    haccp_data_firma = fields.Datetime("Data Firma", readonly=True)
 
     # ── RIGHE PER PRODOTTO ──
     haccp_line_ids = fields.One2many(
@@ -99,6 +100,7 @@ class StockPickingHaccpExtend(models.Model):
             }, sort_keys=True)
             rec.haccp_firma_operatore = hashlib.sha256(payload.encode()).hexdigest()
             rec.haccp_stato_firma = "firmato"
+            rec.haccp_data_firma = fields.Datetime.now()
             rec.haccp_data_controllo = fields.Datetime.now()
 
     def action_haccp_approva(self):

@@ -480,6 +480,53 @@
                                 </div>
                             </t>
                         </div>
+                        <!-- Sezione Arricchimento -->
+                        <div class="cf-mail-ctx-section">
+                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleEnrichment">
+                                <i t-att-class="'fa fa-' + (state.showEnrichment ? 'chevron-down' : 'chevron-right')"/>
+                                Arricchimento
+                            </div>
+                            <t t-if="state.showEnrichment">
+                                <div class="cf-mail-modal-field" style="margin-top:6px">
+                                    <label style="font-size:11px;font-weight:600">Partner</label>
+                                    <input class="cf-mail-modal-input" type="text"
+                                           t-att-value="state.enrichPartnerSearch"
+                                           data-state-key="enrichPartnerSearch"
+                                           t-on-input="onEnrichPartnerSearch"
+                                           placeholder="Cerca azienda/contatto..."/>
+                                    <t t-if="state.enrichPartnerResults and state.enrichPartnerResults.length > 0">
+                                        <div class="cf-mail-tag-dropdown" style="position:relative;max-height:150px;overflow-y:auto">
+                                            <t t-foreach="state.enrichPartnerResults" t-as="p" t-key="p.id">
+                                                <div class="cf-mail-tag-option" t-att-data-partner-id="p.id" t-on-click="onEnrichSelectPartner">
+                                                    <t t-esc="p.name"/>
+                                                    <small t-if="p.email" style="color:var(--text-muted);margin-left:4px" t-esc="p.email"/>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-if="state.msgDetail.partner_name">
+                                        <div style="margin-top:4px;font-size:11px;color:var(--accent)">
+                                            <i class="fa fa-check-circle"/> <t t-esc="state.msgDetail.partner_name"/>
+                                        </div>
+                                    </t>
+                                </div>
+                                <div class="cf-mail-modal-field" style="margin-top:6px">
+                                    <label style="font-size:11px;font-weight:600">Note interne</label>
+                                    <textarea class="cf-mail-modal-input" rows="2"
+                                              t-att-value="state.enrichNote"
+                                              data-state-key="enrichNote"
+                                              t-on-input="onStateInput"
+                                              placeholder="Note..."/>
+                                </div>
+                                <button class="cf-mail-btn-primary" style="font-size:11px;padding:4px 12px;margin-top:8px"
+                                        t-on-click="onSaveEnrichment">
+                                    <i class="fa fa-save"/> Salva
+                                </button>
+                                <span t-if="state.enrichSaved" style="color:#28a745;font-size:11px;margin-left:8px">
+                                    <i class="fa fa-check"/> Salvato
+                                </span>
+                            </t>
+                        </div>
                     </div>
                 </div>
                 <t t-if="state.showComposer" t-call="cf_mail_client.Composer"/>

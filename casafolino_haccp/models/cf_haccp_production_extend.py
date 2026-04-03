@@ -74,6 +74,8 @@ class MrpProductionHaccpExtend(models.Model):
         [("bozza", "Bozza"), ("firmato", "Firmato"), ("approvato", "Approvato")],
         default="bozza", string="Stato Firma",
     )
+    haccp_data_firma = fields.Datetime("Data Firma", readonly=True)
+    haccp_data_approvazione = fields.Datetime("Data Approvazione", readonly=True)
 
     @api.depends("haccp_esito")
     def _compute_haccp_state(self):
@@ -99,6 +101,7 @@ class MrpProductionHaccpExtend(models.Model):
             }, sort_keys=True)
             rec.haccp_firma_operatore = hashlib.sha256(payload.encode()).hexdigest()
             rec.haccp_stato_firma = "firmato"
+            rec.haccp_data_firma = fields.Datetime.now()
 
     def action_haccp_approva(self):
         for rec in self:
@@ -111,6 +114,7 @@ class MrpProductionHaccpExtend(models.Model):
             rec.haccp_firma_responsabile = hashlib.sha256(payload.encode()).hexdigest()
             rec.haccp_responsabile_id = rec.env.uid
             rec.haccp_stato_firma = "approvato"
+            rec.haccp_data_approvazione = fields.Datetime.now()
 
     def action_genera_pdf_produzione(self):
         return self.env.ref(
