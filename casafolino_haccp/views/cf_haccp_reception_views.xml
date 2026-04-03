@@ -1,125 +1,183 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══ cf.haccp.reception — Form ═══ -->
-    <record id="view_cf_haccp_reception_form" model="ir.ui.view">
-        <field name="name">cf.haccp.reception.form</field>
-        <field name="model">cf.haccp.reception</field>
-        <field name="arch" type="xml">
-            <form string="Controllo HACCP Ricezione">
-                <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <field name="haccp_state" widget="badge"
-                               decoration-danger="haccp_state == 'pending'"
-                               decoration-success="haccp_state == 'done'"/>
-                    </div>
-                    <group>
-                        <group string="Ricezione">
-                            <field name="picking_id"/>
-                            <field name="partner_id" readonly="1"/>
-                            <field name="date" readonly="1"/>
-                            <field name="picking_origin" readonly="1"/>
-                            <field name="product_names" readonly="1"/>
-                        </group>
-                        <group string="Controllo">
-                            <field name="operator_id"/>
-                            <field name="lot_number"/>
-                            <field name="expiry_date"/>
-                            <field name="temperature_value"/>
-                        </group>
-                    </group>
-                    <group string="Checklist HACCP">
-                        <group>
-                            <field name="temperature_ok"/>
-                            <field name="packaging_ok"/>
-                        </group>
-                        <group>
-                            <field name="label_ok"/>
-                        </group>
-                    </group>
-                    <group>
-                        <field name="notes" placeholder="Note..."/>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- ═══ cf.haccp.reception — List ═══ -->
-    <record id="view_cf_haccp_reception_list" model="ir.ui.view">
+    <!-- ═══ Lista ricezioni HACCP (stock.picking incoming) ═══ -->
+    <record id="cf_haccp_reception_list" model="ir.ui.view">
         <field name="name">cf.haccp.reception.list</field>
-        <field name="model">cf.haccp.reception</field>
+        <field name="model">stock.picking</field>
         <field name="arch" type="xml">
-            <list string="Controlli HACCP Ricezione"
-                  decoration-success="haccp_state == 'done'"
-                  decoration-danger="haccp_state == 'pending'">
-                <field name="date"/>
-                <field name="partner_id"/>
-                <field name="picking_id"/>
-                <field name="product_names"/>
-                <field name="lot_number"/>
-                <field name="expiry_date"/>
-                <field name="operator_id" widget="many2one_avatar_user"/>
-                <field name="haccp_state" widget="badge"
-                       decoration-danger="haccp_state == 'pending'"
-                       decoration-success="haccp_state == 'done'"/>
+            <list string="Controlli Ricezione"
+                  decoration-danger="haccp_state == 'pending'"
+                  decoration-success="haccp_state == 'done'">
+                <field name="name" string="Riferimento"/>
+                <field name="scheduled_date" string="Data"/>
+                <field name="partner_id" string="Fornitore"/>
+                <field name="haccp_esito" widget="badge"
+                    decoration-danger="haccp_esito in ['pending', 'rifiutato']"
+                    decoration-warning="haccp_esito in ['quarantena', 'accettato_riserva']"
+                    decoration-success="haccp_esito == 'conforme'"/>
+                <field name="haccp_stato_firma" widget="badge"
+                    decoration-muted="haccp_stato_firma == 'bozza'"
+                    decoration-info="haccp_stato_firma == 'firmato'"
+                    decoration-success="haccp_stato_firma == 'approvato'"/>
+                <field name="haccp_operatore_id" string="Operatore" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"/>
+                <field name="haccp_state" column_invisible="1"/>
             </list>
         </field>
     </record>
 
-    <!-- ═══ cf.haccp.reception — Search ═══ -->
-    <record id="view_cf_haccp_reception_search" model="ir.ui.view">
+    <!-- ═══ Search ricezioni HACCP ═══ -->
+    <record id="cf_haccp_reception_search" model="ir.ui.view">
         <field name="name">cf.haccp.reception.search</field>
-        <field name="model">cf.haccp.reception</field>
+        <field name="model">stock.picking</field>
         <field name="arch" type="xml">
             <search string="Cerca Ricezioni HACCP">
+                <field name="name"/>
                 <field name="partner_id"/>
-                <field name="lot_number"/>
-                <field name="picking_id"/>
                 <filter name="filter_from_march" string="Da marzo 2026"
-                        domain="[('date', '&gt;=', '2026-03-01')]"/>
+                        domain="[('scheduled_date', '&gt;=', '2026-03-01')]"/>
                 <separator/>
                 <filter name="filter_pending" string="Da completare"
                         domain="[('haccp_state', '=', 'pending')]"/>
                 <filter name="filter_done" string="Completati"
                         domain="[('haccp_state', '=', 'done')]"/>
+                <separator/>
+                <filter name="filter_conforme" string="Conformi"
+                        domain="[('haccp_esito', '=', 'conforme')]"/>
+                <filter name="filter_quarantena" string="In Quarantena"
+                        domain="[('haccp_esito', '=', 'quarantena')]"/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_partner" string="Fornitore"
                             context="{'group_by': 'partner_id'}"/>
-                    <filter name="group_state" string="Stato HACCP"
-                            context="{'group_by': 'haccp_state'}"/>
+                    <filter name="group_esito" string="Esito"
+                            context="{'group_by': 'haccp_esito'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- ═══ stock.picking — Tab HACCP Ricezione (solo incoming) ═══ -->
-    <record id="view_picking_form_haccp_reception" model="ir.ui.view">
-        <field name="name">stock.picking.haccp.reception.tab</field>
+    <!-- ═══ Tab HACCP in stock.picking form (solo incoming) ═══ -->
+    <record id="cf_haccp_reception_form_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.haccp.reception.form</field>
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="priority">50</field>
         <field name="arch" type="xml">
-            <notebook position="inside">
-                <page string="Controllo HACCP" name="haccp_reception_tab"
+            <xpath expr="//page[last()]" position="after">
+                <page string="Controllo HACCP"
                       invisible="picking_type_code != 'incoming'">
-                    <field name="haccp_reception_ids" nolabel="1">
-                        <list editable="bottom">
-                            <field name="operator_id"/>
-                            <field name="lot_number"/>
-                            <field name="expiry_date"/>
-                            <field name="temperature_value"/>
-                            <field name="temperature_ok"/>
-                            <field name="packaging_ok"/>
-                            <field name="label_ok"/>
-                            <field name="notes"/>
+
+                    <!-- STATO IN TESTA -->
+                    <group>
+                        <group string="Stato Controllo">
                             <field name="haccp_state" widget="badge"
-                                   decoration-danger="haccp_state == 'pending'"
-                                   decoration-success="haccp_state == 'done'"/>
+                                decoration-danger="haccp_state == 'pending'"
+                                decoration-success="haccp_state == 'done'"/>
+                            <field name="haccp_stato_firma" widget="badge"
+                                decoration-muted="haccp_stato_firma == 'bozza'"
+                                decoration-info="haccp_stato_firma == 'firmato'"
+                                decoration-success="haccp_stato_firma == 'approvato'"/>
+                            <field name="haccp_esito" widget="radio"/>
+                        </group>
+                        <group string="Responsabili">
+                            <field name="haccp_operatore_id"/>
+                            <field name="haccp_data_controllo"/>
+                            <field name="haccp_responsabile_id"
+                                invisible="haccp_stato_firma == 'bozza'"/>
+                            <field name="haccp_data_approvazione"
+                                invisible="haccp_stato_firma != 'approvato'"/>
+                        </group>
+                    </group>
+
+                    <!-- PULSANTI AZIONE -->
+                    <div class="o_row mb-3">
+                        <button name="action_haccp_firma_operatore" type="object"
+                            string="Firma come Operatore" class="btn btn-primary"
+                            invisible="haccp_stato_firma != 'bozza'"/>
+                        <button name="action_haccp_approva" type="object"
+                            string="Approva (Responsabile)" class="btn btn-success"
+                            invisible="haccp_stato_firma != 'firmato'"/>
+                        <button name="action_genera_pdf_ricezione" type="object"
+                            string="Genera PDF" class="btn btn-secondary"
+                            invisible="haccp_stato_firma == 'bozza'"/>
+                    </div>
+
+                    <!-- SEZIONE TRASPORTO -->
+                    <group string="Controllo Trasporto">
+                        <group>
+                            <field name="haccp_trasporto_tipo" widget="radio"/>
+                            <field name="haccp_targa"/>
+                            <field name="haccp_temp_trasporto"/>
+                            <field name="haccp_temp_trasporto_ok" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="haccp_vano_pulito" widget="radio"/>
+                            <field name="haccp_odori_anomali" widget="boolean_toggle"/>
+                            <field name="haccp_infestanti_vano" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <!-- SEZIONE IMBALLAGGIO -->
+                    <group string="Controllo Imballaggio">
+                        <group>
+                            <field name="haccp_imballo_esterno_ok" widget="boolean_toggle"/>
+                            <field name="haccp_imballo_primario_ok" widget="boolean_toggle"/>
+                            <field name="haccp_sigilli_ok" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="haccp_umidita" widget="boolean_toggle"/>
+                            <field name="haccp_muffe" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <!-- SEZIONE ETICHETTATURA -->
+                    <group string="Controllo Etichettatura">
+                        <group>
+                            <field name="haccp_etichetta_ok" widget="boolean_toggle"/>
+                            <field name="haccp_allergeni_ok" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="haccp_scadenza_ok" widget="boolean_toggle"/>
+                            <field name="haccp_lotto_ok" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <!-- RIGHE PER PRODOTTO -->
+                    <field name="haccp_line_ids">
+                        <list editable="bottom">
+                            <field name="move_id"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="lot_id"/>
+                            <field name="qty" readonly="1"/>
+                            <field name="expiry_date"/>
+                            <field name="temp_prodotto"/>
+                            <field name="temp_ok" widget="boolean_toggle"/>
+                            <field name="colore_ok" widget="badge"/>
+                            <field name="odore_ok" widget="badge"/>
+                            <field name="esito_riga" widget="badge"
+                                decoration-danger="esito_riga in ['pending', 'rifiutato']"
+                                decoration-warning="esito_riga in ['quarantena', 'accettato_riserva']"
+                                decoration-success="esito_riga == 'conforme'"/>
+                            <field name="note"/>
                         </list>
                     </field>
+
+                    <!-- NOTE -->
+                    <group string="Note e Azioni Correttive">
+                        <field name="haccp_note" nolabel="1"
+                               placeholder="Note generali, azioni correttive intraprese..."/>
+                    </group>
+
+                    <!-- FIRMA DIGITALE -->
+                    <group string="Firma Digitale"
+                           invisible="haccp_stato_firma == 'bozza'">
+                        <field name="haccp_firma_operatore" readonly="1"/>
+                        <field name="haccp_firma_responsabile" readonly="1"
+                            invisible="haccp_stato_firma != 'approvato'"/>
+                    </group>
                 </page>
-            </notebook>
+            </xpath>
         </field>
     </record>
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="cron_haccp_temp_reminder" model="ir.cron">
+            <field name="name">HACCP: Reminder Temperature</field>
+            <field name="model_id" search="[('model','=','cf.haccp.reminder')]" model="ir.model"/>
+            <field name="state">code</field>
+            <field name="code">model._send_temperature_reminders()</field>
+            <field name="interval_number">4</field>
+            <field name="interval_type">hours</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="cron_haccp_sanification_reminder" model="ir.cron">
+            <field name="name">HACCP: Reminder Sanificazione</field>
+            <field name="model_id" search="[('model','=','cf.haccp.reminder')]" model="ir.model"/>
+            <field name="state">code</field>
+            <field name="code">model._send_sanification_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+        </record>
+
+    </data>
+</odoo>

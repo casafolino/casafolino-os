@@ -1,0 +1,58 @@
+/* ═══ CasaFolino HACCP — Mobile-first CSS ═══ */
+
+/* Pulsanti toggle grandi per touch */
+.cf-haccp-form .o_field_widget.o_field_boolean_toggle .o_toggle_button {
+    min-height: 40px;
+    min-width: 72px;
+}
+
+/* Badge stato in testa */
+.cf-haccp-status-badge {
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 12px;
+}
+
+/* Sezioni HACCP con bordo colorato */
+.cf-haccp-section {
+    border-left: 4px solid #6c757d;
+    padding-left: 12px;
+    margin-bottom: 16px;
+}
+.cf-haccp-section.critical { border-left-color: #dc3545; }
+.cf-haccp-section.ok { border-left-color: #28a745; }
+
+/* Tabelle responsive su mobile */
+.cf-haccp-form .o_list_view {
+    overflow-x: auto;
+}
+
+/* Form fields su mobile — full width */
+@media (max-width: 768px) {
+    .o_form_view .o_group .o_inner_group {
+        width: 100% !important;
+    }
+    .o_form_view .o_group .o_wrap_field {
+        flex-direction: column;
+    }
+    .o_form_view .o_group .o_wrap_label {
+        width: 100% !important;
+    }
+    .o_form_view .o_group .o_wrap_input {
+        width: 100% !important;
+    }
+    /* Pulsanti azione piu grandi */
+    .o_form_view .o_row .btn {
+        min-height: 44px;
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+    /* Radio widget — opzioni impilate */
+    .o_field_widget.o_field_radio .o_radio_item {
+        min-height: 38px;
+        padding: 4px 0;
+    }
+}
