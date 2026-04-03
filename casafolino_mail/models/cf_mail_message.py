@@ -122,7 +122,11 @@ class CfMailMessage(models.Model):
         is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
         domain = []
         if not is_admin:
-            user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
+            user_accounts = self.env['cf.mail.account'].search([
+                '|',
+                ('user_id', '=', self.env.uid),
+                ('is_team', '=', True),
+            ])
             domain.append(('account_id', 'in', user_accounts.ids))
         elif account_id:
             domain.append(('account_id', '=', int(account_id)))
@@ -164,7 +168,11 @@ class CfMailMessage(models.Model):
         tag_id = kw.get('tag_id') or False
         is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
         if not is_admin:
-            user_accounts = self.env['cf.mail.account'].search([('user_id', '=', self.env.uid)])
+            user_accounts = self.env['cf.mail.account'].search([
+                '|',
+                ('user_id', '=', self.env.uid),
+                ('is_team', '=', True),
+            ])
             if account_id not in user_accounts.ids:
                 return []
         domain = [('account_id', '=', account_id), ('is_archived', '=', False)]

@@ -56,6 +56,8 @@ class CfMailAccount(models.Model):
     imap_sent_last_uid = fields.Integer('Ultimo UID Sent', default=0)
     imap_enabled = fields.Boolean('IMAP attivo', default=False)
     imap_status = fields.Char('Stato IMAP', default='Non configurato')
+    imap_since_date = fields.Date('Importa dal', default='2026-01-01',
+        help='Data di partenza per import storico IMAP')
 
     smtp_host = fields.Char('SMTP Host', default='smtp.gmail.com')
     smtp_port = fields.Integer('SMTP Port', default=587)
@@ -87,6 +89,35 @@ class CfMailAccount(models.Model):
         self.sync_imap()
         return True
 
+    def action_import_history(self):
+        """Reset UID e importa dal imap_since_date (default 01/01/2026)."""
+        from datetime import date as date_cls
+        for acc in self:
+            acc.imap_last_uid = 0
+            acc.imap_sent_last_uid = 0
+            if not acc.imap_since_date:
+                acc.imap_since_date = date_cls(2026, 1, 1)
+            acc.sync_imap()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Import Storico',
+                'message': 'Import completato per %s' % ', '.join(self.mapped('email')),
+                'type': 'success',
+            }
+        }
+
+    @api.model
+    def _sync_all_accounts(self):
+        """Cron: sync tutti gli account attivi con IMAP abilitato."""
+        accounts = self.search([('imap_enabled', '=', True), ('active', '=', True)])
+        for account in accounts:
+            try:
+                account.sync_imap()
+            except Exception as e:
+                _logger.error('Cron sync error for %s: %s', account.email, e)
+
     def action_mark_all_read(self):
         msgs = self.env['cf.mail.message'].search([
             ('account_id', 'in', self.ids),
@@ -104,7 +135,19 @@ class CfMailAccount(models.Model):
 
     @api.model
     def get_accounts(self, *args, **kw):
-        accounts = self.search([('active', '=', True)], order='sequence, is_team, id')
+        is_admin = (
+            self.env.user.has_group('base.group_system')
+            or self.env.user.login == 'antonio@casafolino.com'
+        )
+        if is_admin:
+            accounts = self.search([('active', '=', True)], order='sequence, is_team, id')
+        else:
+            accounts = self.search([
+                ('active', '=', True),
+                '|',
+                ('user_id', '=', self.env.uid),
+                ('is_team', '=', True),
+            ], order='sequence, is_team, id')
         if not accounts:
             user = self.env.user
             acc = self.create({
@@ -381,10 +424,13 @@ class CfMailAccount(models.Model):
             if last_uid > 0:
                 status, messages = mail.uid('search', None, f'UID {last_uid + 1}:*')
             else:
-                # Prima sync: limita agli ultimi 4 mesi via SINCE
+                # Prima sync: usa imap_since_date se presente, altrimenti 4 mesi
                 from datetime import date
-                cutoff = date.today() - timedelta(days=120)
-                since_str = cutoff.strftime('%d-%b-%Y')
+                if acc.imap_since_date:
+                    since_str = acc.imap_since_date.strftime('%d-%b-%Y')
+                else:
+                    cutoff = date.today() - timedelta(days=120)
+                    since_str = cutoff.strftime('%d-%b-%Y')
                 status, messages = mail.uid('search', None, f'SINCE {since_str}')
 
         if status != 'OK':
@@ -501,21 +547,6 @@ class CfMailAccount(models.Model):
                     user = self.env['res.users'].search([('login', 'ilike', from_address)], limit=1)
                     if user:
                         partner = user.partner_id
-
-                # Filtro INBOX: importa solo email da contatti con tag "Validato"
-                # Per la cartella Sent (direction='out') non filtrare
-                if direction == 'in':
-                    validato_tag = self.env['res.partner.category'].search(
-                        [('name', 'ilike', 'Validato')], limit=1
-                    )
-                    if not partner:
-                        # Mittente non in Odoo — skip silenzioso
-                        max_uid = max(max_uid, uid_int)
-                        continue
-                    if validato_tag and validato_tag not in partner.category_id:
-                        # Mittente presente ma senza tag Validato — skip
-                        max_uid = max(max_uid, uid_int)
-                        continue
 
                 thread_id = None
                 clean_subject = subject.replace('Re: ', '').replace('Fwd: ', '').strip()
