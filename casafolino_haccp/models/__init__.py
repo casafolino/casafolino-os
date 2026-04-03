@@ -15,3 +15,5 @@ from . import cf_haccp_tracciabilita
 from . import cf_haccp_pest
 from . import cf_haccp_formazione
 from . import cf_haccp_igiene
+from . import cf_haccp_reception
+from . import cf_haccp_production_check

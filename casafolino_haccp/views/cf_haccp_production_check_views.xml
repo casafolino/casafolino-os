@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══ cf.haccp.production — Form ═══ -->
+    <record id="view_cf_haccp_production_form" model="ir.ui.view">
+        <field name="name">cf.haccp.production.form</field>
+        <field name="model">cf.haccp.production</field>
+        <field name="arch" type="xml">
+            <form string="Scheda HACCP Produzione">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <field name="haccp_state" widget="badge"
+                               decoration-danger="haccp_state == 'pending'"
+                               decoration-success="haccp_state == 'done'"/>
+                    </div>
+                    <group>
+                        <group string="Produzione">
+                            <field name="production_id"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="lot_producing_id" readonly="1"/>
+                            <field name="qty_production" readonly="1"/>
+                            <field name="date_start" readonly="1"/>
+                        </group>
+                        <group string="Controllo">
+                            <field name="operator_id"/>
+                            <field name="temp_lavorazione"/>
+                        </group>
+                    </group>
+                    <group string="Checklist HACCP">
+                        <group>
+                            <field name="temp_ok"/>
+                            <field name="ccp_check"/>
+                        </group>
+                        <group>
+                            <field name="igiene_ok"/>
+                            <field name="attrezzature_ok"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="ccp_notes" placeholder="Note CCP..."/>
+                        <field name="notes" placeholder="Note generali..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══ cf.haccp.production — List ═══ -->
+    <record id="view_cf_haccp_production_list" model="ir.ui.view">
+        <field name="name">cf.haccp.production.list</field>
+        <field name="model">cf.haccp.production</field>
+        <field name="arch" type="xml">
+            <list string="Schede HACCP Produzione"
+                  decoration-success="haccp_state == 'done'"
+                  decoration-danger="haccp_state == 'pending'">
+                <field name="date_start"/>
+                <field name="product_id"/>
+                <field name="lot_producing_id"/>
+                <field name="qty_production"/>
+                <field name="operator_id" widget="many2one_avatar_user"/>
+                <field name="haccp_state" widget="badge"
+                       decoration-danger="haccp_state == 'pending'"
+                       decoration-success="haccp_state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══ cf.haccp.production — Search ═══ -->
+    <record id="view_cf_haccp_production_search" model="ir.ui.view">
+        <field name="name">cf.haccp.production.search</field>
+        <field name="model">cf.haccp.production</field>
+        <field name="arch" type="xml">
+            <search string="Cerca Schede HACCP Produzione">
+                <field name="product_id"/>
+                <field name="production_id"/>
+                <filter name="filter_from_march" string="Da marzo 2026"
+                        domain="[('date_start', '&gt;=', '2026-03-01')]"/>
+                <separator/>
+                <filter name="filter_pending" string="Da completare"
+                        domain="[('haccp_state', '=', 'pending')]"/>
+                <filter name="filter_done" string="Completati"
+                        domain="[('haccp_state', '=', 'done')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_product" string="Prodotto"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter name="group_state" string="Stato HACCP"
+                            context="{'group_by': 'haccp_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══ mrp.production — Tab Scheda HACCP ═══ -->
+    <record id="view_mrp_form_haccp_production" model="ir.ui.view">
+        <field name="name">mrp.production.haccp.production.tab</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Scheda HACCP" name="haccp_production_tab">
+                    <field name="haccp_production_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="operator_id"/>
+                            <field name="temp_lavorazione"/>
+                            <field name="temp_ok"/>
+                            <field name="ccp_check"/>
+                            <field name="igiene_ok"/>
+                            <field name="attrezzature_ok"/>
+                            <field name="notes"/>
+                            <field name="haccp_state" widget="badge"
+                                   decoration-danger="haccp_state == 'pending'"
+                                   decoration-success="haccp_state == 'done'"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+</odoo>

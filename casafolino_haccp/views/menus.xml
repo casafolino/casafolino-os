@@ -10,10 +10,22 @@
         <field name="res_model">cf.haccp.receipt</field>
         <field name="view_mode">list,form</field>
     </record>
+    <record id="action_cf_haccp_reception" model="ir.actions.act_window">
+        <field name="name">Controlli Ricezione HACCP</field>
+        <field name="res_model">cf.haccp.reception</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{"search_default_filter_from_march": 1}</field>
+    </record>
     <record id="action_cf_haccp_sp" model="ir.actions.act_window">
         <field name="name">Schede Produzione</field>
         <field name="res_model">cf.haccp.sp</field>
         <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_production_check" model="ir.actions.act_window">
+        <field name="name">Schede HACCP Produzione</field>
+        <field name="res_model">cf.haccp.production</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{"search_default_filter_from_march": 1}</field>
     </record>
     <record id="action_cf_haccp_nc" model="ir.actions.act_window">
         <field name="name">Non Conformita</field>
@@ -86,10 +98,18 @@
               web_icon="casafolino_haccp,static/description/icon.png"/>
     <menuitem id="menu_cf_haccp_dashboard" name="Dashboard"
               parent="menu_cf_haccp_root" action="action_cf_haccp_dashboard" sequence="0"/>
-    <menuitem id="menu_cf_haccp_receipts" name="Ricezione MP"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_receipt" sequence="1"/>
-    <menuitem id="menu_cf_haccp_sp" name="Schede Produzione"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_sp" sequence="2"/>
+    <menuitem id="menu_cf_haccp_ricezioni" name="Ricezioni"
+              parent="menu_cf_haccp_root" sequence="1"/>
+    <menuitem id="menu_cf_haccp_reception" name="Controlli Ricezione HACCP"
+              parent="menu_cf_haccp_ricezioni" action="action_cf_haccp_reception" sequence="1"/>
+    <menuitem id="menu_cf_haccp_receipts" name="Controlli Ricezione MP"
+              parent="menu_cf_haccp_ricezioni" action="action_cf_haccp_receipt" sequence="2"/>
+    <menuitem id="menu_cf_haccp_produzione" name="Produzione"
+              parent="menu_cf_haccp_root" sequence="2"/>
+    <menuitem id="menu_cf_haccp_production_check" name="Schede HACCP Produzione"
+              parent="menu_cf_haccp_produzione" action="action_cf_haccp_production_check" sequence="1"/>
+    <menuitem id="menu_cf_haccp_sp" name="Schede Produzione Dettagliate"
+              parent="menu_cf_haccp_produzione" action="action_cf_haccp_sp" sequence="2"/>
     <menuitem id="menu_cf_haccp_nc" name="Non Conformita"
               parent="menu_cf_haccp_root" action="action_cf_haccp_nc" sequence="3"/>
     <menuitem id="menu_cf_haccp_quarantine" name="Quarantena"

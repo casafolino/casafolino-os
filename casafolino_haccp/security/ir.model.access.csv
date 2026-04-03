@@ -32,3 +32,7 @@ access_cf_haccp_formazione_user,cf.haccp.formazione user,model_cf_haccp_formazio
 access_cf_haccp_formazione_mgr,cf.haccp.formazione manager,model_cf_haccp_formazione,base.group_system,1,1,1,1
 access_cf_haccp_igiene_user,cf.haccp.igiene.personale user,model_cf_haccp_igiene_personale,base.group_user,1,1,1,0
 access_cf_haccp_igiene_mgr,cf.haccp.igiene.personale manager,model_cf_haccp_igiene_personale,base.group_system,1,1,1,1
+access_cf_haccp_reception_user,cf.haccp.reception user,model_cf_haccp_reception,base.group_user,1,1,1,0
+access_cf_haccp_reception_mgr,cf.haccp.reception manager,model_cf_haccp_reception,base.group_system,1,1,1,1
+access_cf_haccp_production_user,cf.haccp.production user,model_cf_haccp_production,base.group_user,1,1,1,0
+access_cf_haccp_production_mgr,cf.haccp.production manager,model_cf_haccp_production,base.group_system,1,1,1,1
