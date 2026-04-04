@@ -11,8 +11,9 @@
         <field name="name">res.partner.form.007</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">99</field>
         <field name="arch" type="xml">
-            <notebook position="inside">
+            <xpath expr="//notebook" position="inside">
                 <page string="Agente 007" name="agente_007">
                     <group string="Stato Arricchimento">
                         <group>
@@ -83,7 +84,7 @@
                         </group>
                     </group>
                 </page>
-            </notebook>
+            </xpath>
         </field>
     </record>
 </odoo>
