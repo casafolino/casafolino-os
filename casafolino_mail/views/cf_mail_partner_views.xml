@@ -13,8 +13,14 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_enrich_007" string="Arricchisci con AI" type="object" class="oe_stat_button" icon="fa-user-secret"/>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Agente 007" name="agente_007">
+                    <header>
+                        <button name="action_enrich_007" string="Arricchisci con AI" type="object" class="btn-primary"/>
+                    </header>
                     <group string="Stato Arricchimento">
                         <group>
                             <field name="cf_007_enriched" readonly="1"/>

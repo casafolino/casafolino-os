@@ -323,6 +323,7 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
                     timeout=120,
                 )
                 response.raise_for_status()
+                _logger.info("007 raw response: %s", response.text[:2000])
                 result = response.json()
 
                 text_parts = []
@@ -338,9 +339,21 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
 
                 data = json.loads(json_match.group())
 
+                # Determine enrichment source
+                enrich_from = 'nome_azienda'
+                if company:
+                    enrich_from = 'nome_azienda'
+                elif email:
+                    enrich_from = 'email'
+                elif partner.vat:
+                    enrich_from = 'piva'
+                else:
+                    enrich_from = 'nome_persona'
+
                 vals = {
                     'cf_007_enriched': True,
                     'cf_007_enriched_date': fields.Datetime.now(),
+                    'cf_007_enriched_from': enrich_from,
                 }
 
                 field_map = {
@@ -379,7 +392,6 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
                     'paese': 'cf_007_paese',
                     'provincia': 'cf_007_provincia',
                     'utile': 'cf_007_utile',
-                    'enriched_from': 'cf_007_enriched_from',
                 }
 
                 selection_valid = {
@@ -387,7 +399,6 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
                     'cf_007_ruolo_commerciale': ('produttore', 'distributore', 'importatore', 'retailer', 'grossista', 'agente', 'ecommerce', 'horeca', 'altro'),
                     'cf_007_stato_attivita': ('attiva', 'inattiva', 'liquidazione', 'fallita', 'sconosciuto'),
                     'cf_007_dimensione': ('micro', 'piccola', 'media', 'grande', 'sconosciuto'),
-                    'cf_007_enriched_from': ('email', 'piva', 'nome_azienda', 'nome_persona'),
                 }
 
                 for json_key, odoo_field in field_map.items():
