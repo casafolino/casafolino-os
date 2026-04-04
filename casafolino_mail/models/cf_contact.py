@@ -45,6 +45,33 @@ class ResPartnerMailExt(models.Model):
     cf_007_indirizzo = fields.Char('007 Indirizzo')
     cf_007_cap = fields.Char('007 CAP')
     cf_007_citta = fields.Char('007 Città')
+    cf_007_codice_fiscale = fields.Char('Codice fiscale')
+    cf_007_rea = fields.Char('REA')
+    cf_007_forma_giuridica = fields.Char('Forma giuridica')
+    cf_007_ateco = fields.Char('Codice ATECO')
+    cf_007_ateco_desc = fields.Char('Descrizione ATECO')
+    cf_007_capitale_sociale = fields.Char('Capitale sociale')
+    cf_007_data_costituzione = fields.Char('Data costituzione')
+    cf_007_anzianita = fields.Char('Anzianita azienda')
+    cf_007_stato_attivita = fields.Selection([
+        ('attiva', 'Attiva'), ('inattiva', 'Inattiva'),
+        ('liquidazione', 'In liquidazione'), ('fallita', 'Fallita'), ('sconosciuto', 'Sconosciuto'),
+    ], string='Stato attivita')
+    cf_007_dimensione = fields.Selection([
+        ('micro', 'Microimpresa (<10)'), ('piccola', 'Piccola (10-49)'),
+        ('media', 'Media (50-249)'), ('grande', 'Grande (250+)'), ('sconosciuto', 'Sconosciuto'),
+    ], string='Dimensione azienda')
+    cf_007_canali_vendita = fields.Char('Canali di vendita')
+    cf_007_prodotti_interesse = fields.Char('Prodotti CF di interesse')
+    cf_007_linkedin_company = fields.Char('LinkedIn azienda')
+    cf_007_paese = fields.Char('Paese (007)')
+    cf_007_provincia = fields.Char('Provincia')
+    cf_007_utile = fields.Char('Utile/Perdita')
+    cf_007_enriched_from = fields.Selection([
+        ('email', 'Da email'), ('piva', 'Da P.IVA'),
+        ('nome_azienda', 'Da nome azienda'), ('nome_persona', 'Da nome persona'),
+    ], string='Arricchito da')
+
     cf_department = fields.Char('Reparto')
     cf_linkedin = fields.Char('LinkedIn')
     cf_instagram = fields.Char('Instagram')
@@ -336,17 +363,43 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
                     'potenziale': 'cf_007_potenziale',
                     'ruolo_commerciale': 'cf_007_ruolo_commerciale',
                     'note_agente': 'cf_007_note_agente',
+                    'codice_fiscale': 'cf_007_codice_fiscale',
+                    'rea': 'cf_007_rea',
+                    'forma_giuridica': 'cf_007_forma_giuridica',
+                    'ateco': 'cf_007_ateco',
+                    'ateco_desc': 'cf_007_ateco_desc',
+                    'capitale_sociale': 'cf_007_capitale_sociale',
+                    'data_costituzione': 'cf_007_data_costituzione',
+                    'anzianita': 'cf_007_anzianita',
+                    'stato_attivita': 'cf_007_stato_attivita',
+                    'dimensione': 'cf_007_dimensione',
+                    'canali_vendita': 'cf_007_canali_vendita',
+                    'prodotti_interesse': 'cf_007_prodotti_interesse',
+                    'linkedin_company': 'cf_007_linkedin_company',
+                    'paese': 'cf_007_paese',
+                    'provincia': 'cf_007_provincia',
+                    'utile': 'cf_007_utile',
+                    'enriched_from': 'cf_007_enriched_from',
+                }
+
+                selection_valid = {
+                    'cf_007_potenziale': ('alto', 'medio', 'basso'),
+                    'cf_007_ruolo_commerciale': ('produttore', 'distributore', 'importatore', 'retailer', 'grossista', 'agente', 'ecommerce', 'horeca', 'altro'),
+                    'cf_007_stato_attivita': ('attiva', 'inattiva', 'liquidazione', 'fallita', 'sconosciuto'),
+                    'cf_007_dimensione': ('micro', 'piccola', 'media', 'grande', 'sconosciuto'),
+                    'cf_007_enriched_from': ('email', 'piva', 'nome_azienda', 'nome_persona'),
                 }
 
                 for json_key, odoo_field in field_map.items():
                     val = data.get(json_key)
                     if val:
-                        if odoo_field == 'cf_007_potenziale' and val not in ('alto', 'medio', 'basso'):
+                        str_val = str(val)
+                        if odoo_field in selection_valid and str_val not in selection_valid[odoo_field]:
                             continue
                         if odoo_field == 'cf_007_note_agente' and partner.cf_007_note_agente:
-                            vals[odoo_field] = partner.cf_007_note_agente + '\n---\n' + str(val)
+                            vals[odoo_field] = partner.cf_007_note_agente + '\n---\n' + str_val
                         else:
-                            vals[odoo_field] = str(val)
+                            vals[odoo_field] = str_val
 
                 # Populate standard Odoo fields if currently empty
                 odoo_standard_map = {
@@ -410,6 +463,20 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
             'ragione_sociale': p.cf_007_ragione_sociale or '',
             'settore': p.cf_007_settore or '',
             'marchi': p.cf_007_marchi or '',
+            'codice_fiscale': p.cf_007_codice_fiscale or '',
+            'rea': p.cf_007_rea or '',
+            'forma_giuridica': p.cf_007_forma_giuridica or '',
+            'ateco': p.cf_007_ateco or '',
+            'capitale_sociale': p.cf_007_capitale_sociale or '',
+            'stato_attivita': p.cf_007_stato_attivita or '',
+            'dimensione': p.cf_007_dimensione or '',
+            'canali_vendita': p.cf_007_canali_vendita or '',
+            'prodotti_interesse': p.cf_007_prodotti_interesse or '',
+            'linkedin_company': p.cf_007_linkedin_company or '',
+            'paese': p.cf_007_paese or '',
+            'provincia': p.cf_007_provincia or '',
+            'utile': p.cf_007_utile or '',
+            'enriched_from': p.cf_007_enriched_from or '',
         }
 
 
