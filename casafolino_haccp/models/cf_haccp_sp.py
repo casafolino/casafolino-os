@@ -44,6 +44,14 @@ class CfHaccpSp(models.Model):
             open_nc = rec.nc_ids.filtered(lambda n: n.state not in ("closed","cancelled"))
             rec.state = "blocked" if open_nc else "completed"
 
+    def action_all_steps_ok(self):
+        self.write({
+            'step1_ok': True, 'step2_ok': True, 'step3_ok': True,
+            'step4_ok': True, 'step5_ok': True, 'step6_ok': True,
+            'step7_ok': True, 'step8_ok': True, 'step9_ok': True,
+            'step10_ok': True,
+        })
+
     def action_release(self):
         for rec in self:
             open_nc = rec.nc_ids.filtered(lambda n: n.state not in ("closed","cancelled"))

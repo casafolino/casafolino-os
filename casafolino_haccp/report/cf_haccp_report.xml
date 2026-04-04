@@ -225,4 +225,74 @@
         </t>
     </template>
 
+    <!-- Report Action: Scheda Produzione SP -->
+    <record id="action_report_haccp_sp" model="ir.actions.report">
+        <field name="name">Scheda Produzione HACCP</field>
+        <field name="model">cf.haccp.sp</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_haccp_sp</field>
+        <field name="report_file">casafolino_haccp.report_haccp_sp</field>
+        <field name="binding_model_id" ref="model_cf_haccp_sp"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Template QWeb: Scheda Produzione SP -->
+    <template id="report_haccp_sp">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Scheda Produzione HACCP — <t t-out="doc.reference"/></h2>
+                        <div class="row mt16">
+                            <div class="col-6">
+                                <strong>Prodotto:</strong> <t t-out="doc.product_id.name"/><br/>
+                                <strong>Lotto:</strong> <t t-out="doc.lot_id.name or '-'"/><br/>
+                                <strong>Operatore:</strong> <t t-out="doc.operator_id.name or '-'"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Data inizio:</strong> <t t-out="doc.date"/><br/>
+                                <strong>Data fine:</strong> <t t-out="doc.date_end or '-'"/><br/>
+                                <strong>Stato:</strong> <t t-out="doc.state"/>
+                            </div>
+                        </div>
+                        <h4 class="mt16">Checklist 10 Step</h4>
+                        <table class="table table-sm">
+                            <tr><td>Step 1 - Ricevimento MP</td><td><t t-if="doc.step1_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 2 - Pesatura</td><td><t t-if="doc.step2_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 3 - Miscelazione</td><td><t t-if="doc.step3_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 4 - Lavorazione</td><td><t t-if="doc.step4_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 5 - Controllo Intermedio</td><td><t t-if="doc.step5_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 6 - Confezionamento</td><td><t t-if="doc.step6_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 7 - Etichettatura</td><td><t t-if="doc.step7_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 8 - Controllo Finale</td><td><t t-if="doc.step8_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 9 - Stoccaggio</td><td><t t-if="doc.step9_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                            <tr><td>Step 10 - Spedizione</td><td><t t-if="doc.step10_ok">OK</t><t t-else="">Non completato</t></td></tr>
+                        </table>
+                        <t t-if="doc.ccp_ids">
+                            <h4>CCP</h4>
+                            <table class="table table-sm table-bordered">
+                                <thead><tr><th>CCP</th><th>Valore</th><th>Min</th><th>Max</th><th>Esito</th></tr></thead>
+                                <tbody>
+                                    <t t-foreach="doc.ccp_ids" t-as="ccp">
+                                        <tr>
+                                            <td><t t-out="ccp.name"/></td>
+                                            <td><t t-out="ccp.measured_value"/></td>
+                                            <td><t t-out="ccp.critical_limit_min"/></td>
+                                            <td><t t-out="ccp.critical_limit_max"/></td>
+                                            <td><t t-out="ccp.state"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-if="doc.notes">
+                            <h4>Note</h4>
+                            <p><t t-out="doc.notes"/></p>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
 </odoo>

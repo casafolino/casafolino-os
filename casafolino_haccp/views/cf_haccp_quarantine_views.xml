@@ -6,8 +6,8 @@
         <field name="arch" type="xml">
             <form string="Quarantena">
                 <header>
-                    <button name="action_release" type="object" string="Rilascia" class="btn-success" invisible="state != 'active'"/>
-                    <button name="action_destroy" type="object" string="Distruggi" class="btn-danger" invisible="state != 'active'"/>
+                    <button name="action_release" type="object" string="Rilascia Merce" class="btn-success" invisible="state != 'active'" confirm="Confermi il rilascio della merce dalla quarantena?"/>
+                    <button name="action_destroy" type="object" string="Distruggi Merce" class="btn-danger" invisible="state != 'active'" confirm="ATTENZIONE: Confermi la distruzione definitiva della merce?"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>

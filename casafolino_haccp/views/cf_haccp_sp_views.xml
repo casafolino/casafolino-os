@@ -6,9 +6,10 @@
         <field name="arch" type="xml">
             <form string="Scheda Produzione">
                 <header>
-                    <button name="action_start" type="object" string="Avvia" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_start" type="object" string="Avvia Produzione" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_complete" type="object" string="Completa" class="btn-success" invisible="state != 'in_progress'"/>
-                    <button name="action_release" type="object" string="Rilascia" class="btn-primary" invisible="state != 'completed'"/>
+                    <button name="action_release" type="object" string="Rilascia Lotto" class="btn-primary" invisible="state != 'completed'"/>
+                    <button name="action_all_steps_ok" type="object" string="Tutti Step OK" class="btn-warning" invisible="state == 'released'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,completed,released"/>
                 </header>
                 <sheet>
@@ -28,20 +29,20 @@
                             <field name="operator_id"/>
                         </group>
                     </group>
-                    <group string="10 Step HACCP">
+                    <group string="Checklist 10 Step HACCP">
                         <group>
-                            <field name="step1_ok" string="Step 1 - Ricevimento MP"/>
-                            <field name="step2_ok" string="Step 2 - Pesatura"/>
-                            <field name="step3_ok" string="Step 3 - Miscelazione"/>
-                            <field name="step4_ok" string="Step 4 - Lavorazione"/>
-                            <field name="step5_ok" string="Step 5 - Controllo Intermedio"/>
+                            <field name="step1_ok" string="1 - Ricevimento MP" widget="boolean_toggle"/>
+                            <field name="step2_ok" string="2 - Pesatura" widget="boolean_toggle"/>
+                            <field name="step3_ok" string="3 - Miscelazione" widget="boolean_toggle"/>
+                            <field name="step4_ok" string="4 - Lavorazione" widget="boolean_toggle"/>
+                            <field name="step5_ok" string="5 - Controllo Intermedio" widget="boolean_toggle"/>
                         </group>
                         <group>
-                            <field name="step6_ok" string="Step 6 - Confezionamento"/>
-                            <field name="step7_ok" string="Step 7 - Etichettatura"/>
-                            <field name="step8_ok" string="Step 8 - Controllo Finale"/>
-                            <field name="step9_ok" string="Step 9 - Stoccaggio"/>
-                            <field name="step10_ok" string="Step 10 - Spedizione"/>
+                            <field name="step6_ok" string="6 - Confezionamento" widget="boolean_toggle"/>
+                            <field name="step7_ok" string="7 - Etichettatura" widget="boolean_toggle"/>
+                            <field name="step8_ok" string="8 - Controllo Finale" widget="boolean_toggle"/>
+                            <field name="step9_ok" string="9 - Stoccaggio" widget="boolean_toggle"/>
+                            <field name="step10_ok" string="10 - Spedizione" widget="boolean_toggle"/>
                         </group>
                     </group>
                     <notebook>
