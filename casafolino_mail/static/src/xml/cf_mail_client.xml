@@ -480,6 +480,59 @@
                                 </div>
                             </t>
                         </div>
+                        <!-- Sezione 007 Intelligence -->
+                        <div class="cf-mail-ctx-section">
+                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggle007Panel">
+                                <i t-att-class="'fa fa-' + (state.show007Panel ? 'chevron-down' : 'chevron-right')"/>
+                                <i class="fa fa-user-secret" style="margin-left:4px"/> 007 Intelligence
+                            </div>
+                            <t t-if="state.show007Panel">
+                                <div style="margin-top:8px">
+                                    <t t-if="state.loading007">
+                                        <div style="font-size:11px;color:var(--text-muted)"><i class="fa fa-spinner fa-spin"/> Caricamento...</div>
+                                    </t>
+                                    <t t-elif="state.data007.enriched">
+                                        <span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:#e8f5e9;color:#2e7d32;font-weight:600;margin-bottom:6px">
+                                            Arricchito ✓
+                                        </span>
+                                        <div t-if="state.data007.enriched_date" style="font-size:10px;color:var(--text-muted);margin-bottom:6px">
+                                            <t t-esc="state.data007.enriched_date"/>
+                                        </div>
+                                        <t t-if="state.data007.potenziale">
+                                            <span t-att-style="'display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-bottom:6px;' + (state.data007.potenziale === 'alto' ? 'background:#e8f5e9;color:#2e7d32' : state.data007.potenziale === 'medio' ? 'background:#fff3e0;color:#e65100' : 'background:#ffebee;color:#c62828')">
+                                                Potenziale: <t t-esc="state.data007.potenziale"/>
+                                            </span>
+                                        </t>
+                                        <div t-if="state.data007.fatturato" style="font-size:11px;margin-top:4px">
+                                            <strong>Fatturato:</strong> <t t-esc="state.data007.fatturato"/>
+                                            <t t-if="state.data007.fatturato_anno"> (<t t-esc="state.data007.fatturato_anno"/>)</t>
+                                        </div>
+                                        <div t-if="state.data007.dipendenti" style="font-size:11px;margin-top:2px">
+                                            <strong>Dipendenti:</strong> <t t-esc="state.data007.dipendenti"/>
+                                        </div>
+                                        <div t-if="state.data007.settore" style="font-size:11px;margin-top:2px">
+                                            <strong>Settore:</strong> <t t-esc="state.data007.settore"/>
+                                        </div>
+                                        <div t-if="state.data007.trend" style="font-size:11px;margin-top:2px">
+                                            <strong>Trend:</strong> <t t-esc="state.data007.trend"/>
+                                        </div>
+                                        <div t-if="state.data007.note" style="font-size:11px;margin-top:6px;padding:6px;background:rgba(90,110,58,0.06);border-radius:6px;line-height:1.4;max-height:60px;overflow-y:auto">
+                                            <t t-esc="state.data007.note"/>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:#f5f5f5;color:#999;font-weight:600;margin-bottom:6px">
+                                            Non arricchito
+                                        </span>
+                                    </t>
+                                    <div style="margin-top:8px">
+                                        <button class="cf-mail-btn-secondary" style="background:#1a3a1a;color:#fff;border-color:#1a3a1a;font-size:11px;padding:3px 10px" t-on-click="onEnrich007FromPanel">
+                                            <i class="fa fa-user-secret"/> Arricchisci ora
+                                        </button>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
                         <!-- Sezione Arricchimento -->
                         <div class="cf-mail-ctx-section">
                             <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleEnrichment">

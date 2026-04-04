@@ -53,6 +53,7 @@ class CfMailClient extends Component {
             isAdmin: false,
             activeView: "mail",
             contacts: [], contactSearch: "", contactTagFilter: "",
+            show007Panel: false, data007: {}, loading007: false,
         });
 
         onMounted(() => { this.init(); });
@@ -399,6 +400,11 @@ class CfMailClient extends Component {
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");
+            if (detail.partner_id) {
+                this.load007Data(detail.partner_id);
+            } else {
+                this.state.data007 = {};
+            }
         } catch (e) { console.error(e); }
         finally { this.state.loadingDetail = false; }
     }
@@ -591,6 +597,7 @@ class CfMailClient extends Component {
     async onEnrich007() {
         if (!this.state.contactDetail.id) return;
         try {
+            this.showToast("Agente 007 in azione...");
             await rpc("/web/dataset/call_kw", {
                 model: "res.partner",
                 method: "action_enrich_007",
@@ -603,6 +610,42 @@ class CfMailClient extends Component {
         } catch (e) {
             console.error(e);
             this.notification.add("Errore Agente 007", { type: "danger" });
+        }
+    }
+
+    toggle007Panel() { this.state.show007Panel = !this.state.show007Panel; }
+
+    async load007Data(partnerId) {
+        if (!partnerId) return;
+        this.state.loading007 = true;
+        try {
+            const data = await this._rpc("res.partner", "rpc_get_007_data", { partner_id: partnerId });
+            this.state.data007 = data || {};
+        } catch (e) { this.state.data007 = {}; }
+        finally { this.state.loading007 = false; }
+    }
+
+    async onEnrich007FromPanel() {
+        const pid = this.state.msgDetail.partner_id;
+        if (!pid) {
+            this.notification.add("Nessun partner collegato", { type: "warning" });
+            return;
+        }
+        this.state.loading007 = true;
+        try {
+            this.showToast("Agente 007 in azione...");
+            await rpc("/web/dataset/call_kw", {
+                model: "res.partner",
+                method: "action_enrich_007",
+                args: [[pid]],
+                kwargs: {},
+            });
+            await this.load007Data(pid);
+            this.showToast("Agente 007: enrichment completato!");
+        } catch (e) {
+            console.error(e);
+            this.notification.add("Errore Agente 007", { type: "danger" });
+            this.state.loading007 = false;
         }
     }
 
