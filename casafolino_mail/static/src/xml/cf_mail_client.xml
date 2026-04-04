@@ -718,6 +718,9 @@
                 <div class="cf-mail-modal-footer">
                     <button class="cf-mail-btn-primary" t-on-click="saveContact"><i class="fa fa-save"/> Salva</button>
                     <button class="cf-mail-btn-secondary" t-on-click="closeContactModal">Annulla</button>
+                    <button class="cf-mail-btn-secondary" style="background:#1a3a1a;color:#fff;border-color:#1a3a1a;font-size:12px;padding:4px 12px" t-on-click="onEnrich007">
+                        <i class="fa fa-user-secret"/> Agente 007
+                    </button>
                 </div>
             </div>
         </div>

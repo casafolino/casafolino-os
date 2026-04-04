@@ -12,6 +12,7 @@
         'views/cf_mail_sender_rule_views.xml',
         'views/menus.xml',
         'data/cf_mail_cron.xml',
+        'data/cf_mail_config.xml',
     ],
     'assets': {
         'web.assets_backend': [

@@ -1,6 +1,7 @@
 from odoo import models, fields, api
 
 
+
 class ResPartnerMailExt(models.Model):
     _inherit = 'res.partner'
 

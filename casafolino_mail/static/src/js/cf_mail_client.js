@@ -588,6 +588,24 @@ class CfMailClient extends Component {
         this.state.contactDetail.tags = (this.state.contactDetail.tags || []).filter(t => t.id !== tagId);
     }
 
+    async onEnrich007() {
+        if (!this.state.contactDetail.id) return;
+        try {
+            await rpc("/web/dataset/call_kw", {
+                model: "res.partner",
+                method: "action_enrich_007",
+                args: [[this.state.contactDetail.id]],
+                kwargs: {},
+            });
+            const data = await this._rpc("res.partner", "get_contact_detail", { partner_id: this.state.contactDetail.id });
+            this.state.contactDetail = data || {};
+            this.showToast("Agente 007: enrichment completato!");
+        } catch (e) {
+            console.error(e);
+            this.notification.add("Errore Agente 007", { type: "danger" });
+        }
+    }
+
     async openLeadModal() {
         if (!this.state.selectedMsg) return;
         await this.loadCrmData();
