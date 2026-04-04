@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cf_treasury_user,cf.treasury.snapshot user,model_cf_treasury_snapshot,base.group_user,1,0,0,0
-access_cf_treasury_mgr,cf.treasury.snapshot manager,model_cf_treasury_snapshot,base.group_system,1,1,1,1

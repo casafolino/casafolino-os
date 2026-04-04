@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Production Sequences -->
+    <record id="seq_cf_production_job" model="ir.sequence">
+        <field name="name">Commessa Produzione</field>
+        <field name="code">cf.production.job</field>
+        <field name="prefix">PROD-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+
+    <!-- Recall Sequences -->
+    <record id="seq_cf_recall_session" model="ir.sequence">
+        <field name="name">Mock Recall</field>
+        <field name="code">cf.recall.session</field>
+        <field name="prefix">RECALL-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+
+    <!-- Production Actions -->
+    <record id="action_cf_production_jobs" model="ir.actions.act_window">
+        <field name="name">Commesse Produzione</field>
+        <field name="res_model">cf.production.job</field>
+        <field name="view_mode">kanban,list,calendar,form</field>
+    </record>
+
+    <!-- Recall Actions -->
+    <record id="action_cf_recall_sessions" model="ir.actions.act_window">
+        <field name="name">Sessioni Recall</field>
+        <field name="res_model">cf.recall.session</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Production Menus -->
+    <menuitem id="menu_cf_prod_root" name="Produzione CF" sequence="22"/>
+    <menuitem id="menu_cf_prod_jobs" name="Commesse" parent="menu_cf_prod_root" action="action_cf_production_jobs" sequence="1"/>
+
+    <!-- Recall Menus -->
+    <menuitem id="menu_cf_recall_root" name="Mock Recall" sequence="29"/>
+    <menuitem id="menu_cf_recall_new" name="Avvia Recall" parent="menu_cf_recall_root" action="action_cf_recall_wizard" sequence="1"/>
+    <menuitem id="menu_cf_recall_sessions" name="Sessioni" parent="menu_cf_recall_root" action="action_cf_recall_sessions" sequence="2"/>
+</odoo>

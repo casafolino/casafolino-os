@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cf_gdo_retailer_user,cf.gdo.retailer user,model_cf_gdo_retailer,base.group_user,1,1,1,0
-access_cf_gdo_retailer_mgr,cf.gdo.retailer manager,model_cf_gdo_retailer,base.group_system,1,1,1,1
-access_cf_gdo_listing_user,cf.gdo.listing user,model_cf_gdo_listing,base.group_user,1,1,1,0
-access_cf_gdo_listing_mgr,cf.gdo.listing manager,model_cf_gdo_listing,base.group_system,1,1,1,1

@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cf_pl_client_user,cf.pl.client user,model_cf_pl_client,base.group_user,1,1,1,0
-access_cf_pl_client_mgr,cf.pl.client manager,model_cf_pl_client,base.group_system,1,1,1,1
-access_cf_pl_product_user,cf.pl.product user,model_cf_pl_product,base.group_user,1,1,1,0
-access_cf_pl_product_mgr,cf.pl.product manager,model_cf_pl_product,base.group_system,1,1,1,1

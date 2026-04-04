@@ -1,0 +1,30 @@
+{
+    'name': 'CasaFolino Product',
+    'version': '18.0.1.0.0',
+    'category': 'CasaFolino',
+    'summary': 'Nutrizione e Allergeni',
+    'author': 'CasaFolino Srls',
+    'depends': ['base', 'mail', 'mrp', 'product'],
+    'data': [
+        'security/ir.model.access.csv',
+        'data/cf_allergen_categories.xml',
+        'data/cf_allergen_14eu.xml',
+        'data/cf_allergen_extra.xml',
+        'data/cf_allergen_keywords.xml',
+        'data/cf_allergen_world.xml',
+        'data/cf_nutrition_regulations.xml',
+        'data/cf_nutrition_cron.xml',
+        'views/cf_allergen_views.xml',
+        'views/cf_nutrition_views.xml',
+        'views/cf_nutrition_inherit_views.xml',
+        'views/menus.xml',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'casafolino_product/static/src/xml/cf_nutrition_chart.xml',
+            'casafolino_product/static/src/js/cf_nutrition_chart.js',
+        ],
+    },
+    'installable': True,
+    'license': 'LGPL-3',
+}
