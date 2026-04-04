@@ -22,7 +22,12 @@ class ResPartnerMailExt(models.Model):
         ('medio', 'Medio'),
         ('basso', 'Basso'),
     ], string='007 Potenziale')
-    cf_007_ruolo_commerciale = fields.Char('007 Ruolo Commerciale')
+    cf_007_ruolo_commerciale = fields.Selection([
+        ('produttore', 'Produttore'), ('distributore', 'Distributore'),
+        ('importatore', 'Importatore'), ('retailer', 'Retailer/GDO'),
+        ('grossista', 'Grossista'), ('agente', 'Agente/Broker'),
+        ('ecommerce', 'E-commerce'), ('horeca', 'HoReCa'), ('altro', 'Altro'),
+    ], string='Ruolo commerciale')
     cf_007_note_agente = fields.Text('007 Note Agente')
     cf_007_fatturato = fields.Char('007 Fatturato')
     cf_007_fatturato_anno = fields.Char('007 Anno Fatturato')
