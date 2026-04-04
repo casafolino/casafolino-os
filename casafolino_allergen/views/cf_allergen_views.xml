@@ -4,10 +4,11 @@
         <field name="name">cf.allergen.list</field>
         <field name="model">cf.allergen</field>
         <field name="arch" type="xml">
-            <list string="14 Allergeni UE" editable="bottom">
+            <list string="Allergeni" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="code"/>
                 <field name="name"/>
+                <field name="market"/>
                 <field name="regulation_ref"/>
             </list>
         </field>
@@ -20,6 +21,7 @@
                   decoration-danger="status=='present'"
                   decoration-warning="status=='traces'">
                 <field name="allergen_id"/>
+                <field name="market"/>
                 <field name="status" widget="badge"
                        decoration-danger="status=='present'"
                        decoration-warning="status=='traces'"
@@ -29,6 +31,44 @@
                 <field name="validation_date"/>
                 <field name="notes"/>
             </list>
+        </field>
+    </record>
+    <record id="mrp_bom_form_view_allergen" model="ir.ui.view">
+        <field name="name">mrp.bom.form.allergen</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_analyze_allergens" string="Analizza Allergeni" type="object" class="btn-secondary"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Allergeni e Regole di Mercato">
+                    <t t-if="allergen_alert">
+                        <div class="alert alert-warning" role="alert">
+                            <field name="allergen_alert" readonly="1"/>
+                        </div>
+                    </t>
+                    <field name="allergen_ids" context="{'default_bom_id': active_id}"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_form_view_allergen" model="ir.ui.view">
+        <field name="name">product.template.form.allergen</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Allergeni Mercato" groups="mrp.group_mrp_user">
+                    <field name="allergen_match_ids">
+                        <list editable="bottom" create="0">
+                            <field name="market" string="Mercato di Distribuzione" readonly="1"/>
+                            <field name="matched_allergen_ids" widget="many2many_tags" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
         </field>
     </record>
 </odoo>

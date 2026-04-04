@@ -12,6 +12,13 @@
     <record id="allergen_10_mustard" model="cf.allergen"><field name="sequence">10</field><field name="code">10</field><field name="name">Senape</field></record>
     <record id="allergen_11_sesame" model="cf.allergen"><field name="sequence">11</field><field name="code">11</field><field name="name">Semi di sesamo</field></record>
     <record id="allergen_12_so2" model="cf.allergen"><field name="sequence">12</field><field name="code">12</field><field name="name">Anidride solforosa e solfiti</field></record>
-    <record id="allergen_13_lupin" model="cf.allergen"><field name="sequence">13</field><field name="code">13</field><field name="name">Lupini</field></record>
-    <record id="allergen_14_molluscs" model="cf.allergen"><field name="sequence">14</field><field name="code">14</field><field name="name">Molluschi</field></record>
+    <record id="allergen_13_lupin" model="cf.allergen"><field name="sequence">13</field><field name="code">13</field><field name="name">Lupini</field><field name="market">eu</field></record>
+    <record id="allergen_14_molluscs" model="cf.allergen"><field name="sequence">14</field><field name="code">14</field><field name="name">Molluschi</field><field name="market">eu</field></record>
+
+    <!-- 5 Extra EU/US Allergens -->
+    <record id="allergen_us_01_treenuts" model="cf.allergen"><field name="sequence">15</field><field name="code">US01</field><field name="name">Tree Nuts (US FDA)</field><field name="market">us</field></record>
+    <record id="allergen_us_02_peanuts" model="cf.allergen"><field name="sequence">16</field><field name="code">US02</field><field name="name">Peanuts (US FDA)</field><field name="market">us</field></record>
+    <record id="allergen_us_03_wheat" model="cf.allergen"><field name="sequence">17</field><field name="code">US03</field><field name="name">Wheat (US FDA)</field><field name="market">us</field></record>
+    <record id="allergen_us_04_soybeans" model="cf.allergen"><field name="sequence">18</field><field name="code">US04</field><field name="name">Soybeans (US FDA)</field><field name="market">us</field></record>
+    <record id="allergen_us_05_sesame" model="cf.allergen"><field name="sequence">19</field><field name="code">US05</field><field name="name">Sesame (US FDA)</field><field name="market">us</field></record>
 </odoo>

@@ -373,6 +373,12 @@ class CfMailAccount(models.Model):
                     if user:
                         partner = user.partner_id
 
+                validato_tag = self.env['res.partner.category'].search([('name', 'ilike', 'Validato')], limit=1)
+                if validato_tag:
+                    if not partner or validato_tag.id not in partner.category_id.ids:
+                        max_uid = max(max_uid, uid_int)
+                        continue
+
                 # Thread matching by subject
                 thread_id = None
                 clean_subject = subject.replace('Re: ', '').replace('Fwd: ', '').strip()

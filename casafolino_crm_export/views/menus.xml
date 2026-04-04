@@ -7,12 +7,10 @@
     <!-- Pipeline per mercato -->
     <menuitem id="menu_cf_export_pipeline" name="Tutte le Pipeline"
         parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>
-    <menuitem id="menu_cf_export_dach" name="DACH / Europa"
-        parent="menu_cf_export_root" action="action_cf_export_lead_dach" sequence="2"/>
-    <menuitem id="menu_cf_export_gulf" name="Gulf / Halal"
-        parent="menu_cf_export_root" action="action_cf_export_lead_gulf" sequence="3"/>
-    <menuitem id="menu_cf_export_gdo" name="GDO"
-        parent="menu_cf_export_root" action="action_cf_export_lead_gdo" sequence="4"/>
+    <menuitem id="menu_cf_export_standard" name="Pipeline Standard"
+        parent="menu_cf_export_root" action="action_cf_export_lead_standard" sequence="2"/>
+    <menuitem id="menu_cf_export_premium" name="Pipeline Premium Josefina"
+        parent="menu_cf_export_root" action="action_cf_export_lead_premium" sequence="3"/>
 
     <!-- Operativo -->
     <menuitem id="menu_cf_export_samples" name="Campionature"

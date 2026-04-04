@@ -55,9 +55,15 @@ class CfSupplierQualification(models.Model):
 
 class ResPartnerSupplierQual(models.Model):
     _inherit = "res.partner"
-    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False)
+    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False, search="_search_supplier_qual_id")
     supplier_qual_status = fields.Selection(related="supplier_qual_id.status", readonly=True)
     supplier_traffic_light = fields.Selection(related="supplier_qual_id.traffic_light", readonly=True)
+
+    def _search_supplier_qual_id(self, operator, value):
+        if operator in ('=', '!=', 'in', 'not in'):
+            quals = self.env["casafolino.supplier.qualification"].search([("id", operator, value)])
+            return [("id", "in", quals.mapped("partner_id").ids)]
+        return []
 
     def _compute_supplier_qual(self):
         for rec in self:

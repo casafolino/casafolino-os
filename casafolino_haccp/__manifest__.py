@@ -16,9 +16,17 @@
         "views/cf_haccp_quarantine_views.xml",
         "views/cf_haccp_calibration_views.xml",
         "views/cf_haccp_document_views.xml",
+        "views/haccp_dashboard_views.xml",
+        "report/cf_haccp_report.xml",
         "views/menus.xml",
     ],
     "installable": True,
     "application": True,
     "license": "LGPL-3",
+    "assets": {
+        "web.assets_backend": [
+            "casafolino_haccp/static/src/xml/haccp_dashboard.xml",
+            "casafolino_haccp/static/src/js/haccp_dashboard.js",
+        ],
+    },
 }

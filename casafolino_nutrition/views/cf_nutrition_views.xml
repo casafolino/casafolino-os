@@ -45,4 +45,126 @@
             </list>
         </field>
     </record>
+
+    <record id="view_cf_nutrition_bom_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.bom.form</field>
+        <field name="model">cf.nutrition.bom</field>
+        <field name="arch" type="xml">
+            <form string="Valori Nutrizionali Ricetta">
+                <header>
+                    <button name="action_compute" string="Ricalcola Valori Base" type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Valori Nutrizionali per: <field name="bom_id" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="serving_size_g"/>
+                            <field name="last_computed"/>
+                        </group>
+                        <group>
+                            <!-- Widget custom Chart.js -->
+                            <field name="chart_data" widget="nutrition_chart"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="EU 1169/2011">
+                            <group>
+                                <field name="eu_energy_kcal"/>
+                                <field name="eu_energy_kj"/>
+                                <field name="eu_fat"/>
+                                <field name="eu_saturated_fat"/>
+                                <field name="eu_carbs"/>
+                                <field name="eu_sugars"/>
+                                <field name="eu_fiber"/>
+                                <field name="eu_protein"/>
+                                <field name="eu_salt"/>
+                            </group>
+                        </page>
+                        <page string="US FDA">
+                            <group>
+                                <field name="fda_energy_kcal"/>
+                                <field name="fda_energy_kj"/>
+                                <field name="fda_fat"/>
+                                <field name="fda_saturated_fat"/>
+                                <field name="fda_carbs"/>
+                                <field name="fda_sugars"/>
+                                <field name="fda_fiber"/>
+                                <field name="fda_protein"/>
+                                <field name="fda_salt"/>
+                            </group>
+                        </page>
+                        <page string="UK">
+                            <group>
+                                <field name="uk_energy_kcal"/>
+                                <field name="uk_fat"/>
+                                <field name="uk_carbs"/>
+                                <field name="uk_protein"/>
+                            </group>
+                        </page>
+                        <page string="Canada">
+                            <group>
+                                <field name="ca_energy_kcal"/>
+                                <field name="ca_fat"/>
+                                <field name="ca_carbs"/>
+                                <field name="ca_protein"/>
+                            </group>
+                        </page>
+                        <page string="Australia">
+                            <group>
+                                <field name="au_energy_kcal"/>
+                                <field name="au_fat"/>
+                                <field name="au_carbs"/>
+                                <field name="au_protein"/>
+                            </group>
+                        </page>
+                        <page string="Giappone">
+                            <group>
+                                <field name="jp_energy_kcal"/>
+                                <field name="jp_fat"/>
+                                <field name="jp_carbs"/>
+                                <field name="jp_protein"/>
+                            </group>
+                        </page>
+                        <page string="Valori Base (Raw)">
+                            <group>
+                                <field name="energy_kcal"/>
+                                <field name="energy_kj"/>
+                                <field name="fat"/>
+                                <field name="saturated_fat"/>
+                                <field name="carbs"/>
+                                <field name="sugars"/>
+                                <field name="fiber"/>
+                                <field name="protein"/>
+                                <field name="salt"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="mrp_bom_form_view_nutrition" model="ir.ui.view">
+        <field name="name">mrp.bom.form.nutrition</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Valori Nutrizionali">
+                    <group>
+                        <field name="cf_yield_factor"/>
+                    </group>
+                    <field name="nutrition_ids">
+                        <list>
+                            <field name="serving_size_g"/>
+                            <field name="last_computed"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

@@ -407,3 +407,12 @@ class SaleOrderExportLead(models.Model):
     cf_export_lead_id = fields.Many2one(
         "cf.export.lead", string="Trattativa Export", ondelete="set null", copy=False,
     )
+
+class CfExportLostReason(models.Model):
+    _name = "cf.export.lost.reason"
+    _description = "Motivo Persa Export"
+    _order = "name"
+
+    name = fields.Char(string="Motivo", required=True, translate=True)
+    active = fields.Boolean(default=True)
+

@@ -10,6 +10,16 @@
         <field name="res_model">cf.haccp.sp</field>
         <field name="view_mode">list,form</field>
     </record>
+    <record id="action_cf_haccp_ccp" model="ir.actions.act_window">
+        <field name="name">Punti Critici CCP</field>
+        <field name="res_model">cf.haccp.ccp</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_ccp_template" model="ir.actions.act_window">
+        <field name="name">Template CCP</field>
+        <field name="res_model">cf.haccp.ccp.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
     <record id="action_cf_haccp_nc" model="ir.actions.act_window">
         <field name="name">Non Conformita</field>
         <field name="res_model">cf.haccp.nc</field>
@@ -38,10 +48,17 @@
     </record>
     <menuitem id="menu_cf_haccp_root" name="HACCP" sequence="25"
               web_icon="casafolino_haccp,static/description/icon.png"/>
+    
+    <!-- DASHBOARD -->
+    <menuitem id="menu_cf_haccp_dashboard" name="Dashboard"
+              parent="menu_cf_haccp_root" action="action_haccp_dashboard" sequence="0"/>
+              
     <menuitem id="menu_cf_haccp_receipts" name="Ricezione MP"
               parent="menu_cf_haccp_root" action="action_cf_haccp_receipt" sequence="1"/>
     <menuitem id="menu_cf_haccp_sp" name="Schede Produzione"
               parent="menu_cf_haccp_root" action="action_cf_haccp_sp" sequence="2"/>
+    <menuitem id="menu_cf_haccp_ccp" name="Registri CCP"
+              parent="menu_cf_haccp_root" action="action_cf_haccp_ccp" sequence="3"/>
     <menuitem id="menu_cf_haccp_nc" name="Non Conformita"
               parent="menu_cf_haccp_root" action="action_cf_haccp_nc" sequence="3"/>
     <menuitem id="menu_cf_haccp_quarantine" name="Quarantena"
@@ -49,9 +66,11 @@
     <menuitem id="menu_cf_haccp_calibration" name="Calibrazioni"
               parent="menu_cf_haccp_root" action="action_cf_haccp_calibration" sequence="5"/>
     <menuitem id="menu_cf_haccp_documents" name="Documenti"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_document" sequence="6"/>
+              parent="menu_cf_haccp_root" action="action_cf_haccp_document" sequence="7"/>
     <menuitem id="menu_cf_haccp_config" name="Configurazione"
               parent="menu_cf_haccp_root" sequence="99" groups="base.group_system"/>
     <menuitem id="menu_cf_haccp_raw_materials" name="Materie Prime"
               parent="menu_cf_haccp_config" action="action_cf_haccp_raw_material" sequence="1"/>
+    <menuitem id="menu_cf_haccp_ccp_templates" name="Template CCP"
+              parent="menu_cf_haccp_config" action="action_cf_haccp_ccp_template" sequence="2"/>
 </odoo>

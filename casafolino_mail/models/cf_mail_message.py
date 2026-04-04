@@ -41,6 +41,26 @@ class CfMailMessage(models.Model):
     def action_archive_msg(self):
         self.write({'is_archived': True})
 
+    def action_keep_sender(self):
+        for msg in self:
+            if msg.from_address:
+                rule = self.env['cf.mail.sender.rule'].search([('email', '=', msg.from_address)], limit=1)
+                if not rule:
+                    self.env['cf.mail.sender.rule'].create({'email': msg.from_address, 'action': 'keep'})
+                else:
+                    rule.write({'action': 'keep'})
+
+    def action_exclude_sender(self):
+        for msg in self:
+            if msg.from_address:
+                rule = self.env['cf.mail.sender.rule'].search([('email', '=', msg.from_address)], limit=1)
+                if not rule:
+                    self.env['cf.mail.sender.rule'].create({'email': msg.from_address, 'action': 'exclude'})
+                else:
+                    rule.write({'action': 'exclude'})
+                # Elimina tutte le email correnti del mittente per sicurezza e come richiesto dal bulk.
+                self.env['cf.mail.message'].search([('from_address', '=', msg.from_address)]).unlink()
+
     def _msg_to_dict(self, m):
         tags = [{'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'} for t in m.tag_ids]
         thread_count = 0

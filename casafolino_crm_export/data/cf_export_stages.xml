@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <record id="stage_prospect" model="cf.export.stage"><field name="name">Prospect</field><field name="sequence">1</field></record>
-    <record id="stage_contact" model="cf.export.stage"><field name="name">Contatto Iniziale</field><field name="sequence">2</field></record>
-    <record id="stage_sample" model="cf.export.stage"><field name="name">Campionatura Inviata</field><field name="sequence">3</field></record>
-    <record id="stage_offer" model="cf.export.stage"><field name="name">Offerta Inviata</field><field name="sequence">4</field></record>
-    <record id="stage_negotiation" model="cf.export.stage"><field name="name">Negoziazione</field><field name="sequence">5</field></record>
-    <record id="stage_contract" model="cf.export.stage"><field name="name">Contratto Firmato</field><field name="sequence">6</field><field name="is_won">True</field></record>
-    <record id="stage_active" model="cf.export.stage"><field name="name">Cliente Attivo</field><field name="sequence">7</field><field name="is_won">True</field></record>
-    <record id="stage_lost" model="cf.export.stage"><field name="name">Perso</field><field name="sequence">99</field><field name="fold">True</field><field name="is_lost">True</field></record>
+    <!-- Standard (seq 1-8) -->
+    <record id="stage_standard_1" model="cf.export.stage"><field name="name">Rimprendere</field><field name="sequence">1</field></record>
+    <record id="stage_standard_2" model="cf.export.stage"><field name="name">Primo contatto</field><field name="sequence">2</field></record>
+    <record id="stage_standard_3" model="cf.export.stage"><field name="name">Qualificazione Cliente</field><field name="sequence">3</field></record>
+    <record id="stage_standard_4" model="cf.export.stage"><field name="name">Negoziazione prezzi</field><field name="sequence">4</field></record>
+    <record id="stage_standard_5" model="cf.export.stage"><field name="name">Campionatura</field><field name="sequence">5</field></record>
+    <record id="stage_standard_6" model="cf.export.stage"><field name="name">Negoziazione Ordine</field><field name="sequence">6</field></record>
+    <record id="stage_standard_7" model="cf.export.stage"><field name="name">Chiusa acquisita</field><field name="sequence">7</field><field name="is_won">True</field></record>
+    <record id="stage_standard_8" model="cf.export.stage"><field name="name">Chiusa persa</field><field name="sequence">8</field><field name="is_lost">True</field><field name="fold">True</field></record>
+
+    <!-- Premium (seq 11-16) -->
+    <record id="stage_premium_11" model="cf.export.stage"><field name="name">Negoziazione prezzi</field><field name="sequence">11</field></record>
+    <record id="stage_premium_12" model="cf.export.stage"><field name="name">Negoziazione Ordine</field><field name="sequence">12</field></record>
+    <record id="stage_premium_13" model="cf.export.stage"><field name="name">Operazioni Intermedie</field><field name="sequence">13</field></record>
+    <record id="stage_premium_14" model="cf.export.stage"><field name="name">Preparazione ordine</field><field name="sequence">14</field></record>
+    <record id="stage_premium_15" model="cf.export.stage"><field name="name">Vinta</field><field name="sequence">15</field><field name="is_won">True</field></record>
+    <record id="stage_premium_16" model="cf.export.stage"><field name="name">Persa</field><field name="sequence">16</field><field name="is_lost">True</field><field name="fold">True</field></record>
     <record id="seq_cf_export_sample" model="ir.sequence">
         <field name="name">Campionatura Export</field>
         <field name="code">cf.export.sample</field>

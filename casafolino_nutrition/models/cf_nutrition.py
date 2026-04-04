@@ -37,22 +37,25 @@ class CfNutritionBom(models.Model):
     last_computed = fields.Datetime(string="Ultimo Calcolo", readonly=True)
 
     def action_compute(self):
-        self.ensure_one()
-        bom = self.bom_id
-        total_qty = sum(line.product_qty for line in bom.bom_line_ids)
-        if not total_qty: return
-        fields_map = ["energy_kcal","energy_kj","fat","saturated_fat","carbs","sugars","fiber","protein","salt"]
-        totals = {f: 0.0 for f in fields_map}
-        for line in bom.bom_line_ids:
-            ingredient = self.env["cf.nutrition.ingredient"].search(
-                [("product_id","=",line.product_id.product_tmpl_id.id)], limit=1)
-            if not ingredient: continue
-            ratio = line.product_qty / total_qty
-            for f in fields_map:
-                totals[f] += getattr(ingredient, f) * ratio
-        totals["last_computed"] = fields.Datetime.now()
-        self.write(totals)
+        for rec in self:
+            bom = rec.bom_id
+            total_qty = sum(line.product_qty for line in bom.bom_line_ids)
+            if not total_qty: continue
+            cooked_qty = total_qty * (bom.cf_yield_factor or 1.0)
+            if not cooked_qty: continue
+            fields_map = ["energy_kcal","energy_kj","fat","saturated_fat","carbs","sugars","fiber","protein","salt"]
+            totals = {f: 0.0 for f in fields_map}
+            for line in bom.bom_line_ids:
+                ingredient = self.env["cf.nutrition.ingredient"].search(
+                    [("product_id","=",line.product_id.product_tmpl_id.id)], limit=1)
+                if not ingredient: continue
+                ratio = line.product_qty / cooked_qty
+                for f in fields_map:
+                    totals[f] += getattr(ingredient, f) * ratio
+            totals["last_computed"] = fields.Datetime.now()
+            rec.write(totals)
 
 class MrpBomNutrition(models.Model):
     _inherit = "mrp.bom"
     nutrition_ids = fields.One2many("cf.nutrition.bom", "bom_id", string="Valori Nutrizionali")
+    cf_yield_factor = fields.Float("Fattore di Sfrido/Cottura (Resa)", default=1.0)

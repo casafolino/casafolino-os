@@ -12,25 +12,18 @@
         <field name="context">{"search_default_my_leads": 1}</field>
     </record>
 
-    <record id="action_cf_export_lead_dach" model="ir.actions.act_window">
-        <field name="name">Pipeline DACH</field>
+    <record id="action_cf_export_lead_standard" model="ir.actions.act_window">
+        <field name="name">Pipeline Standard</field>
         <field name="res_model">cf.export.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","in",["dach","france","spain","europe_other"])]</field>
+        <field name="domain">[("stage_id.sequence","&lt;=",10)]</field>
     </record>
 
-    <record id="action_cf_export_lead_gulf" model="ir.actions.act_window">
-        <field name="name">Pipeline Gulf/Halal</field>
+    <record id="action_cf_export_lead_premium" model="ir.actions.act_window">
+        <field name="name">Pipeline Premium Josefina</field>
         <field name="res_model">cf.export.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","=","gulf_halal")]</field>
-    </record>
-
-    <record id="action_cf_export_lead_gdo" model="ir.actions.act_window">
-        <field name="name">Pipeline GDO</field>
-        <field name="res_model">cf.export.lead</field>
-        <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[("pipeline_type","=","gdo")]</field>
+        <field name="domain">[("stage_id.sequence","&gt;",10)]</field>
     </record>
 
     <record id="action_cf_export_sample" model="ir.actions.act_window">
