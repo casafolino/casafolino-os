@@ -8,7 +8,7 @@ class CfSupplierEvaluation(models.Model):
     _inherit = ["mail.thread"]
     _order = "date desc"
     _rec_name = "display_name_computed"
-    display_name_computed = fields.Char(compute="_compute_display_name_computed", store=True, compute_sudo=False)
+    display_name_computed = fields.Char(compute="_compute_display_name", store=True, compute_sudo=False)
     partner_id = fields.Many2one("res.partner", required=True, ondelete="cascade", tracking=True)
     date = fields.Date(default=fields.Date.today, required=True)
     evaluator_id = fields.Many2one("res.users", default=lambda self: self.env.user)
@@ -20,7 +20,7 @@ class CfSupplierEvaluation(models.Model):
     note = fields.Text()
 
     @api.depends("partner_id","date")
-    def _compute_display_name_computed(self):
+    def _compute_display_name(self):
         for rec in self:
             rec.display_name_computed = f"{rec.partner_id.name or ''} - {rec.date or ''}"
 

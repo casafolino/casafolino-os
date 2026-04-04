@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Cereali: Frumento -->
+    <record id="alg_wheat" model="cf.allergen">
+        <field name="name">Frumento/Grano</field><field name="name_en">Wheat</field><field name="name_de">Weizen</field><field name="name_fr">Ble</field><field name="name_es">Trigo</field>
+        <field name="code">WHEAT</field><field name="category_id" ref="cat_gluten"/><field name="market">eu</field><field name="sequence">101</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_canada" eval="True"/><field name="is_mandatory_australia" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_wheat_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_wheat"/><field name="name">farina di frumento</field></record>
+    <record id="alias_wheat_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_wheat"/><field name="name">semola</field></record>
+    <record id="alias_wheat_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_wheat"/><field name="name">amido di frumento</field></record>
+    <record id="alias_wheat_4" model="cf.allergen.alias"><field name="allergen_id" ref="alg_wheat"/><field name="name">glutine</field></record>
+
+    <!-- Cereali: Segale -->
+    <record id="alg_rye" model="cf.allergen">
+        <field name="name">Segale</field><field name="name_en">Rye</field><field name="name_de">Roggen</field>
+        <field name="code">RYE</field><field name="category_id" ref="cat_gluten"/><field name="market">eu</field><field name="sequence">102</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alias_rye_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_rye"/><field name="name">farina di segale</field></record>
+
+    <!-- Cereali: Orzo -->
+    <record id="alg_barley" model="cf.allergen">
+        <field name="name">Orzo</field><field name="name_en">Barley</field><field name="name_de">Gerste</field>
+        <field name="code">BARLEY</field><field name="category_id" ref="cat_gluten"/><field name="market">eu</field><field name="sequence">103</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alias_barley_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_barley"/><field name="name">malto d'orzo</field></record>
+    <record id="alias_barley_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_barley"/><field name="name">estratto di malto</field></record>
+
+    <!-- Cereali: Avena -->
+    <record id="alg_oats" model="cf.allergen">
+        <field name="name">Avena</field><field name="name_en">Oats</field><field name="name_de">Hafer</field>
+        <field name="code">OATS</field><field name="category_id" ref="cat_gluten"/><field name="market">eu</field><field name="sequence">104</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alias_oats_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_oats"/><field name="name">farina d'avena</field></record>
+    <record id="alias_oats_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_oats"/><field name="name">fiocchi d'avena</field></record>
+
+    <!-- Cereali: Farro -->
+    <record id="alg_spelt" model="cf.allergen">
+        <field name="name">Farro</field><field name="name_en">Spelt</field>
+        <field name="code">SPELT</field><field name="category_id" ref="cat_gluten"/><field name="market">eu</field><field name="sequence">105</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alias_spelt_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_spelt"/><field name="name">farina di farro</field></record>
+
+    <!-- Cereali: Kamut -->
+    <record id="alg_kamut" model="cf.allergen">
+        <field name="name">Kamut</field><field name="name_en">Kamut</field>
+        <field name="code">KAMUT</field><field name="category_id" ref="cat_gluten"/><field name="market">eu</field><field name="sequence">106</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alias_kamut_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_kamut"/><field name="name">grano khorasan</field></record>
+
+    <!-- Crostacei -->
+    <record id="alg_shrimp" model="cf.allergen">
+        <field name="name">Gamberi</field><field name="name_en">Shrimp</field>
+        <field name="code">SHRIMP</field><field name="category_id" ref="cat_crustaceans"/><field name="market">eu</field><field name="sequence">201</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_shrimp_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_shrimp"/><field name="name">gamberetti</field></record>
+    <record id="alias_shrimp_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_shrimp"/><field name="name">mazzancolle</field></record>
+
+    <record id="alg_crab" model="cf.allergen">
+        <field name="name">Granchio</field><field name="name_en">Crab</field>
+        <field name="code">CRAB</field><field name="category_id" ref="cat_crustaceans"/><field name="market">eu</field><field name="sequence">202</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_crab_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_crab"/><field name="name">polpa di granchio</field></record>
+
+    <record id="alg_lobster" model="cf.allergen">
+        <field name="name">Aragosta</field><field name="name_en">Lobster</field>
+        <field name="code">LOBSTER</field><field name="category_id" ref="cat_crustaceans"/><field name="market">eu</field><field name="sequence">203</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+
+    <!-- Uova -->
+    <record id="alg_egg" model="cf.allergen">
+        <field name="name">Uovo di gallina</field><field name="name_en">Egg</field><field name="name_de">Ei</field>
+        <field name="code">EGG</field><field name="category_id" ref="cat_eggs"/><field name="market">eu</field><field name="sequence">301</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_canada" eval="True"/><field name="is_mandatory_australia" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_egg_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_egg"/><field name="name">uova</field></record>
+    <record id="alias_egg_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_egg"/><field name="name">albume</field></record>
+    <record id="alias_egg_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_egg"/><field name="name">tuorlo</field></record>
+    <record id="alias_egg_4" model="cf.allergen.alias"><field name="allergen_id" ref="alg_egg"/><field name="name">ovalbumina</field></record>
+    <record id="alias_egg_5" model="cf.allergen.alias"><field name="allergen_id" ref="alg_egg"/><field name="name">lisozima E1105</field></record>
+
+    <!-- Arachidi -->
+    <record id="alg_peanut" model="cf.allergen">
+        <field name="name">Arachidi</field><field name="name_en">Peanuts</field><field name="name_de">Erdnuesse</field>
+        <field name="code">PEANUT</field><field name="category_id" ref="cat_peanuts"/><field name="market">eu</field><field name="sequence">501</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_canada" eval="True"/><field name="is_mandatory_australia" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_peanut_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_peanut"/><field name="name">burro d'arachidi</field></record>
+    <record id="alias_peanut_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_peanut"/><field name="name">olio di arachidi</field></record>
+    <record id="alias_peanut_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_peanut"/><field name="name">farina di arachidi</field></record>
+
+    <!-- Frutta a guscio: Nocciole -->
+    <record id="alg_hazelnut" model="cf.allergen">
+        <field name="name">Nocciole</field><field name="name_en">Hazelnuts</field><field name="name_de">Haselnuesse</field>
+        <field name="code">HAZELNUT</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">801</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_hazel_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_hazelnut"/><field name="name">pasta di nocciole</field></record>
+    <record id="alias_hazel_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_hazelnut"/><field name="name">crema di nocciole</field></record>
+    <record id="alias_hazel_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_hazelnut"/><field name="name">granella di nocciole</field></record>
+    <record id="alias_hazel_4" model="cf.allergen.alias"><field name="allergen_id" ref="alg_hazelnut"/><field name="name">pralinato</field></record>
+
+    <!-- Frutta a guscio: Mandorle -->
+    <record id="alg_almond" model="cf.allergen">
+        <field name="name">Mandorle</field><field name="name_en">Almonds</field><field name="name_de">Mandeln</field>
+        <field name="code">ALMOND</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">802</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alias_almond_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_almond"/><field name="name">farina di mandorle</field></record>
+    <record id="alias_almond_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_almond"/><field name="name">pasta di mandorle</field></record>
+    <record id="alias_almond_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_almond"/><field name="name">marzapane</field></record>
+
+    <!-- Frutta a guscio: Noci -->
+    <record id="alg_walnut" model="cf.allergen">
+        <field name="name">Noci</field><field name="name_en">Walnuts</field><field name="name_de">Walnuesse</field>
+        <field name="code">WALNUT</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">803</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alias_walnut_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_walnut"/><field name="name">olio di noci</field></record>
+
+    <!-- Frutta a guscio: Pistacchi -->
+    <record id="alg_pistachio" model="cf.allergen">
+        <field name="name">Pistacchi</field><field name="name_en">Pistachios</field>
+        <field name="code">PISTACHIO</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">804</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alias_pist_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_pistachio"/><field name="name">pasta di pistacchi</field></record>
+    <record id="alias_pist_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_pistachio"/><field name="name">granella di pistacchi</field></record>
+    <record id="alias_pist_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_pistachio"/><field name="name">crema di pistacchi</field></record>
+
+    <!-- Frutta a guscio: Anacardi -->
+    <record id="alg_cashew" model="cf.allergen">
+        <field name="name">Anacardi</field><field name="name_en">Cashews</field>
+        <field name="code">CASHEW</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">805</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alias_cashew_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_cashew"/><field name="name">burro di anacardi</field></record>
+
+    <!-- Frutta a guscio: Pecan, Brasile, Macadamia -->
+    <record id="alg_pecan" model="cf.allergen">
+        <field name="name">Noci Pecan</field><field name="name_en">Pecan nuts</field>
+        <field name="code">PECAN</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">806</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alg_brazil" model="cf.allergen">
+        <field name="name">Noci del Brasile</field><field name="name_en">Brazil nuts</field>
+        <field name="code">BRAZIL</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">807</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/>
+    </record>
+    <record id="alg_macadamia" model="cf.allergen">
+        <field name="name">Macadamia</field><field name="name_en">Macadamia nuts</field>
+        <field name="code">MACADAMIA</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">808</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alg_pinoli" model="cf.allergen">
+        <field name="name">Pinoli</field><field name="name_en">Pine nuts</field>
+        <field name="code">PINENUTS</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">809</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alias_pinoli_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_pinoli"/><field name="name">pesto</field></record>
+
+    <record id="alg_castagne" model="cf.allergen">
+        <field name="name">Castagne</field><field name="name_en">Chestnuts</field>
+        <field name="code">CHESTNUT</field><field name="category_id" ref="cat_nuts"/><field name="market">eu</field><field name="sequence">810</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alias_castagne_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_castagne"/><field name="name">farina di castagne</field></record>
+    <record id="alias_castagne_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_castagne"/><field name="name">marroni</field></record>
+
+    <!-- Soia -->
+    <record id="alg_soy" model="cf.allergen">
+        <field name="name">Soia</field><field name="name_en">Soy</field><field name="name_de">Soja</field>
+        <field name="code">SOY</field><field name="category_id" ref="cat_soy"/><field name="market">eu</field><field name="sequence">601</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_canada" eval="True"/><field name="is_mandatory_australia" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_soy_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_soy"/><field name="name">tofu</field></record>
+    <record id="alias_soy_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_soy"/><field name="name">lecitina di soia E322</field></record>
+    <record id="alias_soy_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_soy"/><field name="name">proteina di soia</field></record>
+    <record id="alias_soy_4" model="cf.allergen.alias"><field name="allergen_id" ref="alg_soy"/><field name="name">salsa di soia</field></record>
+
+    <!-- Latte -->
+    <record id="alg_milk" model="cf.allergen">
+        <field name="name">Latte vaccino</field><field name="name_en">Milk</field><field name="name_de">Milch</field>
+        <field name="code">MILK</field><field name="category_id" ref="cat_milk"/><field name="market">eu</field><field name="sequence">701</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_canada" eval="True"/><field name="is_mandatory_australia" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_milk_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">lattosio</field></record>
+    <record id="alias_milk_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">caseina</field></record>
+    <record id="alias_milk_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">siero di latte</field></record>
+    <record id="alias_milk_4" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">burro</field></record>
+    <record id="alias_milk_5" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">panna</field></record>
+    <record id="alias_milk_6" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">latte in polvere</field></record>
+    <record id="alias_milk_7" model="cf.allergen.alias"><field name="allergen_id" ref="alg_milk"/><field name="name">proteine del latte</field></record>
+
+    <!-- Sedano -->
+    <record id="alg_celery" model="cf.allergen">
+        <field name="name">Sedano</field><field name="name_en">Celery</field>
+        <field name="code">CELERY</field><field name="category_id" ref="cat_celery"/><field name="market">eu</field><field name="sequence">901</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alias_celery_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_celery"/><field name="name">sedano rapa</field></record>
+    <record id="alias_celery_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_celery"/><field name="name">sale di sedano</field></record>
+
+    <!-- Senape -->
+    <record id="alg_mustard" model="cf.allergen">
+        <field name="name">Senape</field><field name="name_en">Mustard</field>
+        <field name="code">MUSTARD</field><field name="category_id" ref="cat_mustard"/><field name="market">eu</field><field name="sequence">1001</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_canada" eval="True"/>
+    </record>
+    <record id="alias_mustard_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_mustard"/><field name="name">semi di senape</field></record>
+    <record id="alias_mustard_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_mustard"/><field name="name">salsa di senape</field></record>
+
+    <!-- Sesamo -->
+    <record id="alg_sesame" model="cf.allergen">
+        <field name="name">Semi di sesamo</field><field name="name_en">Sesame</field>
+        <field name="code">SESAME</field><field name="category_id" ref="cat_sesame"/><field name="market">eu</field><field name="sequence">1101</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_usa" eval="True"/><field name="is_mandatory_canada" eval="True"/><field name="is_mandatory_australia" eval="True"/><field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_sesame_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_sesame"/><field name="name">olio di sesamo</field></record>
+    <record id="alias_sesame_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_sesame"/><field name="name">tahini</field></record>
+
+    <!-- Solfiti -->
+    <record id="alg_so2" model="cf.allergen">
+        <field name="name">Anidride solforosa E220</field><field name="name_en">Sulphur dioxide</field>
+        <field name="code">SO2</field><field name="category_id" ref="cat_sulphites"/><field name="market">eu</field><field name="sequence">1201</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_australia" eval="True"/>
+    </record>
+    <record id="alias_so2_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_so2"/><field name="name">solfiti</field></record>
+    <record id="alias_so2_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_so2"/><field name="name">metabisolfito</field></record>
+    <record id="alias_so2_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_so2"/><field name="name">conservante E220</field></record>
+
+    <!-- Lupino -->
+    <record id="alg_lupin" model="cf.allergen">
+        <field name="name">Lupino</field><field name="name_en">Lupin</field>
+        <field name="code">LUPIN</field><field name="category_id" ref="cat_lupin"/><field name="market">eu</field><field name="sequence">1301</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_mandatory_australia" eval="True"/>
+    </record>
+    <record id="alias_lupin_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_lupin"/><field name="name">farina di lupino</field></record>
+
+    <!-- Molluschi -->
+    <record id="alg_mussels" model="cf.allergen">
+        <field name="name">Cozze</field><field name="name_en">Mussels</field>
+        <field name="code">MUSSELS</field><field name="category_id" ref="cat_molluscs"/><field name="market">eu</field><field name="sequence">1401</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alg_clams" model="cf.allergen">
+        <field name="name">Vongole</field><field name="name_en">Clams</field>
+        <field name="code">CLAMS</field><field name="category_id" ref="cat_molluscs"/><field name="market">eu</field><field name="sequence">1402</field>
+        <field name="is_mandatory_eu" eval="True"/>
+    </record>
+    <record id="alg_squid" model="cf.allergen">
+        <field name="name">Calamari</field><field name="name_en">Squid</field>
+        <field name="code">SQUID</field><field name="category_id" ref="cat_molluscs"/><field name="market">eu</field><field name="sequence">1403</field>
+        <field name="is_mandatory_eu" eval="True"/><field name="is_recommended_japan" eval="True"/>
+    </record>
+
+    <!-- Grano saraceno (Giappone obbligatorio) -->
+    <record id="alg_buckwheat" model="cf.allergen">
+        <field name="name">Grano saraceno</field><field name="name_en">Buckwheat</field>
+        <field name="code">BUCKWHEAT</field><field name="category_id" ref="cat_buckwheat"/><field name="market">eu</field><field name="sequence">1501</field>
+        <field name="is_mandatory_japan" eval="True"/>
+    </record>
+    <record id="alias_buck_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_buckwheat"/><field name="name">farina di grano saraceno</field></record>
+    <record id="alias_buck_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_buckwheat"/><field name="name">soba</field></record>
+
+    <!-- Carne (Giappone raccomandato) -->
+    <record id="alg_beef" model="cf.allergen">
+        <field name="name">Manzo</field><field name="name_en">Beef</field>
+        <field name="code">BEEF</field><field name="category_id" ref="cat_meat"/><field name="market">eu</field><field name="sequence">1601</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+    <record id="alias_beef_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_beef"/><field name="name">estratto di manzo</field></record>
+    <record id="alias_beef_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_beef"/><field name="name">gelatina di manzo</field></record>
+
+    <record id="alg_pork" model="cf.allergen">
+        <field name="name">Maiale</field><field name="name_en">Pork</field>
+        <field name="code">PORK</field><field name="category_id" ref="cat_meat"/><field name="market">eu</field><field name="sequence">1602</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+    <record id="alias_pork_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_pork"/><field name="name">gelatina di maiale</field></record>
+    <record id="alias_pork_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_pork"/><field name="name">strutto</field></record>
+
+    <record id="alg_chicken" model="cf.allergen">
+        <field name="name">Pollo</field><field name="name_en">Chicken</field>
+        <field name="code">CHICKEN</field><field name="category_id" ref="cat_meat"/><field name="market">eu</field><field name="sequence">1603</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+    <record id="alias_chicken_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_chicken"/><field name="name">brodo di pollo</field></record>
+
+    <!-- Prodotti delle api (Australia) -->
+    <record id="alg_royal_jelly" model="cf.allergen">
+        <field name="name">Gelatina reale</field><field name="name_en">Royal jelly</field>
+        <field name="code">ROYALJELLY</field><field name="category_id" ref="cat_bee"/><field name="market">australia</field><field name="sequence">1701</field>
+        <field name="is_mandatory_australia" eval="True"/>
+    </record>
+    <record id="alg_propolis" model="cf.allergen">
+        <field name="name">Propoli</field><field name="name_en">Propolis</field>
+        <field name="code">PROPOLIS</field><field name="category_id" ref="cat_bee"/><field name="market">australia</field><field name="sequence">1702</field>
+        <field name="is_mandatory_australia" eval="True"/>
+    </record>
+
+    <!-- Frutta (Giappone raccomandato) -->
+    <record id="alg_peach" model="cf.allergen">
+        <field name="name">Pesca</field><field name="name_en">Peach</field>
+        <field name="code">PEACH</field><field name="category_id" ref="cat_fruit"/><field name="market">eu</field><field name="sequence">1801</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+    <record id="alg_kiwi" model="cf.allergen">
+        <field name="name">Kiwi</field><field name="name_en">Kiwi</field>
+        <field name="code">KIWI</field><field name="category_id" ref="cat_fruit"/><field name="market">eu</field><field name="sequence">1802</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+    <record id="alg_banana" model="cf.allergen">
+        <field name="name">Banana</field><field name="name_en">Banana</field>
+        <field name="code">BANANA</field><field name="category_id" ref="cat_fruit"/><field name="market">eu</field><field name="sequence">1803</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+    <record id="alg_apple" model="cf.allergen">
+        <field name="name">Mela</field><field name="name_en">Apple</field>
+        <field name="code">APPLE</field><field name="category_id" ref="cat_fruit"/><field name="market">eu</field><field name="sequence">1804</field>
+        <field name="is_recommended_japan" eval="True"/>
+    </record>
+
+    <!-- Gelatina (Australia) -->
+    <record id="alg_gelatin" model="cf.allergen">
+        <field name="name">Gelatina</field><field name="name_en">Gelatin</field>
+        <field name="code">GELATIN</field><field name="category_id" ref="cat_gelatin"/><field name="market">eu</field><field name="sequence">1901</field>
+        <field name="is_mandatory_australia" eval="True"/>
+    </record>
+    <record id="alias_gelatin_1" model="cf.allergen.alias"><field name="allergen_id" ref="alg_gelatin"/><field name="name">gelatina di bovino</field></record>
+    <record id="alias_gelatin_2" model="cf.allergen.alias"><field name="allergen_id" ref="alg_gelatin"/><field name="name">gelatina di suino</field></record>
+    <record id="alias_gelatin_3" model="cf.allergen.alias"><field name="allergen_id" ref="alg_gelatin"/><field name="name">E441</field></record>
+
+</odoo>

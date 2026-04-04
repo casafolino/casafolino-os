@@ -6,36 +6,107 @@
         <field name="arch" type="xml">
             <form string="Non Conformita">
                 <header>
-                    <button name="action_close" type="object" string="Chiudi" class="btn-success" invisible="state == 'closed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="open,analysis,action,verified,closed"/>
+                    <!-- Step wizard buttons -->
+                    <button name="action_to_analysis" type="object" string="→ In Analisi"
+                        class="btn-primary" invisible="state != 'open'"/>
+                    <button name="action_to_corrective" type="object" string="→ Azione Correttiva"
+                        class="btn-primary" invisible="state != 'analysis'"/>
+                    <button name="action_to_verified" type="object" string="→ Verificata"
+                        class="btn-primary" invisible="state != 'action'"/>
+                    <button name="action_close" type="object" string="✅ Chiudi NC"
+                        class="btn-success" invisible="state != 'verified'"/>
+                    <button name="action_cancel" type="object" string="Annulla"
+                        class="btn-secondary"
+                        invisible="state in ('closed', 'cancelled')"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="open,analysis,action,verified,closed"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="reference" readonly="1"/></h1>
+                        <div>
+                            <field name="severity" widget="badge"
+                                decoration-danger="severity in ('high','critical')"
+                                decoration-warning="severity == 'medium'"
+                                decoration-success="severity == 'low'"/>
+                        </div>
                     </div>
                     <group>
-                        <group>
+                        <group string="Rilevazione">
                             <field name="origin"/>
-                            <field name="severity" widget="badge" decoration-danger="severity in ('high','critical')" decoration-warning="severity=='medium'"/>
                             <field name="product_id"/>
                             <field name="lot_id"/>
+                            <field name="sp_id"/>
                         </group>
-                        <group>
+                        <group string="Assegnazione">
                             <field name="date"/>
                             <field name="reported_by" widget="many2one_avatar_user"/>
                             <field name="assigned_to" widget="many2one_avatar_user"/>
-                            <field name="sp_id"/>
+                            <field name="responsabile_id" widget="many2one_avatar_user"/>
                         </group>
                     </group>
-                    <group string="Descrizione">
-                        <field name="description" nolabel="1"/>
-                    </group>
-                    <group string="Azione Correttiva">
-                        <field name="corrective_action" nolabel="1"/>
-                    </group>
+                    <notebook>
+                        <page string="Descrizione" name="description">
+                            <field name="description" nolabel="1"
+                                placeholder="Descrivere la non conformità rilevata..."/>
+                        </page>
+                        <page string="Azione Correttiva" name="corrective"
+                            invisible="state not in ('action','verified','closed')">
+                            <field name="corrective_action" nolabel="1"
+                                placeholder="Descrivere l'azione correttiva intrapresa..."/>
+                            <separator string="Azione Correttiva Dettagliata"/>
+                            <field name="azione_correttiva" nolabel="1"/>
+                            <separator string="Verifica Efficacia"/>
+                            <field name="verifica_efficacia" nolabel="1"/>
+                            <group>
+                                <field name="data_chiusura"/>
+                            </group>
+                        </page>
+                        <page string="Note" name="notes">
+                            <field name="notes" nolabel="1"/>
+                            <group>
+                                <field name="firma_digitale" widget="image" options="{'size': [120, 60]}"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>
+        </field>
+    </record>
+
+    <record id="view_cf_haccp_nc_kanban" model="ir.ui.view">
+        <field name="name">cf.haccp.nc.kanban</field>
+        <field name="model">cf.haccp.nc</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false" group_create="false">
+                <field name="reference"/>
+                <field name="severity"/>
+                <field name="origin"/>
+                <field name="assigned_to"/>
+                <field name="date"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="cf-crm-card card-rotting-warn">
+                            <div class="cf-card-header">
+                                <span class="cf-card-title"><field name="reference"/></span>
+                                <field name="severity" widget="badge"
+                                    decoration-danger="severity in ('high','critical')"
+                                    decoration-warning="severity == 'medium'"
+                                    decoration-success="severity == 'low'"/>
+                            </div>
+                            <div class="cf-card-partner small text-muted">
+                                <field name="origin"/>
+                            </div>
+                            <div class="cf-card-meta">
+                                <span class="small text-muted"><field name="date"/></span>
+                                <field name="assigned_to" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
     <record id="view_cf_haccp_nc_list" model="ir.ui.view">

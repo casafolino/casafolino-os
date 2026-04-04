@@ -46,11 +46,14 @@ class CfMailClient extends Component {
             accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
             showContactModal: false,
             contactDetail: {},
+            showEnrichment: false, enrichPartnerSearch: "", enrichPartnerResults: [],
+            enrichNote: "", enrichSaved: false,
             showSearchPanel: false,
             searchForm: { query: "", date_from: "", date_to: "", tag_id: "", has_attachments: false },
             isAdmin: false,
             activeView: "mail",
             contacts: [], contactSearch: "", contactTagFilter: "",
+            show007Panel: false, data007: {}, loading007: false,
         });
 
         onMounted(() => { this.init(); });
@@ -185,6 +188,121 @@ class CfMailClient extends Component {
         if (msgId) this.toggleSelect(msgId, ev);
     }
 
+    // ── Generic form handlers (data-form + data-field pattern) ──
+    onFormInput(ev) {
+        const { form, field } = ev.target.dataset;
+        if (form && field) this.state[form][field] = ev.target.value;
+    }
+    onFormChange(ev) {
+        const { form, field } = ev.target.dataset;
+        const isChecked = ev.target.dataset.type === 'checked';
+        if (form && field) this.state[form][field] = isChecked ? ev.target.checked : ev.target.value;
+    }
+    onStateInput(ev) {
+        const key = ev.target.dataset.stateKey;
+        if (key) this.state[key] = ev.target.value;
+    }
+
+    // ── Data-driven click handlers ──
+    onNavTag(ev) { this.navTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onSelectAccount(ev) { this.selectAccount(parseInt(ev.currentTarget.dataset.accountId)); }
+    onOpenEditAccount(ev) { this.openEditAccount(parseInt(ev.currentTarget.dataset.accountId)); }
+    onSelectMsg(ev) {
+        const msgId = parseInt(ev.currentTarget.dataset.msgId);
+        const msg = this.state.messages.find(m => m.id === msgId);
+        if (msg) this.selectMsg(msg, ev);
+    }
+    onQuickStar(ev) { this.quickStar(parseInt(ev.currentTarget.dataset.msgId), ev); }
+    onQuickArchive(ev) { this.quickArchive(parseInt(ev.currentTarget.dataset.msgId), ev); }
+    onDetailStar() { if (this.state.selectedMsg) this.quickStar(this.state.selectedMsg.id, null); }
+    onDetailArchive() { if (this.state.selectedMsg) this.quickArchive(this.state.selectedMsg.id, null); }
+    async onKeepSender() {
+        if (!this.state.selectedMsg) return;
+        const res = await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_keep_sender",
+            args: [[], this.state.selectedMsg.id], kwargs: { message_id: this.state.selectedMsg.id },
+        });
+        if (res && res.success) {
+            this.state.msgDetail.sender_action = "keep";
+            const msg = this.state.messages.find(m => m.id === this.state.selectedMsg.id);
+            if (msg) msg.sender_action = "keep";
+        }
+    }
+    async onExcludeSender() {
+        if (!this.state.selectedMsg) return;
+        const from = this.state.msgDetail.from_name || this.state.msgDetail.from_address || "";
+        if (!confirm("Escludi mittente " + from + "?\nTutte le sue email verranno eliminate.")) return;
+        const res = await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_exclude_sender",
+            args: [[], this.state.selectedMsg.id], kwargs: { message_id: this.state.selectedMsg.id },
+        });
+        if (res && res.success) {
+            this.state.selectedMsg = null;
+            this.state.msgDetail = {};
+            await this.loadMessages();
+        }
+    }
+    toggleEnrichment() { this.state.showEnrichment = !this.state.showEnrichment; }
+    async onEnrichPartnerSearch(ev) {
+        const q = ev.target.value;
+        this.state.enrichPartnerSearch = q;
+        if (q.length < 2) { this.state.enrichPartnerResults = []; return; }
+        const res = await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_search_partners",
+            args: [[], q], kwargs: { query: q },
+        });
+        this.state.enrichPartnerResults = res || [];
+    }
+    onEnrichSelectPartner(ev) {
+        const pid = parseInt(ev.currentTarget.dataset.partnerId);
+        const p = this.state.enrichPartnerResults.find(x => x.id === pid);
+        if (p) {
+            this.state.msgDetail.partner_id = p.id;
+            this.state.msgDetail.partner_name = p.name;
+        }
+        this.state.enrichPartnerResults = [];
+        this.state.enrichPartnerSearch = "";
+    }
+    async onSaveEnrichment() {
+        if (!this.state.selectedMsg) return;
+        this.state.enrichSaved = false;
+        const d = this.state.msgDetail;
+        await rpc("/web/dataset/call_kw", {
+            model: "cf.mail.message", method: "rpc_save_enrichment",
+            args: [[]], kwargs: {
+                message_id: this.state.selectedMsg.id,
+                partner_id: d.partner_id || false,
+                tag_ids: (d.tags || []).map(t => t.id),
+                assigned_user_id: d.assigned_user_id || false,
+                lead_id: d.lead_id || false,
+                note: this.state.enrichNote || "",
+            },
+        });
+        this.state.enrichSaved = true;
+    }
+    onAddTag(ev) { this.addTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onRemoveTag(ev) { this.removeTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onNewTagNameInput(ev) { this.state.newTagName = ev.target.value; }
+    onNewTagColorInput(ev) { this.state.newTagColor = ev.target.value; }
+    onSearchQueryInput(ev) { this.state.searchForm.query = ev.target.value; }
+    onSearchDateFromInput(ev) { this.state.searchForm.date_from = ev.target.value; }
+    onSearchDateToInput(ev) { this.state.searchForm.date_to = ev.target.value; }
+
+    // Bulk actions
+    onBulkRead() { this.bulkAction('read'); }
+    onBulkUnread() { this.bulkAction('unread'); }
+    onBulkStar() { this.bulkAction('star'); }
+    onBulkArchive() { this.bulkAction('archive'); }
+    onBulkDelete() { this.bulkAction('delete'); }
+    onBulkAddTag(ev) { this.bulkAction('add_tag', { tag_id: parseInt(ev.currentTarget.dataset.tagId) }); }
+
+    // Snooze, contact, format
+    onSnooze(ev) { this.snooze(parseInt(ev.currentTarget.dataset.minutes)); }
+    onOpenContactDetail(ev) { this.openContactDetail(parseInt(ev.currentTarget.dataset.contactId)); }
+    onRemoveContactTag(ev) { this.removeContactTag(parseInt(ev.currentTarget.dataset.tagId)); }
+    onExecFormat(ev) { this.execFormat(ev.currentTarget.dataset.command); }
+    onComposerHeaderClick() { if (this.state.composerMinimized) this.toggleComposerMinimized(); }
+
     get groupedMessages() {
         const msgs = this.filteredMessages;
         const groupBy = this.state.groupBy;
@@ -275,9 +393,18 @@ class CfMailClient extends Component {
         try {
             const detail = await this._rpc("cf.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
+            this.state.enrichNote = detail.note || "";
+            this.state.enrichPartnerSearch = "";
+            this.state.enrichPartnerResults = [];
+            this.state.enrichSaved = false;
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");
+            if (detail.partner_id) {
+                this.load007Data(detail.partner_id);
+            } else {
+                this.state.data007 = {};
+            }
         } catch (e) { console.error(e); }
         finally { this.state.loadingDetail = false; }
     }
@@ -465,6 +592,61 @@ class CfMailClient extends Component {
 
     async removeContactTag(tagId) {
         this.state.contactDetail.tags = (this.state.contactDetail.tags || []).filter(t => t.id !== tagId);
+    }
+
+    async onEnrich007() {
+        if (!this.state.contactDetail.id) return;
+        try {
+            this.showToast("Agente 007 in azione...");
+            await rpc("/web/dataset/call_kw", {
+                model: "res.partner",
+                method: "action_enrich_007",
+                args: [[this.state.contactDetail.id]],
+                kwargs: {},
+            });
+            const data = await this._rpc("res.partner", "get_contact_detail", { partner_id: this.state.contactDetail.id });
+            this.state.contactDetail = data || {};
+            this.showToast("Agente 007: enrichment completato!");
+        } catch (e) {
+            console.error(e);
+            this.notification.add("Errore Agente 007", { type: "danger" });
+        }
+    }
+
+    toggle007Panel() { this.state.show007Panel = !this.state.show007Panel; }
+
+    async load007Data(partnerId) {
+        if (!partnerId) return;
+        this.state.loading007 = true;
+        try {
+            const data = await this._rpc("res.partner", "rpc_get_007_data", { partner_id: partnerId });
+            this.state.data007 = data || {};
+        } catch (e) { this.state.data007 = {}; }
+        finally { this.state.loading007 = false; }
+    }
+
+    async onEnrich007FromPanel() {
+        const pid = this.state.msgDetail.partner_id;
+        if (!pid) {
+            this.notification.add("Nessun partner collegato", { type: "warning" });
+            return;
+        }
+        this.state.loading007 = true;
+        try {
+            this.showToast("Agente 007 in azione...");
+            await rpc("/web/dataset/call_kw", {
+                model: "res.partner",
+                method: "action_enrich_007",
+                args: [[pid]],
+                kwargs: {},
+            });
+            await this.load007Data(pid);
+            this.showToast("Agente 007: enrichment completato!");
+        } catch (e) {
+            console.error(e);
+            this.notification.add("Errore Agente 007", { type: "danger" });
+            this.state.loading007 = false;
+        }
     }
 
     async openLeadModal() {

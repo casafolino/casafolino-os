@@ -5,5 +5,7 @@ access_cf_allergen_kw_user,cf.allergen.keyword user,model_cf_allergen_keyword,ba
 access_cf_allergen_kw_mgr,cf.allergen.keyword manager,model_cf_allergen_keyword,base.group_system,1,1,1,1
 access_cf_recipe_allergen_user,cf.recipe.allergen user,model_cf_recipe_allergen,base.group_user,1,1,1,0
 access_cf_recipe_allergen_mgr,cf.recipe.allergen manager,model_cf_recipe_allergen,base.group_system,1,1,1,1
-access_cf_allergen_product_match_user,cf.allergen.product.match user,model_cf_allergen_product_match,base.group_user,1,1,1,0
-access_cf_allergen_product_match_mgr,cf.allergen.product.match manager,model_cf_allergen_product_match,base.group_system,1,1,1,1
+access_cf_allergen_cat_user,cf.allergen.category user,model_cf_allergen_category,base.group_user,1,0,0,0
+access_cf_allergen_cat_mgr,cf.allergen.category manager,model_cf_allergen_category,base.group_system,1,1,1,1
+access_cf_allergen_alias_user,cf.allergen.alias user,model_cf_allergen_alias,base.group_user,1,0,0,0
+access_cf_allergen_alias_mgr,cf.allergen.alias manager,model_cf_allergen_alias,base.group_system,1,1,1,1

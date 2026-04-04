@@ -3,4 +3,5 @@ from . import cf_mail_message
 from . import cf_mail_tag
 from . import cf_mail_crm
 from . import cf_contact
+from . import cf_mail_compose
 from . import cf_mail_sender_rule

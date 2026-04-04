@@ -14,7 +14,7 @@
     <menuitem id="menu_cf_mail_accounts" name="Account Email"
         parent="menu_cf_mail_config"
         action="action_cf_mail_accounts" sequence="1"/>
-    <menuitem id="menu_cf_mail_sender_rule" name="Regole Mittenti"
+    <menuitem id="menu_cf_mail_sender_rules" name="Regole Mittenti"
         parent="menu_cf_mail_config"
-        action="action_cf_mail_sender_rule" sequence="2"/>
+        action="action_cf_mail_sender_rules" sequence="2"/>
 </odoo>

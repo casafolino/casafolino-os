@@ -58,7 +58,7 @@
             <div class="cf-mail-divider"/>
             <div class="cf-mail-section-title">Tag Email</div>
             <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
-                <div class="cf-mail-tag-nav" t-on-click="() => this.navTag(tag.id)">
+                <div class="cf-mail-tag-nav" t-att-data-tag-id="tag.id" t-on-click="onNavTag">
                     <span class="cf-mail-tag-dot" t-att-style="'background:' + tag.color"/>
                     <span t-esc="tag.name"/>
                 </div>
@@ -77,10 +77,10 @@
             </div>
             <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
                 <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''">
-                    <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color" t-on-click="() => this.selectAccount(acc.id)"/>
-                    <span class="cf-mail-account-email" t-on-click="() => this.selectAccount(acc.id)" t-esc="acc.email"/>
-                    <span t-if="acc.unread > 0" class="cf-mail-account-badge" t-on-click="() => this.selectAccount(acc.id)" t-esc="acc.unread"/>
-                    <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:10px;padding:0 2px" t-on-click="() => this.openEditAccount(acc.id)" title="Impostazioni"><i class="fa fa-cog"/></button>
+                    <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color" t-att-data-account-id="acc.id" t-on-click="onSelectAccount"/>
+                    <span class="cf-mail-account-email" t-att-data-account-id="acc.id" t-on-click="onSelectAccount" t-esc="acc.email"/>
+                    <span t-if="acc.unread > 0" class="cf-mail-account-badge" t-att-data-account-id="acc.id" t-on-click="onSelectAccount" t-esc="acc.unread"/>
+                    <button style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:10px;padding:0 2px" t-att-data-account-id="acc.id" t-on-click="onOpenEditAccount" title="Impostazioni"><i class="fa fa-cog"/></button>
                 </div>
                 <t t-if="acc.imap_status and acc.imap_enabled">
                     <div style="padding:2px 12px 4px 28px;font-size:10px;color:var(--text-muted)" t-esc="acc.imap_status"/>
@@ -108,10 +108,10 @@
                 <div class="cf-mail-search-panel">
                     <div class="cf-mail-search-panel-title">Ricerca avanzata</div>
                     <div class="cf-mail-search-panel-fields">
-                        <input class="cf-mail-modal-input" t-att-value="state.searchForm.query" t-on-input="(e) => this.state.searchForm.query = e.target.value" placeholder="Parole chiave..."/>
+                        <input class="cf-mail-modal-input" t-att-value="state.searchForm.query" t-on-input="onSearchQueryInput" placeholder="Parole chiave..."/>
                         <div style="display:flex;gap:6px">
-                            <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_from" t-on-input="(e) => this.state.searchForm.date_from = e.target.value" style="flex:1"/>
-                            <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_to" t-on-input="(e) => this.state.searchForm.date_to = e.target.value" style="flex:1"/>
+                            <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_from" t-on-input="onSearchDateFromInput" style="flex:1"/>
+                            <input class="cf-mail-modal-input" type="date" t-att-value="state.searchForm.date_to" t-on-input="onSearchDateToInput" style="flex:1"/>
                         </div>
                         <select class="cf-mail-modal-input" t-on-change="onSearchTagChange">
                             <option value="">Tutti i tag</option>
@@ -188,7 +188,7 @@
                         </t>
                         <t t-foreach="group.items" t-as="msg" t-key="msg.id">
                             <div t-att-class="'cf-mail-email-item ' + (msg.is_read ? 'read' : 'unread') + (state.selectedMsg and state.selectedMsg.id === msg.id ? ' selected' : '')"
-                                 t-on-click="(ev) => this.selectMsg(msg, ev)">
+                                 t-att-data-msg-id="msg.id" t-on-click="onSelectMsg">
                                 <input type="checkbox" class="cf-item-cb"
                                        t-att-checked="state.selectedIds.includes(msg.id)"
                                        t-att-data-msg-id="msg.id"
@@ -213,6 +213,12 @@
                                                 <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color" t-esc="tag.name"/>
                                             </t>
                                         </t>
+                                        <span t-if="msg.sender_action === 'keep'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
+                                            <i class="fa fa-check-circle"/> Tenuto
+                                        </span>
+                                        <span t-if="msg.sender_action === 'exclude'" class="cf-mail-tag-pill" style="background:#ffebee;color:#c62828">
+                                            <i class="fa fa-ban"/> Escluso
+                                        </span>
                                         <span t-if="msg.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
                                         <span t-if="msg.lead_name and state.groupBy !== 'lead'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
                                             <i class="fa fa-handshake"/> <t t-esc="msg.lead_name"/>
@@ -223,10 +229,10 @@
                                     </div>
                                 </div>
                                 <div class="cf-item-actions">
-                                    <button class="cf-item-action-btn" t-on-click.stop="(ev) => this.quickStar(msg.id, ev)">
+                                    <button class="cf-item-action-btn" t-att-data-msg-id="msg.id" t-on-click.stop="onQuickStar">
                                         <i t-att-class="'fa fa-star' + (msg.is_starred ? '' : '-o')"/>
                                     </button>
-                                    <button class="cf-item-action-btn" t-on-click.stop="(ev) => this.quickArchive(msg.id, ev)">
+                                    <button class="cf-item-action-btn" t-att-data-msg-id="msg.id" t-on-click.stop="onQuickArchive">
                                         <i class="fa fa-archive"/>
                                     </button>
                                 </div>
@@ -242,24 +248,24 @@
         <div class="cf-mail-bulk-bar">
             <i class="fa fa-check-square"/>
             <span t-esc="state.selectedIds.length"/> sel.
-            <button class="cf-mail-bulk-btn" t-on-click="() => this.bulkAction('read')">Lette</button>
-            <button class="cf-mail-bulk-btn" t-on-click="() => this.bulkAction('unread')">Non lette</button>
-            <button class="cf-mail-bulk-btn" t-on-click="() => this.bulkAction('star')"><i class="fa fa-star"/></button>
-            <button class="cf-mail-bulk-btn" t-on-click="() => this.bulkAction('archive')"><i class="fa fa-archive"/></button>
+            <button class="cf-mail-bulk-btn" t-on-click="onBulkRead">Lette</button>
+            <button class="cf-mail-bulk-btn" t-on-click="onBulkUnread">Non lette</button>
+            <button class="cf-mail-bulk-btn" t-on-click="onBulkStar"><i class="fa fa-star"/></button>
+            <button class="cf-mail-bulk-btn" t-on-click="onBulkArchive"><i class="fa fa-archive"/></button>
             <div class="cf-mail-bulk-tag-wrap">
                 <button class="cf-mail-bulk-btn" t-on-click="toggleBulkTagMenu">
                     <i class="fa fa-tag"/> Tag
                 </button>
                 <div t-if="state.showBulkTagMenu" class="cf-mail-tag-dropdown">
                     <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
-                        <div class="cf-mail-tag-option" t-on-click="() => this.bulkAction('add_tag', {tag_id: tag.id})">
+                        <div class="cf-mail-tag-option" t-att-data-tag-id="tag.id" t-on-click="onBulkAddTag">
                             <span class="cf-mail-tag-dot" t-att-style="'background:' + tag.color"/>
                             <t t-esc="tag.name"/>
                         </div>
                     </t>
                 </div>
             </div>
-            <button class="cf-mail-bulk-btn danger" t-on-click="() => this.bulkAction('delete')"><i class="fa fa-trash"/></button>
+            <button class="cf-mail-bulk-btn danger" t-on-click="onBulkDelete"><i class="fa fa-trash"/></button>
         </div>
     </t>
 
@@ -279,7 +285,7 @@
                             <t t-foreach="state.msgDetail.tags" t-as="tag" t-key="tag.id">
                                 <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color">
                                     <t t-esc="tag.name"/>
-                                    <i class="fa fa-times" style="margin-left:4px;cursor:pointer" t-on-click="() => this.removeTag(tag.id)"/>
+                                    <i class="fa fa-times" style="margin-left:4px;cursor:pointer" t-att-data-tag-id="tag.id" t-on-click="onRemoveTag"/>
                                 </span>
                             </t>
                         </t>
@@ -299,27 +305,47 @@
                         </div>
                         <div class="cf-mail-detail-date" t-esc="state.msgDetail.date"/>
                     </div>
+                    <div class="cf-mail-sender-actions" style="display:flex;gap:6px;margin-bottom:8px">
+                        <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;background:#e8f5e9;color:#2e7d32;border-color:#c8e6c9"
+                                t-on-click="onKeepSender">
+                            <i class="fa fa-check"/> Tieni Mittente
+                        </button>
+                        <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;background:#ffebee;color:#c62828;border-color:#ffcdd2"
+                                t-on-click="onExcludeSender">
+                            <i class="fa fa-ban"/> Escludi Mittente
+                        </button>
+                        <t t-if="state.msgDetail.sender_action === 'keep'">
+                            <span style="font-size:11px;padding:4px 10px;background:#e8f5e9;color:#2e7d32;border-radius:12px;display:inline-flex;align-items:center;gap:4px">
+                                <i class="fa fa-check-circle"/> Tenuto
+                            </span>
+                        </t>
+                        <t t-if="state.msgDetail.sender_action === 'exclude'">
+                            <span style="font-size:11px;padding:4px 10px;background:#ffebee;color:#c62828;border-radius:12px;display:inline-flex;align-items:center;gap:4px">
+                                <i class="fa fa-ban"/> Escluso
+                            </span>
+                        </t>
+                    </div>
                     <div class="cf-mail-detail-actions">
                         <button class="cf-mail-btn-primary" t-on-click="openReply"><i class="fa fa-reply"/> Rispondi</button>
                         <button class="cf-mail-btn-secondary" t-on-click="openForward"><i class="fa fa-share"/> Inoltra</button>
-                        <button t-att-class="'cf-mail-btn-icon' + (state.selectedMsg.is_starred ? ' starred' : '')" t-on-click="() => this.quickStar(state.selectedMsg.id, null)">
+                        <button t-att-class="'cf-mail-btn-icon' + (state.selectedMsg.is_starred ? ' starred' : '')" t-on-click="onDetailStar">
                             <i class="fa fa-star"/>
                         </button>
-                        <button class="cf-mail-btn-icon" t-on-click="() => this.quickArchive(state.selectedMsg.id, null)"><i class="fa fa-archive"/></button>
+                        <button class="cf-mail-btn-icon" t-on-click="onDetailArchive"><i class="fa fa-archive"/></button>
                         <div style="position:relative;display:inline-block">
                             <button class="cf-mail-btn-icon" t-on-click="toggleTagDropdown" title="Tag">
                                 <i class="fa fa-tag"/>
                             </button>
                             <div t-if="state.showTagDropdown" class="cf-mail-tag-dropdown">
                                 <t t-foreach="state.allTags" t-as="tag" t-key="tag.id">
-                                    <div class="cf-mail-tag-option" t-on-click="() => this.addTag(tag.id)">
+                                    <div class="cf-mail-tag-option" t-att-data-tag-id="tag.id" t-on-click="onAddTag">
                                         <span class="cf-mail-tag-dot" t-att-style="'background:' + tag.color"/>
                                         <t t-esc="tag.name"/>
                                     </div>
                                 </t>
                                 <div class="cf-mail-tag-create">
-                                    <input t-att-value="state.newTagName" t-on-input="(e) => this.state.newTagName = e.target.value" placeholder="Nuovo tag..."/>
-                                    <input type="color" t-att-value="state.newTagColor" t-on-input="(e) => this.state.newTagColor = e.target.value" style="width:28px;height:28px;border:none;padding:0;cursor:pointer"/>
+                                    <input t-att-value="state.newTagName" t-on-input="onNewTagNameInput" placeholder="Nuovo tag..."/>
+                                    <input type="color" t-att-value="state.newTagColor" t-on-input="onNewTagColorInput" style="width:28px;height:28px;border:none;padding:0;cursor:pointer"/>
                                     <button t-on-click="createNewTag"><i class="fa fa-plus"/></button>
                                 </div>
                             </div>
@@ -329,10 +355,10 @@
                                 <i class="fa fa-clock"/>
                             </button>
                             <div t-if="state.showSnoozeMenu" class="cf-mail-snooze-menu">
-                                <div class="cf-snooze-option" t-on-click="() => this.snooze(60)"><i class="fa fa-coffee"/> Tra 1 ora</div>
-                                <div class="cf-snooze-option" t-on-click="() => this.snooze(240)"><i class="fa fa-sun"/> Tra 4 ore</div>
-                                <div class="cf-snooze-option" t-on-click="() => this.snooze(1440)"><i class="fa fa-calendar"/> Domani</div>
-                                <div class="cf-snooze-option" t-on-click="() => this.snooze(4320)"><i class="fa fa-calendar-alt"/> Tra 3 giorni</div>
+                                <div class="cf-snooze-option" data-minutes="60" t-on-click="onSnooze"><i class="fa fa-coffee"/> Tra 1 ora</div>
+                                <div class="cf-snooze-option" data-minutes="240" t-on-click="onSnooze"><i class="fa fa-sun"/> Tra 4 ore</div>
+                                <div class="cf-snooze-option" data-minutes="1440" t-on-click="onSnooze"><i class="fa fa-calendar"/> Domani</div>
+                                <div class="cf-snooze-option" data-minutes="4320" t-on-click="onSnooze"><i class="fa fa-calendar-alt"/> Tra 3 giorni</div>
                             </div>
                         </div>
                         <button class="cf-mail-btn-icon lead" t-on-click="openLeadModal" title="Crea Trattativa CRM"><i class="fa fa-plus-circle"/></button>
@@ -371,7 +397,7 @@
                         <div class="cf-mail-ctx-section">
                             <div class="cf-mail-ctx-title"><i class="fa fa-user"/> Contatto</div>
                             <t t-if="state.msgDetail.partner_name">
-                                <div class="cf-mail-contact-card" style="cursor:pointer" t-on-click="() => this.openContactDetail(state.msgDetail.partner_id)">
+                                <div class="cf-mail-contact-card" style="cursor:pointer" t-att-data-contact-id="state.msgDetail.partner_id" t-on-click="onOpenContactDetail">
                                     <div class="cf-mail-contact-avatar" t-att-style="'background:' + this.avatarColor(state.msgDetail.partner_name)">
                                         <t t-esc="this.avatarInitial(state.msgDetail.partner_name)"/>
                                     </div>
@@ -382,7 +408,7 @@
                                         <div t-if="state.msgDetail.partner_phone" class="cf-mail-contact-detail" t-esc="state.msgDetail.partner_phone"/>
                                     </div>
                                 </div>
-                                <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:6px" t-on-click="() => this.openContactDetail(state.msgDetail.partner_id)">
+                                <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:6px" t-att-data-contact-id="state.msgDetail.partner_id" t-on-click="onOpenContactDetail">
                                     <i class="fa fa-edit"/> Modifica contatto
                                 </button>
                             </t>
@@ -454,6 +480,106 @@
                                 </div>
                             </t>
                         </div>
+                        <!-- Sezione 007 Intelligence -->
+                        <div class="cf-mail-ctx-section">
+                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggle007Panel">
+                                <i t-att-class="'fa fa-' + (state.show007Panel ? 'chevron-down' : 'chevron-right')"/>
+                                <i class="fa fa-user-secret" style="margin-left:4px"/> 007 Intelligence
+                            </div>
+                            <t t-if="state.show007Panel">
+                                <div style="margin-top:8px">
+                                    <t t-if="state.loading007">
+                                        <div style="font-size:11px;color:var(--text-muted)"><i class="fa fa-spinner fa-spin"/> Caricamento...</div>
+                                    </t>
+                                    <t t-elif="state.data007.enriched">
+                                        <span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:#e8f5e9;color:#2e7d32;font-weight:600;margin-bottom:6px">
+                                            Arricchito ✓
+                                        </span>
+                                        <div t-if="state.data007.enriched_date" style="font-size:10px;color:var(--text-muted);margin-bottom:6px">
+                                            <t t-esc="state.data007.enriched_date"/>
+                                        </div>
+                                        <t t-if="state.data007.potenziale">
+                                            <span t-att-style="'display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-bottom:6px;' + (state.data007.potenziale === 'alto' ? 'background:#e8f5e9;color:#2e7d32' : state.data007.potenziale === 'medio' ? 'background:#fff3e0;color:#e65100' : 'background:#ffebee;color:#c62828')">
+                                                Potenziale: <t t-esc="state.data007.potenziale"/>
+                                            </span>
+                                        </t>
+                                        <div t-if="state.data007.fatturato" style="font-size:11px;margin-top:4px">
+                                            <strong>Fatturato:</strong> <t t-esc="state.data007.fatturato"/>
+                                            <t t-if="state.data007.fatturato_anno"> (<t t-esc="state.data007.fatturato_anno"/>)</t>
+                                        </div>
+                                        <div t-if="state.data007.dipendenti" style="font-size:11px;margin-top:2px">
+                                            <strong>Dipendenti:</strong> <t t-esc="state.data007.dipendenti"/>
+                                        </div>
+                                        <div t-if="state.data007.settore" style="font-size:11px;margin-top:2px">
+                                            <strong>Settore:</strong> <t t-esc="state.data007.settore"/>
+                                        </div>
+                                        <div t-if="state.data007.trend" style="font-size:11px;margin-top:2px">
+                                            <strong>Trend:</strong> <t t-esc="state.data007.trend"/>
+                                        </div>
+                                        <div t-if="state.data007.note" style="font-size:11px;margin-top:6px;padding:6px;background:rgba(90,110,58,0.06);border-radius:6px;line-height:1.4;max-height:60px;overflow-y:auto">
+                                            <t t-esc="state.data007.note"/>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:#f5f5f5;color:#999;font-weight:600;margin-bottom:6px">
+                                            Non arricchito
+                                        </span>
+                                    </t>
+                                    <div style="margin-top:8px">
+                                        <button class="cf-mail-btn-secondary" style="background:#1a3a1a;color:#fff;border-color:#1a3a1a;font-size:11px;padding:3px 10px" t-on-click="onEnrich007FromPanel">
+                                            <i class="fa fa-user-secret"/> Arricchisci ora
+                                        </button>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                        <!-- Sezione Arricchimento -->
+                        <div class="cf-mail-ctx-section">
+                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleEnrichment">
+                                <i t-att-class="'fa fa-' + (state.showEnrichment ? 'chevron-down' : 'chevron-right')"/>
+                                Arricchimento
+                            </div>
+                            <t t-if="state.showEnrichment">
+                                <div class="cf-mail-modal-field" style="margin-top:6px">
+                                    <label style="font-size:11px;font-weight:600">Partner</label>
+                                    <input class="cf-mail-modal-input" type="text"
+                                           t-att-value="state.enrichPartnerSearch"
+                                           data-state-key="enrichPartnerSearch"
+                                           t-on-input="onEnrichPartnerSearch"
+                                           placeholder="Cerca azienda/contatto..."/>
+                                    <t t-if="state.enrichPartnerResults and state.enrichPartnerResults.length > 0">
+                                        <div class="cf-mail-tag-dropdown" style="position:relative;max-height:150px;overflow-y:auto">
+                                            <t t-foreach="state.enrichPartnerResults" t-as="p" t-key="p.id">
+                                                <div class="cf-mail-tag-option" t-att-data-partner-id="p.id" t-on-click="onEnrichSelectPartner">
+                                                    <t t-esc="p.name"/>
+                                                    <small t-if="p.email" style="color:var(--text-muted);margin-left:4px" t-esc="p.email"/>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-if="state.msgDetail.partner_name">
+                                        <div style="margin-top:4px;font-size:11px;color:var(--accent)">
+                                            <i class="fa fa-check-circle"/> <t t-esc="state.msgDetail.partner_name"/>
+                                        </div>
+                                    </t>
+                                </div>
+                                <div class="cf-mail-modal-field" style="margin-top:6px">
+                                    <label style="font-size:11px;font-weight:600">Note interne</label>
+                                    <textarea class="cf-mail-modal-input" rows="2"
+                                              t-att-value="state.enrichNote"
+                                              data-state-key="enrichNote"
+                                              t-on-input="onStateInput"
+                                              placeholder="Note..."/>
+                                </div>
+                                <button class="cf-mail-btn-primary" style="font-size:11px;padding:4px 12px;margin-top:8px"
+                                        t-on-click="onSaveEnrichment">
+                                    <i class="fa fa-save"/> Salva
+                                </button>
+                                <span t-if="state.enrichSaved" style="color:#28a745;font-size:11px;margin-left:8px">
+                                    <i class="fa fa-check"/> Salvato
+                                </span>
+                            </t>
+                        </div>
                     </div>
                 </div>
                 <t t-if="state.showComposer" t-call="cf_mail_client.Composer"/>
@@ -486,7 +612,7 @@
                     <div class="cf-mail-empty" style="grid-column:1/-1"><i class="fa fa-address-book"/><span>Nessun contatto trovato</span></div>
                 </t>
                 <t t-foreach="state.contacts" t-as="contact" t-key="contact.id">
-                    <div class="cf-mail-contact-card-grid" t-on-click="() => this.openContactDetail(contact.id)">
+                    <div class="cf-mail-contact-card-grid" t-att-data-contact-id="contact.id" t-on-click="onOpenContactDetail">
                         <div class="cf-mail-contact-card-avatar" t-att-style="'background:' + this.avatarColor(contact.name)">
                             <t t-esc="this.avatarInitial(contact.name)"/>
                         </div>
@@ -529,19 +655,19 @@
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                                 <div class="cf-mail-modal-field">
                                     <label>Nome completo</label>
-                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.name" t-on-input="(e) => this.state.contactDetail.name = e.target.value"/>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.name" data-form="contactDetail" data-field="name" t-on-input="onFormInput"/>
                                 </div>
                                 <div class="cf-mail-modal-field">
                                     <label>Email</label>
-                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.email" t-on-input="(e) => this.state.contactDetail.email = e.target.value"/>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.email" data-form="contactDetail" data-field="email" t-on-input="onFormInput"/>
                                 </div>
                                 <div class="cf-mail-modal-field">
                                     <label>Telefono</label>
-                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.phone" t-on-input="(e) => this.state.contactDetail.phone = e.target.value"/>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.phone" data-form="contactDetail" data-field="phone" t-on-input="onFormInput"/>
                                 </div>
                                 <div class="cf-mail-modal-field">
                                     <label>Mobile / WhatsApp</label>
-                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.whatsapp || state.contactDetail.mobile" t-on-input="(e) => this.state.contactDetail.whatsapp = e.target.value"/>
+                                    <input class="cf-mail-modal-input" t-att-value="state.contactDetail.whatsapp || state.contactDetail.mobile" data-form="contactDetail" data-field="whatsapp" t-on-input="onFormInput"/>
                                 </div>
                             </div>
                         </div>
@@ -550,35 +676,35 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                         <div class="cf-mail-modal-field">
                             <label>Azienda</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.company" t-on-input="(e) => this.state.contactDetail.company = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.company" data-form="contactDetail" data-field="company" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Ruolo / Posizione</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.job_title" t-on-input="(e) => this.state.contactDetail.job_title = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.job_title" data-form="contactDetail" data-field="job_title" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Reparto</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.department" t-on-input="(e) => this.state.contactDetail.department = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.department" data-form="contactDetail" data-field="department" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Paese</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.country" t-on-input="(e) => this.state.contactDetail.country = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.country" data-form="contactDetail" data-field="country" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Lingua</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.language" t-on-input="(e) => this.state.contactDetail.language = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.language" data-form="contactDetail" data-field="language" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>LinkedIn</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.linkedin" t-on-input="(e) => this.state.contactDetail.linkedin = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.linkedin" data-form="contactDetail" data-field="linkedin" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Fiere frequentate</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.fairs" t-on-input="(e) => this.state.contactDetail.fairs = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.contactDetail.fairs" data-form="contactDetail" data-field="fairs" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Fonte contatto</label>
-                            <select class="cf-mail-modal-input" t-on-change="(e) => this.state.contactDetail.source = e.target.value">
+                            <select class="cf-mail-modal-input" data-form="contactDetail" data-field="source" t-on-change="onFormChange">
                                 <option value="">— Seleziona —</option>
                                 <option value="fiera" t-att-selected="state.contactDetail.source === 'fiera'">Fiera</option>
                                 <option value="email" t-att-selected="state.contactDetail.source === 'email'">Email</option>
@@ -590,7 +716,7 @@
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Valutazione</label>
-                            <select class="cf-mail-modal-input" t-on-change="(e) => this.state.contactDetail.rating = e.target.value">
+                            <select class="cf-mail-modal-input" data-form="contactDetail" data-field="rating" t-on-change="onFormChange">
                                 <option value="">—</option>
                                 <option value="1" t-att-selected="state.contactDetail.rating === '1'">★ Bassa</option>
                                 <option value="2" t-att-selected="state.contactDetail.rating === '2'">★★</option>
@@ -603,7 +729,7 @@
 
                     <div class="cf-mail-modal-field" style="margin-top:8px">
                         <label>Note private</label>
-                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.contactDetail.notes = e.target.value" t-att-value="state.contactDetail.notes"/>
+                        <textarea class="cf-mail-modal-input" rows="3" data-form="contactDetail" data-field="notes" t-on-input="onFormInput" t-att-value="state.contactDetail.notes"/>
                     </div>
 
                     <div style="margin-top:12px">
@@ -612,7 +738,7 @@
                             <t t-foreach="state.contactDetail.tags || []" t-as="tag" t-key="tag.id">
                                 <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color">
                                     <t t-esc="tag.name"/>
-                                    <i class="fa fa-times" style="margin-left:4px;cursor:pointer" t-on-click="() => this.removeContactTag(tag.id)"/>
+                                    <i class="fa fa-times" style="margin-left:4px;cursor:pointer" t-att-data-tag-id="tag.id" t-on-click="onRemoveContactTag"/>
                                 </span>
                             </t>
                         </div>
@@ -626,11 +752,11 @@
 
                     <div style="display:flex;gap:16px;margin-top:12px">
                         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-                            <input type="checkbox" t-att-checked="state.contactDetail.gdpr_consent" t-on-change="(e) => this.state.contactDetail.gdpr_consent = e.target.checked" style="accent-color:var(--accent)"/>
+                            <input type="checkbox" t-att-checked="state.contactDetail.gdpr_consent" data-form="contactDetail" data-field="gdpr_consent" data-type="checked" t-on-change="onFormChange" style="accent-color:var(--accent)"/>
                             Consenso GDPR
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-                            <input type="checkbox" t-att-checked="state.contactDetail.opt_out" t-on-change="(e) => this.state.contactDetail.opt_out = e.target.checked" style="accent-color:#d32f2f"/>
+                            <input type="checkbox" t-att-checked="state.contactDetail.opt_out" data-form="contactDetail" data-field="opt_out" data-type="checked" t-on-change="onFormChange" style="accent-color:#d32f2f"/>
                             Opt-out marketing
                         </label>
                     </div>
@@ -645,6 +771,9 @@
                 <div class="cf-mail-modal-footer">
                     <button class="cf-mail-btn-primary" t-on-click="saveContact"><i class="fa fa-save"/> Salva</button>
                     <button class="cf-mail-btn-secondary" t-on-click="closeContactModal">Annulla</button>
+                    <button class="cf-mail-btn-secondary" style="background:#1a3a1a;color:#fff;border-color:#1a3a1a;font-size:12px;padding:4px 12px" t-on-click="onEnrich007">
+                        <i class="fa fa-user-secret"/> Agente 007
+                    </button>
                 </div>
             </div>
         </div>
@@ -661,41 +790,41 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                         <div class="cf-mail-modal-field">
                             <label>Nome</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.name" t-on-input="(e) => this.state.accountForm.name = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.name" data-form="accountForm" data-field="name" t-on-input="onFormInput"/>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>Email</label>
-                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.email" t-on-input="(e) => this.state.accountForm.email = e.target.value"/>
+                            <input class="cf-mail-modal-input" t-att-value="state.accountForm.email" data-form="accountForm" data-field="email" t-on-input="onFormInput"/>
                         </div>
                     </div>
                     <div class="cf-mail-modal-field">
                         <label>Firma email</label>
-                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.accountForm.signature = e.target.value" t-att-value="state.accountForm.signature"/>
+                        <textarea class="cf-mail-modal-input" rows="3" data-form="accountForm" data-field="signature" t-on-input="onFormInput" t-att-value="state.accountForm.signature"/>
                     </div>
 
                     <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px">
                         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">Out of Office</div>
                         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-bottom:8px">
-                            <input type="checkbox" t-att-checked="state.accountForm.ooo_enabled" t-on-change="(e) => this.state.accountForm.ooo_enabled = e.target.checked" style="accent-color:var(--accent)"/>
+                            <input type="checkbox" t-att-checked="state.accountForm.ooo_enabled" data-form="accountForm" data-field="ooo_enabled" data-type="checked" t-on-change="onFormChange" style="accent-color:var(--accent)"/>
                             Risposta automatica attiva
                         </label>
                         <t t-if="state.accountForm.ooo_enabled">
                             <div class="cf-mail-modal-field">
                                 <label>Oggetto risposta</label>
-                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.ooo_subject" t-on-input="(e) => this.state.accountForm.ooo_subject = e.target.value"/>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.ooo_subject" data-form="accountForm" data-field="ooo_subject" t-on-input="onFormInput"/>
                             </div>
                             <div class="cf-mail-modal-field">
                                 <label>Messaggio</label>
-                                <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.accountForm.ooo_message = e.target.value" t-att-value="state.accountForm.ooo_message"/>
+                                <textarea class="cf-mail-modal-input" rows="3" data-form="accountForm" data-field="ooo_message" t-on-input="onFormInput" t-att-value="state.accountForm.ooo_message"/>
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                                 <div class="cf-mail-modal-field">
                                     <label>Data inizio</label>
-                                    <input class="cf-mail-modal-input" type="date" t-att-value="state.accountForm.ooo_start" t-on-input="(e) => this.state.accountForm.ooo_start = e.target.value"/>
+                                    <input class="cf-mail-modal-input" type="date" t-att-value="state.accountForm.ooo_start" data-form="accountForm" data-field="ooo_start" t-on-input="onFormInput"/>
                                 </div>
                                 <div class="cf-mail-modal-field">
                                     <label>Data fine</label>
-                                    <input class="cf-mail-modal-input" type="date" t-att-value="state.accountForm.ooo_end" t-on-input="(e) => this.state.accountForm.ooo_end = e.target.value"/>
+                                    <input class="cf-mail-modal-input" type="date" t-att-value="state.accountForm.ooo_end" data-form="accountForm" data-field="ooo_end" t-on-input="onFormInput"/>
                                 </div>
                             </div>
                         </t>
@@ -706,23 +835,23 @@
                         <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:8px;align-items:end">
                             <div class="cf-mail-modal-field">
                                 <label>Host</label>
-                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.imap_host" t-on-input="(e) => this.state.accountForm.imap_host = e.target.value"/>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.imap_host" data-form="accountForm" data-field="imap_host" t-on-input="onFormInput"/>
                             </div>
                             <div class="cf-mail-modal-field">
                                 <label>Porta</label>
-                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.imap_port" t-on-input="(e) => this.state.accountForm.imap_port = e.target.value"/>
+                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.imap_port" data-form="accountForm" data-field="imap_port" t-on-input="onFormInput"/>
                             </div>
                             <div class="cf-mail-modal-field">
                                 <label>SSL</label>
-                                <input type="checkbox" t-att-checked="state.accountForm.imap_ssl" t-on-change="(e) => this.state.accountForm.imap_ssl = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
+                                <input type="checkbox" t-att-checked="state.accountForm.imap_ssl" data-form="accountForm" data-field="imap_ssl" data-type="checked" t-on-change="onFormChange" style="width:20px;height:20px;accent-color:var(--accent)"/>
                             </div>
                         </div>
                         <div class="cf-mail-modal-field">
                             <label>App Password Gmail</label>
-                            <input class="cf-mail-modal-input" type="password" placeholder="xxxx xxxx xxxx xxxx" t-on-input="(e) => this.state.accountForm.imap_password = e.target.value"/>
+                            <input class="cf-mail-modal-input" type="password" placeholder="xxxx xxxx xxxx xxxx" data-form="accountForm" data-field="imap_password" t-on-input="onFormInput"/>
                         </div>
                         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-top:6px">
-                            <input type="checkbox" t-att-checked="state.accountForm.imap_enabled" t-on-change="(e) => this.state.accountForm.imap_enabled = e.target.checked" style="accent-color:var(--accent)"/>
+                            <input type="checkbox" t-att-checked="state.accountForm.imap_enabled" data-form="accountForm" data-field="imap_enabled" data-type="checked" t-on-change="onFormChange" style="accent-color:var(--accent)"/>
                             Sincronizzazione IMAP attiva
                         </label>
                         <t t-if="state.accountForm.imap_status">
@@ -737,15 +866,15 @@
                         <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:8px;align-items:end">
                             <div class="cf-mail-modal-field">
                                 <label>Host</label>
-                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.smtp_host" t-on-input="(e) => this.state.accountForm.smtp_host = e.target.value"/>
+                                <input class="cf-mail-modal-input" t-att-value="state.accountForm.smtp_host" data-form="accountForm" data-field="smtp_host" t-on-input="onFormInput"/>
                             </div>
                             <div class="cf-mail-modal-field">
                                 <label>Porta</label>
-                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.smtp_port" t-on-input="(e) => this.state.accountForm.smtp_port = e.target.value"/>
+                                <input class="cf-mail-modal-input" type="number" t-att-value="state.accountForm.smtp_port" data-form="accountForm" data-field="smtp_port" t-on-input="onFormInput"/>
                             </div>
                             <div class="cf-mail-modal-field">
                                 <label>TLS</label>
-                                <input type="checkbox" t-att-checked="state.accountForm.smtp_tls" t-on-change="(e) => this.state.accountForm.smtp_tls = e.target.checked" style="width:20px;height:20px;accent-color:var(--accent)"/>
+                                <input type="checkbox" t-att-checked="state.accountForm.smtp_tls" data-form="accountForm" data-field="smtp_tls" data-type="checked" t-on-change="onFormChange" style="width:20px;height:20px;accent-color:var(--accent)"/>
                             </div>
                         </div>
                     </div>
@@ -772,11 +901,11 @@
                 <div class="cf-mail-modal-body">
                     <div class="cf-mail-modal-field">
                         <label>Nome trattativa</label>
-                        <input class="cf-mail-modal-input" t-att-value="state.leadForm.name" t-on-input="(e) => this.state.leadForm.name = e.target.value"/>
+                        <input class="cf-mail-modal-input" t-att-value="state.leadForm.name" data-form="leadForm" data-field="name" t-on-input="onFormInput"/>
                     </div>
                     <div class="cf-mail-modal-field">
                         <label>Contatto</label>
-                        <select class="cf-mail-modal-input" t-on-change="(e) => this.state.leadForm.partner_id = e.target.value">
+                        <select class="cf-mail-modal-input" data-form="leadForm" data-field="partner_id" t-on-change="onFormChange">
                             <option value="">— Seleziona —</option>
                             <t t-foreach="state.crmPartners" t-as="p" t-key="p.id">
                                 <option t-att-value="p.id" t-att-selected="state.leadForm.partner_id === String(p.id)" t-esc="p.name"/>
@@ -785,7 +914,7 @@
                     </div>
                     <div class="cf-mail-modal-field">
                         <label>Stage / Pipeline</label>
-                        <select class="cf-mail-modal-input" t-on-change="(e) => this.state.leadForm.stage_id = e.target.value">
+                        <select class="cf-mail-modal-input" data-form="leadForm" data-field="stage_id" t-on-change="onFormChange">
                             <option value="">— Seleziona —</option>
                             <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
                                 <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === String(s.id)" t-esc="s.name"/>
@@ -794,11 +923,11 @@
                     </div>
                     <div class="cf-mail-modal-field">
                         <label>Valore stimato (€)</label>
-                        <input class="cf-mail-modal-input" type="number" t-att-value="state.leadForm.expected_revenue" t-on-input="(e) => this.state.leadForm.expected_revenue = e.target.value"/>
+                        <input class="cf-mail-modal-input" type="number" t-att-value="state.leadForm.expected_revenue" data-form="leadForm" data-field="expected_revenue" t-on-input="onFormInput"/>
                     </div>
                     <div class="cf-mail-modal-field">
                         <label>Note</label>
-                        <textarea class="cf-mail-modal-input" rows="3" t-on-input="(e) => this.state.leadForm.description = e.target.value" t-att-value="state.leadForm.description"/>
+                        <textarea class="cf-mail-modal-input" rows="3" data-form="leadForm" data-field="description" t-on-input="onFormInput" t-att-value="state.leadForm.description"/>
                     </div>
                 </div>
                 <div class="cf-mail-modal-footer">
@@ -812,8 +941,8 @@
     <t t-name="cf_mail_client.Composer">
         <div t-att-class="'cf-mail-composer' + (state.composerMinimized ? ' cf-composer-minimized' : '') + (state.composerMaximized ? ' cf-composer-maximized' : '')">
 
-            <!-- ── Header ─────────────────────────────────────────── -->
-            <div class="cf-composer-header" t-on-click="() => state.composerMinimized and this.toggleComposerMinimized()">
+            <!-- Header -->
+            <div class="cf-composer-header" t-on-click="onComposerHeaderClick">
                 <i class="fa fa-pen cf-composer-hdr-icon"/>
                 <span class="cf-composer-hdr-title" t-esc="state.composerMode === 'reply' ? 'Rispondi' : state.composerMode === 'forward' ? 'Inoltra' : 'Nuovo Messaggio'"/>
                 <div class="cf-composer-hdr-actions">
@@ -831,7 +960,7 @@
                 </div>
             </div>
 
-            <!-- ── Campi (nascosti se minimizzato) ───────────────── -->
+            <!-- Campi (nascosti se minimizzato) -->
             <t t-if="!state.composerMinimized">
 
                 <!-- Da -->
@@ -851,7 +980,7 @@
                     <span class="cf-composer-label">A:</span>
                     <input class="cf-composer-input" type="text"
                            t-att-value="state.composerTo"
-                           t-on-input="(e) => this.state.composerTo = e.target.value"
+                           data-state-key="composerTo" t-on-input="onStateInput"
                            placeholder="destinatari@email.com"/>
                     <div class="cf-composer-cc-btns">
                         <button t-att-class="'cf-composer-cc-btn' + (state.composerShowCc ? ' active' : '')"
@@ -867,7 +996,7 @@
                         <span class="cf-composer-label">Cc:</span>
                         <input class="cf-composer-input" type="text"
                                t-att-value="state.composerCc"
-                               t-on-input="(e) => this.state.composerCc = e.target.value"
+                               data-state-key="composerCc" t-on-input="onStateInput"
                                placeholder="cc@email.com"/>
                     </div>
                 </t>
@@ -878,7 +1007,7 @@
                         <span class="cf-composer-label">Bcc:</span>
                         <input class="cf-composer-input" type="text"
                                t-att-value="state.composerBcc"
-                               t-on-input="(e) => this.state.composerBcc = e.target.value"
+                               data-state-key="composerBcc" t-on-input="onStateInput"
                                placeholder="bcc@email.com"/>
                     </div>
                 </t>
@@ -888,36 +1017,36 @@
                     <span class="cf-composer-label">Ogg:</span>
                     <input class="cf-composer-input cf-composer-subject-input"
                            t-att-value="state.composerSubject"
-                           t-on-input="(e) => this.state.composerSubject = e.target.value"
+                           data-state-key="composerSubject" t-on-input="onStateInput"
                            placeholder="Oggetto..."/>
                 </div>
 
-                <!-- ── Toolbar formattazione ──────────────────────── -->
+                <!-- Toolbar formattazione -->
                 <div class="cf-composer-toolbar">
                     <div class="cf-composer-tb-group">
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('bold')" title="Grassetto"><b>B</b></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('italic')" title="Corsivo"><em>I</em></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('underline')" title="Sottolineato"><u>U</u></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('strikeThrough')" title="Barrato"><s>S</s></button>
+                        <button class="cf-fmt-btn" data-command="bold" t-on-click="onExecFormat" title="Grassetto"><b>B</b></button>
+                        <button class="cf-fmt-btn" data-command="italic" t-on-click="onExecFormat" title="Corsivo"><em>I</em></button>
+                        <button class="cf-fmt-btn" data-command="underline" t-on-click="onExecFormat" title="Sottolineato"><u>U</u></button>
+                        <button class="cf-fmt-btn" data-command="strikeThrough" t-on-click="onExecFormat" title="Barrato"><s>S</s></button>
                     </div>
                     <div class="cf-composer-tb-sep"/>
                     <div class="cf-composer-tb-group">
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('insertUnorderedList')" title="Lista puntata"><i class="fa fa-list-ul"/></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('insertOrderedList')" title="Lista numerata"><i class="fa fa-list-ol"/></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('indent')" title="Rientra"><i class="fa fa-indent"/></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('outdent')" title="Togli rientro"><i class="fa fa-outdent"/></button>
+                        <button class="cf-fmt-btn" data-command="insertUnorderedList" t-on-click="onExecFormat" title="Lista puntata"><i class="fa fa-list-ul"/></button>
+                        <button class="cf-fmt-btn" data-command="insertOrderedList" t-on-click="onExecFormat" title="Lista numerata"><i class="fa fa-list-ol"/></button>
+                        <button class="cf-fmt-btn" data-command="indent" t-on-click="onExecFormat" title="Rientra"><i class="fa fa-indent"/></button>
+                        <button class="cf-fmt-btn" data-command="outdent" t-on-click="onExecFormat" title="Togli rientro"><i class="fa fa-outdent"/></button>
                     </div>
                     <div class="cf-composer-tb-sep"/>
                     <div class="cf-composer-tb-group">
                         <button class="cf-fmt-btn" t-on-click="insertLink" title="Inserisci link"><i class="fa fa-link"/></button>
-                        <button class="cf-fmt-btn" t-on-click="() => this.execFormat('removeFormat')" title="Rimuovi formattazione"><i class="fa fa-eraser"/></button>
+                        <button class="cf-fmt-btn" data-command="removeFormat" t-on-click="onExecFormat" title="Rimuovi formattazione"><i class="fa fa-eraser"/></button>
                     </div>
                 </div>
 
-                <!-- ── Corpo ──────────────────────────────────────── -->
+                <!-- Corpo -->
                 <div class="cf-composer-body" contenteditable="true" t-ref="composerBody"/>
 
-                <!-- ── Firma (separata, visibile se presente) ─────── -->
+                <!-- Firma (separata, visibile se presente) -->
                 <t t-if="currentSignature">
                     <div class="cf-composer-sig-area">
                         <div class="cf-composer-sig-divider">—</div>
@@ -925,7 +1054,7 @@
                     </div>
                 </t>
 
-                <!-- ── Footer ────────────────────────────────────── -->
+                <!-- Footer -->
                 <div class="cf-composer-footer">
                     <button class="cf-mail-btn-primary" t-on-click="sendEmail">
                         <i class="fa fa-paper-plane"/> Invia

@@ -25,7 +25,21 @@ class CfRecallSession(models.Model):
     picking_ids = fields.Many2many("stock.picking", string="Spedizioni")
     partner_ids = fields.Many2many("res.partner", string="Partner Coinvolti")
     nodes_count = fields.Integer(readonly=True)
+    traceability_pct = fields.Float(
+        string="Tracciabilità %", compute="_compute_traceability_pct", store=True,
+        help="Target BRC: ≥99%"
+    )
     notes = fields.Text()
+
+    @api.depends("lot_ids", "picking_ids", "partner_ids", "state")
+    def _compute_traceability_pct(self):
+        for rec in self:
+            if rec.state != "done" or not rec.lot_ids:
+                rec.traceability_pct = 0.0
+                continue
+            total_lots = len(rec.lot_ids)
+            traced = len(rec.picking_ids.filtered(lambda p: p.state == "done"))
+            rec.traceability_pct = min(100.0, round(traced / total_lots * 100, 1)) if total_lots else 0.0
 
     def action_run(self):
         self.ensure_one()

@@ -1,29 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="action_cf_haccp_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard HACCP</field>
+        <field name="tag">cf_haccp_dashboard</field>
+    </record>
+
     <record id="action_cf_haccp_receipt" model="ir.actions.act_window">
         <field name="name">Controlli Ricezione</field>
         <field name="res_model">cf.haccp.receipt</field>
         <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_reception" model="ir.actions.act_window">
+        <field name="name">Controlli Ricezione</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[("picking_type_code", "=", "incoming")]</field>
+        <field name="context">{"search_default_filter_from_march": 1, "default_picking_type_code": "incoming"}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('cf_haccp_reception_list')})]"/>
+        <field name="search_view_id" ref="cf_haccp_reception_search"/>
     </record>
     <record id="action_cf_haccp_sp" model="ir.actions.act_window">
         <field name="name">Schede Produzione</field>
         <field name="res_model">cf.haccp.sp</field>
         <field name="view_mode">list,form</field>
     </record>
-    <record id="action_cf_haccp_ccp" model="ir.actions.act_window">
-        <field name="name">Punti Critici CCP</field>
-        <field name="res_model">cf.haccp.ccp</field>
+    <record id="action_cf_haccp_production_check" model="ir.actions.act_window">
+        <field name="name">Schede HACCP Produzione</field>
+        <field name="res_model">mrp.production</field>
         <field name="view_mode">list,form</field>
-    </record>
-    <record id="action_cf_haccp_ccp_template" model="ir.actions.act_window">
-        <field name="name">Template CCP</field>
-        <field name="res_model">cf.haccp.ccp.template</field>
-        <field name="view_mode">list,form</field>
+        <field name="context">{"search_default_filter_from_march": 1}</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('cf_haccp_production_list')})]"/>
+        <field name="search_view_id" ref="cf_haccp_production_search"/>
     </record>
     <record id="action_cf_haccp_nc" model="ir.actions.act_window">
         <field name="name">Non Conformita</field>
         <field name="res_model">cf.haccp.nc</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
     <record id="action_cf_haccp_quarantine" model="ir.actions.act_window">
         <field name="name">Quarantena</field>
@@ -46,19 +58,63 @@
         <field name="view_mode">list,form</field>
         <field name="domain">[("is_raw_material","=",True)]</field>
     </record>
+    <!-- v2 actions -->
+    <record id="action_cf_haccp_temperature" model="ir.actions.act_window">
+        <field name="name">Registro Temperature</field>
+        <field name="res_model">cf.haccp.temperature.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_sanification" model="ir.actions.act_window">
+        <field name="name">Registro Sanificazione</field>
+        <field name="res_model">cf.haccp.sanification.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_ccp_log" model="ir.actions.act_window">
+        <field name="name">Registro CCP</field>
+        <field name="res_model">cf.haccp.ccp.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_etichettatura" model="ir.actions.act_window">
+        <field name="name">Check Etichettatura</field>
+        <field name="res_model">cf.haccp.etichettatura.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_tracciabilita" model="ir.actions.act_window">
+        <field name="name">Tracciabilita</field>
+        <field name="res_model">cf.haccp.tracciabilita</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_pest" model="ir.actions.act_window">
+        <field name="name">Pest Control</field>
+        <field name="res_model">cf.haccp.pest.control</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_formazione" model="ir.actions.act_window">
+        <field name="name">Registro Formazione</field>
+        <field name="res_model">cf.haccp.formazione</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_haccp_igiene" model="ir.actions.act_window">
+        <field name="name">Igiene Personale</field>
+        <field name="res_model">cf.haccp.igiene.personale</field>
+        <field name="view_mode">list,form</field>
+    </record>
     <menuitem id="menu_cf_haccp_root" name="HACCP" sequence="25"
               web_icon="casafolino_haccp,static/description/icon.png"/>
-    
-    <!-- DASHBOARD -->
     <menuitem id="menu_cf_haccp_dashboard" name="Dashboard"
-              parent="menu_cf_haccp_root" action="action_haccp_dashboard" sequence="0"/>
-              
-    <menuitem id="menu_cf_haccp_receipts" name="Ricezione MP"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_receipt" sequence="1"/>
-    <menuitem id="menu_cf_haccp_sp" name="Schede Produzione"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_sp" sequence="2"/>
-    <menuitem id="menu_cf_haccp_ccp" name="Registri CCP"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_ccp" sequence="3"/>
+              parent="menu_cf_haccp_root" action="action_cf_haccp_dashboard" sequence="0"/>
+    <menuitem id="menu_cf_haccp_ricezioni" name="Ricezioni"
+              parent="menu_cf_haccp_root" sequence="1"/>
+    <menuitem id="menu_cf_haccp_reception" name="Controlli Ricezione HACCP"
+              parent="menu_cf_haccp_ricezioni" action="action_cf_haccp_reception" sequence="1"/>
+    <menuitem id="menu_cf_haccp_receipts" name="Controlli Ricezione MP"
+              parent="menu_cf_haccp_ricezioni" action="action_cf_haccp_receipt" sequence="2"/>
+    <menuitem id="menu_cf_haccp_produzione" name="Produzione"
+              parent="menu_cf_haccp_root" sequence="2"/>
+    <menuitem id="menu_cf_haccp_production_check" name="Schede HACCP Produzione"
+              parent="menu_cf_haccp_produzione" action="action_cf_haccp_production_check" sequence="1"/>
+    <menuitem id="menu_cf_haccp_sp" name="Schede Produzione Dettagliate"
+              parent="menu_cf_haccp_produzione" action="action_cf_haccp_sp" sequence="2"/>
     <menuitem id="menu_cf_haccp_nc" name="Non Conformita"
               parent="menu_cf_haccp_root" action="action_cf_haccp_nc" sequence="3"/>
     <menuitem id="menu_cf_haccp_quarantine" name="Quarantena"
@@ -66,11 +122,28 @@
     <menuitem id="menu_cf_haccp_calibration" name="Calibrazioni"
               parent="menu_cf_haccp_root" action="action_cf_haccp_calibration" sequence="5"/>
     <menuitem id="menu_cf_haccp_documents" name="Documenti"
-              parent="menu_cf_haccp_root" action="action_cf_haccp_document" sequence="7"/>
+              parent="menu_cf_haccp_root" action="action_cf_haccp_document" sequence="6"/>
+    <!-- v2 registri submenu -->
+    <menuitem id="menu_cf_haccp_registri" name="Registri v2"
+              parent="menu_cf_haccp_root" sequence="10"/>
+    <menuitem id="menu_cf_haccp_temperature" name="Temperature"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_temperature" sequence="1"/>
+    <menuitem id="menu_cf_haccp_sanification" name="Sanificazione"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_sanification" sequence="2"/>
+    <menuitem id="menu_cf_haccp_ccp_log" name="Log CCP"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_ccp_log" sequence="3"/>
+    <menuitem id="menu_cf_haccp_etichettatura" name="Etichettatura"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_etichettatura" sequence="4"/>
+    <menuitem id="menu_cf_haccp_tracciabilita" name="Tracciabilita"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_tracciabilita" sequence="5"/>
+    <menuitem id="menu_cf_haccp_pest" name="Pest Control"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_pest" sequence="6"/>
+    <menuitem id="menu_cf_haccp_formazione" name="Formazione"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_formazione" sequence="7"/>
+    <menuitem id="menu_cf_haccp_igiene" name="Igiene Personale"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_igiene" sequence="8"/>
     <menuitem id="menu_cf_haccp_config" name="Configurazione"
               parent="menu_cf_haccp_root" sequence="99" groups="base.group_system"/>
     <menuitem id="menu_cf_haccp_raw_materials" name="Materie Prime"
               parent="menu_cf_haccp_config" action="action_cf_haccp_raw_material" sequence="1"/>
-    <menuitem id="menu_cf_haccp_ccp_templates" name="Template CCP"
-              parent="menu_cf_haccp_config" action="action_cf_haccp_ccp_template" sequence="2"/>
 </odoo>

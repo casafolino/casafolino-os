@@ -1,169 +1,742 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         REGULATION — list + form
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_cf_nutrition_regulation_list" model="ir.ui.view">
+        <field name="name">cf.nutrition.regulation.list</field>
+        <field name="model">cf.nutrition.regulation</field>
+        <field name="arch" type="xml">
+            <list string="Normative Nutrizionali">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="market" widget="badge"
+                       decoration-info="market == 'eu'"
+                       decoration-success="market == 'uk'"
+                       decoration-warning="market == 'usa' or market == 'canada'"
+                       decoration-primary="market == 'australia'"/>
+                <field name="last_updated"/>
+                <field name="reference_url" widget="url"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_nutrition_regulation_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.regulation.form</field>
+        <field name="model">cf.nutrition.regulation</field>
+        <field name="arch" type="xml">
+            <form string="Normativa Nutrizionale">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome normativa..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="market"/>
+                            <field name="last_updated"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="reference_url" widget="url"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Nutrienti Obbligatori">
+                        <field name="mandatory_nutrients" nolabel="1"
+                               placeholder="Elenco nutrienti obbligatori..."/>
+                    </group>
+                    <group string="Note Tecniche">
+                        <field name="notes" nolabel="1" placeholder="Note..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         INGREDIENT — list + form (aggiornati con campi estesi)
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_cf_nutrition_ingredient_list" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.list</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <list string="Database Ingredienti Nutrizionali"
+                  decoration-warning="not last_sync"
+                  decoration-muted="data_source == 'manuale'">
+                <field name="product_id"/>
+                <field name="energy_kcal"/>
+                <field name="protein"/>
+                <field name="fat"/>
+                <field name="carbs"/>
+                <field name="salt"/>
+                <field name="data_source" widget="badge"
+                    decoration-info="data_source == 'openfoodfacts'"
+                    decoration-success="data_source == 'usda'"
+                    decoration-warning="data_source == 'manuale'"
+                    decoration-primary="data_source == 'crea'"/>
+                <field name="last_sync" optional="show"/>
+                <field name="external_id" optional="hide"/>
+                <field name="fdc_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_nutrition_ingredient_search" model="ir.ui.view">
+        <field name="name">cf.nutrition.ingredient.search</field>
+        <field name="model">cf.nutrition.ingredient</field>
+        <field name="arch" type="xml">
+            <search string="Cerca ingrediente">
+                <field name="product_id"/>
+                <field name="sync_name"/>
+                <field name="external_id"/>
+                <separator/>
+                <filter string="Open Food Facts" name="filter_off"
+                        domain="[('data_source','=','openfoodfacts')]"/>
+                <filter string="USDA" name="filter_usda"
+                        domain="[('data_source','=','usda')]"/>
+                <filter string="Manuale" name="filter_manuale"
+                        domain="[('data_source','=','manuale')]"/>
+                <separator/>
+                <filter string="Mai sincronizzati" name="filter_never_synced"
+                        domain="[('last_sync','=',False)]"/>
+                <filter string="Senza energia (kcal)" name="filter_no_kcal"
+                        domain="[('energy_kcal','=',0)]"/>
+                <group string="Raggruppa per" expand="0">
+                    <filter string="Fonte dati" name="group_source"
+                            context="{'group_by':'data_source'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="view_cf_nutrition_ingredient_form" model="ir.ui.view">
         <field name="name">cf.nutrition.ingredient.form</field>
         <field name="model">cf.nutrition.ingredient</field>
         <field name="arch" type="xml">
             <form string="Valori Nutrizionali Ingrediente">
+                <header>
+                    <button name="action_sync_openfoodfacts" type="object"
+                            string="Cerca in Open Food Facts" class="btn-primary"/>
+                    <button name="action_sync_usda" type="object"
+                            string="Cerca in USDA" class="btn-primary"/>
+                    <button name="action_resync" type="object"
+                            string="Aggiorna valori" class="btn-secondary"
+                            invisible="data_source == 'manuale'"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="product_id"/></h1>
+                        <div>
+                            <field name="data_source" widget="badge"
+                                decoration-info="data_source == 'openfoodfacts'"
+                                decoration-success="data_source == 'usda'"
+                                decoration-warning="data_source == 'manuale'"
+                                decoration-primary="data_source == 'crea'"
+                                nolabel="1"/>
+                        </div>
                     </div>
-                    <group string="Valori per 100g">
+                    <group>
+                        <group string="Sincronizzazione">
+                            <field name="sync_name"
+                                placeholder="Nome ricerca (lascia vuoto = nome prodotto)"/>
+                            <field name="external_id" readonly="1"/>
+                            <field name="last_sync" readonly="1"/>
+                        </group>
+                        <group string="Riferimento">
+                            <field name="fdc_id"/>
+                        </group>
+                    </group>
+                    <group string="Valori base per 100g (EU obbligatori)">
                         <group>
                             <field name="energy_kcal"/>
                             <field name="energy_kj"/>
                             <field name="fat"/>
                             <field name="saturated_fat"/>
+                            <field name="trans_fat_g"/>
                             <field name="carbs"/>
                         </group>
                         <group>
                             <field name="sugars"/>
+                            <field name="added_sugars_g"/>
                             <field name="fiber"/>
                             <field name="protein"/>
                             <field name="salt"/>
-                            <field name="fdc_id"/>
                         </group>
                     </group>
-                    <field name="notes" placeholder="Note..."/>
+                    <group string="Valori estesi per 100g (US/Canada/AUS/micronutrienti)">
+                        <group>
+                            <field name="sodium_mg"/>
+                            <field name="cholesterol_mg"/>
+                            <field name="potassium_mg"/>
+                            <field name="vitamina_c"/>
+                        </group>
+                        <group>
+                            <field name="calcium_mg"/>
+                            <field name="iron_mg"/>
+                            <field name="vitamin_d_mcg"/>
+                        </group>
+                    </group>
+                    <group string="Note">
+                        <field name="notes" nolabel="1" placeholder="Note..."/>
+                    </group>
                 </sheet>
             </form>
         </field>
     </record>
-    <record id="view_cf_nutrition_ingredient_list" model="ir.ui.view">
-        <field name="name">cf.nutrition.ingredient.list</field>
-        <field name="model">cf.nutrition.ingredient</field>
-        <field name="arch" type="xml">
-            <list string="Ingredienti Nutrizionali">
-                <field name="product_id"/>
-                <field name="energy_kcal"/>
-                <field name="fat"/>
-                <field name="carbs"/>
-                <field name="sugars"/>
-                <field name="protein"/>
-                <field name="salt"/>
-            </list>
-        </field>
-    </record>
 
+    <!-- ═══════════════════════════════════════════════════════════════════
+         NUTRITION BOM — form con 6 tab
+    ═══════════════════════════════════════════════════════════════════ -->
     <record id="view_cf_nutrition_bom_form" model="ir.ui.view">
         <field name="name">cf.nutrition.bom.form</field>
         <field name="model">cf.nutrition.bom</field>
         <field name="arch" type="xml">
-            <form string="Valori Nutrizionali Ricetta">
+            <form string="Etichetta Nutrizionale">
                 <header>
-                    <button name="action_compute" string="Ricalcola Valori Base" type="object" class="btn-primary"/>
+                    <button name="action_compute" type="object"
+                            string="Ricalcola da BoM" class="btn-primary"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <h1>Valori Nutrizionali per: <field name="bom_id" readonly="1"/></h1>
+                        <h1><field name="bom_id"/></h1>
                     </div>
                     <group>
                         <group>
+                            <field name="product_id"
+                                   help="Seleziona prodotto: la BoM viene trovata automaticamente"/>
                             <field name="serving_size_g"/>
-                            <field name="last_computed"/>
+                            <field name="last_computed" readonly="1"/>
                         </group>
                         <group>
-                            <!-- Widget custom Chart.js -->
-                            <field name="chart_data" widget="nutrition_chart"/>
+                            <field name="nutri_score" widget="badge"
+                                   decoration-success="nutri_score == 'A'"
+                                   decoration-info="nutri_score == 'B'"
+                                   decoration-warning="nutri_score == 'C' or nutri_score == 'D'"
+                                   decoration-danger="nutri_score == 'E'"/>
+                            <field name="macro_chart_data" widget="cf_nutrition_chart"
+                                   nolabel="1"/>
                         </group>
                     </group>
+
                     <notebook>
-                        <page string="EU 1169/2011">
+
+                        <!-- ─── TAB 1: UE Reg. 1169/2011 ─────────────────── -->
+                        <page string="UE — Reg. 1169/2011" name="tab_eu">
+                            <div class="row mt-2">
+                                <div class="col-lg-9">
+                                    <div style="border:3px solid #000; border-radius:3px; overflow:hidden; font-family:Arial,sans-serif; max-width:520px;">
+                                        <div style="background:#000; color:#fff; padding:8px 12px; font-size:15px; font-weight:800; letter-spacing:1px;">
+                                            DICHIARAZIONE NUTRIZIONALE
+                                        </div>
+                                        <table class="table table-sm mb-0" style="font-size:13px;">
+                                            <thead style="background:#f0f0f0;">
+                                                <tr>
+                                                    <th style="border-bottom:2px solid #000; font-size:11px; text-transform:uppercase;">Nutriente</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000; font-size:11px; text-transform:uppercase;">Per 100g</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000; font-size:11px; text-transform:uppercase;">Per porzione</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000; font-size:11px; text-transform:uppercase;">%RI*</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr style="border-bottom:2px solid #000;">
+                                                    <td class="fw-bold">Energia</td>
+                                                    <td class="text-end">
+                                                        <field name="energy_kj" nolabel="1"/> kJ /
+                                                        <field name="energy_kcal" nolabel="1"/> kcal
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <field name="energy_kj_srv" nolabel="1"/> kJ /
+                                                        <field name="energy_kcal_srv" nolabel="1"/> kcal
+                                                    </td>
+                                                    <td class="text-end"><field name="ri_energy" nolabel="1"/>%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Grassi</td>
+                                                    <td class="text-end"><field name="fat" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="fat_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="ri_fat" nolabel="1"/>%</td>
+                                                </tr>
+                                                <tr style="background:#fafafa;">
+                                                    <td style="padding-left:22px; color:#555; font-style:italic;">di cui acidi grassi saturi</td>
+                                                    <td class="text-end"><field name="saturated_fat" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="saturated_fat_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="ri_sat_fat" nolabel="1"/>%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Carboidrati</td>
+                                                    <td class="text-end"><field name="carbs" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="carbs_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="ri_carbs" nolabel="1"/>%</td>
+                                                </tr>
+                                                <tr style="background:#fafafa;">
+                                                    <td style="padding-left:22px; color:#555; font-style:italic;">di cui zuccheri</td>
+                                                    <td class="text-end"><field name="sugars" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="sugars_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="ri_sugars" nolabel="1"/>%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Fibre alimentari</td>
+                                                    <td class="text-end"><field name="fiber" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="fiber_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end">—</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Proteine</td>
+                                                    <td class="text-end"><field name="protein" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="protein_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="ri_protein" nolabel="1"/>%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Sale</td>
+                                                    <td class="text-end"><field name="salt" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="salt_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="ri_salt" nolabel="1"/>%</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div style="padding:5px 10px; font-size:10px; color:#888; background:#f8f8f8; border-top:1px solid #ddd;">
+                                            *RI = Valori di riferimento per un adulto medio (2000 kcal / 8400 kJ). Reg. UE 1169/2011.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <!-- ─── TAB 2: USA FDA ───────────────────────────── -->
+                        <page string="USA — FDA 21 CFR 101.9" name="tab_usa">
+                            <div class="row mt-2">
+                                <div class="col-lg-6">
+                                    <div style="border:3px solid #000; padding:6px 10px; font-family:Arial,sans-serif; max-width:340px;">
+                                        <div style="font-size:28px; font-weight:900; line-height:1; border-bottom:8px solid #000; padding-bottom:4px;">Nutrition Facts</div>
+                                        <div style="font-size:11px; margin-top:4px;">
+                                            Serving size <field name="serving_size_g" nolabel="1"/>g
+                                        </div>
+                                        <div style="border-top:5px solid #000; border-bottom:3px solid #000; margin:4px 0; padding:2px 0;">
+                                            <div style="font-size:11px; font-weight:700;">Amount per serving</div>
+                                            <div style="font-size:30px; font-weight:900; line-height:1.1;">Calories <field name="energy_kcal_srv" nolabel="1"/></div>
+                                        </div>
+                                        <div style="text-align:right; font-size:11px; font-weight:700; border-bottom:1px solid #000; padding:2px 0;">% Daily Value*</div>
+                                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Total Fat</b> <field name="fat_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_fat" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;">Saturated Fat <field name="saturated_fat_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_sat_fat" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;"><i>Trans</i> Fat <field name="trans_fat_srv" nolabel="1"/>g</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Cholesterol</b> <field name="cholesterol_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><b><field name="dv_cholesterol" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Sodium</b> <field name="sodium_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><b><field name="dv_sodium" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Total Carbohydrate</b> <field name="carbs_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_carbs" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;">Dietary Fiber <field name="fiber_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_fiber" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;">Total Sugars <field name="sugars_srv" nolabel="1"/>g</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:28px;">Incl. <field name="added_sugars_srv" nolabel="1"/>g Added Sugars</td>
+                                                <td class="text-end"><b><field name="dv_added_sugars" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:3px solid #000;">
+                                                <td><b>Protein</b> <field name="protein_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_protein" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td>Vitamin D <field name="vitamin_d_srv" nolabel="1"/>mcg</td>
+                                                <td class="text-end"><field name="dv_vitamin_d" nolabel="1"/>%</td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td>Calcium <field name="calcium_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><field name="dv_calcium" nolabel="1"/>%</td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td>Iron <field name="iron_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><field name="dv_iron" nolabel="1"/>%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Potassium <field name="potassium_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><field name="dv_potassium" nolabel="1"/>%</td>
+                                            </tr>
+                                        </table>
+                                        <div style="font-size:9px; border-top:5px solid #000; padding-top:4px; margin-top:4px;">
+                                            *The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. FDA 21 CFR 101.9 (2020).
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <!-- ─── TAB 3: Canada Health Canada ──────────────── -->
+                        <page string="Canada — Health Canada" name="tab_canada">
+                            <div class="row mt-2">
+                                <div class="col-lg-7">
+                                    <div style="border:2px solid #000; padding:6px 10px; font-family:Arial,sans-serif; max-width:420px;">
+                                        <div style="display:flex; justify-content:space-between; font-weight:900; font-size:18px; border-bottom:6px solid #000; padding-bottom:4px;">
+                                            <span>Nutrition Facts</span>
+                                            <span>Valeur nutritive</span>
+                                        </div>
+                                        <div style="font-size:11px; margin-top:4px; display:flex; justify-content:space-between;">
+                                            <span>Serving Size / Portion: <field name="serving_size_g" nolabel="1"/>g</span>
+                                        </div>
+                                        <div style="border-top:4px solid #000; border-bottom:2px solid #000; margin:4px 0; display:flex; justify-content:space-between; align-items:baseline;">
+                                            <div>
+                                                <span style="font-size:11px; font-weight:700;">Calories / Calories</span>
+                                                <span style="font-size:24px; font-weight:900; margin-left:8px;"><field name="energy_kcal_srv" nolabel="1"/></span>
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right; font-size:10px; font-weight:700; border-bottom:1px solid #000; padding:2px 0;">% Daily Value / % valeur quotidienne*</div>
+                                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Fat / Lipides</b> <field name="fat_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_fat" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;">Saturated / saturés <field name="saturated_fat_srv" nolabel="1"/>g<br/>+ Trans / trans <field name="trans_fat_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_sat_fat" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Cholesterol / Cholestérol</b> <field name="cholesterol_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><b><field name="dv_cholesterol" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Sodium</b> <field name="sodium_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><b><field name="dv_sodium" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Carbohydrate / Glucides</b> <field name="carbs_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_carbs" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;">Fibre / Fibres <field name="fiber_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_fiber" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td style="padding-left:14px;">Sugars / Sucres <field name="sugars_srv" nolabel="1"/>g</td>
+                                                <td class="text-end"><b><field name="dv_added_sugars" nolabel="1"/>%</b></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td><b>Protein / Protéines</b> <field name="protein_srv" nolabel="1"/>g</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td>Potassium <field name="potassium_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><field name="dv_potassium" nolabel="1"/>%</td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td>Calcium <field name="calcium_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><field name="dv_calcium" nolabel="1"/>%</td>
+                                            </tr>
+                                            <tr style="border-bottom:1px solid #ccc;">
+                                                <td>Iron / Fer <field name="iron_srv" nolabel="1"/>mg</td>
+                                                <td class="text-end"><field name="dv_iron" nolabel="1"/>%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Vitamin D / Vitamine D <field name="vitamin_d_srv" nolabel="1"/>mcg</td>
+                                                <td class="text-end"><field name="dv_vitamin_d" nolabel="1"/>%</td>
+                                            </tr>
+                                        </table>
+                                        <div style="font-size:9px; border-top:4px solid #000; padding-top:4px; margin-top:4px;">
+                                            *5% or less is a little, 15% or more is a lot / 5% ou moins c'est peu, 15% ou plus c'est beaucoup. Health Canada SOR/2003-11.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <!-- ─── TAB 4: Australia/NZ FSANZ ────────────────── -->
+                        <page string="Australia/NZ — FSANZ" name="tab_aus">
+                            <div class="row mt-2">
+                                <div class="col-lg-8">
+                                    <div style="border:2px solid #000; padding:6px 10px; font-family:Arial,sans-serif; max-width:480px;">
+                                        <div style="font-size:16px; font-weight:900; border-bottom:3px solid #000; padding-bottom:4px; text-transform:uppercase;">
+                                            Nutrition Information
+                                        </div>
+                                        <div style="font-size:11px; margin:4px 0;">
+                                            Servings per package: — | Serving size: <field name="serving_size_g" nolabel="1"/>g
+                                        </div>
+                                        <table class="table table-sm mb-0" style="font-size:12px;">
+                                            <thead style="background:#f0f0f0;">
+                                                <tr>
+                                                    <th style="border-bottom:2px solid #000;">Nutriente</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000;">Per serve</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000;">Per 100g</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="fw-bold">Energy</td>
+                                                    <td class="text-end"><field name="energy_kj_srv" nolabel="1"/> kJ</td>
+                                                    <td class="text-end"><field name="energy_kj" nolabel="1"/> kJ</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Protein</td>
+                                                    <td class="text-end"><field name="protein_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="protein" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Fat, Total</td>
+                                                    <td class="text-end"><field name="fat_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="fat" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr style="background:#fafafa;">
+                                                    <td style="padding-left:18px; font-style:italic;">— Saturated Fat</td>
+                                                    <td class="text-end"><field name="saturated_fat_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="saturated_fat" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Carbohydrate</td>
+                                                    <td class="text-end"><field name="carbs_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="carbs" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr style="background:#fafafa;">
+                                                    <td style="padding-left:18px; font-style:italic;">— Sugars</td>
+                                                    <td class="text-end"><field name="sugars_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="sugars" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Dietary Fibre</td>
+                                                    <td class="text-end"><field name="fiber_srv" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="fiber" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Sodium</td>
+                                                    <td class="text-end"><field name="sodium_srv" nolabel="1"/> mg</td>
+                                                    <td class="text-end"><field name="sodium_mg" nolabel="1"/> mg</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div style="font-size:10px; color:#888; border-top:1px solid #ddd; padding:4px 0 0 0; margin-top:4px;">
+                                            FSANZ Standard 1.2.8 — Valori per serve e per 100g obbligatori. Energia in kJ.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <!-- ─── TAB 5: UK Traffic Light ───────────────────── -->
+                        <page string="UK — Traffic Light (FIR 2014)" name="tab_uk">
+                            <div class="row mt-2">
+                                <div class="col-lg-8">
+                                    <!-- UK Traffic Light panel -->
+                                    <div style="border:2px solid #333; border-radius:4px; overflow:hidden; font-family:Arial,sans-serif; max-width:520px; margin-bottom:16px;">
+                                        <div style="background:#333; color:#fff; padding:6px 12px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Reference Intakes — Per serving
+                                        </div>
+                                        <div style="display:flex; border-bottom:1px solid #ddd;">
+                                            <div style="flex:1; text-align:center; padding:10px 6px; border-right:1px solid #ddd;">
+                                                <div style="font-size:11px; color:#555; margin-bottom:4px;">Fat</div>
+                                                <div style="font-size:16px; font-weight:700;"><field name="fat_srv" nolabel="1"/>g</div>
+                                                <field name="tl_fat" widget="badge"
+                                                       decoration-success="tl_fat == 'green'"
+                                                       decoration-warning="tl_fat == 'amber'"
+                                                       decoration-danger="tl_fat == 'red'"
+                                                       nolabel="1"/>
+                                            </div>
+                                            <div style="flex:1; text-align:center; padding:10px 6px; border-right:1px solid #ddd;">
+                                                <div style="font-size:11px; color:#555; margin-bottom:4px;">Saturates</div>
+                                                <div style="font-size:16px; font-weight:700;"><field name="saturated_fat_srv" nolabel="1"/>g</div>
+                                                <field name="tl_sat_fat" widget="badge"
+                                                       decoration-success="tl_sat_fat == 'green'"
+                                                       decoration-warning="tl_sat_fat == 'amber'"
+                                                       decoration-danger="tl_sat_fat == 'red'"
+                                                       nolabel="1"/>
+                                            </div>
+                                            <div style="flex:1; text-align:center; padding:10px 6px; border-right:1px solid #ddd;">
+                                                <div style="font-size:11px; color:#555; margin-bottom:4px;">Sugars</div>
+                                                <div style="font-size:16px; font-weight:700;"><field name="sugars_srv" nolabel="1"/>g</div>
+                                                <field name="tl_sugars" widget="badge"
+                                                       decoration-success="tl_sugars == 'green'"
+                                                       decoration-warning="tl_sugars == 'amber'"
+                                                       decoration-danger="tl_sugars == 'red'"
+                                                       nolabel="1"/>
+                                            </div>
+                                            <div style="flex:1; text-align:center; padding:10px 6px;">
+                                                <div style="font-size:11px; color:#555; margin-bottom:4px;">Salt</div>
+                                                <div style="font-size:16px; font-weight:700;"><field name="salt_srv" nolabel="1"/>g</div>
+                                                <field name="tl_salt" widget="badge"
+                                                       decoration-success="tl_salt == 'green'"
+                                                       decoration-warning="tl_salt == 'amber'"
+                                                       decoration-danger="tl_salt == 'red'"
+                                                       nolabel="1"/>
+                                            </div>
+                                        </div>
+                                        <div style="padding:4px 10px; font-size:10px; color:#888;">
+                                            Soglie per 100g — Verde: basso, Arancio: medio, Rosso: alto. UK FSA / PHE 2016.
+                                        </div>
+                                    </div>
+
+                                    <!-- UK Nutrition Table (same as EU) -->
+                                    <div style="border:2px solid #000; border-radius:3px; overflow:hidden; font-family:Arial,sans-serif; max-width:520px;">
+                                        <div style="background:#000; color:#fff; padding:7px 12px; font-size:14px; font-weight:800; letter-spacing:1px;">
+                                            NUTRITION INFORMATION
+                                        </div>
+                                        <table class="table table-sm mb-0" style="font-size:13px;">
+                                            <thead style="background:#f0f0f0;">
+                                                <tr>
+                                                    <th style="border-bottom:2px solid #000; font-size:11px;">Nutrient</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000; font-size:11px;">Per 100g</th>
+                                                    <th class="text-end" style="border-bottom:2px solid #000; font-size:11px;">Per serving</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr style="border-bottom:2px solid #000;">
+                                                    <td class="fw-bold">Energy</td>
+                                                    <td class="text-end"><field name="energy_kj" nolabel="1"/> kJ / <field name="energy_kcal" nolabel="1"/> kcal</td>
+                                                    <td class="text-end"><field name="energy_kj_srv" nolabel="1"/> kJ / <field name="energy_kcal_srv" nolabel="1"/> kcal</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Fat</td>
+                                                    <td class="text-end"><field name="fat" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="fat_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr style="background:#fafafa;">
+                                                    <td style="padding-left:18px; font-style:italic;">of which Saturates</td>
+                                                    <td class="text-end"><field name="saturated_fat" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="saturated_fat_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Carbohydrate</td>
+                                                    <td class="text-end"><field name="carbs" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="carbs_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr style="background:#fafafa;">
+                                                    <td style="padding-left:18px; font-style:italic;">of which Sugars</td>
+                                                    <td class="text-end"><field name="sugars" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="sugars_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Fibre</td>
+                                                    <td class="text-end"><field name="fiber" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="fiber_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Protein</td>
+                                                    <td class="text-end"><field name="protein" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="protein_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold">Salt</td>
+                                                    <td class="text-end"><field name="salt" nolabel="1"/> g</td>
+                                                    <td class="text-end"><field name="salt_srv" nolabel="1"/> g</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div style="padding:5px 10px; font-size:10px; color:#888; background:#f8f8f8; border-top:1px solid #ddd;">
+                                            UK Food Information Regulations 2014 (post-Brexit).
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <!-- ─── TAB 6: Ingredienti e BoM ─────────────────── -->
+                        <page string="Ingredienti e BoM" name="tab_bom">
                             <group>
-                                <field name="eu_energy_kcal"/>
-                                <field name="eu_energy_kj"/>
-                                <field name="eu_fat"/>
-                                <field name="eu_saturated_fat"/>
-                                <field name="eu_carbs"/>
-                                <field name="eu_sugars"/>
-                                <field name="eu_fiber"/>
-                                <field name="eu_protein"/>
-                                <field name="eu_salt"/>
+                                <field name="bom_id"/>
+                            </group>
+                            <field name="bom_line_ids" readonly="1">
+                                <list string="Ingredienti dalla BoM">
+                                    <field name="product_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id" string="UdM"/>
+                                </list>
+                            </field>
+                            <div class="mt-3">
+                                <button name="action_compute" type="object"
+                                        string="Ricalcola da BoM" class="btn-primary"/>
+                            </div>
+                            <group string="Totali calcolati per 100g">
+                                <group>
+                                    <field name="energy_kcal"/>
+                                    <field name="energy_kj"/>
+                                    <field name="fat"/>
+                                    <field name="saturated_fat"/>
+                                    <field name="carbs"/>
+                                    <field name="sugars"/>
+                                </group>
+                                <group>
+                                    <field name="fiber"/>
+                                    <field name="protein"/>
+                                    <field name="salt"/>
+                                    <field name="sodium_mg"/>
+                                    <field name="cholesterol_mg"/>
+                                    <field name="last_computed" readonly="1"/>
+                                </group>
                             </group>
                         </page>
-                        <page string="US FDA">
-                            <group>
-                                <field name="fda_energy_kcal"/>
-                                <field name="fda_energy_kj"/>
-                                <field name="fda_fat"/>
-                                <field name="fda_saturated_fat"/>
-                                <field name="fda_carbs"/>
-                                <field name="fda_sugars"/>
-                                <field name="fda_fiber"/>
-                                <field name="fda_protein"/>
-                                <field name="fda_salt"/>
-                            </group>
-                        </page>
-                        <page string="UK">
-                            <group>
-                                <field name="uk_energy_kcal"/>
-                                <field name="uk_fat"/>
-                                <field name="uk_carbs"/>
-                                <field name="uk_protein"/>
-                            </group>
-                        </page>
-                        <page string="Canada">
-                            <group>
-                                <field name="ca_energy_kcal"/>
-                                <field name="ca_fat"/>
-                                <field name="ca_carbs"/>
-                                <field name="ca_protein"/>
-                            </group>
-                        </page>
-                        <page string="Australia">
-                            <group>
-                                <field name="au_energy_kcal"/>
-                                <field name="au_fat"/>
-                                <field name="au_carbs"/>
-                                <field name="au_protein"/>
-                            </group>
-                        </page>
-                        <page string="Giappone">
-                            <group>
-                                <field name="jp_energy_kcal"/>
-                                <field name="jp_fat"/>
-                                <field name="jp_carbs"/>
-                                <field name="jp_protein"/>
-                            </group>
-                        </page>
-                        <page string="Valori Base (Raw)">
-                            <group>
-                                <field name="energy_kcal"/>
-                                <field name="energy_kj"/>
-                                <field name="fat"/>
-                                <field name="saturated_fat"/>
-                                <field name="carbs"/>
-                                <field name="sugars"/>
-                                <field name="fiber"/>
-                                <field name="protein"/>
-                                <field name="salt"/>
-                            </group>
-                        </page>
+
                     </notebook>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <record id="mrp_bom_form_view_nutrition" model="ir.ui.view">
-        <field name="name">mrp.bom.form.nutrition</field>
+    <!-- BOM NUTRITION LIST -->
+    <record id="view_cf_nutrition_bom_list" model="ir.ui.view">
+        <field name="name">cf.nutrition.bom.list</field>
+        <field name="model">cf.nutrition.bom</field>
+        <field name="arch" type="xml">
+            <list string="Etichette Nutrizionali">
+                <field name="bom_id"/>
+                <field name="product_id"/>
+                <field name="energy_kcal"/>
+                <field name="fat"/>
+                <field name="carbs"/>
+                <field name="protein"/>
+                <field name="salt"/>
+                <field name="nutri_score" widget="badge"
+                       decoration-success="nutri_score in ('A','B')"
+                       decoration-warning="nutri_score == 'C'"
+                       decoration-danger="nutri_score in ('D','E')"/>
+                <field name="last_computed"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- MRP BOM — tab Nutrizione inline -->
+    <record id="view_mrp_bom_nutrition_tab" model="ir.ui.view">
+        <field name="name">mrp.bom.nutrition.tab</field>
         <field name="model">mrp.bom</field>
         <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
-                <page string="Valori Nutrizionali">
-                    <group>
-                        <field name="cf_yield_factor"/>
-                    </group>
+            <notebook position="inside">
+                <page string="Nutrizione" name="nutrition_tab">
                     <field name="nutrition_ids">
-                        <list>
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="energy_kcal"/>
+                            <field name="fat"/>
+                            <field name="carbs"/>
+                            <field name="protein"/>
+                            <field name="salt"/>
+                            <field name="nutri_score" widget="badge"
+                                   decoration-success="nutri_score in ('A','B')"
+                                   decoration-warning="nutri_score == 'C'"
+                                   decoration-danger="nutri_score in ('D','E')"/>
                             <field name="serving_size_g"/>
-                            <field name="last_computed"/>
+                            <button name="action_compute" type="object"
+                                    string="Ricalcola" icon="fa-refresh"/>
                         </list>
                     </field>
                 </page>
-            </xpath>
+            </notebook>
         </field>
     </record>
 

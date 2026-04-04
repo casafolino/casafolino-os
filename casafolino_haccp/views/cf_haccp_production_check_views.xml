@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Lista produzione HACCP (mrp.production) -->
+    <record id="cf_haccp_production_list" model="ir.ui.view">
+        <field name="name">cf.haccp.production.list</field>
+        <field name="model">mrp.production</field>
+        <field name="arch" type="xml">
+            <list string="Schede HACCP Produzione"
+                  decoration-danger="haccp_state == 'pending'"
+                  decoration-success="haccp_state == 'done'">
+                <field name="name" string="Ordine"/>
+                <field name="date_start" string="Data"/>
+                <field name="product_id"/>
+                <field name="lot_producing_id" string="Lotto"/>
+                <field name="product_qty" string="Quantita"/>
+                <field name="haccp_esito" widget="badge"
+                    decoration-danger="haccp_esito in ['pending', 'non_conforme', 'bloccato']"
+                    decoration-warning="haccp_esito == 'attesa_analisi'"
+                    decoration-success="haccp_esito == 'conforme'"/>
+                <field name="haccp_stato_firma" widget="badge"
+                    decoration-muted="haccp_stato_firma == 'bozza'"
+                    decoration-info="haccp_stato_firma == 'firmato'"
+                    decoration-success="haccp_stato_firma == 'approvato'"/>
+                <field name="haccp_operatore_id" string="Operatore" widget="many2one_avatar_user"/>
+                <field name="haccp_state" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search produzione HACCP -->
+    <record id="cf_haccp_production_search" model="ir.ui.view">
+        <field name="name">cf.haccp.production.search</field>
+        <field name="model">mrp.production</field>
+        <field name="arch" type="xml">
+            <search string="Cerca Schede HACCP Produzione">
+                <field name="name"/>
+                <field name="product_id"/>
+                <filter name="filter_from_march" string="Da marzo 2026"
+                        domain="[('date_start', '&gt;=', '2026-03-01')]"/>
+                <separator/>
+                <filter name="filter_pending" string="Da completare"
+                        domain="[('haccp_state', '=', 'pending')]"/>
+                <filter name="filter_done" string="Completati"
+                        domain="[('haccp_state', '=', 'done')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_product" string="Prodotto"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter name="group_esito" string="Esito"
+                            context="{'group_by': 'haccp_esito'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Tab HACCP in mrp.production form -->
+    <record id="cf_haccp_production_form_inherit" model="ir.ui.view">
+        <field name="name">mrp.production.haccp.production.form</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[last()]" position="after">
+                <page string="Scheda HACCP">
+
+                    <!-- STATO IN TESTA -->
+                    <group>
+                        <group string="Stato Controllo">
+                            <field name="haccp_state" widget="badge"
+                                decoration-danger="haccp_state == 'pending'"
+                                decoration-success="haccp_state == 'done'"/>
+                            <field name="haccp_stato_firma" widget="badge"
+                                decoration-muted="haccp_stato_firma == 'bozza'"
+                                decoration-info="haccp_stato_firma == 'firmato'"
+                                decoration-success="haccp_stato_firma == 'approvato'"/>
+                            <field name="haccp_esito" widget="radio"/>
+                        </group>
+                        <group string="Responsabili">
+                            <field name="haccp_operatore_id"/>
+                            <field name="haccp_responsabile_id"
+                                invisible="haccp_stato_firma == 'bozza'"/>
+                        </group>
+                    </group>
+
+                    <!-- PULSANTI -->
+                    <div class="o_row mb-3">
+                        <button name="action_haccp_firma_operatore" type="object"
+                            string="Firma come Operatore" class="btn btn-primary"
+                            invisible="haccp_stato_firma != 'bozza'"/>
+                        <button name="action_haccp_approva" type="object"
+                            string="Approva (Responsabile)" class="btn btn-success"
+                            invisible="haccp_stato_firma != 'firmato'"/>
+                        <button name="action_genera_pdf_produzione" type="object"
+                            string="Genera PDF" class="btn btn-secondary"
+                            invisible="haccp_stato_firma == 'bozza'"/>
+                    </div>
+
+                    <!-- PREREQUISITI -->
+                    <group string="Prerequisiti">
+                        <group>
+                            <field name="haccp_area_ok" widget="boolean_toggle"/>
+                            <field name="haccp_ref_sanificazione"/>
+                            <field name="haccp_attrezzature_ok" widget="boolean_toggle"/>
+                            <field name="haccp_ref_calibrazione"/>
+                        </group>
+                        <group>
+                            <field name="haccp_igiene_ok" widget="boolean_toggle"/>
+                            <field name="haccp_dpi_ok" widget="boolean_toggle"/>
+                            <field name="haccp_allergeni_ok" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <!-- TEMPERATURE -->
+                    <group string="Temperature">
+                        <group>
+                            <field name="haccp_temp_fusione"/>
+                            <field name="haccp_temp_t1"/>
+                        </group>
+                        <group>
+                            <field name="haccp_temp_t2"/>
+                            <field name="haccp_temp_t3"/>
+                            <field name="haccp_curva_ok" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <!-- CCP -->
+                    <field name="haccp_ccp_ids">
+                        <list editable="bottom">
+                            <field name="ccp_id"/>
+                            <field name="descrizione"/>
+                            <field name="tipo_pericolo" widget="badge"/>
+                            <field name="limite_critico"/>
+                            <field name="valore_misurato"/>
+                            <field name="unita"/>
+                            <field name="ora_misura"/>
+                            <field name="ccp_ok" widget="boolean_toggle"/>
+                            <field name="azione_correttiva"/>
+                        </list>
+                    </field>
+
+                    <!-- CONTROLLI IN PROCESSO -->
+                    <group string="Controlli in Processo">
+                        <group>
+                            <field name="haccp_peso_ok" widget="boolean_toggle"/>
+                            <field name="haccp_peso_medio"/>
+                            <field name="haccp_metalli_ok" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="haccp_campione" widget="boolean_toggle"/>
+                            <field name="haccp_ref_campione"/>
+                        </group>
+                    </group>
+
+                    <!-- CONFEZIONAMENTO -->
+                    <group string="Confezionamento">
+                        <group>
+                            <field name="haccp_imballo_ok" widget="boolean_toggle"/>
+                            <field name="haccp_etichetta_ok" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="haccp_lotto_etichetta_ok" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <!-- RESA -->
+                    <group string="Resa e Scarti">
+                        <group>
+                            <field name="haccp_scarti"/>
+                            <field name="haccp_resa" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- NOTE -->
+                    <group string="Note">
+                        <field name="haccp_note" nolabel="1"
+                               placeholder="Note generali..."/>
+                    </group>
+
+                    <!-- FIRMA -->
+                    <group string="Firma Digitale"
+                           invisible="haccp_stato_firma == 'bozza'">
+                        <group>
+                            <field name="haccp_firma_operatore" readonly="1"/>
+                            <field name="haccp_data_firma" readonly="1"/>
+                        </group>
+                        <group invisible="haccp_stato_firma != 'approvato'">
+                            <field name="haccp_firma_responsabile" readonly="1"/>
+                            <field name="haccp_data_approvazione" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

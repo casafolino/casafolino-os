@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CasaFolino OS — UI Modules v1</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f6f0; color: #2d3a1e; }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #3d4d28 0%, #5A6E3A 60%, #7a9450 100%);
+    color: #fff;
+    padding: 56px 40px 48px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 20px; padding: 5px 16px; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.4px; margin-bottom: 20px;
+  }
+  .hero-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #a8f0a8; display: inline-block; }
+  .hero h1 { font-size: 38px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; }
+  .hero h1 span { color: #d4f0a0; }
+  .hero-sub { font-size: 16px; opacity: 0.85; letter-spacing: 0.2px; }
+  .hero-sub strong { color: #d4f0a0; }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 32px; margin-top: 36px; flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num { font-size: 28px; font-weight: 800; color: #d4f0a0; }
+  .hero-stat .lbl { font-size: 11px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* ── CONTAINER ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+    color: #5A6E3A; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #d0dbc0; }
+
+  /* ── FIX URGENTI ── */
+  .fix-box {
+    background: #fff8f0; border: 1px solid #f5c07a; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 40px;
+  }
+  .fix-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .fix-icon { font-size: 20px; }
+  .fix-header h2 { font-size: 15px; font-weight: 700; color: #c05e10; }
+  .fix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fix-card {
+    background: #fff; border: 1px solid #fad5aa; border-radius: 8px; padding: 14px 16px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .fix-card .fc-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .fix-card .fc-name { font-size: 11px; font-weight: 700; color: #c05e10; letter-spacing: 0.3px; margin-bottom: 4px; font-family: monospace; }
+  .fix-card .fc-desc { font-size: 12px; color: #555; line-height: 1.45; }
+
+  /* ── MODULE GRID ── */
+  .module-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px;
+  }
+  .module-card {
+    background: #fff; border: 1px solid #dce8ca; border-radius: 12px;
+    padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 2px 8px rgba(90,110,58,0.06); transition: transform .15s, box-shadow .15s;
+    position: relative; overflow: hidden;
+  }
+  .module-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #5A6E3A, #7a9450);
+  }
+  .module-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(90,110,58,0.12); }
+
+  .mc-name {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #5A6E3A; color: #fff; border-radius: 6px;
+    padding: 3px 10px 3px 8px; font-size: 11px; font-weight: 700; font-family: monospace;
+    letter-spacing: 0.2px; align-self: flex-start;
+  }
+  .mc-icon { font-size: 13px; }
+  .mc-desc { font-size: 12px; color: #4a5a35; line-height: 1.5; flex: 1; }
+  .mc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag {
+    padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .tag-owl    { background: #e8f0fb; color: #2563eb; }
+  .tag-kanban { background: #fef3c7; color: #92400e; }
+  .tag-field  { background: #d1fae5; color: #065f46; }
+  .tag-wizard { background: #f3e8ff; color: #6b21a8; }
+  .tag-fix    { background: #fee2e2; color: #991b1b; }
+  .tag-misc   { background: #f1f5f9; color: #475569; }
+
+  /* ── BEFORE / AFTER SECTION ── */
+  .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px; }
+  .ba-panel { background: #fff; border-radius: 12px; border: 1px solid #dce8ca; overflow: hidden; }
+  .ba-header {
+    padding: 10px 16px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 7px;
+  }
+  .ba-before .ba-header { background: #fef2f2; color: #dc2626; }
+  .ba-after  .ba-header { background: #f0fdf4; color: #16a34a; }
+  .ba-body { padding: 14px 16px; }
+  .ba-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 9px; font-size: 12px; color: #555; line-height: 1.45; }
+  .ba-row:last-child { margin-bottom: 0; }
+  .ba-row .bullet { flex-shrink: 0; margin-top: 1px; }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-box {
+    background: #fff; border: 1px solid #dce8ca; border-radius: 12px;
+    padding: 24px; margin-bottom: 48px;
+  }
+  .arch-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .arch-layer-label {
+    width: 120px; flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.7px; color: #888; display: flex; align-items: center;
+  }
+  .arch-items { display: flex; gap: 8px; flex-wrap: wrap; }
+  .arch-item {
+    padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600;
+    border: 1.5px solid; white-space: nowrap;
+  }
+  .arch-item.green  { background: #f0fdf4; border-color: #86efac; color: #166534; }
+  .arch-item.blue   { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+  .arch-item.orange { background: #fff7ed; border-color: #fdba74; color: #c2410c; }
+  .arch-item.purple { background: #faf5ff; border-color: #d8b4fe; color: #7e22ce; }
+  .arch-divider { border: none; border-top: 1px dashed #dce8ca; margin: 4px 0 16px; }
+
+  /* ── BOTTOM STATS ── */
+  .stats-bar {
+    background: linear-gradient(135deg, #3d4d28, #5A6E3A);
+    border-radius: 16px; padding: 28px 32px;
+    display: flex; justify-content: space-around; flex-wrap: wrap; gap: 16px;
+  }
+  .stat-item { text-align: center; }
+  .stat-item .snum { font-size: 26px; font-weight: 800; color: #d4f0a0; }
+  .stat-item .slbl { font-size: 11px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+
+  @media (max-width: 768px) {
+    .module-grid { grid-template-columns: 1fr 1fr; }
+    .fix-grid    { grid-template-columns: 1fr; }
+    .ba-grid     { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .module-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ──────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge"><span class="dot"></span> feature/ui-modules-v1 &nbsp;—&nbsp; Rilasciato · 01 Apr 2026</div>
+  <h1>CasaFolino OS <span>UI Upgrade v1</span></h1>
+  <p class="hero-sub">
+    <strong>11 moduli</strong> aggiornati &nbsp;•&nbsp;
+    <strong>4 OWL Dashboards</strong> &nbsp;•&nbsp;
+    <strong>6 Kanban Views</strong> &nbsp;•&nbsp;
+    <strong>5 Computed Fields</strong>
+  </p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">11</div><div class="lbl">Moduli</div></div>
+    <div class="hero-stat"><div class="num">40</div><div class="lbl">File</div></div>
+    <div class="hero-stat"><div class="num">1.525</div><div class="lbl">Righe aggiunte</div></div>
+    <div class="hero-stat"><div class="num">4</div><div class="lbl">OWL Dashboard</div></div>
+    <div class="hero-stat"><div class="num">6</div><div class="lbl">Kanban View</div></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── FIX URGENTI ──────────────────────────────────── -->
+  <div class="section-title">🔥 Fix Urgenti</div>
+  <div class="fix-box">
+    <div class="fix-header">
+      <span class="fix-icon">⚠️</span>
+      <h2>Risolti prima del deploy su folinofood_stage</h2>
+    </div>
+    <div class="fix-grid">
+      <div class="fix-card">
+        <span class="fc-icon">📧</span>
+        <div>
+          <div class="fc-name">casafolino_mail</div>
+          <div class="fc-desc">Rimosso campo <code>outgoing_mail_server_id</code> dal form account — causava errore di avvio su produzione</div>
+        </div>
+      </div>
+      <div class="fix-card">
+        <span class="fc-icon">🌍</span>
+        <div>
+          <div class="fc-name">casafolino_crm_export</div>
+          <div class="fc-desc">Menu "DACH / Europa" e "Gulf / Halal" rinominati; rimosso sottomenu GDO dal CRM (era duplicato)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ARCHITETTURA ──────────────────────────────────── -->
+  <div class="section-title">🏗 Pattern Architetturali Applicati</div>
+  <div class="arch-box">
+    <div class="arch-row">
+      <div class="arch-layer-label">OWL Components</div>
+      <div class="arch-items">
+        <span class="arch-item green">CfHaccpDashboard</span>
+        <span class="arch-item green">CfSupplierDashboard</span>
+        <span class="arch-item green">CfKpiDashboard</span>
+        <span class="arch-item green">CfTreasuryDashboard</span>
+        <span class="arch-item green">CfCrmDashboard</span>
+      </div>
+    </div>
+    <hr class="arch-divider"/>
+    <div class="arch-row">
+      <div class="arch-layer-label">Kanban Views</div>
+      <div class="arch-items">
+        <span class="arch-item blue">NC per Severità</span>
+        <span class="arch-item blue">Retailer GDO</span>
+        <span class="arch-item blue">Prodotti PL</span>
+        <span class="arch-item blue">Allergeni EU</span>
+        <span class="arch-item blue">Commesse Produzione</span>
+        <span class="arch-item blue">Trattative CRM</span>
+      </div>
+    </div>
+    <hr class="arch-divider"/>
+    <div class="arch-row">
+      <div class="arch-layer-label">Computed Fields</div>
+      <div class="arch-items">
+        <span class="arch-item orange">traceability_pct</span>
+        <span class="arch-item orange">listing_status</span>
+        <span class="arch-item orange">products_count</span>
+        <span class="arch-item orange">nutri_score (A→E)</span>
+        <span class="arch-item orange">progress (0–100%)</span>
+      </div>
+    </div>
+    <hr class="arch-divider"/>
+    <div class="arch-row">
+      <div class="arch-layer-label">OWL Pattern</div>
+      <div class="arch-items">
+        <span class="arch-item purple">useState + onWillStart</span>
+        <span class="arch-item purple">rpc from @web/core</span>
+        <span class="arch-item purple">action.doAction + views:[]</span>
+        <span class="arch-item purple">registry.category("actions")</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODULE CARDS ──────────────────────────────────── -->
+  <div class="section-title">📦 Moduli Aggiornati (11)</div>
+  <div class="module-grid">
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🦠</span> casafolino_haccp</div>
+      <div class="mc-desc">Dashboard semaforo HACCP (verde/giallo/rosso), kanban NC per severità con colori, form step-wizard con pulsanti progressione stato, 4 KPI cards con contatori aperti/critici/scaduti.</div>
+      <div class="mc-tags">
+        <span class="tag tag-owl">OWL Dashboard</span>
+        <span class="tag tag-kanban">Kanban NC</span>
+        <span class="tag tag-wizard">Form Wizard</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🤝</span> casafolino_supplier_qual</div>
+      <div class="mc-desc">Fix <code>compute_sudo=True</code> per campo Many2one cross-model, dashboard semaforo fornitori con KPI per stato (approvato/valutazione/sospeso) e breakdown semaforo 🟢🟡🔴.</div>
+      <div class="mc-tags">
+        <span class="tag tag-owl">OWL Dashboard</span>
+        <span class="tag tag-fix">Bug Fix</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">📊</span> casafolino_kpi</div>
+      <div class="mc-desc">Dashboard KPI con vendite YTD/MTD, MO aperti, NC aperte. Frecce trend ▲▼ con delta % vs snapshot precedente. Breakdown canali vendita (B2B, GDO, Amazon, Shopify).</div>
+      <div class="mc-tags">
+        <span class="tag tag-owl">OWL Dashboard</span>
+        <span class="tag tag-misc">Trend Arrows</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">💰</span> casafolino_treasury</div>
+      <div class="mc-desc">Saldo prominente (42px, verde/rosso), forecast 30/60/90 giorni, posizione crediti e debiti 30gg, sparkline cashflow con barre proporzionali degli ultimi 30 giorni.</div>
+      <div class="mc-tags">
+        <span class="tag tag-owl">OWL Dashboard</span>
+        <span class="tag tag-misc">Sparkline</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🔔</span> casafolino_recall</div>
+      <div class="mc-desc">Campo <code>traceability_pct</code> calcolato (pickings tracciati / lotti totali × 100) con badge BRC ✅/⚠, bottone "Avvia Tracciabilità", campo telefono nei partner.</div>
+      <div class="mc-tags">
+        <span class="tag tag-field">Computed Field</span>
+        <span class="tag tag-misc">BRC %</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🏪</span> casafolino_gdo</div>
+      <div class="mc-desc">Campi <code>date_expiry</code> e <code>listing_status</code> (Attivo/In Scadenza/Scaduto) con logica ≤30gg, kanban retailer con partner, tipo, paese, negozi, target annuale.</div>
+      <div class="mc-tags">
+        <span class="tag tag-kanban">Kanban</span>
+        <span class="tag tag-field">Computed Field</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🏷</span> casafolino_private_label</div>
+      <div class="mc-desc">Kanban prodotti raggruppato per stato workflow, badge margine color-coded: 🟢 ≥30% / 🟡 ≥15% / 🔴 &lt;15%. Vista lista clienti PL aggiunta.</div>
+      <div class="mc-tags">
+        <span class="tag tag-kanban">Kanban</span>
+        <span class="tag tag-misc">Margin Badge</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">⚠️</span> casafolino_allergen</div>
+      <div class="mc-desc">Campo <code>products_count</code> (ricette con allergene presente/tracce), kanban allergeni con codice, nome e badge giallo se prodotti &gt;0. Colonna contatore in list.</div>
+      <div class="mc-tags">
+        <span class="tag tag-kanban">Kanban</span>
+        <span class="tag tag-field">Computed Field</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🥗</span> casafolino_nutrition</div>
+      <div class="mc-desc">Calcolo automatico <code>nutri_score</code> A→E (algoritmo EU semplificato: punti negativi − positivi). Tabella etichetta nutrizionale EU stile dichiarazione per 100g. Tab BOM inline in mrp.bom.</div>
+      <div class="mc-tags">
+        <span class="tag tag-field">Computed Field</span>
+        <span class="tag tag-misc">EU Label</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">🏭</span> casafolino_production</div>
+      <div class="mc-desc">Campo <code>progress</code> 0–100% calcolato da stato + qty_done/qty_planned. Kanban commesse raggruppato per stato con barre avanzamento colorate e strip colore linea produzione.</div>
+      <div class="mc-tags">
+        <span class="tag tag-kanban">Kanban</span>
+        <span class="tag tag-field">Progress Bar</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-name"><span class="mc-icon">📈</span> casafolino_crm_export</div>
+      <div class="mc-desc">Dashboard KPI CRM (totale, forecast, score medio, rotting, follow-up). Kanban con rotting indicator (bordo colorato), score badge verde/giallo/rosso, form 2 colonne con sidebar KPI.</div>
+      <div class="mc-tags">
+        <span class="tag tag-owl">OWL Dashboard</span>
+        <span class="tag tag-kanban">Kanban</span>
+        <span class="tag tag-misc">Rotting</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BEFORE / AFTER ──────────────────────────────────── -->
+  <div class="section-title">🔄 Prima / Dopo</div>
+  <div class="ba-grid">
+    <div class="ba-panel ba-before">
+      <div class="ba-header">❌ Prima (v0)</div>
+      <div class="ba-body">
+        <div class="ba-row"><span class="bullet">•</span> Form base senza layout, tutti i campi in una colonna</div>
+        <div class="ba-row"><span class="bullet">•</span> Nessuna dashboard — solo list/form views</div>
+        <div class="ba-row"><span class="bullet">•</span> Nessun kanban — navigazione solo da lista</div>
+        <div class="ba-row"><span class="bullet">•</span> Valori calcolati assenti (progress, traceability, nutri_score…)</div>
+        <div class="ba-row"><span class="bullet">•</span> <code>compute_sudo</code> mancante → errori accesso campi cross-model</div>
+        <div class="ba-row"><span class="bullet">•</span> <code>outgoing_mail_server_id</code> nel form → errore avvio</div>
+        <div class="ba-row"><span class="bullet">•</span> Menu CRM con voci DACH/Gulf/GDO non aggiornate</div>
+        <div class="ba-row"><span class="bullet">•</span> doAction senza <code>views:[]</code> → crash "Cannot read map"</div>
+      </div>
+    </div>
+    <div class="ba-panel ba-after">
+      <div class="ba-header">✅ Dopo (v1)</div>
+      <div class="ba-body">
+        <div class="ba-row"><span class="bullet">•</span> Form 2 colonne Bootstrap con sidebar KPI per moduli chiave</div>
+        <div class="ba-row"><span class="bullet">•</span> 4 OWL Dashboard con semafori, sparkline, trend arrows</div>
+        <div class="ba-row"><span class="bullet">•</span> 6 kanban view con card colorate e indicatori visivi</div>
+        <div class="ba-row"><span class="bullet">•</span> 5 computed fields store=True per analytics automatici</div>
+        <div class="ba-row"><span class="bullet">•</span> <code>compute_sudo=True</code> su tutti i campi cross-model</div>
+        <div class="ba-row"><span class="bullet">•</span> Form mail ripulita, nessun campo obsoleto</div>
+        <div class="ba-row"><span class="bullet">•</span> Menu CRM aggiornati con nomi corretti e struttura pulita</div>
+        <div class="ba-row"><span class="bullet">•</span> doAction con <code>views:[[false,"type"]]</code> + <code>context:{}</code> corretto</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM STATS ──────────────────────────────────── -->
+  <div class="stats-bar">
+    <div class="stat-item"><div class="snum">40</div><div class="slbl">File Modificati</div></div>
+    <div class="stat-item"><div class="snum">1.525</div><div class="slbl">Righe Aggiunte</div></div>
+    <div class="stat-item"><div class="snum">11</div><div class="slbl">Moduli Upgradati</div></div>
+    <div class="stat-item"><div class="snum">4</div><div class="slbl">OWL Dashboards</div></div>
+    <div class="stat-item"><div class="snum">6</div><div class="slbl">Kanban Views</div></div>
+    <div class="stat-item"><div class="snum">5</div><div class="slbl">Computed Fields</div></div>
+    <div class="stat-item"><div class="snum">2</div><div class="slbl">Fix Urgenti</div></div>
+  </div>
+
+</div>
+</body>
+</html>

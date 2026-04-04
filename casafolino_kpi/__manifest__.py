@@ -11,7 +11,14 @@
         "views/cf_kpi_views.xml",
         "views/menus.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "casafolino_kpi/static/src/xml/cf_kpi_dashboard.xml",
+            "casafolino_kpi/static/src/js/cf_kpi_dashboard.js",
+        ],
+    },
     "installable": True,
     "application": True,
     "license": "LGPL-3",
+    "icon": "casafolino_kpi/static/description/icon.png",
 }

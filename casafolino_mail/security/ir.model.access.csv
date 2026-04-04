@@ -7,5 +7,6 @@ access_cf_mail_tag_user,cf.mail.tag user,model_cf_mail_tag,,1,1,1,0
 access_cf_mail_tag_admin,cf.mail.tag admin,model_cf_mail_tag,base.group_system,1,1,1,1
 access_cf_contact_tag_user,cf.contact.tag user,model_cf_contact_tag,,1,1,1,0
 access_cf_contact_tag_admin,cf.contact.tag admin,model_cf_contact_tag,base.group_system,1,1,1,1
-access_cf_mail_sender_rule_user,cf.mail.sender.rule user,model_cf_mail_sender_rule,,1,1,1,0
+access_cf_mail_compose,access_cf_mail_compose,model_cf_mail_compose,base.group_user,1,1,1,1
+access_cf_mail_sender_rule_user,cf.mail.sender.rule user,model_cf_mail_sender_rule,,1,1,1,1
 access_cf_mail_sender_rule_admin,cf.mail.sender.rule admin,model_cf_mail_sender_rule,base.group_system,1,1,1,1

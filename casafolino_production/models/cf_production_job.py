@@ -31,6 +31,7 @@ class CfProductionJob(models.Model):
     product_id = fields.Many2one("product.template", required=True)
     quantity_planned = fields.Float(string="Quantita Pianificata", required=True)
     quantity_done = fields.Float(string="Quantita Prodotta")
+    progress = fields.Float(string="Avanzamento (%)", compute="_compute_progress", store=True)
     date_start = fields.Datetime(string="Inizio", required=True)
     date_end = fields.Datetime(string="Fine", required=True)
     operator_ids = fields.Many2many("res.users", string="Operatori")
@@ -41,6 +42,20 @@ class CfProductionJob(models.Model):
     def _compute_line_color(self):
         for rec in self:
             rec.line_color = LINE_COLORS.get(rec.production_line, "#6B7280")
+
+    @api.depends("state", "quantity_done", "quantity_planned")
+    def _compute_progress(self):
+        for rec in self:
+            if rec.state == "done":
+                rec.progress = 100.0
+            elif rec.state == "cancelled":
+                rec.progress = 0.0
+            elif rec.state == "in_progress" and rec.quantity_planned:
+                rec.progress = min(99.0, round(rec.quantity_done / rec.quantity_planned * 100, 1))
+            elif rec.state == "confirmed":
+                rec.progress = 10.0
+            else:
+                rec.progress = 0.0
 
     @api.constrains("date_start","date_end")
     def _check_dates(self):

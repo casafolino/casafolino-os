@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_crm_export.CfCrmDashboard">
+    <div class="cf-dashboard o_action">
+
+        <!-- ── HEADER ── -->
+        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
+             style="background: #1e2432; color: #fff; min-height: 56px;">
+            <div class="d-flex align-items-center gap-3">
+                <span style="font-size:20px;">📊</span>
+                <h4 class="mb-0 fw-bold" style="font-size:16px; letter-spacing:.3px;">
+                    Dashboard CRM Export
+                </h4>
+            </div>
+            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">
+                ↺ Aggiorna
+            </button>
+        </div>
+
+        <!-- ── LOADING ── -->
+        <t t-if="state.loading">
+            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+                <div class="spinner-border text-secondary" role="status"/>
+            </div>
+        </t>
+
+        <!-- ── ERROR ── -->
+        <t t-elif="state.error">
+            <div class="alert alert-danger m-4">
+                <t t-esc="state.error"/>
+            </div>
+        </t>
+
+        <!-- ── CONTENT ── -->
+        <t t-elif="state.kpis">
+            <div class="cf-dash-body px-4 py-3">
+
+                <!-- ── ROW 1: KPI CARDS ── -->
+                <div class="row g-3 mb-4">
+
+                    <!-- Trattative totali -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onClickAll"
+                             style="border-top: 3px solid #5A6E3A;">
+                            <div class="cf-kpi-label">Trattative aperte</div>
+                            <div class="cf-kpi-value">
+                                <t t-esc="state.kpis.total"/>
+                            </div>
+                            <div class="cf-kpi-sub">
+                                Score medio: <t t-esc="state.kpis.avg_score"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Forecast totale -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onClickAll"
+                             style="border-top: 3px solid #3d4d28;">
+                            <div class="cf-kpi-label">Forecast totale</div>
+                            <div class="cf-kpi-value" style="font-size:22px;">
+                                <t t-esc="formatAmount(state.kpis.total_forecast)"/>
+                            </div>
+                            <div class="cf-kpi-sub">valore ponderato pipeline</div>
+                        </div>
+                    </div>
+
+                    <!-- Stagnanti -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onClickRotting"
+                             t-attf-style="border-top: 3px solid #{state.kpis.rotting_count > 0 ? '#dc3545' : '#28a745'};">
+                            <div class="cf-kpi-label">Stagnanti 🔴</div>
+                            <div t-attf-class="cf-kpi-value #{state.kpis.rotting_count > 0 ? 'text-danger' : 'text-success'}">
+                                <t t-esc="state.kpis.rotting_count"/>
+                            </div>
+                            <div class="cf-kpi-sub">danger + dead</div>
+                        </div>
+                    </div>
+
+                    <!-- Da contattare oggi -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="cf-kpi-card" t-on-click="onClickFollowup"
+                             t-attf-style="border-top: 3px solid #{state.kpis.followup_today_count > 0 ? '#ffc107' : '#28a745'};">
+                            <div class="cf-kpi-label">Follow-up oggi 📅</div>
+                            <div t-attf-class="cf-kpi-value #{state.kpis.followup_today_count > 0 ? 'text-warning' : 'text-success'}">
+                                <t t-esc="state.kpis.followup_today_count"/>
+                            </div>
+                            <div class="cf-kpi-sub">data ≤ oggi</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ── ROW 2: STAGE BREAKDOWN + PIPELINE ── -->
+                <div class="row g-3">
+
+                    <!-- Trattative per fase -->
+                    <div class="col-lg-7">
+                        <div class="cf-dash-panel">
+                            <div class="cf-dash-panel-title">
+                                📋 Trattative per Fase
+                            </div>
+                            <div class="cf-stage-list">
+                                <t t-foreach="state.kpis.by_stage" t-as="stage" t-key="stage.name">
+                                    <div class="cf-stage-row">
+                                        <div class="cf-stage-name">
+                                            <span t-attf-class="cf-stage-dot #{stage.is_won ? 'dot-won' : stage.is_lost ? 'dot-lost' : 'dot-open'}"/>
+                                            <t t-esc="stage.name"/>
+                                        </div>
+                                        <div class="cf-stage-bar-wrap">
+                                            <div class="cf-stage-bar"
+                                                 t-attf-style="width: #{stageBarPct(stage.count)}%"/>
+                                        </div>
+                                        <div class="cf-stage-count">
+                                            <t t-esc="stage.count"/>
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-if="!state.kpis.by_stage.length">
+                                    <div class="text-muted small p-2">Nessuna trattativa.</div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline breakdown -->
+                    <div class="col-lg-5">
+                        <div class="cf-dash-panel">
+                            <div class="cf-dash-panel-title">
+                                🌍 Per Pipeline
+                            </div>
+                            <div class="cf-stage-list">
+                                <t t-foreach="state.kpis.by_pipeline" t-as="p" t-key="p.key">
+                                    <div class="cf-stage-row">
+                                        <div class="cf-stage-name">
+                                            <t t-esc="p.label"/>
+                                        </div>
+                                        <div class="cf-stage-bar-wrap">
+                                            <div class="cf-stage-bar cf-bar-pipeline"
+                                                 t-attf-style="width: #{stageBarPct(p.count)}%"/>
+                                        </div>
+                                        <div class="cf-stage-count">
+                                            <t t-esc="p.count"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                            <!-- Score alto link -->
+                            <div class="mt-3 pt-2" style="border-top: 1px solid rgba(0,0,0,.07);">
+                                <button class="btn btn-sm" t-on-click="onClickScoreHigh"
+                                    style="border: 1px solid #5A6E3A; color: #5A6E3A; font-size:12px;">
+                                    🎯 Vedi Score ≥ 70
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

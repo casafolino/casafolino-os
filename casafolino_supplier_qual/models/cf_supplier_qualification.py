@@ -19,20 +19,24 @@ class CfSupplierQualification(models.Model):
     notes = fields.Text()
     document_ids = fields.One2many("casafolino.supplier.document", "partner_id", string="Documenti")
     evaluation_ids = fields.One2many("casafolino.supplier.evaluation", "partner_id", string="Valutazioni")
-    document_count = fields.Integer(compute="_compute_stats")
-    evaluation_count = fields.Integer(compute="_compute_stats")
-    expired_doc_count = fields.Integer(compute="_compute_stats")
-    expiring_doc_count = fields.Integer(compute="_compute_stats")
-    last_score = fields.Float(compute="_compute_stats", store=True)
+    document_count = fields.Integer(compute="_compute_stats_counts")
+    evaluation_count = fields.Integer(compute="_compute_stats_counts")
+    expired_doc_count = fields.Integer(compute="_compute_stats_counts")
+    expiring_doc_count = fields.Integer(compute="_compute_stats_counts")
+    last_score = fields.Float(compute="_compute_last_score", store=True)
 
-    @api.depends("document_ids","document_ids.doc_status","evaluation_ids","evaluation_ids.punteggio_totale")
-    def _compute_stats(self):
+    @api.depends("document_ids", "document_ids.doc_status", "evaluation_ids")
+    def _compute_stats_counts(self):
         for rec in self:
             docs = rec.document_ids
             rec.document_count = len(docs)
             rec.evaluation_count = len(rec.evaluation_ids)
             rec.expired_doc_count = len(docs.filtered(lambda d: d.doc_status == "expired"))
             rec.expiring_doc_count = len(docs.filtered(lambda d: d.doc_status == "expiring"))
+
+    @api.depends("evaluation_ids", "evaluation_ids.punteggio_totale")
+    def _compute_last_score(self):
+        for rec in self:
             last_eval = rec.evaluation_ids.sorted("date", reverse=True)[:1]
             rec.last_score = last_eval.punteggio_totale if last_eval else 0.0
 
@@ -48,22 +52,37 @@ class CfSupplierQualification(models.Model):
 
     def action_approve(self):
         self.write({"status": "approved"})
+
     def action_suspend(self):
         self.write({"status": "suspended"})
+
     def action_exclude(self):
         self.write({"status": "excluded"})
 
+    @api.model
+    def get_dashboard_data(self):
+        all_quals = self.search([])
+        by_status = {}
+        for key in ("approved", "evaluation", "suspended", "excluded"):
+            by_status[key] = len(all_quals.filtered(lambda r, k=key: r.status == k))
+        by_light = {}
+        for key in ("green", "yellow", "red"):
+            by_light[key] = len(all_quals.filtered(lambda r, k=key: r.traffic_light == k))
+
+        docs = self.env["casafolino.supplier.document"].search([])
+        return {
+            "total": len(all_quals),
+            "by_status": by_status,
+            "by_light": by_light,
+            "docs_expiring": len(docs.filtered(lambda d: d.doc_status == "expiring")),
+            "docs_expired": len(docs.filtered(lambda d: d.doc_status == "expired")),
+        }
+
 class ResPartnerSupplierQual(models.Model):
     _inherit = "res.partner"
-    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False, search="_search_supplier_qual_id")
+    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False, compute_sudo=True)
     supplier_qual_status = fields.Selection(related="supplier_qual_id.status", readonly=True)
     supplier_traffic_light = fields.Selection(related="supplier_qual_id.traffic_light", readonly=True)
-
-    def _search_supplier_qual_id(self, operator, value):
-        if operator in ('=', '!=', 'in', 'not in'):
-            quals = self.env["casafolino.supplier.qualification"].search([("id", operator, value)])
-            return [("id", "in", quals.mapped("partner_id").ids)]
-        return []
 
     def _compute_supplier_qual(self):
         for rec in self:

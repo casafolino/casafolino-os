@@ -7,3 +7,15 @@ from . import cf_haccp_nc
 from . import cf_haccp_quarantine
 from . import cf_haccp_calibration
 from . import cf_haccp_document
+# v2 — nuovi registri
+from . import cf_haccp_temperature
+from . import cf_haccp_sanification
+from . import cf_haccp_ccp_log
+from . import cf_haccp_etichettatura
+from . import cf_haccp_tracciabilita
+from . import cf_haccp_pest
+from . import cf_haccp_formazione
+from . import cf_haccp_igiene
+from . import cf_haccp_picking_extend
+from . import cf_haccp_production_extend
+from . import cf_haccp_reminder

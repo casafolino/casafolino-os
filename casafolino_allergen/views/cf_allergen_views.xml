@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!-- ALLERGEN list -->
     <record id="view_cf_allergen_list" model="ir.ui.view">
         <field name="name">cf.allergen.list</field>
         <field name="model">cf.allergen</field>
@@ -8,67 +10,294 @@
                 <field name="sequence" widget="handle"/>
                 <field name="code"/>
                 <field name="name"/>
-                <field name="market"/>
+                <field name="market" widget="badge"
+                       decoration-info="market == 'eu'"
+                       decoration-success="market == 'uk'"
+                       decoration-warning="market == 'usa' or market == 'canada'"
+                       decoration-primary="market == 'australia'"/>
                 <field name="regulation_ref"/>
+                <field name="products_count" string="Prodotti"/>
             </list>
         </field>
     </record>
+
+    <!-- ALLERGEN form -->
+    <record id="view_cf_allergen_form" model="ir.ui.view">
+        <field name="name">cf.allergen.form</field>
+        <field name="model">cf.allergen</field>
+        <field name="arch" type="xml">
+            <form string="Allergene">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome allergene..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="market"/>
+                            <field name="severity_default"/>
+                            <field name="regulation_ref"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Descrizione">
+                        <field name="description" nolabel="1" placeholder="Descrizione normativa..."/>
+                    </group>
+                    <field name="keyword_ids" string="Keywords rilevamento automatico">
+                        <list editable="bottom">
+                            <field name="keyword"/>
+                            <field name="match_type"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- RECIPE ALLERGEN list (usata inline in BoM) -->
     <record id="view_cf_recipe_allergen_list" model="ir.ui.view">
         <field name="name">cf.recipe.allergen.list</field>
         <field name="model">cf.recipe.allergen</field>
         <field name="arch" type="xml">
             <list string="Allergeni Ricetta" editable="bottom"
-                  decoration-danger="status=='present'"
-                  decoration-warning="status=='traces'">
+                  decoration-danger="status == 'present'"
+                  decoration-warning="status == 'traces'">
                 <field name="allergen_id"/>
-                <field name="market"/>
                 <field name="status" widget="badge"
-                       decoration-danger="status=='present'"
-                       decoration-warning="status=='traces'"
-                       decoration-success="status=='absent'"/>
-                <field name="cross_contamination"/>
+                       decoration-danger="status == 'present'"
+                       decoration-warning="status == 'traces'"
+                       decoration-success="status == 'absent'"/>
+                <field name="source_ingredient" string="Ingrediente fonte"/>
+                <field name="auto_detected" widget="boolean_toggle" string="Auto"/>
+                <field name="verified" widget="boolean_toggle" string="Verificato"/>
+                <field name="cross_contamination" string="Cross-contam."/>
                 <field name="validated_by" widget="many2one_avatar_user"/>
                 <field name="validation_date"/>
-                <field name="notes"/>
+                <field name="notes" optional="show"/>
             </list>
         </field>
     </record>
-    <record id="mrp_bom_form_view_allergen" model="ir.ui.view">
-        <field name="name">mrp.bom.form.allergen</field>
+
+    <!-- MRP.BOM tab Allergeni (inherit) -->
+    <record id="view_mrp_bom_allergen_tab" model="ir.ui.view">
+        <field name="name">mrp.bom.allergen.tab</field>
         <field name="model">mrp.bom</field>
         <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <button name="action_analyze_allergens" string="Analizza Allergeni" type="object" class="btn-secondary"/>
-            </xpath>
-            <xpath expr="//notebook" position="inside">
-                <page string="Allergeni e Regole di Mercato">
-                    <t t-if="allergen_alert">
-                        <div class="alert alert-warning" role="alert">
-                            <field name="allergen_alert" readonly="1"/>
+            <notebook position="inside">
+                <page string="Allergeni" name="allergen_tab">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button name="action_analyze_allergens" type="object"
+                                    string="Analizza Allergeni da BoM"
+                                    class="btn-primary me-2"/>
+                            <field name="allergen_validated" widget="boolean_toggle"
+                                   string="Dichiarazione validata"/>
                         </div>
-                    </t>
-                    <field name="allergen_ids" context="{'default_bom_id': active_id}"/>
+                    </div>
+
+                    <!-- Alert box -->
+                    <div class="alert alert-danger mb-2"
+                         invisible="not allergen_alert_text">
+                        <strong>ALLERGENI PRESENTI: </strong>
+                        <field name="allergen_alert_text" nolabel="1" readonly="1"/>
+                    </div>
+
+                    <!-- Matrice allergeni -->
+                    <field name="allergen_ids" widget="one2many"
+                           context="{}">
+                        <list editable="bottom"
+                              decoration-danger="status == 'present'"
+                              decoration-warning="status == 'traces'">
+                            <field name="allergen_id"/>
+                            <field name="status" widget="badge"
+                                   decoration-danger="status == 'present'"
+                                   decoration-warning="status == 'traces'"
+                                   decoration-success="status == 'absent'"/>
+                            <field name="source_ingredient" string="Ingrediente fonte"/>
+                            <field name="auto_detected" widget="boolean_toggle" string="Auto"/>
+                            <field name="verified" widget="boolean_toggle"/>
+                            <field name="cross_contamination" string="Cross-cont."/>
+                            <field name="notes" optional="show"/>
+                        </list>
+                    </field>
+
+                    <!-- Testo etichetta -->
+                    <group string="Testo pronto per etichetta"
+                           invisible="not allergen_label_text">
+                        <div class="o_field_widget p-2"
+                             style="background:#fff3cd; border-radius:4px; border:1px solid #ffc107;">
+                            <field name="allergen_label_text" nolabel="1" readonly="1"/>
+                        </div>
+                    </group>
                 </page>
+            </notebook>
+        </field>
+    </record>
+
+    <!-- PRODUCT.TEMPLATE tab Allergeni (inherit) -->
+    <record id="view_product_template_allergen_tab" model="ir.ui.view">
+        <field name="name">product.template.allergen.tab</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Allergeni" name="allergen_tab">
+                    <!-- Alert check state -->
+                    <div class="alert alert-danger mb-2"
+                         invisible="allergen_check_state != 'alert'">
+                        <strong>ATTENZIONE ALLERGENI:</strong>
+                        <field name="allergen_alert_msg" readonly="1" nolabel="1"/>
+                    </div>
+                    <div class="alert alert-success mb-2"
+                         invisible="allergen_check_state != 'ok'">
+                        <strong>Allergeni verificati e conformi</strong>
+                    </div>
+                    <div class="alert alert-danger mb-2"
+                         invisible="not allergen_alert_text">
+                        <strong>ALLERGENI PRESENTI: </strong>
+                        <field name="allergen_alert_text" nolabel="1" readonly="1"/>
+                    </div>
+
+                    <group>
+                        <group string="Allergeni Contenuti">
+                            <field name="allergen_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Puo Contenere (Tracce)">
+                            <field name="allergen_may_contain_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Stato Verifica BoM">
+                        <field name="allergen_check_state" widget="badge"
+                            decoration-danger="allergen_check_state == 'alert'"
+                            decoration-success="allergen_check_state == 'ok'"
+                            decoration-muted="allergen_check_state == 'unchecked'"/>
+                    </group>
+
+                    <field name="allergen_bom_ids" readonly="1" string="Dettaglio da BoM">
+                        <list decoration-danger="status == 'present'"
+                              decoration-warning="status == 'traces'">
+                            <field name="allergen_id"/>
+                            <field name="status" widget="badge"
+                                   decoration-danger="status == 'present'"
+                                   decoration-warning="status == 'traces'"
+                                   decoration-success="status == 'absent'"/>
+                            <field name="source_ingredient" string="Fonte"/>
+                            <field name="auto_detected" widget="boolean_toggle"/>
+                            <field name="verified" widget="boolean_toggle"/>
+                        </list>
+                    </field>
+
+                    <group string="Testo etichetta"
+                           invisible="not allergen_label_text">
+                        <div class="p-2"
+                             style="background:#fff3cd; border-radius:4px; border:1px solid #ffc107;">
+                            <field name="allergen_label_text" nolabel="1" readonly="1"/>
+                        </div>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <!-- CATEGORY list -->
+    <record id="view_cf_allergen_category_list" model="ir.ui.view">
+        <field name="name">cf.allergen.category.list</field>
+        <field name="model">cf.allergen.category</field>
+        <field name="arch" type="xml">
+            <list string="Categorie Allergeni">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="is_eu" widget="boolean_toggle"/>
+                <field name="is_usa" widget="boolean_toggle"/>
+                <field name="is_canada" widget="boolean_toggle"/>
+                <field name="is_australia" widget="boolean_toggle"/>
+                <field name="is_japan" widget="boolean_toggle"/>
+                <field name="allergen_count" string="Allergeni"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- CATEGORY form -->
+    <record id="view_cf_allergen_category_form" model="ir.ui.view">
+        <field name="name">cf.allergen.category.form</field>
+        <field name="model">cf.allergen.category</field>
+        <field name="arch" type="xml">
+            <form string="Categoria Allergene">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome categoria..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group string="Mercati obbligatori">
+                            <field name="is_eu" widget="boolean_toggle"/>
+                            <field name="is_usa" widget="boolean_toggle"/>
+                            <field name="is_canada" widget="boolean_toggle"/>
+                            <field name="is_australia" widget="boolean_toggle"/>
+                            <field name="is_japan" widget="boolean_toggle"/>
+                            <field name="is_codex" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <field name="allergen_ids">
+                        <list>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="name_en"/>
+                            <field name="is_mandatory_eu" widget="boolean_toggle"/>
+                            <field name="is_mandatory_usa" widget="boolean_toggle"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- MRP.PRODUCTION allergen alert (inherit) -->
+    <record id="view_mrp_production_allergen_alert" model="ir.ui.view">
+        <field name="name">mrp.production.allergen.alert</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="priority">40</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="before">
+                <div class="alert alert-danger"
+                     invisible="not allergen_alert">
+                    <strong>STOP - ALLERGENI NON DICHIARATI IN ETICHETTA!</strong><br/>
+                    <field name="allergen_alert_msg" readonly="1" nolabel="1"/>
+                    <br/>La produzione e bloccata finche non dichiari gli allergeni sul prodotto.
+                </div>
             </xpath>
         </field>
     </record>
 
-    <record id="product_template_form_view_allergen" model="ir.ui.view">
-        <field name="name">product.template.form.allergen</field>
+    <!-- Product allergen alert list -->
+    <record id="product_allergen_alert_list" model="ir.ui.view">
+        <field name="name">product.allergen.alert.list</field>
         <field name="model">product.template</field>
-        <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
-                <page string="Allergeni Mercato" groups="mrp.group_mrp_user">
-                    <field name="allergen_match_ids">
-                        <list editable="bottom" create="0">
-                            <field name="market" string="Mercato di Distribuzione" readonly="1"/>
-                            <field name="matched_allergen_ids" widget="many2many_tags" readonly="1"/>
-                        </list>
-                    </field>
-                </page>
-            </xpath>
+            <list string="Prodotti - Verifica Allergeni"
+                  decoration-danger="allergen_check_state == 'alert'"
+                  decoration-success="allergen_check_state == 'ok'">
+                <field name="name" string="Prodotto"/>
+                <field name="allergen_ids" widget="many2many_tags"/>
+                <field name="allergen_check_state" widget="badge"
+                    decoration-danger="allergen_check_state == 'alert'"
+                    decoration-success="allergen_check_state == 'ok'"
+                    decoration-muted="allergen_check_state == 'unchecked'"/>
+                <field name="allergen_alert_msg"
+                    invisible="allergen_check_state != 'alert'"
+                    string="Alert"/>
+            </list>
         </field>
     </record>
+
 </odoo>

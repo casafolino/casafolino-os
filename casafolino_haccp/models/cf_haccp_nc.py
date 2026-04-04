@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 
 class CfHaccpNc(models.Model):
     _name = "cf.haccp.nc"
@@ -29,9 +29,69 @@ class CfHaccpNc(models.Model):
     date = fields.Datetime(string="Data", default=fields.Datetime.now)
     reported_by = fields.Many2one("res.users", string="Segnalato da", default=lambda self: self.env.user)
     assigned_to = fields.Many2one("res.users", string="Assegnato a")
+    responsabile_id = fields.Many2one("res.users", string="Responsabile chiusura")
     description = fields.Text(string="Descrizione", required=True)
     corrective_action = fields.Text(string="Azione Correttiva")
+    azione_correttiva = fields.Text(string="Azione Correttiva Dettagliata")
+    verifica_efficacia = fields.Text(string="Verifica Efficacia")
+    data_chiusura = fields.Date(string="Data Chiusura Effettiva")
     notes = fields.Text(string="Note")
+    firma_digitale = fields.Binary(string="Firma Digitale")
+
+    def action_to_analysis(self):
+        self.write({"state": "analysis"})
+
+    def action_to_corrective(self):
+        self.write({"state": "action"})
+
+    def action_to_verified(self):
+        self.write({"state": "verified"})
 
     def action_close(self):
         self.write({"state": "closed"})
+
+    def action_cancel(self):
+        self.write({"state": "cancelled"})
+
+    @api.model
+    def get_dashboard_data(self):
+        nc_counts = {}
+        for key in ("open", "analysis", "action", "verified", "closed", "cancelled"):
+            nc_counts[key] = self.search_count([("state", "=", key)])
+
+        critical_open = self.search_count([
+            ("state", "not in", ("closed", "cancelled")),
+            ("severity", "in", ("high", "critical")),
+        ])
+
+        calib = self.env["cf.haccp.calibration"]
+        docs = self.env["cf.haccp.document"]
+
+        today = fields.Date.today()
+        temp_ko_today = self.env["cf.haccp.temperature.log"].search_count([
+            ("date", "=", today), ("esito", "=", "ko")])
+        ccp_ko = self.env["cf.haccp.ccp.log"].search_count([
+            ("esito", "=", "fuori_limite")])
+        pest_next = self.env["cf.haccp.pest.control"].search(
+            [("prossima_visita", "!=", False)], limit=1, order="prossima_visita asc")
+
+        return {
+            "nc_open": nc_counts.get("open", 0),
+            "nc_analysis": nc_counts.get("analysis", 0),
+            "nc_action": nc_counts.get("action", 0),
+            "nc_critical_open": critical_open,
+            "instruments_expiring": calib.search_count([("state", "=", "expiring")]),
+            "instruments_expired": calib.search_count([("state", "=", "expired")]),
+            "docs_expiring": docs.search_count([("state", "=", "expiring")]),
+            "docs_expired": docs.search_count([("state", "=", "expired")]),
+            "temp_ko_today": temp_ko_today,
+            "ccp_ko_total": ccp_ko,
+            "pest_next_visit": str(pest_next.prossima_visita) if pest_next else "",
+            "overall_state": (
+                "red" if (critical_open > 0 or temp_ko_today > 0 or
+                          calib.search_count([("state", "=", "expired")]) > 0)
+                else "yellow" if (nc_counts.get("open", 0) > 0 or ccp_ko > 0 or
+                                   calib.search_count([("state", "=", "expiring")]) > 0)
+                else "green"
+            ),
+        }

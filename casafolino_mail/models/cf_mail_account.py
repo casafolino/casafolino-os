@@ -18,6 +18,36 @@ class CfMailAccount(models.Model):
     active = fields.Boolean(default=True)
     message_ids = fields.One2many('cf.mail.message', 'account_id', string='Messaggi')
 
+    account_type = fields.Selection([
+        ('personal', 'Personale'),
+        ('shared', 'Condiviso'),
+    ], string='Tipo account', default='personal')
+
+    owner_id = fields.Many2one('res.users', string='Proprietario',
+        default=lambda self: self.env.uid)
+
+    allowed_user_ids = fields.Many2many(
+        'res.users', 'cf_mail_account_user_rel', 'account_id', 'user_id',
+        string='Utenti autorizzati')
+
+    display_name_custom = fields.Char(string='Nome visualizzato',
+        compute='_compute_display_name_custom', store=True)
+
+    email_address = fields.Char(string='Email',
+        compute='_compute_email_address', store=True)
+
+    unread_count = fields.Integer(string='Non lette',
+        compute='_compute_counts')
+
+    email_count = fields.Integer(string='Totale email',
+        compute='_compute_counts')
+
+    last_sync = fields.Datetime('Ultima sincronizzazione', readonly=True)
+
+    fetchmail_server_id = fields.Many2one('fetchmail.server',
+        string='Server posta in entrata',
+        domain=[('server_type', '=', 'imap')])
+
     imap_host = fields.Char('IMAP Host', default='imap.gmail.com')
     imap_port = fields.Integer('IMAP Port', default=993)
     imap_ssl = fields.Boolean('SSL', default=True)
@@ -26,6 +56,8 @@ class CfMailAccount(models.Model):
     imap_sent_last_uid = fields.Integer('Ultimo UID Sent', default=0)
     imap_enabled = fields.Boolean('IMAP attivo', default=False)
     imap_status = fields.Char('Stato IMAP', default='Non configurato')
+    imap_since_date = fields.Date('Importa dal', default='2026-01-01',
+        help='Data di partenza per import storico IMAP')
 
     smtp_host = fields.Char('SMTP Host', default='smtp.gmail.com')
     smtp_port = fields.Integer('SMTP Port', default=587)
@@ -37,6 +69,63 @@ class CfMailAccount(models.Model):
     ooo_start = fields.Date('OOO inizio')
     ooo_end = fields.Date('OOO fine')
 
+    @api.depends('name', 'email')
+    def _compute_display_name_custom(self):
+        for rec in self:
+            rec.display_name_custom = rec.name or rec.email or 'Account'
+
+    @api.depends('email')
+    def _compute_email_address(self):
+        for rec in self:
+            rec.email_address = rec.email or ''
+
+    def _compute_counts(self):
+        for rec in self:
+            msgs = self.env['cf.mail.message'].search([('account_id', '=', rec.id)])
+            rec.email_count = len(msgs)
+            rec.unread_count = len(msgs.filtered(lambda m: not m.is_read and not m.is_archived))
+
+    def action_sync_inbox(self):
+        self.sync_imap()
+        return True
+
+    def action_import_history(self):
+        """Reset UID e importa dal imap_since_date (default 01/01/2026)."""
+        from datetime import date as date_cls
+        for acc in self:
+            acc.imap_last_uid = 0
+            acc.imap_sent_last_uid = 0
+            if not acc.imap_since_date:
+                acc.imap_since_date = date_cls(2026, 1, 1)
+            acc.sync_imap()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Import Storico',
+                'message': 'Import completato per %s' % ', '.join(self.mapped('email')),
+                'type': 'success',
+            }
+        }
+
+    @api.model
+    def _sync_all_accounts(self):
+        """Cron: sync tutti gli account attivi con IMAP abilitato."""
+        accounts = self.search([('imap_enabled', '=', True), ('active', '=', True)])
+        for account in accounts:
+            try:
+                account.sync_imap()
+            except Exception as e:
+                _logger.error('Cron sync error for %s: %s', account.email, e)
+
+    def action_mark_all_read(self):
+        msgs = self.env['cf.mail.message'].search([
+            ('account_id', 'in', self.ids),
+            ('is_read', '=', False),
+        ])
+        msgs.write({'is_read': True})
+        return True
+
     @api.model
     def is_admin(self, *args, **kw):
         return (
@@ -46,7 +135,19 @@ class CfMailAccount(models.Model):
 
     @api.model
     def get_accounts(self, *args, **kw):
-        accounts = self.search([('active', '=', True)], order='sequence, is_team, id')
+        is_admin = (
+            self.env.user.has_group('base.group_system')
+            or self.env.user.login == 'antonio@casafolino.com'
+        )
+        if is_admin:
+            accounts = self.search([('active', '=', True)], order='sequence, is_team, id')
+        else:
+            accounts = self.search([
+                ('active', '=', True),
+                '|',
+                ('user_id', '=', self.env.uid),
+                ('is_team', '=', True),
+            ], order='sequence, is_team, id')
         if not accounts:
             user = self.env.user
             acc = self.create({
@@ -151,19 +252,14 @@ class CfMailAccount(models.Model):
         acc = self.browse(int(account_id))
         if not acc.exists():
             return {'success': False, 'error': 'Account non trovato'}
-
         imap_ok = False
         smtp_ok = False
         errors = []
-
-        # ── Test IMAP ──────────────────────────────────────────────────────
         try:
             import imaplib, ssl as ssl_lib
             if acc.imap_ssl:
-                mail = imaplib.IMAP4_SSL(
-                    acc.imap_host, acc.imap_port,
-                    ssl_context=ssl_lib.create_default_context()
-                )
+                mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port,
+                    ssl_context=ssl_lib.create_default_context())
             else:
                 mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
                 mail.starttls()
@@ -172,8 +268,6 @@ class CfMailAccount(models.Model):
             imap_ok = True
         except Exception as e:
             errors.append(f'IMAP: {str(e)[:80]}')
-
-        # ── Test SMTP ──────────────────────────────────────────────────────
         try:
             import smtplib, ssl as ssl_lib
             if acc.smtp_tls:
@@ -181,17 +275,14 @@ class CfMailAccount(models.Model):
                 server.ehlo()
                 server.starttls(context=ssl_lib.create_default_context())
             else:
-                server = smtplib.SMTP_SSL(
-                    acc.smtp_host, acc.smtp_port,
-                    context=ssl_lib.create_default_context(), timeout=10
-                )
+                server = smtplib.SMTP_SSL(acc.smtp_host, acc.smtp_port,
+                    context=ssl_lib.create_default_context(), timeout=10)
             server.ehlo()
             server.login(acc.email, acc.imap_password)
             server.quit()
             smtp_ok = True
         except Exception as e:
             errors.append(f'SMTP: {str(e)[:80]}')
-
         if imap_ok and smtp_ok:
             status = 'IMAP + SMTP OK ✓'
             acc.write({'imap_status': status})
@@ -207,7 +298,6 @@ class CfMailAccount(models.Model):
 
     @api.model
     def get_imap_folders(self, *args, **kw):
-        """Restituisce lista cartelle IMAP dell'account."""
         account_id = kw.get('account_id')
         if not account_id:
             return []
@@ -217,10 +307,8 @@ class CfMailAccount(models.Model):
         try:
             import imaplib, ssl as ssl_lib, re
             if acc.imap_ssl:
-                mail = imaplib.IMAP4_SSL(
-                    acc.imap_host, acc.imap_port,
-                    ssl_context=ssl_lib.create_default_context()
-                )
+                mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port,
+                    ssl_context=ssl_lib.create_default_context())
             else:
                 mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
                 mail.starttls()
@@ -250,13 +338,75 @@ class CfMailAccount(models.Model):
         acc.sync_imap()
         return {'success': True}
 
-    def _sync_folder(self, mail, acc, folder_name, direction, last_uid_field):
+    # ── Sender-rule helpers ────────────────────────────────────────────────
+
+    def _get_sender_rules(self):
+        """Ritorna dict {email_lower: action} per tutti i mittenti con regola."""
+        rules = self.env['cf.mail.sender.rule'].search([])
+        return {r.email.lower(): r.action for r in rules}
+
+    def _should_import(self, from_address, sender_rules, cutoff_date, msg_date):
+        """
+        Fase 1 (nessuna regola): importa solo ultimi 4 mesi.
+        Fase 2 (regole presenti):
+          - keep  → importa sempre (tutta la storia)
+          - exclude → mai
+          - nessuna regola → solo ultimi 4 mesi
+        Ritorna True se il messaggio va importato.
+        """
+        addr = (from_address or '').lower().strip()
+        if not sender_rules:
+            # Fase 1: nessuna regola → solo 4 mesi
+            return msg_date >= cutoff_date
+        rule = sender_rules.get(addr)
+        if rule == 'exclude':
+            return False
+        if rule == 'keep':
+            return True
+        # Nessuna regola → 4 mesi
+        return msg_date >= cutoff_date
+
+    def _sync_sender_history(self, sender_email):
+        """Sync storica completa per un mittente specifico (regola keep)."""
+        import imaplib, ssl as ssl_lib
+        for acc in self:
+            if not acc.imap_enabled or not acc.email or not acc.imap_password:
+                continue
+            try:
+                if acc.imap_ssl:
+                    mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port,
+                                             ssl_context=ssl_lib.create_default_context())
+                else:
+                    mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
+                    mail.starttls()
+                mail.login(acc.email, acc.imap_password)
+
+                # Cerca tutte le email da quel mittente in INBOX
+                self._sync_folder(mail, acc, 'INBOX', 'in', 'imap_last_uid',
+                                   sender_filter=sender_email, ignore_cutoff=True)
+                # E nella cartella Sent
+                for sent_folder in ['[Gmail]/Sent Mail', 'Sent', 'Sent Items', 'SENT']:
+                    try:
+                        status, _ = mail.select(sent_folder)
+                        if status == 'OK':
+                            self._sync_folder(mail, acc, sent_folder, 'out', 'imap_sent_last_uid',
+                                              sender_filter=sender_email, ignore_cutoff=True)
+                            break
+                    except Exception:
+                        continue
+                mail.logout()
+            except Exception as e:
+                _logger.error('History sync error for %s / %s: %s', acc.email, sender_email, e)
+
+    # ── Core sync ─────────────────────────────────────────────────────────
+
+    def _sync_folder(self, mail, acc, folder_name, direction, last_uid_field,
+                     sender_filter=None, ignore_cutoff=False):
         import email as email_lib
         from email.header import decode_header
         from email.utils import parsedate_to_datetime
-        from datetime import datetime
+        from datetime import datetime, timedelta
         import pytz
-
         try:
             status, _ = mail.select(folder_name)
             if status != 'OK':
@@ -264,40 +414,60 @@ class CfMailAccount(models.Model):
         except Exception:
             return 0
 
-        last_uid = getattr(acc, last_uid_field) or 0
-        status, messages = mail.uid('search', None, f'UID {last_uid + 1}:*' if last_uid > 0 else 'ALL')
+        # Determina il criterio di ricerca IMAP
+        if sender_filter:
+            # Sync storica per un mittente specifico: cerca per FROM
+            safe_sender = sender_filter.replace('"', '')
+            status, messages = mail.uid('search', None, f'FROM "{safe_sender}"')
+        else:
+            last_uid = getattr(acc, last_uid_field) or 0
+            if last_uid > 0:
+                status, messages = mail.uid('search', None, f'UID {last_uid + 1}:*')
+            else:
+                # Prima sync: usa imap_since_date se presente, altrimenti 4 mesi
+                from datetime import date
+                if acc.imap_since_date:
+                    since_str = acc.imap_since_date.strftime('%d-%b-%Y')
+                else:
+                    cutoff = date.today() - timedelta(days=120)
+                    since_str = cutoff.strftime('%d-%b-%Y')
+                status, messages = mail.uid('search', None, f'SINCE {since_str}')
+
         if status != 'OK':
             return 0
-
         uids = messages[0].split()
         if not uids or uids == [b'']:
             return 0
 
-        uids = uids[-100:]
+        # Limite di 100 uid per ciclo normale; nessun limite per sync storica
+        if not sender_filter:
+            uids = uids[-100:]
+
+        # Regole mittenti per il filtro intelligente
+        sender_rules = {} if sender_filter else self._get_sender_rules()
+        cutoff_dt = datetime.now() - timedelta(days=120)
+
+        last_uid = getattr(acc, last_uid_field) or 0
         max_uid = last_uid
         count = 0
-
         for uid in uids:
             uid_int = int(uid)
-            if uid_int <= last_uid:
+            if not sender_filter and uid_int <= last_uid:
                 continue
-
             existing = self.env['cf.mail.message'].search([
                 ('account_id', '=', acc.id),
                 ('message_uid', '=', f'{folder_name}_{uid_int}'),
             ], limit=1)
             if existing:
-                max_uid = max(max_uid, uid_int)
+                if not sender_filter:
+                    max_uid = max(max_uid, uid_int)
                 continue
-
             try:
                 status2, msg_data = mail.uid('fetch', uid, '(RFC822)')
                 if status2 != 'OK' or not msg_data or not msg_data[0]:
                     continue
-
                 raw = msg_data[0][1]
                 msg = email_lib.message_from_bytes(raw)
-
                 def decode_str(s):
                     if not s: return ''
                     parts = decode_header(s)
@@ -308,20 +478,17 @@ class CfMailAccount(models.Model):
                         else:
                             result.append(str(part))
                     return ''.join(result)
-
                 subject = decode_str(msg.get('Subject', '')) or '(nessun oggetto)'
                 from_raw = decode_str(msg.get('From', ''))
                 to_raw = decode_str(msg.get('To', ''))
                 cc_raw = decode_str(msg.get('CC', ''))
                 date_str = msg.get('Date', '')
                 message_id_header = msg.get('Message-ID', '')
-
                 from_name = ''
                 from_address = from_raw
                 if '<' in from_raw and '>' in from_raw:
                     from_name = from_raw.split('<')[0].strip().strip('"\'')
                     from_address = from_raw.split('<')[1].replace('>', '').strip()
-
                 try:
                     dt = parsedate_to_datetime(date_str)
                     if dt.tzinfo:
@@ -329,16 +496,26 @@ class CfMailAccount(models.Model):
                 except Exception:
                     dt = datetime.now()
 
+                # ── Filtro mittente intelligente (sender rules) ───────────
+                if not ignore_cutoff and not self._should_import(
+                        from_address, sender_rules, cutoff_dt, dt):
+                    if not sender_filter:
+                        max_uid = max(max_uid, uid_int)
+                    continue
+
                 body_html = ''
                 body_text = ''
                 has_attachments = False
-
+                attachment_names = []
                 if msg.is_multipart():
                     for part in msg.walk():
                         ct = part.get_content_type()
                         cd = str(part.get('Content-Disposition', ''))
                         if 'attachment' in cd:
                             has_attachments = True
+                            fn = part.get_filename()
+                            if fn:
+                                attachment_names.append(decode_str(fn))
                             continue
                         if ct == 'text/html' and not body_html:
                             charset = part.get_content_charset() or 'utf-8'
@@ -364,22 +541,13 @@ class CfMailAccount(models.Model):
                                 body_text = payload.decode(charset, errors='replace')
                         except Exception:
                             pass
-
                 snippet = (body_text or body_html or '')[:150].replace('\n', ' ').replace('\r', '')
-
                 partner = self.env['res.partner'].search([('email', 'ilike', from_address)], limit=1)
                 if not partner:
                     user = self.env['res.users'].search([('login', 'ilike', from_address)], limit=1)
                     if user:
                         partner = user.partner_id
 
-                validato_tag = self.env['res.partner.category'].search([('name', 'ilike', 'Validato')], limit=1)
-                if validato_tag:
-                    if not partner or validato_tag.id not in partner.category_id.ids:
-                        max_uid = max(max_uid, uid_int)
-                        continue
-
-                # Thread matching by subject
                 thread_id = None
                 clean_subject = subject.replace('Re: ', '').replace('Fwd: ', '').strip()
                 existing_thread = self.env['cf.mail.message'].search([
@@ -391,7 +559,6 @@ class CfMailAccount(models.Model):
                     thread_id = existing_thread.thread_id
                 elif message_id_header:
                     thread_id = message_id_header
-
                 self.env['cf.mail.message'].create({
                     'account_id': acc.id,
                     'subject': subject,
@@ -409,16 +576,18 @@ class CfMailAccount(models.Model):
                     'message_uid': f'{folder_name}_{uid_int}',
                     'partner_id': partner.id if partner else False,
                     'has_attachments': has_attachments,
+                    'attachment_names': ', '.join(attachment_names) if attachment_names else False,
                     'thread_id': thread_id,
                 })
-                max_uid = max(max_uid, uid_int)
+                if not sender_filter:
+                    max_uid = max(max_uid, uid_int)
                 count += 1
-
             except Exception as e:
                 _logger.warning('Error fetching UID %s: %s', uid_int, e)
                 continue
 
-        acc.write({last_uid_field: max_uid})
+        if not sender_filter:
+            acc.write({last_uid_field: max_uid})
         return count
 
     def sync_imap(self):
@@ -428,32 +597,28 @@ class CfMailAccount(models.Model):
             try:
                 import imaplib, ssl as ssl_lib
                 if acc.imap_ssl:
-                    mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port, ssl_context=ssl_lib.create_default_context())
+                    mail = imaplib.IMAP4_SSL(acc.imap_host, acc.imap_port,
+                        ssl_context=ssl_lib.create_default_context())
                 else:
                     mail = imaplib.IMAP4(acc.imap_host, acc.imap_port)
                     mail.starttls()
-
                 mail.login(acc.email, acc.imap_password)
-
-                # Sync INBOX
                 inbox_count = self._sync_folder(mail, acc, 'INBOX', 'in', 'imap_last_uid')
-
-                # Sync Sent (Gmail usa [Gmail]/Sent Mail)
                 sent_folders = ['[Gmail]/Sent Mail', 'Sent', 'Sent Items', 'SENT']
-                sent_count = 0
                 for sent_folder in sent_folders:
                     try:
                         status, _ = mail.select(sent_folder)
                         if status == 'OK':
-                            sent_count = self._sync_folder(mail, acc, sent_folder, 'out', 'imap_sent_last_uid')
+                            self._sync_folder(mail, acc, sent_folder, 'out', 'imap_sent_last_uid')
                             break
                     except Exception:
                         continue
-
                 mail.logout()
                 total = self.env['cf.mail.message'].search_count([('account_id', '=', acc.id)])
-                acc.write({'imap_status': f'✓ Sincronizzato — {total} email ({inbox_count} nuove)'})
-
+                acc.write({
+                    'imap_status': f'✓ Sincronizzato — {total} email ({inbox_count} nuove)',
+                    'last_sync': fields.Datetime.now(),
+                })
             except Exception as e:
                 _logger.error('IMAP sync error for %s: %s', acc.email, e)
                 acc.write({'imap_status': f'Errore: {str(e)[:100]}'})
