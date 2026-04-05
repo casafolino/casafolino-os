@@ -146,29 +146,30 @@ class MrpBomAllergen(models.Model):
             traces = rec.allergen_ids.filtered(
                 lambda a: a.status == 'traces').mapped('allergen_id.name')
             if present:
-                rec.allergen_alert_text = "ALLERGENI PRESENTI: " + ", ".join(present)
+                rec.allergen_alert_text = "ALLERGENI PRESENTI: " + ", ".join(
+                    n.upper() for n in present)
             elif traces:
-                rec.allergen_alert_text = "Tracce possibili: " + ", ".join(traces)
+                rec.allergen_alert_text = "Tracce possibili: " + ", ".join(
+                    n.upper() for n in traces)
             else:
                 rec.allergen_alert_text = False
             parts = []
             if present:
-                parts.append("Contiene: " + ", ".join(present) + ".")
+                parts.append("Contiene: " + ", ".join(n.upper() for n in present) + ".")
             if traces:
-                parts.append("Può contenere tracce di: " + ", ".join(traces) + ".")
+                parts.append("Può contenere tracce di: " + ", ".join(
+                    n.upper() for n in traces) + ".")
             rec.allergen_label_text = " ".join(parts) if parts else False
 
-    def action_analyze_allergens(self):
-        self.ensure_one()
+    def _analyze_allergens_sync(self):
+        """Core allergen detection logic (no UI notification)."""
         keywords = self.env["cf.allergen.keyword"].search([])
-        # Build dict: allergen_id → list of (keyword, match_type)
         kw_map = {}
         for kw in keywords:
             kw_map.setdefault(kw.allergen_id.id, []).append(kw)
 
         allergens = self.env["cf.allergen"].search([])
         for allergen in allergens:
-            # Check each BoM ingredient against this allergen's keywords
             found_status = 'absent'
             source_names = []
             kws = kw_map.get(allergen.id, [])
@@ -196,7 +197,6 @@ class MrpBomAllergen(models.Model):
                 'auto_detected': True,
             }
             if existing:
-                # Only update if not manually verified
                 if not existing[0].verified:
                     existing[0].write(vals)
             else:
@@ -205,12 +205,17 @@ class MrpBomAllergen(models.Model):
                     'allergen_id': allergen.id,
                     **vals,
                 })
+        return len(allergens)
+
+    def action_analyze_allergens(self):
+        self.ensure_one()
+        n_allergens = self._analyze_allergens_sync()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Analisi completata',
-                'message': f'Analizzati {len(allergens)} allergeni su {len(self.bom_line_ids)} ingredienti.',
+                'message': f'Analizzati {n_allergens} allergeni su {len(self.bom_line_ids)} ingredienti.',
                 'type': 'success',
                 'sticky': False,
             }
@@ -280,15 +285,37 @@ class ProductTemplateAllergen(models.Model):
             traces = rec.allergen_bom_ids.filtered(
                 lambda a: a.status == 'traces').mapped('allergen_id.name')
             if present:
-                rec.allergen_alert_text = "ALLERGENI PRESENTI: " + ", ".join(present)
+                rec.allergen_alert_text = "ALLERGENI PRESENTI: " + ", ".join(
+                    n.upper() for n in present)
             else:
                 rec.allergen_alert_text = False
             parts = []
             if present:
-                parts.append("Contiene: " + ", ".join(present) + ".")
+                parts.append("Contiene: " + ", ".join(n.upper() for n in present) + ".")
             if traces:
-                parts.append("Puo contenere tracce di: " + ", ".join(traces) + ".")
+                parts.append("Può contenere tracce di: " + ", ".join(
+                    n.upper() for n in traces) + ".")
             rec.allergen_label_text = " ".join(parts) if parts else False
+
+
+class MrpBomLineAutoAnalyze(models.Model):
+    _inherit = "mrp.bom.line"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        boms = lines.mapped('bom_id')
+        for bom in boms:
+            bom._analyze_allergens_sync()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'product_id' in vals or 'product_qty' in vals:
+            boms = self.mapped('bom_id')
+            for bom in boms:
+                bom._analyze_allergens_sync()
+        return res
 
 
 class MrpProductionAllergen(models.Model):
