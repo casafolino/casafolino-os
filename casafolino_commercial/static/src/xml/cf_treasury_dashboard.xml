@@ -38,25 +38,11 @@
             </t>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <t t-if="state.snapshotMsg">
-                <span style="font-size:11px;color:#9ca3af;">
-                    <t t-esc="state.snapshotMsg"/>
-                </span>
-            </t>
-            <button class="btn btn-sm"
-                    style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
-                    t-on-click="onRefresh">
-                &#8635; Aggiorna
-            </button>
-            <button class="btn btn-sm"
-                    style="background:#5A6E3A;color:#fff;border:none;"
-                    t-att-disabled="state.snapshotCreating"
-                    t-on-click="onCreateSnapshot">
-                <t t-if="state.snapshotCreating">...</t>
-                <t t-else="">+ Crea Snapshot</t>
-            </button>
-        </div>
+        <button class="btn btn-sm"
+                style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                t-on-click="onRefresh">
+            &#8635; Aggiorna
+        </button>
     </div>
 
     <!-- ===== LOADING / ERROR / EMPTY ===== -->

@@ -59,55 +59,13 @@ class CfTreasury(models.Model):
             rec.forecast_90d = base * 1.10
 
     @api.model
-    def get_dashboard_data(self):
-        latest = self.search([], limit=1, order="date desc")
-        if not latest:
-            return {"has_data": False}
-
-        cashflow = []
-        if latest.cashflow_json:
-            try:
-                cashflow = json.loads(latest.cashflow_json)
-            except Exception:
-                cashflow = []
-
-        return {
-            "has_data": True,
-            "date": str(latest.date),
-            "total_balance": latest.total_balance,
-            "runway_days": latest.runway_days,
-            # Aging crediti
-            "receivables_overdue": latest.receivables_overdue,
-            "receivables_30d": latest.receivables_30d,
-            "receivables_60d": latest.receivables_60d,
-            "receivables_90d": latest.receivables_90d,
-            # Aging debiti
-            "payables_overdue": latest.payables_overdue,
-            "payables_30d": latest.payables_30d,
-            "payables_60d": latest.payables_60d,
-            "payables_90d": latest.payables_90d,
-            # KPI
-            "dso": latest.dso,
-            # Scenari
-            "scenario_base": latest.scenario_base,
-            "scenario_opt": latest.scenario_opt,
-            "scenario_pes": latest.scenario_pes,
-            # Cashflow chart
-            "cashflow": cashflow,
-            # Legacy (usato da views classiche)
-            "receivable_30d": latest.receivable_30d,
-            "payable_30d": latest.payable_30d,
-            "forecast_30d": latest.forecast_30d,
-            "forecast_60d": latest.forecast_60d,
-            "forecast_90d": latest.forecast_90d,
-            "currency_symbol": self.env.ref("base.EUR").symbol,
-        }
-
-    @api.model
-    def create_daily_snapshot(self):
+    def _compute_live_data(self):
+        """Calcola tutti i KPI tesoreria in tempo reale dai modelli Odoo."""
         today = date.today()
-        if self.search([("date", "=", today)]):
-            return
+        today_str = str(today)
+        d30 = str(today + timedelta(days=30))
+        d60 = str(today + timedelta(days=60))
+        d90 = str(today + timedelta(days=90))
 
         # --- Saldo banche/cassa ---
         journals = self.env["account.journal"].search([("type", "in", ("bank", "cash"))])
@@ -116,10 +74,6 @@ class CfTreasury(models.Model):
         )
 
         aml = self.env["account.move.line"]
-        d30 = str(today + timedelta(days=30))
-        d60 = str(today + timedelta(days=60))
-        d90 = str(today + timedelta(days=90))
-        today_str = str(today)
 
         # --- Aging crediti ---
         recv_overdue = sum(aml.search([
@@ -178,7 +132,6 @@ class CfTreasury(models.Model):
         ]).mapped("amount_residual")))
 
         # --- DSO (Days Sales Outstanding) ---
-        # DSO = (crediti_totali / fatturato_90gg) * 90
         inv_90d = self.env["account.move"].search([
             ("move_type", "=", "out_invoice"),
             ("state", "=", "posted"),
@@ -190,7 +143,6 @@ class CfTreasury(models.Model):
         dso = round((total_recv / revenue_90d * 90), 1) if revenue_90d > 0 else 0.0
 
         # --- Runway days ---
-        # Burn rate basato sulle uscite previste nei prossimi 30gg
         bills_due = self.env["account.move"].search([
             ("move_type", "=", "in_invoice"),
             ("state", "=", "posted"),
@@ -207,10 +159,9 @@ class CfTreasury(models.Model):
         scenario_opt = round(total_balance + net_monthly * 3 * 1.15, 2)
         scenario_pes = round(total_balance + net_monthly * 3 * 0.75, 2)
 
-        # --- Cashflow JSON 12 mesi ---
-        cashflow_data = []
+        # --- Cashflow 12 mesi ---
+        cashflow = []
         for i in range(11, -1, -1):
-            # Calcolo mese start/end senza dateutil
             m = today.month - i
             y = today.year
             while m <= 0:
@@ -220,11 +171,9 @@ class CfTreasury(models.Model):
             if i == 0:
                 month_end = today
             else:
-                nm = m + 1
-                ny = y
+                nm, ny = m + 1, y
                 if nm > 12:
-                    nm = 1
-                    ny += 1
+                    nm, ny = 1, y + 1
                 month_end = date(ny, nm, 1) - timedelta(days=1)
 
             month_inv = self.env["account.move"].search([
@@ -241,38 +190,84 @@ class CfTreasury(models.Model):
             ])
             inflow = round(sum(month_inv.mapped("amount_untaxed")), 2)
             outflow = round(sum(month_bills.mapped("amount_untaxed")), 2)
-            cashflow_data.append({
+            cashflow.append({
                 "month": month_start.strftime("%b %Y"),
                 "inflow": inflow,
                 "outflow": outflow,
                 "balance": round(inflow - outflow, 2),
             })
 
-        self.create({
-            "date": today,
+        return {
+            "today": today,
+            "today_str": today_str,
             "total_balance": total_balance,
-            # Legacy
-            "receivable_30d": recv_30,
-            "payable_30d": pay_30,
-            # Aging crediti
-            "receivables_overdue": recv_overdue,
-            "receivables_30d": recv_30,
-            "receivables_60d": recv_60,
-            "receivables_90d": recv_90,
-            # Aging debiti
-            "payables_overdue": pay_overdue,
-            "payables_30d": pay_30,
-            "payables_60d": pay_60,
-            "payables_90d": pay_90,
-            # KPI
+            "recv_overdue": recv_overdue,
+            "recv_30": recv_30,
+            "recv_60": recv_60,
+            "recv_90": recv_90,
+            "pay_overdue": pay_overdue,
+            "pay_30": pay_30,
+            "pay_60": pay_60,
+            "pay_90": pay_90,
             "dso": dso,
             "runway_days": runway_days,
-            # Scenari
             "scenario_base": scenario_base,
             "scenario_opt": scenario_opt,
             "scenario_pes": scenario_pes,
-            # JSON
-            "cashflow_json": json.dumps(cashflow_data),
+            "cashflow": cashflow,
+        }
+
+    @api.model
+    def get_dashboard_data(self):
+        """Restituisce i dati tesoreria in tempo reale, senza bisogno di snapshot."""
+        d = self._compute_live_data()
+        return {
+            "has_data": True,
+            "date": d["today_str"],
+            "total_balance": d["total_balance"],
+            "runway_days": d["runway_days"],
+            "receivables_overdue": d["recv_overdue"],
+            "receivables_30d": d["recv_30"],
+            "receivables_60d": d["recv_60"],
+            "receivables_90d": d["recv_90"],
+            "payables_overdue": d["pay_overdue"],
+            "payables_30d": d["pay_30"],
+            "payables_60d": d["pay_60"],
+            "payables_90d": d["pay_90"],
+            "dso": d["dso"],
+            "scenario_base": d["scenario_base"],
+            "scenario_opt": d["scenario_opt"],
+            "scenario_pes": d["scenario_pes"],
+            "cashflow": d["cashflow"],
+            "currency_symbol": self.env.ref("base.EUR").symbol,
+        }
+
+    @api.model
+    def create_daily_snapshot(self):
+        """Salva uno snapshot giornaliero per storico. Usa _compute_live_data()."""
+        today = date.today()
+        if self.search([("date", "=", today)]):
+            return
+        d = self._compute_live_data()
+        self.create({
+            "date": today,
+            "total_balance": d["total_balance"],
+            "receivable_30d": d["recv_30"],
+            "payable_30d": d["pay_30"],
+            "receivables_overdue": d["recv_overdue"],
+            "receivables_30d": d["recv_30"],
+            "receivables_60d": d["recv_60"],
+            "receivables_90d": d["recv_90"],
+            "payables_overdue": d["pay_overdue"],
+            "payables_30d": d["pay_30"],
+            "payables_60d": d["pay_60"],
+            "payables_90d": d["pay_90"],
+            "dso": d["dso"],
+            "runway_days": d["runway_days"],
+            "scenario_base": d["scenario_base"],
+            "scenario_opt": d["scenario_opt"],
+            "scenario_pes": d["scenario_pes"],
+            "cashflow_json": json.dumps(d["cashflow"]),
         })
 
     @api.model

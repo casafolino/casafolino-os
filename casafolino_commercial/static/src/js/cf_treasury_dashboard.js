@@ -33,8 +33,6 @@ class CfTreasuryDashboard extends Component {
             invoices: [],
             bills: [],
             agingLoading: true,
-            snapshotCreating: false,
-            snapshotMsg: null,
         });
 
         this.chartRef = useRef("cashflowChart");
@@ -133,33 +131,6 @@ class CfTreasuryDashboard extends Component {
             this._chart = null;
         }
         Promise.all([this._load(), this._loadAging()]);
-    }
-
-    async onCreateSnapshot() {
-        this.state.snapshotCreating = true;
-        this.state.snapshotMsg = null;
-        try {
-            await rpc("/web/dataset/call_kw", {
-                model: "cf.treasury.snapshot",
-                method: "create_daily_snapshot",
-                args: [],
-                kwargs: {},
-            });
-            this.state.snapshotMsg = "Snapshot creato.";
-        } catch (e) {
-            this.state.snapshotMsg = "Errore creazione snapshot.";
-        } finally {
-            this.state.snapshotCreating = false;
-        }
-        // Ricarica il dashboard con i nuovi dati
-        this.state.loading = true;
-        this.state.agingLoading = true;
-        this._chartHash = null;
-        if (this._chart) {
-            this._chart.destroy();
-            this._chart = null;
-        }
-        await Promise.all([this._load(), this._loadAging()]);
     }
 
     // -------------------------------------------------------------------------
