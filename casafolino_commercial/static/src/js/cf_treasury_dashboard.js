@@ -10,9 +10,7 @@ import {
 } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
-import { Chart, registerables } from "chart.js";
-
-Chart.register(...registerables);
+// Chart.js caricato come UMD via CDN nel manifest — disponibile come window.Chart
 
 // Data di oggi (stringa ISO) — costante per tutta la sessione
 const TODAY_STR = new Date().toISOString().split("T")[0];
@@ -160,7 +158,7 @@ class CfTreasuryDashboard extends Component {
         const outflows = d.cashflow.map(x => x.outflow);
         const balances = d.cashflow.map(x => x.balance);
 
-        this._chart = new Chart(canvas, {
+        this._chart = new window.Chart(canvas, {
             type: "bar",
             data: {
                 labels,

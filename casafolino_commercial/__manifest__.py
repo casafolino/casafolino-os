@@ -15,6 +15,7 @@
     ],
     'assets': {
         'web.assets_backend': [
+            ('prepend', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'),
             'casafolino_commercial/static/src/xml/cf_treasury_dashboard.xml',
             'casafolino_commercial/static/src/js/cf_treasury_dashboard.js',
         ],
