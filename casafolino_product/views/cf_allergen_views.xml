@@ -86,29 +86,31 @@
         <field name="name">mrp.bom.allergen.tab</field>
         <field name="model">mrp.bom</field>
         <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="priority">15</field>
         <field name="arch" type="xml">
             <notebook position="inside">
                 <page string="Allergeni" name="allergen_tab">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <button name="action_analyze_allergens" type="object"
-                                    string="Analizza Allergeni da BoM"
-                                    class="btn-primary me-2"/>
-                            <field name="allergen_validated" widget="boolean_toggle"
-                                   string="Dichiarazione validata"/>
-                        </div>
+
+                    <!-- Azioni -->
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <button name="action_analyze_allergens" type="object"
+                                string="Analizza Allergeni da BoM"
+                                class="btn-primary"/>
+                        <field name="allergen_validated" widget="boolean_toggle"
+                               string="Dichiarazione validata"/>
                     </div>
 
-                    <!-- Alert box -->
-                    <div class="alert alert-danger mb-2"
-                         invisible="not allergen_alert_text">
-                        <strong>ALLERGENI PRESENTI: </strong>
-                        <field name="allergen_alert_text" nolabel="1" readonly="1"/>
+                    <!-- Sommario visuale: presenti (rosso) / assenti (grigio) -->
+                    <div class="mb-3">
+                        <field name="allergen_summary_html" widget="html"
+                               nolabel="1" readonly="1"/>
                     </div>
 
-                    <!-- Matrice allergeni -->
-                    <field name="allergen_ids" widget="one2many"
-                           context="{}">
+                    <!-- Separatore -->
+                    <hr style="margin:8px 0 12px;"/>
+
+                    <!-- Matrice completa per editing -->
+                    <field name="allergen_ids" widget="one2many" context="{}">
                         <list editable="bottom"
                               decoration-danger="status == 'present'"
                               decoration-warning="status == 'traces'">
@@ -125,16 +127,32 @@
                         </list>
                     </field>
 
-                    <!-- Testo etichetta EU (MAIUSCOLO GRASSETTO) -->
+                    <!-- Testo etichetta EU — MAIUSCOLO GRASSETTO ROSSO -->
                     <group string="Testo etichetta EU (Reg. 1169/2011)"
                            invisible="not allergen_label_text">
                         <div class="p-3"
-                             style="background:#fff3cd; border-radius:4px; border:1px solid #ffc107; font-weight:bold; color:#cc0000; letter-spacing:0.3px;">
+                             style="background:#fff3cd;border-radius:4px;border:1px solid #ffc107;font-weight:bold;color:#cc0000;letter-spacing:0.3px;">
                             <field name="allergen_label_text" nolabel="1" readonly="1"/>
                         </div>
                     </group>
+
                 </page>
             </notebook>
+        </field>
+    </record>
+
+    <!-- Colonna Allergeni nella lista componenti della BOM -->
+    <record id="view_mrp_bom_line_allergen_col" model="ir.ui.view">
+        <field name="name">mrp.bom.line.allergen.col</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="priority">16</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='bom_line_ids']//field[@name='product_qty']"
+                   position="after">
+                <field name="x_allergeni_display" string="Allergeni"
+                       widget="html" readonly="1" optional="show"/>
+            </xpath>
         </field>
     </record>
 

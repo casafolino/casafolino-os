@@ -5,6 +5,7 @@
         <field name="name">mrp.bom.form.nutrition</field>
         <field name="model">mrp.bom</field>
         <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="priority">15</field>
         <field name="arch" type="xml">
             <notebook position="inside">
                 <page string="Nutrizione" name="cf_nutrition">

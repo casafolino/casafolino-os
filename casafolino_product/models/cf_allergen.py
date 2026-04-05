@@ -137,6 +137,11 @@ class MrpBomAllergen(models.Model):
                                        string="Alert allergeni")
     allergen_label_text = fields.Text(compute="_compute_allergen_texts",
                                        string="Testo etichetta")
+    allergen_summary_html = fields.Html(
+        compute="_compute_allergen_summary_html",
+        string="Sommario Allergeni",
+        sanitize=False,
+    )
 
     @api.depends('allergen_ids', 'allergen_ids.status', 'allergen_ids.allergen_id')
     def _compute_allergen_texts(self):
@@ -160,6 +165,62 @@ class MrpBomAllergen(models.Model):
                 parts.append("Può contenere tracce di: " + ", ".join(
                     n.upper() for n in traces) + ".")
             rec.allergen_label_text = " ".join(parts) if parts else False
+
+    @api.depends('allergen_ids', 'allergen_ids.status', 'allergen_ids.allergen_id')
+    def _compute_allergen_summary_html(self):
+        for rec in self:
+            present = rec.allergen_ids.filtered(lambda a: a.status == 'present')
+            traces = rec.allergen_ids.filtered(lambda a: a.status == 'traces')
+            absent = rec.allergen_ids.filtered(lambda a: a.status == 'absent')
+            parts = []
+            if present or traces:
+                parts.append(
+                    '<div style="margin-bottom:14px;">'
+                    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;'
+                    'letter-spacing:.7px;color:#9ca3af;margin-bottom:8px;">Allergeni Presenti</div>'
+                )
+                for a in present:
+                    name = (a.allergen_id.name or '').upper()
+                    parts.append(
+                        f'<span style="display:inline-block;background:#fee2e2;color:#cc0000;'
+                        f'font-weight:700;padding:5px 14px;border-radius:20px;margin:3px;'
+                        f'font-size:13px;border:1.5px solid #fca5a5;">{name}</span>'
+                    )
+                if traces:
+                    parts.append(
+                        '<div style="font-size:10px;font-weight:700;text-transform:uppercase;'
+                        'letter-spacing:.7px;color:#9ca3af;margin:10px 0 6px;">Può Contenere Tracce</div>'
+                    )
+                    for a in traces:
+                        name = (a.allergen_id.name or '').upper()
+                        parts.append(
+                            f'<span style="display:inline-block;background:#fef3c7;color:#d97706;'
+                            f'font-weight:600;padding:4px 12px;border-radius:20px;margin:3px;'
+                            f'font-size:12px;border:1.5px solid #fcd34d;">{name}</span>'
+                        )
+                parts.append('</div>')
+            if absent:
+                parts.append(
+                    '<div style="margin-top:8px;">'
+                    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;'
+                    'letter-spacing:.7px;color:#d1d5db;margin-bottom:6px;">Assenti / Non Rilevati</div>'
+                )
+                for a in absent:
+                    name = a.allergen_id.name or ''
+                    parts.append(
+                        f'<span style="display:inline-block;background:#f3f4f6;color:#9ca3af;'
+                        f'font-weight:500;padding:3px 10px;border-radius:20px;margin:2px;'
+                        f'font-size:11px;border:1px solid #e5e7eb;">{name}</span>'
+                    )
+                parts.append('</div>')
+            if not parts:
+                rec.allergen_summary_html = (
+                    '<p style="color:#9ca3af;font-style:italic;margin:0;">'
+                    'Nessun allergene configurato. Usa &#8220;Analizza Allergeni da BoM&#8221; '
+                    'per il rilevamento automatico.</p>'
+                )
+            else:
+                rec.allergen_summary_html = ''.join(parts)
 
     def _analyze_allergens_sync(self):
         """Core allergen detection logic (no UI notification)."""
@@ -300,6 +361,36 @@ class ProductTemplateAllergen(models.Model):
 
 class MrpBomLineAutoAnalyze(models.Model):
     _inherit = "mrp.bom.line"
+
+    x_allergeni_display = fields.Html(
+        compute="_compute_x_allergeni_display",
+        string="Allergeni",
+        sanitize=False,
+    )
+
+    @api.depends('product_id')
+    def _compute_x_allergeni_display(self):
+        for line in self:
+            tmpl = line.product_id.product_tmpl_id
+            # Collect from M2M declared + BOM-based records
+            present = list(tmpl.allergen_ids.mapped('name'))
+            bom_present = tmpl.allergen_bom_ids.filtered(
+                lambda a: a.status == 'present'
+            ).mapped('allergen_id.name')
+            # Deduplicate preserving order
+            seen = set()
+            all_present = []
+            for n in present + bom_present:
+                if n not in seen:
+                    seen.add(n)
+                    all_present.append(n)
+            if all_present:
+                names = ', '.join(n.upper() for n in all_present)
+                line.x_allergeni_display = (
+                    f'<span style="font-weight:700;color:#cc0000;">{names}</span>'
+                )
+            else:
+                line.x_allergeni_display = ''
 
     @api.model_create_multi
     def create(self, vals_list):
