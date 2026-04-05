@@ -311,7 +311,7 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
                         "content-type": "application/json",
                     },
                     json={
-                        "model": "claude-sonnet-4-20250514",
+                        "model": "claude-sonnet-4-5",
                         "max_tokens": 4096,
                         "tools": [{
                             "type": "web_search_20250305",
