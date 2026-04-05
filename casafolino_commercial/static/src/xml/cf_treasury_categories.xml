@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_treasury.CfTreasuryCategories">
+<div class="cf-categories o_action" style="background:#f0f2f5;min-height:100vh;font-family:system-ui,sans-serif;">
+
+    <div class="d-flex align-items-center justify-content-between px-4 py-3"
+         style="background:#1a1f2e;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);">
+        <div class="d-flex align-items-center gap-3">
+            <span style="font-size:20px;">&#127811;</span>
+            <h4 class="mb-0 fw-bold" style="font-size:17px;">Analisi per Categoria</h4>
+        </div>
+        <div class="d-flex gap-2">
+            <button t-attf-class="btn btn-sm #{state.view == 'table' ? '' : 'btn-outline-light'}"
+                    style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                    t-on-click="onViewTable">Tabella</button>
+            <button t-attf-class="btn btn-sm #{state.view == 'chart' ? '' : 'btn-outline-light'}"
+                    style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                    t-on-click="onViewChart">Grafico</button>
+            <button class="btn btn-sm" style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                    t-on-click="onRefresh">&#8635;</button>
+        </div>
+    </div>
+
+    <t t-if="state.loading">
+        <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+            <div class="spinner-border" style="color:#5A6E3A;"/>
+        </div>
+    </t>
+    <t t-elif="state.error">
+        <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+    </t>
+    <t t-elif="state.data">
+    <div class="px-4 py-4">
+
+        <!-- Header totale -->
+        <div style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;display:flex;align-items:center;gap:24px;">
+            <div>
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#9ca3af;">
+                    Fatturato totale (12 mesi)
+                </span>
+                <div style="font-size:22px;font-weight:800;color:#5A6E3A;">
+                    <t t-esc="formatAmount(state.data.total_revenue)"/>
+                </div>
+            </div>
+            <div style="color:#9ca3af;font-size:12px;">
+                Confronto YoY vs stesso periodo anno precedente
+            </div>
+        </div>
+
+        <!-- Vista tabella categorie -->
+        <t t-if="state.view == 'table'">
+            <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                    Fatturato per Categoria Prodotto
+                </div>
+                <t t-if="!state.data.categories.length">
+                    <div class="text-muted small">Nessun dato di prodotto disponibile.</div>
+                </t>
+                <t t-else="">
+                    <table class="table table-sm table-hover mb-0" style="font-size:13px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>Categoria</th>
+                                <th class="text-end">Fatturato 12m</th>
+                                <th class="text-end">% totale</th>
+                                <th class="text-end">YoY &#916;</th>
+                                <th class="text-end">YoY %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.categories" t-as="cat" t-key="cat.id">
+                            <tr>
+                                <td class="fw-500"><t t-esc="cat.name"/></td>
+                                <td class="text-end fw-bold" style="color:#5A6E3A;">
+                                    <t t-esc="formatAmount(cat.amount)"/>
+                                </td>
+                                <td class="text-end" style="color:#6b7280;">
+                                    <t t-esc="cat.pct_total"/>%
+                                </td>
+                                <td t-attf-class="text-end fw-bold #{yoyClass(cat)}">
+                                    <t t-esc="yoyArrow(cat)"/>
+                                    <t t-esc="formatAmount(cat.yoy_delta)"/>
+                                </td>
+                                <td t-attf-class="text-end #{yoyClass(cat)}">
+                                    <t t-esc="cat.yoy_pct"/>%
+                                </td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+            </div>
+
+            <!-- Top 20 conti -->
+            <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                    Top 20 Conti Contabili per Movimento (12 mesi)
+                </div>
+                <t t-if="!state.data.top_accounts.length">
+                    <div class="text-muted small">Nessun dato disponibile.</div>
+                </t>
+                <t t-else="">
+                    <div style="overflow-x:auto;">
+                    <table class="table table-sm table-hover mb-0" style="font-size:12px;min-width:500px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>Conto</th>
+                                <th class="text-end">Dare</th>
+                                <th class="text-end">Avere</th>
+                                <th class="text-end">Netto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.top_accounts" t-as="acc" t-key="acc.id">
+                            <tr>
+                                <td style="font-size:11px;"><t t-esc="acc.name"/></td>
+                                <td class="text-end" style="color:#16a34a;">
+                                    <t t-esc="formatAmount(acc.debit)"/>
+                                </td>
+                                <td class="text-end" style="color:#ef4444;">
+                                    <t t-esc="formatAmount(acc.credit)"/>
+                                </td>
+                                <td t-attf-class="text-end fw-bold #{acc.net >= 0 ? 'text-success' : 'text-danger'}">
+                                    <t t-esc="formatAmount(acc.net)"/>
+                                </td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                </t>
+            </div>
+        </t>
+
+        <!-- Vista grafico a torta -->
+        <t t-if="state.view == 'chart'">
+            <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                    Quota % per Categoria (12 mesi)
+                </div>
+                <t t-if="!state.data.categories.length">
+                    <div class="text-muted small">Nessun dato di prodotto disponibile.</div>
+                </t>
+                <t t-else="">
+                    <div style="position:relative;height:400px;">
+                        <canvas t-ref="pieChart"/>
+                    </div>
+                </t>
+            </div>
+        </t>
+
+    </div>
+    </t>
+</div>
+</t>
+</templates>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lista conti banca/cassa con saldo -->
+    <record id="view_cf_journal_bank_list" model="ir.ui.view">
+        <field name="name">account.journal.cf.bank.list</field>
+        <field name="model">account.journal</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Liquidità — Conti Banca/Cassa" create="false" delete="false">
+                <field name="name" string="Conto"/>
+                <field name="type" string="Tipo"/>
+                <field name="currency_id" optional="show"/>
+                <field name="default_account_id" string="Conto Contabile"/>
+                <field name="bank_account_id" string="IBAN" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action Liquidità -->
+    <record id="action_cf_treasury_liquidity" model="ir.actions.act_window">
+        <field name="name">Liquidità</field>
+        <field name="res_model">account.journal</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('type', 'in', ('bank', 'cash'))]</field>
+        <field name="view_ids" eval="[(5,0,0),(0,0,{'view_mode':'list','view_id':ref('view_cf_journal_bank_list')})]"/>
+        <field name="context">{'default_type': 'bank'}</field>
+    </record>
+
+    <!-- Wizard export — view form -->
+    <record id="view_cf_export_wizard_form" model="ir.ui.view">
+        <field name="name">cf.treasury.export.wizard.form</field>
+        <field name="model">cf.treasury.export.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Esporta Tesoreria XLS">
+                <group>
+                    <field name="section"/>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                </group>
+                <footer>
+                    <button name="action_export" type="object" string="Esporta XLS"
+                            class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action wizard export globale -->
+    <record id="action_cf_treasury_export" model="ir.actions.act_window">
+        <field name="name">Esporta XLS</field>
+        <field name="res_model">cf.treasury.export.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

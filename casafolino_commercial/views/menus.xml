@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- GDO Actions -->
+    <!-- ==== GDO Actions ==== -->
     <record id="action_cf_gdo_retailers" model="ir.actions.act_window">
         <field name="name">Retailer GDO</field>
         <field name="res_model">cf.gdo.retailer</field>
@@ -12,7 +12,7 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Private Label Actions -->
+    <!-- ==== Private Label Actions ==== -->
     <record id="action_cf_pl_clients" model="ir.actions.act_window">
         <field name="name">Clienti PL</field>
         <field name="res_model">cf.pl.client</field>
@@ -24,29 +24,61 @@
         <field name="view_mode">kanban,list,form</field>
     </record>
 
-    <!-- Treasury Actions -->
+    <!-- ==== Treasury Actions ==== -->
     <record id="action_cf_treasury_dashboard" model="ir.actions.client">
         <field name="name">Dashboard Tesoreria</field>
         <field name="tag">cf_treasury_dashboard</field>
     </record>
-    <record id="action_cf_treasury" model="ir.actions.act_window">
-        <field name="name">Snapshots Tesoreria</field>
+    <record id="action_cf_treasury_snapshots" model="ir.actions.act_window">
+        <field name="name">Snapshots</field>
         <field name="res_model">cf.treasury.snapshot</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- GDO Menus -->
+    <!-- ==== GDO Menus ==== -->
     <menuitem id="menu_cf_gdo_root" name="GDO" sequence="35"/>
-    <menuitem id="menu_cf_gdo_retailers" name="Retailer" parent="menu_cf_gdo_root" action="action_cf_gdo_retailers" sequence="1"/>
-    <menuitem id="menu_cf_gdo_listings" name="Listing" parent="menu_cf_gdo_root" action="action_cf_gdo_listings" sequence="2"/>
+    <menuitem id="menu_cf_gdo_retailers" name="Retailer" parent="menu_cf_gdo_root"
+              action="action_cf_gdo_retailers" sequence="1"/>
+    <menuitem id="menu_cf_gdo_listings" name="Listing" parent="menu_cf_gdo_root"
+              action="action_cf_gdo_listings" sequence="2"/>
 
-    <!-- Private Label Menus -->
+    <!-- ==== Private Label Menus ==== -->
     <menuitem id="menu_cf_pl_root" name="Private Label" sequence="40"/>
-    <menuitem id="menu_cf_pl_clients" name="Clienti" parent="menu_cf_pl_root" action="action_cf_pl_clients" sequence="1"/>
-    <menuitem id="menu_cf_pl_products" name="Prodotti" parent="menu_cf_pl_root" action="action_cf_pl_products" sequence="2"/>
+    <menuitem id="menu_cf_pl_clients" name="Clienti" parent="menu_cf_pl_root"
+              action="action_cf_pl_clients" sequence="1"/>
+    <menuitem id="menu_cf_pl_products" name="Prodotti" parent="menu_cf_pl_root"
+              action="action_cf_pl_products" sequence="2"/>
 
-    <!-- Treasury Menus -->
+    <!-- ==== Treasury Menus ==== -->
     <menuitem id="menu_cf_treasury_root" name="Tesoreria" sequence="30"/>
-    <menuitem id="menu_cf_treasury_dashboard" name="Dashboard" parent="menu_cf_treasury_root" action="action_cf_treasury_dashboard" sequence="0"/>
-    <menuitem id="menu_cf_treasury_snapshots" name="Snapshots" parent="menu_cf_treasury_root" action="action_cf_treasury" sequence="1"/>
+    <menuitem id="menu_cf_treasury_dashboard" name="Dashboard"
+              parent="menu_cf_treasury_root"
+              action="action_cf_treasury_dashboard" sequence="1"/>
+    <menuitem id="menu_cf_treasury_liquidity" name="Liquidità"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_liquidity_views.action_cf_treasury_liquidity" sequence="2"/>
+    <menuitem id="menu_cf_treasury_receivables" name="Crediti Clienti"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_receivables_views.action_cf_treasury_receivables" sequence="3"/>
+    <menuitem id="menu_cf_treasury_clients" name="Analisi Clienti"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_cashflow_views.action_cf_treasury_clients" sequence="4"/>
+    <menuitem id="menu_cf_treasury_payables" name="Debiti Fornitori"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_payables_views.action_cf_treasury_payables" sequence="5"/>
+    <menuitem id="menu_cf_treasury_cashflow" name="Cashflow"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_cashflow_views.action_cf_treasury_cashflow" sequence="6"/>
+    <menuitem id="menu_cf_treasury_forecast" name="Forecast &amp; Scenari"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_cashflow_views.action_cf_treasury_forecast" sequence="7"/>
+    <menuitem id="menu_cf_treasury_categories" name="Analisi per Categoria"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_cashflow_views.action_cf_treasury_categories" sequence="8"/>
+    <menuitem id="menu_cf_treasury_snapshots" name="Snapshots"
+              parent="menu_cf_treasury_root"
+              action="action_cf_treasury_snapshots" sequence="9"/>
+    <menuitem id="menu_cf_treasury_export" name="Esporta XLS"
+              parent="menu_cf_treasury_root"
+              action="cf_treasury_liquidity_views.action_cf_treasury_export" sequence="10"/>
 </odoo>

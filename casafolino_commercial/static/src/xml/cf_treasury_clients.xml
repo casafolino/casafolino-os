@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_treasury.CfTreasuryClients">
+<div class="cf-clients o_action" style="background:#f0f2f5;min-height:100vh;font-family:system-ui,sans-serif;">
+
+    <div class="d-flex align-items-center justify-content-between px-4 py-3"
+         style="background:#1a1f2e;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);">
+        <div class="d-flex align-items-center gap-3">
+            <span style="font-size:20px;">&#128101;</span>
+            <h4 class="mb-0 fw-bold" style="font-size:17px;">Analisi Clienti</h4>
+        </div>
+        <button class="btn btn-sm" style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                t-on-click="onRefresh">&#8635; Aggiorna</button>
+    </div>
+
+    <t t-if="state.loading">
+        <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+            <div class="spinner-border" style="color:#5A6E3A;"/>
+        </div>
+    </t>
+    <t t-elif="state.error">
+        <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+    </t>
+    <t t-elif="state.data">
+    <div class="px-4 py-4">
+
+        <!-- Tab switcher -->
+        <div class="d-flex gap-2 mb-4">
+            <button t-attf-class="btn btn-sm #{state.tab == 'revenue' ? 'btn-primary' : 'btn-outline-secondary'}"
+                    t-on-click="onTabRevenue"
+                    style="font-size:12px;">Top 10 Fatturato</button>
+            <button t-attf-class="btn btn-sm #{state.tab == 'overdue' ? 'btn-primary' : 'btn-outline-secondary'}"
+                    t-on-click="onTabOverdue"
+                    style="font-size:12px;">Top 10 Scaduti</button>
+            <button t-attf-class="btn btn-sm #{state.tab == 'dso' ? 'btn-primary' : 'btn-outline-secondary'}"
+                    t-on-click="onTabDso"
+                    style="font-size:12px;">DSO per Cliente</button>
+        </div>
+
+        <!-- Top 10 Fatturato -->
+        <t t-if="state.tab == 'revenue'">
+            <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                    Top 10 Clienti per Fatturato (ultimi 12 mesi)
+                </div>
+                <t t-if="!state.data.top_revenue.length">
+                    <div class="text-muted small">Nessun dato disponibile.</div>
+                </t>
+                <t t-else="">
+                    <table class="table table-sm table-hover mb-0" style="font-size:13px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th class="text-end">Fatturato 12m</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.top_revenue" t-as="c" t-key="c.id">
+                            <tr>
+                                <td style="color:#9ca3af;"><t t-esc="c_index + 1"/></td>
+                                <td class="fw-500"><t t-esc="c.name"/></td>
+                                <td class="text-end fw-bold" style="color:#5A6E3A;">
+                                    <t t-esc="formatAmount(c.amount)"/>
+                                </td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+            </div>
+        </t>
+
+        <!-- Top 10 Scaduti -->
+        <t t-if="state.tab == 'overdue'">
+            <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                    Top 10 Clienti per Credito Scaduto
+                </div>
+                <t t-if="!state.data.top_overdue.length">
+                    <div class="text-muted small">Nessun credito scaduto.</div>
+                </t>
+                <t t-else="">
+                    <table class="table table-sm table-hover mb-0" style="font-size:13px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th class="text-end">Scaduto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.top_overdue" t-as="c" t-key="c.id">
+                            <tr>
+                                <td style="color:#9ca3af;"><t t-esc="c_index + 1"/></td>
+                                <td class="fw-500"><t t-esc="c.name"/></td>
+                                <td class="text-end fw-bold text-danger">
+                                    <t t-esc="formatAmount(c.amount)"/>
+                                </td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+            </div>
+        </t>
+
+        <!-- DSO per cliente -->
+        <t t-if="state.tab == 'dso'">
+            <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                    DSO per Cliente (top 10 per fatturato)
+                    <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:6px;">
+                        Days Sales Outstanding = crediti aperti / fatturato_12m x 365
+                    </span>
+                </div>
+                <t t-if="!state.data.dso_per_client.length">
+                    <div class="text-muted small">Nessun dato disponibile.</div>
+                </t>
+                <t t-else="">
+                    <table class="table table-sm table-hover mb-0" style="font-size:13px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Paese</th>
+                                <th class="text-end">Fatturato 12m</th>
+                                <th class="text-end">Crediti Aperti</th>
+                                <th class="text-end">DSO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.dso_per_client" t-as="c" t-key="c.id">
+                            <tr>
+                                <td class="fw-500"><t t-esc="c.name"/></td>
+                                <td style="color:#9ca3af;"><t t-esc="c.country or '-'"/></td>
+                                <td class="text-end" style="color:#5A6E3A;">
+                                    <t t-esc="formatAmount(c.revenue_12m)"/>
+                                </td>
+                                <td class="text-end">
+                                    <t t-esc="formatAmount(c.open_recv)"/>
+                                </td>
+                                <td t-attf-class="text-end fw-bold #{c.dso > 60 ? 'text-danger' : c.dso > 30 ? 'text-warning' : 'text-success'}">
+                                    <t t-esc="c.dso"/> gg
+                                </td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+            </div>
+        </t>
+
+    </div>
+    </t>
+</div>
+</t>
+</templates>
