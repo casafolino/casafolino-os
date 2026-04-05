@@ -61,3 +61,41 @@ class CfTreasury(models.Model):
         recv = sum(self.env["account.move.line"].search(domain_recv).mapped("amount_residual"))
         pay  = abs(sum(self.env["account.move.line"].search(domain_pay).mapped("amount_residual")))
         self.create({"date":today,"total_balance":total,"receivable_30d":recv,"payable_30d":pay})
+
+    @api.model
+    def cron_liquidity_alert(self):
+        """Alert se liquidita scende sotto soglia."""
+        threshold = float(self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.treasury_alert_threshold', '10000'))
+
+        journals = self.env['account.journal'].search([('type', 'in', ('bank', 'cash'))])
+        cash_available = sum(
+            j.default_account_id.current_balance for j in journals if j.default_account_id
+        )
+
+        cutoff = date.today() + timedelta(days=30)
+        pending_bills = self.env['account.move'].search([
+            ('move_type', '=', 'in_invoice'),
+            ('state', '=', 'posted'),
+            ('payment_state', 'not in', ['paid', 'in_payment']),
+            ('invoice_date_due', '<=', str(cutoff)),
+        ])
+        outflows = sum(pending_bills.mapped('amount_residual'))
+        runway = cash_available - outflows
+
+        if runway < threshold:
+            antonio = self.env['res.users'].search(
+                [('login', '=', 'antonio@casafolino.com')], limit=1)
+            if antonio and antonio.email:
+                body = (
+                    "<p><b>Alert Liquidita CasaFolino</b></p>"
+                    "<p>Cash disponibile: <b>%s %.0f</b></p>"
+                    "<p>Uscite previste 30gg: <b>%s %.0f</b></p>"
+                    "<p>Cash runway netto: <b>%s %.0f</b></p>"
+                    "<p>Soglia configurata: %s %.0f</p>"
+                ) % ('€', cash_available, '€', outflows, '€', runway, '€', threshold)
+                self.env['mail.mail'].create({
+                    'subject': 'Alert Liquidita — Runway %.0f EUR' % runway,
+                    'email_to': antonio.email,
+                    'body_html': body,
+                }).send()

@@ -8,4 +8,12 @@
         <field name="interval_number">1</field><field name="interval_type">days</field>
         <field name="numbercall">-1</field><field name="active">True</field>
     </record>
+    <record id="cron_cf_supplier_doc_expiry_reminder" model="ir.cron">
+        <field name="name">Supplier Qual - Reminder Scadenze 60gg</field>
+        <field name="model_id" search="[('model','=','casafolino.supplier.document')]" model="ir.model"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_expiry_reminder()</field>
+        <field name="interval_number">1</field><field name="interval_type">days</field>
+        <field name="numbercall">-1</field><field name="active">True</field>
+    </record>
 </odoo>

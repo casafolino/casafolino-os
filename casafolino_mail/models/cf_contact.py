@@ -490,6 +490,33 @@ I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, format
             'enriched_from': p.cf_007_enriched_from or '',
         }
 
+    def action_enrich_007_batch(self):
+        """Arricchimento batch con rate limiting (2s tra chiamate)."""
+        import time
+        total = len(self)
+        done = 0
+        errors = 0
+        for partner in self:
+            try:
+                partner.action_enrich_007()
+                done += 1
+                _logger.info("007 batch: %d/%d completati", done, total)
+            except Exception as e:
+                errors += 1
+                _logger.error("007 batch: errore su partner %s: %s", partner.id, e)
+            time.sleep(2)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Agente 007 Batch completato',
+                'message': 'Arricchiti: %d/%d. Errori: %d.' % (done, total, errors),
+                'type': 'success' if errors == 0 else 'warning',
+                'sticky': True,
+            }
+        }
+
 
 class CfContactTag(models.Model):
     _name = 'cf.contact.tag'

@@ -322,6 +322,42 @@ class CfExportLead(models.Model):
             "by_pipeline": by_pipeline,
         }
 
+    @api.model
+    def cron_rotting_alert(self):
+        """Manda email per lead non toccati da X giorni."""
+        days = int(self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.rotting_days', '14'))
+        cutoff = date.today() - timedelta(days=days)
+
+        rotting_leads = self.search([
+            ('stage_id.is_won', '=', False),
+            ('stage_id.is_lost', '=', False),
+            ('write_date', '<', str(cutoff)),
+        ])
+
+        if not rotting_leads:
+            return
+
+        by_user = {}
+        for lead in rotting_leads:
+            user = lead.user_id
+            if user and user.email:
+                by_user.setdefault(user, []).append(lead)
+
+        for user, leads in by_user.items():
+            body = "<p>Ciao %s,</p>" % user.name
+            body += "<p>Hai <b>%d lead</b> non aggiornati da piu di %d giorni:</p><ul>" % (len(leads), days)
+            for l in leads[:20]:
+                body += "<li><b>%s</b> — ultimo aggiornamento: %s</li>" % (
+                    l.name, l.write_date.strftime('%d/%m/%Y') if l.write_date else '-')
+            body += "</ul><p>CasaFolino OS</p>"
+
+            self.env['mail.mail'].create({
+                'subject': '%d lead in stallo — CasaFolino CRM' % len(leads),
+                'email_to': user.email,
+                'body_html': body,
+            }).send()
+
     def write(self, vals):
         old_stages = {rec.id: rec.stage_id.id for rec in self}
         result = super().write(vals)

@@ -58,3 +58,43 @@ class CfSupplierDocument(models.Model):
     def send_expiry_alerts(self):
         for doc in self.search([("doc_status","in",("expiring","expired")),("no_expiry","=",False)]):
             doc.message_post(body=f"Documento {doc.name} scade il {doc.expiry_date}.")
+
+    @api.model
+    def cron_expiry_reminder(self):
+        """Reminder certificati fornitori in scadenza entro 60 giorni."""
+        from datetime import timedelta
+        today = date.today()
+        cutoff = today + timedelta(days=60)
+
+        expiring = self.search([
+            ('expiry_date', '<=', str(cutoff)),
+            ('expiry_date', '>=', str(today)),
+            ('doc_status', '!=', 'expired'),
+            ('no_expiry', '=', False),
+        ])
+
+        if not expiring:
+            return
+
+        quality = self.env['res.users'].search([
+            ('email', 'ilike', 'mirabelli')
+        ], limit=1)
+        if not quality:
+            quality = self.env['res.users'].search(
+                [('login', '=', 'antonio@casafolino.com')], limit=1)
+
+        if quality and quality.email:
+            body = "<p>Certificati fornitori in scadenza entro 60 giorni:</p><ul>"
+            for doc in expiring:
+                days_left = (doc.expiry_date - today).days
+                partner_name = doc.partner_id.name if doc.partner_id else 'N/A'
+                body += "<li><b>%s</b> — %s — scade il %s (<b>%d giorni</b>)</li>" % (
+                    partner_name, doc.name,
+                    doc.expiry_date.strftime('%d/%m/%Y'), days_left)
+            body += "</ul>"
+
+            self.env['mail.mail'].create({
+                'subject': '%d certificati fornitori in scadenza' % len(expiring),
+                'email_to': quality.email,
+                'body_html': body,
+            }).send()

@@ -10,6 +10,7 @@
         "security/ir.model.access.csv",
         "data/cf_export_stages.xml",
         "data/cf_export_lost_reasons.xml",
+        "data/cf_export_cron.xml",
         "views/cf_export_views.xml",
         "views/cf_export_lead_views.xml",
         "views/menus.xml",
