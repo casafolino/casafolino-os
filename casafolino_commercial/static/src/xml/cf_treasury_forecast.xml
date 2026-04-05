@@ -128,9 +128,9 @@
                 <div class="col-auto ms-auto" style="font-size:12px;color:#9ca3af;">
                     Saldo iniziale:
                     <strong><t t-esc="formatAmount(state.data.base_balance)"/></strong>
-                    &nbsp;|&nbsp; Media mensile entrate:
+                    &#160;|&#160; Media mensile entrate:
                     <strong><t t-esc="formatAmount(state.data.avg_monthly_inflow)"/></strong>
-                    &nbsp;|&nbsp; uscite:
+                    &#160;|&#160; uscite:
                     <strong><t t-esc="formatAmount(state.data.avg_monthly_outflow)"/></strong>
                 </div>
             </div>
