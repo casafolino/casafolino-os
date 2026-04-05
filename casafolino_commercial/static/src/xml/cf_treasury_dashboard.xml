@@ -64,7 +64,7 @@
     <t t-elif="state.data">
     <div class="px-4 py-4">
 
-        <!-- ---- KPI CARDS ---- -->
+        <!-- ==== KPI CARDS ==== -->
         <div class="row g-3 mb-4">
 
             <!-- Crediti scaduti -->
@@ -138,7 +138,7 @@
 
         </div>
 
-        <!-- ---- CASHFLOW CHART + SCENARI ---- -->
+        <!-- ==== CASHFLOW CHART + SCENARI ==== -->
         <div class="row g-3 mb-4">
 
             <!-- Grafico cashflow 12 mesi -->
@@ -198,7 +198,7 @@
             </div>
         </div>
 
-        <!-- ---- RIEPILOGO AGING ---- -->
+        <!-- ==== RIEPILOGO AGING ==== -->
         <div class="row g-3 mb-4">
             <div class="col-md-6">
                 <div style="background:#fff;border-radius:10px;padding:20px 24px;
@@ -272,7 +272,7 @@
             </div>
         </div>
 
-        <!-- ---- SCADENZARIO CLIENTI ---- -->
+        <!-- ==== SCADENZARIO CLIENTI ==== -->
         <div class="row g-3 mb-4">
             <div class="col-12">
                 <div style="background:#fff;border-radius:10px;padding:20px 24px;
@@ -334,7 +334,7 @@
             </div>
         </div>
 
-        <!-- ---- SCADENZARIO FORNITORI ---- -->
+        <!-- ==== SCADENZARIO FORNITORI ==== -->
         <div class="row g-3 mb-2">
             <div class="col-12">
                 <div style="background:#fff;border-radius:10px;padding:20px 24px;
