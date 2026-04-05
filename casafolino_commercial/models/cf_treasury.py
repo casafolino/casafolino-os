@@ -60,145 +60,235 @@ class CfTreasury(models.Model):
 
     @api.model
     def _compute_live_data(self):
-        """Calcola tutti i KPI tesoreria in tempo reale dai modelli Odoo."""
+        """
+        Calcola tutti i KPI tesoreria in tempo reale.
+        Fonti: account.journal, account.move.line, account.move.
+        Nessuna query SQL diretta — solo ORM.
+        """
         today = date.today()
         today_str = str(today)
+        d_90ago = str(today - timedelta(days=90))
         d30 = str(today + timedelta(days=30))
         d60 = str(today + timedelta(days=60))
         d90 = str(today + timedelta(days=90))
 
-        # --- Saldo banche/cassa ---
+        # ==============================================================
+        # 1. SALDO BANCHE/CASSA
+        #    current_balance su account.account del journal bank/cash
+        # ==============================================================
         journals = self.env["account.journal"].search([("type", "in", ("bank", "cash"))])
         total_balance = sum(
-            j.default_account_id.current_balance for j in journals if j.default_account_id
+            j.default_account_id.current_balance
+            for j in journals if j.default_account_id
         )
+        # IDs dei conti liquidità — riutilizzati per cashflow e runway
+        bank_account_ids = journals.mapped("default_account_id").ids
 
         aml = self.env["account.move.line"]
 
-        # --- Aging crediti ---
-        recv_overdue = sum(aml.search([
+        # ==============================================================
+        # 2. CREDITI DA INCASSARE (aging)
+        #    account.move.line su conti asset_receivable, non riconciliati,
+        #    move in stato posted. parent_state è indicizzato su aml.
+        # ==============================================================
+        base_recv = [
             ("account_id.account_type", "=", "asset_receivable"),
+            ("parent_state", "=", "posted"),
             ("reconciled", "=", False),
-            ("date_maturity", "<", today_str),
-        ]).mapped("amount_residual"))
+        ]
 
-        recv_30 = sum(aml.search([
-            ("account_id.account_type", "=", "asset_receivable"),
-            ("reconciled", "=", False),
-            ("date_maturity", ">=", today_str),
-            ("date_maturity", "<=", d30),
-        ]).mapped("amount_residual"))
+        recv_overdue = sum(
+            aml.search(base_recv + [("date_maturity", "<", today_str)])
+            .mapped("amount_residual")
+        )
+        recv_30 = sum(
+            aml.search(base_recv + [
+                ("date_maturity", ">=", today_str),
+                ("date_maturity", "<=", d30),
+            ]).mapped("amount_residual")
+        )
+        recv_60 = sum(
+            aml.search(base_recv + [
+                ("date_maturity", ">", d30),
+                ("date_maturity", "<=", d60),
+            ]).mapped("amount_residual")
+        )
+        recv_90 = sum(
+            aml.search(base_recv + [
+                ("date_maturity", ">", d60),
+                ("date_maturity", "<=", d90),
+            ]).mapped("amount_residual")
+        )
 
-        recv_60 = sum(aml.search([
-            ("account_id.account_type", "=", "asset_receivable"),
-            ("reconciled", "=", False),
-            ("date_maturity", ">", d30),
-            ("date_maturity", "<=", d60),
-        ]).mapped("amount_residual"))
-
-        recv_90 = sum(aml.search([
-            ("account_id.account_type", "=", "asset_receivable"),
-            ("reconciled", "=", False),
-            ("date_maturity", ">", d60),
-            ("date_maturity", "<=", d90),
-        ]).mapped("amount_residual"))
-
-        # --- Aging debiti ---
-        pay_overdue = abs(sum(aml.search([
+        # ==============================================================
+        # 3. DEBITI DA PAGARE (aging)
+        #    Stesso schema, liability_payable. amount_residual è negativo
+        #    per i debiti, quindi prendiamo abs().
+        # ==============================================================
+        base_pay = [
             ("account_id.account_type", "=", "liability_payable"),
+            ("parent_state", "=", "posted"),
             ("reconciled", "=", False),
-            ("date_maturity", "<", today_str),
-        ]).mapped("amount_residual")))
+        ]
 
-        pay_30 = abs(sum(aml.search([
-            ("account_id.account_type", "=", "liability_payable"),
-            ("reconciled", "=", False),
-            ("date_maturity", ">=", today_str),
-            ("date_maturity", "<=", d30),
-        ]).mapped("amount_residual")))
+        pay_overdue = abs(sum(
+            aml.search(base_pay + [("date_maturity", "<", today_str)])
+            .mapped("amount_residual")
+        ))
+        pay_30 = abs(sum(
+            aml.search(base_pay + [
+                ("date_maturity", ">=", today_str),
+                ("date_maturity", "<=", d30),
+            ]).mapped("amount_residual")
+        ))
+        pay_60 = abs(sum(
+            aml.search(base_pay + [
+                ("date_maturity", ">", d30),
+                ("date_maturity", "<=", d60),
+            ]).mapped("amount_residual")
+        ))
+        pay_90 = abs(sum(
+            aml.search(base_pay + [
+                ("date_maturity", ">", d60),
+                ("date_maturity", "<=", d90),
+            ]).mapped("amount_residual")
+        ))
 
-        pay_60 = abs(sum(aml.search([
-            ("account_id.account_type", "=", "liability_payable"),
-            ("reconciled", "=", False),
-            ("date_maturity", ">", d30),
-            ("date_maturity", "<=", d60),
-        ]).mapped("amount_residual")))
-
-        pay_90 = abs(sum(aml.search([
-            ("account_id.account_type", "=", "liability_payable"),
-            ("reconciled", "=", False),
-            ("date_maturity", ">", d60),
-            ("date_maturity", "<=", d90),
-        ]).mapped("amount_residual")))
-
-        # --- DSO (Days Sales Outstanding) ---
-        inv_90d = self.env["account.move"].search([
-            ("move_type", "=", "out_invoice"),
-            ("state", "=", "posted"),
-            ("invoice_date", ">=", str(today - timedelta(days=90))),
-            ("invoice_date", "<=", today_str),
-        ])
-        revenue_90d = sum(inv_90d.mapped("amount_untaxed"))
+        # ==============================================================
+        # 4. DSO — Days Sales Outstanding
+        #    DSO = (totale crediti aperti / fatturato ultimi 90gg) × 90
+        #    Fatturato = sum(amount_untaxed) su out_invoice posted
+        # ==============================================================
+        rev_groups = self.env["account.move"].read_group(
+            domain=[
+                ("move_type", "=", "out_invoice"),
+                ("state", "=", "posted"),
+                ("invoice_date", ">=", d_90ago),
+                ("invoice_date", "<=", today_str),
+            ],
+            fields=["amount_untaxed:sum"],
+            groupby=[],
+        )
+        revenue_90d = rev_groups[0]["amount_untaxed"] if rev_groups else 0.0
         total_recv = recv_overdue + recv_30 + recv_60 + recv_90
         dso = round((total_recv / revenue_90d * 90), 1) if revenue_90d > 0 else 0.0
 
-        # --- Runway days ---
-        bills_due = self.env["account.move"].search([
-            ("move_type", "=", "in_invoice"),
-            ("state", "=", "posted"),
-            ("payment_state", "not in", ["paid", "in_payment"]),
-            ("invoice_date_due", "<=", d30),
-        ])
-        outflow_30d = sum(bills_due.mapped("amount_residual"))
-        daily_burn = outflow_30d / 30.0 if outflow_30d > 0 else 0.0
-        runway_days = int(total_balance / daily_burn) if daily_burn > 0 and total_balance > 0 else 0
+        # ==============================================================
+        # 5. RUNWAY — giorni di liquidità rimanenti
+        #    Media uscite giornaliere = uscite effettive ultimi 90gg / 90
+        #    Uscite = movimenti in avere (credit) sui conti banca/cassa
+        #    da account.move.line, parent_state=posted
+        # ==============================================================
+        if bank_account_ids:
+            out_groups = aml.read_group(
+                domain=[
+                    ("account_id", "in", bank_account_ids),
+                    ("parent_state", "=", "posted"),
+                    ("date", ">=", d_90ago),
+                    ("date", "<=", today_str),
+                    ("credit", ">", 0),
+                ],
+                fields=["credit:sum"],
+                groupby=[],
+            )
+            total_outflow_90d = out_groups[0]["credit"] if out_groups else 0.0
+        else:
+            total_outflow_90d = 0.0
 
-        # --- Scenari 90gg ---
-        net_monthly = recv_30 - pay_30
-        scenario_base = round(total_balance + net_monthly * 3, 2)
-        scenario_opt = round(total_balance + net_monthly * 3 * 1.15, 2)
-        scenario_pes = round(total_balance + net_monthly * 3 * 0.75, 2)
+        avg_daily_outflow = total_outflow_90d / 90.0 if total_outflow_90d > 0 else 0.0
+        runway_days = int(total_balance / avg_daily_outflow) if avg_daily_outflow > 0 and total_balance > 0 else 0
 
-        # --- Cashflow 12 mesi ---
-        cashflow = []
+        # ==============================================================
+        # 6. CASHFLOW 12 MESI
+        #    Per ogni mese: movimenti in dare sui conti banca/cassa
+        #    = inflow (incassi); movimenti in avere = outflow (pagamenti).
+        #    Fonte: account.move.line con date = data effettiva.
+        #    Usa read_group per evitare N query separate.
+        # ==============================================================
+        # Calcola start/end dei 12 mesi in anticipo
+        month_ranges = []
         for i in range(11, -1, -1):
             m = today.month - i
             y = today.year
             while m <= 0:
                 m += 12
                 y -= 1
-            month_start = date(y, m, 1)
+            ms = date(y, m, 1)
             if i == 0:
-                month_end = today
+                me = today
             else:
                 nm, ny = m + 1, y
                 if nm > 12:
                     nm, ny = 1, y + 1
-                month_end = date(ny, nm, 1) - timedelta(days=1)
+                me = date(ny, nm, 1) - timedelta(days=1)
+            month_ranges.append((ms, me))
 
-            month_inv = self.env["account.move"].search([
-                ("move_type", "=", "out_invoice"),
-                ("state", "=", "posted"),
-                ("invoice_date", ">=", str(month_start)),
-                ("invoice_date", "<=", str(month_end)),
-            ])
-            month_bills = self.env["account.move"].search([
-                ("move_type", "=", "in_invoice"),
-                ("state", "=", "posted"),
-                ("invoice_date", ">=", str(month_start)),
-                ("invoice_date", "<=", str(month_end)),
-            ])
-            inflow = round(sum(month_inv.mapped("amount_untaxed")), 2)
-            outflow = round(sum(month_bills.mapped("amount_untaxed")), 2)
-            cashflow.append({
-                "month": month_start.strftime("%b %Y"),
-                "inflow": inflow,
-                "outflow": outflow,
-                "balance": round(inflow - outflow, 2),
-            })
+        period_start = str(month_ranges[0][0])
+        period_end = str(month_ranges[-1][1])
+
+        cashflow = []
+        if bank_account_ids:
+            # Fetch tutte le righe del periodo in un colpo solo
+            cf_lines = aml.search([
+                ("account_id", "in", bank_account_ids),
+                ("parent_state", "=", "posted"),
+                ("date", ">=", period_start),
+                ("date", "<=", period_end),
+            ], order="date asc")
+
+            # Indicizza per mese
+            month_totals = {}
+            for line in cf_lines:
+                key = (line.date.year, line.date.month)
+                if key not in month_totals:
+                    month_totals[key] = [0.0, 0.0]  # [debit, credit]
+                month_totals[key][0] += line.debit
+                month_totals[key][1] += line.credit
+
+            for ms, me in month_ranges:
+                key = (ms.year, ms.month)
+                debit, credit = month_totals.get(key, [0.0, 0.0])
+                inflow = round(debit, 2)
+                outflow = round(credit, 2)
+                cashflow.append({
+                    "month": ms.strftime("%b %Y"),
+                    "inflow": inflow,
+                    "outflow": outflow,
+                    "balance": round(inflow - outflow, 2),
+                })
+        else:
+            for ms, _me in month_ranges:
+                cashflow.append({
+                    "month": ms.strftime("%b %Y"),
+                    "inflow": 0.0,
+                    "outflow": 0.0,
+                    "balance": 0.0,
+                })
+
+        # ==============================================================
+        # 7. SCENARI 90GG
+        #    Base trend: media mensile inflow/outflow degli ultimi 90gg
+        #    da account.move.line banca (stessa fonte del cashflow).
+        #    - Base:         saldo + net_monthly × 3
+        #    - Ottimistico:  saldo + (inflow×1.15 − outflow) × 3
+        #    - Pessimistico: saldo + (inflow×0.75 − outflow×1.10) × 3
+        # ==============================================================
+        # Media mensile inflow/outflow dagli ultimi 3 mesi già calcolati
+        recent_inflow_90d = sum(
+            m["inflow"] for m in cashflow[-3:]
+        ) if len(cashflow) >= 3 else 0.0
+        recent_outflow_90d = sum(
+            m["outflow"] for m in cashflow[-3:]
+        ) if len(cashflow) >= 3 else 0.0
+
+        avg_monthly_inflow = recent_inflow_90d / 3.0
+        avg_monthly_outflow = recent_outflow_90d / 3.0
+
+        scenario_base = round(total_balance + (avg_monthly_inflow - avg_monthly_outflow) * 3, 2)
+        scenario_opt = round(total_balance + (avg_monthly_inflow * 1.15 - avg_monthly_outflow) * 3, 2)
+        scenario_pes = round(total_balance + (avg_monthly_inflow * 0.75 - avg_monthly_outflow * 1.10) * 3, 2)
 
         return {
-            "today": today,
             "today_str": today_str,
             "total_balance": total_balance,
             "recv_overdue": recv_overdue,
