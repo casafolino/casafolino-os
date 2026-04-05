@@ -6,7 +6,7 @@ import { rpc } from "@web/core/network/rpc";
 
 class CfSupplierDashboard extends Component {
     static template = "casafolino_supplier_qual.CfSupplierDashboard";
-    static props = {};
+    static props = ["*"];
 
     setup() {
         this.state = useState({ data: null, loading: true, error: null });

@@ -6,7 +6,7 @@ import { rpc } from "@web/core/network/rpc";
 
 class CfHaccpDashboard extends Component {
     static template = "casafolino_haccp.CfHaccpDashboard";
-    static props = {};
+    static props = ["*"];
 
     setup() {
         this.state = useState({ data: null, loading: true, error: null });

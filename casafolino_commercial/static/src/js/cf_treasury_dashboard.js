@@ -5,7 +5,7 @@ import { rpc } from "@web/core/network/rpc";
 
 class CfTreasuryDashboard extends Component {
     static template = "casafolino_treasury.CfTreasuryDashboard";
-    static props = {};
+    static props = ["*"];
 
     setup() {
         this.state = useState({ data: null, loading: true, error: null });

@@ -5,7 +5,7 @@ import { rpc } from "@web/core/network/rpc";
 
 class CfKpiDashboard extends Component {
     static template = "casafolino_kpi.CfKpiDashboard";
-    static props = {};
+    static props = ["*"];
 
     setup() {
         this.state = useState({ data: null, loading: true, error: null });

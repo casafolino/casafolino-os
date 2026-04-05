@@ -9,7 +9,7 @@ import { rpc } from "@web/core/network/rpc";
 
 class CfCrmDashboard extends Component {
     static template = "casafolino_crm_export.CfCrmDashboard";
-    static props = {};
+    static props = ["*"];
 
     setup() {
         this.state = useState({ kpis: null, loading: true, error: null });
