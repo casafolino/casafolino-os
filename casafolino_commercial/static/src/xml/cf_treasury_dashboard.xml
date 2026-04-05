@@ -1,112 +1,404 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates xml:space="preserve">
 <t t-name="casafolino_treasury.CfTreasuryDashboard">
-    <div class="cf-dashboard o_action">
-        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
-             style="background:#1e2432;color:#fff;min-height:56px;">
-            <div class="d-flex align-items-center gap-2">
-                <span style="font-size:20px;">💰</span>
-                <h4 class="mb-0 fw-bold" style="font-size:16px;">Dashboard Tesoreria</h4>
-                <t t-if="state.data and state.data.has_data">
-                    <span class="badge bg-secondary ms-2" style="font-size:11px;">
-                        <t t-esc="state.data.date"/>
-                    </span>
+<div class="cf-treasury o_action" style="background:#f0f2f5;min-height:100vh;font-family:system-ui,sans-serif;">
+
+    <!-- ===== HEADER DARK ===== -->
+    <div class="d-flex align-items-center justify-content-between px-4 py-3"
+         style="background:#1a1f2e;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35);">
+        <div class="d-flex align-items-center gap-3">
+            <span style="font-size:20px;line-height:1;">&#128200;</span>
+            <h4 class="mb-0 fw-bold" style="font-size:17px;letter-spacing:.4px;">Dashboard Tesoreria</h4>
+
+            <t t-if="state.data and state.data.has_data">
+                <span style="background:#2d3348;color:#9ca3af;font-size:11px;padding:2px 8px;border-radius:4px;">
+                    <t t-esc="state.data.date"/>
+                </span>
+
+                <!-- Semaforo runway -->
+                <t t-if="state.data.runway_days > 30">
+                    <span style="width:11px;height:11px;border-radius:50%;background:#22c55e;
+                                 display:inline-block;box-shadow:0 0 7px #22c55e;"/>
                 </t>
-            </div>
-            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+                <t t-elif="state.data.runway_days >= 15">
+                    <span style="width:11px;height:11px;border-radius:50%;background:#f59e0b;
+                                 display:inline-block;box-shadow:0 0 7px #f59e0b;"/>
+                </t>
+                <t t-else="">
+                    <span style="width:11px;height:11px;border-radius:50%;background:#ef4444;
+                                 display:inline-block;box-shadow:0 0 7px #ef4444;"/>
+                </t>
+
+                <span style="font-size:15px;font-weight:800;">
+                    <t t-esc="formatAmount(state.data.total_balance)"/>
+                </span>
+                <span style="font-size:12px;color:#9ca3af;">
+                    runway <t t-esc="state.data.runway_days"/> gg
+                </span>
+            </t>
         </div>
 
-        <t t-if="state.loading">
-            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
-                <div class="spinner-border text-secondary"/>
-            </div>
-        </t>
-        <t t-elif="state.error">
-            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
-        </t>
-        <t t-elif="!state.data or !state.data.has_data">
-            <div class="alert alert-info m-4">Nessun dato tesoreria. Creare uno snapshot prima.</div>
-        </t>
-        <t t-elif="state.data">
-            <div class="cf-dash-body px-4 py-3">
-
-                <!-- Saldo prominente -->
-                <div class="cf-dash-panel mb-4">
-                    <div class="text-center py-3">
-                        <div class="text-muted" style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;">
-                            Saldo Cassa Attuale
-                        </div>
-                        <div t-attf-class="fw-black #{balanceClass(state.data.total_balance)}"
-                             style="font-size:42px;font-weight:900;line-height:1.1;">
-                            <t t-esc="formatAmount(state.data.total_balance)"/>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Forecast cards -->
-                <div class="row g-3 mb-4">
-                    <div class="col-sm-4">
-                        <div class="cf-kpi-card" style="border-top:3px solid #5A6E3A;">
-                            <div class="cf-kpi-label">Forecast 30gg</div>
-                            <div t-attf-class="cf-kpi-value #{balanceClass(state.data.forecast_30d)}" style="font-size:20px;">
-                                <t t-esc="formatAmount(state.data.forecast_30d)"/>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="cf-kpi-card" style="border-top:3px solid #3d4d28;">
-                            <div class="cf-kpi-label">Forecast 60gg</div>
-                            <div t-attf-class="cf-kpi-value #{balanceClass(state.data.forecast_60d)}" style="font-size:20px;">
-                                <t t-esc="formatAmount(state.data.forecast_60d)"/>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="cf-kpi-card" style="border-top:3px solid #17a2b8;">
-                            <div class="cf-kpi-label">Forecast 90gg</div>
-                            <div t-attf-class="cf-kpi-value #{balanceClass(state.data.forecast_90d)}" style="font-size:20px;">
-                                <t t-esc="formatAmount(state.data.forecast_90d)"/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Crediti / Debiti + Sparkline -->
-                <div class="row g-3">
-                    <div class="col-lg-4">
-                        <div class="cf-dash-panel">
-                            <div class="cf-dash-panel-title">📋 Posizione a 30gg</div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Crediti in scadenza</span>
-                                <span class="fw-bold text-success">
-                                    <t t-esc="formatAmount(state.data.receivable_30d)"/>
-                                </span>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <span class="text-muted small">Debiti in scadenza</span>
-                                <span class="fw-bold text-danger">
-                                    <t t-esc="formatAmount(state.data.payable_30d)"/>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-8">
-                        <div class="cf-dash-panel">
-                            <div class="cf-dash-panel-title">📊 Andamento Saldo (30 giorni)</div>
-                            <div class="d-flex align-items-flex-end gap-1" style="height:60px;">
-                                <t t-foreach="sparkBars()" t-as="bar" t-key="bar.date">
-                                    <div t-attf-style="height:#{bar.pct}%;flex:1;border-radius:2px;background:#{bar.positive ? '#5A6E3A' : '#dc3545'};min-height:4px;"
-                                         t-att-title="bar.date"/>
-                                </t>
-                                <t t-if="!sparkBars().length">
-                                    <span class="text-muted small">Dati insufficienti per il grafico.</span>
-                                </t>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </t>
+        <button class="btn btn-sm"
+                style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                t-on-click="onRefresh">
+            &#8635; Aggiorna
+        </button>
     </div>
+
+    <!-- ===== LOADING / ERROR / EMPTY ===== -->
+    <t t-if="state.loading">
+        <div class="d-flex justify-content-center align-items-center" style="height:320px;">
+            <div class="spinner-border" style="color:#5A6E3A;width:2.5rem;height:2.5rem;"/>
+        </div>
+    </t>
+    <t t-elif="state.error">
+        <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+    </t>
+    <t t-elif="!state.data or !state.data.has_data">
+        <div class="alert alert-info m-4">
+            Nessun dato tesoreria. Eseguire lo snapshot giornaliero.
+        </div>
+    </t>
+
+    <!-- ===== CORPO DASHBOARD ===== -->
+    <t t-elif="state.data">
+    <div class="px-4 py-4">
+
+        <!-- ---- KPI CARDS ---- -->
+        <div class="row g-3 mb-4">
+
+            <!-- Crediti scaduti -->
+            <div class="col-6 col-md-3">
+                <div style="background:#fff;border-radius:10px;padding:18px 20px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #ef4444;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                letter-spacing:.7px;color:#9ca3af;margin-bottom:6px;">
+                        Crediti Scaduti
+                    </div>
+                    <div style="font-size:22px;font-weight:800;color:#ef4444;">
+                        <t t-esc="formatAmount(state.data.receivables_overdue)"/>
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                        da incassare (scaduto)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debiti scaduti -->
+            <div class="col-6 col-md-3">
+                <div style="background:#fff;border-radius:10px;padding:18px 20px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #f59e0b;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                letter-spacing:.7px;color:#9ca3af;margin-bottom:6px;">
+                        Debiti Scaduti
+                    </div>
+                    <div style="font-size:22px;font-weight:800;color:#f59e0b;">
+                        <t t-esc="formatAmount(state.data.payables_overdue)"/>
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                        da pagare (scaduto)
+                    </div>
+                </div>
+            </div>
+
+            <!-- DSO -->
+            <div class="col-6 col-md-3">
+                <div style="background:#fff;border-radius:10px;padding:18px 20px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #3b82f6;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                letter-spacing:.7px;color:#9ca3af;margin-bottom:6px;">
+                        DSO
+                    </div>
+                    <div style="font-size:22px;font-weight:800;color:#3b82f6;">
+                        <t t-esc="state.data.dso"/> gg
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                        giorni medi incasso
+                    </div>
+                </div>
+            </div>
+
+            <!-- Runway -->
+            <div class="col-6 col-md-3">
+                <div t-attf-style="background:#fff;border-radius:10px;padding:18px 20px;
+                                   box-shadow:0 1px 4px rgba(0,0,0,.08);
+                                   border-left:4px solid #{runwayColor()};">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                letter-spacing:.7px;color:#9ca3af;margin-bottom:6px;">
+                        Runway
+                    </div>
+                    <div t-attf-style="font-size:22px;font-weight:800;color:#{runwayColor()};">
+                        <t t-esc="state.data.runway_days"/> gg
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                        liquidità rimanente
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ---- CASHFLOW CHART + SCENARI ---- -->
+        <div class="row g-3 mb-4">
+
+            <!-- Grafico cashflow 12 mesi -->
+            <div class="col-lg-8">
+                <div style="background:#fff;border-radius:10px;padding:20px 24px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:16px;">
+                        Cashflow 12 mesi
+                        <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:6px;">
+                            entrate / uscite / saldo netto
+                        </span>
+                    </div>
+                    <div style="position:relative;height:240px;">
+                        <canvas t-ref="cashflowChart"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenari 90gg -->
+            <div class="col-lg-4">
+                <div style="background:#fff;border-radius:10px;padding:20px 24px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);height:100%;">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:16px;">
+                        Scenari Forecast 90gg
+                    </div>
+
+                    <div style="background:#f0fdf4;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                    letter-spacing:.6px;color:#16a34a;margin-bottom:5px;">
+                            Ottimistico +15%
+                        </div>
+                        <div style="font-size:20px;font-weight:800;color:#16a34a;">
+                            <t t-esc="formatAmount(state.data.scenario_opt)"/>
+                        </div>
+                    </div>
+
+                    <div style="background:#eff6ff;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                    letter-spacing:.6px;color:#2563eb;margin-bottom:5px;">
+                            Base
+                        </div>
+                        <div style="font-size:20px;font-weight:800;color:#2563eb;">
+                            <t t-esc="formatAmount(state.data.scenario_base)"/>
+                        </div>
+                    </div>
+
+                    <div style="background:#fff9f0;border-radius:8px;padding:14px 16px;">
+                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;
+                                    letter-spacing:.6px;color:#d97706;margin-bottom:5px;">
+                            Pessimistico -25%
+                        </div>
+                        <div style="font-size:20px;font-weight:800;color:#d97706;">
+                            <t t-esc="formatAmount(state.data.scenario_pes)"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---- RIEPILOGO AGING ---- -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div style="background:#fff;border-radius:10px;padding:20px 24px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                        Crediti per fascia
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2"
+                         style="border-bottom:1px solid #f3f4f6;">
+                        <span style="font-size:12px;color:#6b7280;">0 – 30 gg</span>
+                        <span style="font-size:14px;font-weight:700;color:#16a34a;">
+                            <t t-esc="formatAmount(state.data.receivables_30d)"/>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2"
+                         style="border-bottom:1px solid #f3f4f6;">
+                        <span style="font-size:12px;color:#6b7280;">31 – 60 gg</span>
+                        <span style="font-size:14px;font-weight:700;color:#2563eb;">
+                            <t t-esc="formatAmount(state.data.receivables_60d)"/>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2"
+                         style="border-bottom:1px solid #f3f4f6;">
+                        <span style="font-size:12px;color:#6b7280;">61 – 90 gg</span>
+                        <span style="font-size:14px;font-weight:700;color:#6b7280;">
+                            <t t-esc="formatAmount(state.data.receivables_90d)"/>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span style="font-size:12px;font-weight:600;color:#ef4444;">Scaduti</span>
+                        <span style="font-size:14px;font-weight:700;color:#ef4444;">
+                            <t t-esc="formatAmount(state.data.receivables_overdue)"/>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div style="background:#fff;border-radius:10px;padding:20px 24px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                        Debiti per fascia
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2"
+                         style="border-bottom:1px solid #f3f4f6;">
+                        <span style="font-size:12px;color:#6b7280;">0 – 30 gg</span>
+                        <span style="font-size:14px;font-weight:700;color:#d97706;">
+                            <t t-esc="formatAmount(state.data.payables_30d)"/>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2"
+                         style="border-bottom:1px solid #f3f4f6;">
+                        <span style="font-size:12px;color:#6b7280;">31 – 60 gg</span>
+                        <span style="font-size:14px;font-weight:700;color:#6b7280;">
+                            <t t-esc="formatAmount(state.data.payables_60d)"/>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2"
+                         style="border-bottom:1px solid #f3f4f6;">
+                        <span style="font-size:12px;color:#6b7280;">61 – 90 gg</span>
+                        <span style="font-size:14px;font-weight:700;color:#6b7280;">
+                            <t t-esc="formatAmount(state.data.payables_90d)"/>
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span style="font-size:12px;font-weight:600;color:#ef4444;">Scaduti</span>
+                        <span style="font-size:14px;font-weight:700;color:#ef4444;">
+                            <t t-esc="formatAmount(state.data.payables_overdue)"/>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---- SCADENZARIO CLIENTI ---- -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div style="background:#fff;border-radius:10px;padding:20px 24px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                        Scadenzario Clienti
+                        <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:6px;">
+                            fatture non pagate — scadenza entro 90gg
+                        </span>
+                    </div>
+
+                    <t t-if="state.agingLoading">
+                        <div class="text-muted small">Caricamento...</div>
+                    </t>
+                    <t t-elif="!state.invoices.length">
+                        <div class="text-muted small">Nessuna fattura clienti in scadenza.</div>
+                    </t>
+                    <t t-else="">
+                        <div style="overflow-x:auto;">
+                        <table class="table table-sm table-hover mb-0"
+                               style="font-size:13px;min-width:560px;">
+                            <thead style="color:#9ca3af;border-bottom:1px solid #e5e7eb;">
+                                <tr>
+                                    <th style="font-weight:600;padding:6px 8px;">Fattura</th>
+                                    <th style="font-weight:600;padding:6px 8px;">Cliente</th>
+                                    <th style="font-weight:600;padding:6px 8px;">Scadenza</th>
+                                    <th style="font-weight:600;padding:6px 8px;text-align:right;">Residuo</th>
+                                    <th style="font-weight:600;padding:6px 8px;">Fascia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.invoices" t-as="inv" t-key="inv.id">
+                                <tr style="border-bottom:1px solid #f3f4f6;">
+                                    <td style="padding:7px 8px;color:#6b7280;">
+                                        <t t-esc="inv.name"/>
+                                    </td>
+                                    <td style="padding:7px 8px;font-weight:500;">
+                                        <t t-esc="inv.partner_id[1]"/>
+                                    </td>
+                                    <td style="padding:7px 8px;color:#6b7280;">
+                                        <t t-esc="inv.invoice_date_due"/>
+                                    </td>
+                                    <td style="padding:7px 8px;text-align:right;font-weight:700;color:#16a34a;">
+                                        <t t-esc="formatAmount(inv.amount_residual)"/>
+                                    </td>
+                                    <td style="padding:7px 8px;">
+                                        <span t-attf-class="badge #{agingBadgeClass(inv.invoice_date_due)}"
+                                              style="font-size:10px;">
+                                            <t t-esc="agingLabel(inv.invoice_date_due)"/>
+                                        </span>
+                                    </td>
+                                </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---- SCADENZARIO FORNITORI ---- -->
+        <div class="row g-3 mb-2">
+            <div class="col-12">
+                <div style="background:#fff;border-radius:10px;padding:20px 24px;
+                            box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">
+                        Scadenzario Fornitori
+                        <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:6px;">
+                            fatture da pagare — scadenza entro 90gg
+                        </span>
+                    </div>
+
+                    <t t-if="state.agingLoading">
+                        <div class="text-muted small">Caricamento...</div>
+                    </t>
+                    <t t-elif="!state.bills.length">
+                        <div class="text-muted small">Nessuna fattura fornitori in scadenza.</div>
+                    </t>
+                    <t t-else="">
+                        <div style="overflow-x:auto;">
+                        <table class="table table-sm table-hover mb-0"
+                               style="font-size:13px;min-width:560px;">
+                            <thead style="color:#9ca3af;border-bottom:1px solid #e5e7eb;">
+                                <tr>
+                                    <th style="font-weight:600;padding:6px 8px;">Fattura</th>
+                                    <th style="font-weight:600;padding:6px 8px;">Fornitore</th>
+                                    <th style="font-weight:600;padding:6px 8px;">Scadenza</th>
+                                    <th style="font-weight:600;padding:6px 8px;text-align:right;">Residuo</th>
+                                    <th style="font-weight:600;padding:6px 8px;">Fascia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.bills" t-as="bill" t-key="bill.id">
+                                <tr style="border-bottom:1px solid #f3f4f6;">
+                                    <td style="padding:7px 8px;color:#6b7280;">
+                                        <t t-esc="bill.name"/>
+                                    </td>
+                                    <td style="padding:7px 8px;font-weight:500;">
+                                        <t t-esc="bill.partner_id[1]"/>
+                                    </td>
+                                    <td style="padding:7px 8px;color:#6b7280;">
+                                        <t t-esc="bill.invoice_date_due"/>
+                                    </td>
+                                    <td style="padding:7px 8px;text-align:right;font-weight:700;color:#ef4444;">
+                                        <t t-esc="formatAmount(bill.amount_residual)"/>
+                                    </td>
+                                    <td style="padding:7px 8px;">
+                                        <span t-attf-class="badge #{agingBadgeClass(bill.invoice_date_due)}"
+                                              style="font-size:10px;">
+                                            <t t-esc="agingLabel(bill.invoice_date_due)"/>
+                                        </span>
+                                    </td>
+                                </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </t>
+
+</div>
 </t>
 </templates>
