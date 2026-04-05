@@ -221,7 +221,8 @@ class ResPartnerMailExt(models.Model):
 
     def action_enrich_007(self):
         """Multi-source enrichment via Anthropic Claude + web_search tool."""
-        api_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.anthropic_api_key', '')
+        api_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.groq_api_key', '')
+        serper_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.serper_api_key', '')
         if not api_key:
             raise ValueError("Anthropic API key non configurata. Vai in Impostazioni > Parametri di sistema > casafolino.anthropic_api_key")
 
@@ -233,41 +234,127 @@ class ResPartnerMailExt(models.Model):
             if email and '@' in email:
                 domain_hint = email.split('@')[1]
 
-            prompt = f"""Sei un agente di business intelligence. Devi trovare il MASSIMO delle informazioni su questo contatto/azienda.
-
+            # --- SERPER WEB SEARCH ---
+            serper_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.serper_api_key', '')
+            search_context = ""
+            if serper_key:
+                # Determina paese del contatto
+                country_code = partner.country_id.code.upper() if partner.country_id else ''
+                
+                # Fonti per paese
+                sources_by_country = {
+                    'IT': [
+                        f"{company} site:fatturatoitalia.it",
+                        f"{company} site:aziende.money.it",
+                        f"{company} site:atoka.io",
+                        f"{company} fatturato bilancio dipendenti sede legale P.IVA",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'DE': [
+                        f"{company} site:northdata.de",
+                        f"{company} site:bundesanzeiger.de",
+                        f"{company} Umsatz Mitarbeiter Adresse",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'AT': [
+                        f"{company} site:northdata.de",
+                        f"{company} Umsatz Mitarbeiter Österreich",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'CH': [
+                        f"{company} site:northdata.de",
+                        f"{company} Umsatz Mitarbeiter Schweiz",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'GB': [
+                        f"{company} site:companieshouse.gov.uk",
+                        f"{company} site:opencorporates.com",
+                        f"{company} revenue employees UK",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'US': [
+                        f"{company} site:opencorporates.com",
+                        f"{company} site:dnb.com",
+                        f"{company} revenue employees USA",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'CA': [
+                        f"{company} site:opencorporates.com",
+                        f"{company} revenue employees Canada",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'FR': [
+                        f"{company} site:societe.com",
+                        f"{company} site:infogreffe.fr",
+                        f"{company} chiffre affaires employés",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'ES': [
+                        f"{company} site:einforma.com",
+                        f"{company} site:axesor.es",
+                        f"{company} facturacion empleados España",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'PL': [
+                        f"{company} site:opencorporates.com",
+                        f"{company} przychody pracownicy Polska",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'AE': [
+                        f"{company} site:opencorporates.com",
+                        f"{company} revenue employees UAE Dubai",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                    'AU': [
+                        f"{company} site:opencorporates.com",
+                        f"{company} revenue employees Australia",
+                        f"{company} site:linkedin.com/company",
+                    ],
+                }
+                
+                # Fonti internazionali sempre incluse
+                universal_queries = [
+                    f"{company} site:apollo.io",
+                    f"{company} site:crunchbase.com",
+                ]
+                
+                # Seleziona queries per paese (default: ricerca generica)
+                queries = sources_by_country.get(country_code, [
+                    f"{company} revenue employees headquarters",
+                    f"{company} site:opencorporates.com",
+                    f"{company} site:linkedin.com/company",
+                ])
+                
+                # Aggiungi sempre le universali
+                queries += universal_queries
+                
+                # Lancia max 4 query Serper
+                for q in queries[:4]:
+                    try:
+                        sr = requests.post(
+                            "https://google.serper.dev/search",
+                            headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
+                            json={"q": q, "num": 5, "gl": "it", "hl": "it"},
+                            timeout=10,
+                        )
+                        if sr.ok:
+                            data = sr.json()
+                            for item in data.get("organic", [])[:3]:
+                                search_context += f"- {item.get('title','')}: {item.get('snippet','')} ({item.get('link','')})" + "\n"
+                    except Exception as e:
+                        _logger.warning("Serper error: %s", e)
+            # --- END SERPER ---
+            prompt = f"""Sei un agente di business intelligence. Analizza il contatto e restituisci un JSON con tutti i dati trovati.
 CONTATTO:
 - Nome: {name}
 - Email: {email}
 - Azienda: {company}
 - Dominio email: {domain_hint}
 
-ISTRUZIONI:
-Cerca informazioni su TUTTE queste fonti, in ordine di priorità:
+RISULTATI RICERCA WEB (usa questi dati come fonte primaria):
+{search_context if search_context else "Nessun risultato trovato dalla ricerca web."}
 
-PER AZIENDE ITALIANE:
-1. https://aziende.money.it/ — cerca per nome azienda o P.IVA
-2. https://registroaziende.it/ — cerca ragione sociale
-3. https://www.fatturatoitalia.it/ — cerca fatturato e bilancio
-4. https://www.cerved.com o https://atoka.io — dati pubblici aziendali
-5. https://www.apollo.io — se hai l'email, cerca il profilo
-6. LinkedIn — cerca la pagina aziendale
-7. Sito web aziendale — dal dominio email o ricerca diretta
-8. Google: cerca "{company or name}" + "fatturato" OR "bilancio" OR "sede legale"
-
-PER AZIENDE NON ITALIANE:
-1. LinkedIn — pagina aziendale
-2. https://www.apollo.io — profilo aziendale
-3. Sito web aziendale
-4. Registri commerciali locali del paese
-5. Google: cerca informazioni finanziarie e sede
-
-REGOLE:
-- Sii AGGRESSIVO nella ricerca: prova più query per ogni fonte
-- Estrai il MASSIMO dei dati da ogni fonte
-- Se una fonte non risponde, passa alla successiva
-- Cerca SEMPRE fatturato, dipendenti, sede legale, P.IVA
-- Per il potenziale commerciale, valuta in base a: fatturato, dimensione, settore food/distribuzione
-
+Basandoti sui risultati web sopra, estrai il MASSIMO delle informazioni disponibili.
 Rispondi SOLO con un JSON valido (nessun testo prima o dopo), con TUTTI questi campi:
 {{
     "ragione_sociale": null,
@@ -296,42 +383,31 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo), con TUTTI questi c
     "odoo_website": null,
     "odoo_vat": null
 }}
-
 Per ogni campo usa null se non trovi il dato. Per "potenziale" usa: "alto", "medio" o "basso".
 Per "note_agente" scrivi un breve riassunto (2-3 frasi) utile per il team commerciale.
-I campi odoo_* devono contenere gli stessi dati dei campi corrispondenti, formattati per Odoo (es. indirizzo completo in odoo_street, ecc).
 """
 
             try:
                 response = requests.post(
-                    "https://api.anthropic.com/v1/messages",
+                    "https://api.groq.com/openai/v1/chat/completions",
                     headers={
-                        "x-api-key": api_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
                     },
                     json={
-                        "model": "claude-sonnet-4-5",
+                        "model": "llama-3.3-70b-versatile",
                         "max_tokens": 4096,
-                        "tools": [{
-                            "type": "web_search_20250305",
-                            "name": "web_search",
-                            "max_uses": 15,
-                        }],
                         "messages": [{"role": "user", "content": prompt}],
                     },
                     timeout=120,
                 )
+                if not response.ok:
+                    raise ValueError(f"API Error {response.status_code}: {response.text}")
                 response.raise_for_status()
                 _logger.info("007 raw response: %s", response.text[:2000])
                 result = response.json()
 
-                text_parts = []
-                for block in result.get('content', []):
-                    if block.get('type') == 'text':
-                        text_parts.append(block['text'])
-
-                full_text = '\n'.join(text_parts)
+                full_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
                 json_match = re.search(r'\{[\s\S]*\}', full_text)
                 if not json_match:
                     _logger.warning("007: no JSON found in response for partner %s", partner.id)
