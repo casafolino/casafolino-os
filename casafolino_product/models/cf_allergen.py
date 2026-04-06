@@ -235,9 +235,9 @@ class MrpBomAllergen(models.Model):
         for line in self.bom_line_ids:
             line_tmpl = line.product_id.product_tmpl_id
             prod_name = line.product_id.name or ''
-            for allergen in (line_tmpl.allergen_ids | line_tmpl.x_allergen_present_ids):
+            for allergen in line_tmpl.x_allergen_present_ids:
                 comp_present.setdefault(allergen.id, set()).add(prod_name)
-            for allergen in (line_tmpl.allergen_may_contain_ids | line_tmpl.x_allergen_traces_ids):
+            for allergen in line_tmpl.x_allergen_traces_ids:
                 comp_traces.setdefault(allergen.id, set()).add(prod_name)
 
         allergens = self.env["cf.allergen"].search([])
@@ -364,12 +364,6 @@ class ProductTemplateAllergen(models.Model):
     ], string="Stato Allergeni", compute="_compute_allergen_check", store=True)
     allergen_alert_msg = fields.Text(
         "Dettaglio Alert", compute="_compute_allergen_check", store=True)
-    allergen_label_text = fields.Text(
-        string="Testo etichetta allergeni",
-        compute="_compute_product_allergen_text")
-    allergen_alert_text = fields.Char(
-        compute="_compute_product_allergen_text",
-        string="Alert allergeni")
 
     @api.depends('x_allergen_present_ids', 'x_allergen_traces_ids')
     def _compute_x_allergen_label_eu(self):
@@ -426,7 +420,7 @@ class ProductTemplateAllergen(models.Model):
             }
         }
 
-    @api.depends("allergen_ids", "x_allergen_present_ids",
+    @api.depends("x_allergen_present_ids",
                  "bom_ids", "bom_ids.bom_line_ids",
                  "bom_ids.bom_line_ids.product_id")
     def _compute_allergen_check(self):
@@ -440,9 +434,8 @@ class ProductTemplateAllergen(models.Model):
             for bom in boms:
                 for line in bom.bom_line_ids:
                     line_tmpl = line.product_id.product_tmpl_id
-                    bom_allergens |= line_tmpl.sudo().allergen_ids
                     bom_allergens |= line_tmpl.sudo().x_allergen_present_ids
-            declared = tmpl.allergen_ids | tmpl.x_allergen_present_ids
+            declared = tmpl.x_allergen_present_ids
             undeclared = bom_allergens - declared
             if not bom_allergens:
                 tmpl.allergen_check_state = "unchecked"
@@ -454,26 +447,6 @@ class ProductTemplateAllergen(models.Model):
             else:
                 tmpl.allergen_check_state = "ok"
                 tmpl.allergen_alert_msg = "Tutti gli allergeni dichiarati correttamente"
-
-    @api.depends('allergen_bom_ids', 'allergen_bom_ids.status')
-    def _compute_product_allergen_text(self):
-        for rec in self:
-            present = rec.allergen_bom_ids.filtered(
-                lambda a: a.status == 'present').mapped('allergen_id.name')
-            traces = rec.allergen_bom_ids.filtered(
-                lambda a: a.status == 'traces').mapped('allergen_id.name')
-            if present:
-                rec.allergen_alert_text = "ALLERGENI PRESENTI: " + ", ".join(
-                    n.upper() for n in present)
-            else:
-                rec.allergen_alert_text = False
-            parts = []
-            if present:
-                parts.append("Contiene: " + ", ".join(n.upper() for n in present) + ".")
-            if traces:
-                parts.append("Può contenere tracce di: " + ", ".join(
-                    n.upper() for n in traces) + ".")
-            rec.allergen_label_text = " ".join(parts) if parts else False
 
 
 class MrpBomLineAutoAnalyze(models.Model):
@@ -493,9 +466,9 @@ class MrpBomLineAutoAnalyze(models.Model):
             if not tmpl:
                 line.x_allergeni_display = ''
                 continue
-            # Primary source: x_allergen_present_ids / x_allergen_traces_ids on product
-            present_names = list((tmpl.x_allergen_present_ids | tmpl.allergen_ids).mapped('name'))
-            traces_names = list((tmpl.x_allergen_traces_ids | tmpl.allergen_may_contain_ids).mapped('name'))
+            # Read from product declared allergens
+            present_names = list(tmpl.x_allergen_present_ids.mapped('name'))
+            traces_names = list(tmpl.x_allergen_traces_ids.mapped('name'))
             # Remove duplicates (traces already in present)
             traces_names = [n for n in traces_names if n not in present_names]
             parts = []
