@@ -354,6 +354,17 @@ class ProductTemplateAllergen(models.Model):
         "cf.allergen", "product_x_allergen_traces_rel",
         "product_id", "allergen_id",
         string="Allergeni in Tracce")
+
+    # --- Allergeni da BOM (computed, readonly) ---
+    x_allergen_from_bom_ids = fields.Many2many(
+        "cf.allergen",
+        string="Allergeni da BOM",
+        compute="_compute_x_allergen_from_bom")
+    x_allergen_from_bom_html = fields.Html(
+        string="Allergeni da Distinta Base",
+        compute="_compute_x_allergen_from_bom",
+        sanitize=False)
+
     x_allergen_label_eu = fields.Text(
         string="Testo etichetta EU",
         compute="_compute_x_allergen_label_eu")
@@ -366,11 +377,58 @@ class ProductTemplateAllergen(models.Model):
     allergen_alert_msg = fields.Text(
         "Dettaglio Alert", compute="_compute_allergen_check", store=True)
 
-    @api.depends('x_allergen_present_ids', 'x_allergen_traces_ids')
+    @api.depends('bom_ids.allergen_ids', 'bom_ids.allergen_ids.status',
+                 'bom_ids.allergen_ids.allergen_id', 'bom_ids.active')
+    def _compute_x_allergen_from_bom(self):
+        for rec in self:
+            boms = rec.bom_ids.filtered(lambda b: b.active)
+            bom_present = self.env["cf.allergen"]
+            bom_traces = self.env["cf.allergen"]
+            for bom in boms:
+                for ra in bom.allergen_ids:
+                    if ra.status == 'present':
+                        bom_present |= ra.allergen_id
+                    elif ra.status == 'traces':
+                        bom_traces |= ra.allergen_id
+            # Traces che sono già presenti non contano come tracce
+            bom_traces = bom_traces - bom_present
+            rec.x_allergen_from_bom_ids = bom_present | bom_traces
+            # Badge HTML
+            parts = []
+            for a in bom_present:
+                name = (a.name or '').upper()
+                parts.append(
+                    f'<span style="display:inline-block;background:#fee2e2;color:#cc0000;'
+                    f'font-weight:700;padding:4px 12px;border-radius:20px;margin:3px;'
+                    f'font-size:12px;border:1.5px solid #fca5a5;">{name}</span>')
+            for a in bom_traces:
+                name = (a.name or '').upper()
+                parts.append(
+                    f'<span style="display:inline-block;background:#fef3c7;color:#d97706;'
+                    f'font-weight:600;padding:4px 12px;border-radius:20px;margin:3px;'
+                    f'font-size:12px;border:1.5px solid #fcd34d;">{name}</span>')
+            rec.x_allergen_from_bom_html = ''.join(parts) if parts else False
+
+    @api.depends('x_allergen_present_ids', 'x_allergen_traces_ids',
+                 'bom_ids.allergen_ids', 'bom_ids.allergen_ids.status',
+                 'bom_ids.allergen_ids.allergen_id', 'bom_ids.active')
     def _compute_x_allergen_label_eu(self):
         for rec in self:
-            present = rec.x_allergen_present_ids.mapped('name')
-            traces = rec.x_allergen_traces_ids.mapped('name')
+            # Collect BOM present/traces
+            boms = rec.bom_ids.filtered(lambda b: b.active)
+            bom_present = self.env["cf.allergen"]
+            bom_traces = self.env["cf.allergen"]
+            for bom in boms:
+                for ra in bom.allergen_ids:
+                    if ra.status == 'present':
+                        bom_present |= ra.allergen_id
+                    elif ra.status == 'traces':
+                        bom_traces |= ra.allergen_id
+            # Union: manual + BOM
+            all_present = rec.x_allergen_present_ids | bom_present
+            all_traces = (rec.x_allergen_traces_ids | bom_traces) - all_present
+            present = all_present.mapped('name')
+            traces = all_traces.mapped('name')
             parts = []
             if present:
                 parts.append("Contiene: " + ", ".join(
@@ -440,6 +498,23 @@ class ProductTemplateAllergen(models.Model):
                 'title': 'Allergeni aggiunti',
                 'message': f'Aggiunti: {", ".join(missing.mapped("name"))}' if missing else 'Nessun allergene da aggiungere.',
                 'type': 'success' if missing else 'info',
+                'sticky': False,
+            }
+        }
+
+    def action_refresh_from_bom(self):
+        """Re-analyze all active BOMs and refresh computed BOM allergens."""
+        self.ensure_one()
+        boms = self.bom_ids.filtered(lambda b: b.active)
+        for bom in boms:
+            bom._analyze_allergens_sync()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Aggiornamento da BOM completato',
+                'message': f'Analizzate {len(boms)} distinte base.',
+                'type': 'success',
                 'sticky': False,
             }
         }

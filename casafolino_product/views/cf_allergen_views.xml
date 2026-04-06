@@ -205,9 +205,25 @@
                         </group>
                     </group>
 
+                    <!-- Allergeni da Distinta Base -->
+                    <separator string="Allergeni da Distinta Base"/>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <button name="action_refresh_from_bom" type="object"
+                                string="Aggiorna da BOM"
+                                class="btn-secondary"/>
+                    </div>
+                    <div class="mb-3" invisible="not x_allergen_from_bom_html">
+                        <field name="x_allergen_from_bom_html" widget="html"
+                               nolabel="1" readonly="1"/>
+                    </div>
+                    <div class="text-muted fst-italic mb-3"
+                         invisible="x_allergen_from_bom_html">
+                        Nessun allergene rilevato dalle distinte base. Usa "Aggiorna da BOM" per analizzare.
+                    </div>
+
                     <!-- Testo etichetta EU generato automaticamente -->
-                    <group string="Testo etichetta EU (Reg. 1169/2011)"
-                           invisible="not x_allergen_label_eu">
+                    <separator string="Testo etichetta EU (Reg. 1169/2011)"/>
+                    <group invisible="not x_allergen_label_eu">
                         <div class="p-3"
                              style="background:#fff3cd;border-radius:4px;border:1px solid #ffc107;font-weight:bold;color:#cc0000;letter-spacing:0.3px;">
                             <field name="x_allergen_label_eu" nolabel="1" readonly="1"/>
