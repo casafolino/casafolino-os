@@ -16,7 +16,7 @@ _USDA_API_KEY_DEFAULT = "DEMO_KEY"
 _OFF_API_URL = "https://world.openfoodfacts.org/cgi/search.pl"
 _API_TIMEOUT = 8  # seconds
 
-# USDA nutrient IDs we care about
+# USDA nutrient IDs we care about (primary IDs)
 _USDA_NUTRIENT_IDS = {
     1008: 'energy_kcal',   # Energy kcal
     1062: 'energy_kj',     # Energy kJ
@@ -35,6 +35,45 @@ _USDA_NUTRIENT_IDS = {
     1110: 'vitamin_d_mcg', # Vitamin D (D2 + D3)
     1162: '_vitc_mg_raw',  # Vitamin C (mg)
 }
+# Fallback nutrient IDs (used when primary IDs return 0)
+_USDA_NUTRIENT_FALLBACKS = {
+    'energy_kj': [2048, 2047],         # Energy (kJ) alternates
+    'sugars': [1063],                   # Sugars, Total
+    'energy_kcal': [2047],              # Energy (Atwater General Factors)
+    'fiber': [1185],                    # Fiber, total dietary (alt)
+}
+
+
+def _extract_usda_nutrients(food):
+    """Extract nutrient dict from a single USDA food result.
+    Handles primary IDs + fallbacks. Returns (result_dict, fdc_id).
+    """
+    fdc_id = str(food.get('fdcId', ''))
+    nutrients = {n['nutrientId']: n.get('value', 0)
+                 for n in food.get('foodNutrients', [])
+                 if 'nutrientId' in n}
+    result = {}
+    for nid, field in _USDA_NUTRIENT_IDS.items():
+        val = nutrients.get(nid, 0) or 0
+        if field == '_sodium_mg_raw':
+            result['sodium_mg'] = val
+            result['salt'] = round(val * 2.5 / 1000, 3)
+        elif field == '_vitc_mg_raw':
+            result['vitamina_c'] = val
+        else:
+            result[field] = val
+    # Apply fallbacks for fields that are still 0
+    for field, alt_ids in _USDA_NUTRIENT_FALLBACKS.items():
+        if not result.get(field):
+            for alt_id in alt_ids:
+                val = nutrients.get(alt_id, 0) or 0
+                if val:
+                    result[field] = val
+                    break
+    # Compute energy_kj from kcal if still missing
+    if not result.get('energy_kj') and result.get('energy_kcal'):
+        result['energy_kj'] = round(result['energy_kcal'] * 4.184, 1)
+    return result, fdc_id
 
 
 # ─── Reference constants ─────────────────────────────────────────────────────
@@ -262,40 +301,37 @@ class CfNutritionIngredient(models.Model):
             return {}
 
     def _fetch_usda(self, name):
-        """Call USDA FoodData Central API. Returns nutrient dict or {}."""
+        """Call USDA FoodData Central API. Returns nutrient dict or {}.
+        Fetches up to 5 results and picks the first with energy > 0.
+        """
         try:
             api_key = self.env['ir.config_parameter'].sudo().get_param(
                 _USDA_API_KEY_PARAM, _USDA_API_KEY_DEFAULT)
             resp = requests.get(_USDA_API_URL, params={
                 'query': name,
                 'api_key': api_key,
-                'pageSize': 1,
+                'pageSize': 5,
                 'dataType': 'SR Legacy,Foundation',
             }, timeout=_API_TIMEOUT)
             resp.raise_for_status()
-            data = resp.json()
-            foods = data.get('foods', [])
+            foods = resp.json().get('foods', [])
             if not foods:
                 return {}
-            food = foods[0]
-            fdc_id = str(food.get('fdcId', ''))
-            nutrients = {n['nutrientId']: n.get('value', 0)
-                         for n in food.get('foodNutrients', [])
-                         if 'nutrientId' in n}
-            result = {}
-            for nid, field in _USDA_NUTRIENT_IDS.items():
-                val = nutrients.get(nid, 0) or 0
-                if field == '_sodium_mg_raw':
-                    result['sodium_mg'] = val
-                    result['salt'] = round(val * 2.5 / 1000, 3)
-                elif field == '_vitc_mg_raw':
-                    result['vitamina_c'] = val
-                else:
-                    result[field] = val
-            result['data_source'] = 'usda'
-            result['external_id'] = fdc_id
-            result['fdc_id'] = fdc_id
-            return result
+            # Pick first result with energy > 0
+            best_result, best_fdc = None, ''
+            for food in foods:
+                result, fdc_id = _extract_usda_nutrients(food)
+                if result.get('energy_kcal', 0) > 0:
+                    best_result, best_fdc = result, fdc_id
+                    break
+                if best_result is None:
+                    best_result, best_fdc = result, fdc_id
+            if best_result is None:
+                return {}
+            best_result['data_source'] = 'usda'
+            best_result['external_id'] = best_fdc
+            best_result['fdc_id'] = best_fdc
+            return best_result
         except Exception as e:
             _logger.warning("USDA API error for '%s': %s", name, e)
             return {}

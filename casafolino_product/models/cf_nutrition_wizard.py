@@ -8,6 +8,8 @@ import requests
 
 from odoo import api, fields, models
 
+from .cf_nutrition import _extract_usda_nutrients
+
 _logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,7 @@ class CfNutritionUsdaWizard(models.TransientModel):
     result_ids = fields.One2many("cf.nutrition.usda.wizard.line", "wizard_id")
 
     def action_search(self):
-        """Search USDA API with up to 10 results."""
+        """Search USDA API with up to 15 results."""
         self.ensure_one()
         api_key = self.env['ir.config_parameter'].sudo().get_param(
             'casafolino.usda_api_key', 'DEMO_KEY')
@@ -34,7 +36,7 @@ class CfNutritionUsdaWizard(models.TransientModel):
                 params={
                     'query': self.search_query,
                     'api_key': api_key,
-                    'pageSize': 10,
+                    'pageSize': 15,
                     'dataType': 'SR Legacy,Foundation',
                 },
                 timeout=8,
@@ -42,50 +44,30 @@ class CfNutritionUsdaWizard(models.TransientModel):
             resp.raise_for_status()
             foods = resp.json().get('foods', [])
         except Exception:
-            _logger.warning("USDA API search failed for query: %s", self.search_query, exc_info=True)
+            _logger.warning("USDA API search failed for query: %s",
+                            self.search_query, exc_info=True)
             foods = []
 
         # Clear old results
         self.result_ids.unlink()
 
-        # USDA nutrient IDs
-        NUTRIENT_MAP = {
-            1008: 'energy_kcal',
-            1062: 'energy_kj',
-            1004: 'fat',
-            1258: 'saturated_fat',
-            1257: 'trans_fat_g',
-            1005: 'carbs',
-            2000: 'sugars',
-            1079: 'fiber',
-            1003: 'protein',
-            1093: 'sodium_mg',
-            1253: 'cholesterol_mg',
-        }
-
         lines = []
         for food in foods:
-            fdc_id = str(food.get('fdcId', ''))
-            name = food.get('description', food.get('lowercaseDescription', ''))
-            nutrients = {
-                n['nutrientId']: n.get('value', 0)
-                for n in food.get('foodNutrients', [])
-                if 'nutrientId' in n
-            }
-
-            sodium_val = nutrients.get(1093, 0) or 0
+            result, fdc_id = _extract_usda_nutrients(food)
+            name = food.get('description',
+                            food.get('lowercaseDescription', ''))
             lines.append({
                 'wizard_id': self.id,
                 'fdc_id': fdc_id,
                 'name': name,
-                'energy_kcal': nutrients.get(1008, 0) or 0,
-                'fat': nutrients.get(1004, 0) or 0,
-                'carbs': nutrients.get(1005, 0) or 0,
-                'protein': nutrients.get(1003, 0) or 0,
-                'sugars': nutrients.get(2000, 0) or 0,
-                'fiber': nutrients.get(1079, 0) or 0,
-                'saturated_fat': nutrients.get(1258, 0) or 0,
-                'salt': round(sodium_val * 2.5 / 1000, 3),
+                'energy_kcal': result.get('energy_kcal', 0),
+                'fat': result.get('fat', 0),
+                'carbs': result.get('carbs', 0),
+                'protein': result.get('protein', 0),
+                'sugars': result.get('sugars', 0),
+                'fiber': result.get('fiber', 0),
+                'saturated_fat': result.get('saturated_fat', 0),
+                'salt': result.get('salt', 0),
             })
 
         self.env["cf.nutrition.usda.wizard.line"].create(lines)
@@ -107,6 +89,7 @@ class CfNutritionUsdaWizard(models.TransientModel):
         line = selected[0]
         self.ingredient_id.write({
             'energy_kcal': line.energy_kcal,
+            'energy_kj': round(line.energy_kcal * 4.184, 1),
             'fat': line.fat,
             'saturated_fat': line.saturated_fat,
             'carbs': line.carbs,
@@ -114,6 +97,7 @@ class CfNutritionUsdaWizard(models.TransientModel):
             'fiber': line.fiber,
             'protein': line.protein,
             'salt': line.salt,
+            'sodium_mg': round(line.salt / 2.5 * 1000, 1) if line.salt else 0,
             'fdc_id': line.fdc_id,
             'external_id': line.fdc_id,
             'data_source': 'usda',
