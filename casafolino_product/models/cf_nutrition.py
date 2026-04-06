@@ -688,13 +688,51 @@ class CfNutritionBom(models.Model):
         'iron_mg', 'vitamin_d_mcg',
     ]
 
+    # Keywords that identify non-food packaging components
+    _NON_FOOD_KEYWORDS = (
+        'tappo', 'vaso', 'cartone', 'etichetta', 'box',
+        'imballo', 'imballaggio', 'packaging', 'barattolo',
+        'bottiglia', 'coperchio', 'pellicola', 'vaschetta',
+    )
+
+    @staticmethod
+    def _is_non_food_line(line):
+        """Return True if BOM line is likely non-food (packaging/overhead)."""
+        tmpl = line.product_id.product_tmpl_id
+        name_lower = (line.product_id.name or '').lower()
+        # Generic consumable in root category with packaging-like name
+        categ_name = (tmpl.categ_id.name or '').strip()
+        is_generic_categ = categ_name in ('Tutti', 'All', '')
+        is_consumable = tmpl.type == 'consu'
+        has_packaging_name = any(
+            kw in name_lower for kw in CfNutritionBom._NON_FOOD_KEYWORDS
+        )
+        return is_generic_categ and is_consumable and has_packaging_name
+
+    def _find_ingredient(self, tmpl):
+        """Find cf.nutrition.ingredient for a product template.
+        Search order: direct link, product_id match, name ilike.
+        """
+        NutrIngredient = self.env['cf.nutrition.ingredient']
+        ingredient = tmpl.nutrition_ingredient_id
+        if ingredient:
+            return ingredient
+        ingredient = NutrIngredient.search(
+            [('product_id', '=', tmpl.id)], limit=1)
+        if ingredient:
+            return ingredient
+        # Fallback: search by name
+        ingredient = NutrIngredient.search(
+            [('product_id.name', 'ilike', tmpl.name)], limit=1)
+        return ingredient
+
     def _compute_from_bom(self, bom):
         """Calcola media pesata dei valori nutrizionali dalle righe BoM.
-        Salta componenti con is_food_ingredient=False (imballaggi, overhead).
-        Usa nutrition_ingredient_id (link diretto) se presente, altrimenti cerca per product_id.
+        Esclude solo componenti chiaramente non-food (packaging).
         Restituisce (totals_dict, missing_names_list).
         """
-        food_lines = [l for l in bom.bom_line_ids if l.product_id.product_tmpl_id.is_food_ingredient]
+        food_lines = [l for l in bom.bom_line_ids
+                      if not self._is_non_food_line(l)]
         total_qty = sum(line.product_qty for line in food_lines)
         if not total_qty:
             return {}, []
@@ -702,10 +740,7 @@ class CfNutritionBom(models.Model):
         missing = []
         for line in food_lines:
             tmpl = line.product_id.product_tmpl_id
-            ingredient = tmpl.nutrition_ingredient_id
-            if not ingredient:
-                ingredient = self.env['cf.nutrition.ingredient'].search(
-                    [('product_id', '=', tmpl.id)], limit=1)
+            ingredient = self._find_ingredient(tmpl)
             if not ingredient or not ingredient.energy_kcal:
                 missing.append(line.product_id.display_name)
                 continue
@@ -784,29 +819,41 @@ class MrpBomNutrition(models.Model):
         string="Stato Dati Nutrizionali")
 
     def _compute_nutrition_status(self):
+        NutrBom = self.env['cf.nutrition.bom']
         NutrIngredient = self.env['cf.nutrition.ingredient']
         for bom in self:
-            total = len(bom.bom_line_ids)
-            if not total:
+            if not bom.bom_line_ids:
                 bom.nutrition_status_html = False
                 continue
+            food_lines = [l for l in bom.bom_line_ids
+                          if not NutrBom._is_non_food_line(l)]
+            skipped = len(bom.bom_line_ids) - len(food_lines)
             found = 0
             missing_names = []
-            for line in bom.bom_line_ids:
+            for line in food_lines:
                 tmpl = line.product_id.product_tmpl_id
                 ingredient = tmpl.nutrition_ingredient_id
                 if not ingredient:
                     ingredient = NutrIngredient.search(
                         [('product_id', '=', tmpl.id)], limit=1)
+                if not ingredient:
+                    ingredient = NutrIngredient.search(
+                        [('product_id.name', 'ilike', tmpl.name)], limit=1)
                 if ingredient and ingredient.energy_kcal:
                     found += 1
                 else:
                     missing_names.append(line.product_id.display_name)
+            total = len(food_lines)
             color = '#16a34a' if found == total else '#d97706' if found > 0 else '#dc2626'
             html = (
                 f'<span style="font-weight:600;color:{color};">'
                 f'Dati nutrizionali: {found}/{total} ingredienti</span>'
             )
+            if skipped:
+                html += (
+                    f'<span style="color:#9ca3af;font-size:12px;margin-left:8px;">'
+                    f'({skipped} non-food esclusi)</span>'
+                )
             if missing_names:
                 html += (
                     f'<br/><span style="color:#9ca3af;font-size:12px;">'
@@ -832,16 +879,21 @@ class MrpBomNutrition(models.Model):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Nessun ingrediente alimentare',
-                    'message': 'Nessun componente con is_food_ingredient attivo.',
+                    'message': 'Nessun componente alimentare trovato nella BOM (tutti esclusi come packaging).',
                     'type': 'warning',
                 },
             }
         if totals:
             totals['last_computed'] = fields.Datetime.now()
             nutr.write(totals)
-        found = len(self.bom_line_ids) - len(missing)
-        total = len(self.bom_line_ids)
-        msg = f'Valori calcolati su {found}/{total} ingredienti.'
+        food_lines = [l for l in self.bom_line_ids
+                      if not NutrBom._is_non_food_line(l)]
+        skipped = len(self.bom_line_ids) - len(food_lines)
+        total_food = len(food_lines)
+        found = total_food - len(missing)
+        msg = f'Valori calcolati su {found}/{total_food} ingredienti.'
+        if skipped:
+            msg += f' ({skipped} non-food esclusi.)'
         if missing:
             msg += f' Mancano: {", ".join(missing)}'
         return {
