@@ -419,50 +419,35 @@ class CfNutritionIngredient(models.Model):
             'params': {'title': 'Resync', 'message': 'Fonte dati manuale — scegli CREA, USDA o Open Food Facts.', 'type': 'info'},
         }
 
-    def action_open_crea_wizard(self):
-        """Open CREA search wizard for this ingredient."""
+    def _open_nutrition_wizard(self, res_model, name):
+        """Open a nutrition search wizard for this ingredient."""
         self.ensure_one()
+        view = self.env['ir.ui.view'].search(
+            [('model', '=', res_model), ('type', '=', 'form')], limit=1)
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Cerca su CREA',
-            'res_model': 'cf.nutrition.crea.wizard',
+            'name': name,
+            'res_model': res_model,
             'view_mode': 'form',
+            'views': [(view.id, 'form')] if view else [(False, 'form')],
             'target': 'new',
             'context': {
                 'default_ingredient_id': self.id,
                 'default_search_query': self._get_search_name(),
             },
         }
+
+    def action_open_crea_wizard(self):
+        return self._open_nutrition_wizard(
+            'cf.nutrition.crea.wizard', 'Cerca su CREA')
 
     def action_open_usda_wizard(self):
-        """Open USDA search wizard for this ingredient."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Cerca su USDA',
-            'res_model': 'cf.nutrition.usda.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_ingredient_id': self.id,
-                'default_search_query': self._get_search_name(),
-            },
-        }
+        return self._open_nutrition_wizard(
+            'cf.nutrition.usda.wizard', 'Cerca su USDA')
 
     def action_open_ciqual_wizard(self):
-        """Open CIQUAL search wizard for this ingredient."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Cerca su CIQUAL',
-            'res_model': 'cf.nutrition.ciqual.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_ingredient_id': self.id,
-                'default_search_query': self._get_search_name(),
-            },
-        }
+        return self._open_nutrition_wizard(
+            'cf.nutrition.ciqual.wizard', 'Cerca su CIQUAL')
 
     def action_sync_all_stale(self):
         """Pulsante massivo: sincronizza tutti gli ingredienti con last_sync > 30gg o mai sincronizzati."""
