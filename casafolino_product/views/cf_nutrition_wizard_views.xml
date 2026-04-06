@@ -109,4 +109,57 @@
         <field name="target">new</field>
     </record>
 
+    <!-- ============================================================ -->
+    <!--            Bulk Import Wizard Form + Action                  -->
+    <!-- ============================================================ -->
+    <record id="view_cf_nutrition_bulk_import_wizard_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.bulk.import.wizard.form</field>
+        <field name="model">cf.nutrition.bulk.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importazione massiva dati nutrizionali USDA">
+                <group>
+                    <field name="filter_mode"/>
+                    <field name="skip_existing"/>
+                </group>
+                <group invisible="not result_message">
+                    <field name="result_message" nolabel="1" readonly="1"
+                           widget="text"/>
+                </group>
+                <footer invisible="result_message">
+                    <button name="action_run" type="object"
+                            string="Avvia Importazione" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+                <footer invisible="not result_message">
+                    <button string="Chiudi" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cf_nutrition_bulk_import" model="ir.actions.act_window">
+        <field name="name">Importa dati nutrizionali da USDA</field>
+        <field name="res_model">cf.nutrition.bulk.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Server action binding on product.template list -->
+    <record id="action_bulk_import_usda_from_products" model="ir.actions.server">
+        <field name="name">Importa dati nutrizionali da USDA</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Importa dati nutrizionali da USDA',
+    'res_model': 'cf.nutrition.bulk.import.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+}
+        </field>
+    </record>
+
 </odoo>

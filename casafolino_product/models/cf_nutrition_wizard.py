@@ -284,3 +284,95 @@ class CfNutritionCiqualWizardLine(models.TransientModel):
     fiber = fields.Float("Fibra g")
     protein = fields.Float("Proteine g")
     salt = fields.Float("Sale g")
+
+
+# ---------------------------------------------------------------------------
+# Bulk USDA Import Wizard
+# ---------------------------------------------------------------------------
+
+class CfNutritionBulkImportWizard(models.TransientModel):
+    _name = "cf.nutrition.bulk.import.wizard"
+    _description = "Importazione massiva dati nutrizionali da USDA"
+
+    filter_mode = fields.Selection([
+        ('raw_materials', 'Materie Prime (categoria)'),
+        ('purchasable', 'Prodotti acquistabili'),
+        ('both', 'Entrambi'),
+    ], string="Filtra prodotti", default='both', required=True)
+    skip_existing = fields.Boolean(
+        string="Salta prodotti con dati esistenti", default=True)
+    result_message = fields.Text(string="Risultato", readonly=True)
+
+    def action_run(self):
+        """Find products, create ingredients, run USDA sync."""
+        self.ensure_one()
+        NutrIngredient = self.env['cf.nutrition.ingredient']
+        ProductTemplate = self.env['product.template']
+
+        # Build domain based on filter mode
+        domain = []
+        if self.filter_mode == 'raw_materials':
+            domain = [('categ_id.name', 'ilike', 'materie prime')]
+        elif self.filter_mode == 'purchasable':
+            domain = [('purchase_ok', '=', True)]
+        else:
+            domain = ['|',
+                       ('categ_id.name', 'ilike', 'materie prime'),
+                       ('purchase_ok', '=', True)]
+
+        products = ProductTemplate.search(domain)
+
+        created = 0
+        synced = 0
+        failed = 0
+        skipped = 0
+
+        for product in products:
+            # Find or create ingredient record
+            ingredient = product.nutrition_ingredient_id
+            if not ingredient:
+                ingredient = NutrIngredient.search(
+                    [('product_id', '=', product.id)], limit=1)
+            if not ingredient:
+                ingredient = NutrIngredient.create({
+                    'product_id': product.id,
+                    'sync_name': product.name,
+                    'data_source': 'manuale',
+                })
+                product.nutrition_ingredient_id = ingredient
+                product.is_food_ingredient = True
+                created += 1
+
+            # Skip if already has data and skip_existing
+            if self.skip_existing and ingredient.energy_kcal:
+                skipped += 1
+                continue
+
+            # Try USDA sync
+            try:
+                data = ingredient._fetch_usda(ingredient._get_search_name())
+                if data and data.get('energy_kcal', 0) > 0:
+                    ingredient._apply_nutrients(data)
+                    synced += 1
+                else:
+                    failed += 1
+            except Exception:
+                _logger.warning("Bulk USDA sync failed for %s",
+                                product.name, exc_info=True)
+                failed += 1
+
+        self.result_message = (
+            f"Prodotti trovati: {len(products)}\n"
+            f"Record nutrizionali creati: {created}\n"
+            f"Sincronizzati da USDA: {synced}\n"
+            f"Saltati (dati esistenti): {skipped}\n"
+            f"Falliti (nessun risultato USDA): {failed}"
+        )
+
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }

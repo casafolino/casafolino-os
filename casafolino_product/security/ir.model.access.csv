@@ -19,3 +19,4 @@ access_cf_nutrition_usda_wizard,cf.nutrition.usda.wizard user,model_cf_nutrition
 access_cf_nutrition_usda_wizard_line,cf.nutrition.usda.wizard.line user,model_cf_nutrition_usda_wizard_line,base.group_user,1,1,1,1
 access_cf_nutrition_ciqual_wizard,cf.nutrition.ciqual.wizard user,model_cf_nutrition_ciqual_wizard,base.group_user,1,1,1,1
 access_cf_nutrition_ciqual_wizard_line,cf.nutrition.ciqual.wizard.line user,model_cf_nutrition_ciqual_wizard_line,base.group_user,1,1,1,1
+access_cf_nutrition_bulk_import_wizard,cf.nutrition.bulk.import.wizard user,model_cf_nutrition_bulk_import_wizard,base.group_user,1,1,1,1

@@ -1200,6 +1200,21 @@ class ProductTemplateNutrition(models.Model):
         self.nutrition_ingredient_id = ingredient
         return ingredient
 
+    def action_setup_food_ingredient(self):
+        """Create nutrition ingredient record and mark as food ingredient."""
+        self.ensure_one()
+        self.is_food_ingredient = True
+        ingredient = self._get_or_create_ingredient()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Ingrediente configurato',
+                'message': f'Record nutrizionale creato per "{self.name}". Usa Sync USDA o CIQUAL per popolare i valori.',
+                'type': 'success',
+            },
+        }
+
     def action_sync_ingredient_usda(self):
         self.ensure_one()
         ingredient = self._get_or_create_ingredient()
