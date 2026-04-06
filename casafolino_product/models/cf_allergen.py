@@ -57,6 +57,7 @@ class CfAllergen(models.Model):
         ('assente', 'Assente'),
     ], string="Severità default", default='assente')
     description = fields.Text(string="Descrizione")
+    legislation = fields.Text(string="Note legislative / CasaFolino")
     regulation_ref = fields.Char(string="Rif. Regolamento", default="Reg. 1169/2011")
     active = fields.Boolean(default=True)
     category_id = fields.Many2one("cf.allergen.category", "Categoria")
@@ -379,74 +380,90 @@ class ProductTemplateAllergen(models.Model):
                     n.upper() for n in traces) + ".")
             rec.x_allergen_label_eu = " ".join(parts) if parts else False
 
-    def action_analyze_allergens_from_name(self):
-        """Keyword matching on product name to detect allergens."""
+    def _get_keyword_matches(self):
+        """Return cf.allergen recordset matched by keyword on product name."""
         self.ensure_one()
         keywords = self.env["cf.allergen.keyword"].search([])
         kw_map = {}
         for kw in keywords:
             kw_map.setdefault(kw.allergen_id.id, []).append(kw)
-
         product_name = (self.name or '').lower()
-        found_present = self.env["cf.allergen"]
+        matched = self.env["cf.allergen"]
+        if not product_name:
+            return matched
         for allergen in self.env["cf.allergen"].search([]):
             for kw in kw_map.get(allergen.id, []):
                 k = kw.keyword.lower()
-                matched = False
                 if kw.match_type == "exact" and k == product_name:
-                    matched = True
-                elif kw.match_type == "partial" and k in product_name:
-                    matched = True
-                elif kw.match_type == "starts" and product_name.startswith(k):
-                    matched = True
-                if matched:
-                    found_present |= allergen
+                    matched |= allergen
                     break
+                elif kw.match_type == "partial" and k in product_name:
+                    matched |= allergen
+                    break
+                elif kw.match_type == "starts" and product_name.startswith(k):
+                    matched |= allergen
+                    break
+        return matched
 
-        if found_present:
-            self.x_allergen_present_ids = [(4, a.id) for a in found_present]
+    def action_analyze_allergens_from_name(self):
+        """Keyword matching on product name — adds to x_allergen_present_ids (union)."""
+        self.ensure_one()
+        found = self._get_keyword_matches()
+        if found:
+            self.x_allergen_present_ids = [(4, a.id) for a in found]
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Analisi da nome prodotto',
                 'message': (
-                    f'Trovati {len(found_present)} allergeni nel nome "{self.name}".'
-                    if found_present else
+                    f'Trovati {len(found)} allergeni nel nome "{self.name}".'
+                    if found else
                     f'Nessun allergene rilevato nel nome "{self.name}".'
                 ),
-                'type': 'success' if found_present else 'warning',
+                'type': 'success' if found else 'warning',
                 'sticky': False,
             }
         }
 
-    @api.depends("x_allergen_present_ids",
-                 "bom_ids", "bom_ids.bom_line_ids",
-                 "bom_ids.bom_line_ids.product_id")
+    def action_add_suggested_allergens(self):
+        """Add keyword-matched allergens missing from x_allergen_present_ids."""
+        self.ensure_one()
+        suggested = self._get_keyword_matches()
+        missing = suggested - self.x_allergen_present_ids
+        if missing:
+            self.x_allergen_present_ids = [(4, a.id) for a in missing]
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Allergeni aggiunti',
+                'message': f'Aggiunti: {", ".join(missing.mapped("name"))}' if missing else 'Nessun allergene da aggiungere.',
+                'type': 'success' if missing else 'info',
+                'sticky': False,
+            }
+        }
+
+    @api.depends("x_allergen_present_ids", "name")
     def _compute_allergen_check(self):
+        """Compare keyword matches on product name vs x_allergen_present_ids."""
         for tmpl in self:
-            boms = tmpl.bom_ids
-            if not boms:
+            suggested = tmpl._get_keyword_matches()
+            if not suggested:
                 tmpl.allergen_check_state = "unchecked"
                 tmpl.allergen_alert_msg = ""
                 continue
-            bom_allergens = self.env["cf.allergen"]
-            for bom in boms:
-                for line in bom.bom_line_ids:
-                    line_tmpl = line.product_id.product_tmpl_id
-                    bom_allergens |= line_tmpl.sudo().x_allergen_present_ids
-            declared = tmpl.x_allergen_present_ids
-            undeclared = bom_allergens - declared
-            if not bom_allergens:
-                tmpl.allergen_check_state = "unchecked"
-                tmpl.allergen_alert_msg = "Nessun allergene trovato negli ingredienti"
-            elif undeclared:
+            missing = suggested - tmpl.x_allergen_present_ids
+            if missing:
                 tmpl.allergen_check_state = "alert"
-                names = ", ".join(undeclared.mapped("name"))
-                tmpl.allergen_alert_msg = "ALLERGENI NON DICHIARATI: %s" % names
+                names = ", ".join(missing.mapped("name"))
+                tmpl.allergen_alert_msg = (
+                    "Allergeni rilevati nel nome prodotto ma non dichiarati: %s"
+                    % names
+                )
             else:
                 tmpl.allergen_check_state = "ok"
-                tmpl.allergen_alert_msg = "Tutti gli allergeni dichiarati correttamente"
+                tmpl.allergen_alert_msg = ""
 
 
 class MrpBomLineAutoAnalyze(models.Model):

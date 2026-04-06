@@ -51,4 +51,184 @@
     </record>
     <record id="kw_aus_gel_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_aus_gelatin"/><field name="keyword">gelatina</field></record>
     <record id="kw_aus_gel_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_aus_gelatin"/><field name="keyword">colla di pesce</field></record>
+
+    <!-- ============================================================ -->
+    <!-- Allergeni extra — dichiarazione volontaria / CasaFolino      -->
+    <!-- ============================================================ -->
+
+    <!-- 1. Fragola -->
+    <record id="allergen_vol_fragola" model="cf.allergen">
+        <field name="sequence">51</field>
+        <field name="code">VOL-01</field>
+        <field name="name">Fragola</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU (Reg. 1169/2011). Reazioni pseudoallergiche documentate. Dichiarazione volontaria consigliata.</field>
+    </record>
+    <record id="kw_vol_fragola_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_fragola"/><field name="keyword">fragola</field></record>
+    <record id="kw_vol_fragola_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_fragola"/><field name="keyword">fragole</field></record>
+    <record id="kw_vol_fragola_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_fragola"/><field name="keyword">strawberry</field></record>
+
+    <!-- 2. Kiwi -->
+    <record id="allergen_vol_kiwi" model="cf.allergen">
+        <field name="sequence">52</field>
+        <field name="code">VOL-02</field>
+        <field name="name">Kiwi</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Cross-reattiva con lattice. Dichiarazione volontaria.</field>
+    </record>
+    <record id="kw_vol_kiwi_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_kiwi"/><field name="keyword">kiwi</field></record>
+
+    <!-- 3. Pesca -->
+    <record id="allergen_vol_pesca" model="cf.allergen">
+        <field name="sequence">53</field>
+        <field name="code">VOL-03</field>
+        <field name="name">Pesca</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Allergia alla profilina frequente in area mediterranea. Dichiarazione volontaria.</field>
+    </record>
+    <record id="kw_vol_pesca_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_pesca"/><field name="keyword">pesca</field></record>
+    <record id="kw_vol_pesca_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_pesca"/><field name="keyword">pesche</field></record>
+    <record id="kw_vol_pesca_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_pesca"/><field name="keyword">peach</field></record>
+
+    <!-- 4. Banana -->
+    <record id="allergen_vol_banana" model="cf.allergen">
+        <field name="sequence">54</field>
+        <field name="code">VOL-04</field>
+        <field name="name">Banana</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Cross-reattività con lattice. Dichiarazione volontaria.</field>
+    </record>
+    <record id="kw_vol_banana_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_banana"/><field name="keyword">banana</field></record>
+    <record id="kw_vol_banana_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_banana"/><field name="keyword">banane</field></record>
+
+    <!-- 5. Mela -->
+    <record id="allergen_vol_mela" model="cf.allergen">
+        <field name="sequence">55</field>
+        <field name="code">VOL-05</field>
+        <field name="name">Mela</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Associata a pollinosi. Dichiarazione volontaria.</field>
+    </record>
+    <record id="kw_vol_mela_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_mela"/><field name="keyword">mela</field></record>
+    <record id="kw_vol_mela_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_mela"/><field name="keyword">mele</field></record>
+    <record id="kw_vol_mela_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_mela"/><field name="keyword">apple</field></record>
+
+    <!-- 6. Gelatina (EU volontaria — diversa da allergen_aus_gelatin Australia) -->
+    <record id="allergen_vol_gelatina" model="cf.allergen">
+        <field name="sequence">56</field>
+        <field name="code">VOL-06</field>
+        <field name="name">Gelatina</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Rilevante per Halal/Kosher: specificare origine bovina/suina/pesce.</field>
+    </record>
+    <record id="kw_vol_gelatina_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_gelatina"/><field name="keyword">gelatina</field></record>
+    <record id="kw_vol_gelatina_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_gelatina"/><field name="keyword">colla di pesce</field></record>
+
+    <!-- 7. Propoli (EU volontaria — diversa da allergen_aus_propolis Australia) -->
+    <record id="allergen_vol_propoli" model="cf.allergen">
+        <field name="sequence">57</field>
+        <field name="code">VOL-07</field>
+        <field name="name">Propoli</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Reazioni in soggetti allergici al polline. Rilevante per prodotti miele CasaFolino.</field>
+    </record>
+    <record id="kw_vol_propoli_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_propoli"/><field name="keyword">propoli</field></record>
+
+    <!-- 8. Miele -->
+    <record id="allergen_vol_miele" model="cf.allergen">
+        <field name="sequence">58</field>
+        <field name="code">VOL-08</field>
+        <field name="name">Miele</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non incluso nei 14 EU. Non adatto a bambini &lt;12 mesi. Rilevante per mercati vegan.</field>
+    </record>
+    <record id="kw_vol_miele_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_miele"/><field name="keyword">miele</field></record>
+    <record id="kw_vol_miele_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_miele"/><field name="keyword">honey</field></record>
+
+    <!-- 9. Pistacchio (specifico CasaFolino) -->
+    <record id="allergen_cf_pistacchio" model="cf.allergen">
+        <field name="sequence">59</field>
+        <field name="code">CF-01</field>
+        <field name="name">Pistacchio</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Reg. EU 1169/2011 Allegato II — Frutta a Guscio</field>
+        <field name="legislation">Incluso in Frutta a Guscio (Reg. EU 1169/2011 Allegato II). Mercato Canada (CFIA): obbligo test salmonella per origine iraniana. CasaFolino: richiesto certificato origine mediterranea.</field>
+    </record>
+    <record id="kw_cf_pistacchio_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_cf_pistacchio"/><field name="keyword">pistacchio</field></record>
+    <record id="kw_cf_pistacchio_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_cf_pistacchio"/><field name="keyword">pistacchi</field></record>
+    <record id="kw_cf_pistacchio_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_cf_pistacchio"/><field name="keyword">pistachio</field></record>
+
+    <!-- 10. Grano saraceno -->
+    <record id="allergen_vol_grano_saraceno" model="cf.allergen">
+        <field name="sequence">60</field>
+        <field name="code">VOL-09</field>
+        <field name="name">Grano saraceno</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non incluso nei 14 EU. Allergia in crescita in Europa. Dichiarazione volontaria per prodotti gluten-free.</field>
+    </record>
+    <record id="kw_vol_grano_sar_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_grano_saraceno"/><field name="keyword">grano saraceno</field></record>
+    <record id="kw_vol_grano_sar_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_grano_saraceno"/><field name="keyword">buckwheat</field></record>
+
+    <!-- 11. Manzo -->
+    <record id="allergen_vol_manzo" model="cf.allergen">
+        <field name="sequence">61</field>
+        <field name="code">VOL-10</field>
+        <field name="name">Manzo</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non incluso nei 14 EU. Rilevante per Halal/Kosher e allergia proteine bovine. Dichiarazione volontaria.</field>
+    </record>
+    <record id="kw_vol_manzo_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_manzo"/><field name="keyword">manzo</field></record>
+    <record id="kw_vol_manzo_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_manzo"/><field name="keyword">bovino</field></record>
+    <record id="kw_vol_manzo_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_manzo"/><field name="keyword">beef</field></record>
+
+    <!-- 12. Maiale -->
+    <record id="allergen_vol_maiale" model="cf.allergen">
+        <field name="sequence">62</field>
+        <field name="code">VOL-11</field>
+        <field name="name">Maiale</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non incluso nei 14 EU. Vietato per consumatori Halal e Kosher. Obbligo dichiarazione in Arabia Saudita, UAE, Malaysia.</field>
+    </record>
+    <record id="kw_vol_maiale_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_maiale"/><field name="keyword">maiale</field></record>
+    <record id="kw_vol_maiale_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_maiale"/><field name="keyword">suino</field></record>
+    <record id="kw_vol_maiale_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_maiale"/><field name="keyword">pork</field></record>
+    <record id="kw_vol_maiale_04" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_maiale"/><field name="keyword">lardo</field></record>
+    <record id="kw_vol_maiale_05" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_maiale"/><field name="keyword">pancetta</field></record>
+    <record id="kw_vol_maiale_06" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_maiale"/><field name="keyword">strutto</field></record>
+
+    <!-- 13. Pollo -->
+    <record id="allergen_vol_pollo" model="cf.allergen">
+        <field name="sequence">63</field>
+        <field name="code">VOL-12</field>
+        <field name="name">Pollo</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non incluso nei 14 EU. Cross-reattivo con uova. Dichiarazione volontaria.</field>
+    </record>
+    <record id="kw_vol_pollo_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_pollo"/><field name="keyword">pollo</field></record>
+    <record id="kw_vol_pollo_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_pollo"/><field name="keyword">chicken</field></record>
+
+    <!-- 14. Gelatina reale -->
+    <record id="allergen_vol_gelatina_reale" model="cf.allergen">
+        <field name="sequence">64</field>
+        <field name="code">VOL-13</field>
+        <field name="name">Gelatina reale</field>
+        <field name="market">eu</field>
+        <field name="regulation_ref">Dichiarazione volontaria</field>
+        <field name="legislation">Non inclusa nei 14 EU. Può causare anafilassi. Dichiarazione fortemente consigliata per prodotti miele CasaFolino.</field>
+    </record>
+    <record id="kw_vol_gel_reale_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_gelatina_reale"/><field name="keyword">gelatina reale</field></record>
+    <record id="kw_vol_gel_reale_02" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_gelatina_reale"/><field name="keyword">pappa reale</field></record>
+    <record id="kw_vol_gel_reale_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_vol_gelatina_reale"/><field name="keyword">royal jelly</field></record>
 </odoo>

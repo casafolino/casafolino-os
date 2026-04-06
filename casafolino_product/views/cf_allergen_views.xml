@@ -46,6 +46,9 @@
                     <group string="Descrizione">
                         <field name="description" nolabel="1" placeholder="Descrizione normativa..."/>
                     </group>
+                    <group string="Note legislative / CasaFolino">
+                        <field name="legislation" nolabel="1" placeholder="Note legislative, requisiti CasaFolino..."/>
+                    </group>
                     <field name="keyword_ids" string="Keywords rilevamento automatico">
                         <list editable="bottom">
                             <field name="keyword"/>
@@ -167,15 +170,16 @@
         <field name="arch" type="xml">
             <notebook position="inside">
                 <page string="Allergeni" name="allergen_tab">
-                    <!-- Alert discordanze -->
-                    <div class="alert alert-danger mb-2"
+                    <!-- Alert discordanze con bottone fix -->
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-2"
                          invisible="allergen_check_state != 'alert'">
-                        <strong>ATTENZIONE:</strong>
-                        <field name="allergen_alert_msg" readonly="1" nolabel="1"/>
-                    </div>
-                    <div class="alert alert-success mb-2"
-                         invisible="allergen_check_state != 'ok'">
-                        <strong>Allergeni verificati e conformi</strong>
+                        <span class="flex-grow-1">
+                            <strong>Allergeni suggeriti: </strong>
+                            <field name="allergen_alert_msg" readonly="1" nolabel="1"/>
+                        </span>
+                        <button name="action_add_suggested_allergens" type="object"
+                                string="Aggiungi allergeni suggeriti"
+                                class="btn btn-sm btn-warning"/>
                     </div>
 
                     <!-- Bottone analisi -->
