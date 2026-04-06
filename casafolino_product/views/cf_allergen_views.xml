@@ -177,17 +177,45 @@
                          invisible="allergen_check_state != 'ok'">
                         <strong>Allergeni verificati e conformi</strong>
                     </div>
-                    <div class="alert alert-danger mb-2"
-                         invisible="not allergen_alert_text">
-                        <strong>ALLERGENI PRESENTI: </strong>
-                        <field name="allergen_alert_text" nolabel="1" readonly="1"/>
-                    </div>
 
+                    <!-- Sezione dichiarazione manuale materia prima -->
+                    <separator string="Dichiarazione Allergeni Prodotto"/>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <button name="action_analyze_allergens_from_name" type="object"
+                                string="Analizza da Nome Prodotto"
+                                class="btn-secondary"/>
+                    </div>
                     <group>
-                        <group string="Allergeni Contenuti">
+                        <group string="Allergeni Presenti">
+                            <field name="x_allergen_present_ids"
+                                   widget="many2many_tags"
+                                   options="{'color_field': 'sequence'}"
+                                   nolabel="1"/>
+                        </group>
+                        <group string="Allergeni in Tracce">
+                            <field name="x_allergen_traces_ids"
+                                   widget="many2many_tags"
+                                   options="{'color_field': 'sequence'}"
+                                   nolabel="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Testo etichetta EU generato automaticamente -->
+                    <group string="Testo etichetta EU (Reg. 1169/2011)"
+                           invisible="not x_allergen_label_eu">
+                        <div class="p-3"
+                             style="background:#fff3cd;border-radius:4px;border:1px solid #ffc107;font-weight:bold;color:#cc0000;letter-spacing:0.3px;">
+                            <field name="x_allergen_label_eu" nolabel="1" readonly="1"/>
+                        </div>
+                    </group>
+
+                    <!-- Sezione verifica BoM -->
+                    <separator string="Verifica BoM"/>
+                    <group>
+                        <group string="Allergeni Contenuti (legacy)">
                             <field name="allergen_ids" widget="many2many_tags"/>
                         </group>
-                        <group string="Puo Contenere (Tracce)">
+                        <group string="Può Contenere — Tracce (legacy)">
                             <field name="allergen_may_contain_ids" widget="many2many_tags"/>
                         </group>
                     </group>
@@ -212,10 +240,11 @@
                         </list>
                     </field>
 
-                    <group string="Testo etichetta EU (Reg. 1169/2011)"
+                    <!-- Testo etichetta da BoM -->
+                    <group string="Testo etichetta da BoM"
                            invisible="not allergen_label_text">
                         <div class="p-3"
-                             style="background:#fff3cd; border-radius:4px; border:1px solid #ffc107; font-weight:bold; color:#cc0000; letter-spacing:0.3px;">
+                             style="background:#f3f4f6;border-radius:4px;border:1px solid #e5e7eb;font-weight:bold;color:#cc0000;letter-spacing:0.3px;">
                             <field name="allergen_label_text" nolabel="1" readonly="1"/>
                         </div>
                     </group>
@@ -309,7 +338,9 @@
                   decoration-danger="allergen_check_state == 'alert'"
                   decoration-success="allergen_check_state == 'ok'">
                 <field name="name" string="Prodotto"/>
-                <field name="allergen_ids" widget="many2many_tags"/>
+                <field name="x_allergen_present_ids" widget="many2many_tags" string="Presenti"/>
+                <field name="x_allergen_traces_ids" widget="many2many_tags" string="Tracce" optional="show"/>
+                <field name="allergen_ids" widget="many2many_tags" optional="hide"/>
                 <field name="allergen_check_state" widget="badge"
                     decoration-danger="allergen_check_state == 'alert'"
                     decoration-success="allergen_check_state == 'ok'"
