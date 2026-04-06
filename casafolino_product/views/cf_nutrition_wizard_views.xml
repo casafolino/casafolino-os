@@ -12,7 +12,8 @@
                 <group>
                     <group>
                         <field name="search_query"
-                            placeholder="Es: whole milk, sugar, butter..."/>
+                            placeholder="Es: white rice, whole milk, butter unsalted..."/>
+                        <field name="data_type_filter"/>
                     </group>
                 </group>
                 <footer invisible="result_ids">
@@ -22,21 +23,27 @@
                 </footer>
                 <group invisible="not result_ids">
                     <field name="result_ids" nolabel="1">
-                        <list editable="bottom">
+                        <list editable="bottom"
+                              decoration-success="energy_kcal > 0">
                             <field name="selected" widget="boolean_toggle"/>
-                            <field name="fdc_id" readonly="1"/>
                             <field name="name" readonly="1"/>
+                            <field name="brand" readonly="1" optional="show"/>
+                            <field name="usda_category" readonly="1" optional="show"/>
+                            <field name="usda_data_type" readonly="1" optional="show"/>
                             <field name="energy_kcal" readonly="1"/>
+                            <field name="protein" readonly="1"/>
                             <field name="fat" readonly="1"/>
                             <field name="carbs" readonly="1"/>
-                            <field name="protein" readonly="1"/>
-                            <field name="salt" readonly="1"/>
+                            <field name="salt" readonly="1" optional="show"/>
+                            <field name="fdc_id" readonly="1" optional="hide"/>
                         </list>
                     </field>
                 </group>
                 <footer invisible="not result_ids">
                     <button name="action_confirm" type="object"
                             string="Conferma Selezione" class="btn-primary"/>
+                    <button name="action_search" type="object"
+                            string="Cerca di nuovo" class="btn-secondary"/>
                     <button string="Annulla" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

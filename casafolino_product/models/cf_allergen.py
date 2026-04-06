@@ -580,6 +580,7 @@ class MrpBomLineAutoAnalyze(models.Model):
         boms = lines.mapped('bom_id')
         for bom in boms:
             bom._analyze_allergens_sync()
+            bom._auto_recompute_nutrition()
         return lines
 
     def write(self, vals):
@@ -588,6 +589,7 @@ class MrpBomLineAutoAnalyze(models.Model):
             boms = self.mapped('bom_id')
             for bom in boms:
                 bom._analyze_allergens_sync()
+                bom._auto_recompute_nutrition()
         return res
 
 

@@ -74,7 +74,12 @@
                     decoration-info="data_source == 'openfoodfacts'"
                     decoration-success="data_source == 'usda'"
                     decoration-warning="data_source == 'manuale'"
-                    decoration-primary="data_source == 'crea'"/>
+                    decoration-primary="data_source == 'crea' or data_source == 'ciqual'"/>
+                <field name="data_quality" widget="badge"
+                    decoration-muted="data_quality == 'draft'"
+                    decoration-success="data_quality == 'verified'"
+                    decoration-info="data_quality == 'certified'"/>
+                <field name="yield_factor" optional="show"/>
                 <field name="last_sync" optional="show"/>
                 <field name="external_id" optional="hide"/>
                 <field name="fdc_id" optional="hide"/>
@@ -143,13 +148,22 @@
                     <group>
                         <group string="Sincronizzazione">
                             <field name="sync_name"
-                                placeholder="Nome ricerca (lascia vuoto = nome prodotto)"/>
+                                placeholder="Nome ricerca generico"/>
+                            <field name="usda_search_name"
+                                placeholder="Es: white rice cooked, cream cheese..."/>
                             <field name="external_id" readonly="1"/>
                             <field name="last_sync" readonly="1"/>
                         </group>
                         <group string="Riferimento">
                             <field name="fdc_id"/>
                             <field name="ciqual_code"/>
+                            <field name="data_quality" widget="badge"
+                                decoration-muted="data_quality == 'draft'"
+                                decoration-success="data_quality == 'verified'"
+                                decoration-info="data_quality == 'certified'"/>
+                            <field name="yield_factor"
+                                help="100 = nessuna resa. 35 = riso crudo/cotto"/>
+                            <field name="preferred_supplier_id"/>
                         </group>
                     </group>
                     <group string="Valori base per 100g (EU obbligatori)">
@@ -182,12 +196,26 @@
                             <field name="vitamin_d_mcg"/>
                         </group>
                     </group>
+                    <group string="Note tecniche">
+                        <field name="tech_notes" nolabel="1"
+                            placeholder="Note tecniche interne (resa, cottura, lavorazione...)"/>
+                    </group>
                     <group string="Note">
-                        <field name="notes" nolabel="1" placeholder="Note..."/>
+                        <field name="notes" nolabel="1" placeholder="Note generali..."/>
                     </group>
                 </sheet>
             </form>
         </field>
+    </record>
+
+    <!-- Server action: Sync Massivo USDA -->
+    <record id="action_sync_all_usda" model="ir.actions.server">
+        <field name="name">Sync Massivo USDA</field>
+        <field name="model_id" ref="model_cf_nutrition_ingredient"/>
+        <field name="binding_model_id" ref="model_cf_nutrition_ingredient"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_sync_all_usda()</field>
     </record>
 
     <!-- ═══════════════════════════════════════════════════════════════════
@@ -201,6 +229,8 @@
                 <header>
                     <button name="action_compute" type="object"
                             string="Ricalcola da BoM" class="btn-primary"/>
+                    <button name="action_print_label" type="object"
+                            string="Stampa Etichetta Nutrizionale" class="btn-secondary"/>
                 </header>
                 <sheet>
                     <div class="oe_title">

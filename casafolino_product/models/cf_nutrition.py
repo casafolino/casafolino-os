@@ -241,14 +241,33 @@ class CfNutritionIngredient(models.Model):
     vitamin_d_mcg = fields.Float(string="Vitamina D (mcg/100g)")
     vitamina_c = fields.Float(string="Vitamina C (mg/100g)")
 
-    # ── Legacy USDA reference ─────────────────────────────────────────────────
+    # ── Extended metadata ───────────────────────────────────────────────────
     fdc_id = fields.Char(string="USDA FDC ID")
+    usda_search_name = fields.Char(
+        string="Nome ricerca USDA",
+        help="Nome da usare per cercare su USDA (es. 'white rice cooked'). "
+             "Lascia vuoto per usare sync_name o il nome prodotto.")
+    yield_factor = fields.Float(
+        string="Fattore di resa %", default=100.0,
+        help="Resa in cottura: 100g crudo → X g cotto. "
+             "Es. riso: 35 (100g crudo = 280g cotto, valori nutrizionali per 100g crudo). "
+             "Default 100 = nessuna trasformazione.")
+    data_quality = fields.Selection([
+        ('draft', 'Bozza'),
+        ('verified', 'Verificato'),
+        ('certified', 'Certificato'),
+    ], string="Stato dati", default='draft')
+    tech_notes = fields.Text(string="Note tecniche")
+    preferred_supplier_id = fields.Many2one(
+        "res.partner", string="Fornitore preferito",
+        domain="[('supplier_rank', '>', 0)]")
     notes = fields.Text()
 
     # ── API helpers ───────────────────────────────────────────────────────────
 
     def _get_search_name(self):
-        return self.sync_name or (self.product_id.name if self.product_id else '')
+        return self.usda_search_name or self.sync_name or (
+            self.product_id.name if self.product_id else '')
 
     def _apply_nutrients(self, data):
         """Write nutrient dict to self, set last_sync."""
@@ -435,6 +454,52 @@ class CfNutritionIngredient(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {'title': 'Sincronizzazione completata', 'message': 'Aggiornamento completato per tutti gli ingredienti scaduti.', 'type': 'success'},
+        }
+
+    @api.model
+    def action_sync_all_usda(self):
+        """Sync massivo USDA: risincronizza tutti gli USDA con fdc_id, poi cerca nuovi."""
+        synced = 0
+        failed = 0
+        # 1) Re-sync existing USDA records with fdc_id
+        existing = self.search([
+            ('data_source', '=', 'usda'),
+            ('fdc_id', '!=', False),
+        ])
+        for ingredient in existing:
+            try:
+                data = ingredient._fetch_usda(ingredient._get_search_name())
+                if data and data.get('energy_kcal', 0) > 0:
+                    ingredient._apply_nutrients(data)
+                    synced += 1
+                else:
+                    failed += 1
+            except Exception:
+                failed += 1
+        # 2) Find food products without nutrition data and try USDA
+        no_data = self.search([
+            ('energy_kcal', '=', 0),
+            ('data_source', '!=', 'ciqual'),
+        ])
+        for ingredient in no_data:
+            try:
+                data = ingredient._fetch_usda(ingredient._get_search_name())
+                if data and data.get('energy_kcal', 0) > 0:
+                    ingredient._apply_nutrients(data)
+                    synced += 1
+                else:
+                    failed += 1
+            except Exception:
+                failed += 1
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Sync Massivo USDA completato',
+                'message': f'Sincronizzati {synced} ingredienti, {failed} falliti.',
+                'type': 'success' if not failed else 'warning',
+                'sticky': bool(failed),
+            },
         }
 
     @api.model
@@ -780,9 +845,12 @@ class CfNutritionBom(models.Model):
             if not ingredient or not ingredient.energy_kcal:
                 missing.append(line.product_id.display_name)
                 continue
+            # yield_factor adjusts for cooking loss/gain (100 = no change)
+            yf = (ingredient.yield_factor or 100.0)
+            yield_mult = 100.0 / yf if yf > 0 else 1.0
             ratio = line.product_qty / total_qty
             for f in self._NUTRIENT_FIELDS:
-                totals[f] += getattr(ingredient, f, 0.0) * ratio
+                totals[f] += getattr(ingredient, f, 0.0) * ratio * yield_mult
         return totals, missing
 
     @api.onchange('product_id')
@@ -842,6 +910,103 @@ class CfNutritionBom(models.Model):
                 },
             }
 
+    def get_nutrition_label_html(self, legislation='eu'):
+        """Generate printable nutrition label HTML for given legislation."""
+        self.ensure_one()
+
+        def _row(label, val, unit, bold=False, indent=False, dv=None):
+            b = 'font-weight:700;' if bold else ''
+            pad = 'padding-left:16px;' if indent else ''
+            dv_cell = f'<td style="text-align:right;">{dv}%</td>' if dv is not None else '<td></td>'
+            return (f'<tr style="{b}{pad}border-bottom:1px solid #ddd;">'
+                    f'<td style="{pad}">{label}</td>'
+                    f'<td style="text-align:right;">{val:.1f} {unit}</td>'
+                    f'{dv_cell}</tr>')
+
+        if legislation == 'eu':
+            rows = [
+                _row('Energia', self.energy_kj, 'kJ', bold=True),
+                _row('Energia', self.energy_kcal, 'kcal', bold=True),
+                _row('Grassi', self.fat, 'g', bold=True),
+                _row('di cui acidi grassi saturi', self.saturated_fat, 'g', indent=True),
+                _row('Carboidrati', self.carbs, 'g', bold=True),
+                _row('di cui zuccheri', self.sugars, 'g', indent=True),
+                _row('Fibre', self.fiber, 'g', bold=True),
+                _row('Proteine', self.protein, 'g', bold=True),
+                _row('Sale', self.salt, 'g', bold=True),
+            ]
+            return (
+                '<table style="width:100%;border-collapse:collapse;font-family:sans-serif;'
+                'font-size:13px;border:2px solid #000;padding:8px;">'
+                '<thead><tr style="border-bottom:2px solid #000;">'
+                '<th style="text-align:left;">Dichiarazione nutrizionale</th>'
+                '<th style="text-align:right;">per 100 g</th><th></th></tr></thead>'
+                '<tbody>' + ''.join(rows) + '</tbody></table>'
+            )
+
+        elif legislation == 'usa':
+            r = (self.serving_size_g or 100) / 100.0
+            rows = [
+                _row('Calories', self.energy_kcal * r, '', bold=True),
+                _row('Total Fat', self.fat * r, 'g', bold=True, dv=self.dv_fat),
+                _row('Saturated Fat', self.saturated_fat * r, 'g', indent=True, dv=self.dv_sat_fat),
+                _row('Trans Fat', self.trans_fat_g * r, 'g', indent=True),
+                _row('Cholesterol', self.cholesterol_mg * r, 'mg', bold=True, dv=self.dv_cholesterol),
+                _row('Sodium', self.sodium_mg * r, 'mg', bold=True, dv=self.dv_sodium),
+                _row('Total Carbohydrate', self.carbs * r, 'g', bold=True, dv=self.dv_carbs),
+                _row('Dietary Fiber', self.fiber * r, 'g', indent=True, dv=self.dv_fiber),
+                _row('Total Sugars', self.sugars * r, 'g', indent=True),
+                _row('Incl. Added Sugars', self.added_sugars_g * r, 'g', indent=True, dv=self.dv_added_sugars),
+                _row('Protein', self.protein * r, 'g', bold=True, dv=self.dv_protein),
+            ]
+            srv = f'{self.serving_size_g:.0f}g' if self.serving_size_g else '100g'
+            return (
+                '<div style="font-family:sans-serif;border:2px solid #000;padding:8px;max-width:300px;">'
+                '<div style="font-size:24px;font-weight:900;">Nutrition Facts</div>'
+                f'<div style="font-size:11px;">Serving size {srv}</div>'
+                '<hr style="border:4px solid #000;margin:4px 0;"/>'
+                '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+                '<tbody>' + ''.join(rows) + '</tbody></table>'
+                '<hr style="border:1px solid #000;"/>'
+                '<div style="font-size:10px;">* % Daily Value based on 2,000 calorie diet.</div>'
+                '</div>'
+            )
+
+        elif legislation == 'canada':
+            r = (self.serving_size_g or 100) / 100.0
+            rows = [
+                _row('Calories / Calories', self.energy_kcal * r, '', bold=True),
+                _row('Fat / Lipides', self.fat * r, 'g', bold=True, dv=self.dv_fat),
+                _row('Saturated / Saturés + Trans', (self.saturated_fat + self.trans_fat_g) * r, 'g', indent=True, dv=self.dv_sat_fat),
+                _row('Cholesterol / Cholestérol', self.cholesterol_mg * r, 'mg', dv=self.dv_cholesterol),
+                _row('Sodium / Sodium', self.sodium_mg * r, 'mg', dv=self.dv_sodium),
+                _row('Carbohydrate / Glucides', self.carbs * r, 'g', bold=True, dv=self.dv_carbs),
+                _row('Fibre / Fibres', self.fiber * r, 'g', indent=True, dv=self.dv_fiber),
+                _row('Sugars / Sucres', self.sugars * r, 'g', indent=True),
+                _row('Protein / Protéines', self.protein * r, 'g', bold=True),
+            ]
+            srv = f'{self.serving_size_g:.0f}g' if self.serving_size_g else '100g'
+            return (
+                '<div style="font-family:sans-serif;border:2px solid #000;padding:8px;max-width:320px;">'
+                '<div style="font-size:18px;font-weight:900;">Nutrition Facts / Valeur nutritive</div>'
+                f'<div style="font-size:11px;">Per / pour {srv}</div>'
+                '<hr style="border:2px solid #000;margin:4px 0;"/>'
+                '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+                '<thead><tr><th></th><th></th><th style="text-align:right;">% DV/VQ</th></tr></thead>'
+                '<tbody>' + ''.join(rows) + '</tbody></table></div>'
+            )
+
+        return '<p>Legislazione non supportata.</p>'
+
+    def action_print_label(self):
+        """Open nutrition label in new window."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/report/html/casafolino_product.nutrition_label/{self.id}',
+            'target': 'new',
+        }
+
 
 # ─── mrp.bom inherit ─────────────────────────────────────────────────────────
 
@@ -896,6 +1061,18 @@ class MrpBomNutrition(models.Model):
                     f'Mancano: {", ".join(missing_names)}</span>'
                 )
             bom.nutrition_status_html = html
+
+    def _auto_recompute_nutrition(self):
+        """Auto-recompute nutrition if all food ingredients have data."""
+        self.ensure_one()
+        NutrBom = self.env['cf.nutrition.bom']
+        nutr = NutrBom.search([('bom_id', '=', self.id)], limit=1)
+        if not nutr:
+            return
+        totals, missing = nutr._compute_from_bom(self)
+        if totals and not missing:
+            totals['last_computed'] = fields.Datetime.now()
+            nutr.write(totals)
 
     def action_compute_from_bom(self):
         """Compute nutrition from BOM components and save to cf.nutrition.bom."""
@@ -969,6 +1146,10 @@ class ProductTemplateNutrition(models.Model):
         string="Etichette Nutrizionali",
     )
 
+    nutri_score_final = fields.Selection([
+        ("A", "A"), ("B", "B"), ("C", "C"), ("D", "D"), ("E", "E"),
+    ], compute="_compute_nutri_score_final", string="Nutri-Score")
+
     def _compute_nutrition_bom_ids(self):
         for rec in self:
             boms = self.env["mrp.bom"].search(
@@ -979,6 +1160,18 @@ class ProductTemplateNutrition(models.Model):
                 ("product_id", "=", rec.id),
             ])
             rec.nutrition_bom_ids = nutrition
+
+    def _compute_nutri_score_final(self):
+        NutrBom = self.env["cf.nutrition.bom"]
+        for rec in self:
+            bom = self.env["mrp.bom"].search(
+                [("product_tmpl_id", "=", rec.id), ("active", "=", True)],
+                limit=1)
+            if bom:
+                nutr = NutrBom.search([("bom_id", "=", bom.id)], limit=1)
+                rec.nutri_score_final = nutr.nutri_score if nutr else False
+            else:
+                rec.nutri_score_final = False
 
     def action_create_nutrition(self):
         self.ensure_one()

@@ -23,6 +23,11 @@ class CfNutritionUsdaWizard(models.TransientModel):
 
     ingredient_id = fields.Many2one("cf.nutrition.ingredient", required=True)
     search_query = fields.Char(string="Ricerca", required=True)
+    data_type_filter = fields.Selection([
+        ('all', 'Tutti'),
+        ('foundation_sr', 'Foundation + SR Legacy (consigliato)'),
+        ('branded', 'Solo Branded'),
+    ], string="Tipo dati", default='foundation_sr')
     result_ids = fields.One2many("cf.nutrition.usda.wizard.line", "wizard_id")
 
     def action_search(self):
@@ -30,6 +35,13 @@ class CfNutritionUsdaWizard(models.TransientModel):
         self.ensure_one()
         api_key = self.env['ir.config_parameter'].sudo().get_param(
             'casafolino.usda_api_key', 'DEMO_KEY')
+        dt_filter = self.data_type_filter or 'foundation_sr'
+        if dt_filter == 'foundation_sr':
+            data_type = 'SR Legacy,Foundation'
+        elif dt_filter == 'branded':
+            data_type = 'Branded'
+        else:
+            data_type = 'SR Legacy,Foundation,Survey (FNDDS),Branded'
         try:
             resp = requests.get(
                 "https://api.nal.usda.gov/fdc/v1/foods/search",
@@ -37,7 +49,7 @@ class CfNutritionUsdaWizard(models.TransientModel):
                     'query': self.search_query,
                     'api_key': api_key,
                     'pageSize': 15,
-                    'dataType': 'SR Legacy,Foundation',
+                    'dataType': data_type,
                 },
                 timeout=8,
             )
@@ -56,10 +68,16 @@ class CfNutritionUsdaWizard(models.TransientModel):
             result, fdc_id = _extract_usda_nutrients(food)
             name = food.get('description',
                             food.get('lowercaseDescription', ''))
+            brand = food.get('brandOwner', '') or food.get('brandName', '') or ''
+            category = food.get('foodCategory', '') or ''
+            data_type_val = food.get('dataType', '') or ''
             lines.append({
                 'wizard_id': self.id,
                 'fdc_id': fdc_id,
                 'name': name,
+                'brand': brand,
+                'usda_category': category,
+                'usda_data_type': data_type_val,
                 'energy_kcal': result.get('energy_kcal', 0),
                 'fat': result.get('fat', 0),
                 'carbs': result.get('carbs', 0),
@@ -113,6 +131,9 @@ class CfNutritionUsdaWizardLine(models.TransientModel):
     selected = fields.Boolean(default=False)
     fdc_id = fields.Char("FDC ID")
     name = fields.Char("Alimento")
+    brand = fields.Char("Brand")
+    usda_category = fields.Char("Categoria USDA")
+    usda_data_type = fields.Char("Tipo")
     energy_kcal = fields.Float("kcal/100g")
     fat = fields.Float("Grassi g")
     saturated_fat = fields.Float("Saturi g")

@@ -38,6 +38,20 @@
         </field>
     </record>
 
+    <!-- Nutri-Score nella list view BOM -->
+    <record id="view_mrp_bom_list_nutriscore" model="ir.ui.view">
+        <field name="name">mrp.bom.list.nutriscore</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_tree_view"/>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_tmpl_id']" position="after">
+                <field name="nutrition_status_html" widget="html"
+                       string="Nutrizione" optional="show" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_product_template_nutrition_tab" model="ir.ui.view">
         <field name="name">product.template.form.nutrition</field>
         <field name="model">product.template</field>
@@ -51,6 +65,12 @@
                             <field name="nutrition_ingredient_id"
                                    options="{'no_create': False}"
                                    help="Collega manualmente il record nutrizionale."/>
+                            <field name="nutri_score_final" widget="badge"
+                                decoration-success="nutri_score_final == 'A'"
+                                decoration-info="nutri_score_final == 'B'"
+                                decoration-warning="nutri_score_final == 'C' or nutri_score_final == 'D'"
+                                decoration-danger="nutri_score_final == 'E'"
+                                readonly="1"/>
                         </group>
                         <group>
                             <button name="action_sync_ingredient_usda" type="object"
