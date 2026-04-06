@@ -422,49 +422,46 @@ class CfNutritionIngredient(models.Model):
     def action_open_crea_wizard(self):
         """Open CREA search wizard for this ingredient."""
         self.ensure_one()
-        wizard = self.env['cf.nutrition.crea.wizard'].create({
-            'ingredient_id': self.id,
-            'search_query': self._get_search_name(),
-        })
         return {
             'type': 'ir.actions.act_window',
+            'name': 'Cerca su CREA',
             'res_model': 'cf.nutrition.crea.wizard',
-            'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
-            'name': 'Ricerca CREA (ISS Italia)',
+            'context': {
+                'default_ingredient_id': self.id,
+                'default_search_query': self._get_search_name(),
+            },
         }
 
     def action_open_usda_wizard(self):
         """Open USDA search wizard for this ingredient."""
         self.ensure_one()
-        wizard = self.env['cf.nutrition.usda.wizard'].create({
-            'ingredient_id': self.id,
-            'search_query': self._get_search_name(),
-        })
         return {
             'type': 'ir.actions.act_window',
+            'name': 'Cerca su USDA',
             'res_model': 'cf.nutrition.usda.wizard',
-            'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
-            'name': 'Ricerca USDA FoodData Central',
+            'context': {
+                'default_ingredient_id': self.id,
+                'default_search_query': self._get_search_name(),
+            },
         }
 
     def action_open_ciqual_wizard(self):
         """Open CIQUAL search wizard for this ingredient."""
         self.ensure_one()
-        wizard = self.env['cf.nutrition.ciqual.wizard'].create({
-            'ingredient_id': self.id,
-            'search_query': self._get_search_name(),
-        })
         return {
             'type': 'ir.actions.act_window',
+            'name': 'Cerca su CIQUAL',
             'res_model': 'cf.nutrition.ciqual.wizard',
-            'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
-            'name': 'Ricerca CIQUAL (ANSES)',
+            'context': {
+                'default_ingredient_id': self.id,
+                'default_search_query': self._get_search_name(),
+            },
         }
 
     def action_sync_all_stale(self):
