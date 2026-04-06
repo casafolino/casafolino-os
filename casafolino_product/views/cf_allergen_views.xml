@@ -96,6 +96,9 @@
                         <button name="action_analyze_allergens" type="object"
                                 string="Analizza Allergeni da BoM"
                                 class="btn-primary"/>
+                        <button name="action_recompute_allergens_from_components" type="object"
+                                string="Ricalcola Allergeni da Componenti"
+                                class="btn-secondary"/>
                         <field name="allergen_validated" widget="boolean_toggle"
                                string="Dichiarazione validata"/>
                     </div>

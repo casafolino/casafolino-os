@@ -223,16 +223,29 @@ class MrpBomAllergen(models.Model):
                 rec.allergen_summary_html = ''.join(parts)
 
     def _analyze_allergens_sync(self):
-        """Core allergen detection logic (no UI notification)."""
+        """Core allergen detection: keyword matching + component declared allergens."""
         keywords = self.env["cf.allergen.keyword"].search([])
         kw_map = {}
         for kw in keywords:
             kw_map.setdefault(kw.allergen_id.id, []).append(kw)
 
+        # Collect declared allergens from component product templates
+        comp_present = {}   # allergen_id -> set of product names
+        comp_traces = {}    # allergen_id -> set of product names
+        for line in self.bom_line_ids:
+            line_tmpl = line.product_id.product_tmpl_id
+            prod_name = line.product_id.name or ''
+            for allergen in line_tmpl.allergen_ids:
+                comp_present.setdefault(allergen.id, set()).add(prod_name)
+            for allergen in line_tmpl.allergen_may_contain_ids:
+                comp_traces.setdefault(allergen.id, set()).add(prod_name)
+
         allergens = self.env["cf.allergen"].search([])
         for allergen in allergens:
             found_status = 'absent'
             source_names = []
+
+            # 1) Keyword matching
             kws = kw_map.get(allergen.id, [])
             for line in self.bom_line_ids:
                 ingredient_name = (line.product_id.name or '').lower()
@@ -249,6 +262,20 @@ class MrpBomAllergen(models.Model):
                         found_status = 'present'
                         source_names.append(line.product_id.name)
                         break
+
+            # 2) Component declared allergens (allergen_ids on product.template)
+            if allergen.id in comp_present:
+                found_status = 'present'
+                for name in comp_present[allergen.id]:
+                    if name not in source_names:
+                        source_names.append(name)
+
+            # 3) Component "may contain" (allergen_may_contain_ids)
+            if allergen.id in comp_traces and found_status == 'absent':
+                found_status = 'traces'
+                for name in comp_traces[allergen.id]:
+                    if name not in source_names:
+                        source_names.append(name)
 
             existing = self.allergen_ids.filtered(
                 lambda a: a.allergen_id.id == allergen.id)
@@ -277,6 +304,25 @@ class MrpBomAllergen(models.Model):
             'params': {
                 'title': 'Analisi completata',
                 'message': f'Analizzati {n_allergens} allergeni su {len(self.bom_line_ids)} ingredienti.',
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_recompute_allergens_from_components(self):
+        """Force recompute allergens from component product declarations."""
+        self.ensure_one()
+        # Reset non-verified auto-detected entries to trigger full recompute
+        auto_entries = self.allergen_ids.filtered(
+            lambda a: a.auto_detected and not a.verified)
+        auto_entries.unlink()
+        n_allergens = self._analyze_allergens_sync()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Ricalcolo completato',
+                'message': f'Allergeni ricalcolati da {len(self.bom_line_ids)} componenti ({n_allergens} allergeni analizzati).',
                 'type': 'success',
                 'sticky': False,
             }
@@ -368,29 +414,32 @@ class MrpBomLineAutoAnalyze(models.Model):
         sanitize=False,
     )
 
-    @api.depends('product_id')
+    @api.depends('product_id', 'bom_id.allergen_ids',
+                 'bom_id.allergen_ids.status', 'bom_id.allergen_ids.source_ingredient')
     def _compute_x_allergeni_display(self):
         for line in self:
-            tmpl = line.product_id.product_tmpl_id
-            # Collect from M2M declared + BOM-based records
-            present = list(tmpl.allergen_ids.mapped('name'))
-            bom_present = tmpl.allergen_bom_ids.filtered(
-                lambda a: a.status == 'present'
-            ).mapped('allergen_id.name')
-            # Deduplicate preserving order
-            seen = set()
-            all_present = []
-            for n in present + bom_present:
-                if n not in seen:
-                    seen.add(n)
-                    all_present.append(n)
-            if all_present:
-                names = ', '.join(n.upper() for n in all_present)
-                line.x_allergeni_display = (
-                    f'<span style="font-weight:700;color:#cc0000;">{names}</span>'
-                )
-            else:
+            prod_name = line.product_id.name or ''
+            bom = line.bom_id
+            if not bom or not prod_name:
                 line.x_allergeni_display = ''
+                continue
+            # Read from BOM allergen matrix (same source as Allergeni tab)
+            matching = bom.allergen_ids.filtered(
+                lambda a: a.status in ('present', 'traces')
+                and prod_name in (a.source_ingredient or '')
+            )
+            present = matching.filtered(lambda a: a.status == 'present')
+            traces = matching.filtered(lambda a: a.status == 'traces')
+            parts = []
+            if present:
+                names = ', '.join(n.upper() for n in present.mapped('allergen_id.name'))
+                parts.append(
+                    f'<span style="font-weight:700;color:#cc0000;">{names}</span>')
+            if traces:
+                names = ', '.join(n.upper() for n in traces.mapped('allergen_id.name'))
+                parts.append(
+                    f'<span style="font-weight:600;color:#d97706;">(tracce: {names})</span>')
+            line.x_allergeni_display = ' '.join(parts) if parts else ''
 
     @api.model_create_multi
     def create(self, vals_list):

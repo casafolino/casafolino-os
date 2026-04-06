@@ -43,6 +43,7 @@
     <record id="kw_pnt_03" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">groundnut</field></record>
     <record id="kw_pnt_04" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">monkey nut</field></record>
     <record id="kw_pnt_05" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">burro di arachidi</field></record>
+    <record id="kw_pnt_06" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_05_peanuts"/><field name="keyword">peanut</field></record>
 
     <!-- Soia -->
     <record id="kw_soy_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">soia</field></record>
@@ -51,6 +52,7 @@
     <record id="kw_soy_04" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">miso</field></record>
     <record id="kw_soy_05" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">tempeh</field></record>
     <record id="kw_soy_06" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">lecitina di soia</field></record>
+    <record id="kw_soy_07" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_06_soy"/><field name="keyword">soy</field></record>
 
     <!-- Latte -->
     <record id="kw_milk_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">latte</field></record>
@@ -65,6 +67,8 @@
     <record id="kw_milk_10" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">mozzarella</field></record>
     <record id="kw_milk_11" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">latte intero</field></record>
     <record id="kw_milk_12" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">latte scremato</field></record>
+    <record id="kw_milk_13" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">milk</field></record>
+    <record id="kw_milk_14" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_07_milk"/><field name="keyword">crema</field></record>
 
     <!-- Frutta a guscio -->
     <record id="kw_nuts_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">nocciola</field></record>
@@ -79,6 +83,13 @@
     <record id="kw_nuts_10" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">pralinato</field></record>
     <record id="kw_nuts_11" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">gianduia</field></record>
     <record id="kw_nuts_12" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">noci del brasile</field></record>
+    <record id="kw_nuts_13" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">nocciole</field></record>
+    <record id="kw_nuts_14" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">hazelnut</field></record>
+    <record id="kw_nuts_15" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">mandorle</field></record>
+    <record id="kw_nuts_16" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">almond</field></record>
+    <record id="kw_nuts_17" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">pistacchi</field></record>
+    <record id="kw_nuts_18" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">noci</field></record>
+    <record id="kw_nuts_19" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_08_nuts"/><field name="keyword">walnut</field></record>
 
     <!-- Sedano -->
     <record id="kw_cel_01" model="cf.allergen.keyword"><field name="allergen_id" ref="allergen_09_celery"/><field name="keyword">sedano</field></record>
