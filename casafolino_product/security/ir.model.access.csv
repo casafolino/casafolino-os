@@ -15,3 +15,7 @@ access_cf_nutrition_bom_user,cf.nutrition.bom user,model_cf_nutrition_bom,base.g
 access_cf_nutrition_bom_mgr,cf.nutrition.bom manager,model_cf_nutrition_bom,base.group_system,1,1,1,1
 access_cf_nutrition_regulation_user,cf.nutrition.regulation user,model_cf_nutrition_regulation,base.group_user,1,0,0,0
 access_cf_nutrition_regulation_mgr,cf.nutrition.regulation manager,model_cf_nutrition_regulation,base.group_system,1,1,1,1
+access_cf_nutrition_usda_wizard,cf.nutrition.usda.wizard user,model_cf_nutrition_usda_wizard,base.group_user,1,1,1,1
+access_cf_nutrition_usda_wizard_line,cf.nutrition.usda.wizard.line user,model_cf_nutrition_usda_wizard_line,base.group_user,1,1,1,1
+access_cf_nutrition_ciqual_wizard,cf.nutrition.ciqual.wizard user,model_cf_nutrition_ciqual_wizard,base.group_user,1,1,1,1
+access_cf_nutrition_ciqual_wizard_line,cf.nutrition.ciqual.wizard.line user,model_cf_nutrition_ciqual_wizard_line,base.group_user,1,1,1,1

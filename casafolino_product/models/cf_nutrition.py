@@ -11,7 +11,8 @@ _logger = logging.getLogger(__name__)
 
 # ─── API constants ────────────────────────────────────────────────────────────
 _USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
-_USDA_API_KEY = "DEMO_KEY"  # Replace with real key in production
+_USDA_API_KEY_PARAM = "casafolino.usda_api_key"
+_USDA_API_KEY_DEFAULT = "DEMO_KEY"
 _OFF_API_URL = "https://world.openfoodfacts.org/cgi/search.pl"
 _API_TIMEOUT = 8  # seconds
 
@@ -83,6 +84,79 @@ def _tl_color(value, thresholds):
     return 'red'
 
 
+# ─── Nutri-Score 2023 algorithm ──────────────────────────────────────────────
+
+def _score_from_thresholds(value, thresholds):
+    """Return score (0..N) based on threshold list. Each threshold = max for that point."""
+    for i, t in enumerate(thresholds):
+        if value <= t:
+            return i
+    return len(thresholds)
+
+
+# Thresholds per category (2023 update)
+_NS_ENERGY = {
+    'general':  [335, 670, 1005, 1340, 1675, 2010, 2345, 2680, 3015, 3350],
+    'beverage': [30, 60, 90, 120, 150, 180, 210, 240, 270, 300],
+}
+_NS_SUGARS = {
+    'general':  [3.4, 6.8, 10, 14, 17, 20, 24, 27, 31, 34, 37, 41, 44, 48, 51],
+    'beverage': [0, 1.5, 3, 4.5, 6, 7.5, 9, 10.5, 12, 13.5],
+}
+_NS_SAT_FAT = {
+    'general':  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'cheese':   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'fat':      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+}
+_NS_SALT = {
+    'general':  [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0,
+                 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0],
+}
+_NS_FIBER = [3.0, 4.1, 5.2, 6.3, 7.4]        # positive points 1..5
+_NS_PROTEIN = [2.4, 4.8, 7.2, 9.6, 12.0]     # positive points 1..5
+
+
+def _nutriscore_2023(energy_kcal, sugars, saturated_fat, salt,
+                     fiber, protein, category='general'):
+    """Nutri-Score 2023 algorithm. Returns integer score (lower = better).
+    Categories: general, beverage, cheese, fat.
+    """
+    cat = category if category in ('general', 'beverage', 'cheese', 'fat') else 'general'
+
+    # Negative points
+    e_thresh = _NS_ENERGY.get(cat, _NS_ENERGY['general'])
+    neg_energy = _score_from_thresholds(energy_kcal, e_thresh)
+
+    s_thresh = _NS_SUGARS.get(cat, _NS_SUGARS['general'])
+    neg_sugars = _score_from_thresholds(sugars, s_thresh)
+
+    sf_thresh = _NS_SAT_FAT.get(cat, _NS_SAT_FAT['general'])
+    neg_sat = _score_from_thresholds(saturated_fat, sf_thresh)
+
+    sl_thresh = _NS_SALT.get(cat, _NS_SALT['general'])
+    neg_salt = _score_from_thresholds(salt, sl_thresh)
+
+    neg = neg_energy + neg_sugars + neg_sat + neg_salt
+
+    # Positive points
+    pos_fiber = _score_from_thresholds(fiber, _NS_FIBER) if fiber else 0
+    pos_protein = _score_from_thresholds(protein, _NS_PROTEIN) if protein else 0
+
+    # Protein rule: for general foods, protein only counts if neg < 11 or fiber >= 5
+    pos = pos_fiber
+    if cat == 'general' and neg >= 11 and fiber < 5:
+        pass  # protein not counted
+    else:
+        pos += pos_protein
+
+    # Cheese special: saturated fat ratio to total fat
+    if cat == 'cheese':
+        # For cheese, protein always counts
+        pos = pos_fiber + pos_protein
+
+    return neg - pos
+
+
 # ─── Ingredient ──────────────────────────────────────────────────────────────
 
 class CfNutritionIngredient(models.Model):
@@ -96,6 +170,7 @@ class CfNutritionIngredient(models.Model):
     data_source = fields.Selection([
         ('usda', 'USDA FoodData Central'),
         ('openfoodfacts', 'Open Food Facts'),
+        ('ciqual', 'CIQUAL (ANSES)'),
         ('crea', 'CREA / Alimentinutrizione'),
         ('manuale', 'Inserimento Manuale'),
     ], string="Fonte Dati", default='manuale')
@@ -103,6 +178,7 @@ class CfNutritionIngredient(models.Model):
     last_sync = fields.Datetime(string="Ultima Sincronizzazione")
     sync_name = fields.Char(string="Nome usato per ricerca esterna",
                              help="Lascia vuoto per usare il nome del prodotto Odoo")
+    ciqual_code = fields.Char(string="Codice CIQUAL")
 
     # ── Core EU nutrients (per 100g) ──────────────────────────────────────────
     energy_kcal = fields.Float(string="Energia (kcal/100g)")
@@ -188,9 +264,11 @@ class CfNutritionIngredient(models.Model):
     def _fetch_usda(self, name):
         """Call USDA FoodData Central API. Returns nutrient dict or {}."""
         try:
+            api_key = self.env['ir.config_parameter'].sudo().get_param(
+                _USDA_API_KEY_PARAM, _USDA_API_KEY_DEFAULT)
             resp = requests.get(_USDA_API_URL, params={
                 'query': name,
-                'api_key': _USDA_API_KEY,
+                'api_key': api_key,
                 'pageSize': 1,
                 'dataType': 'SR Legacy,Foundation',
             }, timeout=_API_TIMEOUT)
@@ -274,10 +352,44 @@ class CfNutritionIngredient(models.Model):
             return self.action_sync_openfoodfacts()
         elif self.data_source == 'usda':
             return self.action_sync_usda()
+        elif self.data_source == 'ciqual':
+            return self.action_open_ciqual_wizard()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {'title': 'Resync', 'message': 'Fonte dati manuale — scegli Open Food Facts o USDA.', 'type': 'info'},
+        }
+
+    def action_open_usda_wizard(self):
+        """Open USDA search wizard for this ingredient."""
+        self.ensure_one()
+        wizard = self.env['cf.nutrition.usda.wizard'].create({
+            'ingredient_id': self.id,
+            'search_query': self._get_search_name(),
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'cf.nutrition.usda.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'name': 'Ricerca USDA FoodData Central',
+        }
+
+    def action_open_ciqual_wizard(self):
+        """Open CIQUAL search wizard for this ingredient."""
+        self.ensure_one()
+        wizard = self.env['cf.nutrition.ciqual.wizard'].create({
+            'ingredient_id': self.id,
+            'search_query': self._get_search_name(),
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'cf.nutrition.ciqual.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'name': 'Ricerca CIQUAL (ANSES)',
         }
 
     def action_sync_all_stale(self):
@@ -487,43 +599,49 @@ class CfNutritionBom(models.Model):
             rec.tl_sugars = _tl_color(rec.sugars, _UK_TL['sugars'])
             rec.tl_salt = _tl_color(rec.salt, _UK_TL['salt'])
 
-    # ── Nutri-Score ────────────────────────────────────────────────────────────
+    # ── Nutri-Score 2023 ─────────────────────────────────────────────────────────
+    nutri_score_category = fields.Selection([
+        ('general', 'Alimento Generico'),
+        ('beverage', 'Bevanda'),
+        ('cheese', 'Formaggio'),
+        ('fat', 'Grassi / Oli'),
+    ], string="Categoria Nutri-Score", default='general')
+
     nutri_score = fields.Selection([
         ("A", "A"), ("B", "B"), ("C", "C"), ("D", "D"), ("E", "E"),
     ], compute="_compute_nutri_score", store=True, string="Nutri-Score")
 
+    nutri_score_points = fields.Integer(
+        compute="_compute_nutri_score", store=True,
+        string="Punti Nutri-Score")
+
     @api.depends("energy_kcal", "sugars", "saturated_fat", "salt",
-                 "fiber", "protein")
+                 "fiber", "protein", "nutri_score_category")
     def _compute_nutri_score(self):
         for rec in self:
             if not rec.energy_kcal:
                 rec.nutri_score = False
+                rec.nutri_score_points = 0
                 continue
-            e = rec.energy_kcal
-            neg = (0 if e <= 335 else 1 if e <= 670 else 2 if e <= 1005 else
-                   3 if e <= 1340 else 4 if e <= 1675 else 5 if e <= 2010 else
-                   6 if e <= 2345 else 7 if e <= 2680 else 8 if e <= 3015 else
-                   9 if e <= 3350 else 10)
-            s = rec.sugars
-            neg += (0 if s <= 4.5 else 1 if s <= 9 else 2 if s <= 13.5 else
-                    3 if s <= 18 else 4 if s <= 22.5 else 5 if s <= 27 else
-                    6 if s <= 31 else 7 if s <= 36 else 8 if s <= 40 else
-                    9 if s <= 45 else 10)
-            sf = rec.saturated_fat
-            neg += (0 if sf <= 1 else 1 if sf <= 2 else 2 if sf <= 3 else
-                    3 if sf <= 4 else 4 if sf <= 5 else 5 if sf <= 6 else
-                    6 if sf <= 7 else 7 if sf <= 8 else 8 if sf <= 9 else
-                    9 if sf <= 10 else 10)
-            sl = rec.salt
-            neg += (0 if sl <= 0.2 else 1 if sl <= 0.4 else 2 if sl <= 0.6 else
-                    3 if sl <= 0.8 else 4 if sl <= 1.0 else 5 if sl <= 1.2 else
-                    6 if sl <= 1.4 else 7 if sl <= 1.6 else 8 if sl <= 1.8 else
-                    9 if sl <= 2.0 else 10)
-            pos = min(5, int((rec.fiber or 0) / 0.9)) + min(5, int((rec.protein or 0) / 1.6))
-            score = neg - pos
-            rec.nutri_score = ("A" if score <= -1 else "B" if score <= 2
-                               else "C" if score <= 10 else "D" if score <= 18
-                               else "E")
+            cat = rec.nutri_score_category or 'general'
+            score = _nutriscore_2023(
+                energy_kcal=rec.energy_kcal,
+                sugars=rec.sugars or 0,
+                saturated_fat=rec.saturated_fat or 0,
+                salt=rec.salt or 0,
+                fiber=rec.fiber or 0,
+                protein=rec.protein or 0,
+                category=cat,
+            )
+            rec.nutri_score_points = score
+            if cat == 'beverage':
+                rec.nutri_score = ("A" if score <= 1 else "B" if score <= 5
+                                   else "C" if score <= 9 else "D" if score <= 13
+                                   else "E")
+            else:
+                rec.nutri_score = ("A" if score <= -1 else "B" if score <= 2
+                                   else "C" if score <= 10 else "D" if score <= 18
+                                   else "E")
 
     # ── Macronutrient chart data (JSON for OWL widget) ─────────────────────────
     macro_chart_data = fields.Char(compute="_compute_macro_chart_data")

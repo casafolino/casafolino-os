@@ -16,6 +16,7 @@
         'data/cf_nutrition_cron.xml',
         'views/cf_allergen_views.xml',
         'views/cf_nutrition_views.xml',
+        'views/cf_nutrition_wizard_views.xml',
         'views/cf_nutrition_inherit_views.xml',
         'views/menus.xml',
     ],

@@ -120,6 +120,10 @@
                             string="Cerca in Open Food Facts" class="btn-primary"/>
                     <button name="action_sync_usda" type="object"
                             string="Cerca in USDA" class="btn-primary"/>
+                    <button name="action_open_usda_wizard" type="object"
+                            string="Cerca su USDA" class="btn-secondary"/>
+                    <button name="action_open_ciqual_wizard" type="object"
+                            string="Cerca su CIQUAL" class="btn-secondary"/>
                     <button name="action_resync" type="object"
                             string="Aggiorna valori" class="btn-secondary"
                             invisible="data_source == 'manuale'"/>
@@ -132,7 +136,7 @@
                                 decoration-info="data_source == 'openfoodfacts'"
                                 decoration-success="data_source == 'usda'"
                                 decoration-warning="data_source == 'manuale'"
-                                decoration-primary="data_source == 'crea'"
+                                decoration-primary="data_source == 'crea' or data_source == 'ciqual'"
                                 nolabel="1"/>
                         </div>
                     </div>
@@ -145,6 +149,7 @@
                         </group>
                         <group string="Riferimento">
                             <field name="fdc_id"/>
+                            <field name="ciqual_code"/>
                         </group>
                     </group>
                     <group string="Valori base per 100g (EU obbligatori)">
@@ -209,11 +214,13 @@
                             <field name="last_computed" readonly="1"/>
                         </group>
                         <group>
+                            <field name="nutri_score_category"/>
                             <field name="nutri_score" widget="badge"
                                    decoration-success="nutri_score == 'A'"
                                    decoration-info="nutri_score == 'B'"
                                    decoration-warning="nutri_score == 'C' or nutri_score == 'D'"
                                    decoration-danger="nutri_score == 'E'"/>
+                            <field name="nutri_score_points" readonly="1"/>
                             <field name="macro_chart_data" widget="cf_nutrition_chart"
                                    nolabel="1"/>
                         </group>
