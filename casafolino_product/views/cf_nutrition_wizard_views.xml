@@ -93,8 +93,63 @@
     </record>
 
     <!-- ============================================================ -->
+    <!--                 CREA Search Wizard Form                      -->
+    <!-- ============================================================ -->
+    <record id="view_cf_nutrition_crea_wizard_form" model="ir.ui.view">
+        <field name="name">cf.nutrition.crea.wizard.form</field>
+        <field name="model">cf.nutrition.crea.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Ricerca CREA (ISS Italia)">
+                <group>
+                    <group>
+                        <field name="search_query"
+                            placeholder="Es: riso carnaroli, nocciole, latte intero..."/>
+                    </group>
+                </group>
+                <footer invisible="result_ids">
+                    <button name="action_search" type="object"
+                            string="Cerca" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+                <group invisible="not result_ids">
+                    <field name="result_ids" nolabel="1">
+                        <list editable="bottom"
+                              decoration-success="energy_kcal > 0">
+                            <field name="selected" widget="boolean_toggle"/>
+                            <field name="crea_code" readonly="1"/>
+                            <field name="name" readonly="1"/>
+                            <field name="categoria" readonly="1"/>
+                            <field name="energy_kcal" readonly="1"/>
+                            <field name="protein" readonly="1"/>
+                            <field name="fat" readonly="1"/>
+                            <field name="carbs" readonly="1"/>
+                            <field name="sugars" readonly="1" optional="show"/>
+                            <field name="fiber" readonly="1" optional="show"/>
+                            <field name="salt" readonly="1" optional="show"/>
+                        </list>
+                    </field>
+                </group>
+                <footer invisible="not result_ids">
+                    <button name="action_confirm" type="object"
+                            string="Conferma Selezione" class="btn-primary"/>
+                    <button name="action_search" type="object"
+                            string="Cerca di nuovo" class="btn-secondary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
     <!--                    Wizard Actions                            -->
     <!-- ============================================================ -->
+    <record id="action_cf_nutrition_crea_wizard" model="ir.actions.act_window">
+        <field name="name">Ricerca CREA</field>
+        <field name="res_model">cf.nutrition.crea.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <record id="action_cf_nutrition_usda_wizard" model="ir.actions.act_window">
         <field name="name">Ricerca USDA</field>
         <field name="res_model">cf.nutrition.usda.wizard</field>
@@ -119,6 +174,7 @@
             <form string="Importazione massiva dati nutrizionali USDA">
                 <group>
                     <field name="filter_mode"/>
+                    <field name="source"/>
                     <field name="skip_existing"/>
                 </group>
                 <group invisible="not result_message">
@@ -138,7 +194,7 @@
     </record>
 
     <record id="action_cf_nutrition_bulk_import" model="ir.actions.act_window">
-        <field name="name">Importa dati nutrizionali da USDA</field>
+        <field name="name">Importa dati nutrizionali</field>
         <field name="res_model">cf.nutrition.bulk.import.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
@@ -146,7 +202,7 @@
 
     <!-- Server action binding on product.template list -->
     <record id="action_bulk_import_usda_from_products" model="ir.actions.server">
-        <field name="name">Importa dati nutrizionali da USDA</field>
+        <field name="name">Importa dati nutrizionali</field>
         <field name="model_id" ref="product.model_product_template"/>
         <field name="binding_model_id" ref="product.model_product_template"/>
         <field name="binding_view_types">list</field>
@@ -154,7 +210,7 @@
         <field name="code">
 action = {
     'type': 'ir.actions.act_window',
-    'name': 'Importa dati nutrizionali da USDA',
+    'name': 'Importa dati nutrizionali',
     'res_model': 'cf.nutrition.bulk.import.wizard',
     'view_mode': 'form',
     'target': 'new',

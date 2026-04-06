@@ -121,14 +121,14 @@
         <field name="arch" type="xml">
             <form string="Valori Nutrizionali Ingrediente">
                 <header>
-                    <button name="action_sync_openfoodfacts" type="object"
-                            string="Cerca in Open Food Facts" class="btn-primary"/>
-                    <button name="action_sync_usda" type="object"
-                            string="Cerca in USDA" class="btn-primary"/>
-                    <button name="action_open_usda_wizard" type="object"
-                            string="Cerca su USDA" class="btn-secondary"/>
+                    <button name="action_open_crea_wizard" type="object"
+                            string="Cerca su CREA" class="btn-primary"/>
                     <button name="action_open_ciqual_wizard" type="object"
                             string="Cerca su CIQUAL" class="btn-secondary"/>
+                    <button name="action_open_usda_wizard" type="object"
+                            string="Cerca su USDA" class="btn-secondary"/>
+                    <button name="action_sync_openfoodfacts" type="object"
+                            string="Open Food Facts" class="btn-secondary"/>
                     <button name="action_resync" type="object"
                             string="Aggiorna valori" class="btn-secondary"
                             invisible="data_source == 'manuale'"/>
@@ -148,15 +148,14 @@
                     <group>
                         <group string="Sincronizzazione">
                             <field name="sync_name"
-                                placeholder="Nome ricerca generico"/>
-                            <field name="usda_search_name"
-                                placeholder="Es: white rice cooked, cream cheese..."/>
+                                placeholder="Nome ricerca (it/en)"/>
                             <field name="external_id" readonly="1"/>
                             <field name="last_sync" readonly="1"/>
                         </group>
                         <group string="Riferimento">
-                            <field name="fdc_id"/>
-                            <field name="ciqual_code"/>
+                            <field name="crea_code"/>
+                            <field name="ciqual_code" optional="show"/>
+                            <field name="fdc_id" optional="hide"/>
                             <field name="data_quality" widget="badge"
                                 decoration-muted="data_quality == 'draft'"
                                 decoration-success="data_quality == 'verified'"
@@ -208,14 +207,22 @@
         </field>
     </record>
 
-    <!-- Server action: Sync Massivo USDA -->
-    <record id="action_sync_all_usda" model="ir.actions.server">
-        <field name="name">Sync Massivo USDA</field>
+    <!-- Server action: Importa da CREA (massivo) -->
+    <record id="action_sync_all_crea" model="ir.actions.server">
+        <field name="name">Importa da CREA (massivo)</field>
         <field name="model_id" ref="model_cf_nutrition_ingredient"/>
         <field name="binding_model_id" ref="model_cf_nutrition_ingredient"/>
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
-        <field name="code">action = model.action_sync_all_usda()</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Importa dati nutrizionali',
+    'res_model': 'cf.nutrition.bulk.import.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+}
+        </field>
     </record>
 
     <!-- ═══════════════════════════════════════════════════════════════════

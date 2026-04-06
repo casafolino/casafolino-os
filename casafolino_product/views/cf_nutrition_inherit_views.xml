@@ -103,12 +103,12 @@
                                 readonly="1"/>
                         </group>
                         <group string="Azioni">
+                            <button name="action_sync_ingredient_crea" type="object"
+                                    string="Cerca su CREA" class="btn-primary"/>
                             <button name="action_sync_ingredient_usda" type="object"
-                                    string="Sync USDA" class="btn-secondary"/>
-                            <button name="action_sync_ingredient_off" type="object"
-                                    string="Sync Open Food Facts" class="btn-secondary"/>
+                                    string="Cerca su USDA" class="btn-secondary"/>
                             <button name="action_create_nutrition" type="object"
-                                    string="Calcola da BoM" class="btn-primary"/>
+                                    string="Calcola da BoM" class="btn-secondary"/>
                         </group>
                     </group>
 

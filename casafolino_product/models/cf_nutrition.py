@@ -218,6 +218,7 @@ class CfNutritionIngredient(models.Model):
     sync_name = fields.Char(string="Nome usato per ricerca esterna",
                              help="Lascia vuoto per usare il nome del prodotto Odoo")
     ciqual_code = fields.Char(string="Codice CIQUAL")
+    crea_code = fields.Char(string="Codice CREA")
 
     # ── Core EU nutrients (per 100g) ──────────────────────────────────────────
     energy_kcal = fields.Float(string="Energia (kcal/100g)")
@@ -240,6 +241,7 @@ class CfNutritionIngredient(models.Model):
     iron_mg = fields.Float(string="Ferro (mg/100g)")
     vitamin_d_mcg = fields.Float(string="Vitamina D (mcg/100g)")
     vitamina_c = fields.Float(string="Vitamina C (mg/100g)")
+    water_g = fields.Float(string="Acqua (g/100g)")
 
     # ── Extended metadata ───────────────────────────────────────────────────
     fdc_id = fields.Char(string="USDA FDC ID")
@@ -403,7 +405,9 @@ class CfNutritionIngredient(models.Model):
 
     def action_resync(self):
         self.ensure_one()
-        if self.data_source == 'openfoodfacts':
+        if self.data_source == 'crea':
+            return self.action_open_crea_wizard()
+        elif self.data_source == 'openfoodfacts':
             return self.action_sync_openfoodfacts()
         elif self.data_source == 'usda':
             return self.action_sync_usda()
@@ -412,7 +416,23 @@ class CfNutritionIngredient(models.Model):
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
-            'params': {'title': 'Resync', 'message': 'Fonte dati manuale — scegli Open Food Facts o USDA.', 'type': 'info'},
+            'params': {'title': 'Resync', 'message': 'Fonte dati manuale — scegli CREA, USDA o Open Food Facts.', 'type': 'info'},
+        }
+
+    def action_open_crea_wizard(self):
+        """Open CREA search wizard for this ingredient."""
+        self.ensure_one()
+        wizard = self.env['cf.nutrition.crea.wizard'].create({
+            'ingredient_id': self.id,
+            'search_query': self._get_search_name(),
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'cf.nutrition.crea.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'name': 'Ricerca CREA (ISS Italia)',
         }
 
     def action_open_usda_wizard(self):
@@ -1210,10 +1230,16 @@ class ProductTemplateNutrition(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': 'Ingrediente configurato',
-                'message': f'Record nutrizionale creato per "{self.name}". Usa Sync USDA o CIQUAL per popolare i valori.',
+                'message': f'Record nutrizionale creato per "{self.name}". Usa Cerca su CREA per popolare i valori.',
                 'type': 'success',
             },
         }
+
+    def action_sync_ingredient_crea(self):
+        """Open CREA search wizard from product template."""
+        self.ensure_one()
+        ingredient = self._get_or_create_ingredient()
+        return ingredient.action_open_crea_wizard()
 
     def action_sync_ingredient_usda(self):
         self.ensure_one()
