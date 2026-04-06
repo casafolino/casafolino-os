@@ -779,6 +779,81 @@ class MrpBomNutrition(models.Model):
 
     nutrition_ids = fields.One2many("cf.nutrition.bom", "bom_id",
                                      string="Etichette Nutrizionali")
+    nutrition_status_html = fields.Html(
+        compute="_compute_nutrition_status", sanitize=False,
+        string="Stato Dati Nutrizionali")
+
+    def _compute_nutrition_status(self):
+        NutrIngredient = self.env['cf.nutrition.ingredient']
+        for bom in self:
+            total = len(bom.bom_line_ids)
+            if not total:
+                bom.nutrition_status_html = False
+                continue
+            found = 0
+            missing_names = []
+            for line in bom.bom_line_ids:
+                tmpl = line.product_id.product_tmpl_id
+                ingredient = tmpl.nutrition_ingredient_id
+                if not ingredient:
+                    ingredient = NutrIngredient.search(
+                        [('product_id', '=', tmpl.id)], limit=1)
+                if ingredient and ingredient.energy_kcal:
+                    found += 1
+                else:
+                    missing_names.append(line.product_id.display_name)
+            color = '#16a34a' if found == total else '#d97706' if found > 0 else '#dc2626'
+            html = (
+                f'<span style="font-weight:600;color:{color};">'
+                f'Dati nutrizionali: {found}/{total} ingredienti</span>'
+            )
+            if missing_names:
+                html += (
+                    f'<br/><span style="color:#9ca3af;font-size:12px;">'
+                    f'Mancano: {", ".join(missing_names)}</span>'
+                )
+            bom.nutrition_status_html = html
+
+    def action_compute_from_bom(self):
+        """Compute nutrition from BOM components and save to cf.nutrition.bom."""
+        self.ensure_one()
+        NutrBom = self.env['cf.nutrition.bom']
+        # Find or create the nutrition record for this BOM
+        nutr = NutrBom.search([('bom_id', '=', self.id)], limit=1)
+        if not nutr:
+            nutr = NutrBom.create({
+                'bom_id': self.id,
+                'product_id': self.product_tmpl_id.id,
+            })
+        totals, missing = nutr._compute_from_bom(self)
+        if not totals and not missing:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Nessun ingrediente alimentare',
+                    'message': 'Nessun componente con is_food_ingredient attivo.',
+                    'type': 'warning',
+                },
+            }
+        if totals:
+            totals['last_computed'] = fields.Datetime.now()
+            nutr.write(totals)
+        found = len(self.bom_line_ids) - len(missing)
+        total = len(self.bom_line_ids)
+        msg = f'Valori calcolati su {found}/{total} ingredienti.'
+        if missing:
+            msg += f' Mancano: {", ".join(missing)}'
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Calcolo nutrizionale completato',
+                'message': msg,
+                'type': 'warning' if missing else 'success',
+                'sticky': bool(missing),
+            },
+        }
 
 
 # ─── product.template inherit ─────────────────────────────────────────────────
