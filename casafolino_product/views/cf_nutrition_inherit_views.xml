@@ -38,6 +38,21 @@
         </field>
     </record>
 
+    <!-- Colonna "Escludi nutrizionale" nella lista componenti BOM -->
+    <record id="view_mrp_bom_line_exclude_nutrition" model="ir.ui.view">
+        <field name="name">mrp.bom.line.exclude.nutrition</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="priority">18</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='bom_line_ids']//field[@name='product_qty']"
+                   position="after">
+                <field name="exclude_from_nutrition" string="No Nutriz."
+                       widget="boolean_toggle" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Nutri-Score nella list view BOM -->
     <record id="view_mrp_bom_list_nutriscore" model="ir.ui.view">
         <field name="name">mrp.bom.list.nutriscore</field>

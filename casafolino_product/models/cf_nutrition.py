@@ -789,26 +789,23 @@ class CfNutritionBom(models.Model):
         'iron_mg', 'vitamin_d_mcg',
     ]
 
-    # Keywords that identify non-food packaging components
+    # Keywords that identify non-food packaging components (IT + EN)
     _NON_FOOD_KEYWORDS = (
-        'tappo', 'vaso', 'cartone', 'etichetta', 'box',
-        'imballo', 'imballaggio', 'packaging', 'barattolo',
-        'bottiglia', 'coperchio', 'pellicola', 'vaschetta',
+        'vaso', 'tappo', 'etichetta', 'cartone', 'copritappo',
+        'overhead', 'posto', 'box', 'imballo', 'imballaggio',
+        'packaging', 'barattolo', 'bottiglia', 'coperchio',
+        'pellicola', 'vaschetta',
+        'label', 'jar', 'lid', 'cap', 'carton', 'sleeve',
     )
 
     @staticmethod
     def _is_non_food_line(line):
-        """Return True if BOM line is likely non-food (packaging/overhead)."""
-        tmpl = line.product_id.product_tmpl_id
+        """Return True if BOM line is non-food (packaging/overhead)."""
+        # Manual exclusion flag takes priority
+        if getattr(line, 'exclude_from_nutrition', False):
+            return True
         name_lower = (line.product_id.name or '').lower()
-        # Generic consumable in root category with packaging-like name
-        categ_name = (tmpl.categ_id.name or '').strip()
-        is_generic_categ = categ_name in ('Tutti', 'All', '')
-        is_consumable = tmpl.type == 'consu'
-        has_packaging_name = any(
-            kw in name_lower for kw in CfNutritionBom._NON_FOOD_KEYWORDS
-        )
-        return is_generic_categ and is_consumable and has_packaging_name
+        return any(kw in name_lower for kw in CfNutritionBom._NON_FOOD_KEYWORDS)
 
     def _find_ingredient(self, tmpl):
         """Find cf.nutrition.ingredient for a product template.

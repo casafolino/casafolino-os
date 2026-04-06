@@ -544,6 +544,12 @@ class ProductTemplateAllergen(models.Model):
 class MrpBomLineAutoAnalyze(models.Model):
     _inherit = "mrp.bom.line"
 
+    exclude_from_nutrition = fields.Boolean(
+        string="Escludi da calcolo nutrizionale",
+        default=False,
+        help="Attiva per escludere questo componente dal calcolo nutrizionale "
+             "(es. imballaggi, overhead, materiali non food).")
+
     x_allergeni_display = fields.Html(
         compute="_compute_x_allergeni_display",
         string="Allergeni",
