@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Report action -->
+    <record id="nutrition_label" model="ir.actions.report">
+        <field name="name">Etichetta Nutrizionale</field>
+        <field name="model">cf.nutrition.bom</field>
+        <field name="report_type">qweb-html</field>
+        <field name="report_name">casafolino_product.nutrition_label_template</field>
+        <field name="report_file">casafolino_product.nutrition_label_template</field>
+        <field name="binding_model_id" ref="model_cf_nutrition_bom"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb template -->
+    <template id="nutrition_label_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <div class="page" style="font-family:Arial,Helvetica,sans-serif;max-width:360px;margin:20px auto;padding:0;">
+
+                    <!-- Header prodotto -->
+                    <div style="margin-bottom:12px;">
+                        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;">
+                            Dichiarazione Nutrizionale
+                        </div>
+                        <div style="font-size:16px;font-weight:700;">
+                            <t t-esc="o.bom_id.product_tmpl_id.name or o.product_id.name or 'Prodotto'"/>
+                        </div>
+                        <div style="font-size:11px;color:#666;">
+                            Reg. UE 1169/2011 — Valori medi per 100 g
+                        </div>
+                    </div>
+
+                    <!-- Tabella nutrizionale EU -->
+                    <table style="width:100%;border-collapse:collapse;border:2px solid #000;font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:3px solid #000;background:#f8f8f8;">
+                                <th style="text-align:left;padding:6px 8px;font-weight:700;">
+                                    Dichiarazione nutrizionale
+                                </th>
+                                <th style="text-align:right;padding:6px 8px;font-weight:700;">
+                                    per 100 g
+                                </th>
+                                <th style="text-align:right;padding:6px 8px;font-weight:700;font-size:11px;">
+                                    %AR*
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Energia kJ -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px;font-weight:700;">Energia</td>
+                                <td style="text-align:right;padding:5px 8px;font-weight:700;">
+                                    <t t-esc="'%.0f' % (o.energy_kj or 0)"/> kJ
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_energy or 0)"/>%
+                                </td>
+                            </tr>
+                            <!-- Energia kcal -->
+                            <tr style="border-bottom:2px solid #000;">
+                                <td style="padding:5px 8px;"></td>
+                                <td style="text-align:right;padding:5px 8px;font-weight:700;">
+                                    <t t-esc="'%.0f' % (o.energy_kcal or 0)"/> kcal
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;"></td>
+                            </tr>
+                            <!-- Grassi -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px;font-weight:700;">Grassi</td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.1f' % (o.fat or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_fat or 0)"/>%
+                                </td>
+                            </tr>
+                            <!-- di cui saturi -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px 5px 20px;font-style:italic;">
+                                    di cui acidi grassi saturi
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.1f' % (o.saturated_fat or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_sat_fat or 0)"/>%
+                                </td>
+                            </tr>
+                            <!-- Carboidrati -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px;font-weight:700;">Carboidrati</td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.1f' % (o.carbs or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_carbs or 0)"/>%
+                                </td>
+                            </tr>
+                            <!-- di cui zuccheri -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px 5px 20px;font-style:italic;">
+                                    di cui zuccheri
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.1f' % (o.sugars or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_sugars or 0)"/>%
+                                </td>
+                            </tr>
+                            <!-- Fibre -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px;font-weight:700;">Fibre</td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.1f' % (o.fiber or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;"></td>
+                            </tr>
+                            <!-- Proteine -->
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="padding:5px 8px;font-weight:700;">Proteine</td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.1f' % (o.protein or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_protein or 0)"/>%
+                                </td>
+                            </tr>
+                            <!-- Sale -->
+                            <tr style="border-bottom:2px solid #000;">
+                                <td style="padding:5px 8px;font-weight:700;">Sale</td>
+                                <td style="text-align:right;padding:5px 8px;">
+                                    <t t-esc="'%.2f' % (o.salt or 0)"/> g
+                                </td>
+                                <td style="text-align:right;padding:5px 8px;font-size:11px;">
+                                    <t t-esc="'%.0f' % (o.ri_salt or 0)"/>%
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Footer AR -->
+                    <div style="font-size:10px;color:#666;margin-top:6px;line-height:1.3;">
+                        *Assunzioni di riferimento di un adulto medio (8400 kJ / 2000 kcal).
+                    </div>
+
+                    <!-- Nutri-Score badge -->
+                    <t t-if="o.nutri_score">
+                        <div style="margin-top:14px;text-align:center;">
+                            <t t-set="ns" t-value="o.nutri_score"/>
+                            <t t-set="colors" t-value="{'A':'#038141','B':'#85bb2f','C':'#fecb02','D':'#ee8100','E':'#e63e11'}"/>
+                            <span t-foreach="['A','B','C','D','E']" t-as="letter"
+                                  t-attf-style="display:inline-block;width:36px;height:36px;line-height:36px;
+                                  text-align:center;font-weight:900;font-size:18px;margin:0 2px;
+                                  border-radius:#{letter == ns and '50%' or '4px'};
+                                  color:#{letter == ns and '#fff' or '#999'};
+                                  background:#{letter == ns and colors[letter] or '#eee'};
+                                  transform:#{letter == ns and 'scale(1.3)' or 'none'};">
+                                <t t-esc="letter"/>
+                            </span>
+                        </div>
+                    </t>
+
+                    <!-- Timestamp -->
+                    <div style="font-size:9px;color:#aaa;margin-top:12px;text-align:right;">
+                        Calcolato il <t t-esc="o.last_computed" t-options="{'widget': 'date'}"/>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

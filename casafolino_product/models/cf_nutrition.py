@@ -999,13 +999,11 @@ class CfNutritionBom(models.Model):
         return '<p>Legislazione non supportata.</p>'
 
     def action_print_label(self):
-        """Open nutrition label in new window."""
+        """Print nutrition label report."""
         self.ensure_one()
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/report/html/casafolino_product.nutrition_label/{self.id}',
-            'target': 'new',
-        }
+        return self.env.ref(
+            'casafolino_product.nutrition_label'
+        ).report_action(self)
 
 
 # ─── mrp.bom inherit ─────────────────────────────────────────────────────────

@@ -19,6 +19,7 @@
         'views/cf_nutrition_wizard_views.xml',
         'views/cf_nutrition_inherit_views.xml',
         'views/menus.xml',
+        'report/cf_nutrition_label_report.xml',
     ],
     'assets': {
         'web.assets_backend': [
