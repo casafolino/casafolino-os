@@ -44,7 +44,7 @@
     </record>
 
     <!-- Allergen Menus -->
-    <menuitem id="menu_cf_allergen_root" name="Allergeni" sequence="27"/>
+    <menuitem id="menu_cf_allergen_root" name="Allergeni" sequence="27" web_icon="casafolino_product,static/description/icon.png"/>
     <menuitem id="menu_cf_allergens" name="Dashboard Allergeni"
               parent="menu_cf_allergen_root" action="action_cf_allergens" sequence="1"/>
     <menuitem id="menu_cf_allergen_alert" name="Prodotti con Alert"
@@ -59,7 +59,7 @@
               parent="menu_cf_allergen_config" action="action_cf_allergens" sequence="2"/>
 
     <!-- Nutrition Menus -->
-    <menuitem id="menu_cf_nutrition_root" name="Nutrizione" sequence="28"/>
+    <menuitem id="menu_cf_nutrition_root" name="Nutrizione" sequence="28" web_icon="casafolino_product,static/description/icon.png"/>
     <menuitem id="menu_cf_nutrition_boms" name="Ricette"
               parent="menu_cf_nutrition_root" action="action_cf_nutrition_boms" sequence="1"/>
     <menuitem id="menu_cf_nutrition_ingredients" name="Database Ingredienti"

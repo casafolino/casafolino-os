@@ -103,28 +103,4 @@
         </field>
     </record>
 
-    <record id="view_partner_search_cf" model="ir.ui.view">
-        <field name="name">res.partner.search.cf</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.res_partner_view_search"/>
-        <field name="arch" type="xml">
-            <search position="inside">
-                <filter string="Non contattati da 90+ giorni"
-                    name="cold_contacts"
-                    domain="[('cf_last_contact', '&lt;', (context_today() - datetime.timedelta(days=90)).strftime('%Y-%m-%d %H:%M:%S'))]"/>
-                <filter string="Mai contattati"
-                    name="never_contacted"
-                    domain="[('cf_last_contact', '=', False)]"/>
-                <filter string="Contattati questo mese"
-                    name="active_this_month"
-                    domain="[('cf_last_contact', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
-                <separator/>
-                <group expand="0" string="Raggruppa per">
-                    <filter string="Paese" name="group_country" context="{'group_by': 'country_id'}"/>
-                    <filter string="Fonte" name="group_source" context="{'group_by': 'cf_source'}"/>
-                    <filter string="Valutazione" name="group_rating" context="{'group_by': 'cf_rating'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
 </odoo>

@@ -2,7 +2,7 @@
 {
     "name": "CasaFolino Supplier Qualification",
     "version": "18.0.1.0.0",
-    "category": "Purchase",
+    "category": "Purchase/Supplier",
     "summary": "Qualifica fornitori BRC/IFS",
     "author": "CasaFolino Srls",
     "depends": ["base", "mail", "purchase", "stock"],
@@ -21,5 +21,4 @@
     "installable": True,
     "application": True,
     "license": "LGPL-3",
-    "icon": "casafolino_supplier_qual/static/description/icon.png",
 }

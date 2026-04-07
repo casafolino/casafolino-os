@@ -13,7 +13,7 @@
         <field name="name">Dashboard Fornitori</field>
         <field name="tag">cf_supplier_dashboard</field>
     </record>
-    <menuitem id="menu_cf_supplier_qual_root" name="Fornitori Qualificati" sequence="32"/>
+    <menuitem id="menu_cf_supplier_qual_root" name="Fornitori Qualificati" sequence="32" web_icon="casafolino_supplier_qual,static/description/icon.png"/>
     <menuitem id="menu_cf_supplier_dashboard" name="Dashboard" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_dashboard" sequence="0"/>
     <menuitem id="menu_cf_supplier_schede" name="Schede Qualifica" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_qual" sequence="1"/>
     <menuitem id="menu_cf_supplier_docs" name="Documenti" parent="menu_cf_supplier_qual_root" action="action_cf_supplier_documents" sequence="2"/>

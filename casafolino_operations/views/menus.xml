@@ -31,11 +31,11 @@
     </record>
 
     <!-- Production Menus -->
-    <menuitem id="menu_cf_prod_root" name="Produzione CF" sequence="22"/>
+    <menuitem id="menu_cf_prod_root" name="Produzione CF" sequence="22" web_icon="casafolino_operations,static/description/icon.png"/>
     <menuitem id="menu_cf_prod_jobs" name="Commesse" parent="menu_cf_prod_root" action="action_cf_production_jobs" sequence="1"/>
 
     <!-- Recall Menus -->
-    <menuitem id="menu_cf_recall_root" name="Mock Recall" sequence="29"/>
+    <menuitem id="menu_cf_recall_root" name="Mock Recall" sequence="29" web_icon="casafolino_operations,static/description/icon.png"/>
     <menuitem id="menu_cf_recall_new" name="Avvia Recall" parent="menu_cf_recall_root" action="action_cf_recall_wizard" sequence="1"/>
     <menuitem id="menu_cf_recall_sessions" name="Sessioni" parent="menu_cf_recall_root" action="action_cf_recall_sessions" sequence="2"/>
 </odoo>

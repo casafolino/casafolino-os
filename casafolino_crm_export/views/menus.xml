@@ -11,10 +11,8 @@
     <!-- Pipeline -->
     <menuitem id="menu_cf_export_pipeline" name="Tutte le Pipeline"
         parent="menu_cf_export_root" action="action_cf_export_lead" sequence="1"/>
-    <menuitem id="menu_cf_export_dach" name="Pipeline Europa"
-        parent="menu_cf_export_root" action="action_cf_export_lead_dach" sequence="2"/>
-    <menuitem id="menu_cf_export_gulf" name="Pipeline Gulf/Halal"
-        parent="menu_cf_export_root" action="action_cf_export_lead_gulf" sequence="3"/>
+    <!-- <menuitem id="menu_cf_export_dach" name="Pipeline Europa" parent="menu_cf_export_root" action="action_cf_export_lead_dach" sequence="2"/> -->
+    <!-- <menuitem id="menu_cf_export_gulf" name="Pipeline Gulf/Halal" parent="menu_cf_export_root" action="action_cf_export_lead_gulf" sequence="3"/> -->
 
     <!-- Operativo -->
     <menuitem id="menu_cf_export_samples" name="Campionature"

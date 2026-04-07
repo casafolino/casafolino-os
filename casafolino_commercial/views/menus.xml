@@ -36,21 +36,21 @@
     </record>
 
     <!-- ==== GDO Menus ==== -->
-    <menuitem id="menu_cf_gdo_root" name="GDO" sequence="35"/>
+    <menuitem id="menu_cf_gdo_root" name="GDO" sequence="35" web_icon="casafolino_commercial,static/description/icon.png"/>
     <menuitem id="menu_cf_gdo_retailers" name="Retailer" parent="menu_cf_gdo_root"
               action="action_cf_gdo_retailers" sequence="1"/>
     <menuitem id="menu_cf_gdo_listings" name="Listing" parent="menu_cf_gdo_root"
               action="action_cf_gdo_listings" sequence="2"/>
 
     <!-- ==== Private Label Menus ==== -->
-    <menuitem id="menu_cf_pl_root" name="Private Label" sequence="40"/>
+    <menuitem id="menu_cf_pl_root" name="Private Label" sequence="40" web_icon="casafolino_commercial,static/description/icon.png"/>
     <menuitem id="menu_cf_pl_clients" name="Clienti" parent="menu_cf_pl_root"
               action="action_cf_pl_clients" sequence="1"/>
     <menuitem id="menu_cf_pl_products" name="Prodotti" parent="menu_cf_pl_root"
               action="action_cf_pl_products" sequence="2"/>
 
     <!-- ==== Treasury Menus ==== -->
-    <menuitem id="menu_cf_treasury_root" name="Tesoreria" sequence="30"/>
+    <menuitem id="menu_cf_treasury_root" name="Tesoreria" sequence="30" web_icon="casafolino_commercial,static/description/icon.png"/>
     <menuitem id="menu_cf_treasury_dashboard" name="Dashboard"
               parent="menu_cf_treasury_root"
               action="action_cf_treasury_dashboard" sequence="1"/>
