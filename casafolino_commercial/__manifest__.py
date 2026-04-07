@@ -7,6 +7,7 @@
     'depends': ['base', 'mail', 'sale_management', 'product', 'account', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
+        'wizards/sale_discount_wizard.xml',
         'data/cf_treasury_cron.xml',
         'views/cf_gdo_views.xml',
         'views/cf_pl_views.xml',
@@ -15,6 +16,7 @@
         'views/cf_treasury_receivables_views.xml',
         'views/cf_treasury_payables_views.xml',
         'views/cf_treasury_cashflow_views.xml',
+        'views/cf_sale_discount_views.xml',
         'views/menus.xml',
     ],
     'assets': {

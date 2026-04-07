@@ -12,3 +12,4 @@ access_cf_treasury_mgr,cf.treasury.snapshot manager,model_cf_treasury_snapshot,b
 access_cf_cashflow_user,cf.treasury.cashflow.line user,model_cf_treasury_cashflow_line,base.group_user,1,1,1,0
 access_cf_cashflow_mgr,cf.treasury.cashflow.line manager,model_cf_treasury_cashflow_line,base.group_system,1,1,1,1
 access_cf_export_wizard,cf.treasury.export.wizard,model_cf_treasury_export_wizard,base.group_user,1,1,1,1
+access_sale_discount_wizard,sale.discount.wizard,model_sale_discount_wizard,base.group_user,1,1,1,1

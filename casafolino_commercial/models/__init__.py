@@ -4,3 +4,4 @@ from . import cf_treasury
 from . import cf_treasury_cashflow
 from . import cf_treasury_aml_ext
 from . import cf_treasury_analytics
+from . import sale_order_ext
