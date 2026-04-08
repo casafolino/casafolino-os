@@ -50,7 +50,7 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- SALE ORDER — bottone in header + lista blocchi nel tab -->
+    <!-- SALE ORDER -->
     <record id="view_sale_order_footer_blocks" model="ir.ui.view">
         <field name="name">sale.order.footer.blocks</field>
         <field name="model">sale.order</field>
@@ -83,13 +83,12 @@
                             <field name="payment_term_id"/>
                         </list>
                     </field>
-                </button>
                 </page>
             </xpath>
         </field>
     </record>
 
-    <!-- ACCOUNT MOVE — bottone in header + lista blocchi nel tab -->
+    <!-- ACCOUNT MOVE -->
     <record id="view_account_move_footer_blocks" model="ir.ui.view">
         <field name="name">account.move.footer.blocks</field>
         <field name="model">account.move</field>
