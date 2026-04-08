@@ -50,35 +50,78 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <!-- SALE ORDER — bottone in header + lista blocchi nel tab -->
     <record id="view_sale_order_footer_blocks" model="ir.ui.view">
         <field name="name">sale.order.footer.blocks</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="priority">20</field>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_footer_blocks"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="footer_block_count"/>
+                        </span>
+                        <span class="o_stat_text">Blocchi</span>
+                    </div>
+                </button>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Blocchi Documento" name="footer_blocks">
                     <field name="footer_block_ids"
-                           widget="many2many_tags"
-                           domain="[('active','=',True)]"
-                           options="{'no_create': False}"/>
+                           widget="many2many"
+                           domain="[('active','=',True)]">
+                        <list>
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="block_type"/>
+                            <field name="bank_id"/>
+                            <field name="payment_term_id"/>
+                        </list>
+                    </field>
+                </button>
                 </page>
             </xpath>
         </field>
     </record>
 
+    <!-- ACCOUNT MOVE — bottone in header + lista blocchi nel tab -->
     <record id="view_account_move_footer_blocks" model="ir.ui.view">
         <field name="name">account.move.footer.blocks</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="priority">20</field>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_footer_blocks"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="footer_block_count"/>
+                        </span>
+                        <span class="o_stat_text">Blocchi</span>
+                    </div>
+                </button>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Blocchi Documento" name="footer_blocks">
                     <field name="footer_block_ids"
-                           widget="many2many_tags"
-                           domain="[('active','=',True)]"
-                           options="{'no_create': False}"/>
+                           widget="many2many"
+                           domain="[('active','=',True)]">
+                        <list>
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="block_type"/>
+                            <field name="bank_id"/>
+                            <field name="payment_term_id"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>
