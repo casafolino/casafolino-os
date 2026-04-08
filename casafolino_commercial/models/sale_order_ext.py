@@ -1,7 +1,16 @@
-from odoo import models
+from odoo import models, fields
+
 
 class SaleOrderExt(models.Model):
     _inherit = 'sale.order'
+
+    footer_block_ids = fields.Many2many(
+        'cf.doc.footer.block',
+        'sale_order_footer_block_rel',
+        'order_id',
+        'block_id',
+        string='Blocchi Documento',
+    )
 
     def action_open_discount_wizard(self):
         return {

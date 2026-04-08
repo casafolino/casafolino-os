@@ -81,4 +81,9 @@
     <menuitem id="menu_cf_treasury_export" name="Esporta XLS"
               parent="menu_cf_treasury_root"
               action="action_cf_treasury_export" sequence="10"/>
+    <menuitem id="menu_cf_doc_footer_root" name="Documenti" sequence="45"
+              web_icon="casafolino_commercial,static/description/icon.png"/>
+    <menuitem id="menu_cf_doc_footer_blocks" name="Blocchi Documento"
+              parent="menu_cf_doc_footer_root"
+              action="action_cf_doc_footer_blocks" sequence="1"/>
 </odoo>
