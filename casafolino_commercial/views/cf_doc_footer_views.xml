@@ -72,6 +72,12 @@
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Blocchi Documento" name="footer_blocks">
+                    <div class="o_row mb-3">
+                        <button name="action_insert_footer_blocks"
+                                type="object"
+                                string="⬆ Inserisci nelle righe ordine"
+                                class="btn btn-primary"/>
+                    </div>
                     <field name="footer_block_ids"
                            widget="many2many"
                            domain="[('active','=',True)]">
