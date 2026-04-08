@@ -1,98 +1,287 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates xml:space="preserve">
 <t t-name="casafolino_kpi.CfKpiDashboard">
-    <div class="cf-dashboard o_action">
-        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
-             style="background:#1e2432;color:#fff;min-height:56px;">
-            <div class="d-flex align-items-center gap-2">
-                <span style="font-size:20px;">📈</span>
-                <h4 class="mb-0 fw-bold" style="font-size:16px;">KPI Dashboard</h4>
+    <div class="cf-dashboard o_action"
+         style="background:#f4f5f7;min-height:100vh;font-family:Inter,system-ui,sans-serif;">
+
+        <!-- HEADER -->
+        <div style="background:#1e2432;color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:22px;">📈</span>
+                <h4 style="margin:0;font-size:17px;font-weight:700;letter-spacing:.3px;">
+                    Executive KPI Dashboard
+                </h4>
                 <t t-if="state.data and state.data.has_data">
-                    <span class="badge bg-secondary ms-2" style="font-size:11px;">
-                        Aggiornato: <t t-esc="state.data.date"/>
+                    <span style="background:#374151;padding:3px 10px;border-radius:12px;font-size:11px;color:#d1d5db;">
+                        Live · <t t-esc="state.data.date"/>
                     </span>
                 </t>
             </div>
-            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+            <button t-on-click="onRefresh"
+                    style="background:transparent;color:#fff;border:1px solid #4b5563;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">
+                ↺ Aggiorna
+            </button>
         </div>
 
         <t t-if="state.loading">
-            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+            <div style="display:flex;justify-content:center;align-items:center;height:300px;">
                 <div class="spinner-border text-secondary"/>
             </div>
         </t>
         <t t-elif="state.error">
-            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
-        </t>
-        <t t-elif="!state.data or !state.data.has_data">
-            <div class="alert alert-info m-4">
-                Nessun dato disponibile. Creare uno snapshot KPI prima.
+            <div style="margin:24px;padding:16px;background:#fee2e2;color:#991b1b;border-radius:8px;">
+                <t t-esc="state.error"/>
             </div>
         </t>
         <t t-elif="state.data">
-            <div class="cf-dash-body px-4 py-3">
+            <div style="padding:24px 28px;">
 
-                <!-- Vendite -->
-                <div class="row g-3 mb-4">
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" style="border-top: 3px solid #5A6E3A;">
-                            <div class="cf-kpi-label">Vendite YTD</div>
-                            <div class="cf-kpi-value" style="font-size:22px;">
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- 💼 CFO — FINANCIAL OVERVIEW                              -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div style="margin-bottom:28px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:18px;">💼</span>
+                        <h5 style="margin:0;font-size:14px;font-weight:700;color:#1e2432;text-transform:uppercase;letter-spacing:1px;">
+                            CFO — Financial Overview
+                        </h5>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+
+                        <!-- Vendite YTD -->
+                        <div style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #5A6E3A;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Vendite YTD
+                            </div>
+                            <div style="font-size:26px;font-weight:800;color:#1e2432;margin-top:6px;">
                                 <t t-esc="formatAmount(state.data.sales_ytd)"/>
                             </div>
-                            <div t-attf-class="cf-kpi-sub #{deltaClass(state.data.delta_ytd)}">
-                                <t t-esc="deltaIcon(state.data.delta_ytd)"/> vs snapshot prec.
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                                Anno corrente
                             </div>
                         </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" style="border-top: 3px solid #3d4d28;">
-                            <div class="cf-kpi-label">Vendite MTD</div>
-                            <div class="cf-kpi-value" style="font-size:22px;">
+
+                        <!-- Vendite MTD -->
+                        <div style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #3d4d28;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Vendite MTD
+                            </div>
+                            <div style="font-size:26px;font-weight:800;color:#1e2432;margin-top:6px;">
                                 <t t-esc="formatAmount(state.data.sales_mtd)"/>
                             </div>
-                            <div t-attf-class="cf-kpi-sub #{deltaClass(state.data.delta_mtd)}">
-                                <t t-esc="deltaIcon(state.data.delta_mtd)"/> vs snapshot prec.
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                                Mese corrente
                             </div>
                         </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" style="border-top: 3px solid #17a2b8;">
-                            <div class="cf-kpi-label">MO Aperti</div>
-                            <div t-attf-class="cf-kpi-value #{state.data.mo_open > 0 ? 'text-warning' : 'text-success'}">
-                                <t t-esc="state.data.mo_open"/>
+
+                        <!-- Da incassare -->
+                        <div t-attf-style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #{state.data.overdue_count > 0 ? '#dc2626' : '#0ea5e9'};box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Da Incassare
                             </div>
-                            <div class="cf-kpi-sub">Completati MTD: <t t-esc="state.data.mo_done"/></div>
+                            <div style="font-size:26px;font-weight:800;color:#1e2432;margin-top:6px;">
+                                <t t-esc="formatAmount(state.data.receivable_value)"/>
+                            </div>
+                            <t t-if="state.data.overdue_count > 0">
+                                <div style="font-size:11px;color:#dc2626;font-weight:600;margin-top:4px;">
+                                    ⚠ Scadute: <t t-esc="state.data.overdue_count"/> · <t t-esc="formatAmount(state.data.overdue_value)"/>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Nessuna fattura scaduta</div>
+                            </t>
                         </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card"
-                             t-attf-style="border-top: 3px solid #{state.data.nc_open > 0 ? '#dc3545' : '#28a745'};">
-                            <div class="cf-kpi-label">NC Aperte</div>
-                            <div t-attf-class="cf-kpi-value #{state.data.nc_open > 0 ? 'text-danger' : 'text-success'}">
-                                <t t-esc="state.data.nc_open"/>
+
+                        <!-- Margine MTD -->
+                        <div style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #16a34a;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Margine MTD
                             </div>
-                            <div class="cf-kpi-sub">Quarantene: <t t-esc="state.data.quarantine_active"/></div>
+                            <div style="font-size:26px;font-weight:800;color:#1e2432;margin-top:6px;">
+                                <t t-esc="formatAmount(state.data.margin_mtd)"/>
+                            </div>
+                            <div style="font-size:11px;color:#16a34a;font-weight:600;margin-top:4px;">
+                                <t t-esc="state.data.margin_pct_mtd"/>% sul fatturato
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Canali vendita -->
-                <div class="cf-dash-panel">
-                    <div class="cf-dash-panel-title">🛒 Vendite per Canale</div>
-                    <div class="row g-3">
-                        <t t-foreach="[['B2B', state.data.sales_b2b], ['GDO', state.data.sales_gdo], ['Amazon', state.data.sales_amazon], ['Shopify', state.data.sales_shopify]]" t-as="ch" t-key="ch[0]">
-                            <div class="col-6 col-lg-3">
-                                <div class="text-center">
-                                    <div class="fw-bold" style="font-size:18px; color:#1e2432;">
-                                        <t t-esc="formatAmount(ch[1])"/>
-                                    </div>
-                                    <div class="text-muted" style="font-size:12px;"><t t-esc="ch[0]"/></div>
-                                </div>
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- 🤝 CSO — SALES                                           -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div style="margin-bottom:28px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:18px;">🤝</span>
+                        <h5 style="margin:0;font-size:14px;font-weight:700;color:#1e2432;text-transform:uppercase;letter-spacing:1px;">
+                            CSO — Sales
+                        </h5>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">
+
+                        <!-- Ordini da evadere -->
+                        <div style="background:#fff;padding:20px;border-radius:10px;border-left:4px solid #f59e0b;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Ordini da Evadere
                             </div>
-                        </t>
+                            <div style="font-size:36px;font-weight:800;color:#1e2432;margin-top:8px;line-height:1;">
+                                <t t-esc="state.data.orders_pending"/>
+                            </div>
+                            <div style="font-size:13px;color:#6b7280;margin-top:6px;">
+                                Valore: <span style="font-weight:700;color:#1e2432;">
+                                    <t t-esc="formatAmount(state.data.orders_pending_value)"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Top 5 clienti MTD -->
+                        <div style="background:#fff;padding:20px;border-radius:10px;border-left:4px solid #5A6E3A;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:12px;">
+                                Top 5 Clienti MTD
+                            </div>
+                            <t t-if="state.data.top_clients.length === 0">
+                                <div style="color:#9ca3af;font-style:italic;font-size:13px;">Nessun cliente.</div>
+                            </t>
+                            <t t-foreach="state.data.top_clients" t-as="c" t-key="c_index">
+                                <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">
+                                    <span style="color:#374151;">
+                                        <span style="color:#9ca3af;margin-right:6px;">#<t t-esc="c_index + 1"/></span>
+                                        <t t-esc="c[0]"/>
+                                    </span>
+                                    <span style="font-weight:700;color:#1e2432;">
+                                        <t t-esc="formatAmount(c[1])"/>
+                                    </span>
+                                </div>
+                            </t>
+                        </div>
                     </div>
                 </div>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- 📣 CMO — MARKETING                                       -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div style="margin-bottom:28px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:18px;">📣</span>
+                        <h5 style="margin:0;font-size:14px;font-weight:700;color:#1e2432;text-transform:uppercase;letter-spacing:1px;">
+                            CMO — Marketing
+                        </h5>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+                        <!-- Canali vendita YTD -->
+                        <div style="background:#fff;padding:20px;border-radius:10px;border-left:4px solid #8b5cf6;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;">
+                                Canali Vendita YTD
+                            </div>
+                            <t t-set="channels" t-value="[['B2B', state.data.sales_b2b, '#5A6E3A'], ['GDO', state.data.sales_gdo, '#0ea5e9'], ['Amazon', state.data.sales_amazon, '#f59e0b'], ['Shopify', state.data.sales_shopify, '#10b981']]"/>
+                            <t t-set="maxVal" t-value="Math.max(state.data.sales_b2b, state.data.sales_gdo, state.data.sales_amazon, state.data.sales_shopify, 1)"/>
+                            <t t-foreach="channels" t-as="ch" t-key="ch[0]">
+                                <div style="margin-bottom:10px;">
+                                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                                        <span style="color:#374151;font-weight:600;"><t t-esc="ch[0]"/></span>
+                                        <span style="color:#1e2432;font-weight:700;">
+                                            <t t-esc="formatAmount(ch[1])"/>
+                                        </span>
+                                    </div>
+                                    <div style="background:#f3f4f6;height:8px;border-radius:4px;overflow:hidden;">
+                                        <div t-attf-style="background:#{ch[2]};height:100%;width:#{(ch[1] / maxVal * 100).toFixed(1)}%;border-radius:4px;"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- Top 6 prodotti MTD -->
+                        <div style="background:#fff;padding:20px;border-radius:10px;border-left:4px solid #ec4899;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:12px;">
+                                Top 6 Prodotti MTD
+                            </div>
+                            <t t-if="state.data.top_products.length === 0">
+                                <div style="color:#9ca3af;font-style:italic;font-size:13px;">Nessun prodotto.</div>
+                            </t>
+                            <t t-foreach="state.data.top_products" t-as="p" t-key="p_index">
+                                <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">
+                                    <span style="color:#374151;">
+                                        <span style="color:#9ca3af;margin-right:6px;">#<t t-esc="p_index + 1"/></span>
+                                        <t t-esc="p[0]"/>
+                                    </span>
+                                    <span style="font-weight:700;color:#1e2432;">
+                                        <t t-esc="formatAmount(p[1])"/>
+                                    </span>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- 🏭 COO — OPERATIONS                                      -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:18px;">🏭</span>
+                        <h5 style="margin:0;font-size:14px;font-weight:700;color:#1e2432;text-transform:uppercase;letter-spacing:1px;">
+                            COO — Operations
+                        </h5>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+
+                        <!-- MO aperti -->
+                        <div style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #0ea5e9;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Ordini Produzione Aperti
+                            </div>
+                            <div style="font-size:32px;font-weight:800;color:#1e2432;margin-top:6px;line-height:1;">
+                                <t t-esc="state.data.mo_open"/>
+                            </div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:6px;">
+                                Completati MTD: <strong style="color:#16a34a;"><t t-esc="state.data.mo_done"/></strong>
+                            </div>
+                        </div>
+
+                        <!-- NC aperte -->
+                        <div t-attf-style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #{state.data.nc_open > 0 ? '#dc2626' : '#16a34a'};box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Non Conformità Aperte
+                            </div>
+                            <div t-attf-style="font-size:32px;font-weight:800;margin-top:6px;line-height:1;color:#{state.data.nc_open > 0 ? '#dc2626' : '#16a34a'};">
+                                <t t-esc="state.data.nc_open"/>
+                            </div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:6px;">
+                                <t t-if="state.data.nc_open === 0">Nessuna NC aperta</t>
+                                <t t-else="">Da gestire</t>
+                            </div>
+                        </div>
+
+                        <!-- Quarantene -->
+                        <div t-attf-style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #{state.data.quarantine_active > 0 ? '#f59e0b' : '#16a34a'};box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Quarantene Attive
+                            </div>
+                            <div t-attf-style="font-size:32px;font-weight:800;margin-top:6px;line-height:1;color:#{state.data.quarantine_active > 0 ? '#f59e0b' : '#16a34a'};">
+                                <t t-esc="state.data.quarantine_active"/>
+                            </div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:6px;">
+                                <t t-if="state.data.quarantine_active === 0">Nessun lotto bloccato</t>
+                                <t t-else="">Lotti bloccati</t>
+                            </div>
+                        </div>
+
+                        <!-- Vendite oggi -->
+                        <div style="background:#fff;padding:18px 20px;border-radius:10px;border-left:4px solid #5A6E3A;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">
+                                Vendite Oggi
+                            </div>
+                            <div style="font-size:26px;font-weight:800;color:#1e2432;margin-top:6px;">
+                                <t t-esc="formatAmount(state.data.sales_today)"/>
+                            </div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:6px;">
+                                <t t-esc="state.data.date"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </t>
     </div>
