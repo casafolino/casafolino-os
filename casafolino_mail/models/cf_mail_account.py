@@ -135,14 +135,7 @@ class CfMailAccount(models.Model):
 
     @api.model
     def get_accounts(self, *args, **kw):
-        is_admin = (
-            self.env.user.has_group('base.group_system')
-            or self.env.user.login == 'antonio@casafolino.com'
-        )
-        if is_admin:
-            accounts = self.search([('active', '=', True)], order='sequence, is_team, id')
-        else:
-            accounts = self.search([
+        accounts = self.search([
                 ('active', '=', True),
                 '|',
                 ('user_id', '=', self.env.uid),
