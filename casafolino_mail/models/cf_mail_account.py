@@ -56,7 +56,7 @@ class CfMailAccount(models.Model):
     imap_sent_last_uid = fields.Integer('Ultimo UID Sent', default=0)
     imap_enabled = fields.Boolean('IMAP attivo', default=False)
     imap_status = fields.Char('Stato IMAP', default='Non configurato')
-    imap_since_date = fields.Date('Importa dal', default='2026-01-01',
+    imap_since_date = fields.Date('Importa dal', default='2025-01-01',
         help='Data di partenza per import storico IMAP')
 
     smtp_host = fields.Char('SMTP Host', default='smtp.gmail.com')
@@ -96,7 +96,7 @@ class CfMailAccount(models.Model):
             acc.imap_last_uid = 0
             acc.imap_sent_last_uid = 0
             if not acc.imap_since_date:
-                acc.imap_since_date = date_cls(2026, 1, 1)
+                acc.imap_since_date = date_cls(2025, 1, 1)
             acc.sync_imap()
         return {
             'type': 'ir.actions.client',
@@ -441,7 +441,7 @@ class CfMailAccount(models.Model):
 
         # Limite di 100 uid per ciclo normale; nessun limite per sync storica
         if not sender_filter:
-            uids = uids[-100:]
+            pass  # nessun limite uid
 
         # Regole mittenti per il filtro intelligente
         sender_rules = {} if sender_filter else self._get_sender_rules()
