@@ -361,6 +361,10 @@
                                 <div class="cf-snooze-option" data-minutes="4320" t-on-click="onSnooze"><i class="fa fa-calendar-alt"/> Tra 3 giorni</div>
                             </div>
                         </div>
+                        
+                        <button class="cf-mail-btn-secondary" t-on-click="onTranslate" style="font-size:11px;padding:4px 10px;background:#e3f2fd;color:#1565c0;border-color:#bbdefb">
+                            <i class="fa fa-language"/> Traduci
+                        </button>
                         <button class="cf-mail-btn-icon lead" t-on-click="openLeadModal" title="Crea Trattativa CRM"><i class="fa fa-plus-circle"/></button>
                     </div>
                 </div>
@@ -530,6 +534,36 @@
                                             <i class="fa fa-user-secret"/> Arricchisci ora
                                         </button>
                                     </div>
+                                </div>
+                            </t>
+                        </div>
+                        
+                        <!-- Sezione AI Assistant -->
+                        <div class="cf-mail-ctx-section">
+                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleAIPanel">
+                                <i t-att-class="'fa fa-' + (state.showAIPanel ? 'chevron-down' : 'chevron-right')"/>
+                                <i class="fa fa-robot" style="margin-left:4px"/> AI Assistant
+                            </div>
+                            <t t-if="state.showAIPanel">
+                                <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+                                    <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;text-align:left" t-on-click="onAISummarize">
+                                        <i class="fa fa-compress"/> Riassumi email
+                                    </button>
+                                    <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;text-align:left" t-on-click="onAISuggestReply">
+                                        <i class="fa fa-reply"/> Suggerisci risposta
+                                    </button>
+                                    <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;text-align:left" t-on-click="onAIAnalyze">
+                                        <i class="fa fa-chart-bar"/> Analizza mittente
+                                    </button>
+                                    <t t-if="state.aiLoading">
+                                        <div style="font-size:11px;color:var(--text-muted);padding:6px"><i class="fa fa-spinner fa-spin"/> Elaborazione...</div>
+                                    </t>
+                                    <t t-elif="state.aiResult">
+                                        <div style="font-size:11px;padding:8px;background:rgba(90,110,58,0.06);border-radius:6px;line-height:1.5;max-height:200px;overflow-y:auto;white-space:pre-wrap" t-esc="state.aiResult"/>
+                                        <button class="cf-mail-btn-secondary" style="font-size:10px;padding:2px 8px" t-on-click="onAIUseAsReply">
+                                            <i class="fa fa-arrow-down"/> Usa come risposta
+                                        </button>
+                                    </t>
                                 </div>
                             </t>
                         </div>
@@ -1041,6 +1075,24 @@
                         <button class="cf-fmt-btn" t-on-click="insertLink" title="Inserisci link"><i class="fa fa-link"/></button>
                         <button class="cf-fmt-btn" data-command="removeFormat" t-on-click="onExecFormat" title="Rimuovi formattazione"><i class="fa fa-eraser"/></button>
                     </div>
+                </div>
+
+
+                <!-- Barra AI Composer -->
+                <div class="cf-composer-ai-bar">
+                    <span style="font-size:11px;color:var(--text-muted);margin-right:6px"><i class="fa fa-robot"/> AI:</span>
+                    <button class="cf-composer-ai-btn" t-on-click="onComposerAIDraft" title="Scrivi bozza da zero">
+                        <i class="fa fa-magic"/> Scrivi
+                    </button>
+                    <button class="cf-composer-ai-btn" t-on-click="onComposerAIImprove" title="Migliora testo">
+                        <i class="fa fa-pencil"/> Migliora
+                    </button>
+                    <button class="cf-composer-ai-btn" t-on-click="onComposerAISuggest" title="Suggerisci risposta">
+                        <i class="fa fa-reply"/> Suggerisci
+                    </button>
+                    <t t-if="state.composerAILoading">
+                        <span style="font-size:11px;color:var(--text-muted)"><i class="fa fa-spinner fa-spin"/></span>
+                    </t>
                 </div>
 
                 <!-- Corpo -->

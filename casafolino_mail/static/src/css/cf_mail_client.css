@@ -1154,3 +1154,28 @@ textarea.cf-mail-modal-input { resize: vertical; }
   flex-direction: column;
   gap: 8px;
 }
+
+/* AI Assistant */
+.cf-composer-ai-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: linear-gradient(90deg, rgba(90,110,58,0.06) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+}
+.cf-composer-ai-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all .15s;
+}
+.cf-composer-ai-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}

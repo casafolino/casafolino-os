@@ -54,6 +54,7 @@ class CfMailClient extends Component {
             activeView: "mail",
             contacts: [], contactSearch: "", contactTagFilter: "",
             show007Panel: false, data007: {}, loading007: false,
+            showAIPanel: false, aiLoading: false, aiResult: "", composerAILoading: false,
         });
 
         onMounted(() => { this.init(); });
@@ -938,5 +939,106 @@ class CfMailClient extends Component {
         setTimeout(() => el.remove(), 3000);
     }
 }
+
+
+    // ─── AI ASSISTANT ────────────────────────────────────────────────────────
+
+    async _callAI(action, extraKwargs = {}) {
+        const msg = this.state.msgDetail;
+        const text = msg.body_plain || msg.body_html || '';
+        const context = {
+            partner: msg.partner_name || '',
+            company: msg.partner_company || '',
+            leads: (msg.partner_leads || []).map(l => l.name).join(', '),
+        };
+        this.state.aiLoading = true;
+        this.state.aiResult = '';
+        try {
+            const res = await this._rpc('cf.mail.message', 'ai_action', {
+                action, text, context, ...extraKwargs
+            });
+            this.state.aiResult = res.result || res.error || 'Nessun risultato';
+        } catch(e) {
+            this.state.aiResult = 'Errore: ' + e.message;
+        } finally {
+            this.state.aiLoading = false;
+        }
+    }
+
+    async onTranslate() {
+        const msg = this.state.msgDetail;
+        const text = msg.body_plain || msg.body_html || '';
+        this.state.aiLoading = true;
+        try {
+            const res = await this._rpc('cf.mail.message', 'ai_action', { action: 'translate', text });
+            if (res.result) {
+                const wrap = this.__owl__.refs.emailContent;
+                if (wrap) wrap.innerHTML = '<div style="padding:8px;background:#e3f2fd;border-radius:6px;font-size:13px;line-height:1.6">' + res.result.replace(/\n/g, '<br>') + '</div>';
+                this.state.aiResult = res.result;
+            }
+        } catch(e) {} finally { this.state.aiLoading = false; }
+    }
+
+    toggleAIPanel() { this.state.showAIPanel = !this.state.showAIPanel; }
+    async onAISummarize() { await this._callAI('summarize'); }
+    async onAIAnalyze() { await this._callAI('analyze'); }
+    async onAISuggestReply() { await this._callAI('suggest_reply'); }
+
+    onAIUseAsReply() {
+        if (!this.state.aiResult) return;
+        this.state.showComposer = true;
+        this.state.composerMode = 'reply';
+        this.state.composerTo = this.state.msgDetail.from_address || '';
+        this.state.composerSubject = 'Re: ' + (this.state.msgDetail.subject || '');
+        setTimeout(() => {
+            const body = this.__owl__.refs.composerBody;
+            if (body) body.innerHTML = this.state.aiResult.replace(/\n/g, '<br>');
+        }, 100);
+    }
+
+    async onComposerAIDraft() {
+        const subject = this.state.composerSubject || '';
+        if (!subject) { alert('Inserisci prima un oggetto'); return; }
+        this.state.composerAILoading = true;
+        try {
+            const res = await this._rpc('cf.mail.message', 'ai_action', {
+                action: 'draft', text: subject
+            });
+            if (res.result) {
+                const body = this.__owl__.refs.composerBody;
+                if (body) body.innerHTML = res.result.replace(/\n/g, '<br>');
+            }
+        } catch(e) {} finally { this.state.composerAILoading = false; }
+    }
+
+    async onComposerAIImprove() {
+        const body = this.__owl__.refs.composerBody;
+        const text = body ? body.innerText : '';
+        if (!text.trim()) { alert('Scrivi prima qualcosa da migliorare'); return; }
+        this.state.composerAILoading = true;
+        try {
+            const res = await this._rpc('cf.mail.message', 'ai_action', {
+                action: 'draft', text: 'Migliora e professionalizza questa email mantenendo il senso: ' + text
+            });
+            if (res.result && body) body.innerHTML = res.result.replace(/\n/g, '<br>');
+        } catch(e) {} finally { this.state.composerAILoading = false; }
+    }
+
+    async onComposerAISuggest() {
+        const msg = this.state.msgDetail;
+        if (!msg) { alert('Seleziona prima un messaggio'); return; }
+        this.state.composerAILoading = true;
+        try {
+            const res = await this._rpc('cf.mail.message', 'ai_action', {
+                action: 'suggest_reply',
+                text: msg.body_plain || msg.body_html || '',
+                context: { partner: msg.partner_name || '', company: msg.partner_company || '' }
+            });
+            if (res.result) {
+                const body = this.__owl__.refs.composerBody;
+                if (body) body.innerHTML = res.result.replace(/\n/g, '<br>');
+            }
+        } catch(e) {} finally { this.state.composerAILoading = false; }
+    }
 
 registry.category("actions").add("cf_mail_client", CfMailClient);

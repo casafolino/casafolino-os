@@ -709,3 +709,54 @@ class CfMailMessage(models.Model):
         self.env['cf.mail.sender.rule'].set_rule(addr, 'exclude', trigger_sync=False)
         return {'success': True, 'action': 'exclude', 'email': addr}
 
+
+    @api.model
+    def ai_action(self, *args, **kw):
+        """Esegue azioni AI (traduci, riassumi, suggerisci risposta, analizza, scrivi bozza) via Groq."""
+        import urllib.request, json as _json
+        action = kw.get('action', 'translate')
+        text = kw.get('text', '')
+        context_data = kw.get('context', {})
+
+        api_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.groq_api_key', '')
+        if not api_key:
+            return {'error': 'API key Groq non configurata'}
+
+        prompts = {
+            'translate': f"Traduci in italiano questa email. Rispondi SOLO con il testo tradotto, senza commenti:\n\n{text}",
+            'summarize': f"Riassumi questa email in 3-5 punti chiave in italiano. Sii conciso e diretto:\n\n{text}",
+            'suggest_reply': f"""Sei l'assistente email di CasaFolino, azienda alimentare calabrese.
+Contesto mittente: {context_data.get('partner', '')} - {context_data.get('company', '')}
+Trattative attive: {context_data.get('leads', '')}
+
+Suggerisci 2 possibili risposte brevi a questa email, in italiano e inglese.
+Email originale:\n{text}""",
+            'draft': f"""Scrivi una email professionale per CasaFolino su questo argomento: {text}
+Tono: caldo, professionale, orientato al business internazionale food.""",
+            'analyze': f"""Analizza questa email dal punto di vista commerciale per CasaFolino.
+Mittente: {context_data.get('partner', '')} - {context_data.get('company', '')}
+Fornisci: 1) Intento del mittente 2) Opportunità commerciale 3) Azione consigliata
+Email:\n{text}""",
+        }
+
+        prompt = prompts.get(action, prompts['translate'])
+        payload = _json.dumps({
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 1000,
+            "temperature": 0.7,
+        }).encode()
+
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=payload,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = _json.loads(resp.read())
+                result = data['choices'][0]['message']['content']
+                return {'result': result}
+        except Exception as e:
+            return {'error': str(e)}
