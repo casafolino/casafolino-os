@@ -938,24 +938,22 @@ class CfMailClient extends Component {
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 3000);
     }
-}
 
+    // AI ASSISTANT
 
-    // ─── AI ASSISTANT ────────────────────────────────────────────────────────
-
-    async _callAI(action, extraKwargs = {}) {
+    async _callAI(action) {
         const msg = this.state.msgDetail;
         const text = msg.body_plain || msg.body_html || '';
         const context = {
             partner: msg.partner_name || '',
             company: msg.partner_company || '',
-            leads: (msg.partner_leads || []).map(l => l.name).join(', '),
+            leads: (msg.partner_leads || []).map(function(l) { return l.name; }).join(', '),
         };
         this.state.aiLoading = true;
         this.state.aiResult = '';
         try {
             const res = await this._rpc('cf.mail.message', 'ai_action', {
-                action, text, context, ...extraKwargs
+                action: action, text: text, context: context
             });
             this.state.aiResult = res.result || res.error || 'Nessun risultato';
             this.state.showAIPanel = true;
@@ -971,11 +969,12 @@ class CfMailClient extends Component {
         const text = msg.body_plain || msg.body_html || '';
         this.state.aiLoading = true;
         try {
-            const res = await this._rpc('cf.mail.message', 'ai_action', { action: 'translate', text });
+            const res = await this._rpc('cf.mail.message', 'ai_action', { action: 'translate', text: text });
             if (res.result) {
                 const wrap = this.__owl__.refs.emailContent;
                 if (wrap) wrap.innerHTML = '<div style="padding:8px;background:#e3f2fd;border-radius:6px;font-size:13px;line-height:1.6">' + res.result.replace(/\n/g, '<br>') + '</div>';
                 this.state.aiResult = res.result;
+                this.state.showAIPanel = true;
             }
         } catch(e) {} finally { this.state.aiLoading = false; }
     }
@@ -991,9 +990,10 @@ class CfMailClient extends Component {
         this.state.composerMode = 'reply';
         this.state.composerTo = this.state.msgDetail.from_address || '';
         this.state.composerSubject = 'Re: ' + (this.state.msgDetail.subject || '');
-        setTimeout(() => {
-            const body = this.__owl__.refs.composerBody;
-            if (body) body.innerHTML = this.state.aiResult.replace(/\n/g, '<br>');
+        const self = this;
+        setTimeout(function() {
+            const body = self.__owl__.refs.composerBody;
+            if (body) body.innerHTML = self.state.aiResult.replace(/\n/g, '<br>');
         }, 100);
     }
 
@@ -1042,4 +1042,6 @@ class CfMailClient extends Component {
         } catch(e) {} finally { this.state.composerAILoading = false; }
     }
 
+
+}
 registry.category("actions").add("cf_mail_client", CfMailClient);
