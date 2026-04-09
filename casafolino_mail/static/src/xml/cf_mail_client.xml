@@ -375,6 +375,30 @@
                                 <div class="cf-mail-loading"><i class="fa fa-spinner fa-spin"/> Caricamento...</div>
                             </t>
                         </div>
+                        
+                    <!-- AI Assistant inline -->
+                    <div class="cf-mail-ai-inline">
+                        <div class="cf-mail-ai-inline-bar">
+                            <span style="font-size:12px;font-weight:600;color:var(--accent)"><i class="fa fa-robot"/> AI Assistant</span>
+                            <button class="cf-composer-ai-btn" t-on-click="onAISummarize"><i class="fa fa-compress"/> Riassumi</button>
+                            <button class="cf-composer-ai-btn" t-on-click="onAISuggestReply"><i class="fa fa-reply"/> Suggerisci risposta</button>
+                            <button class="cf-composer-ai-btn" t-on-click="onAIAnalyze"><i class="fa fa-chart-bar"/> Analizza</button>
+                            <button class="cf-composer-ai-btn" t-on-click="onTranslate"><i class="fa fa-language"/> Traduci</button>
+                            <t t-if="state.aiLoading">
+                                <span style="font-size:11px;color:var(--text-muted)"><i class="fa fa-spinner fa-spin"/> Elaborazione...</span>
+                            </t>
+                        </div>
+                        <t t-if="state.aiResult">
+                            <div class="cf-mail-ai-result">
+                                <div style="white-space:pre-wrap;line-height:1.6" t-esc="state.aiResult"/>
+                                <div style="margin-top:8px;display:flex;gap:6px">
+                                    <button class="cf-composer-ai-btn" t-on-click="onAIUseAsReply"><i class="fa fa-arrow-down"/> Usa come risposta</button>
+                                    <button class="cf-composer-ai-btn" t-on-click="() => { this.state.aiResult = ''; }"><i class="fa fa-times"/> Chiudi</button>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
                         <t t-if="state.msgDetail.thread_messages and state.msgDetail.thread_messages.length > 0">
                             <div class="cf-mail-thread-toggle" t-on-click="toggleThreadExpanded">
                                 <i t-att-class="'fa fa-' + (state.threadExpanded ? 'chevron-up' : 'chevron-down')"/>
@@ -538,35 +562,6 @@
                             </t>
                         </div>
                         
-                        <!-- Sezione AI Assistant -->
-                        <div class="cf-mail-ctx-section">
-                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleAIPanel">
-                                <i t-att-class="'fa fa-' + (state.showAIPanel ? 'chevron-down' : 'chevron-right')"/>
-                                <i class="fa fa-robot" style="margin-left:4px"/> AI Assistant
-                            </div>
-                            <t t-if="state.showAIPanel">
-                                <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
-                                    <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;text-align:left" t-on-click="onAISummarize">
-                                        <i class="fa fa-compress"/> Riassumi email
-                                    </button>
-                                    <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;text-align:left" t-on-click="onAISuggestReply">
-                                        <i class="fa fa-reply"/> Suggerisci risposta
-                                    </button>
-                                    <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;text-align:left" t-on-click="onAIAnalyze">
-                                        <i class="fa fa-chart-bar"/> Analizza mittente
-                                    </button>
-                                    <t t-if="state.aiLoading">
-                                        <div style="font-size:11px;color:var(--text-muted);padding:6px"><i class="fa fa-spinner fa-spin"/> Elaborazione...</div>
-                                    </t>
-                                    <t t-elif="state.aiResult">
-                                        <div style="font-size:11px;padding:8px;background:rgba(90,110,58,0.06);border-radius:6px;line-height:1.5;max-height:200px;overflow-y:auto;white-space:pre-wrap" t-esc="state.aiResult"/>
-                                        <button class="cf-mail-btn-secondary" style="font-size:10px;padding:2px 8px" t-on-click="onAIUseAsReply">
-                                            <i class="fa fa-arrow-down"/> Usa come risposta
-                                        </button>
-                                    </t>
-                                </div>
-                            </t>
-                        </div>
                         <!-- Sezione Arricchimento -->
                         <div class="cf-mail-ctx-section">
                             <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleEnrichment">
