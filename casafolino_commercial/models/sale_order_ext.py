@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import models, fields, api, _
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -22,68 +22,88 @@ class SaleOrderExt(models.Model):
         for rec in self:
             rec.footer_block_count = len(rec.footer_block_ids)
 
+    def _get_bank_note_text(self):
+        """Restituisce il testo del blocco banca primaria con numero ordine."""
+        Block = self.env['cf.doc.footer.block']
+        bank_block = Block.search([
+            ('block_type', '=', 'bank'),
+            ('active', '=', True),
+        ], order='sequence asc', limit=1)
+        if not bank_block:
+            return None
+        note = bank_block.note or bank_block.name
+        return note.replace('[N. Fattura / N. Ordine]', self.name or '')
+
+    def _has_bank_note_line(self):
+        """Controlla se esiste già una riga nota con coordinate bancarie."""
+        for line in self.order_line:
+            if line.display_type == 'line_note' and 'COORDINATE BANCARIE' in (line.name or ''):
+                return True
+        return False
+
+    def _insert_bank_block(self):
+        """Inserisce la riga coordinate bancarie se non già presente."""
+        if self._has_bank_note_line():
+            return
+        note_text = self._get_bank_note_text()
+        if not note_text:
+            return
+        max_seq = max((l.sequence for l in self.order_line), default=10)
+        self.env['sale.order.line'].create({
+            'order_id': self.id,
+            'display_type': 'line_note',
+            'name': note_text,
+            'sequence': max_seq + 1,
+        })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        orders = super().create(vals_list)
+        for order in orders:
+            order._insert_bank_block()
+        return orders
+
+    def write(self, vals):
+        result = super().write(vals)
+        # Inserisce il blocco solo se non già presente
+        for order in self:
+            if order.state in ('draft', 'sent'):
+                order._insert_bank_block()
+        return result
+
     def action_insert_footer_blocks(self):
+        """Inserimento manuale blocchi aggiuntivi."""
         self.ensure_one()
         SaleOrderLine = self.env['sale.order.line']
         Block = self.env['cf.doc.footer.block']
         max_seq = max((l.sequence for l in self.order_line), default=10)
 
-        blocks_to_insert = []
-
-        # RIGA 1 — Termine di pagamento del documento
+        # Blocco payment_term dal documento
         if self.payment_term_id:
-            _logger.info("CF Footer: payment_term_id = %s (ID %s)",
-                         self.payment_term_id.name, self.payment_term_id.id)
             pt_block = Block.search([
                 ('block_type', '=', 'payment_term'),
                 ('payment_term_id', '=', self.payment_term_id.id),
                 ('active', '=', True),
             ], limit=1)
-            _logger.info("CF Footer: blocco trovato = %s", pt_block)
             if pt_block:
-                blocks_to_insert.append(pt_block)
+                note_text = pt_block.note or pt_block.name
+                max_seq += 1
+                SaleOrderLine.create({
+                    'order_id': self.id,
+                    'display_type': 'line_note',
+                    'name': note_text,
+                    'sequence': max_seq,
+                })
 
-        # RIGA 2 — Banca primaria
-        bank_block = Block.search([
-            ('block_type', '=', 'bank'),
-            ('active', '=', True),
-        ], order='sequence asc', limit=1)
-        if bank_block:
-            blocks_to_insert.append(bank_block)
-
-        # RIGHE SUCCESSIVE — blocchi manuali
-        already_ids = [b.id for b in blocks_to_insert]
+        # Blocchi manuali selezionati
         for block in self.footer_block_ids.sorted('sequence'):
-            if block.id not in already_ids:
-                blocks_to_insert.append(block)
-
-        _logger.info("CF Footer: blocchi da inserire = %s",
-                     [(b.name, b.block_type) for b in blocks_to_insert])
-
-        for block in blocks_to_insert:
             if block.block_type == 'bank':
                 note_text = (block.note or block.name).replace(
-                    '[N. Fattura / N. Ordine]',
-                    self.name or '[N. Ordine]'
-                )
-            elif block.block_type == 'payment_term' and block.payment_term_id:
-                pt = block.payment_term_id
-                parts = [f"Condizioni di pagamento: {pt.name}"]
-                if pt.note:
-                    parts.append(pt.note)
-                note_text = "\n".join(parts)
+                    '[N. Fattura / N. Ordine]', self.name or '')
             elif block.block_type == 'note':
                 note_text = block.note or block.name
             else:
-                lines = block.get_display_lines()
-                text_parts = []
-                for label, value in lines:
-                    if label:
-                        text_parts.append(f"{label}: {value}")
-                    else:
-                        text_parts.append(value)
-                note_text = "\n".join(text_parts) if text_parts else block.name
-
+                note_text = block.name
             max_seq += 1
             SaleOrderLine.create({
                 'order_id': self.id,
