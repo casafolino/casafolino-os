@@ -946,7 +946,7 @@ class CfMailClient extends Component {
         const text = msg.body_plain || msg.body_html || '';
         const context = {
             partner: msg.partner_name || '',
-            company: msg.partner_company || '',
+            company_name: msg.partner_company || '',
             leads: (msg.partner_leads || []).map(function(l) { return l.name; }).join(', '),
         };
         this.state.aiLoading = true;
@@ -1033,7 +1033,7 @@ class CfMailClient extends Component {
             const res = await this._rpc('cf.mail.message', 'ai_action', {
                 action: 'suggest_reply',
                 text: msg.body_plain || msg.body_html || '',
-                context: { partner: msg.partner_name || '', company: msg.partner_company || '' }
+                context: { partner: msg.partner_name || '', company_name: msg.partner_company || '' }
             });
             if (res.result) {
                 const body = this.__owl__.refs.composerBody;
