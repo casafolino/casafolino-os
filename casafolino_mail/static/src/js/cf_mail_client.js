@@ -958,6 +958,7 @@ class CfMailClient extends Component {
                 action, text, context, ...extraKwargs
             });
             this.state.aiResult = res.result || res.error || 'Nessun risultato';
+            this.state.showAIPanel = true;
         } catch(e) {
             this.state.aiResult = 'Errore: ' + e.message;
         } finally {
