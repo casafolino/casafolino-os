@@ -808,6 +808,11 @@ class CfMailClient extends Component {
             const el = this.composerBody.el;
             if (!el) return;
             const sig = this.currentSignature;
+            // Render firma HTML
+            setTimeout(() => {
+                const sigEl = this.__owl__.refs.sigContent;
+                if (sigEl && sig) sigEl.innerHTML = sig;
+            }, 50);
             const sigHtml = sig
                 ? '<br><div class="cf-composer-sig-divider">—</div><div class="cf-composer-sig">' + sig + "</div>"
                 : "";

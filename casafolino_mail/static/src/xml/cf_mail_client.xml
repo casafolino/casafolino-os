@@ -1097,7 +1097,7 @@
                 <t t-if="currentSignature">
                     <div class="cf-composer-sig-area">
                         <div class="cf-composer-sig-divider">—</div>
-                        <div class="cf-composer-sig-content" t-out="currentSignature"/>
+                        <div class="cf-composer-sig-content" t-ref="sigContent"/>
                     </div>
                 </t>
 
