@@ -803,11 +803,20 @@ class CfMailClient extends Component {
         } catch (e) { this.showToast("Bozza salvata in locale"); }
     }
 
-    _initComposerBody() {
+    async _initComposerBody() {
+        // Carica firma fresca dall'account
+        let freshSig = "";
+        try {
+            const accountId = this.state.composerFrom || this.state.selectedAccount;
+            if (accountId) {
+                const detail = await this._rpc("cf.mail.account", "get_account_detail", { account_id: accountId });
+                freshSig = detail.signature || "";
+            }
+        } catch(e) {}
         requestAnimationFrame(() => {
             const el = this.composerBody.el;
             if (!el) return;
-            const sig = this.currentSignature;
+            const sig = freshSig || this.currentSignature;
 
             const sigHtml = sig
                 ? '<br><div class="cf-composer-sig-divider">—</div><div class="cf-composer-sig">' + sig + "</div>"
