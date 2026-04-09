@@ -1094,12 +1094,7 @@
                 <div class="cf-composer-body" contenteditable="true" t-ref="composerBody"/>
 
                 <!-- Firma (separata, visibile se presente) -->
-                <t t-if="currentSignature">
-                    <div class="cf-composer-sig-area">
-                        <div class="cf-composer-sig-divider">—</div>
-                        <div class="cf-composer-sig-content" t-ref="sigContent"/>
-                    </div>
-                </t>
+
 
                 <!-- Footer -->
                 <div class="cf-composer-footer">
