@@ -938,7 +938,7 @@
                         <select class="cf-mail-modal-input" data-form="leadForm" data-field="partner_id" t-on-change="onFormChange">
                             <option value="">— Seleziona —</option>
                             <t t-foreach="state.crmPartners" t-as="p" t-key="p.id">
-                                <option t-att-value="p.id" t-att-selected="state.leadForm.partner_id === ("" + p.id)" t-esc="p.name"/>
+                                <option t-att-value="p.id" t-att-selected="state.leadForm.partner_id === ('' + p.id)" t-esc="p.name"/>
                             </t>
                         </select>
                     </div>
@@ -947,7 +947,7 @@
                         <select class="cf-mail-modal-input" data-form="leadForm" data-field="stage_id" t-on-change="onFormChange">
                             <option value="">— Seleziona —</option>
                             <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
-                                <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === ("" + s.id)" t-esc="s.name"/>
+                                <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === ('' + s.id)" t-esc="s.name"/>
                             </t>
                         </select>
                     </div>

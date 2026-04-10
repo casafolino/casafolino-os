@@ -29,8 +29,8 @@ class CfMailMessage(models.Model):
     message_uid = fields.Char('UID IMAP')
     thread_id = fields.Char('Thread ID')
     partner_id = fields.Many2one('res.partner', string='Contatto')
-    lead_id = fields.Many2one('cf.export.lead', string='Trattativa CRM')
-    export_lead_id = fields.Many2one('cf.export.lead', string='Trattativa',
+    lead_id = fields.Many2one('crm.lead', string='Trattativa CRM')
+    export_lead_id = fields.Many2one('crm.lead', string='Trattativa',
         compute='_compute_export_lead_id', inverse='_inverse_export_lead_id', store=False)
     assigned_user_id = fields.Many2one('res.users', string='Assegnata a')
     tag_ids = fields.Many2many('cf.mail.tag', string='Tag')
@@ -229,7 +229,7 @@ class CfMailMessage(models.Model):
                 msg.with_context(mail_notrack=True).write({'partner_id': partner.id})
         if msg.partner_id:
             try:
-                leads = self.env['cf.export.lead'].search([('partner_id', '=', msg.partner_id.id)], limit=5)
+                leads = self.env['crm.lead'].search([('partner_id', '=', msg.partner_id.id)], limit=5)
                 for l in leads:
                     partner_leads.append({'id': l.id, 'name': l.name, 'stage': l.stage_id.name if l.stage_id else ''})
             except Exception:
@@ -392,7 +392,7 @@ class CfMailMessage(models.Model):
     @api.model
     def get_leads_list(self, *args, **kw):
         try:
-            leads = self.env['cf.export.lead'].search([('active', '=', True)], limit=100, order='id desc')
+            leads = self.env['crm.lead'].search([('active', '=', True)], limit=100, order='id desc')
             return [{'id': l.id, 'name': l.name} for l in leads]
         except Exception:
             return []
@@ -529,7 +529,7 @@ class CfMailMessage(models.Model):
     @api.model
     def get_crm_data(self, *args, **kw):
         try:
-            stages = self.env['cf.export.stage'].search([], order='sequence')
+            stages = self.env['crm.stage'].search([], order='sequence')
             pipelines = [{'id': s.id, 'name': s.name} for s in stages]
         except Exception:
             pipelines = []
@@ -553,7 +553,7 @@ class CfMailMessage(models.Model):
                 'expected_revenue': float(expected_revenue) if expected_revenue else 0,
                 'description': description,
             }
-            lead = self.env['cf.export.lead'].create(vals)
+            lead = self.env['crm.lead'].create(vals)
             if message_id:
                 msg = self.browse(int(message_id))
                 if msg.exists():
@@ -607,7 +607,7 @@ class CfMailMessage(models.Model):
         if not query:
             return []
         try:
-            leads = self.env['cf.export.lead'].search([
+            leads = self.env['crm.lead'].search([
                 ('name', 'ilike', query),
             ], limit=10)
             return [{'id': l.id, 'name': l.name} for l in leads]

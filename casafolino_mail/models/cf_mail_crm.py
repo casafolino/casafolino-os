@@ -24,14 +24,14 @@ class CfMailMessageCrm(models.Model):
                         'email': msg.from_address,
                     })
                 msg.write({'partner_id': partner.id})
-            stage = self.env['cf.export.stage'].search([], order='sequence', limit=1)
+            stage = self.env['crm.stage'].search([], order='sequence', limit=1)
             lead_vals = {
                 'name': msg.subject or 'Lead da email',
                 'partner_id': partner.id if partner else False,
                 'stage_id': stage.id if stage else False,
                 'description': (msg.body_text or '')[:500],
             }
-            lead = self.env['cf.export.lead'].create(lead_vals)
+            lead = self.env['crm.lead'].create(lead_vals)
             msg.write({'lead_id': lead.id})
             return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
         except Exception as e:
