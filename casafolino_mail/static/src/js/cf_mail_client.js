@@ -40,8 +40,8 @@ class CfMailClient extends Component {
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
             groupBy: "date",
-            showLeadModal: false, crmPipelines: [], crmPartners: [],
-            leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "" },
+            showLeadModal: false, crmPipelines: [], crmPartners: [], crmMarkets: [],
+            leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "", cf_market: "" },
             showAccountModal: false,
             accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
             showContactModal: false,
@@ -118,6 +118,7 @@ class CfMailClient extends Component {
             const data = await this._rpc("cf.mail.message", "get_crm_data");
             this.state.crmPipelines = data.pipelines || [];
             this.state.crmPartners = data.partners || [];
+            this.state.crmMarkets = data.markets || [];
         } catch (e) {}
     }
 

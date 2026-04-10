@@ -951,6 +951,15 @@
                             </t>
                         </select>
                     </div>
+                    </div>
+                    <div class="cf-mail-modal-field">
+                        <label>Mercato</label>
+                        <select class="cf-mail-modal-input" data-form="leadForm" data-field="cf_market" t-on-change="onFormChange">
+                            <option value="">— Seleziona —</option>
+                            <t t-foreach="state.crmMarkets or []" t-as="m" t-key="m.value">
+                                <option t-att-value="m.value" t-esc="m.label"/>
+                            </t>
+                        </select>
                     <div class="cf-mail-modal-field">
                         <label>Valore stimato (€)</label>
                         <input class="cf-mail-modal-input" type="number" t-att-value="state.leadForm.expected_revenue" data-form="leadForm" data-field="expected_revenue" t-on-input="onFormInput"/>
