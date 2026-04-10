@@ -278,14 +278,20 @@
 
                                 <!-- Tab: Email -->
                                 <page string="Email" name="emails">
-                                    <button name="action_view_partner_emails" type="object"
-                                        string="📧 Vedi tutte le email"
-                                        class="btn btn-sm btn-secondary mb-3"/>
+                                    <div class="o_row mb-3">
+                                        <button name="action_send_email" type="object"
+                                            string="✉️ Scrivi Email" class="btn btn-primary btn-sm"
+                                            invisible="not partner_id"/>
+                                        <button name="action_view_partner_emails" type="object"
+                                            string="📋 Vedi tutte in lista" class="btn btn-secondary btn-sm"/>
+                                    </div>
                                     <field name="cf_partner_email_ids" readonly="1" nolabel="1">
-                                        <list>
-                                            <field name="date"/>
-                                            <field name="subject"/>
-                                            <field name="email_from"/>
+                                        <list decoration-muted="message_type == 'notification'">
+                                            <field name="date" string="Data"/>
+                                            <field name="subject" string="Oggetto"/>
+                                            <field name="email_from" string="Da"/>
+                                            <field name="message_type" string="Tipo" widget="badge"/>
+                                            <field name="body" string="Anteprima" widget="html"/>
                                         </list>
                                     </field>
                                 </page>

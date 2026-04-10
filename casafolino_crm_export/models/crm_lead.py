@@ -150,27 +150,45 @@ class CrmLead(models.Model):
                 lead.cf_next_activity_summary = False
                 lead.cf_next_activity_date = False
 
-    @api.depends('partner_id')
+    @api.depends('partner_id', 'message_ids')
     def _compute_cf_email_count(self):
+        MailMessage = self.env['mail.message']
         for lead in self:
             if lead.partner_id:
-                lead.cf_email_count = self.env['mail.message'].search_count([
-                    ('partner_ids', 'in', lead.partner_id.id),
-                    ('message_type', 'in', ['email', 'email_outgoing']),
+                lead.cf_email_count = MailMessage.search_count([
+                    '|',
+                    '&', ('partner_ids', 'in', lead.partner_id.id),
+                         ('message_type', 'in', ['email', 'email_outgoing']),
+                    '&', ('res_id', '=', lead.id),
+                    '&', ('model', '=', 'crm.lead'),
+                         ('message_type', 'in', ['email', 'email_outgoing']),
                 ])
             else:
-                lead.cf_email_count = 0
+                lead.cf_email_count = MailMessage.search_count([
+                    ('res_id', '=', lead.id),
+                    ('model', '=', 'crm.lead'),
+                    ('message_type', '!=', 'notification'),
+                ])
 
-    @api.depends('partner_id')
+    @api.depends('partner_id', 'message_ids')
     def _compute_cf_partner_emails(self):
+        MailMessage = self.env['mail.message']
         for lead in self:
             if lead.partner_id:
-                lead.cf_partner_email_ids = self.env['mail.message'].search([
-                    ('partner_ids', 'in', lead.partner_id.id),
-                    ('message_type', 'in', ['email', 'email_outgoing']),
-                ], order='date desc', limit=50)
+                lead.cf_partner_email_ids = MailMessage.search([
+                    '|',
+                    '&', ('partner_ids', 'in', lead.partner_id.id),
+                         ('message_type', 'in', ['email', 'email_outgoing']),
+                    '&', ('res_id', '=', lead.id),
+                    '&', ('model', '=', 'crm.lead'),
+                         ('message_type', 'in', ['email', 'email_outgoing']),
+                ], order='date desc', limit=100)
             else:
-                lead.cf_partner_email_ids = False
+                lead.cf_partner_email_ids = MailMessage.search([
+                    ('res_id', '=', lead.id),
+                    ('model', '=', 'crm.lead'),
+                    ('message_type', '!=', 'notification'),
+                ], order='date desc', limit=100)
 
     @api.depends('cf_sample_ids')
     def _compute_cf_sample_count(self):
@@ -276,6 +294,23 @@ class CrmLead(models.Model):
                 ('message_type', 'in', ['email', 'email_outgoing']),
             ],
             'context': {'default_partner_ids': [self.partner_id.id]},
+        }
+
+    def action_send_email(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Scrivi Email',
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_model': 'crm.lead',
+                'default_res_ids': [self.id],
+                'default_partner_ids': [self.partner_id.id] if self.partner_id else [],
+                'default_composition_mode': 'comment',
+                'default_email_from': self.env.user.email,
+            },
         }
 
     def action_view_samples(self):
