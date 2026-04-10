@@ -91,7 +91,7 @@ class CrmLead(models.Model):
     @api.depends(
         'cf_date_last_contact', 'cf_date_next_followup',
         'cf_sample_ids', 'cf_sample_ids.state',
-        'order_ids', 'stage_id', 'priority', 'activity_ids',
+        'stage_id', 'priority', 'activity_ids',
     )
     def _compute_cf_lead_score(self):
         today = date.today()
