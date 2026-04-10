@@ -1,0 +1,224 @@
+/* ========================================
+   CASAFOLINO EXPORT CRM — KANBAN CARDS
+   ======================================== */
+
+/* Card base */
+.cf-crm-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.cf-crm-card:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
+}
+
+/* Rotting borders */
+.card-rotting-ok { border-left-color: #28a745; }
+.card-rotting-warn { border-left-color: #ffc107; }
+.card-rotting-warning { border-left-color: #ffc107; }
+.card-rotting-danger { border-left-color: #dc3545; }
+.card-rotting-dead { border-left-color: #721c24; background: #fff5f5; }
+
+/* Card header */
+.cf-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.cf-card-title {
+    font-weight: 600;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 75%;
+    color: #212529;
+}
+
+/* Score badge */
+.cf-score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.score-high { background: #28a745; }
+.score-medium { background: #fd7e14; }
+.score-low { background: #dc3545; }
+
+/* Partner */
+.cf-card-partner {
+    color: #6c757d;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Meta row */
+.cf-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.cf-card-value {
+    font-weight: 700;
+    font-size: 13px;
+    color: #212529;
+}
+
+/* Rotting dot */
+.cf-rotting-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot-ok { background: #28a745; }
+.dot-warning { background: #ffc107; }
+.dot-danger { background: #dc3545; }
+.dot-dead { background: #721c24; animation: cf-pulse 1.5s infinite; }
+
+@keyframes cf-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Follow-up */
+.cf-card-followup {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+/* Quick action buttons */
+.cf-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+.btn-cf-action {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #495057;
+}
+.btn-cf-action:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+/* Channel badges */
+.cf-channel-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.channel-gdo { background: #ffe0e0; color: #c62828; }
+.channel-importatore { background: #e0e7ff; color: #283593; }
+.channel-distributore { background: #e0f2e0; color: #2e7d32; }
+.channel-horeca { background: #fff3e0; color: #e65100; }
+.channel-ecommerce { background: #e0f7fa; color: #00695c; }
+.channel-private_label { background: #f3e5f5; color: #6a1b9a; }
+.channel-foodservice { background: #efebe9; color: #4e342e; }
+
+/* Market badges */
+.cf-market-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.market-america { background: #e3f2fd; color: #1565c0; }
+.market-europa { background: #e8f5e9; color: #2e7d32; }
+.market-italia { background: #fff3e0; color: #e65100; }
+.market-medio_oriente { background: #fce4ec; color: #ad1457; }
+.market-australia { background: #f3e5f5; color: #6a1b9a; }
+.market-altri { background: #eceff1; color: #546e7a; }
+
+/* ========================================
+   FORM SIDEBAR
+   ======================================== */
+
+.cf-form-sidebar-col {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+}
+.cf-sidebar-widget {
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+.cf-sw-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Score banner */
+.cf-score-banner {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+.cf-sbn-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a73e8;
+}
+.cf-sbn-label {
+    font-size: 11px;
+    color: #6c757d;
+    text-transform: uppercase;
+}
+
+/* ========================================
+   CAMPIONATURE KANBAN
+   ======================================== */
+
+.cf-sample-card {
+    padding: 10px 12px;
+}
+.cf-sample-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #6c757d;
+}
+.cf-sample-tracking {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+}

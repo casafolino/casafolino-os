@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Action -->
+    <record id="action_cf_fair" model="ir.actions.act_window">
+        <field name="name">Fiere</field>
+        <field name="res_model">cf.export.fair</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============================================================
+         LIST
+         ============================================================ -->
+
+    <record id="cf_fair_view_list" model="ir.ui.view">
+        <field name="name">cf.export.fair.list</field>
+        <field name="model">cf.export.fair</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="location"/>
+                <field name="country_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('active','done')"
+                       decoration-warning="state == 'followup'"
+                       decoration-info="state in ('planned','confirmed')"/>
+                <field name="lead_count"/>
+                <field name="budget"/>
+                <field name="revenue_generated"/>
+                <field name="roi"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         FORM
+         ============================================================ -->
+
+    <record id="cf_fair_view_form" model="ir.ui.view">
+        <field name="name">cf.export.fair.form</field>
+        <field name="model">cf.export.fair</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="planned,confirmed,active,done,followup,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_leads" type="object"
+                                class="oe_stat_button" icon="fa-handshake-o">
+                            <field name="lead_count" widget="statinfo" string="Trattative"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome Fiera"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="location"/>
+                            <field name="country_id"/>
+                        </group>
+                        <group>
+                            <field name="budget"/>
+                            <field name="revenue_generated"/>
+                            <field name="roi"/>
+                        </group>
+                    </group>
+                    <group string="Note">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         SEARCH
+         ============================================================ -->
+
+    <record id="cf_fair_view_search" model="ir.ui.view">
+        <field name="name">cf.export.fair.search</field>
+        <field name="model">cf.export.fair</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="country_id"/>
+                <separator/>
+                <filter string="Pianificate" name="planned" domain="[('state','=','planned')]"/>
+                <filter string="In Corso" name="active" domain="[('state','=','active')]"/>
+                <filter string="Follow-up" name="followup" domain="[('state','=','followup')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Stato" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Paese" name="group_country" context="{'group_by': 'country_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

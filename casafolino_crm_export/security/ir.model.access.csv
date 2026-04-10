@@ -1,23 +1,9 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cf_export_lead_user,cf.export.lead user,model_cf_export_lead,base.group_user,1,1,1,0
-access_cf_export_lead_mgr,cf.export.lead manager,model_cf_export_lead,base.group_system,1,1,1,1
-access_cf_export_stage_user,cf.export.stage user,model_cf_export_stage,base.group_user,1,0,0,0
-access_cf_export_stage_mgr,cf.export.stage manager,model_cf_export_stage,base.group_system,1,1,1,1
-access_cf_export_tag_user,cf.export.tag user,model_cf_export_tag,base.group_user,1,1,1,0
-access_cf_export_tag_mgr,cf.export.tag manager,model_cf_export_tag,base.group_system,1,1,1,1
-access_cf_export_fair_user,cf.export.fair user,model_cf_export_fair,base.group_user,1,1,1,0
-access_cf_export_fair_mgr,cf.export.fair manager,model_cf_export_fair,base.group_system,1,1,1,1
-access_cf_export_cert_user,cf.export.certification user,model_cf_export_certification,base.group_user,1,0,0,0
-access_cf_export_cert_mgr,cf.export.certification manager,model_cf_export_certification,base.group_system,1,1,1,1
-access_cf_export_sample_user,cf.export.sample user,model_cf_export_sample,base.group_user,1,1,1,0
-access_cf_export_sample_mgr,cf.export.sample manager,model_cf_export_sample,base.group_system,1,1,1,1
-access_cf_export_seq_user,cf.export.sequence user,model_cf_export_sequence,base.group_user,1,0,0,0
-access_cf_export_seq_mgr,cf.export.sequence manager,model_cf_export_sequence,base.group_system,1,1,1,1
-access_cf_export_seq_step_user,cf.export.sequence.step user,model_cf_export_sequence_step,base.group_user,1,0,0,0
-access_cf_export_seq_step_mgr,cf.export.sequence.step manager,model_cf_export_sequence_step,base.group_system,1,1,1,1
-access_cf_export_seq_log_user,cf.export.sequence.log user,model_cf_export_sequence_log,base.group_user,1,1,1,0
-access_cf_export_seq_log_mgr,cf.export.sequence.log manager,model_cf_export_sequence_log,base.group_system,1,1,1,1
-access_cf_export_seq_log_line_user,cf.export.sequence.log.line user,model_cf_export_sequence_log_line,base.group_user,1,1,1,0
-access_cf_export_seq_log_line_mgr,cf.export.sequence.log.line manager,model_cf_export_sequence_log_line,base.group_system,1,1,1,1
-access_cf_export_lost_reason_user,cf.export.lost.reason user,model_cf_export_lost_reason,base.group_user,1,0,0,0
-access_cf_export_lost_reason_mgr,cf.export.lost.reason manager,model_cf_export_lost_reason,base.group_system,1,1,1,1
+id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_sample,cf.export.sample,model_cf_export_sample,base.group_user,1,1,1,1
+access_cf_sample_stage,cf.export.sample.stage,model_cf_export_sample_stage,base.group_user,1,1,1,0
+access_cf_fair,cf.export.fair,model_cf_export_fair,base.group_user,1,1,1,1
+access_cf_cert,cf.export.certification,model_cf_export_certification,base.group_user,1,1,1,0
+access_cf_sequence,cf.export.sequence,model_cf_export_sequence,base.group_user,1,1,1,0
+access_cf_sequence_step,cf.export.sequence.step,model_cf_export_sequence_step,base.group_user,1,1,1,0
+access_cf_sequence_log,cf.export.sequence.log,model_cf_export_sequence_log,base.group_user,1,1,1,0
+access_cf_sequence_log_line,cf.export.sequence.log.line,model_cf_export_sequence_log_line,base.group_user,1,1,1,0

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Action -->
+    <record id="action_cf_sample" model="ir.actions.act_window">
+        <field name="name">Campionature</field>
+        <field name="res_model">cf.export.sample</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+    <!-- ============================================================
+         KANBAN
+         ============================================================ -->
+
+    <record id="cf_sample_view_kanban" model="ir.ui.view">
+        <field name="name">cf.export.sample.kanban</field>
+        <field name="model">cf.export.sample</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" quick_create="false">
+                <field name="reference"/>
+                <field name="partner_id"/>
+                <field name="state"/>
+                <field name="date_sent"/>
+                <field name="tracking_number"/>
+                <field name="stage_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="cf-sample-card">
+                            <strong><field name="reference"/></strong>
+                            <div><field name="partner_id"/></div>
+                            <div><field name="product_ids" widget="many2many_tags"/></div>
+                            <div class="cf-sample-meta">
+                                <span><field name="date_sent"/></span>
+                                <field name="state" widget="badge"
+                                       decoration-success="state in ('feedback_ok','received')"
+                                       decoration-warning="state == 'sent'"
+                                       decoration-danger="state == 'feedback_ko'"
+                                       decoration-info="state in ('draft','prepared')"/>
+                            </div>
+                            <t t-if="record.tracking_number.raw_value">
+                                <div class="cf-sample-tracking">📦 <field name="tracking_number"/></div>
+                            </t>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         LIST
+         ============================================================ -->
+
+    <record id="cf_sample_view_list" model="ir.ui.view">
+        <field name="name">cf.export.sample.list</field>
+        <field name="model">cf.export.sample</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="reference"/>
+                <field name="lead_id"/>
+                <field name="partner_id"/>
+                <field name="stage_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('feedback_ok','received')"
+                       decoration-warning="state == 'sent'"
+                       decoration-danger="state == 'feedback_ko'"/>
+                <field name="product_ids" widget="many2many_tags"/>
+                <field name="date_sent"/>
+                <field name="tracking_number"/>
+                <field name="feedback_score"/>
+                <field name="cf_market"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         FORM
+         ============================================================ -->
+
+    <record id="cf_sample_view_form" model="ir.ui.view">
+        <field name="name">cf.export.sample.form</field>
+        <field name="model">cf.export.sample</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,prepared,sent,received,feedback_ok"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="lead_id"/>
+                            <field name="partner_id"/>
+                            <field name="stage_id"/>
+                        </group>
+                        <group>
+                            <field name="date_sent"/>
+                            <field name="date_feedback_expected"/>
+                            <field name="tracking_number"/>
+                        </group>
+                    </group>
+                    <group string="Prodotti">
+                        <field name="product_ids" widget="many2many_tags" nolabel="1"/>
+                    </group>
+                    <group string="Feedback">
+                        <group>
+                            <field name="feedback_score"/>
+                        </group>
+                        <group>
+                            <field name="feedback_notes"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         SEARCH
+         ============================================================ -->
+
+    <record id="cf_sample_view_search" model="ir.ui.view">
+        <field name="name">cf.export.sample.search</field>
+        <field name="model">cf.export.sample</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="reference"/>
+                <field name="lead_id"/>
+                <field name="partner_id"/>
+                <separator/>
+                <filter string="Da Preparare" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Spedite" name="sent" domain="[('state','=','sent')]"/>
+                <filter string="Feedback Positivo" name="feedback_ok" domain="[('state','=','feedback_ok')]"/>
+                <filter string="Feedback Negativo" name="feedback_ko" domain="[('state','=','feedback_ko')]"/>
+                <separator/>
+                <filter string="America" name="market_america" domain="[('cf_market','=','america')]"/>
+                <filter string="Europa" name="market_europa" domain="[('cf_market','=','europa')]"/>
+                <filter string="Italia" name="market_italia" domain="[('cf_market','=','italia')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
+                    <filter string="Stato" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Mercato" name="group_market" context="{'group_by': 'cf_market'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

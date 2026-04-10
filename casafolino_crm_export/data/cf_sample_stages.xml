@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="sample_stage_request" model="cf.export.sample.stage">
+        <field name="name">Richiesta Ricevuta</field>
+        <field name="sequence">1</field>
+    </record>
+    <record id="sample_stage_preparation" model="cf.export.sample.stage">
+        <field name="name">In Preparazione</field>
+        <field name="sequence">2</field>
+    </record>
+    <record id="sample_stage_sent" model="cf.export.sample.stage">
+        <field name="name">Spedita</field>
+        <field name="sequence">3</field>
+    </record>
+    <record id="sample_stage_delivered" model="cf.export.sample.stage">
+        <field name="name">Consegnata</field>
+        <field name="sequence">4</field>
+    </record>
+    <record id="sample_stage_evaluation" model="cf.export.sample.stage">
+        <field name="name">In Valutazione</field>
+        <field name="sequence">5</field>
+    </record>
+    <record id="sample_stage_ok" model="cf.export.sample.stage">
+        <field name="name">Feedback Positivo</field>
+        <field name="sequence">6</field>
+        <field name="is_closed">True</field>
+    </record>
+    <record id="sample_stage_ko" model="cf.export.sample.stage">
+        <field name="name">Feedback Negativo</field>
+        <field name="sequence">7</field>
+        <field name="fold">True</field>
+        <field name="is_closed">True</field>
+    </record>
+</odoo>

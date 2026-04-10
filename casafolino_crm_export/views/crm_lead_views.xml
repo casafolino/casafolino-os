@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         ACTIONS
+         ============================================================ -->
+
+    <record id="action_cf_crm_all" model="ir.actions.act_window">
+        <field name="name">Tutte le Pipeline</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity')]</field>
+        <field name="context">{'default_type': 'opportunity'}</field>
+    </record>
+
+    <record id="action_cf_crm_america" model="ir.actions.act_window">
+        <field name="name">Pipeline America</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity'),('cf_market','=','america')]</field>
+        <field name="context">{'default_type':'opportunity','default_cf_market':'america'}</field>
+    </record>
+
+    <record id="action_cf_crm_europa" model="ir.actions.act_window">
+        <field name="name">Pipeline Europa</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity'),('cf_market','=','europa')]</field>
+        <field name="context">{'default_type':'opportunity','default_cf_market':'europa'}</field>
+    </record>
+
+    <record id="action_cf_crm_italia" model="ir.actions.act_window">
+        <field name="name">Pipeline Italia</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity'),('cf_market','=','italia')]</field>
+        <field name="context">{'default_type':'opportunity','default_cf_market':'italia'}</field>
+    </record>
+
+    <record id="action_cf_crm_medio_oriente" model="ir.actions.act_window">
+        <field name="name">Pipeline Medio Oriente</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity'),('cf_market','=','medio_oriente')]</field>
+        <field name="context">{'default_type':'opportunity','default_cf_market':'medio_oriente'}</field>
+    </record>
+
+    <record id="action_cf_crm_australia" model="ir.actions.act_window">
+        <field name="name">Pipeline Australia</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity'),('cf_market','=','australia')]</field>
+        <field name="context">{'default_type':'opportunity','default_cf_market':'australia'}</field>
+    </record>
+
+    <record id="action_cf_crm_altri" model="ir.actions.act_window">
+        <field name="name">Pipeline Altri</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type','=','opportunity'),('cf_market','=','altri')]</field>
+        <field name="context">{'default_type':'opportunity','default_cf_market':'altri'}</field>
+    </record>
+
+    <!-- ============================================================
+         KANBAN — nuova vista con priorità alta
+         ============================================================ -->
+
+    <record id="cf_crm_lead_view_kanban" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.cf</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" quick_create="false"
+                    class="o_kanban_small_column o_opportunity_kanban">
+                <field name="stage_id"/>
+                <field name="partner_id"/>
+                <field name="expected_revenue"/>
+                <field name="cf_lead_score"/>
+                <field name="cf_rotting_state"/>
+                <field name="cf_market"/>
+                <field name="cf_channel"/>
+                <field name="cf_date_next_followup"/>
+                <field name="user_id"/>
+                <field name="priority"/>
+                <field name="activity_state"/>
+                <field name="color"/>
+                <progressbar field="activity_state"
+                    colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="cf-crm-card card-rotting-#{record.cf_rotting_state.raw_value or 'ok'}">
+                            <!-- Header: title + score -->
+                            <div class="cf-card-header">
+                                <div class="cf-card-title">
+                                    <field name="name"/>
+                                </div>
+                                <div t-attf-class="cf-score-badge #{record.cf_lead_score.raw_value >= 60 ? 'score-high' : record.cf_lead_score.raw_value >= 30 ? 'score-medium' : 'score-low'}">
+                                    <t t-out="record.cf_lead_score.raw_value"/>
+                                </div>
+                            </div>
+
+                            <!-- Partner -->
+                            <div class="cf-card-partner">
+                                <field name="partner_id"/>
+                            </div>
+
+                            <!-- Value + rotting dot -->
+                            <div class="cf-card-meta">
+                                <span class="cf-card-value">
+                                    <field name="expected_revenue" widget="monetary"/>
+                                </span>
+                                <span t-attf-class="cf-rotting-dot dot-#{record.cf_rotting_state.raw_value or 'ok'}"/>
+                            </div>
+
+                            <!-- Channel badge -->
+                            <div class="cf-card-meta" t-if="record.cf_channel.raw_value">
+                                <span t-attf-class="cf-channel-badge channel-#{record.cf_channel.raw_value}">
+                                    <field name="cf_channel"/>
+                                </span>
+                            </div>
+
+                            <!-- Follow-up -->
+                            <div class="cf-card-followup" t-if="record.cf_date_next_followup.raw_value">
+                                Follow-up: <field name="cf_date_next_followup"/>
+                            </div>
+
+                            <!-- Quick actions -->
+                            <div class="cf-card-actions">
+                                <button class="btn-cf-action" name="action_mark_contacted" type="object"
+                                        title="Segna Contattato">✅ Contatto</button>
+                                <button class="btn-cf-action" name="action_schedule_followup" type="object"
+                                        title="Follow-up +7gg">📅 +7gg</button>
+                            </div>
+
+                            <!-- Avatar -->
+                            <div class="d-flex justify-content-end mt-1">
+                                <field name="user_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Bind kanban to our actions -->
+    <record id="action_cf_crm_all_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_all"/>
+    </record>
+    <record id="action_cf_crm_america_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_america"/>
+    </record>
+    <record id="action_cf_crm_europa_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_europa"/>
+    </record>
+    <record id="action_cf_crm_italia_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_italia"/>
+    </record>
+    <record id="action_cf_crm_medio_oriente_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_medio_oriente"/>
+    </record>
+    <record id="action_cf_crm_australia_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_australia"/>
+    </record>
+    <record id="action_cf_crm_altri_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_altri"/>
+    </record>
+
+    <!-- ============================================================
+         SEARCH — eredita dalla nativa
+         ============================================================ -->
+
+    <record id="cf_crm_lead_view_search" model="ir.ui.view">
+        <field name="name">crm.lead.search.cf</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <!-- Filtri Mercato -->
+                <separator/>
+                <filter string="America" name="cf_market_america" domain="[('cf_market','=','america')]"/>
+                <filter string="Europa" name="cf_market_europa" domain="[('cf_market','=','europa')]"/>
+                <filter string="Italia" name="cf_market_italia" domain="[('cf_market','=','italia')]"/>
+                <filter string="Medio Oriente" name="cf_market_medio_oriente" domain="[('cf_market','=','medio_oriente')]"/>
+                <filter string="Australia" name="cf_market_australia" domain="[('cf_market','=','australia')]"/>
+                <filter string="Altri" name="cf_market_altri" domain="[('cf_market','=','altri')]"/>
+                <!-- Filtri Canale -->
+                <separator/>
+                <filter string="GDO" name="cf_channel_gdo" domain="[('cf_channel','=','gdo')]"/>
+                <filter string="Importatore" name="cf_channel_importatore" domain="[('cf_channel','=','importatore')]"/>
+                <filter string="Distributore" name="cf_channel_distributore" domain="[('cf_channel','=','distributore')]"/>
+                <filter string="Ho.Re.Ca." name="cf_channel_horeca" domain="[('cf_channel','=','horeca')]"/>
+                <filter string="E-commerce" name="cf_channel_ecommerce" domain="[('cf_channel','=','ecommerce')]"/>
+                <filter string="Private Label" name="cf_channel_private_label" domain="[('cf_channel','=','private_label')]"/>
+                <filter string="Foodservice" name="cf_channel_foodservice" domain="[('cf_channel','=','foodservice')]"/>
+                <!-- Raggruppamenti -->
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Mercato" name="group_cf_market" context="{'group_by': 'cf_market'}"/>
+                    <filter string="Canale" name="group_cf_channel" context="{'group_by': 'cf_channel'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         FORM — eredita dalla nativa
+         ============================================================ -->
+
+    <record id="cf_crm_lead_view_form" model="ir.ui.view">
+        <field name="name">crm.lead.form.cf</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Smart button campionature nel button_box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_samples" type="object"
+                        class="oe_stat_button" icon="fa-flask">
+                    <field name="cf_sample_count" widget="statinfo" string="Campionature"/>
+                </button>
+            </xpath>
+
+            <!-- Gruppo Export dopo i campi principali -->
+            <xpath expr="//group[@name='opportunity']" position="after">
+                <group string="Export" name="cf_export">
+                    <group>
+                        <field name="cf_market"/>
+                        <field name="cf_channel"/>
+                    </group>
+                    <group>
+                        <field name="cf_language"/>
+                        <field name="cf_fair_id"/>
+                    </group>
+                </group>
+                <group string="Certificazioni" name="cf_certs">
+                    <field name="cf_certifications_required" widget="many2many_tags" nolabel="1"
+                           options="{'color_field': 'color'}"/>
+                </group>
+                <group string="Scoring &amp; Follow-up" name="cf_scoring">
+                    <group>
+                        <field name="cf_lead_score" widget="progressbar"/>
+                        <field name="cf_rotting_state" widget="badge"
+                               decoration-success="cf_rotting_state == 'ok'"
+                               decoration-warning="cf_rotting_state == 'warning'"
+                               decoration-danger="cf_rotting_state in ('danger', 'dead')"/>
+                        <field name="cf_rotting_days"/>
+                    </group>
+                    <group>
+                        <field name="cf_date_last_contact"/>
+                        <field name="cf_date_next_followup"/>
+                    </group>
+                </group>
+            </xpath>
+
+            <!-- Tab Campionature nella notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Campionature" name="cf_samples">
+                    <field name="cf_sample_ids">
+                        <list editable="bottom">
+                            <field name="reference"/>
+                            <field name="stage_id"/>
+                            <field name="state"/>
+                            <field name="product_ids" widget="many2many_tags"/>
+                            <field name="date_sent"/>
+                            <field name="tracking_number"/>
+                            <field name="feedback_score"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Sequenze" name="cf_sequences">
+                    <field name="cf_sequence_log_ids">
+                        <list>
+                            <field name="sequence_id"/>
+                            <field name="state"/>
+                            <field name="date_start"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- ============================================================
+         LIST — eredita dalla nativa
+         ============================================================ -->
+
+    <record id="cf_crm_lead_view_list" model="ir.ui.view">
+        <field name="name">crm.lead.list.cf</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='stage_id']" position="after">
+                <field name="cf_market" optional="show"/>
+                <field name="cf_channel" optional="show"/>
+                <field name="cf_lead_score" optional="show" string="Score"/>
+                <field name="cf_rotting_state" optional="hide" widget="badge"
+                       decoration-success="cf_rotting_state == 'ok'"
+                       decoration-warning="cf_rotting_state == 'warning'"
+                       decoration-danger="cf_rotting_state in ('danger', 'dead')"/>
+                <field name="cf_date_next_followup" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
