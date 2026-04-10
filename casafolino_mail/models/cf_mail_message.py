@@ -533,9 +533,21 @@ class CfMailMessage(models.Model):
             pipelines = [{'id': s.id, 'name': s.name} for s in stages]
         except Exception:
             pipelines = []
-        partners = self.env['res.partner'].search([('active', '=', True)], limit=100, order='name')
+        query = kw.get('query', '')
+        domain = [('active', '=', True)]
+        if query:
+            domain += ['|', '|', ('name', 'ilike', query), ('email', 'ilike', query), ('phone', 'ilike', query)]
+        partners = self.env['res.partner'].search(domain, limit=500, order='name')
         partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
-        return {'pipelines': pipelines, 'partners': partner_list}
+        markets = [
+            {'value': 'america', 'label': 'America'},
+            {'value': 'europa', 'label': 'Europa'},
+            {'value': 'italia', 'label': 'Italia'},
+            {'value': 'medio_oriente', 'label': 'Medio Oriente'},
+            {'value': 'australia', 'label': 'Australia'},
+            {'value': 'altri', 'label': 'Altri'},
+        ]
+        return {'pipelines': pipelines, 'partners': partner_list, 'markets': markets}
 
     @api.model
     def create_lead_from_form(self, *args, **kw):
@@ -548,6 +560,8 @@ class CfMailMessage(models.Model):
         try:
             vals = {
                 'name': name,
+                'type': 'opportunity',
+                'cf_market': kw.get('cf_market') or '',
                 'partner_id': int(partner_id) if partner_id else False,
                 'stage_id': int(stage_id) if stage_id else False,
                 'expected_revenue': float(expected_revenue) if expected_revenue else 0,
