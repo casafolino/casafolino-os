@@ -40,8 +40,8 @@ class CfMailClient extends Component {
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
             groupBy: "date",
-            showLeadModal: false, crmPipelines: [], crmPartners: [], crmMarkets: [],
-            leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "", cf_market: "" },
+            showLeadModal: false, crmPipelines: [], crmPartners: [], crmMarkets: [], leadPartnerSearch: '', leadPartnerResults: [],
+            leadForm: { name: "", partner_id: "", stage_id: "", expected_revenue: "", description: "", cf_market: "", partner_name: "" },
             showAccountModal: false,
             accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
             showContactModal: false,
@@ -651,6 +651,28 @@ class CfMailClient extends Component {
         }
     }
 
+    onLeadPartnerSearch(ev) {
+        const q = ev.target.value;
+        this.state.leadPartnerSearch = q;
+        if (q.length < 2) { this.state.leadPartnerResults = []; return; }
+        const filtered = this.state.crmPartners.filter(function(p) {
+            return (p.name && p.name.toLowerCase().indexOf(q.toLowerCase()) >= 0) ||
+                   (p.email && p.email.toLowerCase().indexOf(q.toLowerCase()) >= 0);
+        }).slice(0, 20);
+        this.state.leadPartnerResults = filtered;
+    }
+
+    onLeadPartnerSelect(ev) {
+        const pid = parseInt(ev.currentTarget.dataset.partnerId);
+        const p = this.state.crmPartners.find(function(x) { return x.id === pid; });
+        if (p) {
+            this.state.leadForm.partner_id = String(p.id);
+            this.state.leadForm.partner_name = p.name;
+        }
+        this.state.leadPartnerResults = [];
+        this.state.leadPartnerSearch = p ? p.name : '';
+    }
+
     async openLeadModal() {
         if (!this.state.selectedMsg) return;
         await this.loadCrmData();
@@ -662,6 +684,11 @@ class CfMailClient extends Component {
             expected_revenue: "",
             description: "",
         };
+        this.state.leadPartnerSearch = detail.partner_name || '';
+        this.state.leadPartnerResults = [];
+        if (detail.partner_id) {
+            this.state.leadForm.partner_name = detail.partner_name || '';
+        }
         this.state.showLeadModal = true;
     }
 
@@ -676,6 +703,7 @@ class CfMailClient extends Component {
                 stage_id: this.state.leadForm.stage_id || false,
                 expected_revenue: this.state.leadForm.expected_revenue || 0,
                 description: this.state.leadForm.description || "",
+                cf_market: this.state.leadForm.cf_market || "",
             });
             if (res && res.success) {
                 this.showToast("Trattativa creata: " + res.lead_name);
