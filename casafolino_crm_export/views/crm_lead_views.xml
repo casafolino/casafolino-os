@@ -242,7 +242,7 @@
             </xpath>
 
             <!-- Gruppo Export dopo i campi principali -->
-            <xpath expr="//group[@name='opportunity']" position="after">
+            <xpath expr="//notebook" position="before">
                 <group string="Export" name="cf_export">
                     <group>
                         <field name="cf_market"/>
