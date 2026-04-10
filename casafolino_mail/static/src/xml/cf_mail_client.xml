@@ -368,14 +368,6 @@
                         <button class="cf-mail-btn-icon lead" t-on-click="openLeadModal" title="Crea Trattativa CRM"><i class="fa fa-plus-circle"/></button>
                     </div>
                 </div>
-                <div class="cf-mail-detail-body">
-                    <div class="cf-mail-email-body-wrap">
-                        <div class="cf-mail-email-content" t-ref="emailContent">
-                            <t t-if="state.loadingDetail">
-                                <div class="cf-mail-loading"><i class="fa fa-spinner fa-spin"/> Caricamento...</div>
-                            </t>
-                        </div>
-                        
                     <!-- AI Assistant inline -->
                     <div class="cf-mail-ai-inline">
                         <div class="cf-mail-ai-inline-bar">
@@ -399,6 +391,15 @@
                         </t>
                     </div>
 
+
+                <div class="cf-mail-detail-body">
+                    <div class="cf-mail-email-body-wrap">
+                        <div class="cf-mail-email-content" t-ref="emailContent">
+                            <t t-if="state.loadingDetail">
+                                <div class="cf-mail-loading"><i class="fa fa-spinner fa-spin"/> Caricamento...</div>
+                            </t>
+                        </div>
+                        
                         <t t-if="state.msgDetail.thread_messages and state.msgDetail.thread_messages.length > 0">
                             <div class="cf-mail-thread-toggle" t-on-click="toggleThreadExpanded">
                                 <i t-att-class="'fa fa-' + (state.threadExpanded ? 'chevron-up' : 'chevron-down')"/>
