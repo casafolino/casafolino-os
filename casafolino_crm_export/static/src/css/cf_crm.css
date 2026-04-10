@@ -1,6 +1,195 @@
-/* ========================================
-   CASAFOLINO EXPORT CRM — KANBAN CARDS
-   ======================================== */
+/* ════════════════════════════════════════════
+   CASAFOLINO EXPORT CRM — PREMIUM STYLES
+   ════════════════════════════════════════════ */
+
+/* ─── FORM CONTAINER ─── */
+.cf-premium-form .o_form_sheet {
+    max-width: 1400px !important;
+}
+
+/* ─── HERO BANNER ─── */
+.cf-hero-banner {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 0 0 20px 0;
+    color: white;
+}
+.cf-hero-score-value {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+}
+.cf-hero-score-label,
+.cf-hero-forecast-label,
+.cf-hero-days-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+.cf-hero-forecast-value {
+    font-size: 24px;
+    font-weight: 700;
+}
+.cf-hero-forecast-detail {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 2px;
+}
+.cf-hero-divider {
+    width: 1px;
+    height: 50px;
+    background: rgba(255,255,255,0.2);
+}
+.cf-hero-rotting {
+    text-align: center;
+}
+.cf-hero-rotting-detail {
+    font-size: 12px;
+    margin-top: 4px;
+    opacity: 0.8;
+}
+.cf-hero-days-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Hero banner field overrides (white text inside dark bg) */
+.cf-hero-banner .o_field_widget {
+    color: white !important;
+}
+.cf-hero-banner .o_field_monetary,
+.cf-hero-banner .o_field_integer,
+.cf-hero-banner .o_field_float,
+.cf-hero-banner .o_field_char {
+    color: white !important;
+}
+.cf-hero-banner input.o_input {
+    color: white !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* ─── CONTACT ROW ─── */
+.cf-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #eee;
+}
+.cf-contact-avatar {
+    flex-shrink: 0;
+}
+.cf-contact-avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #f0f0f0;
+}
+.cf-contact-info {
+    flex: 1;
+}
+.cf-contact-info h2 {
+    margin: 0 0 4px 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+.cf-contact-company {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+.cf-contact-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.cf-contact-detail-item {
+    font-size: 13px;
+    color: #495057;
+}
+.cf-contact-detail-item i {
+    color: #6B4A1E;
+    margin-right: 4px;
+    width: 14px;
+    text-align: center;
+}
+.cf-contact-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+/* ─── MAIN LAYOUT ─── */
+.cf-main-layout {
+    margin-top: 0;
+}
+
+/* ─── SIDEBAR ─── */
+.cf-sidebar {
+    padding-left: 20px !important;
+}
+.cf-sidebar-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s;
+}
+.cf-sidebar-card:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+.cf-sidebar-card-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #C8A43A;
+    color: #6B4A1E;
+}
+.cf-sidebar-card-subtitle {
+    margin-top: 8px;
+    font-size: 12px;
+}
+.cf-sidebar-score-gauge {
+    margin: 8px 0;
+}
+.cf-sidebar-next-activity {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 12px;
+}
+
+/* ─── ROTTING BADGES ─── */
+.cf-rotting-badge-ok { color: #28a745; }
+.cf-rotting-badge-warning { color: #ffc107; }
+.cf-rotting-badge-danger { color: #dc3545; }
+.cf-rotting-badge-dead { color: #721c24; font-weight: 700; }
+
+/* ─── EXPORT GROUP ─── */
+.cf-export-group {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+/* ════════════════════════════════════════════
+   KANBAN CARDS
+   ════════════════════════════════════════════ */
 
 /* Card base */
 .cf-crm-card {
@@ -157,54 +346,9 @@
 .market-australia { background: #f3e5f5; color: #6a1b9a; }
 .market-altri { background: #eceff1; color: #546e7a; }
 
-/* ========================================
-   FORM SIDEBAR
-   ======================================== */
-
-.cf-form-sidebar-col {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 16px;
-}
-.cf-sidebar-widget {
-    background: #fff;
-    border-radius: 6px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    padding: 12px;
-    margin-bottom: 12px;
-}
-.cf-sw-title {
-    font-weight: 700;
-    font-size: 13px;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #eee;
-}
-
-/* Score banner */
-.cf-score-banner {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 16px;
-}
-.cf-sbn-value {
-    font-size: 22px;
-    font-weight: 700;
-    color: #1a73e8;
-}
-.cf-sbn-label {
-    font-size: 11px;
-    color: #6c757d;
-    text-transform: uppercase;
-}
-
-/* ========================================
+/* ════════════════════════════════════════════
    CAMPIONATURE KANBAN
-   ======================================== */
+   ════════════════════════════════════════════ */
 
 .cf-sample-card {
     padding: 10px 12px;
@@ -222,27 +366,3 @@
     color: #6c757d;
     margin-top: 4px;
 }
-
-/* ========================================
-   FORM — Export page styling
-   ======================================== */
-
-.cf-export-group {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-}
-
-/* Score display in form */
-.cf-score-display {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* Rotting badge enhancement */
-.cf-rotting-badge-ok { color: #28a745; }
-.cf-rotting-badge-warning { color: #ffc107; }
-.cf-rotting-badge-danger { color: #dc3545; }
-.cf-rotting-badge-dead { color: #721c24; font-weight: 700; }

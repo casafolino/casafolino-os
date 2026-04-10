@@ -62,7 +62,7 @@
     </record>
 
     <!-- ============================================================
-         KANBAN — nuova vista con priorità alta
+         KANBAN — custom view
          ============================================================ -->
 
     <record id="cf_crm_lead_view_kanban" model="ir.ui.view">
@@ -89,7 +89,6 @@
                 <templates>
                     <t t-name="card">
                         <div t-attf-class="cf-crm-card card-rotting-#{record.cf_rotting_state.raw_value or 'ok'}">
-                            <!-- Header: title + score -->
                             <div class="cf-card-header">
                                 <div class="cf-card-title">
                                     <field name="name"/>
@@ -98,41 +97,29 @@
                                     <t t-out="record.cf_lead_score.raw_value"/>
                                 </div>
                             </div>
-
-                            <!-- Partner -->
                             <div class="cf-card-partner">
                                 <field name="partner_id"/>
                             </div>
-
-                            <!-- Value + rotting dot -->
                             <div class="cf-card-meta">
                                 <span class="cf-card-value">
                                     <field name="expected_revenue" widget="monetary"/>
                                 </span>
                                 <span t-attf-class="cf-rotting-dot dot-#{record.cf_rotting_state.raw_value or 'ok'}"/>
                             </div>
-
-                            <!-- Channel badge -->
                             <div class="cf-card-meta" t-if="record.cf_channel.raw_value">
                                 <span t-attf-class="cf-channel-badge channel-#{record.cf_channel.raw_value}">
                                     <field name="cf_channel"/>
                                 </span>
                             </div>
-
-                            <!-- Follow-up -->
                             <div class="cf-card-followup" t-if="record.cf_date_next_followup.raw_value">
                                 Follow-up: <field name="cf_date_next_followup"/>
                             </div>
-
-                            <!-- Quick actions -->
                             <div class="cf-card-actions">
                                 <button class="btn-cf-action" name="action_mark_contacted" type="object"
                                         title="Segna Contattato">✅ Contatto</button>
                                 <button class="btn-cf-action" name="action_schedule_followup" type="object"
                                         title="Follow-up +7gg">📅 +7gg</button>
                             </div>
-
-                            <!-- Avatar -->
                             <div class="d-flex justify-content-end mt-1">
                                 <field name="user_id" widget="many2one_avatar_user"/>
                             </div>
@@ -143,47 +130,348 @@
         </field>
     </record>
 
-    <!-- Bind kanban to our actions -->
+    <!-- ============================================================
+         PREMIUM FORM — standalone (NOT inherited)
+         ============================================================ -->
+
+    <record id="cf_crm_lead_view_form_premium" model="ir.ui.view">
+        <field name="name">crm.lead.form.cf.premium</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <form string="Trattativa Export" class="cf-premium-form">
+                <header>
+                    <button name="action_mark_contacted" string="✅ Contatto Registrato"
+                        type="object" class="btn-primary"/>
+                    <button name="action_schedule_followup" string="📅 Follow-up +7gg"
+                        type="object" class="btn-secondary"/>
+                    <field name="stage_id" widget="statusbar"
+                        options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <!-- SMART BUTTONS -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_partner_emails" type="object"
+                            class="oe_stat_button" icon="fa-envelope">
+                            <field name="cf_email_count" widget="statinfo" string="Email"/>
+                        </button>
+                        <button name="action_view_samples" type="object"
+                            class="oe_stat_button" icon="fa-flask">
+                            <field name="cf_sample_count" widget="statinfo" string="Campionature"/>
+                        </button>
+                    </div>
+
+                    <!-- HERO BANNER -->
+                    <div class="cf-hero-banner">
+                        <div class="cf-hero-score">
+                            <div class="cf-hero-score-value">
+                                <field name="cf_lead_score"/>
+                            </div>
+                            <div class="cf-hero-score-label">SCORE</div>
+                        </div>
+                        <div class="cf-hero-divider"/>
+                        <div class="cf-hero-forecast">
+                            <div class="cf-hero-forecast-value">
+                                <field name="cf_forecast_value" widget="monetary"/>
+                            </div>
+                            <div class="cf-hero-forecast-label">FORECAST</div>
+                            <div class="cf-hero-forecast-detail">
+                                <field name="expected_revenue" widget="monetary"/> x
+                                <field name="probability"/>%
+                            </div>
+                        </div>
+                        <div class="cf-hero-divider"/>
+                        <div class="cf-hero-rotting">
+                            <field name="cf_rotting_state" widget="badge"
+                                decoration-success="cf_rotting_state == 'ok'"
+                                decoration-warning="cf_rotting_state == 'warning'"
+                                decoration-danger="cf_rotting_state in ('danger','dead')"/>
+                            <div class="cf-hero-rotting-detail">
+                                <field name="cf_rotting_days_display"/>
+                            </div>
+                        </div>
+                        <div class="cf-hero-divider"/>
+                        <div class="cf-hero-stage-days">
+                            <div class="cf-hero-days-value">
+                                <field name="cf_days_in_stage"/>
+                            </div>
+                            <div class="cf-hero-days-label">GIORNI IN FASE</div>
+                        </div>
+                    </div>
+
+                    <!-- CONTACT ROW -->
+                    <div class="cf-contact-row">
+                        <div class="cf-contact-avatar">
+                            <field name="cf_partner_image" widget="image"
+                                options="{'size': [80, 80]}"/>
+                        </div>
+                        <div class="cf-contact-info">
+                            <h2><field name="name" placeholder="Nome trattativa..."/></h2>
+                            <div class="cf-contact-company">
+                                <field name="partner_id" placeholder="Azienda/Contatto"/>
+                            </div>
+                            <div class="cf-contact-details">
+                                <span class="cf-contact-detail-item">
+                                    <i class="fa fa-envelope"/> <field name="email_from"/>
+                                </span>
+                                <span class="cf-contact-detail-item">
+                                    <i class="fa fa-phone"/> <field name="phone"/>
+                                </span>
+                                <span class="cf-contact-detail-item">
+                                    <i class="fa fa-globe"/> <field name="cf_partner_country"/>
+                                </span>
+                                <span class="cf-contact-detail-item">
+                                    <i class="fa fa-map-marker"/> <field name="cf_partner_city"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="cf-contact-actions">
+                            <field name="priority" widget="priority"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                        </div>
+                    </div>
+
+                    <!-- 2-COLUMN LAYOUT -->
+                    <div class="row cf-main-layout">
+
+                        <!-- MAIN CONTENT (col-8) -->
+                        <div class="col-lg-8">
+                            <notebook>
+                                <!-- Tab: Dettagli Export -->
+                                <page string="Dettagli Export" name="export_details">
+                                    <group>
+                                        <group string="Mercato &amp; Canale">
+                                            <field name="cf_market"/>
+                                            <field name="cf_channel"/>
+                                            <field name="cf_language"/>
+                                            <field name="cf_fair_id"/>
+                                        </group>
+                                        <group string="Commerciale">
+                                            <field name="user_id" widget="many2one_avatar_user"/>
+                                            <field name="tag_ids" widget="many2many_tags"
+                                                options="{'color_field': 'color'}"/>
+                                            <field name="cf_certifications_required"
+                                                widget="many2many_tags"/>
+                                        </group>
+                                    </group>
+                                </page>
+
+                                <!-- Tab: Campionature -->
+                                <page string="Campionature" name="samples">
+                                    <div class="o_row mb-3">
+                                        <button name="action_create_sample" type="object"
+                                            string="+ Nuova Campionatura"
+                                            class="btn btn-primary btn-sm"/>
+                                    </div>
+                                    <field name="cf_sample_ids">
+                                        <list editable="bottom">
+                                            <field name="reference" readonly="1"/>
+                                            <field name="product_ids" widget="many2many_tags"/>
+                                            <field name="stage_id"/>
+                                            <field name="state" widget="badge"/>
+                                            <field name="date_sent"/>
+                                            <field name="tracking_number"/>
+                                            <field name="feedback_score"/>
+                                            <field name="feedback_notes"/>
+                                        </list>
+                                    </field>
+                                </page>
+
+                                <!-- Tab: Email -->
+                                <page string="Email" name="emails">
+                                    <button name="action_view_partner_emails" type="object"
+                                        string="📧 Vedi tutte le email"
+                                        class="btn btn-sm btn-secondary mb-3"/>
+                                    <field name="cf_partner_email_ids" readonly="1" nolabel="1">
+                                        <list>
+                                            <field name="date"/>
+                                            <field name="subject"/>
+                                            <field name="email_from"/>
+                                        </list>
+                                    </field>
+                                </page>
+
+                                <!-- Tab: Forecast -->
+                                <page string="Forecast" name="forecast">
+                                    <group>
+                                        <group>
+                                            <field name="expected_revenue"/>
+                                            <field name="probability" widget="progressbar"/>
+                                            <field name="cf_forecast_value"/>
+                                        </group>
+                                        <group>
+                                            <field name="date_deadline"/>
+                                            <field name="date_open" readonly="1"/>
+                                        </group>
+                                    </group>
+                                </page>
+
+                                <!-- Tab: Note -->
+                                <page string="Note" name="notes">
+                                    <field name="description" placeholder="Note sulla trattativa..."/>
+                                </page>
+                            </notebook>
+                        </div>
+
+                        <!-- SIDEBAR (col-4) -->
+                        <div class="col-lg-4 cf-sidebar">
+
+                            <!-- Scoring Widget -->
+                            <div class="cf-sidebar-card">
+                                <div class="cf-sidebar-card-title">🎯 Lead Score</div>
+                                <div class="cf-sidebar-score-gauge">
+                                    <field name="cf_lead_score" widget="progressbar"/>
+                                </div>
+                                <div class="cf-sidebar-card-subtitle">
+                                    <field name="cf_rotting_state" widget="badge"
+                                        decoration-success="cf_rotting_state == 'ok'"
+                                        decoration-warning="cf_rotting_state == 'warning'"
+                                        decoration-danger="cf_rotting_state in ('danger','dead')"/>
+                                </div>
+                            </div>
+
+                            <!-- Follow-up Widget -->
+                            <div class="cf-sidebar-card">
+                                <div class="cf-sidebar-card-title">📅 Follow-up</div>
+                                <group col="1">
+                                    <field name="cf_date_last_contact"/>
+                                    <field name="cf_date_next_followup"/>
+                                </group>
+                                <div class="cf-sidebar-next-activity"
+                                    invisible="not cf_next_activity_summary">
+                                    <div class="cf-sidebar-card-subtitle">Prossima attività:</div>
+                                    <div><field name="cf_next_activity_summary"/></div>
+                                    <div class="text-muted"><field name="cf_next_activity_date"/></div>
+                                </div>
+                            </div>
+
+                            <!-- Contact Card -->
+                            <div class="cf-sidebar-card">
+                                <div class="cf-sidebar-card-title">👤 Contatto</div>
+                                <group col="1">
+                                    <field name="email_from" widget="email"/>
+                                    <field name="phone" widget="phone"/>
+                                    <field name="cf_partner_country"/>
+                                    <field name="cf_partner_city"/>
+                                    <field name="cf_language"/>
+                                </group>
+                            </div>
+
+                            <!-- Mini campionature -->
+                            <div class="cf-sidebar-card" invisible="cf_sample_count == 0">
+                                <div class="cf-sidebar-card-title">
+                                    🧪 Campionature (<field name="cf_sample_count"/>)
+                                </div>
+                                <button name="action_view_samples" type="object"
+                                    string="Vedi tutte" class="btn btn-sm btn-outline-primary"/>
+                            </div>
+
+                        </div>
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         BIND views to actions (kanban + form)
+         ============================================================ -->
+
+    <!-- action_cf_crm_all -->
     <record id="action_cf_crm_all_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
         <field name="act_window_id" ref="action_cf_crm_all"/>
     </record>
+    <record id="action_cf_crm_all_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
+        <field name="act_window_id" ref="action_cf_crm_all"/>
+    </record>
+
+    <!-- action_cf_crm_america -->
     <record id="action_cf_crm_america_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
         <field name="act_window_id" ref="action_cf_crm_america"/>
     </record>
+    <record id="action_cf_crm_america_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
+        <field name="act_window_id" ref="action_cf_crm_america"/>
+    </record>
+
+    <!-- action_cf_crm_europa -->
     <record id="action_cf_crm_europa_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
         <field name="act_window_id" ref="action_cf_crm_europa"/>
     </record>
+    <record id="action_cf_crm_europa_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
+        <field name="act_window_id" ref="action_cf_crm_europa"/>
+    </record>
+
+    <!-- action_cf_crm_italia -->
     <record id="action_cf_crm_italia_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
         <field name="act_window_id" ref="action_cf_crm_italia"/>
     </record>
+    <record id="action_cf_crm_italia_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
+        <field name="act_window_id" ref="action_cf_crm_italia"/>
+    </record>
+
+    <!-- action_cf_crm_medio_oriente -->
     <record id="action_cf_crm_medio_oriente_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
         <field name="act_window_id" ref="action_cf_crm_medio_oriente"/>
     </record>
+    <record id="action_cf_crm_medio_oriente_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
+        <field name="act_window_id" ref="action_cf_crm_medio_oriente"/>
+    </record>
+
+    <!-- action_cf_crm_australia -->
     <record id="action_cf_crm_australia_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
         <field name="act_window_id" ref="action_cf_crm_australia"/>
     </record>
+    <record id="action_cf_crm_australia_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
+        <field name="act_window_id" ref="action_cf_crm_australia"/>
+    </record>
+
+    <!-- action_cf_crm_altri -->
     <record id="action_cf_crm_altri_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
         <field name="view_mode">kanban</field>
         <field name="view_id" ref="cf_crm_lead_view_kanban"/>
+        <field name="act_window_id" ref="action_cf_crm_altri"/>
+    </record>
+    <record id="action_cf_crm_altri_form" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_crm_lead_view_form_premium"/>
         <field name="act_window_id" ref="action_cf_crm_altri"/>
     </record>
 
@@ -197,7 +485,6 @@
         <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
         <field name="arch" type="xml">
             <xpath expr="//search" position="inside">
-                <!-- Filtri Mercato -->
                 <separator/>
                 <filter string="America" name="cf_market_america" domain="[('cf_market','=','america')]"/>
                 <filter string="Europa" name="cf_market_europa" domain="[('cf_market','=','europa')]"/>
@@ -205,7 +492,6 @@
                 <filter string="Medio Oriente" name="cf_market_medio_oriente" domain="[('cf_market','=','medio_oriente')]"/>
                 <filter string="Australia" name="cf_market_australia" domain="[('cf_market','=','australia')]"/>
                 <filter string="Altri" name="cf_market_altri" domain="[('cf_market','=','altri')]"/>
-                <!-- Filtri Canale -->
                 <separator/>
                 <filter string="GDO" name="cf_channel_gdo" domain="[('cf_channel','=','gdo')]"/>
                 <filter string="Importatore" name="cf_channel_importatore" domain="[('cf_channel','=','importatore')]"/>
@@ -214,7 +500,6 @@
                 <filter string="E-commerce" name="cf_channel_ecommerce" domain="[('cf_channel','=','ecommerce')]"/>
                 <filter string="Private Label" name="cf_channel_private_label" domain="[('cf_channel','=','private_label')]"/>
                 <filter string="Foodservice" name="cf_channel_foodservice" domain="[('cf_channel','=','foodservice')]"/>
-                <!-- Raggruppamenti -->
                 <group expand="0" string="Raggruppa per">
                     <filter string="Mercato" name="group_cf_market" context="{'group_by': 'cf_market'}"/>
                     <filter string="Canale" name="group_cf_channel" context="{'group_by': 'cf_channel'}"/>
@@ -224,7 +509,7 @@
     </record>
 
     <!-- ============================================================
-         FORM — eredita dalla nativa
+         FORM — inherited (still used by native CRM menus)
          ============================================================ -->
 
     <record id="cf_crm_lead_view_form" model="ir.ui.view">
@@ -233,7 +518,6 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
 
-            <!-- Smart buttons -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_samples" type="object"
                         class="oe_stat_button" icon="fa-flask">
@@ -245,9 +529,7 @@
                 </button>
             </xpath>
 
-            <!-- All custom content inside the notebook as pages -->
             <xpath expr="//notebook" position="inside">
-                <!-- Page: Export -->
                 <page string="Export" name="export_info">
                     <group string="Mercato &amp; Canale" name="cf_export">
                         <group>
@@ -264,26 +546,6 @@
                                options="{'color_field': 'color'}"/>
                     </group>
                 </page>
-
-                <!-- Page: Scoring & Follow-up -->
-                <page string="Scoring &amp; Follow-up" name="scoring_followup">
-                    <group>
-                        <group>
-                            <field name="cf_lead_score" widget="progressbar"/>
-                            <field name="cf_rotting_state" widget="badge"
-                                   decoration-success="cf_rotting_state == 'ok'"
-                                   decoration-warning="cf_rotting_state == 'warning'"
-                                   decoration-danger="cf_rotting_state in ('danger', 'dead')"/>
-                            <field name="cf_rotting_days"/>
-                        </group>
-                        <group>
-                            <field name="cf_date_last_contact"/>
-                            <field name="cf_date_next_followup"/>
-                        </group>
-                    </group>
-                </page>
-
-                <!-- Page: Campionature -->
                 <page string="Campionature" name="cf_samples">
                     <field name="cf_sample_ids">
                         <list editable="bottom">
@@ -294,29 +556,6 @@
                             <field name="date_sent"/>
                             <field name="tracking_number"/>
                             <field name="feedback_score"/>
-                        </list>
-                    </field>
-                </page>
-
-                <!-- Page: Email partner -->
-                <page string="Email" name="cf_emails">
-                    <field name="cf_partner_email_ids" readonly="1" nolabel="1">
-                        <list>
-                            <field name="date"/>
-                            <field name="subject"/>
-                            <field name="email_from"/>
-                            <field name="body" widget="html"/>
-                        </list>
-                    </field>
-                </page>
-
-                <!-- Page: Sequenze -->
-                <page string="Sequenze" name="cf_sequences">
-                    <field name="cf_sequence_log_ids">
-                        <list>
-                            <field name="sequence_id"/>
-                            <field name="state"/>
-                            <field name="date_start"/>
                         </list>
                     </field>
                 </page>

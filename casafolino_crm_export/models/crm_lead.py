@@ -86,9 +86,69 @@ class CrmLead(models.Model):
         compute='_compute_cf_partner_emails',
     )
 
+    # --- Contact details (related from partner) ---
+    cf_partner_phone = fields.Char(related='partner_id.phone', string='Telefono Partner')
+    cf_partner_mobile = fields.Char(related='partner_id.mobile', string='Cellulare Partner')
+    cf_partner_country = fields.Many2one(related='partner_id.country_id', string='Paese Partner')
+    cf_partner_city = fields.Char(related='partner_id.city', string='Città Partner')
+    cf_partner_image = fields.Binary(related='partner_id.image_128', string='Foto Partner')
+
+    # --- Premium form computed ---
+    cf_rotting_days_display = fields.Char(
+        string='Ultimo Aggiornamento', compute='_compute_cf_rotting_days_display',
+    )
+    cf_forecast_value = fields.Float(
+        string='Forecast', compute='_compute_cf_forecast_value', store=True,
+    )
+    cf_days_in_stage = fields.Integer(
+        string='Giorni in Fase', compute='_compute_cf_days_in_stage',
+    )
+    cf_next_activity_summary = fields.Char(
+        string='Prossima Attività', compute='_compute_cf_next_activity',
+    )
+    cf_next_activity_date = fields.Date(
+        string='Data Prossima Attività', compute='_compute_cf_next_activity',
+    )
+
     # ------------------------------------------------------------------
     # Compute
     # ------------------------------------------------------------------
+
+    def _compute_cf_rotting_days_display(self):
+        for lead in self:
+            days = lead.cf_rotting_days
+            if days <= 0:
+                lead.cf_rotting_days_display = 'Aggiornato oggi'
+            elif days == 1:
+                lead.cf_rotting_days_display = '1 giorno fa'
+            else:
+                lead.cf_rotting_days_display = f'{days} giorni fa'
+
+    @api.depends('expected_revenue', 'probability')
+    def _compute_cf_forecast_value(self):
+        for lead in self:
+            lead.cf_forecast_value = (lead.expected_revenue or 0) * (lead.probability or 0) / 100
+
+    def _compute_cf_days_in_stage(self):
+        today = fields.Date.today()
+        for lead in self:
+            if lead.date_last_stage_update:
+                lead.cf_days_in_stage = (today - lead.date_last_stage_update.date()).days
+            else:
+                lead.cf_days_in_stage = 0
+
+    def _compute_cf_next_activity(self):
+        for lead in self:
+            activity = self.env['mail.activity'].search([
+                ('res_model', '=', 'crm.lead'),
+                ('res_id', '=', lead.id),
+            ], order='date_deadline asc', limit=1)
+            if activity:
+                lead.cf_next_activity_summary = activity.summary or activity.activity_type_id.name
+                lead.cf_next_activity_date = activity.date_deadline
+            else:
+                lead.cf_next_activity_summary = False
+                lead.cf_next_activity_date = False
 
     @api.depends('partner_id')
     def _compute_cf_email_count(self):
@@ -226,6 +286,17 @@ class CrmLead(models.Model):
             'res_model': 'cf.export.sample',
             'view_mode': 'kanban,list,form',
             'domain': [('lead_id', '=', self.id)],
+            'context': {'default_lead_id': self.id},
+        }
+
+    def action_create_sample(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova Campionatura',
+            'res_model': 'cf.export.sample',
+            'view_mode': 'form',
+            'target': 'new',
             'context': {'default_lead_id': self.id},
         }
 
