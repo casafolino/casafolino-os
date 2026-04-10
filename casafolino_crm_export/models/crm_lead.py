@@ -114,7 +114,7 @@ class CrmLead(models.Model):
                 score += 20
 
             # Ordini collegati
-            if lead.order_ids:
+            if hasattr(lead, "order_ids") and lead.order_ids:
                 score += 25
 
             # Stage avanzato
