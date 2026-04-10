@@ -137,12 +137,13 @@
     <record id="cf_crm_lead_view_form_premium" model="ir.ui.view">
         <field name="name">crm.lead.form.cf.premium</field>
         <field name="model">crm.lead</field>
+        <field name="priority">99</field>
         <field name="arch" type="xml">
             <form string="Trattativa Export" class="cf-premium-form">
                 <header>
-                    <button name="action_mark_contacted" string="✅ Contatto Registrato"
+                    <button name="action_mark_contacted" string="Contatto Registrato"
                         type="object" class="btn-primary"/>
-                    <button name="action_schedule_followup" string="📅 Follow-up +7gg"
+                    <button name="action_schedule_followup" string="Follow-up +7gg"
                         type="object" class="btn-secondary"/>
                     <field name="stage_id" widget="statusbar"
                         options="{'clickable': '1'}"/>
@@ -160,93 +161,125 @@
                         </button>
                     </div>
 
-                    <!-- HERO BANNER -->
-                    <div class="cf-hero-banner">
-                        <div class="cf-hero-score">
-                            <div class="cf-hero-score-value">
+                    <!-- KPI BANNER -->
+                    <div class="cf-kpi-banner">
+                        <div class="cf-kpi-item">
+                            <div class="cf-kpi-value cf-kpi-score">
                                 <field name="cf_lead_score"/>
                             </div>
-                            <div class="cf-hero-score-label">SCORE</div>
+                            <div class="cf-kpi-label">SCORE</div>
                         </div>
-                        <div class="cf-hero-divider"/>
-                        <div class="cf-hero-forecast">
-                            <div class="cf-hero-forecast-value">
+                        <div class="cf-kpi-item">
+                            <div class="cf-kpi-value">
                                 <field name="cf_forecast_value" widget="monetary"/>
                             </div>
-                            <div class="cf-hero-forecast-label">FORECAST</div>
-                            <div class="cf-hero-forecast-detail">
-                                <field name="expected_revenue" widget="monetary"/> x
-                                <field name="probability"/>%
-                            </div>
+                            <div class="cf-kpi-label">FORECAST</div>
                         </div>
-                        <div class="cf-hero-divider"/>
-                        <div class="cf-hero-rotting">
-                            <field name="cf_rotting_state" widget="badge"
-                                decoration-success="cf_rotting_state == 'ok'"
-                                decoration-warning="cf_rotting_state == 'warning'"
-                                decoration-danger="cf_rotting_state in ('danger','dead')"/>
-                            <div class="cf-hero-rotting-detail">
-                                <field name="cf_rotting_days_display"/>
+                        <div class="cf-kpi-item">
+                            <div class="cf-kpi-value">
+                                <field name="cf_rotting_state" widget="badge"
+                                    decoration-success="cf_rotting_state == 'ok'"
+                                    decoration-warning="cf_rotting_state == 'warning'"
+                                    decoration-danger="cf_rotting_state in ('danger','dead')"/>
                             </div>
+                            <div class="cf-kpi-label">STATO</div>
                         </div>
-                        <div class="cf-hero-divider"/>
-                        <div class="cf-hero-stage-days">
-                            <div class="cf-hero-days-value">
+                        <div class="cf-kpi-item">
+                            <div class="cf-kpi-value">
                                 <field name="cf_days_in_stage"/>
+                                <span class="cf-kpi-unit">gg</span>
                             </div>
-                            <div class="cf-hero-days-label">GIORNI IN FASE</div>
+                            <div class="cf-kpi-label">IN FASE</div>
                         </div>
                     </div>
 
-                    <!-- CONTACT ROW -->
-                    <div class="cf-contact-row">
-                        <div class="cf-contact-avatar">
-                            <field name="cf_partner_image" widget="image"
-                                options="{'size': [80, 80]}"/>
-                        </div>
-                        <div class="cf-contact-info">
-                            <h2><field name="name" placeholder="Nome trattativa..."/></h2>
-                            <div class="cf-contact-company">
-                                <field name="partner_id" placeholder="Azienda/Contatto"/>
+                    <!-- CONTACT CARD -->
+                    <div class="cf-contact-card">
+                        <div class="cf-contact-left">
+                            <div class="cf-avatar">
+                                <field name="cf_partner_image" widget="image"
+                                    options="{'size': [64, 64]}"/>
                             </div>
-                            <div class="cf-contact-details">
-                                <span class="cf-contact-detail-item">
-                                    <i class="fa fa-envelope"/> <field name="email_from"/>
-                                </span>
-                                <span class="cf-contact-detail-item">
-                                    <i class="fa fa-phone"/> <field name="phone"/>
-                                </span>
-                                <span class="cf-contact-detail-item">
-                                    <i class="fa fa-globe"/> <field name="cf_partner_country"/>
-                                </span>
-                                <span class="cf-contact-detail-item">
-                                    <i class="fa fa-map-marker"/> <field name="cf_partner_city"/>
-                                </span>
+                            <div class="cf-contact-text">
+                                <div class="cf-deal-name">
+                                    <field name="name" placeholder="Nome trattativa..."/>
+                                </div>
+                                <div class="cf-company-name">
+                                    <field name="partner_id" placeholder="Azienda/Contatto"/>
+                                </div>
+                                <div class="cf-contact-meta">
+                                    <span invisible="not email_from">
+                                        <i class="fa fa-envelope-o"/> <field name="email_from" widget="email"/>
+                                    </span>
+                                    <span invisible="not phone">
+                                        <i class="fa fa-phone"/> <field name="phone" widget="phone"/>
+                                    </span>
+                                    <span invisible="not cf_partner_country">
+                                        <i class="fa fa-globe"/> <field name="cf_partner_country"/>
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div class="cf-contact-actions">
-                            <field name="priority" widget="priority"/>
-                            <field name="user_id" widget="many2one_avatar_user"/>
+                        <div class="cf-contact-right">
+                            <div class="cf-action-buttons">
+                                <button name="action_send_email" type="object"
+                                    class="cf-action-btn" title="Invia Email"
+                                    invisible="not partner_id">
+                                    <i class="fa fa-envelope"/>
+                                </button>
+                                <button name="action_schedule_followup" type="object"
+                                    class="cf-action-btn" title="Pianifica Follow-up">
+                                    <i class="fa fa-calendar-plus-o"/>
+                                </button>
+                                <button name="action_mark_contacted" type="object"
+                                    class="cf-action-btn" title="Segna Contattato">
+                                    <i class="fa fa-check"/>
+                                </button>
+                            </div>
+                            <div class="cf-priority-user">
+                                <field name="priority" widget="priority"/>
+                                <field name="user_id" widget="many2one_avatar_user"/>
+                            </div>
                         </div>
                     </div>
 
                     <!-- 2-COLUMN LAYOUT -->
-                    <div class="row cf-main-layout">
+                    <div class="row cf-layout">
 
-                        <!-- MAIN CONTENT (col-8) -->
-                        <div class="col-lg-8">
+                        <!-- LEFT: TABS -->
+                        <div class="col-lg-8 cf-main-col">
                             <notebook>
-                                <!-- Tab: Dettagli Export -->
-                                <page string="Dettagli Export" name="export_details">
+                                <!-- Tab: Attività -->
+                                <page string="Attività" name="activities">
+                                    <field name="activity_ids"/>
+                                </page>
+
+                                <!-- Tab: Email -->
+                                <page string="Email" name="emails">
+                                    <div class="o_row mb-3">
+                                        <button name="action_send_email" type="object"
+                                            string="Scrivi Email" class="btn btn-primary btn-sm"
+                                            invisible="not partner_id"/>
+                                    </div>
+                                    <field name="cf_partner_email_ids" readonly="1" nolabel="1">
+                                        <list decoration-muted="message_type == 'notification'">
+                                            <field name="date" string="Data"/>
+                                            <field name="subject" string="Oggetto"/>
+                                            <field name="email_from" string="Da"/>
+                                        </list>
+                                    </field>
+                                </page>
+
+                                <!-- Tab: Dettagli -->
+                                <page string="Dettagli" name="export_details">
                                     <group>
-                                        <group string="Mercato &amp; Canale">
+                                        <group string="Mercato">
                                             <field name="cf_market"/>
                                             <field name="cf_channel"/>
                                             <field name="cf_language"/>
                                             <field name="cf_fair_id"/>
                                         </group>
                                         <group string="Commerciale">
-                                            <field name="user_id" widget="many2one_avatar_user"/>
                                             <field name="tag_ids" widget="many2many_tags"
                                                 options="{'color_field': 'color'}"/>
                                             <field name="cf_certifications_required"
@@ -271,44 +304,8 @@
                                             <field name="date_sent"/>
                                             <field name="tracking_number"/>
                                             <field name="feedback_score"/>
-                                            <field name="feedback_notes"/>
                                         </list>
                                     </field>
-                                </page>
-
-                                <!-- Tab: Email -->
-                                <page string="Email" name="emails">
-                                    <div class="o_row mb-3">
-                                        <button name="action_send_email" type="object"
-                                            string="✉️ Scrivi Email" class="btn btn-primary btn-sm"
-                                            invisible="not partner_id"/>
-                                        <button name="action_view_partner_emails" type="object"
-                                            string="📋 Vedi tutte in lista" class="btn btn-secondary btn-sm"/>
-                                    </div>
-                                    <field name="cf_partner_email_ids" readonly="1" nolabel="1">
-                                        <list decoration-muted="message_type == 'notification'">
-                                            <field name="date" string="Data"/>
-                                            <field name="subject" string="Oggetto"/>
-                                            <field name="email_from" string="Da"/>
-                                            <field name="message_type" string="Tipo" widget="badge"/>
-                                            <field name="body" string="Anteprima" widget="html"/>
-                                        </list>
-                                    </field>
-                                </page>
-
-                                <!-- Tab: Forecast -->
-                                <page string="Forecast" name="forecast">
-                                    <group>
-                                        <group>
-                                            <field name="expected_revenue"/>
-                                            <field name="probability" widget="progressbar"/>
-                                            <field name="cf_forecast_value"/>
-                                        </group>
-                                        <group>
-                                            <field name="date_deadline"/>
-                                            <field name="date_open" readonly="1"/>
-                                        </group>
-                                    </group>
                                 </page>
 
                                 <!-- Tab: Note -->
@@ -318,59 +315,86 @@
                             </notebook>
                         </div>
 
-                        <!-- SIDEBAR (col-4) -->
-                        <div class="col-lg-4 cf-sidebar">
-
-                            <!-- Scoring Widget -->
-                            <div class="cf-sidebar-card">
-                                <div class="cf-sidebar-card-title">🎯 Lead Score</div>
-                                <div class="cf-sidebar-score-gauge">
-                                    <field name="cf_lead_score" widget="progressbar"/>
+                        <!-- RIGHT: SIDEBAR -->
+                        <div class="col-lg-4 cf-sidebar-col">
+                            <!-- Deal Info -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Informazioni Deal</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Ricavi previsti</span>
+                                    <span class="cf-prop-value"><field name="expected_revenue"/></span>
                                 </div>
-                                <div class="cf-sidebar-card-subtitle">
-                                    <field name="cf_rotting_state" widget="badge"
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Probabilità</span>
+                                    <span class="cf-prop-value"><field name="probability"/>%</span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Forecast</span>
+                                    <span class="cf-prop-value"><field name="cf_forecast_value" widget="monetary"/></span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Chiusura prevista</span>
+                                    <span class="cf-prop-value"><field name="date_deadline"/></span>
+                                </div>
+                            </div>
+
+                            <!-- Scoring -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Scoring</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Lead Score</span>
+                                    <span class="cf-prop-value"><field name="cf_lead_score" widget="progressbar"/></span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Stato</span>
+                                    <span class="cf-prop-value"><field name="cf_rotting_state" widget="badge"
                                         decoration-success="cf_rotting_state == 'ok'"
                                         decoration-warning="cf_rotting_state == 'warning'"
-                                        decoration-danger="cf_rotting_state in ('danger','dead')"/>
+                                        decoration-danger="cf_rotting_state in ('danger','dead')"/></span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Ultimo aggiornamento</span>
+                                    <span class="cf-prop-value"><field name="cf_rotting_days_display"/></span>
                                 </div>
                             </div>
 
-                            <!-- Follow-up Widget -->
-                            <div class="cf-sidebar-card">
-                                <div class="cf-sidebar-card-title">📅 Follow-up</div>
-                                <group col="1">
-                                    <field name="cf_date_last_contact"/>
-                                    <field name="cf_date_next_followup"/>
-                                </group>
-                                <div class="cf-sidebar-next-activity"
-                                    invisible="not cf_next_activity_summary">
-                                    <div class="cf-sidebar-card-subtitle">Prossima attività:</div>
-                                    <div><field name="cf_next_activity_summary"/></div>
-                                    <div class="text-muted"><field name="cf_next_activity_date"/></div>
+                            <!-- Follow-up -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Follow-up</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Ultimo contatto</span>
+                                    <span class="cf-prop-value"><field name="cf_date_last_contact"/></span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Prossimo</span>
+                                    <span class="cf-prop-value"><field name="cf_date_next_followup"/></span>
+                                </div>
+                                <div class="cf-prop-row" invisible="not cf_next_activity_summary">
+                                    <span class="cf-prop-label">Prossima attività</span>
+                                    <span class="cf-prop-value"><field name="cf_next_activity_summary"/></span>
                                 </div>
                             </div>
 
-                            <!-- Contact Card -->
-                            <div class="cf-sidebar-card">
-                                <div class="cf-sidebar-card-title">👤 Contatto</div>
-                                <group col="1">
-                                    <field name="email_from" widget="email"/>
-                                    <field name="phone" widget="phone"/>
-                                    <field name="cf_partner_country"/>
-                                    <field name="cf_partner_city"/>
-                                    <field name="cf_language"/>
-                                </group>
-                            </div>
-
-                            <!-- Mini campionature -->
-                            <div class="cf-sidebar-card" invisible="cf_sample_count == 0">
-                                <div class="cf-sidebar-card-title">
-                                    🧪 Campionature (<field name="cf_sample_count"/>)
+                            <!-- Contatto -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Contatto</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Email</span>
+                                    <span class="cf-prop-value"><field name="email_from" widget="email"/></span>
                                 </div>
-                                <button name="action_view_samples" type="object"
-                                    string="Vedi tutte" class="btn btn-sm btn-outline-primary"/>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Telefono</span>
+                                    <span class="cf-prop-value"><field name="phone" widget="phone"/></span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Paese</span>
+                                    <span class="cf-prop-value"><field name="cf_partner_country"/></span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Lingua</span>
+                                    <span class="cf-prop-value"><field name="cf_language"/></span>
+                                </div>
                             </div>
-
                         </div>
                     </div>
                 </sheet>
