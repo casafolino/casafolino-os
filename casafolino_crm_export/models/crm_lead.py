@@ -79,9 +79,38 @@ class CrmLead(models.Model):
     cf_date_last_contact = fields.Date(string='Ultimo Contatto', tracking=True)
     cf_date_next_followup = fields.Date(string='Prossimo Follow-up', tracking=True)
 
+    # --- Email partner ---
+    cf_email_count = fields.Integer(string='N. Email', compute='_compute_cf_email_count')
+    cf_partner_email_ids = fields.Many2many(
+        'mail.message', string='Email Partner',
+        compute='_compute_cf_partner_emails',
+    )
+
     # ------------------------------------------------------------------
     # Compute
     # ------------------------------------------------------------------
+
+    @api.depends('partner_id')
+    def _compute_cf_email_count(self):
+        for lead in self:
+            if lead.partner_id:
+                lead.cf_email_count = self.env['mail.message'].search_count([
+                    ('partner_ids', 'in', lead.partner_id.id),
+                    ('message_type', 'in', ['email', 'email_outgoing']),
+                ])
+            else:
+                lead.cf_email_count = 0
+
+    @api.depends('partner_id')
+    def _compute_cf_partner_emails(self):
+        for lead in self:
+            if lead.partner_id:
+                lead.cf_partner_email_ids = self.env['mail.message'].search([
+                    ('partner_ids', 'in', lead.partner_id.id),
+                    ('message_type', 'in', ['email', 'email_outgoing']),
+                ], order='date desc', limit=50)
+            else:
+                lead.cf_partner_email_ids = False
 
     @api.depends('cf_sample_ids')
     def _compute_cf_sample_count(self):
@@ -174,6 +203,20 @@ class CrmLead(models.Model):
         self.write({
             'cf_date_next_followup': date.today() + timedelta(days=7),
         })
+
+    def action_view_partner_emails(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Email Contatto',
+            'res_model': 'mail.message',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_ids', 'in', self.partner_id.id),
+                ('message_type', 'in', ['email', 'email_outgoing']),
+            ],
+            'context': {'default_partner_ids': [self.partner_id.id]},
+        }
 
     def action_view_samples(self):
         self.ensure_one()

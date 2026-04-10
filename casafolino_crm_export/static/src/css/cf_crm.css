@@ -222,3 +222,27 @@
     color: #6c757d;
     margin-top: 4px;
 }
+
+/* ========================================
+   FORM — Export page styling
+   ======================================== */
+
+.cf-export-group {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+/* Score display in form */
+.cf-score-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Rotting badge enhancement */
+.cf-rotting-badge-ok { color: #28a745; }
+.cf-rotting-badge-warning { color: #ffc107; }
+.cf-rotting-badge-danger { color: #dc3545; }
+.cf-rotting-badge-dead { color: #721c24; font-weight: 700; }

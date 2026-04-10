@@ -233,48 +233,57 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
 
-            <!-- Smart button campionature nel button_box -->
+            <!-- Smart buttons -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_samples" type="object"
                         class="oe_stat_button" icon="fa-flask">
                     <field name="cf_sample_count" widget="statinfo" string="Campionature"/>
                 </button>
+                <button name="action_view_partner_emails" type="object"
+                        class="oe_stat_button" icon="fa-envelope">
+                    <field name="cf_email_count" widget="statinfo" string="Email"/>
+                </button>
             </xpath>
 
-            <!-- Gruppo Export dopo i campi principali -->
-            <xpath expr="//notebook" position="before">
-                <group string="Export" name="cf_export">
-                    <group>
-                        <field name="cf_market"/>
-                        <field name="cf_channel"/>
-                    </group>
-                    <group>
-                        <field name="cf_language"/>
-                        <field name="cf_fair_id"/>
-                    </group>
-                </group>
-                <group string="Certificazioni" name="cf_certs">
-                    <field name="cf_certifications_required" widget="many2many_tags" nolabel="1"
-                           options="{'color_field': 'color'}"/>
-                </group>
-                <group string="Scoring &amp; Follow-up" name="cf_scoring">
-                    <group>
-                        <field name="cf_lead_score" widget="progressbar"/>
-                        <field name="cf_rotting_state" widget="badge"
-                               decoration-success="cf_rotting_state == 'ok'"
-                               decoration-warning="cf_rotting_state == 'warning'"
-                               decoration-danger="cf_rotting_state in ('danger', 'dead')"/>
-                        <field name="cf_rotting_days"/>
-                    </group>
-                    <group>
-                        <field name="cf_date_last_contact"/>
-                        <field name="cf_date_next_followup"/>
-                    </group>
-                </group>
-            </xpath>
-
-            <!-- Tab Campionature nella notebook -->
+            <!-- All custom content inside the notebook as pages -->
             <xpath expr="//notebook" position="inside">
+                <!-- Page: Export -->
+                <page string="Export" name="export_info">
+                    <group string="Mercato &amp; Canale" name="cf_export">
+                        <group>
+                            <field name="cf_market"/>
+                            <field name="cf_channel"/>
+                        </group>
+                        <group>
+                            <field name="cf_language"/>
+                            <field name="cf_fair_id"/>
+                        </group>
+                    </group>
+                    <group string="Certificazioni" name="cf_certs">
+                        <field name="cf_certifications_required" widget="many2many_tags" nolabel="1"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+
+                <!-- Page: Scoring & Follow-up -->
+                <page string="Scoring &amp; Follow-up" name="scoring_followup">
+                    <group>
+                        <group>
+                            <field name="cf_lead_score" widget="progressbar"/>
+                            <field name="cf_rotting_state" widget="badge"
+                                   decoration-success="cf_rotting_state == 'ok'"
+                                   decoration-warning="cf_rotting_state == 'warning'"
+                                   decoration-danger="cf_rotting_state in ('danger', 'dead')"/>
+                            <field name="cf_rotting_days"/>
+                        </group>
+                        <group>
+                            <field name="cf_date_last_contact"/>
+                            <field name="cf_date_next_followup"/>
+                        </group>
+                    </group>
+                </page>
+
+                <!-- Page: Campionature -->
                 <page string="Campionature" name="cf_samples">
                     <field name="cf_sample_ids">
                         <list editable="bottom">
@@ -288,6 +297,20 @@
                         </list>
                     </field>
                 </page>
+
+                <!-- Page: Email partner -->
+                <page string="Email" name="cf_emails">
+                    <field name="cf_partner_email_ids" readonly="1" nolabel="1">
+                        <list>
+                            <field name="date"/>
+                            <field name="subject"/>
+                            <field name="email_from"/>
+                            <field name="body" widget="html"/>
+                        </list>
+                    </field>
+                </page>
+
+                <!-- Page: Sequenze -->
                 <page string="Sequenze" name="cf_sequences">
                     <field name="cf_sequence_log_ids">
                         <list>
