@@ -417,7 +417,7 @@ class CfMailClient extends Component {
         if (!el) return;
         el.innerHTML = "";
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:none;";
+        iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:auto;";
         iframe.setAttribute("sandbox", "allow-same-origin");
         el.appendChild(iframe);
         iframe.onload = () => {
