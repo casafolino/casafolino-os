@@ -1302,3 +1302,9 @@ textarea.cf-modal-input { resize: vertical; min-height: 44px; }
     font-weight: 600; cursor: pointer;
 }
 .cf-modal-btn-ghost:hover { background: #f5f8fa; }
+
+/* Allow text selection in email body */
+.cf-mail-body, .cf-mail-body * {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
