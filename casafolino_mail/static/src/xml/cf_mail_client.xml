@@ -983,7 +983,7 @@
                             <select class="cf-modal-input" data-form="leadForm" data-field="stage_id" t-on-change="onFormChange">
                                 <option value="">&#x2014; Seleziona &#x2014;</option>
                                 <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
-                                    <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === String(s.id)" t-esc="s.name"/>
+                                    <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === '' + s.id" t-esc="s.name"/>
                                 </t>
                             </select>
                         </div>
