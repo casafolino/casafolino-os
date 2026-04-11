@@ -533,11 +533,7 @@ class CfMailMessage(models.Model):
             pipelines = [{'id': s.id, 'name': s.name} for s in stages]
         except Exception:
             pipelines = []
-        query = kw.get('query', '')
-        domain = [('active', '=', True)]
-        if query:
-            domain += ['|', '|', ('name', 'ilike', query), ('email', 'ilike', query), ('phone', 'ilike', query)]
-        partners = self.env['res.partner'].search(domain, limit=500, order='name')
+        partners = self.env['res.partner'].search([('active', '=', True)], limit=500, order='name')
         partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
         markets = [
             {'value': 'america', 'label': 'America'},
@@ -557,21 +553,31 @@ class CfMailMessage(models.Model):
         expected_revenue = kw.get('expected_revenue') or 0
         description = kw.get('description') or ''
         message_id = kw.get('message_id') or False
+        cf_market = kw.get('cf_market') or False
+        cf_channel = kw.get('cf_channel') or False
+        cf_language = kw.get('cf_language') or False
         try:
             vals = {
                 'name': name,
                 'type': 'opportunity',
-                'cf_market': kw.get('cf_market') or '',
                 'partner_id': int(partner_id) if partner_id else False,
                 'stage_id': int(stage_id) if stage_id else False,
                 'expected_revenue': float(expected_revenue) if expected_revenue else 0,
                 'description': description,
+                'cf_market': cf_market if cf_market else False,
+                'cf_channel': cf_channel if cf_channel else False,
+                'cf_language': cf_language if cf_language else False,
             }
             lead = self.env['crm.lead'].create(vals)
             if message_id:
                 msg = self.browse(int(message_id))
                 if msg.exists():
-                    msg.write({'lead_id': lead.id})
+                    # Link mail message to lead via lead_id if field exists
+                    if hasattr(msg, 'lead_id'):
+                        try:
+                            msg.write({'lead_id': lead.id})
+                        except Exception:
+                            pass
                     if not msg.partner_id and partner_id:
                         msg.write({'partner_id': int(partner_id)})
             return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
