@@ -4,7 +4,7 @@
     'summary': 'Client email Gmail-style per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
-    'depends': ['base', 'mail', 'web'],
+    'depends': ['base', 'mail', 'web', 'utm'],
     'data': [
         'security/ir.model.access.csv',
         'views/cf_mail_views.xml',
@@ -13,6 +13,7 @@
         'views/menus.xml',
         'data/cf_mail_cron.xml',
         'data/cf_mail_config.xml',
+        'data/cf_utm_sources.xml',
     ],
     'assets': {
         'web.assets_backend': [

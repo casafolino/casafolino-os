@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="source_fair" model="utm.source"><field name="name">Fiera</field></record>
+    <record id="source_cold_email" model="utm.source"><field name="name">Email a freddo</field></record>
+    <record id="source_website" model="utm.source"><field name="name">Sito Web</field></record>
+    <record id="source_linkedin" model="utm.source"><field name="name">LinkedIn</field></record>
+    <record id="source_referral" model="utm.source"><field name="name">Referral</field></record>
+    <record id="source_marketplace" model="utm.source"><field name="name">Marketplace</field></record>
+    <record id="source_inbound" model="utm.source"><field name="name">Email in entrata</field></record>
+    <record id="source_phone" model="utm.source"><field name="name">Telefono</field></record>
+    <record id="source_social" model="utm.source"><field name="name">Social Media</field></record>
+</odoo>

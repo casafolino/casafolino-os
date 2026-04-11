@@ -40,8 +40,8 @@ class CfMailClient extends Component {
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
             groupBy: "date",
-            showLeadModal: false, crmPipelines: [], crmPartners: [],
-            leadForm: { name: "", partner_id: "", partner_name: "", stage_id: "", expected_revenue: "", description: "", cf_market: "", cf_channel: "", cf_language: "" },
+            showLeadModal: false, crmPipelines: [], crmPartners: [], crmSources: [],
+            leadForm: { name: "", partner_id: "", partner_name: "", contact_name: "", function: "", email_from: "", phone: "", stage_id: "", expected_revenue: "", description: "", cf_market: "", cf_channel: "", cf_language: "", source: "" },
             leadPartnerSearch: "", leadPartnerResults: [],
             showAccountModal: false,
             accountForm: { id: null, name: "", email: "", signature: "", imap_host: "imap.gmail.com", imap_port: 993, imap_ssl: true, imap_password: "", imap_enabled: false, imap_status: "", smtp_host: "smtp.gmail.com", smtp_port: 587, smtp_tls: true, color: "#5A6E3A", ooo_enabled: false, ooo_subject: "Sono fuori ufficio", ooo_message: "", ooo_start: "", ooo_end: "" },
@@ -119,7 +119,7 @@ class CfMailClient extends Component {
             const data = await this._rpc("cf.mail.message", "get_crm_data");
             this.state.crmPipelines = data.pipelines || [];
             this.state.crmPartners = data.partners || [];
-            this.state.crmMarkets = data.markets || [];
+            this.state.crmSources = data.sources || [];
         } catch (e) {}
     }
 
@@ -653,25 +653,37 @@ class CfMailClient extends Component {
     }
 
     onLeadPartnerSearch(ev) {
-        const q = ev.target.value;
-        this.state.leadPartnerSearch = q;
-        if (q.length < 2) { this.state.leadPartnerResults = []; return; }
-        const filtered = this.state.crmPartners.filter(function(p) {
-            return (p.name && p.name.toLowerCase().indexOf(q.toLowerCase()) >= 0) ||
-                   (p.email && p.email.toLowerCase().indexOf(q.toLowerCase()) >= 0);
-        }).slice(0, 20);
-        this.state.leadPartnerResults = filtered;
+        const q = (ev.target.value || "").toLowerCase().trim();
+        this.state.leadPartnerSearch = ev.target.value;
+        if (q.length < 2) {
+            this.state.leadPartnerResults = [];
+            return;
+        }
+        this.state.leadPartnerResults = (this.state.crmPartners || []).filter(
+            function(p) {
+                return p.is_company && (
+                    (p.name || "").toLowerCase().indexOf(q) >= 0 ||
+                    (p.email || "").toLowerCase().indexOf(q) >= 0
+                );
+            }
+        ).slice(0, 15);
     }
 
     onLeadPartnerSelect(ev) {
         const pid = parseInt(ev.currentTarget.dataset.partnerId);
         const p = this.state.crmPartners.find(function(x) { return x.id === pid; });
         if (p) {
-            this.state.leadForm.partner_id = String(p.id);
+            this.state.leadForm.partner_id = '' + p.id;
             this.state.leadForm.partner_name = p.name;
         }
         this.state.leadPartnerResults = [];
         this.state.leadPartnerSearch = p ? p.name : '';
+    }
+
+    onLeadPartnerClear() {
+        this.state.leadForm.partner_id = '';
+        this.state.leadForm.partner_name = '';
+        this.state.leadPartnerSearch = '';
     }
 
     async openLeadModal() {
@@ -680,45 +692,26 @@ class CfMailClient extends Component {
         const detail = this.state.msgDetail;
         this.state.leadForm = {
             name: detail.subject || "",
-            partner_id: detail.partner_id ? String(detail.partner_id) : "",
+            partner_id: detail.partner_id ? '' + detail.partner_id : "",
             partner_name: detail.partner_name || "",
-            stage_id: this.state.crmPipelines.length > 0 ? String(this.state.crmPipelines[0].id) : "",
+            contact_name: detail.from_name || "",
+            function: "",
+            email_from: detail.from_address || "",
+            phone: "",
+            stage_id: this.state.crmPipelines.length > 0 ? '' + this.state.crmPipelines[0].id : "",
             expected_revenue: "",
             description: "",
             cf_market: "",
             cf_channel: "",
             cf_language: "",
+            source: "",
         };
-        this.state.leadPartnerSearch = detail.partner_name || "";
+        this.state.leadPartnerSearch = detail.partner_name || '';
         this.state.leadPartnerResults = [];
-        if (detail.partner_id) {
-            this.state.leadForm.partner_name = detail.partner_name || "";
-        }
         this.state.showLeadModal = true;
     }
 
     closeLeadModal() { this.state.showLeadModal = false; }
-
-    onLeadPartnerSearch(ev) {
-        const q = (ev.target.value || "").toLowerCase().trim();
-        this.state.leadPartnerSearch = ev.target.value;
-        if (q.length < 2) {
-            this.state.leadPartnerResults = [];
-            return;
-        }
-        this.state.leadPartnerResults = (this.state.crmPartners || []).filter(
-            p => (p.name || "").toLowerCase().includes(q) || (p.email || "").toLowerCase().includes(q)
-        ).slice(0, 10);
-    }
-
-    onLeadPartnerSelect(ev) {
-        const id = ev.currentTarget.dataset.partnerId;
-        const name = ev.currentTarget.dataset.partnerName;
-        this.state.leadForm.partner_id = id;
-        this.state.leadForm.partner_name = name;
-        this.state.leadPartnerSearch = name;
-        this.state.leadPartnerResults = [];
-    }
 
     async submitLeadForm() {
         try {
@@ -726,12 +719,17 @@ class CfMailClient extends Component {
                 message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
                 name: this.state.leadForm.name,
                 partner_id: this.state.leadForm.partner_id || false,
+                contact_name: this.state.leadForm.contact_name || "",
+                function: this.state.leadForm.function || "",
+                email_from: this.state.leadForm.email_from || "",
+                phone: this.state.leadForm.phone || "",
                 stage_id: this.state.leadForm.stage_id || false,
                 expected_revenue: this.state.leadForm.expected_revenue || 0,
                 description: this.state.leadForm.description || "",
                 cf_market: this.state.leadForm.cf_market || "",
                 cf_channel: this.state.leadForm.cf_channel || "",
                 cf_language: this.state.leadForm.cf_language || "",
+                source: this.state.leadForm.source || false,
             });
             if (res && res.success) {
                 this.showToast("Trattativa creata: " + res.lead_name);

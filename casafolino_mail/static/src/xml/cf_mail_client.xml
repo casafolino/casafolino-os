@@ -929,19 +929,61 @@
                     <button class="cf-modal-close" t-on-click="closeLeadModal">&#x2715;</button>
                 </div>
                 <div class="cf-modal-body">
+                    <!-- NOME TRATTATIVA -->
                     <div class="cf-modal-row">
                         <div class="cf-modal-col">
-                            <label>Nome Trattativa</label>
-                            <input class="cf-modal-input" t-att-value="state.leadForm.name" data-form="leadForm" data-field="name" t-on-input="onFormInput"/>
+                            <label>NOME TRATTATIVA</label>
+                            <input class="cf-modal-input" t-att-value="state.leadForm.name"
+                                data-form="leadForm" data-field="name" t-on-input="onFormInput"
+                                placeholder="Es: Pomona Group - Creme 220g"/>
+                        </div>
+                    </div>
+
+                    <!-- SEZIONE: REFERENTE -->
+                    <div class="cf-modal-section-title">&#x1F464; Referente</div>
+                    <div class="cf-modal-row cf-modal-2col">
+                        <div class="cf-modal-col">
+                            <label>NOME E COGNOME</label>
+                            <input class="cf-modal-input" t-att-value="state.leadForm.contact_name"
+                                data-form="leadForm" data-field="contact_name" t-on-input="onFormInput"
+                                placeholder="Es: Bruno Lagaillarde"/>
+                        </div>
+                        <div class="cf-modal-col">
+                            <label>RUOLO / MANSIONE</label>
+                            <input class="cf-modal-input" t-att-value="state.leadForm.function"
+                                data-form="leadForm" data-field="function" t-on-input="onFormInput"
+                                placeholder="Es: Buyer, Import Manager"/>
                         </div>
                     </div>
                     <div class="cf-modal-row cf-modal-2col">
                         <div class="cf-modal-col">
-                            <label>Contatto</label>
-                            <input class="cf-modal-input" type="text" placeholder="Cerca per nome o email..." t-att-value="state.leadPartnerSearch or ''" t-on-input="onLeadPartnerSearch"/>
-                            <div t-if="state.leadPartnerResults and state.leadPartnerResults.length" class="cf-modal-search-results">
+                            <label>EMAIL</label>
+                            <input class="cf-modal-input" type="email" t-att-value="state.leadForm.email_from"
+                                data-form="leadForm" data-field="email_from" t-on-input="onFormInput"
+                                placeholder="email@azienda.com"/>
+                        </div>
+                        <div class="cf-modal-col">
+                            <label>TELEFONO</label>
+                            <input class="cf-modal-input" t-att-value="state.leadForm.phone"
+                                data-form="leadForm" data-field="phone" t-on-input="onFormInput"
+                                placeholder="+39..."/>
+                        </div>
+                    </div>
+
+                    <!-- SEZIONE: AZIENDA -->
+                    <div class="cf-modal-section-title">&#x1F3E2; Azienda</div>
+                    <div class="cf-modal-row">
+                        <div class="cf-modal-col">
+                            <label>CERCA AZIENDA ESISTENTE</label>
+                            <input class="cf-modal-input" type="text"
+                                placeholder="Cerca per nome azienda..."
+                                t-att-value="state.leadPartnerSearch or ''"
+                                t-on-input="onLeadPartnerSearch"/>
+                            <div t-if="state.leadPartnerResults and state.leadPartnerResults.length"
+                                class="cf-modal-search-results">
                                 <t t-foreach="state.leadPartnerResults" t-as="p" t-key="p.id">
-                                    <div class="cf-modal-search-item" t-att-data-partner-id="p.id" t-att-data-partner-name="p.name" t-on-click="onLeadPartnerSelect">
+                                    <div class="cf-modal-search-item" t-att-data-partner-id="p.id"
+                                        t-on-click="onLeadPartnerSelect">
                                         <span class="cf-modal-search-name" t-esc="p.name"/>
                                         <span class="cf-modal-search-email" t-if="p.email" t-esc="p.email"/>
                                     </div>
@@ -949,11 +991,18 @@
                             </div>
                             <div t-if="state.leadForm.partner_id" class="cf-modal-selected">
                                 &#x2713; <t t-esc="state.leadForm.partner_name"/>
+                                <span class="cf-modal-clear" t-on-click="onLeadPartnerClear">&#x2715;</span>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- SEZIONE: CLASSIFICAZIONE -->
+                    <div class="cf-modal-section-title">&#x1F4CA; Classificazione</div>
+                    <div class="cf-modal-row cf-modal-2col">
                         <div class="cf-modal-col">
-                            <label>Mercato</label>
-                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_market" t-on-change="onFormChange">
+                            <label>MERCATO</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_market"
+                                t-on-change="onFormChange">
                                 <option value="">&#x2014; Seleziona &#x2014;</option>
                                 <option value="america">America</option>
                                 <option value="europa">Europa</option>
@@ -963,11 +1012,10 @@
                                 <option value="altri">Altri</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="cf-modal-row cf-modal-2col">
                         <div class="cf-modal-col">
-                            <label>Canale</label>
-                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_channel" t-on-change="onFormChange">
+                            <label>CANALE COMMERCIALE</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_channel"
+                                t-on-change="onFormChange">
                                 <option value="">&#x2014; Seleziona &#x2014;</option>
                                 <option value="gdo">GDO</option>
                                 <option value="importatore">Importatore</option>
@@ -978,24 +1026,22 @@
                                 <option value="foodservice">Foodservice</option>
                             </select>
                         </div>
-                        <div class="cf-modal-col">
-                            <label>Stage</label>
-                            <select class="cf-modal-input" data-form="leadForm" data-field="stage_id" t-on-change="onFormChange">
-                                <option value="">&#x2014; Seleziona &#x2014;</option>
-                                <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
-                                    <option t-att-value="s.id" t-att-selected="state.leadForm.stage_id === '' + s.id" t-esc="s.name"/>
-                                </t>
-                            </select>
-                        </div>
                     </div>
                     <div class="cf-modal-row cf-modal-2col">
                         <div class="cf-modal-col">
-                            <label>Valore stimato (&#x20AC;)</label>
-                            <input class="cf-modal-input" type="number" t-att-value="state.leadForm.expected_revenue" data-form="leadForm" data-field="expected_revenue" t-on-input="onFormInput"/>
+                            <label>FONTE LEAD</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="source"
+                                t-on-change="onFormChange">
+                                <option value="">&#x2014; Seleziona &#x2014;</option>
+                                <t t-foreach="state.crmSources or []" t-as="src" t-key="src.id">
+                                    <option t-att-value="src.id" t-esc="src.name"/>
+                                </t>
+                            </select>
                         </div>
                         <div class="cf-modal-col">
-                            <label>Lingua</label>
-                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_language" t-on-change="onFormChange">
+                            <label>LINGUA</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_language"
+                                t-on-change="onFormChange">
                                 <option value="">&#x2014; Seleziona &#x2014;</option>
                                 <option value="it">Italiano</option>
                                 <option value="en">English</option>
@@ -1006,10 +1052,37 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- SEZIONE: DEAL -->
+                    <div class="cf-modal-section-title">&#x1F4B0; Deal</div>
+                    <div class="cf-modal-row cf-modal-2col">
+                        <div class="cf-modal-col">
+                            <label>FASE</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="stage_id"
+                                t-on-change="onFormChange">
+                                <option value="">&#x2014; Seleziona &#x2014;</option>
+                                <t t-foreach="state.crmPipelines" t-as="s" t-key="s.id">
+                                    <option t-att-value="s.id" t-esc="s.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="cf-modal-col">
+                            <label>VALORE STIMATO (&#x20AC;)</label>
+                            <input class="cf-modal-input" type="number"
+                                t-att-value="state.leadForm.expected_revenue"
+                                data-form="leadForm" data-field="expected_revenue"
+                                t-on-input="onFormInput" placeholder="0"/>
+                        </div>
+                    </div>
+
+                    <!-- NOTE -->
                     <div class="cf-modal-row">
                         <div class="cf-modal-col">
-                            <label>Note</label>
-                            <textarea class="cf-modal-input" rows="2" data-form="leadForm" data-field="description" t-on-input="onFormInput" t-att-value="state.leadForm.description" placeholder="Note sulla trattativa..."/>
+                            <label>NOTE</label>
+                            <textarea class="cf-modal-input" rows="2"
+                                data-form="leadForm" data-field="description"
+                                t-on-input="onFormInput" t-att-value="state.leadForm.description"
+                                placeholder="Note sulla trattativa..."/>
                         </div>
                     </div>
                 </div>

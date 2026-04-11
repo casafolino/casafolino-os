@@ -1276,6 +1276,16 @@ textarea.cf-modal-input { resize: vertical; min-height: 44px; }
 .cf-modal-selected {
     margin-top: 4px; font-size: 12px; color: #00bda5; font-weight: 600;
 }
+.cf-modal-section-title {
+    font-size: 12px; font-weight: 700; color: #0091ae;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin: 16px 0 8px 0; padding-bottom: 4px;
+    border-bottom: 1px solid #eaf0f6;
+}
+.cf-modal-clear {
+    cursor: pointer; color: #f2545b; margin-left: 8px; font-size: 14px;
+}
+.cf-modal-clear:hover { color: #c0392b; }
 .cf-modal-footer {
     padding: 16px 24px; border-top: 1px solid #eaf0f6;
     display: flex; justify-content: flex-end; gap: 10px;

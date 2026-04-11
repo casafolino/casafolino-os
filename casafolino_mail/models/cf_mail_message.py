@@ -534,16 +534,13 @@ class CfMailMessage(models.Model):
         except Exception:
             pipelines = []
         partners = self.env['res.partner'].search([('active', '=', True)], limit=500, order='name')
-        partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
-        markets = [
-            {'value': 'america', 'label': 'America'},
-            {'value': 'europa', 'label': 'Europa'},
-            {'value': 'italia', 'label': 'Italia'},
-            {'value': 'medio_oriente', 'label': 'Medio Oriente'},
-            {'value': 'australia', 'label': 'Australia'},
-            {'value': 'altri', 'label': 'Altri'},
-        ]
-        return {'pipelines': pipelines, 'partners': partner_list, 'markets': markets}
+        partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or '', 'is_company': p.is_company} for p in partners]
+        try:
+            sources = self.env['utm.source'].search([], order='name')
+            source_list = [{'id': s.id, 'name': s.name} for s in sources]
+        except Exception:
+            source_list = []
+        return {'pipelines': pipelines, 'partners': partner_list, 'sources': source_list}
 
     @api.model
     def create_lead_from_form(self, *args, **kw):
@@ -553,20 +550,22 @@ class CfMailMessage(models.Model):
         expected_revenue = kw.get('expected_revenue') or 0
         description = kw.get('description') or ''
         message_id = kw.get('message_id') or False
-        cf_market = kw.get('cf_market') or False
-        cf_channel = kw.get('cf_channel') or False
-        cf_language = kw.get('cf_language') or False
         try:
             vals = {
                 'name': name,
                 'type': 'opportunity',
                 'partner_id': int(partner_id) if partner_id else False,
+                'contact_name': kw.get('contact_name') or '',
+                'function': kw.get('function') or '',
+                'email_from': kw.get('email_from') or '',
+                'phone': kw.get('phone') or '',
                 'stage_id': int(stage_id) if stage_id else False,
                 'expected_revenue': float(expected_revenue) if expected_revenue else 0,
                 'description': description,
-                'cf_market': cf_market if cf_market else False,
-                'cf_channel': cf_channel if cf_channel else False,
-                'cf_language': cf_language if cf_language else False,
+                'cf_market': kw.get('cf_market') or False,
+                'cf_channel': kw.get('cf_channel') or False,
+                'cf_language': kw.get('cf_language') or False,
+                'source_id': int(kw.get('source')) if kw.get('source') else False,
             }
             lead = self.env['crm.lead'].create(vals)
             if message_id:
