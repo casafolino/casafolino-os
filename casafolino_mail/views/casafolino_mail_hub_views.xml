@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         ACTIONS — devono venire PRIMA delle viste e dei menu
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="action_casafolino_mail_account" model="ir.actions.act_window">
+        <field name="name">Account IMAP</field>
+        <field name="res_model">casafolino.mail.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_casafolino_mail_message_triage" model="ir.actions.act_window">
+        <field name="name">Email Triage</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_state_new': 1}</field>
+    </record>
+
+    <record id="action_casafolino_mail_blacklist" model="ir.actions.act_window">
+        <field name="name">Blacklist</field>
+        <field name="res_model">casafolino.mail.blacklist</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         ACCOUNT IMAP — Form
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_account_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.account.form</field>
+        <field name="model">casafolino.mail.account</field>
+        <field name="arch" type="xml">
+            <form string="Account Email IMAP">
+                <div class="o_row mb-3">
+                    <button name="action_test_connection" string="Test Connessione"
+                            type="object" class="btn btn-primary"/>
+                    <button name="action_fetch_now" string="Fetch Now"
+                            type="object" class="btn btn-success"
+                            invisible="state != 'connected'"/>
+                </div>
+                <group>
+                    <group string="Account">
+                        <field name="name"/>
+                        <field name="email_address"/>
+                        <field name="responsible_user_id"/>
+                        <field name="state" widget="badge"
+                               decoration-info="state == 'draft'"
+                               decoration-success="state == 'connected'"
+                               decoration-danger="state == 'error'"/>
+                    </group>
+                    <group string="IMAP">
+                        <field name="imap_host"/>
+                        <field name="imap_port"/>
+                        <field name="imap_password" password="True"/>
+                        <field name="imap_use_ssl"/>
+                        <field name="sent_folder"/>
+                    </group>
+                    <group string="Sync">
+                        <field name="sync_start_date"/>
+                        <field name="last_fetch_datetime"/>
+                        <field name="fetch_inbox"/>
+                        <field name="fetch_sent"/>
+                    </group>
+                </group>
+                <field name="error_message" invisible="state != 'error'" readonly="1"/>
+            </form>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_account_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.account.list</field>
+        <field name="model">casafolino.mail.account</field>
+        <field name="arch" type="xml">
+            <list string="Account IMAP">
+                <field name="name"/>
+                <field name="email_address"/>
+                <field name="responsible_user_id"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"/>
+                <field name="last_fetch_datetime"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         MESSAGE STAGING — Triage list + form
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_message_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.search</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <search string="Cerca email">
+                <field name="subject"/>
+                <field name="sender_email"/>
+                <field name="sender_name"/>
+                <field name="sender_domain"/>
+                <field name="partner_id"/>
+                <filter name="state_new" string="Nuove" domain="[('state', '=', 'new')]"/>
+                <filter name="state_keep" string="Tenute" domain="[('state', '=', 'keep')]"/>
+                <filter name="state_discard" string="Scartate" domain="[('state', '=', 'discard')]"/>
+                <separator/>
+                <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
+                <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
+                <separator/>
+                <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_account" string="Account" context="{'group_by': 'account_id'}"/>
+                    <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
+                    <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
+                    <filter name="group_date" string="Data" context="{'group_by': 'email_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_message_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.list</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <list string="Email Triage"
+                  decoration-muted="state == 'discard'"
+                  decoration-success="state == 'keep'"
+                  decoration-info="state == 'new'"
+                  multi_edit="1">
+                <field name="email_date" string="Data"/>
+                <field name="direction" string="Dir"/>
+                <field name="sender_name" string="Da"/>
+                <field name="sender_email" string="Email"/>
+                <field name="sender_domain" string="Dominio"/>
+                <field name="subject" string="Oggetto"/>
+                <field name="snippet" string="Anteprima"/>
+                <field name="partner_id" string="Contatto"/>
+                <field name="match_type" string="Match"/>
+                <field name="state" string="Stato" widget="badge"
+                       decoration-info="state == 'new'"
+                       decoration-success="state == 'keep'"
+                       decoration-muted="state == 'discard'"/>
+                <field name="account_id" string="Account"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_message_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.form</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <form string="Email Staging">
+                <div class="o_row mb-3">
+                    <button name="action_keep" string="KEEP"
+                            type="object" class="btn btn-success"
+                            invisible="state != 'new'"/>
+                    <button name="action_discard" string="DISCARD"
+                            type="object" class="btn btn-danger"
+                            invisible="state != 'new'"/>
+                </div>
+                <group>
+                    <group string="Email">
+                        <field name="subject"/>
+                        <field name="sender_name"/>
+                        <field name="sender_email"/>
+                        <field name="sender_domain"/>
+                        <field name="recipient_emails"/>
+                        <field name="cc_emails"/>
+                        <field name="email_date"/>
+                        <field name="direction"/>
+                    </group>
+                    <group string="Triage">
+                        <field name="state" widget="badge"/>
+                        <field name="partner_id"/>
+                        <field name="match_type"/>
+                        <field name="account_id"/>
+                        <field name="triage_user_id"/>
+                        <field name="triage_date"/>
+                        <field name="body_downloaded"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="Anteprima" name="snippet_page">
+                        <field name="snippet"/>
+                    </page>
+                    <page string="Body HTML" name="body_page"
+                          invisible="not body_downloaded">
+                        <field name="body_html"/>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         BLACKLIST — list + form
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_blacklist_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.blacklist.list</field>
+        <field name="model">casafolino.mail.blacklist</field>
+        <field name="arch" type="xml">
+            <list string="Blacklist" editable="bottom">
+                <field name="type"/>
+                <field name="value"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_blacklist_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.blacklist.form</field>
+        <field name="model">casafolino.mail.blacklist</field>
+        <field name="arch" type="xml">
+            <form string="Blacklist">
+                <group>
+                    <field name="type"/>
+                    <field name="value"/>
+                    <field name="notes"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         MENU — Mail Hub submenu
+         ══════════════════════════════════════════════════════════════ -->
+
+    <menuitem id="menu_casafolino_mail_hub_root"
+              name="Mail Hub"
+              parent="casafolino_mail.menu_cf_mail_root"
+              sequence="50"/>
+
+    <menuitem id="menu_casafolino_mail_triage"
+              name="Email Triage"
+              parent="menu_casafolino_mail_hub_root"
+              action="action_casafolino_mail_message_triage"
+              sequence="10"/>
+
+    <menuitem id="menu_casafolino_mail_accounts"
+              name="Account IMAP"
+              parent="menu_casafolino_mail_hub_root"
+              action="action_casafolino_mail_account"
+              sequence="20"/>
+
+    <menuitem id="menu_casafolino_mail_blacklist"
+              name="Blacklist"
+              parent="menu_casafolino_mail_hub_root"
+              action="action_casafolino_mail_blacklist"
+              sequence="30"/>
+
+</odoo>

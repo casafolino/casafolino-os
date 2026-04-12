@@ -14,6 +14,14 @@ class ResPartnerMailExt(models.Model):
     # Campi extra tipo HubSpot/Zoho
     cf_job_title = fields.Char('Ruolo / Posizione')
 
+    # ── Mail Hub tracking fields ──
+    mail_tracked = fields.Boolean('Mail Tracked', default=False,
+        help='Se attivo, le nuove email vanno direttamente nel chatter')
+    mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
+    mail_last_sync = fields.Datetime('Ultimo sync email')
+    mail_message_count = fields.Integer('Email nel chatter',
+        compute='_compute_mail_message_count')
+
     # ── Agente 007 fields ──
     cf_007_enriched = fields.Boolean('007 Arricchito', default=False)
     cf_007_enriched_date = fields.Datetime('007 Data Arricchimento')
@@ -107,6 +115,14 @@ class ResPartnerMailExt(models.Model):
     cf_opt_out = fields.Boolean('Opt-out email marketing', default=False)
     cf_gdpr_consent = fields.Boolean('Consenso GDPR', default=False)
     cf_gdpr_date = fields.Date('Data consenso GDPR')
+
+    def _compute_mail_message_count(self):
+        for partner in self:
+            partner.mail_message_count = self.env['mail.message'].search_count([
+                ('res_id', '=', partner.id),
+                ('model', '=', 'res.partner'),
+                ('message_type', '=', 'email'),
+            ])
 
     @api.depends('message_ids')
     def _compute_last_contact(self):

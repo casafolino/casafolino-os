@@ -10,3 +10,9 @@ access_cf_contact_tag_admin,cf.contact.tag admin,model_cf_contact_tag,base.group
 access_cf_mail_compose,access_cf_mail_compose,model_cf_mail_compose,base.group_user,1,1,1,1
 access_cf_mail_sender_rule_user,cf.mail.sender.rule user,model_cf_mail_sender_rule,,1,1,1,1
 access_cf_mail_sender_rule_admin,cf.mail.sender.rule admin,model_cf_mail_sender_rule,base.group_system,1,1,1,1
+access_casafolino_mail_account_user,casafolino.mail.account user,model_casafolino_mail_account,base.group_user,1,1,1,0
+access_casafolino_mail_account_admin,casafolino.mail.account admin,model_casafolino_mail_account,base.group_system,1,1,1,1
+access_casafolino_mail_message_user,casafolino.mail.message user,model_casafolino_mail_message,base.group_user,1,1,1,0
+access_casafolino_mail_message_admin,casafolino.mail.message admin,model_casafolino_mail_message,base.group_system,1,1,1,1
+access_casafolino_mail_blacklist_user,casafolino.mail.blacklist user,model_casafolino_mail_blacklist,base.group_user,1,1,1,0
+access_casafolino_mail_blacklist_admin,casafolino.mail.blacklist admin,model_casafolino_mail_blacklist,base.group_system,1,1,1,1
