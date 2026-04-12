@@ -36,6 +36,8 @@ class CasafolinoMailAccount(models.Model):
     active = fields.Boolean(default=True)
     fetch_inbox = fields.Boolean('Scarica INBOX', default=True)
     fetch_sent = fields.Boolean('Scarica Sent', default=True)
+    company_domain = fields.Char('Dominio aziendale', default='casafolino.com',
+        help='Email da questo dominio sono considerate interne')
 
     # ── Connection helpers ────────────────────────────────────────────
 
@@ -244,8 +246,7 @@ class CasafolinoMailAccount(models.Model):
 
                 # Matching con res.partner
                 partner_id, match_type = self._match_partner(
-                    sender_email if actual_direction == 'inbound' else recipient_emails,
-                    actual_direction
+                    sender_email, recipient_emails, actual_direction
                 )
 
                 # Crea record staging
@@ -318,18 +319,43 @@ class CasafolinoMailAccount(models.Model):
                 addresses.append(addr.lower().strip())
         return ', '.join(addresses)
 
-    def _match_partner(self, email_or_emails, direction):
+    def _get_external_email(self, sender_email, recipient_emails):
+        """Se il mittente è interno (company_domain), ritorna il primo destinatario esterno."""
+        self.ensure_one()
+        cd = (self.company_domain or '').lower().strip()
+        if not cd:
+            return sender_email
+
+        sender_domain = sender_email.split('@')[1].lower() if '@' in sender_email else ''
+        if sender_domain != cd:
+            # Mittente è esterno — usa il mittente
+            return sender_email
+
+        # Mittente è interno — cerca primo destinatario esterno
+        if recipient_emails:
+            for addr in recipient_emails.split(','):
+                addr = addr.strip().lower()
+                if addr and '@' in addr and addr.split('@')[1] != cd:
+                    return addr
+
+        # Tutti interni — fallback sul mittente
+        return sender_email
+
+    def _match_partner(self, sender_email, recipient_emails, direction):
         """Cerca partner corrispondente. Ritorna (partner_id, match_type) o (False, 'none')."""
         Partner = self.env['res.partner']
 
         if direction == 'inbound':
-            email_to_match = email_or_emails  # stringa singola (sender_email)
+            # Se mittente è interno, cerca sul primo destinatario esterno
+            email_to_match = self._get_external_email(sender_email, recipient_emails)
         else:
-            # Per outbound, prendi il primo destinatario
-            if isinstance(email_or_emails, str) and email_or_emails:
-                email_to_match = email_or_emails.split(',')[0].strip()
-            else:
-                return False, 'none'
+            # Per outbound, prendi il primo destinatario esterno
+            email_to_match = self._get_external_email(sender_email, recipient_emails)
+            # Se il risultato è il sender (tutti interni), prova il primo recipient
+            if email_to_match == sender_email and recipient_emails:
+                first_rcpt = recipient_emails.split(',')[0].strip()
+                if first_rcpt:
+                    email_to_match = first_rcpt
 
         if not email_to_match:
             return False, 'none'

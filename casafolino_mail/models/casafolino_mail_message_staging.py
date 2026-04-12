@@ -287,15 +287,22 @@ class CasafolinoMailMessage(models.Model):
                 'triage_date': fields.Datetime.now(),
             })
 
+    def _get_contact_email_and_name(self):
+        """Ritorna (email, name) del contatto esterno per questa email."""
+        self.ensure_one()
+        ext_email = self.account_id._get_external_email(
+            self.sender_email or '', self.recipient_emails or '')
+        # Se l'email esterna è il mittente, usa sender_name
+        if ext_email == self.sender_email:
+            name = self.sender_name or ext_email
+        else:
+            name = ext_email
+        return ext_email, name
+
     def action_create_partner(self):
         """Crea un nuovo res.partner arricchito dall'email."""
         self.ensure_one()
-        if self.direction == 'inbound':
-            email_addr = self.sender_email
-            name = self.sender_name or email_addr
-        else:
-            email_addr = self.recipient_emails.split(',')[0].strip() if self.recipient_emails else ''
-            name = email_addr
+        email_addr, name = self._get_contact_email_and_name()
 
         vals = {
             'name': name or email_addr,
@@ -441,39 +448,53 @@ class CasafolinoMailMessage(models.Model):
         })
 
     def action_rematch_partner(self):
-        """Ri-match automatico per email senza partner."""
-        Account = self.env['casafolino.mail.account']
+        """Ri-match automatico per email senza partner (usa logica dominio interno)."""
         for record in self.filtered(lambda r: not r.partner_id):
-            email_to_match = record.sender_email if record.direction == 'inbound' else (
-                record.recipient_emails.split(',')[0].strip() if record.recipient_emails else '')
-            if not email_to_match:
-                continue
-            # Match esatto
-            partner = self.env['res.partner'].search([('email', '=ilike', email_to_match)], limit=1)
-            if partner:
-                record.write({'partner_id': partner.id, 'match_type': 'exact'})
-                continue
-            # Match dominio
-            domain = email_to_match.split('@')[1] if '@' in email_to_match else ''
-            if domain:
-                partner = self.env['res.partner'].search([
-                    ('is_company', '=', True),
-                    ('website', 'ilike', domain),
-                ], limit=1)
-                if partner:
-                    record.write({'partner_id': partner.id, 'match_type': 'domain'})
+            partner_id, match_type = record.account_id._match_partner(
+                record.sender_email or '', record.recipient_emails or '',
+                record.direction or 'inbound')
+            if partner_id:
+                record.write({'partner_id': partner_id, 'match_type': match_type})
+
+    @api.model
+    def _rematch_internal_emails(self):
+        """Fix email matchate su partner interni @casafolino.com: resetta e ri-matcha."""
+        # Trova tutti i record matchati su partner con email @casafolino.com
+        internal_matched = self.search([
+            ('partner_id', '!=', False),
+            ('partner_id.email', 'ilike', '%@casafolino.com'),
+        ])
+        _logger.info("Rematch: %d email matchate su partner interni", len(internal_matched))
+
+        count_fixed = 0
+        for record in internal_matched:
+            # Resetta e ri-matcha con logica corretta
+            record.write({'partner_id': False, 'match_type': 'none'})
+            partner_id, match_type = record.account_id._match_partner(
+                record.sender_email or '', record.recipient_emails or '',
+                record.direction or 'inbound')
+            if partner_id:
+                record.write({'partner_id': partner_id, 'match_type': match_type})
+                count_fixed += 1
+
+        _logger.info("Rematch completato: %d/%d ri-matchati su partner esterni",
+                      count_fixed, len(internal_matched))
+        return count_fixed
 
     def action_bulk_create_partners(self):
         """Crea contatti da email selezionate senza partner."""
         Partner = self.env['res.partner']
-        for record in self.filtered(lambda r: not r.partner_id and r.sender_email):
-            existing = Partner.search([('email', '=ilike', record.sender_email)], limit=1)
+        for record in self.filtered(lambda r: not r.partner_id):
+            email_addr, name = record._get_contact_email_and_name()
+            if not email_addr:
+                continue
+            existing = Partner.search([('email', '=ilike', email_addr)], limit=1)
             if existing:
                 record.write({'partner_id': existing.id, 'match_type': 'exact'})
             else:
                 partner = Partner.create({
-                    'name': record.sender_name or record.sender_email,
-                    'email': record.sender_email,
+                    'name': name or email_addr,
+                    'email': email_addr,
                 })
                 record.write({'partner_id': partner.id, 'match_type': 'manual'})
 

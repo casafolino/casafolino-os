@@ -123,6 +123,7 @@
                     <group string="Account">
                         <field name="name"/>
                         <field name="email_address"/>
+                        <field name="company_domain"/>
                         <field name="responsible_user_id"/>
                         <field name="state" widget="badge"
                                decoration-info="state == 'draft'"
