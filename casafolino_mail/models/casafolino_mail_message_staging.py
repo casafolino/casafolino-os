@@ -89,8 +89,10 @@ class CasafolinoMailMessage(models.Model):
                 except Exception as e:
                     _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
-            # Se ha un partner, crea nel chatter
+            # Se ha un partner, crea nel chatter e attiva tracking
             if record.partner_id:
+                if not record.partner_id.mail_tracked:
+                    record.partner_id.mail_tracked = True
                 record._create_partner_mail_message()
 
     def action_discard(self):
