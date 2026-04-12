@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Utente normale: vede solo email delle caselle di cui è responsabile -->
+    <record id="rule_mail_message_user" model="ir.rule">
+        <field name="name">CasaFolino Mail Hub: solo proprie caselle</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Admin: vede tutto -->
+    <record id="rule_mail_message_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail Hub: admin vede tutto</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+</odoo>

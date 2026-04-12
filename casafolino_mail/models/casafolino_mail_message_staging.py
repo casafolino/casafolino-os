@@ -326,3 +326,15 @@ class CasafolinoMailMessage(models.Model):
                 'res_model': 'casafolino.mail.message',
                 'res_id': self.id,
             })
+
+    # ── Cron cleanup (Step 8) ────────────────────────────────────────
+
+    @api.model
+    def _cron_cleanup_discarded(self):
+        """Elimina email scartate più vecchie di 30 giorni."""
+        from datetime import timedelta
+        cutoff = fields.Datetime.now() - timedelta(days=30)
+        old = self.search([('state', '=', 'discard'), ('triage_date', '<', cutoff)])
+        count = len(old)
+        old.unlink()
+        _logger.info("Mail cleanup: %d email scartate eliminate.", count)

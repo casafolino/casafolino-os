@@ -7,6 +7,7 @@
     'depends': ['base', 'mail', 'web', 'utm'],
     'data': [
         'security/ir.model.access.csv',
+        'security/ir_rules.xml',
         'views/cf_mail_views.xml',
         'views/cf_mail_partner_views.xml',
         'views/cf_mail_sender_rule_views.xml',
@@ -24,6 +25,7 @@
             'casafolino_mail/static/src/js/cf_mail_client.js',
         ],
     },
+    'post_init_hook': '_post_init_hook',
     'installable': True,
     'application': True,
     'license': 'OPL-1',

@@ -362,3 +362,16 @@ class CasafolinoMailAccount(models.Model):
                 return partner.id, 'domain'
 
         return False, 'none'
+
+    # ── Cron (Step 8) ────────────────────────────────────────────────
+
+    @api.model
+    def _cron_fetch_all_accounts(self):
+        """Fetch incrementale per tutti gli account connessi."""
+        accounts = self.search([('state', '=', 'connected'), ('active', '=', True)])
+        for account in accounts:
+            try:
+                account._fetch_emails()
+            except Exception as e:
+                account.write({'state': 'error', 'error_message': str(e)})
+                _logger.error("Cron fetch error %s: %s", account.email_address, e)
