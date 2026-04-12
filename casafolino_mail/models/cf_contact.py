@@ -1,9 +1,12 @@
+import email as email_lib
 import json
 import logging
 import re
 import requests
+from email.utils import parseaddr, parsedate_to_datetime
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -123,6 +126,133 @@ class ResPartnerMailExt(models.Model):
                 ('model', '=', 'res.partner'),
                 ('message_type', '=', 'email'),
             ])
+
+    # ── Sync storico email per contatto (Step 7) ─────────────────────
+
+    def action_sync_full_email_history(self):
+        """Scarica tutto lo storico email per questo contatto da tutte le caselle."""
+        self.ensure_one()
+        if not self.email:
+            raise UserError("Il contatto non ha un indirizzo email.")
+
+        accounts = self.env['casafolino.mail.account'].search([('state', '=', 'connected')])
+        email_lower = self.email.lower().strip()
+        Message = self.env['casafolino.mail.message']
+
+        for account in accounts:
+            imap = account._get_imap_connection()
+            try:
+                folders = []
+                if account.fetch_inbox:
+                    folders.append(('INBOX', 'inbound'))
+                if account.fetch_sent and account.sent_folder:
+                    folders.append((account.sent_folder, 'outbound'))
+
+                for folder_name, direction in folders:
+                    status, _ = imap.select('"%s"' % folder_name, readonly=True)
+                    if status != 'OK':
+                        continue
+
+                    # Cerca TUTTE le email da/a questo indirizzo, SENZA limite di data
+                    search_criteria = '(OR FROM "%s" TO "%s")' % (email_lower, email_lower)
+                    status, msg_ids = imap.search(None, search_criteria)
+
+                    if status != 'OK' or not msg_ids[0]:
+                        continue
+
+                    uid_list = msg_ids[0].split()
+                    _logger.info("Storico %s in %s: %d email", email_lower, folder_name, len(uid_list))
+
+                    for uid in uid_list:
+                        uid_str = uid.decode()
+
+                        # Scarica completo (header + body)
+                        status2, msg_data = imap.fetch(uid, '(RFC822)')
+                        if status2 != 'OK':
+                            continue
+
+                        raw_email = None
+                        for part in msg_data:
+                            if isinstance(part, tuple):
+                                raw_email = part[1]
+                                break
+                        if not raw_email:
+                            continue
+
+                        msg = email_lib.message_from_bytes(raw_email)
+                        message_id = msg.get('Message-ID', '').strip()
+
+                        if not message_id:
+                            message_id = "<%s-%s-%s@generated>" % (account.email_address, uid_str, folder_name)
+
+                        # Skip se già esiste
+                        if Message.search([('message_id_rfc', '=', message_id)], limit=1):
+                            continue
+
+                        # Parsa header
+                        sender_name, sender_email_addr = parseaddr(msg.get('From', ''))
+                        sender_name = account._decode_header_value(sender_name)
+                        sender_email_addr = sender_email_addr.lower().strip() if sender_email_addr else ''
+
+                        subject = account._decode_header_value(msg.get('Subject', ''))
+                        try:
+                            email_date = parsedate_to_datetime(msg.get('Date', ''))
+                        except Exception:
+                            email_date = fields.Datetime.now()
+
+                        actual_direction = 'outbound' if sender_email_addr == account.email_address.lower() else 'inbound'
+
+                        # Crea record staging con state=keep e body
+                        try:
+                            new_msg = Message.create({
+                                'account_id': account.id,
+                                'message_id_rfc': message_id,
+                                'imap_uid': uid_str,
+                                'imap_folder': folder_name,
+                                'direction': actual_direction,
+                                'sender_email': sender_email_addr,
+                                'sender_name': sender_name,
+                                'recipient_emails': account._extract_emails(msg.get('To', '')),
+                                'cc_emails': account._extract_emails(msg.get('Cc', '')),
+                                'subject': subject,
+                                'email_date': email_date,
+                                'state': 'keep',
+                                'partner_id': self.id,
+                                'match_type': 'exact',
+                                'triage_user_id': self.env.user.id,
+                                'triage_date': fields.Datetime.now(),
+                            })
+
+                            # Parsa body direttamente dal raw già disponibile
+                            new_msg._parse_and_save_body(msg)
+                            new_msg._create_partner_mail_message()
+
+                            self.env.cr.commit()
+                        except Exception as e:
+                            _logger.warning("History sync error for %s uid %s: %s", email_lower, uid_str, e)
+                            continue
+
+            finally:
+                try:
+                    imap.logout()
+                except Exception:
+                    pass
+
+        self.write({
+            'mail_tracked': True,
+            'mail_first_sync_done': True,
+            'mail_last_sync': fields.Datetime.now(),
+        })
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Sync completato',
+                'message': 'Storico email scaricato per %s' % self.email,
+                'type': 'success',
+            },
+        }
 
     @api.depends('message_ids')
     def _compute_last_contact(self):

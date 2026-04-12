@@ -240,6 +240,25 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════
+         PARTNER — Stat button Sync Email (Step 7)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_partner_form_mail_hub" model="ir.ui.view">
+        <field name="name">res.partner.form.mail.hub</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_sync_full_email_history" string="Sync Email"
+                        type="object" class="oe_stat_button" icon="fa-envelope">
+                    <field name="mail_message_count" string="Email" widget="statinfo"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
          MENU — Mail Hub submenu
          ══════════════════════════════════════════════════════════════ -->
 

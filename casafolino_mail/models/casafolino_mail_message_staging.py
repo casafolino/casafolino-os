@@ -270,3 +270,59 @@ class CasafolinoMailMessage(models.Model):
         self.ensure_one()
         if self.partner_id:
             return self.partner_id.action_enrich_007()
+
+    # ── Parse body from already-fetched message (Step 7) ─────────────
+
+    def _parse_and_save_body(self, msg_obj):
+        """Parsa body e allegati da un oggetto email.message già scaricato."""
+        self.ensure_one()
+        body_html = ''
+        body_text = ''
+        attachments = []
+
+        if msg_obj.is_multipart():
+            for part in msg_obj.walk():
+                content_type = part.get_content_type()
+                disposition = str(part.get('Content-Disposition', ''))
+
+                if 'attachment' in disposition or part.get_filename():
+                    filename = part.get_filename()
+                    if filename:
+                        filename = self.env['casafolino.mail.account']._decode_header_value(filename)
+                        file_data = part.get_payload(decode=True)
+                        if file_data:
+                            attachments.append({
+                                'name': filename,
+                                'datas': base64.b64encode(file_data),
+                                'mimetype': content_type,
+                            })
+                elif content_type == 'text/html':
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body_html = payload.decode(part.get_content_charset() or 'utf-8', errors='ignore')
+                elif content_type == 'text/plain' and not body_html:
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body_text = payload.decode(part.get_content_charset() or 'utf-8', errors='ignore')
+        else:
+            payload = msg_obj.get_payload(decode=True)
+            if payload:
+                charset = msg_obj.get_content_charset() or 'utf-8'
+                if msg_obj.get_content_type() == 'text/html':
+                    body_html = payload.decode(charset, errors='ignore')
+                else:
+                    body_text = payload.decode(charset, errors='ignore')
+
+        self.write({
+            'body_html': body_html or ('<pre>%s</pre>' % body_text),
+            'body_downloaded': True,
+        })
+
+        for att in attachments:
+            self.env['ir.attachment'].create({
+                'name': att['name'],
+                'datas': att['datas'],
+                'mimetype': att['mimetype'],
+                'res_model': 'casafolino.mail.message',
+                'res_id': self.id,
+            })
