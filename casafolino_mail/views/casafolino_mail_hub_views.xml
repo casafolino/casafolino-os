@@ -19,6 +19,10 @@
                 <filter name="state_keep" string="Tenute" domain="[('state', '=', 'keep')]"/>
                 <filter name="state_discard" string="Scartate" domain="[('state', '=', 'discard')]"/>
                 <separator/>
+                <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
+                <filter name="read" string="Letti" domain="[('is_read', '=', True)]"/>
+                <filter name="important" string="Importanti" domain="[('is_important', '=', True)]"/>
+                <separator/>
                 <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
                 <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
                 <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
@@ -63,7 +67,9 @@
                   decoration-muted="state == 'discard'"
                   decoration-success="state == 'keep'"
                   decoration-info="state == 'new'"
+                  decoration-bf="not is_read"
                   multi_edit="1">
+                <field name="is_important" string=" " widget="boolean_favorite"/>
                 <field name="email_date" string="Data"/>
                 <field name="direction" string="Dir"/>
                 <field name="sender_name" string="Da"/>
@@ -78,6 +84,7 @@
                        decoration-info="state == 'new'"
                        decoration-success="state == 'keep'"
                        decoration-danger="state == 'discard'"/>
+                <field name="is_read" column_invisible="1"/>
             </list>
         </field>
     </record>

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ══ TRIAGE ══════════════════════════════════════════════════ -->
+
     <record id="action_bulk_keep" model="ir.actions.server">
         <field name="name">Tieni selezionati</field>
         <field name="model_id" ref="model_casafolino_mail_message"/>
@@ -26,6 +28,131 @@
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
         <field name="code">records.action_blacklist_domain()</field>
+    </record>
+
+    <record id="action_bulk_reset_new" model="ir.actions.server">
+        <field name="name">Rimetti in Da Valutare</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_reset_new()</field>
+    </record>
+
+    <!-- ══ CONTATTO ════════════════════════════════════════════════ -->
+
+    <record id="action_bulk_assign_partner" model="ir.actions.server">
+        <field name="name">Assegna contatto</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Assegna contatto',
+    'res_model': 'casafolino.mail.assign.partner.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {'active_ids': records.ids},
+}
+        </field>
+    </record>
+
+    <record id="action_bulk_rematch" model="ir.actions.server">
+        <field name="name">Ri-match automatico</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_rematch_partner()</field>
+    </record>
+
+    <record id="action_bulk_create_partners" model="ir.actions.server">
+        <field name="name">Crea contatti da email</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_bulk_create_partners()</field>
+    </record>
+
+    <record id="action_bulk_launch_007" model="ir.actions.server">
+        <field name="name">Lancia 007 su contatti</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_bulk_launch_007()</field>
+    </record>
+
+    <!-- ══ CRM ═════════════════════════════════════════════════════ -->
+
+    <record id="action_bulk_assign_lead" model="ir.actions.server">
+        <field name="name">Collega a trattativa CRM</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Collega a trattativa CRM',
+    'res_model': 'casafolino.mail.assign.lead.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {'active_ids': records.ids},
+}
+        </field>
+    </record>
+
+    <record id="action_bulk_mark_important" model="ir.actions.server">
+        <field name="name">Segna come importante</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_mark_important()</field>
+    </record>
+
+    <!-- ══ LETTURA ═════════════════════════════════════════════════ -->
+
+    <record id="action_bulk_mark_read" model="ir.actions.server">
+        <field name="name">Segna come letto</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_mark_read()</field>
+    </record>
+
+    <record id="action_bulk_mark_unread" model="ir.actions.server">
+        <field name="name">Segna come non letto</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_mark_unread()</field>
+    </record>
+
+    <!-- ══ PULIZIA ═════════════════════════════════════════════════ -->
+
+    <record id="action_bulk_delete" model="ir.actions.server">
+        <field name="name">Elimina selezionati</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_bulk_delete()</field>
+    </record>
+
+    <record id="action_bulk_discard_domain" model="ir.actions.server">
+        <field name="name">Scarta tutto il dominio</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_discard_domain_no_blacklist()</field>
     </record>
 
 </odoo>

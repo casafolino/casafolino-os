@@ -3,6 +3,7 @@ import email
 import logging
 
 from odoo import models, fields, api
+from odoo.exceptions import AccessError
 
 _logger = logging.getLogger(__name__)
 
@@ -52,6 +53,8 @@ class CasafolinoMailMessage(models.Model):
                                       domain=[('res_model', '=', 'casafolino.mail.message')])
     triage_user_id = fields.Many2one('res.users', string='Triage da')
     triage_date = fields.Datetime('Data triage')
+    is_read = fields.Boolean('Letta', default=False)
+    is_important = fields.Boolean('Importante', default=False)
 
     _sql_constraints = [
         ('message_id_unique', 'unique(message_id_rfc)',
@@ -326,6 +329,109 @@ class CasafolinoMailMessage(models.Model):
                 'res_model': 'casafolino.mail.message',
                 'res_id': self.id,
             })
+
+    # ── Bulk actions ───────────────────────────────────────────────────
+
+    def action_reset_new(self):
+        """Rimetti in Da Valutare."""
+        self.write({
+            'state': 'new',
+            'triage_user_id': False,
+            'triage_date': False,
+        })
+
+    def action_rematch_partner(self):
+        """Ri-match automatico per email senza partner."""
+        Account = self.env['casafolino.mail.account']
+        for record in self.filtered(lambda r: not r.partner_id):
+            email_to_match = record.sender_email if record.direction == 'inbound' else (
+                record.recipient_emails.split(',')[0].strip() if record.recipient_emails else '')
+            if not email_to_match:
+                continue
+            # Match esatto
+            partner = self.env['res.partner'].search([('email', '=ilike', email_to_match)], limit=1)
+            if partner:
+                record.write({'partner_id': partner.id, 'match_type': 'exact'})
+                continue
+            # Match dominio
+            domain = email_to_match.split('@')[1] if '@' in email_to_match else ''
+            if domain:
+                partner = self.env['res.partner'].search([
+                    ('is_company', '=', True),
+                    ('website', 'ilike', domain),
+                ], limit=1)
+                if partner:
+                    record.write({'partner_id': partner.id, 'match_type': 'domain'})
+
+    def action_bulk_create_partners(self):
+        """Crea contatti da email selezionate senza partner."""
+        Partner = self.env['res.partner']
+        for record in self.filtered(lambda r: not r.partner_id and r.sender_email):
+            existing = Partner.search([('email', '=ilike', record.sender_email)], limit=1)
+            if existing:
+                record.write({'partner_id': existing.id, 'match_type': 'exact'})
+            else:
+                partner = Partner.create({
+                    'name': record.sender_name or record.sender_email,
+                    'email': record.sender_email,
+                })
+                record.write({'partner_id': partner.id, 'match_type': 'manual'})
+
+    def action_bulk_launch_007(self):
+        """Lancia Agente 007 su tutti i partner collegati (senza duplicati)."""
+        partners_done = set()
+        for record in self.filtered(lambda r: r.partner_id):
+            if record.partner_id.id not in partners_done:
+                try:
+                    record.partner_id.action_enrich_007()
+                except Exception as e:
+                    _logger.warning("007 bulk error partner %s: %s", record.partner_id.id, e)
+                partners_done.add(record.partner_id.id)
+
+    def action_mark_important(self):
+        """Segna come importante."""
+        self.write({'is_important': True})
+
+    def action_mark_read(self):
+        """Segna come letto."""
+        self.write({'is_read': True})
+
+    def action_mark_unread(self):
+        """Segna come non letto."""
+        self.write({'is_read': False})
+
+    def action_bulk_delete(self):
+        """Elimina selezionati (solo admin)."""
+        if not self.env.user.has_group('base.group_system'):
+            raise AccessError("Solo gli amministratori possono eliminare.")
+        self.unlink()
+
+    def action_discard_domain_no_blacklist(self):
+        """Scarta tutto il dominio dei selezionati senza aggiungere alla blacklist."""
+        domains = set()
+        for record in self:
+            if record.sender_domain:
+                domains.add(record.sender_domain)
+        if domains:
+            all_from_domains = self.search([
+                ('sender_domain', 'in', list(domains)),
+                ('state', '=', 'new'),
+            ])
+            all_from_domains.write({
+                'state': 'discard',
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
+
+    def _ensure_body_downloaded(self):
+        """Scarica body per i record che non lo hanno ancora."""
+        for record in self.filtered(lambda r: not r.body_downloaded):
+            try:
+                imap = record.account_id._get_imap_connection()
+                record._download_body_imap(imap, record.imap_folder, record.imap_uid)
+                imap.logout()
+            except Exception as e:
+                _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
     # ── Cron cleanup (Step 8) ────────────────────────────────────────
 

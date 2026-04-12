@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── Assign Partner Wizard ──────────────────────────────────── -->
+
+    <record id="casafolino_mail_assign_partner_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.assign.partner.wizard.form</field>
+        <field name="model">casafolino.mail.assign.partner.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assegna contatto">
+                <group>
+                    <field name="partner_id"/>
+                </group>
+                <footer>
+                    <button name="action_assign" string="Assegna" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_casafolino_mail_assign_partner_wizard" model="ir.actions.act_window">
+        <field name="name">Assegna contatto</field>
+        <field name="res_model">casafolino.mail.assign.partner.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ── Assign Lead Wizard ─────────────────────────────────────── -->
+
+    <record id="casafolino_mail_assign_lead_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.assign.lead.wizard.form</field>
+        <field name="model">casafolino.mail.assign.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Collega a trattativa CRM">
+                <group>
+                    <field name="lead_id"/>
+                </group>
+                <footer>
+                    <button name="action_assign" string="Collega" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_casafolino_mail_assign_lead_wizard" model="ir.actions.act_window">
+        <field name="name">Collega a trattativa CRM</field>
+        <field name="res_model">casafolino.mail.assign.lead.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
