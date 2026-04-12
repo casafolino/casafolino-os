@@ -15,6 +15,7 @@
         <field name="name">Email Triage</field>
         <field name="res_model">casafolino.mail.message</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
         <field name="context">{'search_default_state_new': 1}</field>
     </record>
 
@@ -25,8 +26,25 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════
-         ACCOUNT IMAP — Form
+         ACCOUNT IMAP — List + Form
          ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_account_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.account.list</field>
+        <field name="model">casafolino.mail.account</field>
+        <field name="arch" type="xml">
+            <list string="Account IMAP">
+                <field name="name"/>
+                <field name="email_address"/>
+                <field name="responsible_user_id"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"/>
+                <field name="last_fetch_datetime"/>
+            </list>
+        </field>
+    </record>
 
     <record id="casafolino_mail_account_form" model="ir.ui.view">
         <field name="name">casafolino.mail.account.form</field>
@@ -69,50 +87,34 @@
         </field>
     </record>
 
-    <record id="casafolino_mail_account_list" model="ir.ui.view">
-        <field name="name">casafolino.mail.account.list</field>
-        <field name="model">casafolino.mail.account</field>
-        <field name="arch" type="xml">
-            <list string="Account IMAP">
-                <field name="name"/>
-                <field name="email_address"/>
-                <field name="responsible_user_id"/>
-                <field name="state" widget="badge"
-                       decoration-info="state == 'draft'"
-                       decoration-success="state == 'connected'"
-                       decoration-danger="state == 'error'"/>
-                <field name="last_fetch_datetime"/>
-            </list>
-        </field>
-    </record>
-
     <!-- ══════════════════════════════════════════════════════════════
-         MESSAGE STAGING — Triage list + form
+         MESSAGE STAGING — Search, List, Form (Step 5)
          ══════════════════════════════════════════════════════════════ -->
 
     <record id="casafolino_mail_message_search" model="ir.ui.view">
         <field name="name">casafolino.mail.message.search</field>
         <field name="model">casafolino.mail.message</field>
         <field name="arch" type="xml">
-            <search string="Cerca email">
+            <search string="Cerca Email">
                 <field name="subject"/>
                 <field name="sender_email"/>
                 <field name="sender_name"/>
                 <field name="sender_domain"/>
                 <field name="partner_id"/>
-                <filter name="state_new" string="Nuove" domain="[('state', '=', 'new')]"/>
+                <filter name="state_new" string="Da valutare" domain="[('state', '=', 'new')]"/>
                 <filter name="state_keep" string="Tenute" domain="[('state', '=', 'keep')]"/>
                 <filter name="state_discard" string="Scartate" domain="[('state', '=', 'discard')]"/>
                 <separator/>
+                <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
                 <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
                 <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
                 <separator/>
-                <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
                 <group expand="0" string="Raggruppa per">
-                    <filter name="group_account" string="Account" context="{'group_by': 'account_id'}"/>
-                    <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
                     <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
-                    <filter name="group_date" string="Data" context="{'group_by': 'email_date:month'}"/>
+                    <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_account" string="Casella" context="{'group_by': 'account_id'}"/>
+                    <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
+                    <filter name="group_date" string="Data" context="{'group_by': 'email_date:day'}"/>
                 </group>
             </search>
         </field>
@@ -133,14 +135,14 @@
                 <field name="sender_email" string="Email"/>
                 <field name="sender_domain" string="Dominio"/>
                 <field name="subject" string="Oggetto"/>
-                <field name="snippet" string="Anteprima"/>
+                <field name="snippet" string="Preview" optional="show"/>
                 <field name="partner_id" string="Contatto"/>
-                <field name="match_type" string="Match"/>
+                <field name="match_type" string="Match" optional="hide"/>
+                <field name="account_id" string="Casella"/>
                 <field name="state" string="Stato" widget="badge"
                        decoration-info="state == 'new'"
                        decoration-success="state == 'keep'"
-                       decoration-muted="state == 'discard'"/>
-                <field name="account_id" string="Account"/>
+                       decoration-danger="state == 'discard'"/>
             </list>
         </field>
     </record>
@@ -149,43 +151,58 @@
         <field name="name">casafolino.mail.message.form</field>
         <field name="model">casafolino.mail.message</field>
         <field name="arch" type="xml">
-            <form string="Email Staging">
+            <form string="Email">
                 <div class="o_row mb-3">
-                    <button name="action_keep" string="KEEP"
+                    <button name="action_keep" string="Tieni"
                             type="object" class="btn btn-success"
                             invisible="state != 'new'"/>
-                    <button name="action_discard" string="DISCARD"
+                    <button name="action_discard" string="Scarta"
                             type="object" class="btn btn-danger"
                             invisible="state != 'new'"/>
+                    <button name="action_blacklist_domain" string="Blacklist Dominio"
+                            type="object" class="btn btn-warning"/>
+                    <button name="action_create_partner" string="Crea Contatto"
+                            type="object" class="btn btn-secondary"
+                            invisible="partner_id != False"/>
+                    <button name="action_launch_007" string="Agente 007"
+                            type="object" class="btn btn-info"
+                            invisible="partner_id == False"/>
                 </div>
                 <group>
                     <group string="Email">
-                        <field name="subject"/>
-                        <field name="sender_name"/>
-                        <field name="sender_email"/>
-                        <field name="sender_domain"/>
-                        <field name="recipient_emails"/>
-                        <field name="cc_emails"/>
                         <field name="email_date"/>
                         <field name="direction"/>
+                        <field name="sender_name"/>
+                        <field name="sender_email"/>
+                        <field name="recipient_emails"/>
+                        <field name="cc_emails"/>
+                        <field name="subject"/>
+                        <field name="snippet" invisible="body_downloaded"/>
                     </group>
-                    <group string="Triage">
-                        <field name="state" widget="badge"/>
+                    <group string="CRM">
                         <field name="partner_id"/>
                         <field name="match_type"/>
                         <field name="account_id"/>
+                        <field name="state" widget="badge"/>
                         <field name="triage_user_id"/>
                         <field name="triage_date"/>
-                        <field name="body_downloaded"/>
                     </group>
                 </group>
                 <notebook>
-                    <page string="Anteprima" name="snippet_page">
-                        <field name="snippet"/>
+                    <page string="Contenuto" name="content" invisible="not body_downloaded">
+                        <field name="body_html" widget="html" readonly="1"/>
                     </page>
-                    <page string="Body HTML" name="body_page"
-                          invisible="not body_downloaded">
-                        <field name="body_html"/>
+                    <page string="Allegati" name="attachments" invisible="not body_downloaded">
+                        <field name="attachment_ids"/>
+                    </page>
+                    <page string="Tecnico" name="technical">
+                        <group>
+                            <field name="message_id_rfc"/>
+                            <field name="imap_uid"/>
+                            <field name="imap_folder"/>
+                            <field name="sender_domain"/>
+                            <field name="body_downloaded"/>
+                        </group>
                     </page>
                 </notebook>
             </form>

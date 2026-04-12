@@ -15,6 +15,7 @@
         'data/cf_mail_cron.xml',
         'data/cf_mail_config.xml',
         'data/cf_utm_sources.xml',
+        'data/casafolino_mail_server_actions.xml',
     ],
     'assets': {
         'web.assets_backend': [

@@ -213,3 +213,60 @@ class CasafolinoMailMessage(models.Model):
             'message_id': self.message_id_rfc,
         }
         self.env['mail.message'].sudo().create(msg_vals)
+
+    # ── Blacklist + Quick actions (Step 6) ────────────────────────────
+
+    def action_blacklist_domain(self):
+        """Aggiunge il dominio alla blacklist e scarta tutte le email new da quel dominio."""
+        Blacklist = self.env['casafolino.mail.blacklist']
+        domains_done = set()
+
+        for record in self:
+            domain = record.sender_domain
+            if domain and domain not in domains_done:
+                existing = Blacklist.search([('type', '=', 'domain'), ('value', '=', domain)], limit=1)
+                if not existing:
+                    Blacklist.create({'type': 'domain', 'value': domain})
+                domains_done.add(domain)
+
+        # Scarta TUTTE le email new da questi domini
+        if domains_done:
+            all_from_domains = self.search([
+                ('sender_domain', 'in', list(domains_done)),
+                ('state', '=', 'new'),
+            ])
+            all_from_domains.write({
+                'state': 'discard',
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
+
+    def action_create_partner(self):
+        """Crea un nuovo res.partner dall'email."""
+        self.ensure_one()
+        if self.direction == 'inbound':
+            email_addr = self.sender_email
+            name = self.sender_name or email_addr
+        else:
+            email_addr = self.recipient_emails.split(',')[0].strip() if self.recipient_emails else ''
+            name = email_addr
+
+        partner = self.env['res.partner'].create({
+            'name': name or email_addr,
+            'email': email_addr,
+        })
+        self.write({'partner_id': partner.id, 'match_type': 'manual'})
+
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'res.partner',
+            'res_id': partner.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_launch_007(self):
+        """Lancia Agente 007 sul partner collegato."""
+        self.ensure_one()
+        if self.partner_id:
+            return self.partner_id.action_enrich_007()
