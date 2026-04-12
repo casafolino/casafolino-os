@@ -22,8 +22,10 @@ class ResPartnerMailExt(models.Model):
         help='Se attivo, le nuove email vanno direttamente nel chatter')
     mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
     mail_last_sync = fields.Datetime('Ultimo sync email')
-    mail_message_count = fields.Integer('Email nel chatter',
+    mail_message_count = fields.Integer('Email',
         compute='_compute_mail_message_count')
+    partner_message_ids = fields.One2many(
+        'casafolino.mail.message', 'partner_id', string='Email')
 
     # ── CRM fields ──
     cf_role = fields.Selection([
@@ -147,10 +149,8 @@ class ResPartnerMailExt(models.Model):
 
     def _compute_mail_message_count(self):
         for partner in self:
-            partner.mail_message_count = self.env['mail.message'].search_count([
-                ('res_id', '=', partner.id),
-                ('model', '=', 'res.partner'),
-                ('message_type', '=', 'email'),
+            partner.mail_message_count = self.env['casafolino.mail.message'].search_count([
+                ('partner_id', '=', partner.id),
             ])
 
     # ── Sync storico email per contatto (Step 7) ─────────────────────

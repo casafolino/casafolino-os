@@ -243,6 +243,26 @@
                 </button>
             </xpath>
             <xpath expr="//notebook" position="inside">
+                <page string="Email" name="partner_emails">
+                    <field name="partner_message_ids" readonly="1">
+                        <list string="Email" decoration-bf="not is_read"
+                              decoration-muted="state == 'discard'"
+                              decoration-success="state == 'keep'"
+                              default_order="email_date desc">
+                            <field name="is_important" string=" " widget="boolean_favorite"/>
+                            <field name="email_date" string="Data"/>
+                            <field name="direction" string="Dir"/>
+                            <field name="subject" string="Oggetto"/>
+                            <field name="sender_email" string="Mittente"/>
+                            <field name="recipient_emails" string="Destinatari" optional="hide"/>
+                            <field name="state" string="Stato" widget="badge"
+                                   decoration-info="state == 'new'"
+                                   decoration-success="state == 'keep'"
+                                   decoration-danger="state == 'discard'"/>
+                            <field name="is_read" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
                 <page string="CRM Info" name="crm_info">
                     <group string="Ruolo Commerciale">
                         <group>

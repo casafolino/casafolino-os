@@ -8,22 +8,22 @@ from odoo.exceptions import AccessError
 
 _logger = logging.getLogger(__name__)
 
-# Patterns per estrazione ruolo dalla firma email
-_ROLE_PATTERNS = re.compile(
-    r'\b(Export\s+Manager|Import\s+Manager|Category\s+Manager|'
-    r'Buyer|Purchasing\s+Manager|Procurement\s+Manager|'
-    r'Sales\s+Manager|Sales\s+Director|Account\s+Manager|'
-    r'Key\s+Account|Business\s+Development|'
-    r'CEO|COO|CFO|CTO|CMO|CPO|'
-    r'Managing\s+Director|General\s+Manager|Director|'
-    r'Owner|Founder|Co-Founder|Proprietario|Titolare|'
-    r'Quality\s+Manager|QA\s+Manager|'
-    r'Logistics\s+Manager|Supply\s+Chain|'
-    r'Marketing\s+Manager|Brand\s+Manager|'
-    r'Responsabile\s+Acquisti|Responsabile\s+Commerciale|'
-    r'Direttore\s+Commerciale|Direttore\s+Vendite|'
-    r'Amministratore\s+Delegato|Einkaufsleiter|'
-    r'Geschäftsführer|Directeur|Gérant|Head\s+of\s+\w+)\b',
+# Lista esatta di titoli professionali riconosciuti (case-insensitive)
+_ROLE_TITLES = [
+    'Export Manager', 'Import Manager', 'Category Manager',
+    'Buyer', 'Purchase Manager', 'Procurement Manager', 'Purchasing Manager',
+    'Sales Manager', 'Sales Director', 'Key Account Manager',
+    'CEO', 'COO', 'CFO',
+    'Managing Director', 'General Manager',
+    'Owner', 'Founder', 'Co-Founder',
+    'Quality Manager', 'Operations Manager', 'Logistics Manager',
+    'Marketing Manager', 'Brand Manager',
+    'Responsabile Acquisti', 'Directeur Commercial',
+    'Geschäftsführer',
+]
+# Compila pattern: match esatto solo su titoli completi
+_ROLE_PATTERN = re.compile(
+    r'\b(' + '|'.join(re.escape(t) for t in _ROLE_TITLES) + r')\b',
     re.IGNORECASE
 )
 
@@ -38,12 +38,6 @@ _LANG_KEYWORDS = {
     'it_IT': {'gentile', 'cordiali', 'saluti', 'grazie', 'ordine',
               'spedizione', 'prodotti', 'distinti', 'buongiorno', 'gentilissimo'},
 }
-
-# Pattern telefono internazionale
-_PHONE_PATTERN = re.compile(
-    r'(?:tel|phone|fon|t|ph)[.:\s]*([+]?[\d\s\-().]{7,20})',
-    re.IGNORECASE
-)
 
 
 class CasafolinoMailMessage(models.Model):
@@ -130,11 +124,10 @@ class CasafolinoMailMessage(models.Model):
                 except Exception as e:
                     _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
-            # Se ha un partner, crea nel chatter e attiva tracking
+            # Se ha un partner, attiva tracking (email visibili dalla tab Email)
             if record.partner_id:
                 if not record.partner_id.mail_tracked:
                     record.partner_id.mail_tracked = True
-                record._create_partner_mail_message()
 
     def action_discard(self):
         """Marca come discard."""
@@ -342,24 +335,16 @@ class CasafolinoMailMessage(models.Model):
         # Estrai body text per analisi
         body_text = ''
         if self.body_html:
-            # Strip HTML tags per avere testo pulito
             body_text = re.sub(r'<[^>]+>', ' ', self.body_html)
             body_text = re.sub(r'\s+', ' ', body_text).strip()
 
-        # Cerca ruolo/mansione nelle ultime 10 righe (firma)
+        # Cerca ruolo/mansione nelle ultime 10 righe (firma) — solo titoli esatti
         if body_text:
             lines = body_text.split('\n')
             signature_block = '\n'.join(lines[-10:]) if len(lines) > 10 else body_text
-            role_match = _ROLE_PATTERNS.search(signature_block)
+            role_match = _ROLE_PATTERN.search(signature_block)
             if role_match:
                 vals['function'] = role_match.group(0).strip()
-
-            # Cerca telefono nella firma
-            phone_match = _PHONE_PATTERN.search(signature_block)
-            if phone_match:
-                phone = phone_match.group(1).strip()
-                if len(phone) >= 7:
-                    vals['phone'] = phone
 
         # Detect lingua
         if body_text:
