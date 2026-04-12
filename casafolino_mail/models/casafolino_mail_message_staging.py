@@ -1,11 +1,49 @@
 import base64
 import email
 import logging
+import re
 
 from odoo import models, fields, api
 from odoo.exceptions import AccessError
 
 _logger = logging.getLogger(__name__)
+
+# Patterns per estrazione ruolo dalla firma email
+_ROLE_PATTERNS = re.compile(
+    r'\b(Export\s+Manager|Import\s+Manager|Category\s+Manager|'
+    r'Buyer|Purchasing\s+Manager|Procurement\s+Manager|'
+    r'Sales\s+Manager|Sales\s+Director|Account\s+Manager|'
+    r'Key\s+Account|Business\s+Development|'
+    r'CEO|COO|CFO|CTO|CMO|CPO|'
+    r'Managing\s+Director|General\s+Manager|Director|'
+    r'Owner|Founder|Co-Founder|Proprietario|Titolare|'
+    r'Quality\s+Manager|QA\s+Manager|'
+    r'Logistics\s+Manager|Supply\s+Chain|'
+    r'Marketing\s+Manager|Brand\s+Manager|'
+    r'Responsabile\s+Acquisti|Responsabile\s+Commerciale|'
+    r'Direttore\s+Commerciale|Direttore\s+Vendite|'
+    r'Amministratore\s+Delegato|Einkaufsleiter|'
+    r'Geschäftsführer|Directeur|Gérant|Head\s+of\s+\w+)\b',
+    re.IGNORECASE
+)
+
+# Parole chiave per detect lingua
+_LANG_KEYWORDS = {
+    'de_DE': {'sehr', 'geehrte', 'freundlichen', 'grüßen', 'bezüglich', 'anfrage',
+              'angebot', 'lieferung', 'bestellung', 'vielen', 'dank', 'bitte'},
+    'fr_FR': {'bonjour', 'cordialement', 'merci', 'veuillez', 'salutations',
+              'madame', 'monsieur', 'commande', 'livraison', 'produits'},
+    'es_ES': {'estimado', 'saludos', 'cordiales', 'gracias', 'pedido',
+              'envío', 'productos', 'atentamente', 'buenos', 'días'},
+    'it_IT': {'gentile', 'cordiali', 'saluti', 'grazie', 'ordine',
+              'spedizione', 'prodotti', 'distinti', 'buongiorno', 'gentilissimo'},
+}
+
+# Pattern telefono internazionale
+_PHONE_PATTERN = re.compile(
+    r'(?:tel|phone|fon|t|ph)[.:\s]*([+]?[\d\s\-().]{7,20})',
+    re.IGNORECASE
+)
 
 
 class CasafolinoMailMessage(models.Model):
@@ -247,7 +285,7 @@ class CasafolinoMailMessage(models.Model):
             })
 
     def action_create_partner(self):
-        """Crea un nuovo res.partner dall'email."""
+        """Crea un nuovo res.partner arricchito dall'email."""
         self.ensure_one()
         if self.direction == 'inbound':
             email_addr = self.sender_email
@@ -256,10 +294,13 @@ class CasafolinoMailMessage(models.Model):
             email_addr = self.recipient_emails.split(',')[0].strip() if self.recipient_emails else ''
             name = email_addr
 
-        partner = self.env['res.partner'].create({
+        vals = {
             'name': name or email_addr,
             'email': email_addr,
-        })
+        }
+        self._enrich_partner_vals(vals)
+
+        partner = self.env['res.partner'].create(vals)
         self.write({'partner_id': partner.id, 'match_type': 'manual'})
 
         return {
@@ -269,6 +310,60 @@ class CasafolinoMailMessage(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def _enrich_partner_vals(self, vals):
+        """Arricchisce i vals per la creazione partner con dati estratti dall'email."""
+        self.ensure_one()
+        email_addr = vals.get('email', '')
+
+        # Estrai company_name dal dominio (se non generica)
+        generic_domains = {
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+            'icloud.com', 'mail.com', 'protonmail.com', 'live.com', 'msn.com',
+            'gmx.de', 'web.de', 'libero.it', 'virgilio.it', 'alice.it',
+            't-online.de', 'wanadoo.fr', 'orange.fr', 'free.fr',
+        }
+        if email_addr and '@' in email_addr:
+            domain = email_addr.split('@')[1].lower()
+            if domain not in generic_domains:
+                company_name = domain.split('.')[0].capitalize()
+                vals['company_name'] = company_name
+
+        # Estrai body text per analisi
+        body_text = ''
+        if self.body_html:
+            # Strip HTML tags per avere testo pulito
+            body_text = re.sub(r'<[^>]+>', ' ', self.body_html)
+            body_text = re.sub(r'\s+', ' ', body_text).strip()
+
+        # Cerca ruolo/mansione nelle ultime 10 righe (firma)
+        if body_text:
+            lines = body_text.split('\n')
+            signature_block = '\n'.join(lines[-10:]) if len(lines) > 10 else body_text
+            role_match = _ROLE_PATTERNS.search(signature_block)
+            if role_match:
+                vals['function'] = role_match.group(0).strip()
+
+            # Cerca telefono nella firma
+            phone_match = _PHONE_PATTERN.search(signature_block)
+            if phone_match:
+                phone = phone_match.group(1).strip()
+                if len(phone) >= 7:
+                    vals['phone'] = phone
+
+        # Detect lingua
+        if body_text:
+            body_lower = body_text.lower()
+            words = set(re.findall(r'\b\w+\b', body_lower))
+            best_lang = 'en_US'
+            best_score = 0
+            for lang, keywords in _LANG_KEYWORDS.items():
+                score = len(words & keywords)
+                if score > best_score:
+                    best_score = score
+                    best_lang = lang
+            if best_score >= 2:
+                vals['lang'] = best_lang
 
     def action_launch_007(self):
         """Lancia Agente 007 sul partner collegato."""

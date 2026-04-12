@@ -238,6 +238,45 @@
                     <field name="mail_message_count" string="Email" widget="statinfo"/>
                 </button>
             </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="CRM Info" name="crm_info">
+                    <group string="Ruolo Commerciale">
+                        <group>
+                            <field name="cf_role"/>
+                            <field name="cf_decision_level"/>
+                        </group>
+                        <group>
+                            <field name="function"/>
+                        </group>
+                    </group>
+                    <group string="Origine">
+                        <group>
+                            <field name="cf_channel"/>
+                        </group>
+                        <group>
+                            <field name="cf_fair_met"/>
+                        </group>
+                    </group>
+                    <group string="Note Commerciali">
+                        <group>
+                            <field name="cf_contact_frequency"/>
+                            <field name="cf_last_contact_date"/>
+                        </group>
+                    </group>
+                    <field name="cf_notes_commercial" nolabel="1"
+                           placeholder="Note commerciali (cosa cerca, volumi, budget...)"/>
+                    <group string="Email Tracking">
+                        <group>
+                            <field name="mail_tracked"/>
+                            <field name="mail_first_sync_done"/>
+                        </group>
+                        <group>
+                            <field name="mail_last_sync"/>
+                            <field name="mail_message_count"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
         </field>
     </record>
 

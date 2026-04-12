@@ -25,6 +25,32 @@ class ResPartnerMailExt(models.Model):
     mail_message_count = fields.Integer('Email nel chatter',
         compute='_compute_mail_message_count')
 
+    # ── CRM fields ──
+    cf_role = fields.Selection([
+        ('buyer', 'Buyer'), ('category_manager', 'Category Manager'),
+        ('import_manager', 'Import Manager'), ('owner', 'Owner/CEO'),
+        ('quality', 'Quality Manager'), ('logistics', 'Logistics'),
+        ('marketing', 'Marketing'), ('sales', 'Sales'),
+        ('procurement', 'Procurement'), ('other', 'Other'),
+    ], string='Ruolo acquisto')
+    cf_decision_level = fields.Selection([
+        ('decision_maker', 'Decision Maker'), ('influencer', 'Influencer'),
+        ('gatekeeper', 'Gatekeeper'), ('user', 'User'), ('champion', 'Champion'),
+    ], string='Livello decisionale')
+    cf_channel = fields.Selection([
+        ('fair', 'Fiera'), ('website', 'Sito web'), ('referral', 'Referral'),
+        ('linkedin', 'LinkedIn'), ('cold_call', 'Cold call'),
+        ('inbound', 'Inbound'), ('other', 'Other'),
+    ], string='Canale acquisizione')
+    cf_fair_met = fields.Char('Fiera incontro')
+    cf_notes_commercial = fields.Text('Note commerciali')
+    cf_last_contact_date = fields.Date('Data ultimo contatto')
+    cf_contact_frequency = fields.Selection([
+        ('weekly', 'Settimanale'), ('monthly', 'Mensile'),
+        ('quarterly', 'Trimestrale'), ('yearly', 'Annuale'),
+        ('sporadic', 'Sporadico'),
+    ], string='Frequenza contatto')
+
     # ── Agente 007 fields ──
     cf_007_enriched = fields.Boolean('007 Arricchito', default=False)
     cf_007_enriched_date = fields.Datetime('007 Data Arricchimento')
