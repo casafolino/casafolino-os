@@ -3,7 +3,7 @@ from odoo import models, fields
 
 class CasafolinoMailAssignPartnerWizard(models.TransientModel):
     _name = 'casafolino.mail.assign.partner.wizard'
-    _description = 'Assegna contatto a email selezionate'
+    _description = 'Assegna contatto CRM a email selezionate'
 
     partner_id = fields.Many2one('res.partner', string='Contatto', required=True)
 

@@ -1,13 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ── Assign Partner Wizard ──────────────────────────────────── -->
+    <!-- ── Assign User (Responsabile) Wizard ─────────────────────── -->
+
+    <record id="casafolino_mail_assign_user_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.assign.user.wizard.form</field>
+        <field name="model">casafolino.mail.assign.user.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assegna responsabile">
+                <group>
+                    <field name="user_ids" widget="many2many_tags"/>
+                </group>
+                <footer>
+                    <button name="action_assign" string="Assegna" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_casafolino_mail_assign_user_wizard" model="ir.actions.act_window">
+        <field name="name">Assegna responsabile</field>
+        <field name="res_model">casafolino.mail.assign.user.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ── Assign Partner (Contatto CRM) Wizard ──────────────────── -->
 
     <record id="casafolino_mail_assign_partner_wizard_form" model="ir.ui.view">
         <field name="name">casafolino.mail.assign.partner.wizard.form</field>
         <field name="model">casafolino.mail.assign.partner.wizard</field>
         <field name="arch" type="xml">
-            <form string="Assegna contatto">
+            <form string="Assegna contatto CRM">
                 <group>
                     <field name="partner_id"/>
                 </group>
@@ -20,13 +45,13 @@
     </record>
 
     <record id="action_casafolino_mail_assign_partner_wizard" model="ir.actions.act_window">
-        <field name="name">Assegna contatto</field>
+        <field name="name">Assegna contatto CRM</field>
         <field name="res_model">casafolino.mail.assign.partner.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
 
-    <!-- ── Assign Lead Wizard ─────────────────────────────────────── -->
+    <!-- ── Assign Lead Wizard ─────────────────────────��───────────── -->
 
     <record id="casafolino_mail_assign_lead_wizard_form" model="ir.ui.view">
         <field name="name">casafolino.mail.assign.lead.wizard.form</field>

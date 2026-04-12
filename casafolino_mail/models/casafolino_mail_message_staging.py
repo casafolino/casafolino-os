@@ -93,6 +93,9 @@ class CasafolinoMailMessage(models.Model):
     triage_date = fields.Datetime('Data triage')
     is_read = fields.Boolean('Letta', default=False)
     is_important = fields.Boolean('Importante', default=False)
+    assigned_user_ids = fields.Many2many(
+        'res.users', 'casafolino_mail_message_user_rel',
+        'message_id', 'user_id', string='Assegnato a')
 
     _sql_constraints = [
         ('message_id_unique', 'unique(message_id_rfc)',

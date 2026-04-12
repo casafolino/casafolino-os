@@ -39,10 +39,10 @@
         <field name="code">records.action_reset_new()</field>
     </record>
 
-    <!-- ══ CONTATTO ════════════════════════════════════════════════ -->
+    <!-- ══ RESPONSABILE ═══════════════════════════════════════════ -->
 
-    <record id="action_bulk_assign_partner" model="ir.actions.server">
-        <field name="name">Assegna contatto</field>
+    <record id="action_bulk_assign_user" model="ir.actions.server">
+        <field name="name">Assegna responsabile</field>
         <field name="model_id" ref="model_casafolino_mail_message"/>
         <field name="binding_model_id" ref="model_casafolino_mail_message"/>
         <field name="binding_view_types">list</field>
@@ -50,7 +50,27 @@
         <field name="code">
 action = {
     'type': 'ir.actions.act_window',
-    'name': 'Assegna contatto',
+    'name': 'Assegna responsabile',
+    'res_model': 'casafolino.mail.assign.user.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {'active_ids': records.ids},
+}
+        </field>
+    </record>
+
+    <!-- ══ CONTATTO ════════════════════════════════════════════════ -->
+
+    <record id="action_bulk_assign_partner" model="ir.actions.server">
+        <field name="name">Assegna contatto CRM</field>
+        <field name="model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Assegna contatto CRM',
     'res_model': 'casafolino.mail.assign.partner.wizard',
     'view_mode': 'form',
     'target': 'new',
