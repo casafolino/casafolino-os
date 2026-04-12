@@ -183,20 +183,17 @@ class CasafolinoMailAccount(models.Model):
             for uid in batch:
                 uid_str = uid.decode()
 
-                # Scarica solo header + snippet
-                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER] BODY.PEEK[TEXT]<0.200>)')
+                # Scarica solo header (no body — snippet viene dal Subject)
+                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
                 if status2 != 'OK':
                     continue
 
                 # Parsa gli header
                 raw_header = None
-                snippet_raw = b''
                 for part in header_data:
                     if isinstance(part, tuple):
-                        if b'HEADER' in part[0]:
-                            raw_header = part[1]
-                        elif b'TEXT' in part[0]:
-                            snippet_raw = part[1]
+                        raw_header = part[1]
+                        break
 
                 if not raw_header:
                     continue
@@ -240,14 +237,6 @@ class CasafolinoMailAccount(models.Model):
                 except Exception:
                     email_date = fields.Datetime.now()
 
-                # Snippet (prime 200 chars del body text)
-                snippet = ''
-                if snippet_raw:
-                    try:
-                        snippet = snippet_raw.decode('utf-8', errors='ignore')[:200].strip()
-                    except Exception:
-                        snippet = ''
-
                 # Determina direction effettiva
                 actual_direction = direction
                 if direction == 'inbound' and sender_email == self.email_address.lower():
@@ -272,7 +261,6 @@ class CasafolinoMailAccount(models.Model):
                     'cc_emails': cc_emails,
                     'subject': subject,
                     'email_date': email_date,
-                    'snippet': snippet,
                     'state': 'new',
                     'partner_id': partner_id,
                     'match_type': match_type,
