@@ -407,9 +407,7 @@ class CasafolinoMailAccount(models.Model):
 
     @api.model
     def get_accounts(self, *args, **kw):
-        domain = [('active', '=', True)]
-        if not self.env.user.has_group('base.group_system'):
-            domain.append(('responsible_user_id', '=', self.env.uid))
+        domain = [('active', '=', True), ('responsible_user_id', '=', self.env.uid)]
         accounts = self.search(domain, order='name')
         result = []
         for a in accounts:

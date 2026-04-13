@@ -1054,23 +1054,55 @@ class CasafolinoMailMessage(models.Model):
 
     @api.model
     def get_odoo_attachments(self, *args, **kw):
-        """Cerca allegati esistenti in Odoo."""
-        search = kw.get('search') or ''
+        """Cerca allegati: da modulo documents se installato, altrimenti da ir.attachment."""
+        search_term = kw.get('search') or ''
         limit = int(kw.get('limit') or 30)
+
+        # Check se modulo documents è installato
+        docs_installed = bool(self.env['ir.module.module'].search([
+            ('name', '=', 'documents'), ('state', '=', 'installed')
+        ], limit=1))
+
+        if docs_installed:
+            try:
+                domain = []
+                if search_term:
+                    domain.append(('name', 'ilike', search_term))
+                docs = self.env['documents.document'].search(
+                    domain, limit=limit, order='create_date desc')
+                result = []
+                for d in docs:
+                    att_id = d.attachment_id.id if d.attachment_id else False
+                    result.append({
+                        'id': att_id,
+                        'doc_id': d.id,
+                        'name': d.name or '',
+                        'mimetype': d.mimetype or '',
+                        'size': d.attachment_id.file_size if d.attachment_id else 0,
+                        'folder': d.folder_id.name if hasattr(d, 'folder_id') and d.folder_id else '',
+                        'source': 'documents',
+                    })
+                return result
+            except Exception as e:
+                _logger.warning("documents module error, falling back to ir.attachment: %s", e)
+
+        # Fallback: ir.attachment
         domain = [
             ('res_model', 'in', [False, '', 'res.partner', 'crm.lead',
                                   'product.template', 'casafolino.mail.message',
                                   'cf.mail.template']),
             ('type', '=', 'binary'),
         ]
-        if search:
-            domain.append(('name', 'ilike', search))
+        if search_term:
+            domain.append(('name', 'ilike', search_term))
         atts = self.env['ir.attachment'].search(domain, limit=limit, order='create_date desc')
         return [{
             'id': a.id,
             'name': a.name,
             'mimetype': a.mimetype or '',
             'size': a.file_size or 0,
+            'folder': '',
+            'source': 'attachment',
         } for a in atts]
 
     @api.model

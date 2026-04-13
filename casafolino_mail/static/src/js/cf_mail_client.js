@@ -57,6 +57,9 @@ class CfMailClient extends Component {
             show007Panel: false, data007: {}, loading007: false,
             showAIPanel: false, aiLoading: false, aiResult: "", composerAILoading: false,
             composerAttachments: [], templates: [], showTemplateDropdown: false,
+            showAttachDropdown: false, showAttachModal: false, attachModalSearch: '',
+            attachModalResults: [], attachModalSelected: [],
+            showUrlModal: false, urlInput: '',
         });
 
         onMounted(() => { this.init(); });
@@ -784,6 +787,9 @@ class CfMailClient extends Component {
         this.state.composerShowBcc = false;
         this.state.composerAttachments = [];
         this.state.showTemplateDropdown = false;
+        this.state.showAttachDropdown = false;
+        this.state.showAttachModal = false;
+        this.state.showUrlModal = false;
         this.state.composerMinimized = false;
         this.state.composerMaximized = false;
     }
@@ -846,6 +852,105 @@ class CfMailClient extends Component {
 
     removeAttachment(index) {
         this.state.composerAttachments.splice(index, 1);
+    }
+
+    toggleAttachDropdown() {
+        this.state.showAttachDropdown = !this.state.showAttachDropdown;
+    }
+
+    onAttachFromPC() {
+        this.state.showAttachDropdown = false;
+        this.onAttachClick();
+    }
+
+    async openAttachFromOdoo() {
+        this.state.showAttachDropdown = false;
+        this.state.showAttachModal = true;
+        this.state.attachModalSearch = '';
+        this.state.attachModalSelected = [];
+        await this._loadAttachResults('');
+    }
+
+    async _loadAttachResults(searchTerm) {
+        try {
+            this.state.attachModalResults = await this._rpc(
+                "casafolino.mail.message", "get_odoo_attachments",
+                { search: searchTerm, limit: 30 }) || [];
+        } catch (e) {
+            this.state.attachModalResults = [];
+        }
+    }
+
+    async onAttachModalSearch(ev) {
+        this.state.attachModalSearch = ev.target.value;
+        await this._loadAttachResults(ev.target.value);
+    }
+
+    toggleAttachSelect(id) {
+        var idx = this.state.attachModalSelected.indexOf(id);
+        if (idx >= 0) {
+            this.state.attachModalSelected.splice(idx, 1);
+        } else {
+            this.state.attachModalSelected.push(id);
+        }
+    }
+
+    confirmAttachFromOdoo() {
+        for (var i = 0; i < this.state.attachModalResults.length; i++) {
+            var r = this.state.attachModalResults[i];
+            if (this.state.attachModalSelected.indexOf(r.id) >= 0 && r.id) {
+                this.state.composerAttachments.push({
+                    id: r.id,
+                    name: r.name,
+                    size: r.size || 0,
+                    mimetype: r.mimetype || '',
+                    source: 'odoo',
+                });
+            }
+        }
+        this.state.showAttachModal = false;
+    }
+
+    closeAttachModal() {
+        this.state.showAttachModal = false;
+    }
+
+    openUrlModal() {
+        this.state.showAttachDropdown = false;
+        this.state.showUrlModal = true;
+        this.state.urlInput = '';
+    }
+
+    closeUrlModal() {
+        this.state.showUrlModal = false;
+    }
+
+    onUrlInput(ev) {
+        this.state.urlInput = ev.target.value;
+    }
+
+    async confirmUrlAttach() {
+        var url = this.state.urlInput.trim();
+        if (!url) return;
+        var filename = url.split('/').pop().split('?')[0] || 'file';
+        try {
+            var res = await this._rpc("casafolino.mail.message", "attach_from_url",
+                { url: url, filename: filename });
+            if (res && res.success) {
+                this.state.composerAttachments.push({
+                    id: res.id,
+                    name: res.name || filename,
+                    size: res.size || 0,
+                    mimetype: res.mimetype || '',
+                    source: 'url',
+                });
+                this.state.showUrlModal = false;
+            } else {
+                this.showToast("Errore: " + (res.error || "sconosciuto"));
+            }
+        } catch (e) {
+            this.showToast("Errore download URL");
+        }
     }
 
     onTemplateToggle() {

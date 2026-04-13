@@ -29,6 +29,10 @@ class CfLeadMailWidget extends Component {
             replyToId: null,
             showTemplates: false,
             templates: [],
+            showAttachDropdown: false,
+            showAttachModal: false, attachModalSearch: '',
+            attachModalResults: [], attachModalSelected: [],
+            showUrlModal: false, urlInput: '',
         });
 
         onWillStart(this.loadMessages.bind(this));
@@ -156,6 +160,95 @@ class CfLeadMailWidget extends Component {
         var idx = this.state.composerAttachments.indexOf(att);
         if (idx >= 0) {
             this.state.composerAttachments.splice(idx, 1);
+        }
+    }
+
+    toggleAttachDropdown() {
+        this.state.showAttachDropdown = !this.state.showAttachDropdown;
+    }
+
+    onAttachFromPC() {
+        this.state.showAttachDropdown = false;
+        this.onClickAttachFile();
+    }
+
+    async openAttachFromOdoo() {
+        this.state.showAttachDropdown = false;
+        this.state.showAttachModal = true;
+        this.state.attachModalSearch = '';
+        this.state.attachModalSelected = [];
+        try {
+            this.state.attachModalResults = await rpc("/web/dataset/call_kw", {
+                model: "casafolino.mail.message", method: "get_odoo_attachments",
+                args: [], kwargs: { search: '', limit: 30 },
+            }) || [];
+        } catch (e) { this.state.attachModalResults = []; }
+    }
+
+    async onAttachModalSearch(ev) {
+        this.state.attachModalSearch = ev.target.value;
+        try {
+            this.state.attachModalResults = await rpc("/web/dataset/call_kw", {
+                model: "casafolino.mail.message", method: "get_odoo_attachments",
+                args: [], kwargs: { search: ev.target.value, limit: 30 },
+            }) || [];
+        } catch (e) { this.state.attachModalResults = []; }
+    }
+
+    toggleAttachSelect(id) {
+        var idx = this.state.attachModalSelected.indexOf(id);
+        if (idx >= 0) {
+            this.state.attachModalSelected.splice(idx, 1);
+        } else {
+            this.state.attachModalSelected.push(id);
+        }
+    }
+
+    confirmAttachFromOdoo() {
+        for (var i = 0; i < this.state.attachModalResults.length; i++) {
+            var r = this.state.attachModalResults[i];
+            if (this.state.attachModalSelected.indexOf(r.id) >= 0 && r.id) {
+                this.state.composerAttachments.push({
+                    id: r.id, name: r.name, size: r.size || 0,
+                    mimetype: r.mimetype || '', source: 'odoo',
+                });
+            }
+        }
+        this.state.showAttachModal = false;
+    }
+
+    closeAttachModal() { this.state.showAttachModal = false; }
+
+    openUrlModal() {
+        this.state.showAttachDropdown = false;
+        this.state.showUrlModal = true;
+        this.state.urlInput = '';
+    }
+
+    closeUrlModal() { this.state.showUrlModal = false; }
+
+    onUrlInput(ev) { this.state.urlInput = ev.target.value; }
+
+    async confirmUrlAttach() {
+        var url = this.state.urlInput.trim();
+        if (!url) return;
+        var filename = url.split('/').pop().split('?')[0] || 'file';
+        try {
+            var res = await rpc("/web/dataset/call_kw", {
+                model: "casafolino.mail.message", method: "attach_from_url",
+                args: [], kwargs: { url: url, filename: filename },
+            });
+            if (res && res.success) {
+                this.state.composerAttachments.push({
+                    id: res.id, name: res.name || filename,
+                    size: res.size || 0, source: 'url',
+                });
+                this.state.showUrlModal = false;
+            } else {
+                this.notification.add("Errore: " + (res.error || ""), { type: "danger" });
+            }
+        } catch (e) {
+            this.notification.add("Errore download URL", { type: "danger" });
         }
     }
 
