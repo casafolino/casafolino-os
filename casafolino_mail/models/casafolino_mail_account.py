@@ -392,3 +392,109 @@ class CasafolinoMailAccount(models.Model):
             except Exception as e:
                 account.write({'state': 'error', 'error_message': str(e)})
                 _logger.error("Cron fetch error %s: %s", account.email_address, e)
+
+    # ── OWL Client API ───────────────────────────────────────────────
+
+    @api.model
+    def is_admin(self, *args, **kw):
+        return (
+            self.env.user.has_group('base.group_system')
+            or self.env.user.login in ('antonio@casafolino.com',)
+        )
+
+    @api.model
+    def get_accounts(self, *args, **kw):
+        accounts = self.search([('active', '=', True)], order='name')
+        result = []
+        for a in accounts:
+            unread = self.env['casafolino.mail.message'].search_count([
+                ('account_id', '=', a.id),
+                ('is_read', '=', False),
+                ('state', '=', 'keep'),
+                ('direction', '=', 'inbound'),
+            ])
+            result.append({
+                'id': a.id,
+                'name': a.name or a.email_address,
+                'email': a.email_address or '',
+                'color': '#5A6E3A',
+                'is_team': False,
+                'unread': unread,
+                'signature': '',
+                'imap_enabled': a.state == 'connected',
+                'imap_status': a.state or '',
+            })
+        return result
+
+    @api.model
+    def get_account_detail(self, *args, **kw):
+        account_id = kw.get('account_id')
+        if not account_id:
+            return {}
+        acc = self.browse(int(account_id))
+        if not acc.exists():
+            return {}
+        return {
+            'id': acc.id,
+            'name': acc.name or '',
+            'email': acc.email_address or '',
+            'color': '#5A6E3A',
+            'signature': '',
+            'imap_host': acc.imap_host or 'imap.gmail.com',
+            'imap_port': acc.imap_port or 993,
+            'imap_ssl': acc.imap_use_ssl,
+            'imap_enabled': acc.state == 'connected',
+            'imap_status': acc.state or '',
+            'smtp_host': 'smtp.gmail.com',
+            'smtp_port': 587,
+            'smtp_tls': True,
+            'ooo_enabled': False,
+            'ooo_subject': '',
+            'ooo_message': '',
+            'ooo_start': '',
+            'ooo_end': '',
+        }
+
+    @api.model
+    def save_account(self, *args, **kw):
+        account_id = kw.get('id') or False
+        vals = {
+            'name': kw.get('name') or '',
+            'email_address': kw.get('email') or '',
+            'imap_host': kw.get('imap_host') or 'imap.gmail.com',
+            'imap_port': int(kw.get('imap_port') or 993),
+            'imap_use_ssl': bool(kw.get('imap_ssl')),
+        }
+        if kw.get('imap_password'):
+            vals['imap_password'] = kw.get('imap_password')
+        if account_id:
+            acc = self.browse(int(account_id))
+            acc.write(vals)
+        else:
+            acc = self.create(vals)
+        return {'success': True, 'id': acc.id}
+
+    @api.model
+    def test_connection(self, *args, **kw):
+        account_id = kw.get('account_id')
+        if not account_id:
+            return {'success': False, 'error': 'Account non trovato'}
+        acc = self.browse(int(account_id))
+        if not acc.exists():
+            return {'success': False, 'error': 'Account non trovato'}
+        try:
+            acc.action_test_connection()
+            return {'success': True, 'message': 'Connessione riuscita'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)[:100]}
+
+    @api.model
+    def sync_now(self, *args, **kw):
+        account_id = kw.get('account_id')
+        if account_id:
+            acc = self.browse(int(account_id))
+        else:
+            acc = self.search([('state', '=', 'connected')])
+        for a in acc:
+            a._fetch_emails()
+        return {'success': True}

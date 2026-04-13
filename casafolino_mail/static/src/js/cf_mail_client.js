@@ -72,14 +72,14 @@ class CfMailClient extends Component {
 
     async checkAdmin() {
         try {
-            const result = await this._rpc("cf.mail.account", "is_admin");
+            const result = await this._rpc("casafolino.mail.account", "is_admin");
             this.state.isAdmin = result || false;
         } catch (e) { this.state.isAdmin = false; }
     }
 
     async loadAccounts() {
         try {
-            const accounts = await this._rpc("cf.mail.account", "get_accounts");
+            const accounts = await this._rpc("casafolino.mail.account", "get_accounts");
             this.state.accounts = accounts || [];
             if (accounts && accounts.length > 0 && !this.state.selectedAccount)
                 this.state.selectedAccount = accounts[0].id;
@@ -91,7 +91,7 @@ class CfMailClient extends Component {
         if (!this.state.selectedAccount) return;
         this.state.loading = true;
         try {
-            const msgs = await this._rpc("cf.mail.message", "get_messages", {
+            const msgs = await this._rpc("casafolino.mail.message", "get_messages", {
                 account_id: this.state.selectedAccount,
                 folder: this.state.folder,
                 limit: 100, offset: 0, search: this.state.search,
@@ -103,20 +103,20 @@ class CfMailClient extends Component {
     }
 
     async loadUsers() {
-        try { this.state.users = await this._rpc("cf.mail.message", "get_users_list") || []; } catch (e) {}
+        try { this.state.users = await this._rpc("casafolino.mail.message", "get_users_list") || []; } catch (e) {}
     }
     async loadLeads() {
-        try { this.state.leads = await this._rpc("cf.mail.message", "get_leads_list") || []; } catch (e) {}
+        try { this.state.leads = await this._rpc("casafolino.mail.message", "get_leads_list") || []; } catch (e) {}
     }
     async loadTags() {
-        try { this.state.allTags = await this._rpc("cf.mail.message", "get_tags_list") || []; } catch (e) {}
+        try { this.state.allTags = await this._rpc("casafolino.mail.message", "get_tags_list") || []; } catch (e) {}
     }
     async loadContactTags() {
         try { this.state.contactTags = await this._rpc("cf.contact.tag", "get_all_tags") || []; } catch (e) {}
     }
     async loadCrmData() {
         try {
-            const data = await this._rpc("cf.mail.message", "get_crm_data");
+            const data = await this._rpc("casafolino.mail.message", "get_crm_data");
             this.state.crmPipelines = data.pipelines || [];
             this.state.crmPartners = data.partners || [];
             this.state.crmSources = data.sources || [];
@@ -222,7 +222,7 @@ class CfMailClient extends Component {
     async onKeepSender() {
         if (!this.state.selectedMsg) return;
         const res = await rpc("/web/dataset/call_kw", {
-            model: "cf.mail.message", method: "rpc_keep_sender",
+            model: "casafolino.mail.message", method: "rpc_keep_sender",
             args: [[], this.state.selectedMsg.id], kwargs: { message_id: this.state.selectedMsg.id },
         });
         if (res && res.success) {
@@ -236,7 +236,7 @@ class CfMailClient extends Component {
         const from = this.state.msgDetail.from_name || this.state.msgDetail.from_address || "";
         if (!confirm("Escludi mittente " + from + "?\nTutte le sue email verranno eliminate.")) return;
         const res = await rpc("/web/dataset/call_kw", {
-            model: "cf.mail.message", method: "rpc_exclude_sender",
+            model: "casafolino.mail.message", method: "rpc_exclude_sender",
             args: [[], this.state.selectedMsg.id], kwargs: { message_id: this.state.selectedMsg.id },
         });
         if (res && res.success) {
@@ -251,7 +251,7 @@ class CfMailClient extends Component {
         this.state.enrichPartnerSearch = q;
         if (q.length < 2) { this.state.enrichPartnerResults = []; return; }
         const res = await rpc("/web/dataset/call_kw", {
-            model: "cf.mail.message", method: "rpc_search_partners",
+            model: "casafolino.mail.message", method: "rpc_search_partners",
             args: [[], q], kwargs: { query: q },
         });
         this.state.enrichPartnerResults = res || [];
@@ -271,7 +271,7 @@ class CfMailClient extends Component {
         this.state.enrichSaved = false;
         const d = this.state.msgDetail;
         await rpc("/web/dataset/call_kw", {
-            model: "cf.mail.message", method: "rpc_save_enrichment",
+            model: "casafolino.mail.message", method: "rpc_save_enrichment",
             args: [[]], kwargs: {
                 message_id: this.state.selectedMsg.id,
                 partner_id: d.partner_id || false,
@@ -394,7 +394,7 @@ class CfMailClient extends Component {
         this.state.threadExpanded = false;
         this.state.showLeadModal = false;
         try {
-            const detail = await this._rpc("cf.mail.message", "get_message_detail", { message_id: msg.id });
+            const detail = await this._rpc("casafolino.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
             this.state.enrichNote = detail.note || "";
             this.state.enrichPartnerSearch = "";
@@ -452,7 +452,7 @@ class CfMailClient extends Component {
     async runAdvancedSearch() {
         this.state.loading = true;
         try {
-            const msgs = await this._rpc("cf.mail.message", "advanced_search", {
+            const msgs = await this._rpc("casafolino.mail.message", "advanced_search", {
                 ...this.state.searchForm,
                 account_id: this.state.selectedAccount,
                 folder: this.state.folder,
@@ -477,7 +477,7 @@ class CfMailClient extends Component {
     async bulkAction(action, extraKwargs = {}) {
         if (!this.state.selectedIds.length) return;
         try {
-            await this._rpc("cf.mail.message", "do_bulk_action", { ids: this.state.selectedIds, action, ...extraKwargs });
+            await this._rpc("casafolino.mail.message", "do_bulk_action", { ids: this.state.selectedIds, action, ...extraKwargs });
             this.showToast(action === "delete" ? "Email eliminate" : "Azione completata");
             this.state.showBulkTagMenu = false;
             await this.loadMessages();
@@ -487,7 +487,7 @@ class CfMailClient extends Component {
     async quickStar(msgId, ev) {
         if (ev) ev.stopPropagation();
         try {
-            const starred = await this._rpc("cf.mail.message", "do_toggle_star", { message_id: msgId });
+            const starred = await this._rpc("casafolino.mail.message", "do_toggle_star", { message_id: msgId });
             const idx = this.state.messages.findIndex(m => m.id === msgId);
             if (idx !== -1) this.state.messages[idx].is_starred = starred;
             if (this.state.selectedMsg && this.state.selectedMsg.id === msgId)
@@ -498,7 +498,7 @@ class CfMailClient extends Component {
     async quickArchive(msgId, ev) {
         if (ev) ev.stopPropagation();
         try {
-            await this._rpc("cf.mail.message", "do_bulk_action", { ids: [msgId], action: "archive" });
+            await this._rpc("casafolino.mail.message", "do_bulk_action", { ids: [msgId], action: "archive" });
             this.state.messages = this.state.messages.filter(m => m.id !== msgId);
             if (this.state.selectedMsg && this.state.selectedMsg.id === msgId) {
                 this.state.selectedMsg = null;
@@ -511,7 +511,7 @@ class CfMailClient extends Component {
     async addTag(tagId) {
         if (!this.state.selectedMsg) return;
         try {
-            const tags = await this._rpc("cf.mail.message", "do_add_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
+            const tags = await this._rpc("casafolino.mail.message", "do_add_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
             this.state.msgDetail.tags = tags;
             const idx = this.state.messages.findIndex(m => m.id === this.state.selectedMsg.id);
             if (idx !== -1) this.state.messages[idx].tags = tags;
@@ -522,7 +522,7 @@ class CfMailClient extends Component {
     async removeTag(tagId) {
         if (!this.state.selectedMsg) return;
         try {
-            const tags = await this._rpc("cf.mail.message", "do_remove_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
+            const tags = await this._rpc("casafolino.mail.message", "do_remove_tag", { message_id: this.state.selectedMsg.id, tag_id: tagId });
             this.state.msgDetail.tags = tags;
             const idx = this.state.messages.findIndex(m => m.id === this.state.selectedMsg.id);
             if (idx !== -1) this.state.messages[idx].tags = tags;
@@ -532,7 +532,7 @@ class CfMailClient extends Component {
     async createNewTag() {
         if (!this.state.newTagName.trim()) return;
         try {
-            const tag = await this._rpc("cf.mail.message", "create_tag", { name: this.state.newTagName.trim(), color: this.state.newTagColor });
+            const tag = await this._rpc("casafolino.mail.message", "create_tag", { name: this.state.newTagName.trim(), color: this.state.newTagColor });
             this.state.allTags = [...this.state.allTags, tag];
             this.state.newTagName = "";
             if (this.state.selectedMsg) await this.addTag(tag.id);
@@ -543,7 +543,7 @@ class CfMailClient extends Component {
         if (!this.state.selectedMsg) return;
         const until = new Date(Date.now() + minutes * 60000).toISOString();
         try {
-            await this._rpc("cf.mail.message", "do_snooze", { message_id: this.state.selectedMsg.id, until });
+            await this._rpc("casafolino.mail.message", "do_snooze", { message_id: this.state.selectedMsg.id, until });
             this.state.showSnoozeMenu = false;
             this.showToast("Email posticipata");
             this.state.messages = this.state.messages.filter(m => m.id !== this.state.selectedMsg.id);
@@ -715,7 +715,7 @@ class CfMailClient extends Component {
 
     async submitLeadForm() {
         try {
-            const res = await this._rpc("cf.mail.message", "create_lead_from_form", {
+            const res = await this._rpc("casafolino.mail.message", "create_lead_from_form", {
                 message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
                 name: this.state.leadForm.name,
                 partner_id: this.state.leadForm.partner_id || false,
@@ -747,7 +747,7 @@ class CfMailClient extends Component {
         const userId = ev.target.value;
         if (!this.state.selectedMsg) return;
         try {
-            const name = await this._rpc("cf.mail.message", "do_assign", { message_id: this.state.selectedMsg.id, user_id: userId || false });
+            const name = await this._rpc("casafolino.mail.message", "do_assign", { message_id: this.state.selectedMsg.id, user_id: userId || false });
             this.state.msgDetail.assigned_user_name = name || "";
             this.state.msgDetail.assigned_user_id = userId ? parseInt(userId) : false;
             this.showToast(name ? "Assegnata a " + name : "Assegnazione rimossa");
@@ -758,7 +758,7 @@ class CfMailClient extends Component {
         const leadId = ev.target.value;
         if (!this.state.selectedMsg) return;
         try {
-            await this._rpc("cf.mail.message", "do_link_lead", { message_id: this.state.selectedMsg.id, lead_id: leadId || false });
+            await this._rpc("casafolino.mail.message", "do_link_lead", { message_id: this.state.selectedMsg.id, lead_id: leadId || false });
             this.state.msgDetail.lead_id = leadId ? parseInt(leadId) : false;
             this.showToast("Trattativa collegata");
         } catch (e) {}
@@ -845,7 +845,7 @@ class CfMailClient extends Component {
         const bodyEl = this.composerBody.el;
         const body = bodyEl ? bodyEl.innerHTML : "";
         try {
-            const res = await this._rpc("cf.mail.message", "save_draft", {
+            const res = await this._rpc("casafolino.mail.message", "save_draft", {
                 account_id: this.state.composerFrom || this.state.selectedAccount,
                 to_address: this.state.composerTo || "",
                 cc_address: this.state.composerCc || "",
@@ -864,7 +864,7 @@ class CfMailClient extends Component {
         try {
             const accountId = this.state.composerFrom || this.state.selectedAccount;
             if (accountId) {
-                const detail = await this._rpc("cf.mail.account", "get_account_detail", { account_id: accountId });
+                const detail = await this._rpc("casafolino.mail.account", "get_account_detail", { account_id: accountId });
                 freshSig = detail.signature || "";
             }
         } catch(e) {}
@@ -894,7 +894,7 @@ class CfMailClient extends Component {
         const body = bodyEl ? bodyEl.innerHTML : "";
         if (!this.state.composerTo || !body.trim()) { this.showToast("Compilare destinatario e messaggio"); return; }
         try {
-            const res = await this._rpc("cf.mail.message", "send_reply", {
+            const res = await this._rpc("casafolino.mail.message", "send_reply", {
                 message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
                 to_address: this.state.composerTo,
                 cc_address: this.state.composerCc || "",
@@ -915,7 +915,7 @@ class CfMailClient extends Component {
 
     async openEditAccount(accountId) {
         try {
-            const data = await this._rpc("cf.mail.account", "get_account_detail", { account_id: accountId });
+            const data = await this._rpc("casafolino.mail.account", "get_account_detail", { account_id: accountId });
             this.state.accountForm = { ...data, imap_password: "" };
             this.state.showAccountModal = true;
         } catch (e) { console.error(e); }
@@ -925,7 +925,7 @@ class CfMailClient extends Component {
 
     async submitAccountForm() {
         try {
-            const res = await this._rpc("cf.mail.account", "save_account", { ...this.state.accountForm });
+            const res = await this._rpc("casafolino.mail.account", "save_account", { ...this.state.accountForm });
             if (res && res.success) {
                 this.showToast("Account salvato");
                 this.state.showAccountModal = false;
@@ -937,7 +937,7 @@ class CfMailClient extends Component {
     async testConnection() {
         try {
             this.showToast("Test connessione...");
-            const res = await this._rpc("cf.mail.account", "test_connection", { account_id: this.state.accountForm.id });
+            const res = await this._rpc("casafolino.mail.account", "test_connection", { account_id: this.state.accountForm.id });
             if (res.success) {
                 this.showToast("Connessione OK ✓");
                 this.state.accountForm.imap_status = "Connessione OK ✓";
@@ -951,7 +951,7 @@ class CfMailClient extends Component {
     async syncNow() {
         try {
             this.showToast("Sincronizzazione in corso...");
-            await this._rpc("cf.mail.account", "sync_now", { account_id: this.state.accountForm.id });
+            await this._rpc("casafolino.mail.account", "sync_now", { account_id: this.state.accountForm.id });
             this.showToast("Sincronizzazione completata");
             this.state.showAccountModal = false;
             await this.loadAccounts();
@@ -962,7 +962,7 @@ class CfMailClient extends Component {
     async syncAllAccounts() {
         try {
             this.showToast("Sincronizzazione in corso...");
-            await this._rpc("cf.mail.account", "sync_now", {});
+            await this._rpc("casafolino.mail.account", "sync_now", {});
             this.showToast("Sincronizzazione completata");
             await this.loadAccounts();
             await this.loadMessages();

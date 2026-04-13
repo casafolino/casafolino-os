@@ -550,3 +550,155 @@ class CasafolinoMailMessage(models.Model):
         count = len(old)
         old.unlink()
         _logger.info("Mail cleanup: %d email scartate eliminate.", count)
+
+    # ── OWL Client API ───────────────────────────────────────────────
+
+    def _msg_to_dict(self, m):
+        """Converte un record in dict per il client OWL."""
+        return {
+            'id': m.id,
+            'subject': m.subject or '(nessun oggetto)',
+            'from_address': m.sender_email or '',
+            'from_name': m.sender_name or m.sender_email or '',
+            'snippet': m.snippet or '',
+            'date': m.email_date.strftime('%d/%m/%Y %H:%M') if m.email_date else '',
+            'date_short': m.email_date.strftime('%d %b') if m.email_date else '',
+            'is_read': m.is_read,
+            'is_starred': m.is_important,
+            'is_archived': False,
+            'replied': False,
+            'direction': 'in' if m.direction == 'inbound' else 'out',
+            'folder': 'INBOX' if m.direction == 'inbound' else 'Sent',
+            'has_attachments': bool(m.attachment_ids),
+            'attachment_names': ', '.join(m.attachment_ids.mapped('name')) if m.attachment_ids else '',
+            'thread_count': 0,
+            'partner_id': m.partner_id.id if m.partner_id else False,
+            'partner_name': m.partner_id.name if m.partner_id else '',
+            'lead_id': False,
+            'lead_name': '',
+            'assigned_user_id': m.assigned_user_ids[0].id if m.assigned_user_ids else False,
+            'assigned_user_name': m.assigned_user_ids[0].name if m.assigned_user_ids else '',
+            'tags': [],
+            'lead_stage': '',
+            'sender_action': False,
+            'state': m.state,
+        }
+
+    @api.model
+    def get_messages(self, *args, **kw):
+        """API per il client OWL — ritorna email kept."""
+        account_id = kw.get('account_id')
+        folder = kw.get('folder') or 'INBOX'
+        limit = int(kw.get('limit') or 50)
+        offset = int(kw.get('offset') or 0)
+        search = kw.get('search') or ''
+
+        domain = [('state', '=', 'keep')]
+
+        if account_id:
+            domain.append(('account_id', '=', account_id))
+
+        if folder == 'Sent':
+            domain.append(('direction', '=', 'outbound'))
+        elif folder == 'Starred':
+            domain.append(('is_important', '=', True))
+        elif folder == 'INBOX':
+            domain.append(('direction', '=', 'inbound'))
+
+        if search:
+            domain += ['|', '|', '|',
+                ('subject', 'ilike', search),
+                ('sender_email', 'ilike', search),
+                ('sender_name', 'ilike', search),
+                ('recipient_emails', 'ilike', search),
+            ]
+
+        msgs = self.search(domain, limit=limit, offset=offset)
+        return [self._msg_to_dict(m) for m in msgs]
+
+    @api.model
+    def get_message_detail(self, *args, **kw):
+        """API per il client OWL — dettaglio singola email."""
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return {}
+        msg = self.browse(int(message_id))
+        if not msg.exists():
+            return {}
+
+        # Segna come letta
+        if not msg.is_read:
+            msg.write({'is_read': True})
+
+        # Scarica body se necessario
+        if not msg.body_downloaded:
+            try:
+                imap = msg.account_id._get_imap_connection()
+                msg._download_body_imap(imap, msg.imap_folder, msg.imap_uid)
+                imap.logout()
+            except Exception as e:
+                _logger.error("Error downloading body for detail %s: %s", msg.message_id_rfc, e)
+
+        result = self._msg_to_dict(msg)
+        result['body_html'] = msg.body_html or ''
+        result['to_address'] = msg.recipient_emails or ''
+        result['cc_address'] = msg.cc_emails or ''
+
+        # Info partner
+        if msg.partner_id:
+            p = msg.partner_id
+            result['partner_info'] = {
+                'id': p.id,
+                'name': p.name or '',
+                'email': p.email or '',
+                'phone': p.phone or '',
+                'company': p.parent_id.name if p.parent_id else (p.company_name or ''),
+                'job_title': p.function or '',
+            }
+
+        return result
+
+    @api.model
+    def get_users_list(self, *args, **kw):
+        users = self.env['res.users'].search([('share', '=', False)], limit=50)
+        return [{'id': u.id, 'name': u.name} for u in users]
+
+    @api.model
+    def get_leads_list(self, *args, **kw):
+        try:
+            leads = self.env['crm.lead'].search([], limit=100, order='create_date desc')
+            return [{'id': l.id, 'name': l.name} for l in leads]
+        except Exception:
+            return []
+
+    @api.model
+    def get_tags_list(self, *args, **kw):
+        return []
+
+    @api.model
+    def do_bulk_action(self, *args, **kw):
+        ids = kw.get('ids', [])
+        action = kw.get('action', '')
+        if not ids or not action:
+            return True
+        records = self.browse(ids)
+        if action == 'mark_read':
+            records.write({'is_read': True})
+        elif action == 'mark_unread':
+            records.write({'is_read': False})
+        elif action == 'archive':
+            records.action_discard()
+        elif action == 'star':
+            records.write({'is_important': True})
+        elif action == 'unstar':
+            records.write({'is_important': False})
+        return True
+
+    @api.model
+    def do_toggle_star(self, *args, **kw):
+        message_id = kw.get('message_id')
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        msg.write({'is_important': not msg.is_important})
+        return msg.is_important
