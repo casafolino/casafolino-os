@@ -33,6 +33,7 @@
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
+            <!-- Banner semaforo sopra lo sheet -->
             <xpath expr="//sheet" position="before">
                 <div class="alert alert-info" role="alert"
                      invisible="not cf_project_type">
@@ -48,6 +49,20 @@
                         </span>
                     </div>
                 </div>
+            </xpath>
+            <!-- Campi CasaFolino in cima al form, subito dopo il titolo -->
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="after">
+                <group>
+                    <group string="CasaFolino">
+                        <field name="cf_template_id"/>
+                        <field name="cf_project_type"/>
+                        <field name="cf_target_date"/>
+                    </group>
+                    <group string="Partner">
+                        <field name="cf_partner_id"/>
+                        <field name="cf_partner_country_id"/>
+                    </group>
+                </group>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="CasaFolino" name="cf_project_info">

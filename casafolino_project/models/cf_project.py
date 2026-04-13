@@ -83,7 +83,14 @@ class CfProject(models.Model):
     cf_shipment_ids = fields.One2many(
         'cf.project.shipment', 'project_id', string="Spedizioni")
 
-    # ── Compute methods ───���──────────────────────────────────────────
+    # ── Onchange ──────────────────────────────────────────────────────
+
+    @api.onchange('cf_template_id')
+    def _onchange_cf_template_id(self):
+        if self.cf_template_id and self.cf_template_id.cf_project_type:
+            self.cf_project_type = self.cf_template_id.cf_project_type
+
+    # ── Compute methods ──────────────────────────────────────────────
 
     @api.depends('task_ids.stage_id', 'task_ids.date_deadline', 'cf_target_date')
     def _compute_traffic_light(self):

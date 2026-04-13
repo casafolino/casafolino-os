@@ -67,7 +67,7 @@
         <field name="res_model">project.project</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="domain">[('cf_project_type', '!=', False)]</field>
-        <field name="context">{'search_default_cf_my_projects': 0}</field>
+        <field name="context">{'search_default_cf_my_projects': 0, 'quick_create': False}</field>
         <field name="search_view_id" ref="project.view_project_project_filter"/>
     </record>
 
