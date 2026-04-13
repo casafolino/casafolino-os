@@ -687,6 +687,16 @@ class CasafolinoMailMessage(models.Model):
         result['to_address'] = msg.recipient_emails or ''
         result['cc_address'] = msg.cc_emails or ''
 
+        # Allegati
+        result['attachments'] = []
+        for att in msg.attachment_ids:
+            result['attachments'].append({
+                'id': att.id,
+                'name': att.name,
+                'mimetype': att.mimetype or '',
+                'size': att.file_size or 0,
+            })
+
         # Info partner
         if msg.partner_id:
             p = msg.partner_id
@@ -760,6 +770,79 @@ class CasafolinoMailMessage(models.Model):
         return [self._msg_to_dict(m) for m in msgs]
 
     @api.model
+    def _build_and_send_email(self, account, to_address, cc_address, subject, body,
+                               reply_to_id=False, attachments=None, attachment_ids=None):
+        """Helper: costruisce email MIME con allegati e invia via SMTP."""
+        import smtplib
+        import ssl as ssl_lib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders as email_encoders
+
+        msg_obj = MIMEMultipart('mixed')
+        msg_obj['Subject'] = subject
+        msg_obj['From'] = '%s <%s>' % (account.name or account.email_address, account.email_address)
+        msg_obj['To'] = to_address
+        if cc_address:
+            msg_obj['Cc'] = cc_address
+
+        if reply_to_id:
+            orig = self.browse(int(reply_to_id))
+            if orig.exists() and orig.message_id_rfc:
+                msg_obj['In-Reply-To'] = orig.message_id_rfc
+                msg_obj['References'] = orig.message_id_rfc
+
+        msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
+
+        # Allegati dal PC (base64)
+        att_records = []
+        for att in (attachments or []):
+            fname = att.get('filename', 'file')
+            content = base64.b64decode(att.get('content_base64', ''))
+            mimetype = att.get('mimetype', 'application/octet-stream')
+            maintype, subtype = mimetype.split('/', 1) if '/' in mimetype else ('application', 'octet-stream')
+            part = MIMEBase(maintype, subtype)
+            part.set_payload(content)
+            email_encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename=fname)
+            msg_obj.attach(part)
+            # Salva come ir.attachment
+            att_records.append(self.env['ir.attachment'].create({
+                'name': fname,
+                'datas': att.get('content_base64', ''),
+                'mimetype': mimetype,
+            }))
+
+        # Allegati da Odoo (ids)
+        for att_id in (attachment_ids or []):
+            ir_att = self.env['ir.attachment'].browse(int(att_id))
+            if ir_att.exists() and ir_att.datas:
+                content = base64.b64decode(ir_att.datas)
+                mimetype = ir_att.mimetype or 'application/octet-stream'
+                maintype, subtype = mimetype.split('/', 1) if '/' in mimetype else ('application', 'octet-stream')
+                part = MIMEBase(maintype, subtype)
+                part.set_payload(content)
+                email_encoders.encode_base64(part)
+                part.add_header('Content-Disposition', 'attachment', filename=ir_att.name)
+                msg_obj.attach(part)
+                att_records.append(ir_att)
+
+        recipients = [r.strip() for r in to_address.split(',') if r.strip()]
+        if cc_address:
+            recipients += [r.strip() for r in cc_address.split(',') if r.strip()]
+
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
+        server.ehlo()
+        server.starttls(context=ssl_lib.create_default_context())
+        server.ehlo()
+        server.login(account.email_address, account.imap_password)
+        server.sendmail(account.email_address, recipients, msg_obj.as_string())
+        server.quit()
+
+        return msg_obj, att_records
+
+    @api.model
     def send_from_lead(self, *args, **kw):
         """Invia email da una trattativa CRM e collegala al lead."""
         lead_id = kw.get('lead_id')
@@ -768,58 +851,28 @@ class CasafolinoMailMessage(models.Model):
         subject = kw.get('subject') or ''
         body = kw.get('body') or ''
         reply_to_id = kw.get('reply_to_id') or False
+        attachments = kw.get('attachments') or []
+        attachment_ids = kw.get('attachment_ids') or []
 
         if not to_address or not body:
             return {'success': False, 'error': 'Destinatario e corpo obbligatori'}
 
-        # Prendi il primo account dell'utente corrente
         account = self.env['casafolino.mail.account'].search([
             ('responsible_user_id', '=', self.env.uid),
             ('state', '=', 'connected'),
         ], limit=1)
         if not account:
             return {'success': False, 'error': 'Nessun account email configurato'}
+        if not account.imap_password:
+            return {'success': False, 'error': 'Password SMTP non configurata'}
 
         try:
-            import smtplib
-            import ssl as ssl_lib
-            from email.mime.multipart import MIMEMultipart
-            from email.mime.text import MIMEText
+            msg_obj, att_records = self._build_and_send_email(
+                account, to_address, cc_address, subject, body,
+                reply_to_id=reply_to_id, attachments=attachments,
+                attachment_ids=attachment_ids)
 
-            msg_obj = MIMEMultipart('alternative')
-            msg_obj['Subject'] = subject
-            msg_obj['From'] = '%s <%s>' % (account.name or account.email_address, account.email_address)
-            msg_obj['To'] = to_address
-            if cc_address:
-                msg_obj['Cc'] = cc_address
-
-            # In-Reply-To se è una risposta
-            if reply_to_id:
-                orig = self.browse(int(reply_to_id))
-                if orig.exists() and orig.message_id_rfc:
-                    msg_obj['In-Reply-To'] = orig.message_id_rfc
-                    msg_obj['References'] = orig.message_id_rfc
-
-            msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
-
-            recipients = [r.strip() for r in to_address.split(',') if r.strip()]
-            if cc_address:
-                recipients += [r.strip() for r in cc_address.split(',') if r.strip()]
-
-            # Invio SMTP
-            if account.imap_password:
-                server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
-                server.ehlo()
-                server.starttls(context=ssl_lib.create_default_context())
-                server.ehlo()
-                server.login(account.email_address, account.imap_password)
-                server.sendmail(account.email_address, recipients, msg_obj.as_string())
-                server.quit()
-            else:
-                return {'success': False, 'error': 'Password SMTP non configurata'}
-
-            # Crea record email inviata collegata al lead
-            self.create({
+            sent_msg = self.create({
                 'account_id': account.id,
                 'message_id_rfc': msg_obj.get('Message-ID', ''),
                 'direction': 'outbound',
@@ -837,6 +890,13 @@ class CasafolinoMailMessage(models.Model):
                 'triage_user_id': self.env.user.id,
                 'triage_date': fields.Datetime.now(),
             })
+
+            # Collega allegati al record
+            for att_rec in att_records:
+                att_rec.write({
+                    'res_model': 'casafolino.mail.message',
+                    'res_id': sent_msg.id,
+                })
 
             return {'success': True}
         except Exception as e:
@@ -929,3 +989,61 @@ class CasafolinoMailMessage(models.Model):
             return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    # ── Attachment + Template API ────────────────────────────────────
+
+    @api.model
+    def get_odoo_attachments(self, *args, **kw):
+        """Cerca allegati esistenti in Odoo."""
+        search = kw.get('search') or ''
+        limit = int(kw.get('limit') or 30)
+        domain = [
+            ('res_model', 'in', [False, '', 'res.partner', 'crm.lead',
+                                  'product.template', 'casafolino.mail.message',
+                                  'cf.mail.template']),
+            ('type', '=', 'binary'),
+        ]
+        if search:
+            domain.append(('name', 'ilike', search))
+        atts = self.env['ir.attachment'].search(domain, limit=limit, order='create_date desc')
+        return [{
+            'id': a.id,
+            'name': a.name,
+            'mimetype': a.mimetype or '',
+            'size': a.file_size or 0,
+        } for a in atts]
+
+    @api.model
+    def attach_from_url(self, *args, **kw):
+        """Scarica file da URL e crea ir.attachment."""
+        import requests as req
+        url = kw.get('url') or ''
+        filename = kw.get('filename') or 'attachment'
+        if not url:
+            return {'success': False, 'error': 'URL mancante'}
+        try:
+            resp = req.get(url, timeout=30, allow_redirects=True)
+            if resp.ok:
+                att = self.env['ir.attachment'].create({
+                    'name': filename,
+                    'datas': base64.b64encode(resp.content),
+                    'mimetype': resp.headers.get('Content-Type', 'application/octet-stream'),
+                })
+                return {'success': True, 'id': att.id, 'name': att.name,
+                        'size': len(resp.content), 'mimetype': att.mimetype}
+            else:
+                # Salva come link
+                att = self.env['ir.attachment'].create({
+                    'name': filename,
+                    'type': 'url',
+                    'url': url,
+                })
+                return {'success': True, 'id': att.id, 'name': att.name,
+                        'size': 0, 'mimetype': 'url'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)[:200]}
+
+    @api.model
+    def get_templates(self, *args, **kw):
+        """Proxy per cf.mail.template.get_templates."""
+        return self.env['cf.mail.template'].get_templates()

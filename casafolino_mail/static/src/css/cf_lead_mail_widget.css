@@ -17,6 +17,7 @@
 .cf-dir-out { color: #5A6E3A; }
 .cf-lead-mail-sender { width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
 .cf-lead-mail-subject { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #333; }
+.cf-lead-mail-att-icon { flex-shrink: 0; color: #888; }
 .cf-lead-mail-date { flex-shrink: 0; font-size: 12px; color: #888; white-space: nowrap; }
 
 /* Detail */
@@ -26,8 +27,22 @@
 .cf-lead-mail-body { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; }
 .cf-lead-mail-iframe { width: 100%; min-height: 200px; border: none; pointer-events: auto; }
 
+/* Attachments */
+.cf-lead-mail-attachments { display: flex; flex-wrap: wrap; gap: 6px; }
+.cf-att-chip { display: inline-flex; align-items: center; padding: 3px 10px; background: #eef2e8; border: 1px solid #d5ddc8; border-radius: 12px; font-size: 12px; color: #3d4d28; text-decoration: none; cursor: pointer; }
+.cf-att-chip:hover { background: #d5ddc8; color: #3d4d28; text-decoration: none; }
+.cf-att-remove { cursor: pointer; color: #999; }
+.cf-att-remove:hover { color: #d32f2f; }
+
 /* Composer */
 .cf-lead-mail-composer { border-top: 2px solid #5A6E3A; padding: 12px; background: #fafbf8; }
 .cf-lead-mail-composer-header { font-size: 14px; margin-bottom: 8px; }
 .cf-composer-label { font-size: 12px; font-weight: 600; color: #555; width: 50px; display: inline-block; }
 .cf-composer-body { font-size: 13px; }
+.cf-composer-att-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Templates */
+.cf-template-list { background: #fff; border: 1px solid #dee2e6; border-radius: 4px; max-height: 180px; overflow-y: auto; }
+.cf-template-item { padding: 6px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+.cf-template-item:hover { background: #f5f7f0; }
+.cf-template-item:last-child { border-bottom: none; }

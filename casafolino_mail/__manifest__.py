@@ -13,6 +13,7 @@
         'views/cf_mail_sender_rule_views.xml',
         'views/casafolino_mail_hub_views.xml',
         'views/casafolino_mail_wizard_views.xml',
+        'views/cf_mail_template_views.xml',
         'views/menus.xml',
         'data/cf_mail_cron.xml',
         'data/cf_mail_config.xml',

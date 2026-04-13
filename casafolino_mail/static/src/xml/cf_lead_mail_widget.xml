@@ -38,6 +38,7 @@
                         </span>
                         <span class="cf-lead-mail-sender" t-esc="msg.from_name || msg.from_address"/>
                         <span class="cf-lead-mail-subject" t-esc="msg.subject"/>
+                        <span t-if="msg.has_attachments" class="cf-lead-mail-att-icon"><i class="fa fa-paperclip"/></span>
                         <span class="cf-lead-mail-date" t-esc="msg.date_short"/>
                     </div>
                 </div>
@@ -62,6 +63,14 @@
                                     <i class="fa fa-reply me-1"/> Rispondi
                                 </button>
                             </div>
+                            <!-- Allegati -->
+                            <div t-if="state.expandedDetail.attachments and state.expandedDetail.attachments.length" class="cf-lead-mail-attachments mb-2">
+                                <t t-foreach="state.expandedDetail.attachments" t-as="att" t-key="att.id">
+                                    <a t-attf-href="/web/content/ir.attachment/#{att.id}/#{att.name}" target="_blank" class="cf-att-chip">
+                                        <i class="fa fa-paperclip me-1"/><t t-esc="att.name"/>
+                                    </a>
+                                </t>
+                            </div>
                             <div class="cf-lead-mail-body">
                                 <iframe class="cf-lead-mail-iframe" t-att-srcdoc="state.expandedDetail.body_html"/>
                             </div>
@@ -80,6 +89,28 @@
                     <button class="btn-close btn-sm float-end" t-on-click="onCloseComposer"/>
                 </div>
                 <div class="cf-lead-mail-composer-fields">
+                    <!-- Template selector -->
+                    <div class="mb-2">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" t-on-click="onToggleTemplates">
+                                <i class="fa fa-file-text-o me-1"/> Template
+                            </button>
+                            <button class="btn btn-outline-secondary" t-on-click="onClickAttachFile">
+                                <i class="fa fa-paperclip me-1"/> Allega
+                            </button>
+                        </div>
+                        <input type="file" class="d-none" t-ref="fileInput" multiple="multiple" t-on-change="onFileSelected"/>
+                    </div>
+                    <!-- Template list -->
+                    <div t-if="state.showTemplates" class="cf-template-list mb-2">
+                        <t t-foreach="state.templates" t-as="tpl" t-key="tpl.id">
+                            <div class="cf-template-item" t-on-click="() => this.onSelectTemplate(tpl)">
+                                <span class="badge bg-secondary me-1" t-esc="tpl.category"/>
+                                <t t-esc="tpl.name"/>
+                            </div>
+                        </t>
+                        <div t-if="!state.templates.length" class="text-muted small p-2">Nessun template</div>
+                    </div>
                     <div class="mb-1">
                         <label class="cf-composer-label">A:</label>
                         <input class="form-control form-control-sm" t-att-value="state.composerTo" t-on-input="onInputTo"/>
@@ -94,8 +125,20 @@
                     </div>
                     <div class="mb-2">
                         <div class="cf-composer-body form-control" contenteditable="true"
+                             t-ref="composerBody"
                              t-on-input="onInputBody"
                              style="min-height: 120px;"/>
+                    </div>
+                    <!-- Attachment list -->
+                    <div t-if="state.composerAttachments.length" class="cf-composer-att-list mb-2">
+                        <t t-foreach="state.composerAttachments" t-as="att" t-key="att.id || att.tempId">
+                            <div class="cf-att-chip">
+                                <i class="fa fa-paperclip me-1"/>
+                                <t t-esc="att.name"/>
+                                <span class="text-muted ms-1 small" t-if="att.size">(<t t-esc="Math.round(att.size/1024)"/>KB)</span>
+                                <i class="fa fa-times ms-1 cf-att-remove" t-on-click="() => this.onRemoveAttachment(att)"/>
+                            </div>
+                        </t>
                     </div>
                     <button class="btn btn-primary btn-sm" t-on-click="onSendEmail"
                             t-att-disabled="state.composerSending">
