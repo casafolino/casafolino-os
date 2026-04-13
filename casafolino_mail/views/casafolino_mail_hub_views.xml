@@ -337,6 +337,34 @@
         </field>
     </record>
 
+    <!-- Inherited view per la form premium di casafolino_crm_export -->
+    <record id="view_crm_lead_form_premium_mail_hub" model="ir.ui.view">
+        <field name="name">crm.lead.form.cf.premium.mail.hub</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="casafolino_crm_export.cf_crm_lead_view_form_premium"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='emails']" position="inside">
+                <separator string="Email collegate dal Mail Hub"/>
+                <field name="lead_message_ids" readonly="1" nolabel="1">
+                    <list string="Email Mail Hub" decoration-bf="not is_read"
+                          default_order="email_date desc">
+                        <field name="is_important" string=" " widget="boolean_favorite"/>
+                        <field name="email_date" string="Data"/>
+                        <field name="direction" string="Dir"/>
+                        <field name="subject" string="Oggetto"/>
+                        <field name="sender_email" string="Mittente"/>
+                        <field name="state" string="Stato" widget="badge"
+                               decoration-info="state == 'new'"
+                               decoration-success="state == 'keep'"
+                               decoration-danger="state == 'discard'"/>
+                        <field name="is_read" column_invisible="1"/>
+                    </list>
+                </field>
+            </xpath>
+        </field>
+    </record>
+
     <!-- ══════════════════════════════════════════════════════════════
          5) ACTIONS (dopo le viste che referenziano)
          ══════════════════════════════════════════════════════════════ -->
