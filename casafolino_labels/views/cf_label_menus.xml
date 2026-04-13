@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_casafolino_labels_root"
+              name="Etichette"
+              web_icon="casafolino_labels,static/description/icon.png"
+              sequence="50"/>
+
+    <menuitem id="menu_casafolino_labels_pipeline"
+              name="Pipeline Etichette"
+              parent="menu_casafolino_labels_root"
+              action="action_cf_label_kanban"
+              sequence="10"/>
+
+    <menuitem id="menu_casafolino_labels_list"
+              name="Tutte le Etichette"
+              parent="menu_casafolino_labels_root"
+              action="action_cf_label_list"
+              sequence="20"/>
+
+</odoo>

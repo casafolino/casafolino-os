@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         1) SEARCH VIEW
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_label_search" model="ir.ui.view">
+        <field name="name">casafolino.label.search</field>
+        <field name="model">casafolino.label</field>
+        <field name="arch" type="xml">
+            <search string="Cerca Etichette">
+                <field name="name"/>
+                <field name="sku"/>
+                <field name="responsible_id"/>
+                <filter name="my_labels" string="Le mie" domain="[('responsible_id', '=', uid)]"/>
+                <separator/>
+                <filter name="deadline_overdue" string="Scadute"
+                        domain="[('deadline', '&lt;', context_today().strftime('%Y-%m-%d')),
+                                 ('stage', 'not in', ['archived', 'printing'])]"/>
+                <filter name="deadline_week" string="Scadenza questa settimana"
+                        domain="[('deadline', '&gt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('deadline', '&lt;=', (context_today() + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="active_labels" string="Attive" domain="[('active', '=', True)]"/>
+                <filter name="archived_labels" string="Archiviate" domain="[('active', '=', False)]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_stage" string="Fase" context="{'group_by': 'stage'}"/>
+                    <filter name="group_responsible" string="Responsabile" context="{'group_by': 'responsible_id'}"/>
+                    <filter name="group_deadline" string="Scadenza" context="{'group_by': 'deadline:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         2) KANBAN VIEW
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_label_kanban" model="ir.ui.view">
+        <field name="name">casafolino.label.kanban</field>
+        <field name="model">casafolino.label</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage" default_order="deadline asc">
+                <field name="name"/>
+                <field name="sku"/>
+                <field name="stage"/>
+                <field name="deadline"/>
+                <field name="responsible_id"/>
+                <field name="market_ids"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="#{record.deadline.raw_value and record.deadline.raw_value &lt; (new Date()).toISOString().slice(0,10) ? 'border-start border-danger border-3' : record.deadline.raw_value and record.deadline.raw_value &lt; (new Date(Date.now() + 3*86400000)).toISOString().slice(0,10) ? 'border-start border-warning border-3' : ''}">
+                            <div class="fw-bold fs-5">
+                                <field name="name"/>
+                            </div>
+                            <div class="text-muted small" t-if="record.sku.value">
+                                SKU: <field name="sku"/>
+                            </div>
+                            <div class="mt-1" t-if="record.deadline.value">
+                                <i class="fa fa-calendar-o me-1"/>
+                                <field name="deadline"/>
+                            </div>
+                            <div class="mt-1" t-if="record.market_ids.raw_value.length">
+                                <field name="market_ids" widget="many2many_tags"
+                                       options="{'color_field': 'color'}"/>
+                            </div>
+                            <div class="mt-2">
+                                <field name="responsible_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         3) LIST VIEW
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_label_list" model="ir.ui.view">
+        <field name="name">casafolino.label.list</field>
+        <field name="model">casafolino.label</field>
+        <field name="arch" type="xml">
+            <list string="Etichette"
+                  decoration-danger="deadline and deadline &lt; current_date"
+                  decoration-warning="deadline and deadline &gt;= current_date and deadline &lt;= (current_date + datetime.timedelta(days=3))">
+                <field name="name"/>
+                <field name="sku"/>
+                <field name="version"/>
+                <field name="stage" widget="badge"/>
+                <field name="responsible_id" widget="many2one_avatar_user"/>
+                <field name="deadline"/>
+                <field name="market_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         4) FORM VIEW
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_label_form" model="ir.ui.view">
+        <field name="name">casafolino.label.form</field>
+        <field name="model">casafolino.label</field>
+        <field name="arch" type="xml">
+            <form string="Etichetta">
+                <header>
+                    <field name="stage" widget="statusbar"
+                           statusbar_visible="recipe,specs,draft,quality,revision,printing"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-paperclip"
+                                name="action_get_attachment_tree_view" type="object"
+                                invisible="1"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nome etichetta"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Identificazione">
+                            <field name="product_id"/>
+                            <field name="sku"/>
+                            <field name="version"/>
+                        </group>
+                        <group string="Assegnazione">
+                            <field name="responsible_id" widget="many2one_avatar_user"/>
+                            <field name="deadline"/>
+                            <field name="languages"/>
+                            <field name="market_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Fase 1 - Ricetta" name="phase1">
+                            <group>
+                                <field name="check_recipe"/>
+                                <field name="check_perc"/>
+                                <field name="check_origin"/>
+                                <field name="check_nutrition"/>
+                                <field name="check_diary"/>
+                            </group>
+                        </page>
+                        <page string="Fase 2 - Legale" name="phase2">
+                            <group>
+                                <field name="check_allergens"/>
+                                <field name="check_company"/>
+                                <field name="check_lot"/>
+                                <field name="check_eco"/>
+                            </group>
+                        </page>
+                        <page string="Fase 3 - Layout" name="phase3">
+                            <group>
+                                <field name="check_size"/>
+                                <field name="check_readability"/>
+                                <field name="check_languages"/>
+                                <field name="check_ean"/>
+                            </group>
+                        </page>
+                        <page string="Note" name="notes_page">
+                            <field name="notes" placeholder="Note generali..."/>
+                            <separator string="Controllo Qualità"/>
+                            <field name="quality_notes" placeholder="Note QC..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         5) ACTIONS
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="action_cf_label_kanban" model="ir.actions.act_window">
+        <field name="name">Pipeline Etichette</field>
+        <field name="res_model">casafolino.label</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="cf_label_search"/>
+        <field name="context">{'search_default_active_labels': 1}</field>
+    </record>
+
+    <record id="action_cf_label_list" model="ir.actions.act_window">
+        <field name="name">Tutte le Etichette</field>
+        <field name="res_model">casafolino.label</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="search_view_id" ref="cf_label_search"/>
+    </record>
+
+</odoo>
