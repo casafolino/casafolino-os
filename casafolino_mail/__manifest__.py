@@ -4,7 +4,7 @@
     'summary': 'Client email Gmail-style per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
-    'depends': ['base', 'mail', 'web', 'utm', 'crm'],
+    'depends': ['base', 'mail', 'web', 'utm', 'crm', 'casafolino_crm_export'],
     'data': [
         'security/ir.model.access.csv',
         'security/ir_rules.xml',

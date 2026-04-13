@@ -40,7 +40,7 @@ class CfMailClient extends Component {
             showTagDropdown: false, showSnoozeMenu: false, showBulkTagMenu: false,
             newTagName: "", newTagColor: "#5A6E3A", threadExpanded: false,
             groupBy: "date",
-            showLeadModal: false, crmTeams: [], crmPipelines: [], crmStagesFiltered: [], crmPartners: [], crmSources: [],
+            showLeadModal: false, crmMarkets: [], crmChannels: [], crmStages: [], crmPartners: [], crmSources: [],
             leadForm: { name: "", partner_id: "", partner_name: "", contact_name: "", function: "", email_from: "", phone: "", stage_id: "", expected_revenue: "", description: "", cf_market: "", cf_channel: "", cf_language: "", source: "" },
             leadPartnerSearch: "", leadPartnerResults: [],
             showAccountModal: false,
@@ -117,9 +117,9 @@ class CfMailClient extends Component {
     async loadCrmData() {
         try {
             const data = await this._rpc("casafolino.mail.message", "get_crm_data");
-            this.state.crmTeams = data.teams || [];
-            this.state.crmPipelines = data.pipelines || [];
-            this.state.crmStagesFiltered = data.pipelines || [];
+            this.state.crmMarkets = data.markets || [];
+            this.state.crmChannels = data.channels || [];
+            this.state.crmStages = data.pipelines || [];
             this.state.crmPartners = data.partners || [];
             this.state.crmSources = data.sources || [];
         } catch (e) {}
@@ -700,16 +700,14 @@ class CfMailClient extends Component {
             function: "",
             email_from: detail.from_address || "",
             phone: "",
-            team_id: "",
-            stage_id: "",
-            expected_revenue: "",
-            description: "",
             cf_market: "",
             cf_channel: "",
+            stage_id: this.state.crmStages.length > 0 ? '' + this.state.crmStages[0].id : "",
+            expected_revenue: "",
+            description: "",
             cf_language: "",
             source: "",
         };
-        this.state.crmStagesFiltered = this.state.crmPipelines;
         this.state.leadPartnerSearch = detail.partner_name || '';
         this.state.leadPartnerResults = [];
         this.state.showLeadModal = true;
@@ -717,21 +715,6 @@ class CfMailClient extends Component {
 
     closeLeadModal() { this.state.showLeadModal = false; }
 
-    onTeamChange(ev) {
-        const teamId = parseInt(ev.target.value) || 0;
-        this.state.leadForm.team_id = ev.target.value;
-        this.state.leadForm.stage_id = '';
-        if (!teamId) {
-            this.state.crmStagesFiltered = this.state.crmPipelines;
-        } else {
-            this.state.crmStagesFiltered = this.state.crmPipelines.filter(
-                s => !s.team_ids.length || s.team_ids.includes(teamId)
-            );
-        }
-        if (this.state.crmStagesFiltered.length > 0) {
-            this.state.leadForm.stage_id = '' + this.state.crmStagesFiltered[0].id;
-        }
-    }
 
     async submitLeadForm() {
         try {
@@ -743,7 +726,8 @@ class CfMailClient extends Component {
                 function: this.state.leadForm.function || "",
                 email_from: this.state.leadForm.email_from || "",
                 phone: this.state.leadForm.phone || "",
-                team_id: this.state.leadForm.team_id || false,
+                cf_market: this.state.leadForm.cf_market || false,
+                cf_channel: this.state.leadForm.cf_channel || false,
                 stage_id: this.state.leadForm.stage_id || false,
                 expected_revenue: this.state.leadForm.expected_revenue || 0,
                 description: this.state.leadForm.description || "",

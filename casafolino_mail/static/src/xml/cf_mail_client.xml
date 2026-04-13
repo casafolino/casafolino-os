@@ -1057,22 +1057,33 @@
                     <div class="cf-modal-section-title">&#x1F4B0; Deal</div>
                     <div class="cf-modal-row cf-modal-2col">
                         <div class="cf-modal-col">
-                            <label>PIPELINE</label>
-                            <select class="cf-modal-input" t-on-change="onTeamChange">
-                                <option value="">&#x2014; Tutte &#x2014;</option>
-                                <t t-foreach="state.crmTeams" t-as="t" t-key="t.id">
-                                    <option t-att-value="t.id"
-                                            t-att-selected="state.leadForm.team_id == '' + t.id"
-                                            t-esc="t.name"/>
+                            <label>MERCATO</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_market"
+                                t-on-change="onFormChange">
+                                <option value="">&#x2014; Seleziona &#x2014;</option>
+                                <t t-foreach="state.crmMarkets" t-as="m" t-key="m.value">
+                                    <option t-att-value="m.value" t-esc="m.name"/>
                                 </t>
                             </select>
                         </div>
+                        <div class="cf-modal-col">
+                            <label>CANALE</label>
+                            <select class="cf-modal-input" data-form="leadForm" data-field="cf_channel"
+                                t-on-change="onFormChange">
+                                <option value="">&#x2014; Seleziona &#x2014;</option>
+                                <t t-foreach="state.crmChannels" t-as="c" t-key="c.value">
+                                    <option t-att-value="c.value" t-esc="c.name"/>
+                                </t>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cf-modal-row cf-modal-2col">
                         <div class="cf-modal-col">
                             <label>FASE</label>
                             <select class="cf-modal-input" data-form="leadForm" data-field="stage_id"
                                 t-on-change="onFormChange">
                                 <option value="">&#x2014; Seleziona &#x2014;</option>
-                                <t t-foreach="state.crmStagesFiltered" t-as="s" t-key="s.id">
+                                <t t-foreach="state.crmStages" t-as="s" t-key="s.id">
                                     <option t-att-value="s.id" t-esc="s.name"/>
                                 </t>
                             </select>

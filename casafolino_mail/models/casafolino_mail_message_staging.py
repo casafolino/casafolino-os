@@ -711,24 +711,25 @@ class CasafolinoMailMessage(models.Model):
 
     @api.model
     def get_crm_data(self, *args, **kw):
-        """Dati per il Lead Modal: teams, stages (con team_ids), partners, sources."""
-        # Teams (pipeline)
+        """Dati per il Lead Modal: market/channel selections, stages, partners, sources."""
+        # cf_market selection values dal modello crm.lead (esteso da casafolino_crm_export)
+        market_list = []
+        channel_list = []
         try:
-            teams = self.env['crm.team'].search([('use_opportunities', '=', True)], order='sequence')
-            team_list = [{'id': t.id, 'name': t.name} for t in teams]
+            lead_fields = self.env['crm.lead'].fields_get(['cf_market', 'cf_channel'])
+            if 'cf_market' in lead_fields:
+                market_list = [{'value': k, 'name': v}
+                               for k, v in lead_fields['cf_market']['selection']]
+            if 'cf_channel' in lead_fields:
+                channel_list = [{'value': k, 'name': v}
+                                for k, v in lead_fields['cf_channel']['selection']]
         except Exception:
-            team_list = []
+            pass
 
-        # Stages con team_ids per filtro lato JS
+        # Stages CRM
         try:
             stages = self.env['crm.stage'].search([], order='sequence')
-            stage_list = []
-            for s in stages:
-                stage_list.append({
-                    'id': s.id,
-                    'name': s.name,
-                    'team_ids': s.team_id.ids if hasattr(s, 'team_id') else [],
-                })
+            stage_list = [{'id': s.id, 'name': s.name} for s in stages]
         except Exception:
             stage_list = []
 
@@ -745,7 +746,8 @@ class CasafolinoMailMessage(models.Model):
             source_list = []
 
         return {
-            'teams': team_list,
+            'markets': market_list,
+            'channels': channel_list,
             'pipelines': stage_list,
             'partners': partner_list,
             'sources': source_list,
@@ -753,14 +755,12 @@ class CasafolinoMailMessage(models.Model):
 
     @api.model
     def create_lead_from_form(self, *args, **kw):
-        """Crea lead CRM dal mail client."""
+        """Crea lead CRM (crm.lead con campi casafolino_crm_export)."""
         name = kw.get('name') or 'Lead da email'
         partner_id = kw.get('partner_id') or False
         stage_id = kw.get('stage_id') or False
-        team_id = kw.get('team_id') or False
         expected_revenue = kw.get('expected_revenue') or 0
         description = kw.get('description') or ''
-        message_id = kw.get('message_id') or False
         try:
             vals = {
                 'name': name,
@@ -771,15 +771,17 @@ class CasafolinoMailMessage(models.Model):
                 'email_from': kw.get('email_from') or '',
                 'phone': kw.get('phone') or '',
                 'stage_id': int(stage_id) if stage_id else False,
-                'team_id': int(team_id) if team_id else False,
                 'expected_revenue': float(expected_revenue) if expected_revenue else 0,
                 'description': description,
                 'source_id': int(kw.get('source')) if kw.get('source') else False,
             }
-            # Campi custom CRM se esistono
-            for cf in ('cf_market', 'cf_channel', 'cf_language'):
-                if kw.get(cf):
-                    vals[cf] = kw[cf]
+            # Campi casafolino_crm_export
+            if kw.get('cf_market'):
+                vals['cf_market'] = kw['cf_market']
+            if kw.get('cf_channel'):
+                vals['cf_channel'] = kw['cf_channel']
+            if kw.get('cf_language'):
+                vals['cf_language'] = kw['cf_language']
 
             lead = self.env['crm.lead'].create(vals)
             return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
