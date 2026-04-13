@@ -330,9 +330,10 @@
         <field name="inherit_id" ref="casafolino_crm_export.cf_crm_lead_view_form_premium"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='emails']" position="inside">
-                <separator string="Email Mail Hub"/>
-                <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+            <xpath expr="//page[@name='emails']" position="replace">
+                <page string="Email" name="emails">
+                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+                </page>
             </xpath>
         </field>
     </record>

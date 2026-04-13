@@ -1,5 +1,5 @@
 /* ── CfLeadMailWidget ─────────────────────────────────────── */
-.cf-lead-mail { border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; }
+.cf-lead-mail { border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; width: 100%; max-width: 100%; }
 .cf-lead-mail-toolbar { padding: 8px 12px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; }
 .cf-lead-mail-list { max-height: 500px; overflow-y: auto; }
 
