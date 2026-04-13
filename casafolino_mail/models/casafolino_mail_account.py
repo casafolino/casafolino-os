@@ -404,7 +404,10 @@ class CasafolinoMailAccount(models.Model):
 
     @api.model
     def get_accounts(self, *args, **kw):
-        accounts = self.search([('active', '=', True)], order='name')
+        domain = [('active', '=', True)]
+        if not self.env.user.has_group('base.group_system'):
+            domain.append(('responsible_user_id', '=', self.env.uid))
+        accounts = self.search(domain, order='name')
         result = []
         for a in accounts:
             unread = self.env['casafolino.mail.message'].search_count([

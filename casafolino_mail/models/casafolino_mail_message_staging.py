@@ -593,6 +593,12 @@ class CasafolinoMailMessage(models.Model):
         offset = int(kw.get('offset') or 0)
         search = kw.get('search') or ''
 
+        # Ownership check: account deve appartenere all'utente
+        if account_id and not self.env.user.has_group('base.group_system'):
+            acc = self.env['casafolino.mail.account'].browse(int(account_id))
+            if not acc.exists() or acc.responsible_user_id.id != self.env.uid:
+                return []
+
         domain = [('state', '=', 'keep')]
 
         if account_id:
