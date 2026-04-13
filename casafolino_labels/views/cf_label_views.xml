@@ -112,11 +112,6 @@
                            statusbar_visible="recipe,specs,draft,quality,revision,printing"/>
                 </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button class="oe_stat_button" icon="fa-paperclip"
-                                name="action_get_attachment_tree_view" type="object"
-                                invisible="1"/>
-                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Nome etichetta"/>
