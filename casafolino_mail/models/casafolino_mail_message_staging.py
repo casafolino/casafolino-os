@@ -708,3 +708,80 @@ class CasafolinoMailMessage(models.Model):
         msg = self.browse(int(message_id))
         msg.write({'is_important': not msg.is_important})
         return msg.is_important
+
+    @api.model
+    def get_crm_data(self, *args, **kw):
+        """Dati per il Lead Modal: teams, stages (con team_ids), partners, sources."""
+        # Teams (pipeline)
+        try:
+            teams = self.env['crm.team'].search([('use_opportunities', '=', True)], order='sequence')
+            team_list = [{'id': t.id, 'name': t.name} for t in teams]
+        except Exception:
+            team_list = []
+
+        # Stages con team_ids per filtro lato JS
+        try:
+            stages = self.env['crm.stage'].search([], order='sequence')
+            stage_list = []
+            for s in stages:
+                stage_list.append({
+                    'id': s.id,
+                    'name': s.name,
+                    'team_ids': s.team_id.ids if hasattr(s, 'team_id') else [],
+                })
+        except Exception:
+            stage_list = []
+
+        # Partners
+        partners = self.env['res.partner'].search([('active', '=', True)], limit=500, order='name')
+        partner_list = [{'id': p.id, 'name': p.name, 'email': p.email or '', 'is_company': p.is_company}
+                        for p in partners]
+
+        # UTM sources
+        try:
+            sources = self.env['utm.source'].search([], order='name')
+            source_list = [{'id': s.id, 'name': s.name} for s in sources]
+        except Exception:
+            source_list = []
+
+        return {
+            'teams': team_list,
+            'pipelines': stage_list,
+            'partners': partner_list,
+            'sources': source_list,
+        }
+
+    @api.model
+    def create_lead_from_form(self, *args, **kw):
+        """Crea lead CRM dal mail client."""
+        name = kw.get('name') or 'Lead da email'
+        partner_id = kw.get('partner_id') or False
+        stage_id = kw.get('stage_id') or False
+        team_id = kw.get('team_id') or False
+        expected_revenue = kw.get('expected_revenue') or 0
+        description = kw.get('description') or ''
+        message_id = kw.get('message_id') or False
+        try:
+            vals = {
+                'name': name,
+                'type': 'opportunity',
+                'partner_id': int(partner_id) if partner_id else False,
+                'contact_name': kw.get('contact_name') or '',
+                'function': kw.get('function') or '',
+                'email_from': kw.get('email_from') or '',
+                'phone': kw.get('phone') or '',
+                'stage_id': int(stage_id) if stage_id else False,
+                'team_id': int(team_id) if team_id else False,
+                'expected_revenue': float(expected_revenue) if expected_revenue else 0,
+                'description': description,
+                'source_id': int(kw.get('source')) if kw.get('source') else False,
+            }
+            # Campi custom CRM se esistono
+            for cf in ('cf_market', 'cf_channel', 'cf_language'):
+                if kw.get(cf):
+                    vals[cf] = kw[cf]
+
+            lead = self.env['crm.lead'].create(vals)
+            return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
