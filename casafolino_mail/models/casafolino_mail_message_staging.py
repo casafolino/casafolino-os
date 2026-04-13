@@ -843,6 +843,66 @@ class CasafolinoMailMessage(models.Model):
         return msg_obj, att_records
 
     @api.model
+    def send_reply(self, *args, **kw):
+        """Invia email dal client principale."""
+        to_address = kw.get('to_address') or ''
+        cc_address = kw.get('cc_address') or ''
+        bcc_address = kw.get('bcc_address') or ''
+        subject = kw.get('subject') or ''
+        body = kw.get('body') or ''
+        account_id = kw.get('account_id') or None
+        message_id = kw.get('message_id') or False
+        attachments = kw.get('attachments') or []
+        attachment_ids = kw.get('attachment_ids') or []
+
+        if not to_address or not body:
+            return {'success': False, 'error': 'Destinatario o corpo mancante'}
+
+        account = None
+        if account_id:
+            account = self.env['casafolino.mail.account'].browse(int(account_id))
+        if not account or not account.exists():
+            account = self.env['casafolino.mail.account'].search([
+                ('responsible_user_id', '=', self.env.uid),
+                ('state', '=', 'connected'),
+            ], limit=1)
+        if not account:
+            return {'success': False, 'error': 'Nessun account configurato'}
+        if not account.imap_password:
+            return {'success': False, 'error': 'Password SMTP non configurata'}
+
+        try:
+            msg_obj, att_records = self._build_and_send_email(
+                account, to_address, cc_address, subject, body,
+                reply_to_id=message_id, attachments=attachments,
+                attachment_ids=attachment_ids)
+
+            sent_msg = self.create({
+                'account_id': account.id,
+                'message_id_rfc': msg_obj.get('Message-ID', ''),
+                'direction': 'outbound',
+                'sender_email': account.email_address,
+                'sender_name': account.name or '',
+                'recipient_emails': to_address,
+                'cc_emails': cc_address,
+                'subject': subject,
+                'email_date': fields.Datetime.now(),
+                'body_html': body,
+                'body_downloaded': True,
+                'state': 'keep',
+                'is_read': True,
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
+            for att_rec in att_records:
+                att_rec.write({'res_model': 'casafolino.mail.message', 'res_id': sent_msg.id})
+
+            return {'success': True}
+        except Exception as e:
+            _logger.error("send_reply error: %s", e)
+            return {'success': False, 'error': str(e)[:200]}
+
+    @api.model
     def send_from_lead(self, *args, **kw):
         """Invia email da una trattativa CRM e collegala al lead."""
         lead_id = kw.get('lead_id')

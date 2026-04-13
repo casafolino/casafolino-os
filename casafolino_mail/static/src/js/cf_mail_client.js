@@ -56,6 +56,7 @@ class CfMailClient extends Component {
             contacts: [], contactSearch: "", contactTagFilter: "",
             show007Panel: false, data007: {}, loading007: false,
             showAIPanel: false, aiLoading: false, aiResult: "", composerAILoading: false,
+            composerAttachments: [], templates: [], showTemplateDropdown: false,
         });
 
         onMounted(() => { this.init(); });
@@ -66,8 +67,14 @@ class CfMailClient extends Component {
     }
 
     async init() {
-        await Promise.all([this.loadAccounts(), this.loadUsers(), this.loadLeads(), this.loadTags(), this.loadContactTags(), this.checkAdmin()]);
+        await Promise.all([this.loadAccounts(), this.loadUsers(), this.loadLeads(), this.loadTags(), this.loadContactTags(), this.checkAdmin(), this.loadTemplates()]);
         await this.loadMessages();
+    }
+
+    async loadTemplates() {
+        try {
+            this.state.templates = await this._rpc("casafolino.mail.message", "get_templates") || [];
+        } catch (e) { this.state.templates = []; }
     }
 
     async checkAdmin() {
@@ -775,6 +782,8 @@ class CfMailClient extends Component {
         this.state.composerBcc = "";
         this.state.composerShowCc = false;
         this.state.composerShowBcc = false;
+        this.state.composerAttachments = [];
+        this.state.showTemplateDropdown = false;
         this.state.composerMinimized = false;
         this.state.composerMaximized = false;
     }
@@ -804,6 +813,60 @@ class CfMailClient extends Component {
         this._initComposerBody();
     }
     closeComposer() { this.state.showComposer = false; }
+
+    // ── Attachments + Templates (composer) ──────────────────────────────────
+
+    onAttachClick() {
+        var input = this.__owl__.refs.fileInput;
+        if (input) input.click();
+    }
+
+    onFileSelected(ev) {
+        var files = ev.target.files;
+        if (!files || !files.length) return;
+        var self = this;
+        for (var i = 0; i < files.length; i++) {
+            (function(file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var b64 = e.target.result.split(",")[1] || "";
+                    self.state.composerAttachments.push({
+                        name: file.name,
+                        size: file.size,
+                        mimetype: file.type || "application/octet-stream",
+                        content_base64: b64,
+                        source: "pc",
+                    });
+                };
+                reader.readAsDataURL(file);
+            })(files[i]);
+        }
+        ev.target.value = "";
+    }
+
+    removeAttachment(index) {
+        this.state.composerAttachments.splice(index, 1);
+    }
+
+    onTemplateToggle() {
+        this.state.showTemplateDropdown = !this.state.showTemplateDropdown;
+    }
+
+    onTemplateSelect(template) {
+        var body = this.composerBody.el;
+        if (body) body.innerHTML = template.body_html || "";
+        this.state.composerSubject = template.subject || this.state.composerSubject;
+        this.state.showTemplateDropdown = false;
+        var atts = template.attachments || [];
+        for (var j = 0; j < atts.length; j++) {
+            this.state.composerAttachments.push({
+                id: atts[j].id,
+                name: atts[j].name,
+                size: atts[j].size || 0,
+                source: "odoo",
+            });
+        }
+    }
 
     // ── Composer v2 helpers ─────────────────────────────────────────────────
 
@@ -895,18 +958,30 @@ class CfMailClient extends Component {
     }
 
     async sendEmail() {
-        const bodyEl = this.composerBody.el;
-        const body = bodyEl ? bodyEl.innerHTML : "";
+        var bodyEl = this.composerBody.el;
+        var body = bodyEl ? bodyEl.innerHTML : "";
         if (!this.state.composerTo || !body.trim()) { this.showToast("Compilare destinatario e messaggio"); return; }
+        var pcAtts = [];
+        var odooIds = [];
+        for (var i = 0; i < this.state.composerAttachments.length; i++) {
+            var att = this.state.composerAttachments[i];
+            if (att.content_base64) {
+                pcAtts.push({ filename: att.name, content_base64: att.content_base64, mimetype: att.mimetype || "application/octet-stream" });
+            } else if (att.id) {
+                odooIds.push(att.id);
+            }
+        }
         try {
-            const res = await this._rpc("casafolino.mail.message", "send_reply", {
+            var res = await this._rpc("casafolino.mail.message", "send_reply", {
                 message_id: this.state.selectedMsg ? this.state.selectedMsg.id : false,
                 to_address: this.state.composerTo,
                 cc_address: this.state.composerCc || "",
                 bcc_address: this.state.composerBcc || "",
                 subject: this.state.composerSubject,
-                body,
+                body: body,
                 account_id: this.state.composerFrom || this.state.selectedAccount,
+                attachments: pcAtts,
+                attachment_ids: odooIds,
             });
             if (res && res.success) { this.showToast("Email inviata!"); this.closeComposer(); }
             else this.showToast("Errore invio: " + (res.error || "sconosciuto"));

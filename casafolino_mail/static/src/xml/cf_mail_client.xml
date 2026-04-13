@@ -1244,16 +1244,45 @@
                 <!-- Corpo -->
                 <div class="cf-composer-body" contenteditable="true" t-ref="composerBody"/>
 
-                <!-- Firma (separata, visibile se presente) -->
+                <!-- Allegati -->
+                <div t-if="state.composerAttachments.length" class="cf-composer-att-list" style="padding:6px 12px;display:flex;flex-wrap:wrap;gap:4px;">
+                    <t t-foreach="state.composerAttachments" t-as="att" t-key="att_index">
+                        <span class="badge bg-light text-dark border" style="font-size:11px;">
+                            <i class="fa fa-paperclip me-1"/>
+                            <t t-esc="att.name"/>
+                            <i class="fa fa-times ms-1" style="cursor:pointer;color:#999;" t-on-click="() => this.removeAttachment(att_index)"/>
+                        </span>
+                    </t>
+                </div>
 
+                <!-- Template dropdown -->
+                <t t-if="state.showTemplateDropdown">
+                    <div style="max-height:180px;overflow-y:auto;border:1px solid #dee2e6;border-radius:4px;margin:0 12px 8px;background:#fff;">
+                        <t t-foreach="state.templates" t-as="tpl" t-key="tpl.id">
+                            <div style="padding:5px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0;" t-on-click="() => this.onTemplateSelect(tpl)">
+                                <span class="badge bg-secondary me-1" style="font-size:10px;" t-esc="tpl.category"/>
+                                <t t-esc="tpl.name"/>
+                            </div>
+                        </t>
+                        <div t-if="!state.templates.length" class="text-muted small p-2">Nessun template</div>
+                    </div>
+                </t>
+
+                <input type="file" class="d-none" t-ref="fileInput" multiple="multiple" t-on-change="onFileSelected"/>
 
                 <!-- Footer -->
                 <div class="cf-composer-footer">
                     <button class="cf-mail-btn-primary" t-on-click="sendEmail">
                         <i class="fa fa-paper-plane"/> Invia
                     </button>
+                    <button class="cf-mail-btn-secondary" t-on-click="onAttachClick" title="Allega file">
+                        <i class="fa fa-paperclip"/>
+                    </button>
+                    <button class="cf-mail-btn-secondary" t-on-click="onTemplateToggle" title="Template">
+                        <i class="fa fa-file-text-o"/>
+                    </button>
                     <button class="cf-mail-btn-secondary" t-on-click="saveDraft">
-                        <i class="fa fa-floppy-o"/> Bozza
+                        <i class="fa fa-floppy-o"/>
                     </button>
                     <div style="flex:1"/>
                     <button class="cf-composer-del-btn" t-on-click="closeComposer" title="Elimina bozza">
