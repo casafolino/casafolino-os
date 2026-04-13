@@ -277,17 +277,20 @@ class CasafolinoMailAccount(models.Model):
                     new_msg = Message.create(vals)
                     new_count += 1
 
-                    # Se stato keep (partner tracked), scarica body e crea nel chatter
+                    # Se stato keep (partner tracked), scarica body
                     if new_msg.state == 'keep':
                         new_msg._download_body_imap(imap, folder_name, uid_str)
-                        if new_msg.partner_id:
-                            new_msg._create_partner_mail_message()
 
                 except Exception as e:
                     _logger.warning("Error creating mail message: %s", e)
                     continue
 
-            # Commit ogni batch
+            # Aggiorna last_fetch_datetime e committa ogni batch
+            self.write({
+                'last_fetch_datetime': fields.Datetime.now(),
+                'state': 'connected',
+                'error_message': False,
+            })
             self.env.cr.commit()
             _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
 
