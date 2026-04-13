@@ -8,3 +8,4 @@ from . import cf_mail_sender_rule
 from . import casafolino_mail_account
 from . import casafolino_mail_message_staging
 from . import casafolino_mail_blacklist
+from . import crm_lead_ext

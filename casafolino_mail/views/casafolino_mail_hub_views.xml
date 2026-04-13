@@ -187,6 +187,7 @@
                         <field name="account_id"/>
                         <field name="state" widget="badge"/>
                         <field name="assigned_user_ids" widget="many2many_tags"/>
+                        <field name="lead_id"/>
                         <field name="triage_user_id"/>
                         <field name="triage_date"/>
                     </group>
@@ -299,6 +300,38 @@
                             <field name="mail_message_count"/>
                         </group>
                     </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         4b) INHERITED VIEW — crm.lead Email tab
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_crm_lead_form_mail_hub" model="ir.ui.view">
+        <field name="name">crm.lead.form.mail.hub</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Email" name="lead_emails">
+                    <field name="lead_message_ids" readonly="1">
+                        <list string="Email collegate" decoration-bf="not is_read"
+                              default_order="email_date desc">
+                            <field name="is_important" string=" " widget="boolean_favorite"/>
+                            <field name="email_date" string="Data"/>
+                            <field name="direction" string="Dir"/>
+                            <field name="subject" string="Oggetto"/>
+                            <field name="sender_email" string="Mittente"/>
+                            <field name="state" string="Stato" widget="badge"
+                                   decoration-info="state == 'new'"
+                                   decoration-success="state == 'keep'"
+                                   decoration-danger="state == 'discard'"/>
+                            <field name="is_read" column_invisible="1"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>

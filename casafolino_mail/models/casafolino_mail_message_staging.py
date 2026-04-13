@@ -90,6 +90,7 @@ class CasafolinoMailMessage(models.Model):
     assigned_user_ids = fields.Many2many(
         'res.users', 'casafolino_mail_message_user_rel',
         'message_id', 'user_id', string='Assegnato a')
+    lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
 
     _sql_constraints = [
         ('message_id_unique', 'unique(message_id_rfc)',
@@ -128,6 +129,42 @@ class CasafolinoMailMessage(models.Model):
             if record.partner_id:
                 if not record.partner_id.mail_tracked:
                     record.partner_id.mail_tracked = True
+
+        # Auto-keep: tutte le email dallo stesso mittente ancora in 'new'
+        sender_emails = set()
+        for record in self:
+            if record.sender_email:
+                sender_emails.add(record.sender_email.lower().strip())
+        if sender_emails:
+            siblings = self.search([
+                ('sender_email', 'in', list(sender_emails)),
+                ('state', '=', 'new'),
+                ('id', 'not in', self.ids),
+            ])
+            if siblings:
+                # Trova il partner_id dal record appena processato per ogni sender
+                sender_partner = {}
+                for record in self:
+                    if record.sender_email and record.partner_id:
+                        sender_partner[record.sender_email.lower().strip()] = record.partner_id.id
+                for sib in siblings:
+                    sib_vals = {
+                        'state': 'keep',
+                        'triage_user_id': self.env.user.id,
+                        'triage_date': fields.Datetime.now(),
+                    }
+                    pid = sender_partner.get((sib.sender_email or '').lower().strip())
+                    if pid and not sib.partner_id:
+                        sib_vals['partner_id'] = pid
+                        sib_vals['match_type'] = 'exact'
+                    sib.write(sib_vals)
+                    if not sib.body_downloaded:
+                        try:
+                            imap = sib.account_id._get_imap_connection()
+                            sib._download_body_imap(imap, sib.imap_folder, sib.imap_uid)
+                            imap.logout()
+                        except Exception as e:
+                            _logger.error("Auto-keep body error %s: %s", sib.message_id_rfc, e)
 
     def action_discard(self):
         """Marca come discard."""
@@ -698,6 +735,8 @@ class CasafolinoMailMessage(models.Model):
             records.write({'is_important': True})
         elif action == 'unstar':
             records.write({'is_important': False})
+        elif action == 'delete':
+            records.unlink()
         return True
 
     @api.model
@@ -784,6 +823,14 @@ class CasafolinoMailMessage(models.Model):
                 vals['cf_language'] = kw['cf_language']
 
             lead = self.env['crm.lead'].create(vals)
+
+            # Collega le email selezionate al lead
+            message_id = kw.get('message_id') or False
+            if message_id:
+                msg = self.browse(int(message_id))
+                if msg.exists():
+                    msg.write({'lead_id': lead.id})
+
             return {'success': True, 'lead_id': lead.id, 'lead_name': lead.name}
         except Exception as e:
             return {'success': False, 'error': str(e)}

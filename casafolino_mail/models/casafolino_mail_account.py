@@ -267,8 +267,11 @@ class CasafolinoMailAccount(models.Model):
                     'match_type': match_type,
                 }
 
+                # Email inviate → sempre keep (le hai inviate tu)
+                if actual_direction == 'outbound':
+                    vals['state'] = 'keep'
                 # Se il partner è tracked, scarica subito body e metti in keep
-                if partner_id:
+                elif partner_id:
                     partner = self.env['res.partner'].browse(partner_id)
                     if partner.mail_tracked:
                         vals['state'] = 'keep'
