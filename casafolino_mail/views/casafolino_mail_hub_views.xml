@@ -317,21 +317,7 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Email" name="lead_emails">
-                    <field name="lead_message_ids" readonly="1">
-                        <list string="Email collegate" decoration-bf="not is_read"
-                              default_order="email_date desc">
-                            <field name="is_important" string=" " widget="boolean_favorite"/>
-                            <field name="email_date" string="Data"/>
-                            <field name="direction" string="Dir"/>
-                            <field name="subject" string="Oggetto"/>
-                            <field name="sender_email" string="Mittente"/>
-                            <field name="state" string="Stato" widget="badge"
-                                   decoration-info="state == 'new'"
-                                   decoration-success="state == 'keep'"
-                                   decoration-danger="state == 'discard'"/>
-                            <field name="is_read" column_invisible="1"/>
-                        </list>
-                    </field>
+                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
                 </page>
             </xpath>
         </field>
@@ -345,22 +331,8 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='emails']" position="inside">
-                <separator string="Email collegate dal Mail Hub"/>
-                <field name="lead_message_ids" readonly="1" nolabel="1">
-                    <list string="Email Mail Hub" decoration-bf="not is_read"
-                          default_order="email_date desc">
-                        <field name="is_important" string=" " widget="boolean_favorite"/>
-                        <field name="email_date" string="Data"/>
-                        <field name="direction" string="Dir"/>
-                        <field name="subject" string="Oggetto"/>
-                        <field name="sender_email" string="Mittente"/>
-                        <field name="state" string="Stato" widget="badge"
-                               decoration-info="state == 'new'"
-                               decoration-success="state == 'keep'"
-                               decoration-danger="state == 'discard'"/>
-                        <field name="is_read" column_invisible="1"/>
-                    </list>
-                </field>
+                <separator string="Email Mail Hub"/>
+                <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
             </xpath>
         </field>
     </record>

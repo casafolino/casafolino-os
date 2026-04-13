@@ -22,8 +22,11 @@
     'assets': {
         'web.assets_backend': [
             'casafolino_mail/static/src/css/cf_mail_client.css',
+            'casafolino_mail/static/src/css/cf_lead_mail_widget.css',
             'casafolino_mail/static/src/xml/cf_mail_client.xml',
+            'casafolino_mail/static/src/xml/cf_lead_mail_widget.xml',
             'casafolino_mail/static/src/js/cf_mail_client.js',
+            'casafolino_mail/static/src/js/cf_lead_mail_widget.js',
         ],
     },
     'post_init_hook': '_post_init_hook',

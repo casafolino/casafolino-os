@@ -748,6 +748,101 @@ class CasafolinoMailMessage(models.Model):
         msg.write({'is_important': not msg.is_important})
         return msg.is_important
 
+    # ── Lead Email Widget API ────────────────────────────────────────
+
+    @api.model
+    def get_lead_emails(self, *args, **kw):
+        """Ritorna email collegate a un lead per il widget embedded."""
+        lead_id = kw.get('lead_id')
+        if not lead_id:
+            return []
+        msgs = self.search([('lead_id', '=', int(lead_id))], order='email_date desc')
+        return [self._msg_to_dict(m) for m in msgs]
+
+    @api.model
+    def send_from_lead(self, *args, **kw):
+        """Invia email da una trattativa CRM e collegala al lead."""
+        lead_id = kw.get('lead_id')
+        to_address = kw.get('to_address') or ''
+        cc_address = kw.get('cc_address') or ''
+        subject = kw.get('subject') or ''
+        body = kw.get('body') or ''
+        reply_to_id = kw.get('reply_to_id') or False
+
+        if not to_address or not body:
+            return {'success': False, 'error': 'Destinatario e corpo obbligatori'}
+
+        # Prendi il primo account dell'utente corrente
+        account = self.env['casafolino.mail.account'].search([
+            ('responsible_user_id', '=', self.env.uid),
+            ('state', '=', 'connected'),
+        ], limit=1)
+        if not account:
+            return {'success': False, 'error': 'Nessun account email configurato'}
+
+        try:
+            import smtplib
+            import ssl as ssl_lib
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+
+            msg_obj = MIMEMultipart('alternative')
+            msg_obj['Subject'] = subject
+            msg_obj['From'] = '%s <%s>' % (account.name or account.email_address, account.email_address)
+            msg_obj['To'] = to_address
+            if cc_address:
+                msg_obj['Cc'] = cc_address
+
+            # In-Reply-To se è una risposta
+            if reply_to_id:
+                orig = self.browse(int(reply_to_id))
+                if orig.exists() and orig.message_id_rfc:
+                    msg_obj['In-Reply-To'] = orig.message_id_rfc
+                    msg_obj['References'] = orig.message_id_rfc
+
+            msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
+
+            recipients = [r.strip() for r in to_address.split(',') if r.strip()]
+            if cc_address:
+                recipients += [r.strip() for r in cc_address.split(',') if r.strip()]
+
+            # Invio SMTP
+            if account.imap_password:
+                server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
+                server.ehlo()
+                server.starttls(context=ssl_lib.create_default_context())
+                server.ehlo()
+                server.login(account.email_address, account.imap_password)
+                server.sendmail(account.email_address, recipients, msg_obj.as_string())
+                server.quit()
+            else:
+                return {'success': False, 'error': 'Password SMTP non configurata'}
+
+            # Crea record email inviata collegata al lead
+            self.create({
+                'account_id': account.id,
+                'message_id_rfc': msg_obj.get('Message-ID', ''),
+                'direction': 'outbound',
+                'sender_email': account.email_address,
+                'sender_name': account.name or '',
+                'recipient_emails': to_address,
+                'cc_emails': cc_address,
+                'subject': subject,
+                'email_date': fields.Datetime.now(),
+                'body_html': body,
+                'body_downloaded': True,
+                'state': 'keep',
+                'is_read': True,
+                'lead_id': int(lead_id) if lead_id else False,
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
+
+            return {'success': True}
+        except Exception as e:
+            _logger.error("send_from_lead error: %s", e)
+            return {'success': False, 'error': str(e)[:200]}
+
     @api.model
     def get_crm_data(self, *args, **kw):
         """Dati per il Lead Modal: market/channel selections, stages, partners, sources."""

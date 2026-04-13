@@ -1,0 +1,32 @@
+/* ── CfLeadMailWidget ─────────────────────────────────────── */
+.cf-lead-mail { border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; }
+.cf-lead-mail-toolbar { padding: 8px 12px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; }
+.cf-lead-mail-list { max-height: 500px; overflow-y: auto; }
+
+/* Row */
+.cf-lead-mail-row { border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.1s; }
+.cf-lead-mail-row:hover { background: #f5f7f0; }
+.cf-lead-mail-row.cf-expanded { background: #eef2e8; }
+.cf-lead-mail-row.cf-unread .cf-lead-mail-sender,
+.cf-lead-mail-row.cf-unread .cf-lead-mail-subject { font-weight: 700; }
+
+.cf-lead-mail-row-main { display: flex; align-items: center; padding: 8px 12px; gap: 8px; min-height: 40px; }
+.cf-lead-mail-dir { width: 20px; text-align: center; flex-shrink: 0; }
+.cf-dir-in { color: #1a73e8; }
+.cf-dir-out { color: #5A6E3A; }
+.cf-lead-mail-sender { width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.cf-lead-mail-subject { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #333; }
+.cf-lead-mail-date { flex-shrink: 0; font-size: 12px; color: #888; white-space: nowrap; }
+
+/* Detail */
+.cf-lead-mail-detail { padding: 12px 16px; background: #fafbf8; border-bottom: 2px solid #5A6E3A; }
+.cf-lead-mail-detail-header { font-size: 12px; color: #555; margin-bottom: 8px; line-height: 1.6; }
+.cf-lead-mail-detail-actions { }
+.cf-lead-mail-body { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; }
+.cf-lead-mail-iframe { width: 100%; min-height: 200px; border: none; pointer-events: auto; }
+
+/* Composer */
+.cf-lead-mail-composer { border-top: 2px solid #5A6E3A; padding: 12px; background: #fafbf8; }
+.cf-lead-mail-composer-header { font-size: 14px; margin-bottom: 8px; }
+.cf-composer-label { font-size: 12px; font-weight: 600; color: #555; width: 50px; display: inline-block; }
+.cf-composer-body { font-size: 13px; }

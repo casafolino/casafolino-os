@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="cf_lead_mail_widget.Main">
+    <div class="cf-lead-mail">
+        <!-- Toolbar -->
+        <div class="cf-lead-mail-toolbar">
+            <button class="btn btn-primary btn-sm" t-on-click="onClickNewEmail">
+                <i class="fa fa-pencil me-1"/> Nuova Email
+            </button>
+            <button class="btn btn-outline-secondary btn-sm ms-1" t-on-click="loadMessages">
+                <i class="fa fa-refresh"/>
+            </button>
+            <span class="ms-2 text-muted small" t-if="state.messages.length">
+                <t t-esc="state.messages.length"/> email
+            </span>
+        </div>
+
+        <!-- Loading -->
+        <div t-if="state.loading" class="text-center py-3 text-muted">
+            <i class="fa fa-spinner fa-spin"/> Caricamento...
+        </div>
+
+        <!-- Empty -->
+        <div t-if="!state.loading and !state.messages.length" class="text-center py-4 text-muted">
+            <i class="fa fa-inbox fa-2x mb-2 d-block"/>
+            Nessuna email collegata
+        </div>
+
+        <!-- Email list -->
+        <div t-if="!state.loading and state.messages.length" class="cf-lead-mail-list">
+            <t t-foreach="state.messages" t-as="msg" t-key="msg.id">
+                <div t-attf-class="cf-lead-mail-row #{!msg.is_read ? 'cf-unread' : ''} #{state.expandedId === msg.id ? 'cf-expanded' : ''}"
+                     t-on-click="() => this.onClickRow(msg.id)">
+                    <div class="cf-lead-mail-row-main">
+                        <span t-attf-class="cf-lead-mail-dir #{msg.direction === 'out' ? 'cf-dir-out' : 'cf-dir-in'}">
+                            <i t-attf-class="fa #{msg.direction === 'out' ? 'fa-arrow-right' : 'fa-arrow-left'}"/>
+                        </span>
+                        <span class="cf-lead-mail-sender" t-esc="msg.from_name || msg.from_address"/>
+                        <span class="cf-lead-mail-subject" t-esc="msg.subject"/>
+                        <span class="cf-lead-mail-date" t-esc="msg.date_short"/>
+                    </div>
+                </div>
+
+                <!-- Expanded detail -->
+                <t t-if="state.expandedId === msg.id">
+                    <div class="cf-lead-mail-detail">
+                        <t t-if="!state.expandedDetail">
+                            <div class="text-center py-2 text-muted">
+                                <i class="fa fa-spinner fa-spin"/> Caricamento...
+                            </div>
+                        </t>
+                        <t t-if="state.expandedDetail">
+                            <div class="cf-lead-mail-detail-header">
+                                <div><strong>Da:</strong> <t t-esc="state.expandedDetail.from_name"/> &lt;<t t-esc="state.expandedDetail.from_address"/>&gt;</div>
+                                <div t-if="state.expandedDetail.to_address"><strong>A:</strong> <t t-esc="state.expandedDetail.to_address"/></div>
+                                <div t-if="state.expandedDetail.cc_address"><strong>CC:</strong> <t t-esc="state.expandedDetail.cc_address"/></div>
+                                <div><strong>Data:</strong> <t t-esc="state.expandedDetail.date"/></div>
+                            </div>
+                            <div class="cf-lead-mail-detail-actions mb-2">
+                                <button class="btn btn-sm btn-outline-primary" t-on-click="() => this.onClickReply(msg)">
+                                    <i class="fa fa-reply me-1"/> Rispondi
+                                </button>
+                            </div>
+                            <div class="cf-lead-mail-body">
+                                <iframe class="cf-lead-mail-iframe" t-att-srcdoc="state.expandedDetail.body_html"/>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </div>
+
+        <!-- Composer -->
+        <t t-if="state.showComposer">
+            <div class="cf-lead-mail-composer">
+                <div class="cf-lead-mail-composer-header">
+                    <strong t-if="state.replyToId">Rispondi</strong>
+                    <strong t-else="">Nuova Email</strong>
+                    <button class="btn-close btn-sm float-end" t-on-click="onCloseComposer"/>
+                </div>
+                <div class="cf-lead-mail-composer-fields">
+                    <div class="mb-1">
+                        <label class="cf-composer-label">A:</label>
+                        <input class="form-control form-control-sm" t-att-value="state.composerTo" t-on-input="onInputTo"/>
+                    </div>
+                    <div class="mb-1">
+                        <label class="cf-composer-label">CC:</label>
+                        <input class="form-control form-control-sm" t-att-value="state.composerCc" t-on-input="onInputCc"/>
+                    </div>
+                    <div class="mb-1">
+                        <label class="cf-composer-label">Oggetto:</label>
+                        <input class="form-control form-control-sm" t-att-value="state.composerSubject" t-on-input="onInputSubject"/>
+                    </div>
+                    <div class="mb-2">
+                        <div class="cf-composer-body form-control" contenteditable="true"
+                             t-on-input="onInputBody"
+                             style="min-height: 120px;"/>
+                    </div>
+                    <button class="btn btn-primary btn-sm" t-on-click="onSendEmail"
+                            t-att-disabled="state.composerSending">
+                        <i t-attf-class="fa #{state.composerSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'} me-1"/>
+                        Invia
+                    </button>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>
