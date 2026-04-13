@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Search view -->
+    <record id="cf_project_search" model="ir.ui.view">
+        <field name="name">project.project.search.cf</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_project_filter"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="cf_my_projects" string="I Miei Progetti"
+                        domain="[('user_id', '=', uid)]"/>
+                <filter name="cf_blocked" string="Bloccati"
+                        domain="[('cf_main_blocker', '!=', 'none')]"/>
+                <filter name="cf_late" string="In Ritardo"
+                        domain="[('cf_traffic_light', '=', 'red')]"/>
+                <separator/>
+                <filter name="cf_group_type" string="Tipo Progetto"
+                        context="{'group_by': 'cf_project_type'}"/>
+                <filter name="cf_group_partner" string="Cliente"
+                        context="{'group_by': 'cf_partner_id'}"/>
+                <filter name="cf_group_traffic" string="Semaforo"
+                        context="{'group_by': 'cf_traffic_light'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Form view extension -->
+    <record id="cf_project_form" model="ir.ui.view">
+        <field name="name">project.project.form.cf</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-info" role="alert"
+                     invisible="not cf_project_type">
+                    <div class="d-flex align-items-center">
+                        <field name="cf_traffic_light" widget="badge"
+                               decoration-success="cf_traffic_light == 'green'"
+                               decoration-warning="cf_traffic_light == 'yellow'"
+                               decoration-danger="cf_traffic_light == 'red'"/>
+                        <span class="ms-3">
+                            Avanzamento: <field name="cf_progress" widget="progressbar"/> |
+                            Task: <field name="cf_tasks_done"/>/<field name="cf_tasks_total"/> |
+                            Giorni aperti: <field name="cf_days_open"/>
+                        </span>
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="CasaFolino" name="cf_project_info">
+                    <group>
+                        <group string="Progetto">
+                            <field name="cf_project_type"/>
+                            <field name="cf_template_id"/>
+                            <field name="cf_target_date"/>
+                            <field name="cf_parent_project_id"/>
+                        </group>
+                        <group string="Partner">
+                            <field name="cf_partner_id"/>
+                            <field name="cf_partner_country_id"/>
+                            <field name="cf_partner_email"/>
+                        </group>
+                    </group>
+                    <group string="Stato">
+                        <group>
+                            <field name="cf_traffic_light"/>
+                            <field name="cf_main_blocker"/>
+                            <field name="cf_tasks_blocked"/>
+                        </group>
+                        <group>
+                            <field name="cf_progress" widget="progressbar"/>
+                            <field name="cf_days_open"/>
+                            <field name="cf_child_count"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Spedizioni" name="cf_shipments"
+                      invisible="cf_project_type not in ('sample_fair', 'sample_client')">
+                    <field name="cf_shipment_ids">
+                        <list editable="bottom">
+                            <field name="state" widget="badge"/>
+                            <field name="carrier"/>
+                            <field name="tracking_number"/>
+                            <field name="ship_date"/>
+                            <field name="estimated_delivery"/>
+                            <field name="product_ids" widget="many2many_tags"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

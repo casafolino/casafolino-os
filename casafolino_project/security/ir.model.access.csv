@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_project_template_user,cf.project.template user,model_cf_project_template,group_cf_project_user,1,0,0,0
+access_cf_project_template_manager,cf.project.template manager,model_cf_project_template,group_cf_project_manager,1,1,1,1
+access_cf_project_task_template_user,cf.project.task.template user,model_cf_project_task_template,group_cf_project_user,1,0,0,0
+access_cf_project_task_template_manager,cf.project.task.template manager,model_cf_project_task_template,group_cf_project_manager,1,1,1,1
+access_cf_project_shipment_user,cf.project.shipment user,model_cf_project_shipment,group_cf_project_user,1,1,1,0
+access_cf_project_shipment_manager,cf.project.shipment manager,model_cf_project_shipment,group_cf_project_manager,1,1,1,1
+access_cf_project_checklist_item_user,cf.project.checklist.item user,model_cf_project_checklist_item,group_cf_project_user,1,1,1,0
+access_cf_project_checklist_item_manager,cf.project.checklist.item manager,model_cf_project_checklist_item,group_cf_project_manager,1,1,1,1
+access_cf_project_checklist_template_user,cf.project.checklist.template user,model_cf_project_checklist_template,group_cf_project_user,1,0,0,0
+access_cf_project_checklist_template_manager,cf.project.checklist.template manager,model_cf_project_checklist_template,group_cf_project_manager,1,1,1,1

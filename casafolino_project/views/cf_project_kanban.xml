@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Dashboard Kanban -->
+    <record id="cf_project_kanban_view" model="ir.ui.view">
+        <field name="name">project.project.kanban.cf</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="cf_project_type" default_order="cf_target_date asc">
+                <field name="name"/>
+                <field name="cf_project_type"/>
+                <field name="cf_partner_id"/>
+                <field name="cf_partner_country_id"/>
+                <field name="cf_target_date"/>
+                <field name="cf_traffic_light"/>
+                <field name="cf_progress"/>
+                <field name="cf_main_blocker"/>
+                <field name="cf_days_open"/>
+                <field name="user_id"/>
+                <field name="cf_tasks_done"/>
+                <field name="cf_tasks_total"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="p-2 #{record.cf_traffic_light.raw_value === 'red' ? 'border-start border-danger border-3' : record.cf_traffic_light.raw_value === 'yellow' ? 'border-start border-warning border-3' : 'border-start border-success border-3'}">
+                            <!-- Nome progetto -->
+                            <div class="fw-bold">
+                                <field name="name"/>
+                            </div>
+                            <!-- Partner + paese -->
+                            <div class="text-muted small mt-1" t-if="record.cf_partner_id.value">
+                                <field name="cf_partner_id"/>
+                                <span t-if="record.cf_partner_country_id.value" class="ms-1">
+                                    (<field name="cf_partner_country_id"/>)
+                                </span>
+                            </div>
+                            <!-- Progress -->
+                            <div class="mt-2">
+                                <field name="cf_progress" widget="progressbar"/>
+                            </div>
+                            <!-- Semaforo + blocker -->
+                            <div class="mt-1 d-flex align-items-center gap-2 small">
+                                <span t-if="record.cf_main_blocker.raw_value and record.cf_main_blocker.raw_value !== 'none'" class="badge bg-warning text-dark">
+                                    In attesa: <field name="cf_main_blocker"/>
+                                </span>
+                                <span class="text-muted">
+                                    <field name="cf_days_open"/>g
+                                </span>
+                            </div>
+                            <!-- Data target + responsabile -->
+                            <div class="mt-1 d-flex align-items-center justify-content-between">
+                                <span class="small" t-if="record.cf_target_date.value">
+                                    <i class="fa fa-calendar-o me-1"/>
+                                    <field name="cf_target_date"/>
+                                </span>
+                                <field name="user_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Dashboard action -->
+    <record id="action_cf_project_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard Progetti</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('cf_project_type', '!=', False)]</field>
+        <field name="context">{'search_default_cf_my_projects': 0}</field>
+        <field name="search_view_id" ref="project.view_project_project_filter"/>
+    </record>
+
+    <!-- All projects action -->
+    <record id="action_cf_project_all" model="ir.actions.act_window">
+        <field name="name">Tutti i Progetti</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[('cf_project_type', '!=', False)]</field>
+    </record>
+
+</odoo>

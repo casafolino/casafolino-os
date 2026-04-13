@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         1. Campionatura Fiera
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="template_sample_fair" model="cf.project.template">
+        <field name="name">Campionatura Fiera</field>
+        <field name="cf_project_type">sample_fair</field>
+    </record>
+
+    <record id="tt_sf_1" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Selezione SKU da campionare</field>
+        <field name="sequence">10</field>
+        <field name="relative_days">-45</field>
+        <field name="cf_waiting_for">none</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sf_2" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Conferma disponibilita produzione</field>
+        <field name="sequence">20</field>
+        <field name="relative_days">-40</field>
+        <field name="cf_waiting_for">production</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sf_3" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Preparazione campioni</field>
+        <field name="sequence">30</field>
+        <field name="relative_days">-30</field>
+        <field name="cf_waiting_for">production</field>
+        <field name="auto_activate_next" eval="True"/>
+        <field name="checklist_required" eval="True"/>
+    </record>
+    <record id="cl_sf_3_1" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_sf_3"/>
+        <field name="name">Prodotti pronti</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="cl_sf_3_2" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_sf_3"/>
+        <field name="name">Confezionamento OK</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="cl_sf_3_3" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_sf_3"/>
+        <field name="name">Etichette applicate</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="tt_sf_4" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Preparazione materiale marketing</field>
+        <field name="sequence">40</field>
+        <field name="relative_days">-25</field>
+        <field name="cf_waiting_for">graphic</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sf_5" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Imballaggio e preparazione spedizione</field>
+        <field name="sequence">50</field>
+        <field name="relative_days">-15</field>
+        <field name="cf_waiting_for">internal</field>
+        <field name="auto_activate_next" eval="True"/>
+        <field name="checklist_required" eval="True"/>
+    </record>
+    <record id="cl_sf_5_1" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_sf_5"/>
+        <field name="name">Peso verificato</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="cl_sf_5_2" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_sf_5"/>
+        <field name="name">Documenti doganali</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="cl_sf_5_3" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_sf_5"/>
+        <field name="name">Tracking inserito</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="tt_sf_6" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Spedizione</field>
+        <field name="sequence">60</field>
+        <field name="relative_days">-10</field>
+        <field name="cf_waiting_for">none</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sf_7" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Conferma ricezione</field>
+        <field name="sequence">70</field>
+        <field name="relative_days">-5</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sf_8" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_fair"/>
+        <field name="name">Follow-up post consegna</field>
+        <field name="sequence">80</field>
+        <field name="relative_days">7</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="False"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         2. Campionatura Cliente
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="template_sample_client" model="cf.project.template">
+        <field name="name">Campionatura Cliente</field>
+        <field name="cf_project_type">sample_client</field>
+    </record>
+
+    <record id="tt_sc_1" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_client"/>
+        <field name="name">Ricezione richiesta e briefing</field>
+        <field name="sequence">10</field>
+        <field name="relative_days">0</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sc_2" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_client"/>
+        <field name="name">Selezione prodotti</field>
+        <field name="sequence">20</field>
+        <field name="relative_days">-20</field>
+        <field name="cf_waiting_for">none</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sc_3" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_client"/>
+        <field name="name">Verifica disponibilita</field>
+        <field name="sequence">30</field>
+        <field name="relative_days">-18</field>
+        <field name="cf_waiting_for">production</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_sc_4" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_client"/>
+        <field name="name">Preparazione campioni</field>
+        <field name="sequence">40</field>
+        <field name="relative_days">-12</field>
+        <field name="cf_waiting_for">production</field>
+        <field name="auto_activate_next" eval="True"/>
+        <field name="checklist_required" eval="True"/>
+    </record>
+
+    <record id="tt_sc_5" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_client"/>
+        <field name="name">Spedizione</field>
+        <field name="sequence">50</field>
+        <field name="relative_days">-7</field>
+        <field name="cf_waiting_for">internal</field>
+        <field name="auto_activate_next" eval="True"/>
+        <field name="checklist_required" eval="True"/>
+    </record>
+
+    <record id="tt_sc_6" model="cf.project.task.template">
+        <field name="template_id" ref="template_sample_client"/>
+        <field name="name">Follow-up feedback</field>
+        <field name="sequence">60</field>
+        <field name="relative_days">5</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="False"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         3. Etichetta Personalizzata
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="template_custom_label" model="cf.project.template">
+        <field name="name">Etichetta Personalizzata</field>
+        <field name="cf_project_type">custom_label</field>
+    </record>
+
+    <record id="tt_cl_1" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Briefing cliente (specifiche etichetta)</field>
+        <field name="sequence">10</field>
+        <field name="relative_days">0</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_cl_2" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Invio brief a grafico</field>
+        <field name="sequence">20</field>
+        <field name="relative_days">-25</field>
+        <field name="cf_waiting_for">graphic</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_cl_3" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Ricezione bozza v1</field>
+        <field name="sequence">30</field>
+        <field name="relative_days">-20</field>
+        <field name="cf_waiting_for">graphic</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_cl_4" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Revisione interna</field>
+        <field name="sequence">40</field>
+        <field name="relative_days">-18</field>
+        <field name="cf_waiting_for">internal</field>
+        <field name="auto_activate_next" eval="True"/>
+        <field name="checklist_required" eval="True"/>
+    </record>
+    <record id="cl_cl_4_1" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_cl_4"/>
+        <field name="name">Allergeni corretti</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="cl_cl_4_2" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_cl_4"/>
+        <field name="name">Valori nutrizionali OK</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="cl_cl_4_3" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_cl_4"/>
+        <field name="name">Testi legali conformi</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="tt_cl_5" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Invio bozza a cliente</field>
+        <field name="sequence">50</field>
+        <field name="relative_days">-15</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_cl_6" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Ricezione feedback/approvazione</field>
+        <field name="sequence">60</field>
+        <field name="relative_days">-10</field>
+        <field name="cf_waiting_for">client</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_cl_7" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Invio file definitivo a tipografia</field>
+        <field name="sequence">70</field>
+        <field name="relative_days">-7</field>
+        <field name="cf_waiting_for">printer</field>
+        <field name="auto_activate_next" eval="True"/>
+    </record>
+
+    <record id="tt_cl_8" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Ricezione etichette stampate</field>
+        <field name="sequence">80</field>
+        <field name="relative_days">-3</field>
+        <field name="cf_waiting_for">printer</field>
+        <field name="auto_activate_next" eval="True"/>
+        <field name="checklist_required" eval="True"/>
+    </record>
+    <record id="cl_cl_8_1" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_cl_8"/>
+        <field name="name">Colori conformi</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="cl_cl_8_2" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_cl_8"/>
+        <field name="name">Quantita corretta</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="cl_cl_8_3" model="cf.project.checklist.template">
+        <field name="task_template_id" ref="tt_cl_8"/>
+        <field name="name">Adesione OK</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="tt_cl_9" model="cf.project.task.template">
+        <field name="template_id" ref="template_custom_label"/>
+        <field name="name">Applicazione su prodotti</field>
+        <field name="sequence">90</field>
+        <field name="relative_days">-1</field>
+        <field name="cf_waiting_for">production</field>
+        <field name="auto_activate_next" eval="False"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         4. Lancio Nuovo Prodotto
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="template_new_product" model="cf.project.template">
+        <field name="name">Lancio Nuovo Prodotto</field>
+        <field name="cf_project_type">new_product</field>
+    </record>
+
+    <record id="tt_np_1" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Sviluppo ricetta / R&amp;D</field>
+        <field name="sequence">10</field>
+        <field name="relative_days">-60</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_np_2" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Test produzione pilota</field>
+        <field name="sequence">20</field>
+        <field name="relative_days">-50</field>
+        <field name="cf_waiting_for">production</field>
+    </record>
+    <record id="tt_np_3" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Analisi di laboratorio</field>
+        <field name="sequence">30</field>
+        <field name="relative_days">-45</field>
+        <field name="cf_waiting_for">supplier</field>
+    </record>
+    <record id="tt_np_4" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Scheda tecnica</field>
+        <field name="sequence">40</field>
+        <field name="relative_days">-40</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_np_5" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Definizione etichetta</field>
+        <field name="sequence">50</field>
+        <field name="relative_days">-35</field>
+        <field name="cf_waiting_for">graphic</field>
+    </record>
+    <record id="tt_np_6" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Pricing e MOQ</field>
+        <field name="sequence">60</field>
+        <field name="relative_days">-30</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_np_7" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Preparazione campionatura</field>
+        <field name="sequence">70</field>
+        <field name="relative_days">-20</field>
+        <field name="cf_waiting_for">production</field>
+    </record>
+    <record id="tt_np_8" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Presentazione a clienti target</field>
+        <field name="sequence">80</field>
+        <field name="relative_days">-10</field>
+        <field name="cf_waiting_for">client</field>
+    </record>
+    <record id="tt_np_9" model="cf.project.task.template">
+        <field name="template_id" ref="template_new_product"/>
+        <field name="name">Go-live catalogo e marketplace</field>
+        <field name="sequence">90</field>
+        <field name="relative_days">0</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         5. Preparazione Fiera
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="template_fair_prep" model="cf.project.template">
+        <field name="name">Preparazione Fiera</field>
+        <field name="cf_project_type">fair_prep</field>
+    </record>
+
+    <record id="tt_fp_1" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Prenotazione stand e logistica</field>
+        <field name="sequence">10</field>
+        <field name="relative_days">-90</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_fp_2" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Design stand e materiali</field>
+        <field name="sequence">20</field>
+        <field name="relative_days">-60</field>
+        <field name="cf_waiting_for">graphic</field>
+    </record>
+    <record id="tt_fp_3" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Selezione campioni da esporre</field>
+        <field name="sequence">30</field>
+        <field name="relative_days">-45</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_fp_4" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Preparazione catalogo/listino</field>
+        <field name="sequence">40</field>
+        <field name="relative_days">-30</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_fp_5" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Organizzazione viaggio e hotel</field>
+        <field name="sequence">50</field>
+        <field name="relative_days">-30</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_fp_6" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Spedizione materiali allo stand</field>
+        <field name="sequence">60</field>
+        <field name="relative_days">-15</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fp_7" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Checklist pre-partenza</field>
+        <field name="sequence">70</field>
+        <field name="relative_days">-3</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+    <record id="tt_fp_8" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_prep"/>
+        <field name="name">Follow-up contatti post-fiera</field>
+        <field name="sequence">80</field>
+        <field name="relative_days">3</field>
+        <field name="cf_waiting_for">none</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Task form extension -->
+    <record id="cf_task_form" model="ir.ui.view">
+        <field name="name">project.task.form.cf</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="CasaFolino" name="cf_task_info">
+                    <group>
+                        <group>
+                            <field name="cf_waiting_for"/>
+                            <field name="cf_days_in_stage"/>
+                            <field name="cf_checklist_required"/>
+                            <field name="cf_auto_activate_next"/>
+                        </group>
+                        <group>
+                            <field name="cf_template_sequence"/>
+                            <field name="cf_relative_days"/>
+                            <field name="cf_shipment_id"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Checklist" name="cf_checklist">
+                    <field name="cf_checklist_progress" widget="progressbar"/>
+                    <field name="cf_checklist_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="is_done"/>
+                            <field name="done_by"/>
+                            <field name="done_date"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Task list extension -->
+    <record id="cf_task_list" model="ir.ui.view">
+        <field name="name">project.task.list.cf</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="cf_waiting_for" string="In Attesa Di" optional="show"/>
+                <field name="cf_days_in_stage" string="Giorni" optional="show"/>
+                <field name="cf_checklist_progress" string="Checklist %" widget="progressbar" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- My Tasks action -->
+    <record id="action_cf_my_tasks" model="ir.actions.act_window">
+        <field name="name">Le Mie Task</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[('user_ids', 'in', uid)]</field>
+        <field name="context">{'group_by': 'project_id'}</field>
+    </record>
+
+</odoo>

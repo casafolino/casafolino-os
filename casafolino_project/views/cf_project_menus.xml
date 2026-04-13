@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu -->
+    <menuitem id="menu_cf_project_root"
+              name="CasaFolino Project"
+              web_icon="casafolino_project,static/description/icon.png"
+              sequence="25"/>
+
+    <menuitem id="menu_cf_project_dashboard"
+              name="Dashboard Progetti"
+              parent="menu_cf_project_root"
+              action="action_cf_project_dashboard"
+              sequence="1"/>
+
+    <menuitem id="menu_cf_my_tasks"
+              name="Le Mie Task"
+              parent="menu_cf_project_root"
+              action="action_cf_my_tasks"
+              sequence="2"/>
+
+    <menuitem id="menu_cf_project_all"
+              name="Tutti i Progetti"
+              parent="menu_cf_project_root"
+              action="action_cf_project_all"
+              sequence="3"/>
+
+    <menuitem id="menu_cf_shipments"
+              name="Spedizioni"
+              parent="menu_cf_project_root"
+              action="action_cf_shipment"
+              sequence="4"/>
+
+    <!-- Configurazione -->
+    <menuitem id="menu_cf_project_config"
+              name="Configurazione"
+              parent="menu_cf_project_root"
+              sequence="99"
+              groups="group_cf_project_manager"/>
+
+    <menuitem id="menu_cf_project_templates"
+              name="Template Progetto"
+              parent="menu_cf_project_config"
+              action="action_cf_project_template"
+              sequence="1"/>
+
+    <menuitem id="menu_cf_project_task_templates"
+              name="Template Task"
+              parent="menu_cf_project_config"
+              action="action_cf_project_task_template"
+              sequence="2"/>
+
+</odoo>
