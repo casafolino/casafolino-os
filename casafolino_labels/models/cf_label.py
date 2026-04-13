@@ -59,6 +59,6 @@ class CasafolinoLabel(models.Model):
     # ── Audit ────────────────────────────────────────────────────────
     active = fields.Boolean(default=True)
 
-    def _group_expand_stage(self, stages, domain, order):
+    def _group_expand_stage(self, stages, domain, order=None):
         """Mostra tutte le colonne stage nel kanban anche se vuote."""
         return [key for key, _ in self._fields['stage'].selection]
