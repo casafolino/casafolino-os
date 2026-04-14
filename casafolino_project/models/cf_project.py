@@ -94,7 +94,7 @@ class CfProject(models.Model):
 
     @api.depends('task_ids.stage_id', 'task_ids.date_deadline', 'cf_target_date')
     def _compute_traffic_light(self):
-        today = fields.Date.context_today(self)
+        today = fields.Date.today()
         for proj in self:
             if not proj.cf_target_date:
                 proj.cf_traffic_light = 'green'
@@ -102,14 +102,15 @@ class CfProject(models.Model):
             if proj.cf_target_date < today:
                 proj.cf_traffic_light = 'red'
                 continue
-            # Check task deadlines
+            # Check task deadlines (date_deadline is Datetime in Odoo 18)
             has_red = False
             has_yellow = False
             for task in proj.task_ids.filtered(lambda t: not t.stage_id.fold):
                 if task.date_deadline:
-                    if task.date_deadline < today:
+                    dl = task.date_deadline.date()
+                    if dl < today:
                         has_red = True
-                    elif task.date_deadline <= today + timedelta(days=3):
+                    elif dl <= today + timedelta(days=3):
                         has_yellow = True
             if has_red:
                 proj.cf_traffic_light = 'red'
