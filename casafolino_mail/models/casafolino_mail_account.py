@@ -38,6 +38,8 @@ class CasafolinoMailAccount(models.Model):
     fetch_sent = fields.Boolean('Scarica Sent', default=True)
     company_domain = fields.Char('Dominio aziendale', default='casafolino.com',
         help='Email da questo dominio sono considerate interne')
+    signature_html = fields.Html('Firma Email',
+        help='Firma HTML inserita automaticamente nelle email')
 
     # ── Connection helpers ────────────────────────────────────────────
 
@@ -424,7 +426,7 @@ class CasafolinoMailAccount(models.Model):
                 'color': '#5A6E3A',
                 'is_team': False,
                 'unread': unread,
-                'signature': '',
+                'signature': a.signature_html or '',
                 'imap_enabled': a.state == 'connected',
                 'imap_status': a.state or '',
             })
@@ -443,7 +445,7 @@ class CasafolinoMailAccount(models.Model):
             'name': acc.name or '',
             'email': acc.email_address or '',
             'color': '#5A6E3A',
-            'signature': '',
+            'signature': acc.signature_html or '',
             'imap_host': acc.imap_host or 'imap.gmail.com',
             'imap_port': acc.imap_port or 993,
             'imap_ssl': acc.imap_use_ssl,

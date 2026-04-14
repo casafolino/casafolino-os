@@ -145,6 +145,9 @@
                     </group>
                 </group>
                 <field name="error_message" invisible="state != 'error'" readonly="1"/>
+                <separator string="Firma Email"/>
+                <field name="signature_html" widget="html"
+                       placeholder="La tua firma email (inserita automaticamente nelle email inviate)..."/>
             </form>
         </field>
     </record>

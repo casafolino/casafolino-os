@@ -1065,12 +1065,15 @@ class CfMailClient extends Component {
 
     async _initComposerBody() {
         // Carica firma fresca dall'account
-        let freshSig = "";
+        var freshSig = "";
         try {
-            const accountId = this.state.composerFrom || this.state.selectedAccount;
+            var accountId = this.state.composerFrom || this.state.selectedAccount;
             if (accountId) {
-                const detail = await this._rpc("casafolino.mail.account", "get_account_detail", { account_id: accountId });
+                var detail = await this._rpc("casafolino.mail.account", "get_account_detail", { account_id: accountId });
                 freshSig = detail.signature || "";
+                if (!freshSig && detail.name && detail.email) {
+                    freshSig = detail.name + "<br/>" + detail.email;
+                }
             }
         } catch(e) {}
         requestAnimationFrame(() => {

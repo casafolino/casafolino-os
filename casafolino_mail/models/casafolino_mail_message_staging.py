@@ -2,6 +2,7 @@ import base64
 import email
 import logging
 import re
+import uuid
 
 from odoo import models, fields, api
 from odoo.exceptions import AccessError
@@ -92,10 +93,24 @@ class CasafolinoMailMessage(models.Model):
         'message_id', 'user_id', string='Assegnato a')
     lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
 
-    _sql_constraints = [
-        ('message_id_account_unique', 'unique(message_id_rfc, account_id)',
-         'Email già presente per questo account (Message-ID duplicato).'),
-    ]
+    _sql_constraints = []
+
+    def init(self):
+        """Partial unique index: dedup solo per message_id_rfc non vuoti."""
+        # Drop old constraints if they exist
+        self.env.cr.execute("""
+            ALTER TABLE casafolino_mail_message
+            DROP CONSTRAINT IF EXISTS casafolino_mail_message_message_id_unique;
+        """)
+        self.env.cr.execute("""
+            ALTER TABLE casafolino_mail_message
+            DROP CONSTRAINT IF EXISTS casafolino_mail_message_message_id_account_unique;
+        """)
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS casafolino_mail_message_rfc_account_uniq
+            ON casafolino_mail_message (message_id_rfc, account_id)
+            WHERE message_id_rfc IS NOT NULL AND message_id_rfc != ''
+        """)
 
     @api.depends('sender_email')
     def _compute_sender_domain(self):
@@ -843,6 +858,8 @@ class CasafolinoMailMessage(models.Model):
         from email import encoders as email_encoders
 
         msg_obj = MIMEMultipart('mixed')
+        generated_msg_id = '<%s@casafolino.com>' % uuid.uuid4()
+        msg_obj['Message-ID'] = generated_msg_id
         msg_obj['Subject'] = subject
         msg_obj['From'] = '%s <%s>' % (account.name or account.email_address, account.email_address)
         msg_obj['To'] = to_address
