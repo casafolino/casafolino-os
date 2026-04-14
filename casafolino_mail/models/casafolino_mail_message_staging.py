@@ -93,8 +93,8 @@ class CasafolinoMailMessage(models.Model):
     lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
 
     _sql_constraints = [
-        ('message_id_unique', 'unique(message_id_rfc)',
-         'Email già presente (Message-ID duplicato).'),
+        ('message_id_account_unique', 'unique(message_id_rfc, account_id)',
+         'Email già presente per questo account (Message-ID duplicato).'),
     ]
 
     @api.depends('sender_email')

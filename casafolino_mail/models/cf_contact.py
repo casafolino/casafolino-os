@@ -212,7 +212,7 @@ class ResPartnerMailExt(models.Model):
                             message_id = "<%s-%s-%s@generated>" % (account.email_address, uid_str, folder_name)
 
                         # Skip se già esiste
-                        if Message.search([('message_id_rfc', '=', message_id)], limit=1):
+                        if Message.search([('message_id_rfc', '=', message_id), ('account_id', '=', account.id)], limit=1):
                             continue
 
                         # Parsa header

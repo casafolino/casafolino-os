@@ -208,7 +208,7 @@ class CasafolinoMailAccount(models.Model):
                     message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
 
                 # Deduplicazione: skip se Message-ID già esiste
-                existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
+                existing = Message.search([('message_id_rfc', '=', message_id), ('account_id', '=', self.id)], limit=1)
                 if existing:
                     skip_count += 1
                     continue
