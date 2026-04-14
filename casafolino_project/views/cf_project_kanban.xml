@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Dashboard Kanban -->
+    <!-- Dashboard Kanban (standalone) -->
     <record id="cf_project_kanban_view" model="ir.ui.view">
-        <field name="name">project.project.kanban.cf</field>
+        <field name="name">project.project.kanban.cf.dashboard</field>
         <field name="model">project.project</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="cf_project_type" default_order="cf_target_date asc">
+            <kanban default_group_by="cf_project_type" default_order="cf_target_date asc"
+                    quick_create="false">
                 <field name="name"/>
                 <field name="cf_project_type"/>
                 <field name="cf_partner_id"/>
@@ -22,22 +23,18 @@
                 <templates>
                     <t t-name="card">
                         <div t-attf-class="p-2 #{record.cf_traffic_light.raw_value === 'red' ? 'border-start border-danger border-3' : record.cf_traffic_light.raw_value === 'yellow' ? 'border-start border-warning border-3' : 'border-start border-success border-3'}">
-                            <!-- Nome progetto -->
                             <div class="fw-bold">
                                 <field name="name"/>
                             </div>
-                            <!-- Partner + paese -->
                             <div class="text-muted small mt-1" t-if="record.cf_partner_id.value">
                                 <field name="cf_partner_id"/>
                                 <span t-if="record.cf_partner_country_id.value" class="ms-1">
                                     (<field name="cf_partner_country_id"/>)
                                 </span>
                             </div>
-                            <!-- Progress -->
                             <div class="mt-2">
                                 <field name="cf_progress" widget="progressbar"/>
                             </div>
-                            <!-- Semaforo + blocker -->
                             <div class="mt-1 d-flex align-items-center gap-2 small">
                                 <span t-if="record.cf_main_blocker.raw_value and record.cf_main_blocker.raw_value !== 'none'" class="badge bg-warning text-dark">
                                     In attesa: <field name="cf_main_blocker"/>
@@ -46,7 +43,6 @@
                                     <field name="cf_days_open"/>g
                                 </span>
                             </div>
-                            <!-- Data target + responsabile -->
                             <div class="mt-1 d-flex align-items-center justify-content-between">
                                 <span class="small" t-if="record.cf_target_date.value">
                                     <i class="fa fa-calendar-o me-1"/>
@@ -61,22 +57,103 @@
         </field>
     </record>
 
-    <!-- Dashboard action -->
+    <!-- List view for "Tutti i Progetti" (standalone) -->
+    <record id="cf_project_list_view" model="ir.ui.view">
+        <field name="name">project.project.list.cf</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <list string="Progetti CasaFolino">
+                <field name="name"/>
+                <field name="cf_project_type" string="Tipo"/>
+                <field name="cf_partner_id" string="Partner"/>
+                <field name="cf_partner_country_id" string="Paese"/>
+                <field name="cf_target_date" string="Data Target"/>
+                <field name="cf_traffic_light" string="Stato" widget="badge"
+                       decoration-success="cf_traffic_light == 'green'"
+                       decoration-warning="cf_traffic_light == 'yellow'"
+                       decoration-danger="cf_traffic_light == 'red'"/>
+                <field name="cf_progress" string="Avanzamento" widget="progressbar"/>
+                <field name="cf_main_blocker" string="Bloccato da"/>
+                <field name="user_id" string="Responsabile" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Task list for "Le Mie Task" (standalone) -->
+    <record id="cf_my_tasks_list_view" model="ir.ui.view">
+        <field name="name">project.task.list.cf.mytasks</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Le Mie Task">
+                <field name="name"/>
+                <field name="project_id" string="Progetto"/>
+                <field name="cf_waiting_for" string="In Attesa Di"/>
+                <field name="date_deadline" string="Scadenza"/>
+                <field name="cf_days_in_stage" string="Giorni"/>
+                <field name="cf_checklist_progress" string="Checklist %" widget="progressbar"/>
+                <field name="stage_id" string="Stage"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         ACTIONS + explicit view bindings
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- Dashboard -->
     <record id="action_cf_project_dashboard" model="ir.actions.act_window">
         <field name="name">Dashboard Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="domain">[('cf_project_type', '!=', False)]</field>
-        <field name="context">{'search_default_cf_my_projects': 0, 'quick_create': False}</field>
-        <field name="search_view_id" ref="project.view_project_project_filter"/>
+        <field name="context">{'quick_create': False}</field>
+    </record>
+    <record id="action_cf_project_dashboard_view_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_project_kanban_view"/>
+        <field name="act_window_id" ref="action_cf_project_dashboard"/>
+    </record>
+    <record id="action_cf_project_dashboard_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_project_list_view"/>
+        <field name="act_window_id" ref="action_cf_project_dashboard"/>
     </record>
 
-    <!-- All projects action -->
+    <!-- Tutti i Progetti -->
     <record id="action_cf_project_all" model="ir.actions.act_window">
         <field name="name">Tutti i Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">list,form,kanban</field>
         <field name="domain">[('cf_project_type', '!=', False)]</field>
+    </record>
+    <record id="action_cf_project_all_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_project_list_view"/>
+        <field name="act_window_id" ref="action_cf_project_all"/>
+    </record>
+    <record id="action_cf_project_all_view_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_project_kanban_view"/>
+        <field name="act_window_id" ref="action_cf_project_all"/>
+    </record>
+
+    <!-- Le Mie Task -->
+    <record id="action_cf_my_tasks" model="ir.actions.act_window">
+        <field name="name">Le Mie Task</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('user_ids', 'in', uid)]</field>
+        <field name="context">{'group_by': 'project_id'}</field>
+    </record>
+    <record id="action_cf_my_tasks_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_my_tasks_list_view"/>
+        <field name="act_window_id" ref="action_cf_my_tasks"/>
     </record>
 
 </odoo>
