@@ -1,19 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Task form extension -->
+    <!-- ══════════════════════════════════════════════════════════════
+         SEARCH VIEW TASK (standalone per Le Mie Task)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_task_search_view" model="ir.ui.view">
+        <field name="name">project.task.search.cf</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <search string="Cerca Task">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="cf_waiting_for"/>
+                <separator/>
+                <filter name="my_tasks" string="Le mie task" domain="[('user_ids', 'in', uid)]"/>
+                <filter name="overdue" string="Scadute"
+                        domain="[('date_deadline', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="blocked" string="Bloccate"
+                        domain="[('cf_waiting_for', '!=', 'none')]"/>
+                <filter name="today_week" string="Questa settimana"
+                        domain="[('date_deadline', '&lt;=', (context_today() + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_project" string="Progetto" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_waiting" string="In attesa di" context="{'group_by': 'cf_waiting_for'}"/>
+                    <filter name="group_stage" string="Stage" context="{'group_by': 'stage_id'}"/>
+                    <filter name="group_user" string="Responsabile" context="{'group_by': 'user_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         LISTA "LE MIE TASK" (standalone)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_my_tasks_list_view" model="ir.ui.view">
+        <field name="name">project.task.list.cf.mytasks</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Le Mie Task" default_group_by="project_id"
+                  decoration-danger="cf_days_in_stage > 7"
+                  decoration-warning="cf_days_in_stage > 3">
+                <field name="priority" widget="priority"/>
+                <field name="name" string="Titolo"/>
+                <field name="project_id" string="Progetto"/>
+                <field name="cf_waiting_for" string="In attesa di" widget="badge"
+                       decoration-info="cf_waiting_for == 'client'"
+                       decoration-warning="cf_waiting_for == 'production'"
+                       decoration-danger="cf_waiting_for == 'printer'"/>
+                <field name="date_deadline" string="Scadenza" widget="remaining_days"/>
+                <field name="cf_days_in_stage" string="Giorni" widget="badge"
+                       decoration-danger="cf_days_in_stage > 7"
+                       decoration-warning="cf_days_in_stage > 3"/>
+                <field name="cf_checklist_progress" string="Checklist %" widget="progressbar"/>
+                <field name="stage_id" string="Stage"/>
+                <field name="user_ids" string="Responsabile" widget="many2many_tags_avatar"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         FORM TASK (inherit — estende il form nativo task)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="cf_task_form" model="ir.ui.view">
         <field name="name">project.task.form.cf</field>
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
+            <!-- Campi waiting_for e days dopo user_ids -->
+            <xpath expr="//field[@name='user_ids']" position="after">
+                <field name="cf_waiting_for" widget="badge"
+                       decoration-info="cf_waiting_for == 'client'"
+                       decoration-muted="cf_waiting_for == 'none'"
+                       decoration-warning="cf_waiting_for == 'production'"
+                       decoration-success="cf_waiting_for == 'internal'"
+                       decoration-danger="cf_waiting_for == 'printer'"/>
+                <field name="cf_days_in_stage" widget="badge"
+                       decoration-danger="cf_days_in_stage > 7"
+                       decoration-warning="cf_days_in_stage > 3"
+                       string="Giorni"/>
+            </xpath>
+
+            <!-- Tab aggiuntivi nel notebook -->
             <xpath expr="//notebook" position="inside">
+                <page string="Checklist" name="cf_checklist">
+                    <div class="o_row mb-2" invisible="not cf_checklist_required">
+                        <span class="badge bg-warning text-dark">Checklist obbligatoria per completare questa task</span>
+                    </div>
+                    <field name="cf_checklist_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="is_done" widget="boolean_toggle"/>
+                            <field name="done_by" readonly="1"/>
+                            <field name="done_date" readonly="1"/>
+                        </list>
+                    </field>
+                    <div class="mt-2">
+                        <field name="cf_checklist_progress" widget="progressbar"/>
+                    </div>
+                </page>
                 <page string="CasaFolino" name="cf_task_info">
                     <group>
                         <group>
                             <field name="cf_waiting_for"/>
-                            <field name="cf_days_in_stage"/>
                             <field name="cf_checklist_required"/>
                             <field name="cf_auto_activate_next"/>
                         </group>
@@ -24,23 +118,15 @@
                         </group>
                     </group>
                 </page>
-                <page string="Checklist" name="cf_checklist">
-                    <field name="cf_checklist_progress" widget="progressbar"/>
-                    <field name="cf_checklist_ids">
-                        <list editable="bottom">
-                            <field name="sequence" widget="handle"/>
-                            <field name="name"/>
-                            <field name="is_done"/>
-                            <field name="done_by"/>
-                            <field name="done_date"/>
-                        </list>
-                    </field>
+                <page string="Spedizione" name="cf_task_shipment"
+                      invisible="not cf_shipment_id">
+                    <field name="cf_shipment_id"/>
                 </page>
             </xpath>
         </field>
     </record>
 
-    <!-- Task list extension -->
+    <!-- LIST TASK (inherit — aggiunge colonne CF alla lista nativa) -->
     <record id="cf_task_list" model="ir.ui.view">
         <field name="name">project.task.list.cf</field>
         <field name="model">project.task</field>
@@ -48,12 +134,11 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <xpath expr="//list" position="inside">
-                <field name="cf_waiting_for" string="In Attesa Di" optional="show"/>
-                <field name="cf_days_in_stage" string="Giorni" optional="show"/>
+                <field name="cf_waiting_for" string="In Attesa Di" widget="badge" optional="show"/>
+                <field name="cf_days_in_stage" string="Giorni" widget="badge" optional="show"/>
                 <field name="cf_checklist_progress" string="Checklist %" widget="progressbar" optional="hide"/>
             </xpath>
         </field>
     </record>
-
 
 </odoo>

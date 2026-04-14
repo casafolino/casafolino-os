@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Search view -->
+    <!-- ══════════════════════════════════════════════════════════════
+         SEARCH VIEW (inherit — aggiunge filtri CF)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="cf_project_search" model="ir.ui.view">
         <field name="name">project.project.search.cf</field>
         <field name="model">project.project</field>
@@ -9,6 +12,7 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <xpath expr="//search" position="inside">
+                <separator/>
                 <filter name="cf_my_projects" string="I Miei Progetti"
                         domain="[('user_id', '=', uid)]"/>
                 <filter name="cf_blocked" string="Bloccati"
@@ -26,33 +30,69 @@
         </field>
     </record>
 
-    <!-- Form view extension -->
+    <!-- ══════════════════════════════════════════════════════════════
+         FORM VIEW (inherit — estende il form nativo project)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="cf_project_form" model="ir.ui.view">
         <field name="name">project.project.form.cf</field>
         <field name="model">project.project</field>
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <!-- Banner semaforo sopra lo sheet -->
-            <xpath expr="//sheet" position="before">
-                <div class="alert alert-info" role="alert"
+
+            <!-- Smart buttons nel button_box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" icon="fa-circle"
+                        style="pointer-events: none;"
+                        invisible="not cf_project_type">
+                    <field name="cf_traffic_light" widget="badge"
+                           decoration-success="cf_traffic_light == 'green'"
+                           decoration-warning="cf_traffic_light == 'yellow'"
+                           decoration-danger="cf_traffic_light == 'red'"/>
+                </button>
+                <button class="oe_stat_button" icon="fa-folder"
+                        invisible="cf_project_type != 'fair_prep'">
+                    <field name="cf_child_count" string="Sotto-progetti" widget="statinfo"/>
+                </button>
+            </xpath>
+
+            <!-- Metriche dopo il titolo -->
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <!-- Riga metriche -->
+                <div class="d-flex gap-3 mb-3" style="margin-top: 12px;"
                      invisible="not cf_project_type">
-                    <div class="d-flex align-items-center">
-                        <field name="cf_traffic_light" widget="badge"
-                               decoration-success="cf_traffic_light == 'green'"
-                               decoration-warning="cf_traffic_light == 'yellow'"
-                               decoration-danger="cf_traffic_light == 'red'"/>
-                        <span class="ms-3">
-                            Avanzamento: <field name="cf_progress" widget="progressbar"/> |
-                            Task: <field name="cf_tasks_done"/>/<field name="cf_tasks_total"/> |
-                            Giorni aperti: <field name="cf_days_open"/>
-                        </span>
+                    <div style="flex: 1; background: #f8f9fa; border-radius: 8px; padding: 12px 14px;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.3px;">Avanzamento</div>
+                        <div style="font-size: 20px; font-weight: 500;">
+                            <field name="cf_progress" widget="progressbar"/>
+                        </div>
+                    </div>
+                    <div style="flex: 1; background: #f8f9fa; border-radius: 8px; padding: 12px 14px;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase;">Task</div>
+                        <div style="font-size: 20px; font-weight: 500;">
+                            <field name="cf_tasks_done"/>/<field name="cf_tasks_total"/>
+                        </div>
+                        <div style="font-size: 11px; color: #999;">
+                            <field name="cf_tasks_blocked"/> bloccate
+                        </div>
+                    </div>
+                    <div style="flex: 1; background: #f8f9fa; border-radius: 8px; padding: 12px 14px;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase;">Giorni aperti</div>
+                        <div style="font-size: 20px; font-weight: 500;">
+                            <field name="cf_days_open"/>
+                        </div>
+                    </div>
+                    <div style="flex: 1; background: #f8f9fa; border-radius: 8px; padding: 12px 14px;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase;">Bloccato da</div>
+                        <div style="font-size: 14px; font-weight: 500;">
+                            <field name="cf_main_blocker"/>
+                        </div>
                     </div>
                 </div>
-            </xpath>
-            <!-- Campi CasaFolino in cima al form, subito dopo il titolo -->
-            <xpath expr="//sheet/div[hasclass('oe_title')]" position="after">
-                <group>
+
+                <!-- Campi CasaFolino principali -->
+                <group invisible="not cf_project_type">
                     <group string="CasaFolino">
                         <field name="cf_template_id"/>
                         <field name="cf_project_type"/>
@@ -61,47 +101,48 @@
                     <group string="Partner">
                         <field name="cf_partner_id"/>
                         <field name="cf_partner_country_id"/>
+                        <field name="cf_partner_email" widget="email"/>
                     </group>
                 </group>
+
+                <!-- Progetto padre (sotto-progetti fiera) -->
+                <group string="Fiera Collegata"
+                       invisible="cf_project_type not in ('sample_fair', 'sample_client')">
+                    <field name="cf_parent_project_id"/>
+                </group>
             </xpath>
+
+            <!-- Tab aggiuntivi nel notebook -->
             <xpath expr="//notebook" position="inside">
-                <page string="CasaFolino" name="cf_project_info">
-                    <group>
-                        <group string="Progetto">
-                            <field name="cf_project_type"/>
-                            <field name="cf_template_id"/>
-                            <field name="cf_target_date"/>
-                            <field name="cf_parent_project_id"/>
-                        </group>
-                        <group string="Partner">
-                            <field name="cf_partner_id"/>
-                            <field name="cf_partner_country_id"/>
-                            <field name="cf_partner_email"/>
-                        </group>
-                    </group>
-                    <group string="Stato">
-                        <group>
-                            <field name="cf_traffic_light"/>
-                            <field name="cf_main_blocker"/>
-                            <field name="cf_tasks_blocked"/>
-                        </group>
-                        <group>
-                            <field name="cf_progress" widget="progressbar"/>
-                            <field name="cf_days_open"/>
-                            <field name="cf_child_count"/>
-                        </group>
-                    </group>
-                </page>
                 <page string="Spedizioni" name="cf_shipments"
-                      invisible="cf_project_type not in ('sample_fair', 'sample_client')">
-                    <field name="cf_shipment_ids">
+                      invisible="cf_project_type not in ('sample_fair', 'sample_client', 'custom_label')">
+                    <field name="cf_shipment_ids" mode="list">
                         <list editable="bottom">
-                            <field name="state" widget="badge"/>
+                            <field name="state" widget="badge"
+                                   decoration-info="state == 'shipped'"
+                                   decoration-success="state in ('delivered', 'feedback')"
+                                   decoration-warning="state == 'ready'"
+                                   decoration-muted="state == 'draft'"/>
                             <field name="carrier"/>
                             <field name="tracking_number"/>
                             <field name="ship_date"/>
                             <field name="estimated_delivery"/>
                             <field name="product_ids" widget="many2many_tags"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Sotto-progetti" name="cf_children"
+                      invisible="cf_project_type != 'fair_prep'">
+                    <field name="cf_child_project_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="cf_project_type" widget="badge"/>
+                            <field name="cf_partner_id"/>
+                            <field name="cf_progress" widget="progressbar"/>
+                            <field name="cf_traffic_light" widget="badge"
+                                   decoration-success="cf_traffic_light == 'green'"
+                                   decoration-warning="cf_traffic_light == 'yellow'"
+                                   decoration-danger="cf_traffic_light == 'red'"/>
                         </list>
                     </field>
                 </page>

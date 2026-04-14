@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ══════════════════════════════════════════════════════════════
+         TEMPLATE PROGETTO — List + Form (standalone)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="cf_project_template_list" model="ir.ui.view">
         <field name="name">cf.project.template.list</field>
         <field name="model">cf.project.template</field>
         <field name="arch" type="xml">
             <list string="Template Progetto">
                 <field name="name"/>
-                <field name="cf_project_type"/>
+                <field name="cf_project_type" widget="badge"/>
                 <field name="active"/>
             </list>
         </field>
@@ -18,29 +22,55 @@
         <field name="model">cf.project.template</field>
         <field name="arch" type="xml">
             <form string="Template Progetto">
-                <group>
+                <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="cf_project_type"/>
+                        <group>
+                            <field name="name"/>
+                            <field name="cf_project_type"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
                     </group>
-                    <group>
-                        <field name="active"/>
-                    </group>
-                </group>
-                <field name="description"/>
-                <separator string="Task del Template"/>
-                <field name="task_template_ids">
-                    <list editable="bottom">
-                        <field name="sequence" widget="handle"/>
-                        <field name="name"/>
-                        <field name="relative_days"/>
-                        <field name="default_user_id"/>
-                        <field name="cf_waiting_for"/>
-                        <field name="auto_activate_next"/>
-                        <field name="checklist_required"/>
-                    </list>
-                </field>
+                    <notebook>
+                        <page string="Task del template">
+                            <field name="task_template_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="relative_days"/>
+                                    <field name="default_user_id"/>
+                                    <field name="cf_waiting_for"/>
+                                    <field name="auto_activate_next"/>
+                                    <field name="checklist_required"/>
+                                    <field name="stage_name"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TASK TEMPLATE — Form (standalone)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="cf_project_task_template_list" model="ir.ui.view">
+        <field name="name">cf.project.task.template.list</field>
+        <field name="model">cf.project.task.template</field>
+        <field name="arch" type="xml">
+            <list string="Task Template">
+                <field name="template_id"/>
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="relative_days"/>
+                <field name="default_user_id"/>
+                <field name="cf_waiting_for" widget="badge"/>
+                <field name="checklist_required"/>
+            </list>
         </field>
     </record>
 
@@ -75,16 +105,41 @@
         </field>
     </record>
 
+    <!-- Actions con binding espliciti -->
     <record id="action_cf_project_template" model="ir.actions.act_window">
         <field name="name">Template Progetto</field>
         <field name="res_model">cf.project.template</field>
         <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_project_template_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_project_template_list"/>
+        <field name="act_window_id" ref="action_cf_project_template"/>
+    </record>
+    <record id="action_cf_project_template_view_form" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_project_template_form"/>
+        <field name="act_window_id" ref="action_cf_project_template"/>
     </record>
 
     <record id="action_cf_project_task_template" model="ir.actions.act_window">
         <field name="name">Template Task</field>
         <field name="res_model">cf.project.task.template</field>
         <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_cf_project_task_template_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_project_task_template_list"/>
+        <field name="act_window_id" ref="action_cf_project_task_template"/>
+    </record>
+    <record id="action_cf_project_task_template_view_form" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="cf_project_task_template_form"/>
+        <field name="act_window_id" ref="action_cf_project_task_template"/>
     </record>
 
 </odoo>

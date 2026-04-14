@@ -1,7 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Root menu -->
+    <!-- ══════════════════════════════════════════════════════════════
+         ACTIONS con binding espliciti
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- Dashboard -->
+    <record id="action_cf_project_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard Progetti</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('cf_project_type', '!=', False)]</field>
+        <field name="context">{'quick_create': False}</field>
+    </record>
+    <record id="action_cf_project_dashboard_view_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_project_kanban_view"/>
+        <field name="act_window_id" ref="action_cf_project_dashboard"/>
+    </record>
+    <record id="action_cf_project_dashboard_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_project_list_view"/>
+        <field name="act_window_id" ref="action_cf_project_dashboard"/>
+    </record>
+
+    <!-- Tutti i Progetti -->
+    <record id="action_cf_project_all" model="ir.actions.act_window">
+        <field name="name">Tutti i Progetti</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[('cf_project_type', '!=', False)]</field>
+    </record>
+    <record id="action_cf_project_all_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_project_list_view"/>
+        <field name="act_window_id" ref="action_cf_project_all"/>
+    </record>
+    <record id="action_cf_project_all_view_kanban" model="ir.actions.act_window.view">
+        <field name="sequence">3</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="cf_project_kanban_view"/>
+        <field name="act_window_id" ref="action_cf_project_all"/>
+    </record>
+
+    <!-- Le Mie Task -->
+    <record id="action_cf_my_tasks" model="ir.actions.act_window">
+        <field name="name">Le Mie Task</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_my_tasks': 1, 'search_default_group_project': 1}</field>
+        <field name="search_view_id" ref="cf_task_search_view"/>
+    </record>
+    <record id="action_cf_my_tasks_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="cf_my_tasks_list_view"/>
+        <field name="act_window_id" ref="action_cf_my_tasks"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         MENU
+         ══════════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_cf_project_root"
               name="CasaFolino Project"
               web_icon="casafolino_project,static/description/icon.png"

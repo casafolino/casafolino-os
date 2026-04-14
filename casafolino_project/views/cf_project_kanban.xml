@@ -1,54 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Dashboard Kanban (standalone) -->
+    <!-- ══════════════════════════════════════════════════════════════
+         DASHBOARD KANBAN (standalone)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="cf_project_kanban_view" model="ir.ui.view">
         <field name="name">project.project.kanban.cf.dashboard</field>
         <field name="model">project.project</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="cf_project_type" default_order="cf_target_date asc"
-                    quick_create="false">
+            <kanban quick_create="false" default_group_by="cf_project_type" class="o_kanban_small_column">
                 <field name="name"/>
                 <field name="cf_project_type"/>
                 <field name="cf_partner_id"/>
                 <field name="cf_partner_country_id"/>
-                <field name="cf_target_date"/>
                 <field name="cf_traffic_light"/>
                 <field name="cf_progress"/>
+                <field name="cf_tasks_done"/>
+                <field name="cf_tasks_total"/>
                 <field name="cf_main_blocker"/>
                 <field name="cf_days_open"/>
                 <field name="user_id"/>
-                <field name="cf_tasks_done"/>
-                <field name="cf_tasks_total"/>
+                <field name="cf_target_date"/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="p-2 #{record.cf_traffic_light.raw_value === 'red' ? 'border-start border-danger border-3' : record.cf_traffic_light.raw_value === 'yellow' ? 'border-start border-warning border-3' : 'border-start border-success border-3'}">
-                            <div class="fw-bold">
-                                <field name="name"/>
+                        <div t-attf-style="border-left: 4px solid #{record.cf_project_type.raw_value == 'sample_fair' ? '#534AB7' : record.cf_project_type.raw_value == 'sample_client' ? '#1D9E75' : record.cf_project_type.raw_value == 'custom_label' ? '#D85A30' : record.cf_project_type.raw_value == 'new_product' ? '#378ADD' : record.cf_project_type.raw_value == 'fair_prep' ? '#534AB7' : '#888780'}; border-radius: 8px; padding: 12px;">
+                            <!-- Riga 1: Nome + Semaforo -->
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div t-attf-style="width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; background: #{record.cf_traffic_light.raw_value == 'green' ? '#639922' : record.cf_traffic_light.raw_value == 'yellow' ? '#EF9F27' : '#E24B4A'};"/>
                             </div>
-                            <div class="text-muted small mt-1" t-if="record.cf_partner_id.value">
-                                <field name="cf_partner_id"/>
-                                <span t-if="record.cf_partner_country_id.value" class="ms-1">
-                                    (<field name="cf_partner_country_id"/>)
+
+                            <!-- Riga 2: Badge tipo -->
+                            <div class="mb-2">
+                                <span t-attf-style="font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 600; background: #{record.cf_project_type.raw_value == 'sample_fair' ? '#EEEDFE' : record.cf_project_type.raw_value == 'sample_client' ? '#E1F5EE' : record.cf_project_type.raw_value == 'custom_label' ? '#FAECE7' : record.cf_project_type.raw_value == 'new_product' ? '#E6F1FB' : '#F1EFE8'}; color: #{record.cf_project_type.raw_value == 'sample_fair' ? '#3C3489' : record.cf_project_type.raw_value == 'sample_client' ? '#085041' : record.cf_project_type.raw_value == 'custom_label' ? '#712B13' : record.cf_project_type.raw_value == 'new_product' ? '#0C447C' : '#444441'};">
+                                    <field name="cf_project_type"/>
                                 </span>
                             </div>
-                            <div class="mt-2">
-                                <field name="cf_progress" widget="progressbar"/>
+
+                            <!-- Riga 3: Cliente + paese -->
+                            <div style="font-size: 12px; color: #666; margin-bottom: 8px;" t-if="record.cf_partner_id.value">
+                                <field name="cf_partner_id"/>
+                                <t t-if="record.cf_partner_country_id.value">
+                                    — <field name="cf_partner_country_id"/>
+                                </t>
                             </div>
-                            <div class="mt-1 d-flex align-items-center gap-2 small">
-                                <span t-if="record.cf_main_blocker.raw_value and record.cf_main_blocker.raw_value !== 'none'" class="badge bg-warning text-dark">
+
+                            <!-- Riga 4: Progress bar -->
+                            <div class="mb-1">
+                                <div style="height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden;">
+                                    <div t-attf-style="height: 100%; width: #{record.cf_progress.raw_value}%; border-radius: 3px; background: #{record.cf_traffic_light.raw_value == 'green' ? '#639922' : record.cf_traffic_light.raw_value == 'yellow' ? '#EF9F27' : '#E24B4A'};"/>
+                                </div>
+                                <div style="font-size: 11px; color: #999; margin-top: 2px;">
+                                    <field name="cf_tasks_done"/>/<field name="cf_tasks_total"/> task completate
+                                </div>
+                            </div>
+
+                            <!-- Riga 5: Footer -->
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span t-if="record.cf_main_blocker.raw_value != 'none'"
+                                      t-attf-style="font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 500; background: #{record.cf_main_blocker.raw_value == 'client' ? '#E6F1FB' : record.cf_main_blocker.raw_value == 'graphic' ? '#EEEDFE' : record.cf_main_blocker.raw_value == 'printer' ? '#FAECE7' : record.cf_main_blocker.raw_value == 'production' ? '#EAF3DE' : record.cf_main_blocker.raw_value == 'supplier' ? '#FAEEDA' : '#F1EFE8'}; color: #{record.cf_main_blocker.raw_value == 'client' ? '#0C447C' : record.cf_main_blocker.raw_value == 'graphic' ? '#3C3489' : record.cf_main_blocker.raw_value == 'printer' ? '#712B13' : record.cf_main_blocker.raw_value == 'production' ? '#27500A' : record.cf_main_blocker.raw_value == 'supplier' ? '#633806' : '#444441'};">
                                     In attesa: <field name="cf_main_blocker"/>
                                 </span>
-                                <span class="text-muted">
-                                    <field name="cf_days_open"/>g
-                                </span>
-                            </div>
-                            <div class="mt-1 d-flex align-items-center justify-content-between">
-                                <span class="small" t-if="record.cf_target_date.value">
-                                    <i class="fa fa-calendar-o me-1"/>
-                                    <field name="cf_target_date"/>
-                                </span>
-                                <field name="user_id" widget="many2one_avatar_user"/>
+                                <span t-else="" style="font-size: 11px; color: #ccc;">Nessun blocco</span>
+                                <div class="d-flex align-items-center" style="gap: 8px;">
+                                    <span t-attf-style="font-size: 11px; color: #{record.cf_days_open.raw_value > 30 ? '#E24B4A' : record.cf_days_open.raw_value > 14 ? '#BA7517' : '#999'};">
+                                        <field name="cf_days_open"/>g
+                                    </span>
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                </div>
                             </div>
                         </div>
                     </t>
@@ -57,103 +79,34 @@
         </field>
     </record>
 
-    <!-- List view for "Tutti i Progetti" (standalone) -->
+    <!-- ══════════════════════════════════════════════════════════════
+         LISTA PROGETTI (standalone)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="cf_project_list_view" model="ir.ui.view">
         <field name="name">project.project.list.cf</field>
         <field name="model">project.project</field>
         <field name="arch" type="xml">
-            <list string="Progetti CasaFolino">
-                <field name="name"/>
-                <field name="cf_project_type" string="Tipo"/>
-                <field name="cf_partner_id" string="Partner"/>
+            <list string="Progetti CasaFolino"
+                  decoration-danger="cf_traffic_light == 'red'"
+                  decoration-warning="cf_traffic_light == 'yellow'">
+                <field name="name" string="Progetto"/>
+                <field name="cf_project_type" string="Tipo" widget="badge"/>
+                <field name="cf_partner_id" string="Cliente"/>
                 <field name="cf_partner_country_id" string="Paese"/>
-                <field name="cf_target_date" string="Data Target"/>
+                <field name="cf_target_date" string="Target" widget="remaining_days"/>
+                <field name="cf_progress" string="Avanzamento" widget="progressbar"/>
                 <field name="cf_traffic_light" string="Stato" widget="badge"
                        decoration-success="cf_traffic_light == 'green'"
                        decoration-warning="cf_traffic_light == 'yellow'"
                        decoration-danger="cf_traffic_light == 'red'"/>
-                <field name="cf_progress" string="Avanzamento" widget="progressbar"/>
-                <field name="cf_main_blocker" string="Bloccato da"/>
-                <field name="user_id" string="Responsabile" widget="many2one_avatar_user"/>
+                <field name="cf_main_blocker" string="Bloccato da" widget="badge"/>
+                <field name="cf_tasks_done" string="Done" optional="show"/>
+                <field name="cf_tasks_total" string="Tot" optional="show"/>
+                <field name="cf_days_open" string="Giorni"/>
+                <field name="user_id" string="Resp." widget="many2one_avatar_user"/>
             </list>
         </field>
-    </record>
-
-    <!-- Task list for "Le Mie Task" (standalone) -->
-    <record id="cf_my_tasks_list_view" model="ir.ui.view">
-        <field name="name">project.task.list.cf.mytasks</field>
-        <field name="model">project.task</field>
-        <field name="arch" type="xml">
-            <list string="Le Mie Task">
-                <field name="name"/>
-                <field name="project_id" string="Progetto"/>
-                <field name="cf_waiting_for" string="In Attesa Di"/>
-                <field name="date_deadline" string="Scadenza"/>
-                <field name="cf_days_in_stage" string="Giorni"/>
-                <field name="cf_checklist_progress" string="Checklist %" widget="progressbar"/>
-                <field name="stage_id" string="Stage"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- ══════════════════════════════════════════════════════════════
-         ACTIONS + explicit view bindings
-         ══════════════════════════════════════════════════════════════ -->
-
-    <!-- Dashboard -->
-    <record id="action_cf_project_dashboard" model="ir.actions.act_window">
-        <field name="name">Dashboard Progetti</field>
-        <field name="res_model">project.project</field>
-        <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[('cf_project_type', '!=', False)]</field>
-        <field name="context">{'quick_create': False}</field>
-    </record>
-    <record id="action_cf_project_dashboard_view_kanban" model="ir.actions.act_window.view">
-        <field name="sequence">1</field>
-        <field name="view_mode">kanban</field>
-        <field name="view_id" ref="cf_project_kanban_view"/>
-        <field name="act_window_id" ref="action_cf_project_dashboard"/>
-    </record>
-    <record id="action_cf_project_dashboard_view_list" model="ir.actions.act_window.view">
-        <field name="sequence">2</field>
-        <field name="view_mode">list</field>
-        <field name="view_id" ref="cf_project_list_view"/>
-        <field name="act_window_id" ref="action_cf_project_dashboard"/>
-    </record>
-
-    <!-- Tutti i Progetti -->
-    <record id="action_cf_project_all" model="ir.actions.act_window">
-        <field name="name">Tutti i Progetti</field>
-        <field name="res_model">project.project</field>
-        <field name="view_mode">list,form,kanban</field>
-        <field name="domain">[('cf_project_type', '!=', False)]</field>
-    </record>
-    <record id="action_cf_project_all_view_list" model="ir.actions.act_window.view">
-        <field name="sequence">1</field>
-        <field name="view_mode">list</field>
-        <field name="view_id" ref="cf_project_list_view"/>
-        <field name="act_window_id" ref="action_cf_project_all"/>
-    </record>
-    <record id="action_cf_project_all_view_kanban" model="ir.actions.act_window.view">
-        <field name="sequence">3</field>
-        <field name="view_mode">kanban</field>
-        <field name="view_id" ref="cf_project_kanban_view"/>
-        <field name="act_window_id" ref="action_cf_project_all"/>
-    </record>
-
-    <!-- Le Mie Task -->
-    <record id="action_cf_my_tasks" model="ir.actions.act_window">
-        <field name="name">Le Mie Task</field>
-        <field name="res_model">project.task</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('user_ids', 'in', uid)]</field>
-        <field name="context">{'group_by': 'project_id'}</field>
-    </record>
-    <record id="action_cf_my_tasks_view_list" model="ir.actions.act_window.view">
-        <field name="sequence">1</field>
-        <field name="view_mode">list</field>
-        <field name="view_id" ref="cf_my_tasks_list_view"/>
-        <field name="act_window_id" ref="action_cf_my_tasks"/>
     </record>
 
 </odoo>
