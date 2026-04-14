@@ -9,7 +9,7 @@
         <field name="name">project.project.kanban.cf.dashboard</field>
         <field name="model">project.project</field>
         <field name="arch" type="xml">
-            <kanban quick_create="false" default_group_by="cf_project_type" class="o_kanban_small_column">
+            <kanban quick_create="false">
                 <field name="name"/>
                 <field name="cf_project_type"/>
                 <field name="cf_partner_id"/>
