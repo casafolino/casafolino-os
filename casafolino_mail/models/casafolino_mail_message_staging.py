@@ -956,6 +956,13 @@ class CasafolinoMailMessage(models.Model):
                 reply_to_id=message_id, attachments=attachments,
                 attachment_ids=attachment_ids)
 
+            # Eredita lead_id dall'email originale
+            inherited_lead_id = False
+            if message_id:
+                orig = self.browse(int(message_id))
+                if orig.exists() and orig.lead_id:
+                    inherited_lead_id = orig.lead_id.id
+
             sent_msg = self.create({
                 'account_id': account.id,
                 'message_id_rfc': msg_obj.get('Message-ID', ''),
@@ -970,6 +977,7 @@ class CasafolinoMailMessage(models.Model):
                 'body_downloaded': True,
                 'state': 'keep',
                 'is_read': True,
+                'lead_id': inherited_lead_id,
                 'triage_user_id': self.env.user.id,
                 'triage_date': fields.Datetime.now(),
             })
