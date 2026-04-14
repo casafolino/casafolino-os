@@ -34,7 +34,7 @@
                             </div>
 
                             <!-- Riga 2: Badge tipo -->
-                            <div class="mb-2">
+                            <div class="mb-2" t-if="record.cf_project_type.raw_value">
                                 <span t-attf-style="font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 600; background: #{record.cf_project_type.raw_value == 'sample_fair' ? '#EEEDFE' : record.cf_project_type.raw_value == 'sample_client' ? '#E1F5EE' : record.cf_project_type.raw_value == 'custom_label' ? '#FAECE7' : record.cf_project_type.raw_value == 'new_product' ? '#E6F1FB' : '#F1EFE8'}; color: #{record.cf_project_type.raw_value == 'sample_fair' ? '#3C3489' : record.cf_project_type.raw_value == 'sample_client' ? '#085041' : record.cf_project_type.raw_value == 'custom_label' ? '#712B13' : record.cf_project_type.raw_value == 'new_product' ? '#0C447C' : '#444441'};">
                                     <field name="cf_project_type"/>
                                 </span>

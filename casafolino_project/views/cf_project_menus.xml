@@ -10,7 +10,6 @@
         <field name="name">Dashboard Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[('cf_project_type', '!=', False)]</field>
         <field name="context">{'quick_create': False}</field>
     </record>
     <record id="action_cf_project_dashboard_view_kanban" model="ir.actions.act_window.view">
@@ -31,7 +30,6 @@
         <field name="name">Tutti i Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">list,form,kanban</field>
-        <field name="domain">[('cf_project_type', '!=', False)]</field>
     </record>
     <record id="action_cf_project_all_view_list" model="ir.actions.act_window.view">
         <field name="sequence">1</field>

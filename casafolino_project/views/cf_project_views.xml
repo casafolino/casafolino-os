@@ -57,10 +57,26 @@
                 </button>
             </xpath>
 
-            <!-- Metriche dopo il titolo -->
-            <xpath expr="//div[hasclass('oe_title')]" position="after">
-                <!-- Riga metriche -->
-                <div class="d-flex gap-3 mb-3" style="margin-top: 12px;"
+            <!-- Campi CasaFolino PRIMA dei campi nativi (label_tasks) -->
+            <xpath expr="//field[@name='label_tasks']" position="before">
+                <group>
+                    <group string="CasaFolino">
+                        <field name="cf_template_id"/>
+                        <field name="cf_project_type"/>
+                        <field name="cf_target_date"/>
+                    </group>
+                    <group string="Partner Collegato">
+                        <field name="cf_partner_id"/>
+                        <field name="cf_partner_country_id"/>
+                        <field name="cf_partner_email" widget="email"/>
+                    </group>
+                </group>
+                <group invisible="cf_project_type not in ('sample_fair', 'sample_client')">
+                    <field name="cf_parent_project_id"/>
+                </group>
+
+                <!-- Riga metriche (visibile solo se tipo impostato) -->
+                <div class="d-flex gap-3 mb-3" style="margin-top: 8px; margin-bottom: 16px;"
                      invisible="not cf_project_type">
                     <div style="flex: 1; background: #f8f9fa; border-radius: 8px; padding: 12px 14px;">
                         <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.3px;">Avanzamento</div>
@@ -90,26 +106,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Campi CasaFolino principali -->
-                <group invisible="not cf_project_type">
-                    <group string="CasaFolino">
-                        <field name="cf_template_id"/>
-                        <field name="cf_project_type"/>
-                        <field name="cf_target_date"/>
-                    </group>
-                    <group string="Partner">
-                        <field name="cf_partner_id"/>
-                        <field name="cf_partner_country_id"/>
-                        <field name="cf_partner_email" widget="email"/>
-                    </group>
-                </group>
-
-                <!-- Progetto padre (sotto-progetti fiera) -->
-                <group string="Fiera Collegata"
-                       invisible="cf_project_type not in ('sample_fair', 'sample_client')">
-                    <field name="cf_parent_project_id"/>
-                </group>
             </xpath>
 
             <!-- Tab aggiuntivi nel notebook -->
