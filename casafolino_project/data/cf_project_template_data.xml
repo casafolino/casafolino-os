@@ -440,4 +440,85 @@
         <field name="cf_waiting_for">none</field>
     </record>
 
+    <!-- ══════════════════════════════════════════════════════════════
+         6. Fiera Standard (con dashboard monitoring)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="template_fair_standard" model="cf.project.template">
+        <field name="name">Fiera Standard</field>
+        <field name="cf_project_type">fair_prep</field>
+        <field name="description">Template standard per preparazione fiere internazionali</field>
+    </record>
+
+    <record id="tt_fs_1" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Contattare ente fiera - Buyer Program</field>
+        <field name="sequence">10</field>
+        <field name="relative_days">-90</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fs_2" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Verificare concorsi - date iscrizione e requisiti</field>
+        <field name="sequence">20</field>
+        <field name="relative_days">-90</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fs_3" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Revisione grafiche stand (misure, loghi, testi)</field>
+        <field name="sequence">30</field>
+        <field name="relative_days">-60</field>
+        <field name="cf_waiting_for">graphic</field>
+    </record>
+    <record id="tt_fs_4" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Ordine campionatura stand - prodotti degustazione</field>
+        <field name="sequence">40</field>
+        <field name="relative_days">-45</field>
+        <field name="cf_waiting_for">production</field>
+    </record>
+    <record id="tt_fs_5" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Catalogo - caricamento digitale su piattaforma fiera</field>
+        <field name="sequence">50</field>
+        <field name="relative_days">-30</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fs_6" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">LinkedIn - piano editoriale e post Save the Date</field>
+        <field name="sequence">60</field>
+        <field name="relative_days">-30</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fs_7" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Aprire agenda appuntamenti su piattaforma matchmaking</field>
+        <field name="sequence">70</field>
+        <field name="relative_days">-21</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fs_8" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Spedire campioni per giuria concorso</field>
+        <field name="sequence">80</field>
+        <field name="relative_days">-14</field>
+        <field name="cf_waiting_for">production</field>
+    </record>
+    <record id="tt_fs_9" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Scaricare badge e distribuirli al team</field>
+        <field name="sequence">90</field>
+        <field name="relative_days">-7</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+    <record id="tt_fs_10" model="cf.project.task.template">
+        <field name="template_id" ref="template_fair_standard"/>
+        <field name="name">Confermare orari scarico merce e logistica arrivo</field>
+        <field name="sequence">100</field>
+        <field name="relative_days">-7</field>
+        <field name="cf_waiting_for">internal</field>
+    </record>
+
 </odoo>

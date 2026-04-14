@@ -113,7 +113,138 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- FAIR DASHBOARD -->
+                    <div invisible="cf_project_type != 'fair_prep'"
+                         style="margin-top: 24px; border-top: 2px solid #0d6efd; padding-top: 16px;">
+
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <h4 style="margin: 0; color: #0d6efd; font-size: 16px;">Dashboard Monitoraggio Fiera</h4>
+                        </div>
+
+                        <!-- Info base -->
+                        <group col="2" string="Date e Sede">
+                            <group>
+                                <field name="cf_fair_start_date"/>
+                                <field name="cf_fair_end_date"/>
+                            </group>
+                            <group>
+                                <field name="cf_fair_location"/>
+                                <field name="cf_fair_booth"/>
+                            </group>
+                        </group>
+
+                        <!-- Progress fiera -->
+                        <div style="margin: 8px 0 16px 0;">
+                            <div style="font-size: 11px; color: #666; margin-bottom: 4px;">Completamento dashboard fiera</div>
+                            <field name="cf_fair_completion" widget="progressbar"/>
+                        </div>
+
+                        <!-- Alert temporali -->
+                        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin: 12px 0;"
+                             invisible="not cf_fair_start_date">
+                            <div style="font-size: 12px; font-weight: 600; color: #664d03; margin-bottom: 6px;">
+                                ALERT AUTOMATICI
+                            </div>
+                            <div style="display: flex; gap: 24px; font-size: 12px;">
+                                <span><field name="cf_alert_90_sent" widget="boolean_toggle" readonly="1"/> -90 gg</span>
+                                <span><field name="cf_alert_60_sent" widget="boolean_toggle" readonly="1"/> -60 gg</span>
+                                <span><field name="cf_alert_30_sent" widget="boolean_toggle" readonly="1"/> -30 gg</span>
+                                <span><field name="cf_alert_7_sent" widget="boolean_toggle" readonly="1"/> -7 gg</span>
+                            </div>
+                        </div>
+
+                        <!-- Buyer Program -->
+                        <group string="Buyer Program e Networking" col="2">
+                            <group>
+                                <field name="cf_buyer_program_contacted" widget="boolean_toggle"/>
+                                <field name="cf_matchmaking_open" widget="boolean_toggle"/>
+                                <field name="cf_matchmaking_url" widget="url"/>
+                            </group>
+                            <group>
+                                <field name="cf_matchmaking_notes" placeholder="Note appuntamenti, nomi buyer confermati..."/>
+                            </group>
+                        </group>
+
+                        <!-- Concorsi -->
+                        <group string="Concorsi e Campionatura Giuria" col="2">
+                            <group>
+                                <field name="cf_contest_checked" widget="boolean_toggle"/>
+                                <field name="cf_contest_deadline"/>
+                                <field name="cf_contest_samples_sent" widget="boolean_toggle"/>
+                                <field name="cf_contest_samples_tracking"/>
+                            </group>
+                            <group>
+                                <field name="cf_contest_requirements" placeholder="Requisiti prodotto, formato, etichette..."/>
+                            </group>
+                        </group>
+
+                        <!-- Campionatura stand -->
+                        <group string="Ordine Campionatura Stand" col="2">
+                            <group>
+                                <field name="cf_stand_samples_ordered" widget="boolean_toggle"/>
+                                <field name="cf_stand_samples_date"/>
+                            </group>
+                            <group>
+                                <field name="cf_stand_samples_notes" placeholder="Prodotti, quantita, formato espositivo..."/>
+                            </group>
+                        </group>
+
+                        <!-- Grafica -->
+                        <group string="Allestimento e Grafica" col="2">
+                            <group>
+                                <field name="cf_graphics_reviewed" widget="boolean_toggle"/>
+                                <field name="cf_catalogue_digital" widget="boolean_toggle"/>
+                                <field name="cf_catalogue_print_qty"/>
+                                <field name="cf_catalogue_print_done" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+
+                        <!-- Social -->
+                        <group string="Comunicazione e Social LinkedIn" col="2">
+                            <group>
+                                <field name="cf_linkedin_savedate" widget="boolean_toggle"/>
+                                <field name="cf_linkedin_stand" widget="boolean_toggle"/>
+                            </group>
+                            <group>
+                                <field name="cf_linkedin_notes" placeholder="Piano editoriale: date post, immagini, testi..."/>
+                            </group>
+                        </group>
+
+                        <!-- Checklist ultima settimana -->
+                        <div style="background: #f8d7da; border: 1px solid #f5c2c7; border-radius: 8px; padding: 12px 16px; margin: 12px 0;">
+                            <div style="font-size: 12px; font-weight: 600; color: #842029; margin-bottom: 8px;">
+                                CHECKLIST ULTIMA SETTIMANA (-7 giorni)
+                            </div>
+                            <group col="2">
+                                <group>
+                                    <field name="cf_badges_downloaded" widget="boolean_toggle"/>
+                                    <field name="cf_delivery_confirmed" widget="boolean_toggle"/>
+                                </group>
+                                <group>
+                                    <field name="cf_delivery_notes" placeholder="Orari scarico, rampa, referente magazzino fiera..."/>
+                                </group>
+                            </group>
+                        </div>
+
+                        <!-- Note e contatti -->
+                        <group string="Note e Contatti Utili" col="1">
+                            <field name="cf_fair_contacts" placeholder="Numeri utili: referente ICE, ufficio fiera, agente locale, hotel..."/>
+                            <field name="cf_post_fair_notes" placeholder="Note post-fiera: lead raccolti, feedback, follow-up da fare..."/>
+                        </group>
+                    </div>
                 </div>
+            </xpath>
+
+            <!-- Smart button fiera -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" icon="fa-check-square-o"
+                        invisible="cf_project_type != 'fair_prep'">
+                    <div class="o_field_widget o_stat_info">
+                        <field name="cf_fair_completion" widget="float_factor"/>
+                        <span class="o_stat_text">% Fiera</span>
+                    </div>
+                </button>
             </xpath>
 
             <!-- Tab aggiuntivi nel notebook -->

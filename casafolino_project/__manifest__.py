@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Project',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'CasaFolino',
     'summary': 'Gestione progetti CasaFolino: campionature, etichette, fiere, lanci',
     'author': 'CasaFolino',
@@ -15,8 +15,10 @@
         'views/cf_project_shipment_views.xml',
         'views/cf_project_checklist_views.xml',
         'views/cf_project_menus.xml',
+        'data/cf_fair_alert_cron.xml',
         'data/cf_project_template_data.xml',
     ],
+    'post_init_hook': 'post_init_hook',
     'installable': True,
     'application': True,
     'license': 'LGPL-3',

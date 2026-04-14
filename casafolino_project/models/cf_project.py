@@ -71,6 +71,52 @@ class CfProject(models.Model):
     cf_child_count = fields.Integer(
         compute='_compute_child_count', string="N. Sotto-progetti")
 
+    # === FAIR DASHBOARD ===
+    cf_fair_start_date = fields.Date(string="Inizio Fiera", tracking=True)
+    cf_fair_end_date = fields.Date(string="Fine Fiera", tracking=True)
+    cf_fair_location = fields.Char(string="Sede / Padiglione", tracking=True)
+    cf_fair_booth = fields.Char(string="N. Stand / Booth")
+
+    cf_alert_90_sent = fields.Boolean(string="Alert -90gg inviato", default=False)
+    cf_alert_60_sent = fields.Boolean(string="Alert -60gg inviato", default=False)
+    cf_alert_30_sent = fields.Boolean(string="Alert -30gg inviato", default=False)
+    cf_alert_7_sent = fields.Boolean(string="Alert -7gg inviato", default=False)
+
+    cf_buyer_program_contacted = fields.Boolean(string="Ente fiera contattato per Buyer Program")
+    cf_matchmaking_open = fields.Boolean(string="Piattaforma matchmaking aperta")
+    cf_matchmaking_url = fields.Char(string="URL piattaforma appuntamenti")
+    cf_matchmaking_notes = fields.Text(string="Note agenda appuntamenti")
+
+    cf_contest_checked = fields.Boolean(string="Date iscrizione verificate")
+    cf_contest_deadline = fields.Date(string="Deadline iscrizione concorso")
+    cf_contest_requirements = fields.Text(string="Requisiti concorso")
+    cf_contest_samples_sent = fields.Boolean(string="Campioni giuria spediti")
+    cf_contest_samples_tracking = fields.Char(string="Tracking spedizione campioni giuria")
+
+    cf_stand_samples_ordered = fields.Boolean(string="Ordine campionatura stand inviato")
+    cf_stand_samples_date = fields.Date(string="Data invio ordine")
+    cf_stand_samples_notes = fields.Text(string="Note prodotti / quantita stand")
+
+    cf_graphics_reviewed = fields.Boolean(string="Grafiche stand verificate")
+    cf_catalogue_digital = fields.Boolean(string="Catalogo digitale caricato")
+    cf_catalogue_print_qty = fields.Integer(string="Copie catalogo cartaceo")
+    cf_catalogue_print_done = fields.Boolean(string="Stampa catalogo completata")
+
+    cf_linkedin_savedate = fields.Boolean(string="Post Save the Date pubblicato")
+    cf_linkedin_stand = fields.Boolean(string="Post Ti aspettiamo allo stand pubblicato")
+    cf_linkedin_notes = fields.Text(string="Piano editoriale LinkedIn")
+
+    cf_badges_downloaded = fields.Boolean(string="Badge scaricati e distribuiti al team")
+    cf_delivery_confirmed = fields.Boolean(string="Orari scarico merce confermati")
+    cf_delivery_notes = fields.Char(string="Note logistica scarico")
+
+    cf_fair_contacts = fields.Text(string="Contatti utili")
+    cf_post_fair_notes = fields.Text(string="Note post-fiera / follow-up")
+
+    cf_fair_completion = fields.Float(
+        string="Completamento Dashboard Fiera %",
+        compute='_compute_fair_completion', store=True)
+
     # === CONTATORE GIORNI ===
     cf_days_open = fields.Integer(
         compute='_compute_days_open', string="Giorni Aperti")
@@ -82,6 +128,31 @@ class CfProject(models.Model):
     # === SPEDIZIONI ===
     cf_shipment_ids = fields.One2many(
         'cf.project.shipment', 'project_id', string="Spedizioni")
+
+    # ── Fair dashboard compute ───────────────────────────────────────
+
+    _FAIR_CHECKBOXES = [
+        'cf_buyer_program_contacted', 'cf_matchmaking_open',
+        'cf_contest_checked', 'cf_contest_samples_sent',
+        'cf_stand_samples_ordered',
+        'cf_graphics_reviewed', 'cf_catalogue_digital', 'cf_catalogue_print_done',
+        'cf_linkedin_savedate', 'cf_linkedin_stand',
+        'cf_badges_downloaded', 'cf_delivery_confirmed',
+    ]
+
+    @api.depends(
+        'cf_buyer_program_contacted', 'cf_matchmaking_open',
+        'cf_contest_checked', 'cf_contest_samples_sent',
+        'cf_stand_samples_ordered',
+        'cf_graphics_reviewed', 'cf_catalogue_digital', 'cf_catalogue_print_done',
+        'cf_linkedin_savedate', 'cf_linkedin_stand',
+        'cf_badges_downloaded', 'cf_delivery_confirmed',
+    )
+    def _compute_fair_completion(self):
+        for project in self:
+            total = len(self._FAIR_CHECKBOXES)
+            done = sum(1 for f in self._FAIR_CHECKBOXES if project[f])
+            project.cf_fair_completion = (done / total * 100) if total else 0
 
     # ── Onchange ──────────────────────────────────────────────────────
 
@@ -220,3 +291,41 @@ class CfProject(models.Model):
                     'name': cl.name,
                     'sequence': cl.sequence,
                 })
+
+    # ── Fair Alerts Cron ─────────────────────────────────────────────
+
+    @api.model
+    def _cron_fair_alerts(self):
+        """Invia alert automatici per fiere imminenti (-90, -60, -30, -7 giorni)."""
+        today = fields.Date.today()
+        thresholds = [
+            (90, 'cf_alert_90_sent', '-90 giorni'),
+            (60, 'cf_alert_60_sent', '-60 giorni'),
+            (30, 'cf_alert_30_sent', '-30 giorni'),
+            (7,  'cf_alert_7_sent',  '-7 giorni (Check-in finale)'),
+        ]
+
+        fair_projects = self.search([
+            ('cf_project_type', '=', 'fair_prep'),
+            ('cf_fair_start_date', '!=', False),
+            ('active', '=', True),
+        ])
+
+        for project in fair_projects:
+            delta = (project.cf_fair_start_date - today).days
+            for days, flag_field, label in thresholds:
+                if delta <= days and not project[flag_field]:
+                    project[flag_field] = True
+                    project.message_post(
+                        body="<b>Alert Fiera %s</b>: mancano <b>%d giorni</b> "
+                             "all'inizio di <b>%s</b> (%s). "
+                             "Verifica il tab Fiera per i punti in sospeso." % (
+                                 label, delta, project.name,
+                                 project.cf_fair_start_date.strftime('%d/%m/%Y')),
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_note',
+                    )
+                    _logger.info(
+                        "Fair alert %s sent for project %s (delta=%d days)",
+                        label, project.name, delta
+                    )

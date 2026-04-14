@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- cron caricato via post_init_hook in __init__.py -->
+</odoo>
