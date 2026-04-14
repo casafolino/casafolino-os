@@ -265,6 +265,9 @@
                     </t>
                 </div>
             </div>
+            <button t-if="state.isAdmin" class="cf-mail-bulk-btn" style="background:#ede7f6;color:#4527a0;" t-on-click="onBulkKeepForAll">
+                <i class="fa fa-users"/> Tutti
+            </button>
             <button class="cf-mail-bulk-btn danger" t-on-click="onBulkDelete"><i class="fa fa-trash"/></button>
         </div>
     </t>
@@ -313,6 +316,10 @@
                         <button class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;background:#ffebee;color:#c62828;border-color:#ffcdd2"
                                 t-on-click="onExcludeSender">
                             <i class="fa fa-ban"/> Escludi Mittente
+                        </button>
+                        <button t-if="state.isAdmin" class="cf-mail-btn-secondary" style="font-size:11px;padding:4px 10px;background:#ede7f6;color:#4527a0;border-color:#d1c4e9"
+                                t-on-click="onKeepForAll">
+                            <i class="fa fa-users"/> Tieni per tutti
                         </button>
                         <t t-if="state.msgDetail.sender_action === 'keep'">
                             <span style="font-size:11px;padding:4px 10px;background:#e8f5e9;color:#2e7d32;border-radius:12px;display:inline-flex;align-items:center;gap:4px">

@@ -747,6 +747,8 @@ class CasafolinoMailMessage(models.Model):
             records.write({'is_important': False})
         elif action == 'delete':
             records.unlink()
+        elif action == 'keep_for_all':
+            return self.action_keep_for_all(message_ids=ids)
         return True
 
     @api.model
@@ -757,6 +759,66 @@ class CasafolinoMailMessage(models.Model):
         msg = self.browse(int(message_id))
         msg.write({'is_important': not msg.is_important})
         return msg.is_important
+
+    @api.model
+    def action_keep_for_all(self, *args, **kw):
+        """Tieni email per tutti gli account — accesso cross-account con sudo."""
+        message_ids = kw.get('message_ids') or []
+        if not message_ids:
+            return {'success': False, 'error': 'Nessuna email selezionata'}
+
+        messages = self.browse(message_ids)
+        sender_emails = set()
+        for msg in messages:
+            if msg.sender_email:
+                sender_emails.add(msg.sender_email.lower().strip())
+
+        if not sender_emails:
+            return {'success': False, 'error': 'Nessun mittente trovato'}
+
+        # Usa sudo per accedere a email di tutti gli account
+        SudoMsg = self.sudo()
+        Partner = self.env['res.partner'].sudo()
+
+        total_kept = 0
+        for sender in sender_emails:
+            # Trova o crea partner per questo mittente
+            partner = Partner.search([('email', '=ilike', sender)], limit=1)
+
+            # Trova tutte le email new di questo mittente su TUTTI gli account
+            all_new = SudoMsg.search([
+                ('sender_email', '=ilike', sender),
+                ('state', '=', 'new'),
+            ])
+
+            if not partner and all_new:
+                # Crea partner una sola volta
+                first = all_new[0]
+                partner = Partner.create({
+                    'name': first.sender_name or sender,
+                    'email': sender,
+                })
+
+            for record in all_new:
+                record.write({
+                    'state': 'keep',
+                    'triage_user_id': self.env.uid,
+                    'triage_date': fields.Datetime.now(),
+                    'partner_id': partner.id if partner else False,
+                    'match_type': 'exact' if partner else 'none',
+                })
+                if not record.body_downloaded:
+                    try:
+                        imap = record.account_id._get_imap_connection()
+                        record._download_body_imap(imap, record.imap_folder, record.imap_uid)
+                        imap.logout()
+                    except Exception as e:
+                        _logger.error("keep_for_all body error %s: %s", record.message_id_rfc, e)
+                if partner and not partner.mail_tracked:
+                    partner.mail_tracked = True
+                total_kept += 1
+
+        return {'success': True, 'count': total_kept, 'senders': list(sender_emails)}
 
     # ── Lead Email Widget API ────────────────────────────────────────
 

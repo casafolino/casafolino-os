@@ -257,6 +257,38 @@ class CfMailClient extends Component {
             await this.loadMessages();
         }
     }
+    async onKeepForAll() {
+        var ids = [];
+        if (this.state.selectedIds.length > 0) {
+            ids = this.state.selectedIds.slice();
+        } else if (this.state.selectedMsg) {
+            ids = [this.state.selectedMsg.id];
+        }
+        if (!ids.length) return;
+        var sender = "";
+        if (this.state.msgDetail && this.state.msgDetail.from_address) {
+            sender = this.state.msgDetail.from_address;
+        }
+        if (!confirm("Tieni tutte le email di " + (sender || "questi mittenti") + " per TUTTI gli account. Continuare?")) return;
+        try {
+            var res = await this._rpc("casafolino.mail.message", "action_keep_for_all", {
+                message_ids: ids,
+            });
+            if (res && res.success) {
+                this.showToast("Tenute " + res.count + " email per tutti gli account");
+                await this.loadMessages();
+            } else {
+                this.showToast("Errore: " + (res.error || "sconosciuto"));
+            }
+        } catch (e) {
+            this.showToast("Errore: " + e.message);
+        }
+    }
+
+    onBulkKeepForAll() {
+        this.onKeepForAll();
+    }
+
     toggleEnrichment() { this.state.showEnrichment = !this.state.showEnrichment; }
     async onEnrichPartnerSearch(ev) {
         const q = ev.target.value;
