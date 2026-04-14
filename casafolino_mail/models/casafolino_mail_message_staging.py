@@ -846,6 +846,32 @@ class CasafolinoMailMessage(models.Model):
         msgs = self.search([('lead_id', '=', int(lead_id))], order='email_date desc')
         return [self._msg_to_dict(m) for m in msgs]
 
+    @staticmethod
+    def _compress_image(content, filename):
+        """Comprimi immagine se > 500KB. Ritorna (content_bytes, filename, mimetype)."""
+        import io
+        if len(content) <= 512000:
+            return content, filename, None
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(content))
+            # Converti RGBA/palette in RGB per JPEG
+            if img.mode in ('RGBA', 'P', 'LA'):
+                img = img.convert('RGB')
+            # Ridimensiona se troppo grande
+            if max(img.size) > 1920:
+                img.thumbnail((1920, 1920), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=75, optimize=True)
+            compressed = buf.getvalue()
+            new_name = filename.rsplit('.', 1)[0] + '.jpg' if '.' in filename else filename + '.jpg'
+            _logger.info("Image compressed: %s %dKB -> %dKB",
+                         filename, len(content) // 1024, len(compressed) // 1024)
+            return compressed, new_name, 'image/jpeg'
+        except Exception as e:
+            _logger.warning("Image compression failed for %s: %s", filename, e)
+            return content, filename, None
+
     @api.model
     def _build_and_send_email(self, account, to_address, cc_address, subject, body,
                                reply_to_id=False, attachments=None, attachment_ids=None):
@@ -856,6 +882,8 @@ class CasafolinoMailMessage(models.Model):
         from email.mime.text import MIMEText
         from email.mime.base import MIMEBase
         from email import encoders as email_encoders
+
+        _IMAGE_MIMES = {'image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff'}
 
         msg_obj = MIMEMultipart('mixed')
         generated_msg_id = '<%s@casafolino.com>' % uuid.uuid4()
@@ -880,30 +908,43 @@ class CasafolinoMailMessage(models.Model):
             fname = att.get('filename', 'file')
             content = base64.b64decode(att.get('content_base64', ''))
             mimetype = att.get('mimetype', 'application/octet-stream')
+
+            # Comprimi immagini > 500KB
+            if mimetype in _IMAGE_MIMES and len(content) > 512000:
+                content, fname, new_mime = self._compress_image(content, fname)
+                if new_mime:
+                    mimetype = new_mime
+
             maintype, subtype = mimetype.split('/', 1) if '/' in mimetype else ('application', 'octet-stream')
             part = MIMEBase(maintype, subtype)
             part.set_payload(content)
             email_encoders.encode_base64(part)
             part.add_header('Content-Disposition', 'attachment', filename=fname)
             msg_obj.attach(part)
-            # Salva come ir.attachment
             att_records.append(self.env['ir.attachment'].create({
                 'name': fname,
-                'datas': att.get('content_base64', ''),
+                'datas': base64.b64encode(content),
                 'mimetype': mimetype,
             }))
 
-        # Allegati da Odoo (ids)
+        # Allegati da Odoo (ids) — comprimi immagini se necessario
         for att_id in (attachment_ids or []):
             ir_att = self.env['ir.attachment'].browse(int(att_id))
             if ir_att.exists() and ir_att.datas:
                 content = base64.b64decode(ir_att.datas)
                 mimetype = ir_att.mimetype or 'application/octet-stream'
+                fname = ir_att.name
+
+                if mimetype in _IMAGE_MIMES and len(content) > 512000:
+                    content, fname, new_mime = self._compress_image(content, fname)
+                    if new_mime:
+                        mimetype = new_mime
+
                 maintype, subtype = mimetype.split('/', 1) if '/' in mimetype else ('application', 'octet-stream')
                 part = MIMEBase(maintype, subtype)
                 part.set_payload(content)
                 email_encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment', filename=ir_att.name)
+                part.add_header('Content-Disposition', 'attachment', filename=fname)
                 msg_obj.attach(part)
                 att_records.append(ir_att)
 

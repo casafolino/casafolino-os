@@ -132,12 +132,69 @@ class CfLeadMailWidget extends Component {
         }
     }
 
+    _getTotalAttachSize() {
+        var total = 0;
+        for (var i = 0; i < this.state.composerAttachments.length; i++) {
+            total += this.state.composerAttachments[i].size || 0;
+        }
+        return total;
+    }
+
+    _compressAndAddImage(file, self) {
+        var img = new window.Image();
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            img.onload = function() {
+                var canvas = document.createElement("canvas");
+                var maxDim = 1920;
+                var w = img.width;
+                var h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                    else { w = Math.round(w * maxDim / h); h = maxDim; }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                var dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+                var b64 = dataUrl.split(",")[1] || "";
+                var newSize = Math.round(b64.length * 3 / 4);
+                self.state.composerAttachments.push({
+                    tempId: _nextTempId++,
+                    name: file.name.replace(/\.[^.]+$/, ".jpg"),
+                    size: newSize,
+                    mimetype: "image/jpeg",
+                    content_base64: b64,
+                    source: "pc",
+                });
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
     onFileSelected(ev) {
         var files = ev.target.files;
         if (!files || !files.length) return;
         var self = this;
+        var MAX_SINGLE = 25 * 1024 * 1024;
+        var MAX_TOTAL = 25 * 1024 * 1024;
+        var IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/bmp", "image/tiff"];
+
         for (var i = 0; i < files.length; i++) {
             (function(file) {
+                if (file.size > MAX_SINGLE) {
+                    alert("File troppo grande: " + file.name + " (" + Math.round(file.size / 1024 / 1024) + "MB). Max 25MB.");
+                    return;
+                }
+                if (self._getTotalAttachSize() + file.size > MAX_TOTAL) {
+                    alert("Limite totale allegati 25MB raggiunto.");
+                    return;
+                }
+                if (IMAGE_TYPES.indexOf(file.type) >= 0 && file.size > 2 * 1024 * 1024) {
+                    self._compressAndAddImage(file, self);
+                    return;
+                }
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     var b64 = e.target.result.split(",")[1] || "";
