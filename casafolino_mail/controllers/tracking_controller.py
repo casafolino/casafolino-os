@@ -93,7 +93,7 @@ class MailTrackingController(http.Controller):
         except Exception as e:
             _logger.warning("Tracking notification error: %s", e)
 
-    @http.route('/mail/track/open/<string:token>.png',
+    @http.route('/mail/track/open/<string:token>',
                 type='http', auth='public', csrf=False, methods=['GET'])
     def track_open(self, token, **kw):
         self._record_event(token, 'opened')

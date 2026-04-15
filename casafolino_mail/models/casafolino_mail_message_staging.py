@@ -1065,7 +1065,7 @@ class CasafolinoMailMessage(models.Model):
         tracked_body = re.sub(r'href="([^"]+)"', rewrite_link, body_html)
 
         # 2. Append tracking pixel
-        pixel = '<img src="%s/mail/track/open/%s.png" width="1" height="1" style="display:none" />' % (base_url, token)
+        pixel = '<img src="%s/mail/track/open/%s" width="1" height="1" style="display:none" />' % (base_url, token)
         if '</body>' in tracked_body:
             tracked_body = tracked_body.replace('</body>', pixel + '</body>')
         else:
