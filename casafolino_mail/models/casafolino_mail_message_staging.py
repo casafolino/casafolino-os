@@ -1105,6 +1105,9 @@ class CasafolinoMailMessage(models.Model):
         # Inject tracking pixel + rewrite links
         base_url = self.env['ir.config_parameter'].sudo().get_param(
             'web.base.url', 'http://erp.casafolino.com:4589')
+        # Ensure external URL (not localhost)
+        if 'localhost' in base_url or '127.0.0.1' in base_url:
+            base_url = 'http://erp.casafolino.com:4589'
         tracked_body = self._inject_tracking(body, tracking_token, base_url)
         msg_obj.attach(MIMEText(tracked_body, 'html', 'utf-8'))
 
@@ -1166,7 +1169,7 @@ class CasafolinoMailMessage(models.Model):
         server.sendmail(account.email_address, recipients, msg_obj.as_string())
         server.quit()
 
-        return msg_obj, att_records, tracking_token
+        return msg_obj, att_records, tracking_token, tracked_body
 
     @api.model
     def send_reply(self, *args, **kw):
@@ -1198,7 +1201,7 @@ class CasafolinoMailMessage(models.Model):
             return {'success': False, 'error': 'Password SMTP non configurata'}
 
         try:
-            msg_obj, att_records, tracking_token = self._build_and_send_email(
+            msg_obj, att_records, tracking_token, tracked_body = self._build_and_send_email(
                 account, to_address, cc_address, subject, body,
                 reply_to_id=message_id, attachments=attachments,
                 attachment_ids=attachment_ids)
@@ -1221,7 +1224,7 @@ class CasafolinoMailMessage(models.Model):
                 'cc_emails': cc_address,
                 'subject': subject,
                 'email_date': fields.Datetime.now(),
-                'body_html': body,
+                'body_html': tracked_body,
                 'body_downloaded': True,
                 'state': 'keep',
                 'is_read': True,
@@ -1271,7 +1274,7 @@ class CasafolinoMailMessage(models.Model):
             return {'success': False, 'error': 'Password SMTP non configurata'}
 
         try:
-            msg_obj, att_records, tracking_token = self._build_and_send_email(
+            msg_obj, att_records, tracking_token, tracked_body = self._build_and_send_email(
                 account, to_address, cc_address, subject, body,
                 reply_to_id=reply_to_id, attachments=attachments,
                 attachment_ids=attachment_ids)
@@ -1287,7 +1290,7 @@ class CasafolinoMailMessage(models.Model):
                 'cc_emails': cc_address,
                 'subject': subject,
                 'email_date': fields.Datetime.now(),
-                'body_html': body,
+                'body_html': tracked_body,
                 'body_downloaded': True,
                 'state': 'keep',
                 'is_read': True,

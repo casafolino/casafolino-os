@@ -7,11 +7,8 @@ from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-# 1x1 transparent PNG
-PIXEL = base64.b64decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4'
-    '2mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-)
+# 1x1 transparent PNG pixel
+PIXEL = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')
 
 
 class MailTrackingController(http.Controller):
