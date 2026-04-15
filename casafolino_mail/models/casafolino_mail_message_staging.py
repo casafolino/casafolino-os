@@ -772,6 +772,151 @@ class CasafolinoMailMessage(models.Model):
     def get_tags_list(self, *args, **kw):
         return []
 
+    # ── RPC methods called by OWL client ─────────────────────────────
+
+    @api.model
+    def rpc_keep_sender(self, *args, **kw):
+        """Tieni mittente: marca tutte le email new dallo stesso sender come keep."""
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return {'success': False}
+        msg = self.browse(int(message_id))
+        if not msg.exists() or not msg.sender_email:
+            return {'success': False}
+        addr = msg.sender_email.strip().lower()
+        # Keep all new emails from this sender on this account
+        siblings = self.search([
+            ('sender_email', '=ilike', addr),
+            ('state', '=', 'new'),
+            ('account_id', '=', msg.account_id.id),
+        ])
+        if siblings:
+            siblings.action_keep()
+        return {'success': True, 'action': 'keep', 'email': addr}
+
+    @api.model
+    def rpc_exclude_sender(self, *args, **kw):
+        """Escludi mittente: aggiungi a blacklist e scarta tutte le email."""
+        message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
+        if not message_id:
+            return {'success': False}
+        msg = self.browse(int(message_id))
+        if not msg.exists() or not msg.sender_email:
+            return {'success': False}
+        addr = msg.sender_email.strip().lower()
+        domain = addr.split('@')[1] if '@' in addr else ''
+        # Add to blacklist
+        Blacklist = self.env['casafolino.mail.blacklist']
+        if domain and not Blacklist.search([('type', '=', 'domain'), ('value', '=', domain)], limit=1):
+            Blacklist.create({'type': 'domain', 'value': domain})
+        # Discard all from this sender
+        to_discard = self.search([
+            ('sender_email', '=ilike', addr),
+            ('state', '=', 'new'),
+        ])
+        if to_discard:
+            to_discard.action_discard()
+        return {'success': True, 'action': 'exclude', 'email': addr}
+
+    @api.model
+    def rpc_search_partners(self, *args, **kw):
+        """Cerca partner per il pannello arricchimento."""
+        query = kw.get('query') or ''
+        if not query or len(query) < 2:
+            return []
+        partners = self.env['res.partner'].search(
+            [('name', 'ilike', query)], limit=10, order='name')
+        return [{'id': p.id, 'name': p.name, 'email': p.email or ''} for p in partners]
+
+    @api.model
+    def rpc_save_enrichment(self, *args, **kw):
+        """Salva nota arricchimento sul messaggio."""
+        message_id = kw.get('message_id')
+        partner_id = kw.get('partner_id')
+        note = kw.get('note') or ''
+        if not message_id:
+            return {'success': False}
+        msg = self.browse(int(message_id))
+        if not msg.exists():
+            return {'success': False}
+        vals = {}
+        if partner_id:
+            vals['partner_id'] = int(partner_id)
+            vals['match_type'] = 'manual'
+        msg.write(vals)
+        return {'success': True}
+
+    @api.model
+    def advanced_search(self, *args, **kw):
+        """Ricerca avanzata email."""
+        query = kw.get('query') or ''
+        domain = [('state', '=', 'keep')]
+        if query:
+            domain += ['|', '|', '|',
+                ('subject', 'ilike', query),
+                ('sender_email', 'ilike', query),
+                ('sender_name', 'ilike', query),
+                ('recipient_emails', 'ilike', query)]
+        date_from = kw.get('date_from')
+        date_to = kw.get('date_to')
+        if date_from:
+            domain.append(('email_date', '>=', date_from))
+        if date_to:
+            domain.append(('email_date', '<=', date_to + ' 23:59:59'))
+        account_id = kw.get('account_id')
+        if account_id:
+            domain.append(('account_id', '=', int(account_id)))
+        msgs = self.search(domain, limit=100, order='email_date desc')
+        return [self._msg_to_dict(m) for m in msgs]
+
+    @api.model
+    def create_tag(self, *args, **kw):
+        return False
+
+    @api.model
+    def do_add_tag(self, *args, **kw):
+        return []
+
+    @api.model
+    def do_remove_tag(self, *args, **kw):
+        return []
+
+    @api.model
+    def do_assign(self, *args, **kw):
+        """Assegna email a un utente."""
+        message_id = kw.get('message_id')
+        user_id = kw.get('user_id')
+        if not message_id:
+            return ''
+        msg = self.browse(int(message_id))
+        if msg.exists() and user_id:
+            msg.write({'assigned_user_ids': [(4, int(user_id))]})
+            user = self.env['res.users'].browse(int(user_id))
+            return user.name if user.exists() else ''
+        elif msg.exists():
+            msg.write({'assigned_user_ids': [(5,)]})
+        return ''
+
+    @api.model
+    def do_link_lead(self, *args, **kw):
+        """Collega email a un lead."""
+        message_id = kw.get('message_id')
+        lead_id = kw.get('lead_id')
+        if not message_id:
+            return False
+        msg = self.browse(int(message_id))
+        if msg.exists():
+            msg.write({'lead_id': int(lead_id) if lead_id else False})
+        return True
+
+    @api.model
+    def do_snooze(self, *args, **kw):
+        return True
+
+    @api.model
+    def save_draft(self, *args, **kw):
+        return {'success': True}
+
     @api.model
     def do_bulk_action(self, *args, **kw):
         ids = kw.get('ids', [])
