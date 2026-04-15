@@ -570,6 +570,42 @@
                             </t>
                         </div>
                         
+                        <!-- Sezione KGB Tracking -->
+                        <div class="cf-mail-ctx-section" t-if="state.msgDetail.has_tracking">
+                            <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleKGBPanel">
+                                <i t-att-class="'fa fa-' + (state.showKGBPanel ? 'chevron-down' : 'chevron-right')"/>
+                                <i class="fa fa-eye" style="margin-left:4px;color:#7b1fa2"/> KGB Tracking
+                            </div>
+                            <t t-if="state.showKGBPanel">
+                                <div style="margin-top:8px">
+                                    <!-- Summary -->
+                                    <div style="font-size:11px;margin-bottom:8px;display:flex;gap:8px;">
+                                        <span style="color:#2e7d32"><i class="fa fa-eye"/> <t t-esc="state.msgDetail.tracking_open_count || 0"/> aperture</span>
+                                        <span style="color:#1565c0"><i class="fa fa-mouse-pointer"/> <t t-esc="state.msgDetail.tracking_click_count || 0"/> click</span>
+                                    </div>
+                                    <!-- Timeline -->
+                                    <t t-if="state.trackingEvents.length">
+                                        <t t-foreach="state.trackingEvents" t-as="ev" t-key="ev_index">
+                                            <div style="font-size:11px;padding:4px 0;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:6px;">
+                                                <span t-if="ev.event_type === 'sent'" style="color:#666"><i class="fa fa-paper-plane"/></span>
+                                                <span t-if="ev.event_type === 'opened'" style="color:#2e7d32"><i class="fa fa-eye"/></span>
+                                                <span t-if="ev.event_type === 'clicked'" style="color:#1565c0"><i class="fa fa-mouse-pointer"/></span>
+                                                <span t-if="ev.event_type === 'downloaded'" style="color:#e65100"><i class="fa fa-download"/></span>
+                                                <span t-if="ev.event_type === 'forwarded'" style="color:#7b1fa2"><i class="fa fa-share"/></span>
+                                                <span style="color:#999" t-esc="ev.event_date"/>
+                                                <span t-if="ev.city" style="color:#666" t-esc="ev.city + ', ' + ev.country"/>
+                                                <span t-if="ev.url_clicked" style="color:#1565c0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" t-esc="ev.url_clicked"/>
+                                                <span t-if="ev.attachment_name" style="color:#e65100" t-esc="ev.attachment_name"/>
+                                            </div>
+                                        </t>
+                                    </t>
+                                    <t t-if="!state.trackingEvents.length">
+                                        <div style="font-size:11px;color:#999;">Non ancora aperta</div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+
                         <!-- Sezione Arricchimento -->
                         <div class="cf-mail-ctx-section">
                             <div class="cf-mail-ctx-title" style="cursor:pointer" t-on-click="toggleEnrichment">

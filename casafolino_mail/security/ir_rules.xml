@@ -37,4 +37,20 @@
         <field name="groups" eval="[(4, ref('base.group_system'))]"/>
     </record>
 
+    <!-- ══ casafolino.mail.tracking ══════════════════════════════════ -->
+
+    <record id="rule_mail_tracking_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: tracking proprie email</field>
+        <field name="model_id" ref="model_casafolino_mail_tracking"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_tracking_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutto il tracking</field>
+        <field name="model_id" ref="model_casafolino_mail_tracking"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
 </odoo>

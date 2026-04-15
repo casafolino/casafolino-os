@@ -56,6 +56,7 @@ class CfMailClient extends Component {
             contacts: [], contactSearch: "", contactTagFilter: "",
             show007Panel: false, data007: {}, loading007: false,
             showAIPanel: false, aiLoading: false, aiResult: "", composerAILoading: false,
+            showKGBPanel: false, trackingEvents: [],
             composerAttachments: [], templates: [], showTemplateDropdown: false,
             showAttachDropdown: false, showAttachModal: false, attachModalSearch: '',
             attachModalResults: [], attachModalSelected: [],
@@ -440,6 +441,8 @@ class CfMailClient extends Component {
         try {
             const detail = await this._rpc("casafolino.mail.message", "get_message_detail", { message_id: msg.id });
             this.state.msgDetail = detail || {};
+            this.state.trackingEvents = detail.tracking_events || [];
+            this.state.showKGBPanel = false;
             this.state.enrichNote = detail.note || "";
             this.state.enrichPartnerSearch = "";
             this.state.enrichPartnerResults = [];
@@ -661,6 +664,24 @@ class CfMailClient extends Component {
     }
 
     toggle007Panel() { this.state.show007Panel = !this.state.show007Panel; }
+
+    async toggleKGBPanel() {
+        this.state.showKGBPanel = !this.state.showKGBPanel;
+        if (this.state.showKGBPanel && this.state.selectedMsg && !this.state.trackingEvents.length) {
+            await this.loadTrackingEvents(this.state.selectedMsg.id);
+        }
+    }
+
+    async loadTrackingEvents(messageId) {
+        try {
+            var events = await this._rpc("casafolino.mail.tracking", "get_tracking_events", {
+                message_id: messageId,
+            });
+            this.state.trackingEvents = events || [];
+        } catch (e) {
+            this.state.trackingEvents = [];
+        }
+    }
 
     async load007Data(partnerId) {
         if (!partnerId) return;

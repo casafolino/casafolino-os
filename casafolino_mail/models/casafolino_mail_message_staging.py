@@ -92,6 +92,10 @@ class CasafolinoMailMessage(models.Model):
         'res.users', 'casafolino_mail_message_user_rel',
         'message_id', 'user_id', string='Assegnato a')
     lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
+    tracking_token = fields.Char('Tracking Token', index=True)
+    tracking_ids = fields.One2many('casafolino.mail.tracking', 'message_id', string='Tracking')
+    tracking_open_count = fields.Integer(compute='_compute_tracking_counts', string='Aperture')
+    tracking_click_count = fields.Integer(compute='_compute_tracking_counts', string='Click')
 
     _sql_constraints = []
 
@@ -119,6 +123,12 @@ class CasafolinoMailMessage(models.Model):
                 rec.sender_domain = rec.sender_email.split('@')[1].lower().strip()
             else:
                 rec.sender_domain = ''
+
+    def _compute_tracking_counts(self):
+        for rec in self:
+            events = self.env['casafolino.mail.tracking'].search([('message_id', '=', rec.id)])
+            rec.tracking_open_count = len(events.filtered(lambda e: e.event_type in ('opened', 'forwarded')))
+            rec.tracking_click_count = len(events.filtered(lambda e: e.event_type == 'clicked'))
 
     # ── Triage actions (Step 3) ──────────────────────────────────────
 
@@ -634,6 +644,9 @@ class CasafolinoMailMessage(models.Model):
             'lead_stage': '',
             'sender_action': False,
             'state': m.state,
+            'tracking_open_count': m.tracking_open_count,
+            'tracking_click_count': m.tracking_click_count,
+            'has_tracking': bool(m.tracking_token),
         }
 
     @api.model
@@ -723,6 +736,22 @@ class CasafolinoMailMessage(models.Model):
                 'company': p.parent_id.name if p.parent_id else (p.company_name or ''),
                 'job_title': p.function or '',
             }
+
+        # Tracking events
+        result['tracking_events'] = []
+        if msg.tracking_token:
+            events = self.env['casafolino.mail.tracking'].search(
+                [('message_id', '=', msg.id)], order='event_date desc')
+            for ev in events:
+                result['tracking_events'].append({
+                    'event_type': ev.event_type,
+                    'event_date': ev.event_date.strftime('%d/%m/%Y %H:%M') if ev.event_date else '',
+                    'country': ev.country or '',
+                    'city': ev.city or '',
+                    'url_clicked': ev.url_clicked or '',
+                    'attachment_name': ev.attachment_name or '',
+                    'ip_address': ev.ip_address or '',
+                })
 
         return result
 
@@ -872,6 +901,33 @@ class CasafolinoMailMessage(models.Model):
             _logger.warning("Image compression failed for %s: %s", filename, e)
             return content, filename, None
 
+    @staticmethod
+    def _inject_tracking(body_html, token, base_url):
+        """Inject tracking pixel and rewrite links in HTML body."""
+        from urllib.parse import quote
+        if not body_html or not token:
+            return body_html
+
+        # 1. Rewrite links (but not mailto: or internal erp links)
+        import re
+        def rewrite_link(match):
+            url = match.group(1)
+            if url.startswith('mailto:') or 'erp.casafolino.com' in url:
+                return match.group(0)
+            tracked = '%s/mail/track/click/%s?url=%s' % (base_url, token, quote(url, safe=''))
+            return 'href="%s"' % tracked
+
+        tracked_body = re.sub(r'href="([^"]+)"', rewrite_link, body_html)
+
+        # 2. Append tracking pixel
+        pixel = '<img src="%s/mail/track/open/%s.png" width="1" height="1" style="display:none" />' % (base_url, token)
+        if '</body>' in tracked_body:
+            tracked_body = tracked_body.replace('</body>', pixel + '</body>')
+        else:
+            tracked_body = tracked_body + pixel
+
+        return tracked_body
+
     @api.model
     def _build_and_send_email(self, account, to_address, cc_address, subject, body,
                                reply_to_id=False, attachments=None, attachment_ids=None):
@@ -887,6 +943,7 @@ class CasafolinoMailMessage(models.Model):
 
         msg_obj = MIMEMultipart('mixed')
         generated_msg_id = '<%s@casafolino.com>' % uuid.uuid4()
+        tracking_token = str(uuid.uuid4())
         msg_obj['Message-ID'] = generated_msg_id
         msg_obj['Subject'] = subject
         msg_obj['From'] = '%s <%s>' % (account.name or account.email_address, account.email_address)
@@ -900,7 +957,11 @@ class CasafolinoMailMessage(models.Model):
                 msg_obj['In-Reply-To'] = orig.message_id_rfc
                 msg_obj['References'] = orig.message_id_rfc
 
-        msg_obj.attach(MIMEText(body, 'html', 'utf-8'))
+        # Inject tracking pixel + rewrite links
+        base_url = self.env['ir.config_parameter'].sudo().get_param(
+            'web.base.url', 'http://erp.casafolino.com:4589')
+        tracked_body = self._inject_tracking(body, tracking_token, base_url)
+        msg_obj.attach(MIMEText(tracked_body, 'html', 'utf-8'))
 
         # Allegati dal PC (base64)
         att_records = []
@@ -960,7 +1021,7 @@ class CasafolinoMailMessage(models.Model):
         server.sendmail(account.email_address, recipients, msg_obj.as_string())
         server.quit()
 
-        return msg_obj, att_records
+        return msg_obj, att_records, tracking_token
 
     @api.model
     def send_reply(self, *args, **kw):
@@ -992,7 +1053,7 @@ class CasafolinoMailMessage(models.Model):
             return {'success': False, 'error': 'Password SMTP non configurata'}
 
         try:
-            msg_obj, att_records = self._build_and_send_email(
+            msg_obj, att_records, tracking_token = self._build_and_send_email(
                 account, to_address, cc_address, subject, body,
                 reply_to_id=message_id, attachments=attachments,
                 attachment_ids=attachment_ids)
@@ -1007,6 +1068,7 @@ class CasafolinoMailMessage(models.Model):
             sent_msg = self.create({
                 'account_id': account.id,
                 'message_id_rfc': msg_obj.get('Message-ID', ''),
+                'tracking_token': tracking_token,
                 'direction': 'outbound',
                 'sender_email': account.email_address,
                 'sender_name': account.name or '',
@@ -1024,6 +1086,15 @@ class CasafolinoMailMessage(models.Model):
             })
             for att_rec in att_records:
                 att_rec.write({'res_model': 'casafolino.mail.message', 'res_id': sent_msg.id})
+
+            # Create initial tracking event
+            self.env['casafolino.mail.tracking'].create({
+                'message_id': sent_msg.id,
+                'tracking_token': tracking_token,
+                'event_type': 'sent',
+                'account_id': account.id,
+                'partner_id': sent_msg.partner_id.id if sent_msg.partner_id else False,
+            })
 
             return {'success': True}
         except Exception as e:
@@ -1055,7 +1126,7 @@ class CasafolinoMailMessage(models.Model):
             return {'success': False, 'error': 'Password SMTP non configurata'}
 
         try:
-            msg_obj, att_records = self._build_and_send_email(
+            msg_obj, att_records, tracking_token = self._build_and_send_email(
                 account, to_address, cc_address, subject, body,
                 reply_to_id=reply_to_id, attachments=attachments,
                 attachment_ids=attachment_ids)
@@ -1063,6 +1134,7 @@ class CasafolinoMailMessage(models.Model):
             sent_msg = self.create({
                 'account_id': account.id,
                 'message_id_rfc': msg_obj.get('Message-ID', ''),
+                'tracking_token': tracking_token,
                 'direction': 'outbound',
                 'sender_email': account.email_address,
                 'sender_name': account.name or '',
@@ -1085,6 +1157,16 @@ class CasafolinoMailMessage(models.Model):
                     'res_model': 'casafolino.mail.message',
                     'res_id': sent_msg.id,
                 })
+
+            # Create initial tracking event
+            self.env['casafolino.mail.tracking'].create({
+                'message_id': sent_msg.id,
+                'tracking_token': tracking_token,
+                'event_type': 'sent',
+                'account_id': account.id,
+                'partner_id': sent_msg.partner_id.id if sent_msg.partner_id else False,
+                'lead_id': int(lead_id) if lead_id else False,
+            })
 
             return {'success': True}
         except Exception as e:

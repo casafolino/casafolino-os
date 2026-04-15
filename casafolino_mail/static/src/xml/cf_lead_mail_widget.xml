@@ -39,6 +39,8 @@
                         <span class="cf-lead-mail-sender" t-esc="msg.from_name || msg.from_address"/>
                         <span class="cf-lead-mail-subject" t-esc="msg.subject"/>
                         <span t-if="msg.has_attachments" class="cf-lead-mail-att-icon"><i class="fa fa-paperclip"/></span>
+                        <span t-if="msg.tracking_open_count" style="color:#2e7d32;font-size:11px;"><i class="fa fa-eye"/> <t t-esc="msg.tracking_open_count"/></span>
+                        <span t-if="msg.tracking_click_count" style="color:#1565c0;font-size:11px;"><i class="fa fa-mouse-pointer"/> <t t-esc="msg.tracking_click_count"/></span>
                         <span class="cf-lead-mail-date" t-esc="msg.date_short"/>
                     </div>
                 </div>
