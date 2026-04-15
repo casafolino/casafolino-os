@@ -278,6 +278,19 @@ class CasafolinoMailAccount(models.Model):
                     if partner.mail_tracked:
                         vals['state'] = 'keep'
 
+                # Auto-keep: se esistono già email keep dallo stesso mittente su questo account
+                if vals['state'] == 'new' and sender_email:
+                    prev_keep = Message.search([
+                        ('sender_email', '=ilike', sender_email),
+                        ('account_id', '=', self.id),
+                        ('state', '=', 'keep'),
+                    ], limit=1)
+                    if prev_keep:
+                        vals['state'] = 'keep'
+                        if prev_keep.partner_id and not vals.get('partner_id'):
+                            vals['partner_id'] = prev_keep.partner_id.id
+                            vals['match_type'] = 'exact'
+
                 try:
                     new_msg = Message.create(vals)
                     new_count += 1
