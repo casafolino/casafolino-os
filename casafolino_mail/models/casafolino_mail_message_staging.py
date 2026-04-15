@@ -153,7 +153,7 @@ class CasafolinoMailMessage(models.Model):
             # Se ha un partner, attiva tracking (email visibili dalla tab Email)
             if record.partner_id:
                 if not record.partner_id.mail_tracked:
-                    record.partner_id.mail_tracked = True
+                    record.partner_id.sudo().mail_tracked = True
 
         # Auto-keep: tutte le email dallo stesso mittente ancora in 'new'
         sender_emails = set()
@@ -319,7 +319,7 @@ class CasafolinoMailMessage(models.Model):
 
     def action_blacklist_domain(self):
         """Aggiunge il dominio alla blacklist e scarta tutte le email new da quel dominio."""
-        Blacklist = self.env['casafolino.mail.blacklist']
+        Blacklist = self.env['casafolino.mail.blacklist'].sudo()
         domains_done = set()
 
         for record in self:
@@ -365,7 +365,7 @@ class CasafolinoMailMessage(models.Model):
         }
         self._enrich_partner_vals(vals)
 
-        partner = self.env['res.partner'].create(vals)
+        partner = self.env['res.partner'].sudo().create(vals)
         self.write({'partner_id': partner.id, 'match_type': 'manual'})
 
         return {
@@ -530,7 +530,7 @@ class CasafolinoMailMessage(models.Model):
 
     def action_bulk_create_partners(self):
         """Crea contatti da email selezionate senza partner."""
-        Partner = self.env['res.partner']
+        Partner = self.env['res.partner'].sudo()
         for record in self.filtered(lambda r: not r.partner_id):
             email_addr, name = record._get_contact_email_and_name()
             if not email_addr:
@@ -806,7 +806,7 @@ class CasafolinoMailMessage(models.Model):
         addr = msg.sender_email.strip().lower()
         domain = addr.split('@')[1] if '@' in addr else ''
         # Add to blacklist
-        Blacklist = self.env['casafolino.mail.blacklist']
+        Blacklist = self.env['casafolino.mail.blacklist'].sudo()
         if domain and not Blacklist.search([('type', '=', 'domain'), ('value', '=', domain)], limit=1):
             Blacklist.create({'type': 'domain', 'value': domain})
         # Discard all from this sender
@@ -890,11 +890,11 @@ class CasafolinoMailMessage(models.Model):
             return ''
         msg = self.browse(int(message_id))
         if msg.exists() and user_id:
-            msg.write({'assigned_user_ids': [(4, int(user_id))]})
+            msg.sudo().write({'assigned_user_ids': [(4, int(user_id))]})
             user = self.env['res.users'].browse(int(user_id))
             return user.name if user.exists() else ''
         elif msg.exists():
-            msg.write({'assigned_user_ids': [(5,)]})
+            msg.sudo().write({'assigned_user_ids': [(5,)]})
         return ''
 
     @api.model
