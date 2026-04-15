@@ -93,7 +93,7 @@ class MailTrackingController(http.Controller):
         except Exception as e:
             _logger.warning("Tracking notification error: %s", e)
 
-    @http.route('/mail/track/open/<string:token>',
+    @http.route('/cf/track/open/<string:token>',
                 type='http', auth='public', csrf=False, methods=['GET'])
     def track_open(self, token, **kw):
         self._record_event(token, 'opened')
@@ -104,14 +104,14 @@ class MailTrackingController(http.Controller):
         ]
         return request.make_response(PIXEL, headers=headers)
 
-    @http.route('/mail/track/click/<string:token>',
+    @http.route('/cf/track/click/<string:token>',
                 type='http', auth='public', csrf=False, methods=['GET'])
     def track_click(self, token, url='', **kw):
         target_url = unquote(url) if url else '/'
         self._record_event(token, 'clicked', url_clicked=target_url)
         return request.redirect(target_url, code=302)
 
-    @http.route('/mail/track/download/<string:token>/<int:attachment_id>',
+    @http.route('/cf/track/download/<string:token>/<int:attachment_id>',
                 type='http', auth='public', csrf=False, methods=['GET'])
     def track_download(self, token, attachment_id, **kw):
         attachment = request.env['ir.attachment'].sudo().browse(attachment_id)

@@ -1059,13 +1059,13 @@ class CasafolinoMailMessage(models.Model):
             url = match.group(1)
             if url.startswith('mailto:') or 'erp.casafolino.com' in url:
                 return match.group(0)
-            tracked = '%s/mail/track/click/%s?url=%s' % (base_url, token, quote(url, safe=''))
+            tracked = '%s/cf/track/click/%s?url=%s' % (base_url, token, quote(url, safe=''))
             return 'href="%s"' % tracked
 
         tracked_body = re.sub(r'href="([^"]+)"', rewrite_link, body_html)
 
         # 2. Append tracking pixel
-        pixel = '<img src="%s/mail/track/open/%s" width="1" height="1" style="display:none" />' % (base_url, token)
+        pixel = '<img src="%s/cf/track/open/%s" width="1" height="1" style="display:none" />' % (base_url, token)
         if '</body>' in tracked_body:
             tracked_body = tracked_body.replace('</body>', pixel + '</body>')
         else:
