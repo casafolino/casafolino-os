@@ -25,6 +25,7 @@ class CfMailClient extends Component {
         this.notification = useService("notification");
         this.emailContent = useRef("emailContent");
         this.composerBody = useRef("composerBody");
+        this.fileInputRef = useRef("fileInput");
         this._searchTimer = null;
 
         this.state = useState({
@@ -876,8 +877,9 @@ class CfMailClient extends Component {
     // ── Attachments + Templates (composer) ──────────────────────────────────
 
     onAttachClick() {
-        var input = this.__owl__.refs.fileInput;
-        if (input) input.click();
+        if (this.fileInputRef.el) {
+            this.fileInputRef.el.click();
+        }
     }
 
     _getTotalAttachSize() {

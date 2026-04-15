@@ -1236,7 +1236,7 @@ class CasafolinoMailMessage(models.Model):
                 att_rec.write({'res_model': 'casafolino.mail.message', 'res_id': sent_msg.id})
 
             # Create initial tracking event
-            self.env['casafolino.mail.tracking'].create({
+            self.env['casafolino.mail.tracking'].sudo().create({
                 'message_id': sent_msg.id,
                 'tracking_token': tracking_token,
                 'event_type': 'sent',
@@ -1307,7 +1307,7 @@ class CasafolinoMailMessage(models.Model):
                 })
 
             # Create initial tracking event
-            self.env['casafolino.mail.tracking'].create({
+            self.env['casafolino.mail.tracking'].sudo().create({
                 'message_id': sent_msg.id,
                 'tracking_token': tracking_token,
                 'event_type': 'sent',
