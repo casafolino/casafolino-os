@@ -62,6 +62,10 @@ class CfMailClient extends Component {
             showAttachDropdown: false, showAttachModal: false, attachModalSearch: '',
             attachModalResults: [], attachModalSelected: [],
             showUrlModal: false, urlInput: '',
+            // v2: detail attachments, CRM sidebar tabs
+            detailAttachments: [],
+            crmTabActive: 'partner',
+            showCrmSidebar: true,
         });
 
         onMounted(() => { this.init(); });
@@ -433,6 +437,7 @@ class CfMailClient extends Component {
         if (ev && ev.target.type === "checkbox") return;
         this.state.selectedMsg = msg;
         this.state.msgDetail = {};
+        this.state.detailAttachments = [];
         this.state.loadingDetail = true;
         this.state.showComposer = false;
         this.state.showTagDropdown = false;
@@ -451,6 +456,11 @@ class CfMailClient extends Component {
             const idx = this.state.messages.findIndex(m => m.id === msg.id);
             if (idx !== -1) this.state.messages[idx].is_read = true;
             await this._renderEmailBody(detail.body_html || detail.body_text || "");
+            // Attachments come from get_message_detail response
+            this.state.detailAttachments = detail.attachments || [];
+            // Reset CRM sidebar to partner tab
+            this.state.crmTabActive = 'partner';
+            this.state.showCrmSidebar = true;
             if (detail.partner_id) {
                 this.load007Data(detail.partner_id);
             } else {
@@ -463,17 +473,45 @@ class CfMailClient extends Component {
     async _renderEmailBody(html) {
         const el = this.emailContent.el;
         if (!el) return;
+        // Cleanup previous observer
+        if (this._bodyResizeObserver) {
+            this._bodyResizeObserver.disconnect();
+            this._bodyResizeObserver = null;
+        }
         el.innerHTML = "";
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:auto;";
+        iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:auto;display:block;";
         iframe.setAttribute("sandbox", "allow-same-origin");
         el.appendChild(iframe);
-        iframe.onload = () => {
-            try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 40 + "px"; } catch (e) {}
+
+        const self = this;
+        const adjustHeight = function() {
+            try {
+                var body = iframe.contentDocument && iframe.contentDocument.body;
+                if (body) {
+                    var h = Math.max(body.scrollHeight, body.offsetHeight) + 40;
+                    iframe.style.height = h + "px";
+                }
+            } catch (e) {}
         };
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+        iframe.onload = function() {
+            adjustHeight();
+            // ResizeObserver for dynamic content (images loading, etc.)
+            try {
+                var body = iframe.contentDocument && iframe.contentDocument.body;
+                if (body && typeof ResizeObserver !== 'undefined') {
+                    self._bodyResizeObserver = new ResizeObserver(function() {
+                        adjustHeight();
+                    });
+                    self._bodyResizeObserver.observe(body);
+                }
+            } catch (e) {}
+        };
+
+        var doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
-        doc.write(`<style>body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:16px;margin:0}a{color:#5A6E3A}img{max-width:100%}ul,ol{margin:8px 0 8px 20px}</style>${html}`);
+        doc.write('<style>body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;color:#202124;padding:16px;margin:0;overflow:visible}a{color:#6B7A3E}img{max-width:100%;height:auto}ul,ol{margin:8px 0 8px 20px}pre{white-space:pre-wrap;word-break:break-word}</style>' + html);
         doc.close();
     }
 
@@ -1388,6 +1426,72 @@ class CfMailClient extends Component {
             });
             if (res.result && body) body.innerHTML = res.result.replace(/\n/g, '<br>');
         } catch(e) {} finally { this.state.composerAILoading = false; }
+    }
+
+    // ── Detail attachments (from ir.attachment) ────────────────────────────
+    async loadDetailAttachments(messageId) {
+        if (!messageId) { this.state.detailAttachments = []; return; }
+        try {
+            var atts = await this._rpc("casafolino.mail.message", "get_message_attachments", {
+                message_id: messageId,
+            });
+            this.state.detailAttachments = atts || [];
+        } catch (e) {
+            this.state.detailAttachments = [];
+        }
+    }
+
+    onDownloadAttachment(ev) {
+        var attId = parseInt(ev.currentTarget.dataset.attId);
+        if (attId) {
+            window.open("/web/content/" + attId + "?download=true", "_blank");
+        }
+    }
+
+    getAttachmentIcon(mimetype) {
+        if (!mimetype) return "fa-file-o";
+        if (mimetype.indexOf("pdf") >= 0) return "fa-file-pdf-o";
+        if (mimetype.indexOf("image") >= 0) return "fa-file-image-o";
+        if (mimetype.indexOf("word") >= 0 || mimetype.indexOf("document") >= 0) return "fa-file-word-o";
+        if (mimetype.indexOf("excel") >= 0 || mimetype.indexOf("sheet") >= 0) return "fa-file-excel-o";
+        if (mimetype.indexOf("zip") >= 0 || mimetype.indexOf("archive") >= 0) return "fa-file-archive-o";
+        if (mimetype.indexOf("text") >= 0) return "fa-file-text-o";
+        return "fa-file-o";
+    }
+
+    formatFileSize(bytes) {
+        if (!bytes) return "";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1048576) return Math.round(bytes / 1024) + " KB";
+        return (bytes / 1048576).toFixed(1) + " MB";
+    }
+
+    // ── CRM Sidebar tabs ─────────────────────────────────────────────────
+    toggleCrmSidebar() { this.state.showCrmSidebar = !this.state.showCrmSidebar; }
+    onCrmTabPartner() { this.state.crmTabActive = 'partner'; }
+    onCrmTabCrm() { this.state.crmTabActive = 'crm'; }
+    onCrmTab007() { this.state.crmTabActive = '007'; }
+    onCrmTabNotes() { this.state.crmTabActive = 'notes'; }
+
+    // ── Fix: replace inline arrow functions in XML ───────────────────────
+    closeAIResult() { this.state.aiResult = ''; }
+
+    onRemoveComposerAttachment(ev) {
+        var idx = parseInt(ev.currentTarget.dataset.attIndex);
+        if (!isNaN(idx) && idx >= 0 && idx < this.state.composerAttachments.length) {
+            this.state.composerAttachments.splice(idx, 1);
+        }
+    }
+
+    onSelectTemplateClick(ev) {
+        var tplId = parseInt(ev.currentTarget.dataset.tplId);
+        var tpl = this.state.templates.find(function(t) { return t.id === tplId; });
+        if (tpl) this.onTemplateSelect(tpl);
+    }
+
+    onToggleAttachSelectClick(ev) {
+        var id = parseInt(ev.currentTarget.dataset.attId);
+        if (id) this.toggleAttachSelect(id);
     }
 
     async onComposerAISuggest() {
