@@ -684,16 +684,26 @@ class CasafolinoMailMessage(models.Model):
         offset = int(kw.get('offset') or 0)
         search = kw.get('search') or ''
 
-        # Ownership check: account deve appartenere all'utente
-        if account_id and not self.env.user.has_group('base.group_system'):
-            acc = self.env['casafolino.mail.account'].browse(int(account_id))
-            if not acc.exists() or acc.responsible_user_id.id != self.env.uid:
-                return []
-
         domain = [('state', '=', 'keep')]
 
-        if account_id:
-            domain.append(('account_id', '=', account_id))
+        # Account filter: SEMPRE applicato tranne quando esplicitamente 'all'
+        if account_id and str(account_id) != 'all':
+            domain.append(('account_id', '=', int(account_id)))
+            # Ownership check per non-admin
+            if not self.env.user.has_group('base.group_system'):
+                acc = self.env['casafolino.mail.account'].browse(int(account_id))
+                if not acc.exists() or acc.responsible_user_id.id != self.env.uid:
+                    return []
+        elif str(account_id) == 'all':
+            # "Tutti": filtra per account dell'utente
+            user_accounts = self.env['casafolino.mail.account'].search([
+                ('active', '=', True), ('responsible_user_id', '=', self.env.uid)])
+            domain.append(('account_id', 'in', user_accounts.ids))
+        else:
+            # account_id mancante/falsy: filtra per account dell'utente (mai mostrare tutto)
+            user_accounts = self.env['casafolino.mail.account'].search([
+                ('active', '=', True), ('responsible_user_id', '=', self.env.uid)])
+            domain.append(('account_id', 'in', user_accounts.ids))
 
         if folder == 'Sent':
             domain.append(('direction', '=', 'outbound'))
@@ -723,15 +733,21 @@ class CasafolinoMailMessage(models.Model):
         thread_offset = int(kw.get('thread_offset') or 0)
         hide_internal = kw.get('hide_internal') or False
 
-        # Build domain (same logic as get_messages)
-        if account_id and not self.env.user.has_group('base.group_system'):
-            acc = self.env['casafolino.mail.account'].browse(int(account_id))
-            if not acc.exists() or acc.responsible_user_id.id != self.env.uid:
-                return {'threads': [], 'has_more': False, 'total': 0}
-
         domain = [('state', '=', 'keep')]
-        if account_id:
-            domain.append(('account_id', '=', account_id))
+
+        # Account filter: SEMPRE applicato tranne quando esplicitamente 'all'
+        if account_id and str(account_id) != 'all':
+            domain.append(('account_id', '=', int(account_id)))
+            # Ownership check per non-admin
+            if not self.env.user.has_group('base.group_system'):
+                acc = self.env['casafolino.mail.account'].browse(int(account_id))
+                if not acc.exists() or acc.responsible_user_id.id != self.env.uid:
+                    return {'threads': [], 'has_more': False, 'total': 0}
+        else:
+            # 'all' o falsy: filtra per account dell'utente (mai mostrare tutto senza filtro)
+            user_accounts = self.env['casafolino.mail.account'].search([
+                ('active', '=', True), ('responsible_user_id', '=', self.env.uid)])
+            domain.append(('account_id', 'in', user_accounts.ids))
 
         if folder == 'Sent':
             domain.append(('direction', '=', 'outbound'))
@@ -1021,8 +1037,13 @@ class CasafolinoMailMessage(models.Model):
         if date_to:
             domain.append(('email_date', '<=', date_to + ' 23:59:59'))
         account_id = kw.get('account_id')
-        if account_id:
+        if account_id and str(account_id) != 'all':
             domain.append(('account_id', '=', int(account_id)))
+        else:
+            # 'all' o mancante: filtra per account dell'utente
+            user_accounts = self.env['casafolino.mail.account'].search([
+                ('active', '=', True), ('responsible_user_id', '=', self.env.uid)])
+            domain.append(('account_id', 'in', user_accounts.ids))
         msgs = self.search(domain, limit=100, order='email_date desc')
         return [self._msg_to_dict(m) for m in msgs]
 

@@ -75,6 +75,13 @@
             <div class="cf-mail-nav-item" t-on-click="openNewAccount">
                 <i class="fa fa-cog nav-icon"/> Impostazioni Account
             </div>
+            <t t-if="state.accounts.length > 1">
+                <div class="cf-mail-account-header" t-att-class="state.selectedAccount === 'all' ? 'active' : ''" t-on-click="selectAllAccounts">
+                    <div class="cf-mail-account-dot" style="background:linear-gradient(135deg,#5A6E3A,#3d4d27)"/>
+                    <span class="cf-mail-account-email">Tutti gli account</span>
+                    <span t-if="state.totalUnread > 0" class="cf-mail-account-badge" t-esc="state.totalUnread"/>
+                </div>
+            </t>
             <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
                 <div class="cf-mail-account-header" t-att-class="state.selectedAccount === acc.id ? 'active' : ''">
                     <div class="cf-mail-account-dot" t-att-style="'background:' + acc.color" t-att-data-account-id="acc.id" t-on-click="onSelectAccount"/>

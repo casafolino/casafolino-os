@@ -116,6 +116,13 @@ class CfMailClient extends Component {
         } catch (e) { console.error(e); }
     }
 
+    selectAllAccounts() {
+        this.state.selectedAccount = 'all';
+        this.state.selectedMsg = null;
+        this.state.msgDetail = {};
+        this.loadMessages();
+    }
+
     async loadMessages() {
         if (!this.state.selectedAccount) return;
         this.state.loading = true;
