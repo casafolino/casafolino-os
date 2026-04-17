@@ -1,6 +1,13 @@
 from odoo import models, fields, api
+import re
 import logging
 _logger = logging.getLogger(__name__)
+
+# Prefissi email da strippare per normalizzare il subject (thread grouping)
+_SUBJECT_PREFIX_RE = re.compile(
+    r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
+    re.IGNORECASE,
+)
 
 
 class CfMailMessage(models.Model):
@@ -38,6 +45,26 @@ class CfMailMessage(models.Model):
     snoozed_until = fields.Datetime('Posticipata fino a')
     has_attachments = fields.Boolean('Ha allegati', default=False)
     attachment_names = fields.Char('Allegati')
+    thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
+
+    @staticmethod
+    def _normalize_subject(subject):
+        """Strip Re:/Fwd:/R:/FW:/AW:/SV:/VS:/Rif: prefixes recursively, lowercase, strip."""
+        if not subject:
+            return ''
+        s = subject.strip()
+        prev = None
+        while s != prev:
+            prev = s
+            s = _SUBJECT_PREFIX_RE.sub('', s).strip()
+        return s.lower()
+
+    @api.depends('subject', 'account_id')
+    def _compute_thread_key(self):
+        for rec in self:
+            norm = self._normalize_subject(rec.subject)
+            aid = rec.account_id.id if rec.account_id else 0
+            rec.thread_key = '%s::%s' % (norm, aid) if norm else ''
 
     @api.depends('body_text')
     def _compute_body_plain(self):
@@ -205,6 +232,167 @@ class CfMailMessage(models.Model):
             ]
         msgs = self.search(domain, limit=limit, offset=offset)
         return [self._msg_to_dict(m) for m in msgs]
+
+    def _build_messages_domain(self, account_id, folder, search=''):
+        """Build search domain for messages (shared by get_messages and get_threaded_messages)."""
+        is_admin = self.env.user.has_group('base.group_system') or self.env.user.login == 'antonio@casafolino.com'
+        if not is_admin:
+            user_accounts = self.env['cf.mail.account'].search([
+                '|',
+                ('user_id', '=', self.env.uid),
+                ('is_team', '=', True),
+            ])
+            if account_id not in user_accounts.ids:
+                return None  # signal: no access
+        domain = [('account_id', '=', account_id), ('is_archived', '=', False)]
+        if folder == 'Starred':
+            domain.append(('is_starred', '=', True))
+        elif folder == 'Sent':
+            domain.append(('direction', '=', 'out'))
+        elif folder == 'Archived':
+            domain = [('account_id', '=', account_id), ('is_archived', '=', True)]
+        elif folder == 'Assigned':
+            domain.append(('assigned_user_id', '=', self.env.uid))
+        elif folder and folder.startswith('TAG_'):
+            try:
+                tid = int(folder.replace('TAG_', ''))
+                domain.append(('tag_ids', 'in', [tid]))
+            except Exception:
+                pass
+        else:
+            domain.append(('folder', '=', folder))
+        if search:
+            domain += ['|', '|', '|',
+                ('subject', 'ilike', search),
+                ('from_address', 'ilike', search),
+                ('from_name', 'ilike', search),
+                ('snippet', 'ilike', search),
+            ]
+        return domain
+
+    @api.model
+    def get_threaded_messages(self, *args, **kw):
+        """Return messages grouped by thread_key for the mail hub list view."""
+        account_id = kw.get('account_id')
+        folder = kw.get('folder') or 'INBOX'
+        search = kw.get('search') or ''
+        thread_limit = int(kw.get('thread_limit') or 50)
+        thread_offset = int(kw.get('thread_offset') or 0)
+        hide_internal = kw.get('hide_internal') or False
+
+        domain = self._build_messages_domain(account_id, folder, search)
+        if domain is None:
+            return {'threads': [], 'has_more': False}
+
+        if hide_internal:
+            domain.append(('from_address', 'not ilike', '%@casafolino.com'))
+
+        # Fetch enough messages to fill threads (fetch more than needed to ensure we get enough threads)
+        fetch_limit = (thread_limit + thread_offset) * 8
+        msgs = self.search(domain, limit=fetch_limit, order='date desc, id desc')
+
+        # Group by thread_key
+        thread_map = {}  # thread_key -> list of msg records
+        thread_order = []  # preserve order by latest date
+        for m in msgs:
+            key = m.thread_key or ('__single_%s' % m.id)
+            if key not in thread_map:
+                thread_map[key] = []
+                thread_order.append(key)
+            thread_map[key].append(m)
+
+        # Build thread summaries
+        threads = []
+        for key in thread_order:
+            group = thread_map[key]
+            # Sort within thread: oldest first for expansion, but use newest for display
+            group_sorted = sorted(group, key=lambda m: (m.date or fields.Datetime.now(), m.id))
+            latest = group_sorted[-1]
+            unread_count = sum(1 for m in group if not m.is_read)
+            is_starred = any(m.is_starred for m in group)
+            has_attachments = any(m.has_attachments for m in group)
+
+            # Collect unique tags
+            tag_seen = set()
+            tags = []
+            for m in group:
+                for t in m.tag_ids:
+                    if t.id not in tag_seen:
+                        tag_seen.add(t.id)
+                        tags.append({'id': t.id, 'name': t.name, 'color': t.color or '#5A6E3A'})
+
+            # Lead info from first message that has one
+            lead_name = ''
+            lead_id = False
+            for m in group:
+                if m.lead_id:
+                    lead_id = m.lead_id.id
+                    lead_name = m.lead_id.name
+                    break
+
+            # Assigned user from latest assigned
+            assigned_user_name = ''
+            assigned_user_id = False
+            for m in reversed(group_sorted):
+                if m.assigned_user_id:
+                    assigned_user_id = m.assigned_user_id.id
+                    assigned_user_name = m.assigned_user_id.name
+                    break
+
+            # Sender rule on latest message
+            sender_rule = self.env['cf.mail.sender.rule'].sudo().search(
+                [('email', '=', (latest.from_address or '').strip().lower())], limit=1)
+
+            # Child messages summary (for expansion)
+            child_msgs = []
+            for m in group_sorted:
+                child_msgs.append({
+                    'id': m.id,
+                    'from_name': m.from_name or m.from_address or '',
+                    'from_address': m.from_address or '',
+                    'date': m.date.strftime('%d/%m/%Y %H:%M') if m.date else '',
+                    'date_short': m.date.strftime('%d %b') if m.date else '',
+                    'is_read': m.is_read,
+                    'is_starred': m.is_starred,
+                    'snippet': m.snippet or '',
+                    'direction': m.direction,
+                    'subject': m.subject or '(nessun oggetto)',
+                    'has_attachments': m.has_attachments,
+                })
+
+            threads.append({
+                'thread_key': key,
+                'subject': latest.subject or '(nessun oggetto)',
+                'message_count': len(group),
+                'unread_count': unread_count,
+                'is_starred': is_starred,
+                'has_attachments': has_attachments,
+                'last_date': latest.date.strftime('%d/%m/%Y %H:%M') if latest.date else '',
+                'last_date_short': latest.date.strftime('%d %b') if latest.date else '',
+                'last_sender_name': latest.from_name or latest.from_address or '',
+                'last_sender_address': latest.from_address or '',
+                'last_snippet': latest.snippet or '',
+                'last_direction': latest.direction,
+                'last_msg_id': latest.id,
+                'tags': tags,
+                'lead_id': lead_id,
+                'lead_name': lead_name,
+                'assigned_user_id': assigned_user_id,
+                'assigned_user_name': assigned_user_name,
+                'sender_action': sender_rule.action if sender_rule else False,
+                'messages': child_msgs,
+            })
+
+        # Paginate threads
+        total_threads = len(threads)
+        paginated = threads[thread_offset:thread_offset + thread_limit]
+        has_more = (thread_offset + thread_limit) < total_threads
+
+        return {
+            'threads': paginated,
+            'has_more': has_more,
+            'total': total_threads,
+        }
 
     @api.model
     def get_message_detail(self, *args, **kw):

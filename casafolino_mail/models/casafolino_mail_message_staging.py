@@ -96,6 +96,12 @@ class CasafolinoMailMessage(models.Model):
     tracking_ids = fields.One2many('casafolino.mail.tracking', 'message_id', string='Tracking')
     tracking_open_count = fields.Integer(compute='_compute_tracking_counts', string='Aperture')
     tracking_click_count = fields.Integer(compute='_compute_tracking_counts', string='Click')
+    thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
+
+    _SUBJECT_PREFIX_RE = re.compile(
+        r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
+        re.IGNORECASE,
+    )
 
     _sql_constraints = []
 
@@ -129,6 +135,26 @@ class CasafolinoMailMessage(models.Model):
             events = self.env['casafolino.mail.tracking'].search([('message_id', '=', rec.id)])
             rec.tracking_open_count = len(events.filtered(lambda e: e.event_type in ('opened', 'forwarded')))
             rec.tracking_click_count = len(events.filtered(lambda e: e.event_type == 'clicked'))
+
+    @staticmethod
+    def _normalize_subject(subject):
+        """Strip Re:/Fwd:/R:/FW:/AW:/SV:/VS:/Rif: prefixes recursively, lowercase, strip."""
+        if not subject:
+            return ''
+        s = subject.strip()
+        prefix_re = re.compile(r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*', re.IGNORECASE)
+        prev = None
+        while s != prev:
+            prev = s
+            s = prefix_re.sub('', s).strip()
+        return s.lower()
+
+    @api.depends('subject', 'account_id')
+    def _compute_thread_key(self):
+        for rec in self:
+            norm = self._normalize_subject(rec.subject)
+            aid = rec.account_id.id if rec.account_id else 0
+            rec.thread_key = '%s::%s' % (norm, aid) if norm else ''
 
     # ── Triage actions (Step 3) ──────────────────────────────────────
 
@@ -686,6 +712,137 @@ class CasafolinoMailMessage(models.Model):
 
         msgs = self.search(domain, limit=limit, offset=offset)
         return [self._msg_to_dict(m) for m in msgs]
+
+    @api.model
+    def get_threaded_messages(self, *args, **kw):
+        """Return messages grouped by thread_key for the mail hub list view."""
+        account_id = kw.get('account_id')
+        folder = kw.get('folder') or 'INBOX'
+        search = kw.get('search') or ''
+        thread_limit = int(kw.get('thread_limit') or 50)
+        thread_offset = int(kw.get('thread_offset') or 0)
+        hide_internal = kw.get('hide_internal') or False
+
+        # Build domain (same logic as get_messages)
+        if account_id and not self.env.user.has_group('base.group_system'):
+            acc = self.env['casafolino.mail.account'].browse(int(account_id))
+            if not acc.exists() or acc.responsible_user_id.id != self.env.uid:
+                return {'threads': [], 'has_more': False, 'total': 0}
+
+        domain = [('state', '=', 'keep')]
+        if account_id:
+            domain.append(('account_id', '=', account_id))
+
+        if folder == 'Sent':
+            domain.append(('direction', '=', 'outbound'))
+        elif folder == 'Starred':
+            domain.append(('is_important', '=', True))
+        elif folder == 'INBOX':
+            domain.append(('direction', '=', 'inbound'))
+
+        if hide_internal:
+            domain.append(('sender_email', 'not ilike', '%@casafolino.com'))
+
+        if search:
+            domain += ['|', '|', '|',
+                ('subject', 'ilike', search),
+                ('sender_email', 'ilike', search),
+                ('sender_name', 'ilike', search),
+                ('recipient_emails', 'ilike', search),
+            ]
+
+        # Fetch enough messages to fill threads
+        fetch_limit = (thread_limit + thread_offset) * 8
+        msgs = self.search(domain, limit=fetch_limit, order='email_date desc, id desc')
+
+        # Group by thread_key
+        thread_map = {}
+        thread_order = []
+        for m in msgs:
+            key = m.thread_key or ('__single_%s' % m.id)
+            if key not in thread_map:
+                thread_map[key] = []
+                thread_order.append(key)
+            thread_map[key].append(m)
+
+        # Build thread summaries
+        threads = []
+        for key in thread_order:
+            group = thread_map[key]
+            group_sorted = sorted(group, key=lambda m: (m.email_date or fields.Datetime.now(), m.id))
+            latest = group_sorted[-1]
+            unread_count = sum(1 for m in group if not m.is_read)
+            is_starred = any(m.is_important for m in group)
+            has_attachments = any(bool(m.attachment_ids) for m in group)
+
+            # Lead info
+            lead_name = ''
+            lead_id = False
+            for m in group:
+                if m.lead_id:
+                    lead_id = m.lead_id.id
+                    lead_name = m.lead_id.name
+                    break
+
+            # Assigned user
+            assigned_user_name = ''
+            assigned_user_id = False
+            for m in reversed(group_sorted):
+                if m.assigned_user_ids:
+                    assigned_user_id = m.assigned_user_ids[0].id
+                    assigned_user_name = m.assigned_user_ids[0].name
+                    break
+
+            # Child messages
+            child_msgs = []
+            for m in group_sorted:
+                child_msgs.append({
+                    'id': m.id,
+                    'from_name': m.sender_name or m.sender_email or '',
+                    'from_address': m.sender_email or '',
+                    'date': m.email_date.strftime('%d/%m/%Y %H:%M') if m.email_date else '',
+                    'date_short': m.email_date.strftime('%d %b') if m.email_date else '',
+                    'is_read': m.is_read,
+                    'is_starred': m.is_important,
+                    'snippet': m.snippet or '',
+                    'direction': 'in' if m.direction == 'inbound' else 'out',
+                    'subject': m.subject or '(nessun oggetto)',
+                    'has_attachments': bool(m.attachment_ids),
+                })
+
+            threads.append({
+                'thread_key': key,
+                'subject': latest.subject or '(nessun oggetto)',
+                'message_count': len(group),
+                'unread_count': unread_count,
+                'is_starred': is_starred,
+                'has_attachments': has_attachments,
+                'last_date': latest.email_date.strftime('%d/%m/%Y %H:%M') if latest.email_date else '',
+                'last_date_short': latest.email_date.strftime('%d %b') if latest.email_date else '',
+                'last_sender_name': latest.sender_name or latest.sender_email or '',
+                'last_sender_address': latest.sender_email or '',
+                'last_snippet': latest.snippet or '',
+                'last_direction': 'in' if latest.direction == 'inbound' else 'out',
+                'last_msg_id': latest.id,
+                'tags': [],
+                'lead_id': lead_id,
+                'lead_name': lead_name,
+                'assigned_user_id': assigned_user_id,
+                'assigned_user_name': assigned_user_name,
+                'sender_action': False,
+                'messages': child_msgs,
+            })
+
+        # Paginate
+        total_threads = len(threads)
+        paginated = threads[thread_offset:thread_offset + thread_limit]
+        has_more = (thread_offset + thread_limit) < total_threads
+
+        return {
+            'threads': paginated,
+            'has_more': has_more,
+            'total': total_threads,
+        }
 
     @api.model
     def get_message_detail(self, *args, **kw):

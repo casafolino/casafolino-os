@@ -66,7 +66,20 @@ class CfMailClient extends Component {
             detailAttachments: [],
             crmTabActive: 'partner',
             showCrmSidebar: true,
+            // v3: thread grouping
+            threads: [],
+            expandedThreadKeys: {},
+            hideInternal: false,
+            threadOffset: 0,
+            hasMoreThreads: false,
+            totalThreads: 0,
+            loadingMore: false,
         });
+
+        // Restore hideInternal from localStorage
+        try {
+            this.state.hideInternal = localStorage.getItem('cf_mail_hide_internal') === 'true';
+        } catch (e) {}
 
         onMounted(() => { this.init(); });
     }
@@ -106,16 +119,60 @@ class CfMailClient extends Component {
     async loadMessages() {
         if (!this.state.selectedAccount) return;
         this.state.loading = true;
+        this.state.threadOffset = 0;
+        this.state.expandedThreadKeys = {};
         try {
-            const msgs = await this._rpc("casafolino.mail.message", "get_messages", {
+            var res = await this._rpc("casafolino.mail.message", "get_threaded_messages", {
                 account_id: this.state.selectedAccount,
                 folder: this.state.folder,
-                limit: 100, offset: 0, search: this.state.search,
+                search: this.state.search,
+                thread_limit: 50,
+                thread_offset: 0,
+                hide_internal: this.state.hideInternal,
             });
-            this.state.messages = msgs || [];
+            this.state.threads = (res && res.threads) || [];
+            this.state.hasMoreThreads = (res && res.has_more) || false;
+            this.state.totalThreads = (res && res.total) || 0;
+            // Keep messages flat for compatibility (bulk actions, selectAll, etc.)
+            var flat = [];
+            for (var i = 0; i < this.state.threads.length; i++) {
+                var t = this.state.threads[i];
+                for (var j = 0; j < t.messages.length; j++) {
+                    flat.push(t.messages[j]);
+                }
+            }
+            this.state.messages = flat;
             this.state.selectedIds = [];
         } catch (e) { console.error(e); }
         finally { this.state.loading = false; }
+    }
+
+    async loadMoreThreads() {
+        if (this.state.loadingMore || !this.state.hasMoreThreads) return;
+        this.state.loadingMore = true;
+        try {
+            var newOffset = this.state.threadOffset + 50;
+            var res = await this._rpc("casafolino.mail.message", "get_threaded_messages", {
+                account_id: this.state.selectedAccount,
+                folder: this.state.folder,
+                search: this.state.search,
+                thread_limit: 50,
+                thread_offset: newOffset,
+                hide_internal: this.state.hideInternal,
+            });
+            var newThreads = (res && res.threads) || [];
+            this.state.threads = this.state.threads.concat(newThreads);
+            this.state.hasMoreThreads = (res && res.has_more) || false;
+            this.state.threadOffset = newOffset;
+            // Update flat messages
+            for (var i = 0; i < newThreads.length; i++) {
+                var t = newThreads[i];
+                for (var j = 0; j < t.messages.length; j++) {
+                    this.state.messages.push(t.messages[j]);
+                }
+            }
+        } catch (e) { console.error(e); }
+        finally { this.state.loadingMore = false; }
     }
 
     async loadUsers() {
@@ -159,6 +216,129 @@ class CfMailClient extends Component {
         if (f === 'inbox') return msgs.filter(m => m.direction !== 'out');
         if (f === 'sent') return msgs.filter(m => m.direction === 'out');
         return msgs;
+    }
+
+    get filteredThreads() {
+        var threads = this.state.threads;
+        var f = this.state.quickFilter;
+        if (f === 'unread') return threads.filter(function(t) { return t.unread_count > 0; });
+        if (f === 'starred') return threads.filter(function(t) { return t.is_starred; });
+        if (f === 'inbox') return threads.filter(function(t) { return t.last_direction !== 'out'; });
+        if (f === 'sent') return threads.filter(function(t) { return t.last_direction === 'out'; });
+        return threads;
+    }
+
+    get groupedThreads() {
+        var threads = this.filteredThreads;
+        var groupBy = this.state.groupBy;
+
+        if (groupBy === "date") {
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            var days = ["Domenica","Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato"];
+            var months = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+
+            var getLabel = function(dateStr) {
+                if (!dateStr) return "Senza data";
+                var parts = dateStr.split(/[\/\s:]/);
+                var d = parts.length >= 3 && parts[2].length === 4
+                    ? new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]))
+                    : new Date(dateStr.replace(' ', 'T'));
+                if (isNaN(d.getTime())) return "Senza data";
+                var day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                var diffDays = Math.round((today - day) / 86400000);
+                if (diffDays === 0) return "Oggi";
+                if (diffDays === 1) return "Ieri";
+                if (diffDays < 7) return days[day.getDay()];
+                if (diffDays < 14) return "Settimana scorsa";
+                return months[d.getMonth()] + " " + d.getFullYear();
+            };
+
+            var order = [];
+            var map = {};
+            for (var i = 0; i < threads.length; i++) {
+                var label = getLabel(threads[i].last_date);
+                if (!map[label]) { map[label] = []; order.push(label); }
+                map[label].push(threads[i]);
+            }
+            return order.map(function(label) { return { label: label, items: map[label] }; });
+        }
+
+        if (groupBy === "sender") {
+            var map2 = {};
+            var order2 = [];
+            for (var i2 = 0; i2 < threads.length; i2++) {
+                var key2 = threads[i2].last_sender_name || "Sconosciuto";
+                if (!map2[key2]) { map2[key2] = []; order2.push(key2); }
+                map2[key2].push(threads[i2]);
+            }
+            return order2.sort(function(a,b) { return map2[b].length - map2[a].length; })
+                .map(function(label) { return { label: label, items: map2[label], count: map2[label].length }; });
+        }
+
+        if (groupBy === "lead") {
+            var map3 = {};
+            var order3 = [];
+            for (var i3 = 0; i3 < threads.length; i3++) {
+                var key3 = threads[i3].lead_name || "Senza trattativa";
+                if (!map3[key3]) { map3[key3] = []; order3.push(key3); }
+                map3[key3].push(threads[i3]);
+            }
+            return order3.sort(function(a,b) {
+                if (a === "Senza trattativa") return 1;
+                if (b === "Senza trattativa") return -1;
+                return a.localeCompare(b);
+            }).map(function(label) { return { label: label, items: map3[label] }; });
+        }
+
+        return [{ label: null, items: threads }];
+    }
+
+    // ── Thread expansion handlers ──
+    onToggleThread(ev) {
+        var threadKey = ev.currentTarget.dataset.threadKey;
+        if (!threadKey) return;
+        var expanded = this.state.expandedThreadKeys;
+        if (expanded[threadKey]) {
+            delete expanded[threadKey];
+        } else {
+            expanded[threadKey] = true;
+        }
+        // Force reactivity by reassigning
+        this.state.expandedThreadKeys = Object.assign({}, expanded);
+    }
+
+    isThreadExpanded(threadKey) {
+        return !!this.state.expandedThreadKeys[threadKey];
+    }
+
+    onSelectThreadMsg(ev) {
+        var msgId = parseInt(ev.currentTarget.dataset.msgId);
+        if (!msgId) return;
+        // Create a minimal msg object compatible with selectMsg
+        this.selectMsg({ id: msgId }, ev);
+    }
+
+    onClickThread(ev) {
+        var threadKey = ev.currentTarget.dataset.threadKey;
+        var msgCount = parseInt(ev.currentTarget.dataset.msgCount) || 1;
+        var lastMsgId = parseInt(ev.currentTarget.dataset.lastMsgId);
+        if (msgCount <= 1 && lastMsgId) {
+            // Single message thread — open directly
+            this.selectMsg({ id: lastMsgId }, ev);
+        } else if (threadKey) {
+            // Multi-message thread — toggle expansion
+            this.onToggleThread(ev);
+        }
+    }
+
+    // ── Hide internal toggle ──
+    toggleHideInternal() {
+        this.state.hideInternal = !this.state.hideInternal;
+        try {
+            localStorage.setItem('cf_mail_hide_internal', this.state.hideInternal ? 'true' : 'false');
+        } catch (e) {}
+        this.loadMessages();
     }
 
     setQuickFilter(filter) {
@@ -544,6 +724,35 @@ class CfMailClient extends Component {
                 folder: this.state.folder,
             });
             this.state.messages = msgs || [];
+            // Build single-message threads from flat results for consistent display
+            var fakeThreads = [];
+            for (var i = 0; i < this.state.messages.length; i++) {
+                var m = this.state.messages[i];
+                fakeThreads.push({
+                    thread_key: '__search_' + m.id,
+                    subject: m.subject,
+                    message_count: 1,
+                    unread_count: m.is_read ? 0 : 1,
+                    is_starred: m.is_starred,
+                    has_attachments: m.has_attachments,
+                    last_date: m.date,
+                    last_date_short: m.date_short,
+                    last_sender_name: m.from_name || m.from_address,
+                    last_sender_address: m.from_address,
+                    last_snippet: m.snippet,
+                    last_direction: m.direction,
+                    last_msg_id: m.id,
+                    tags: m.tags || [],
+                    lead_id: m.lead_id,
+                    lead_name: m.lead_name,
+                    assigned_user_id: m.assigned_user_id,
+                    assigned_user_name: m.assigned_user_name,
+                    sender_action: m.sender_action,
+                    messages: [m],
+                });
+            }
+            this.state.threads = fakeThreads;
+            this.state.hasMoreThreads = false;
             this.state.showSearchPanel = false;
         } catch (e) { console.error(e); }
         finally { this.state.loading = false; }
@@ -1308,9 +1517,9 @@ class CfMailClient extends Component {
     }
 
     get listHeaderLabel() {
-        const total = this.filteredMessages.length;
+        const total = this.filteredThreads.length;
         const map = { INBOX: "Inbox", Starred: "Preferiti", Sent: "Inviati", Archived: "Archivio", Assigned: "Assegnate a me" };
-        return (map[this.state.folder] || this.state.folder) + " — " + total;
+        return (map[this.state.folder] || this.state.folder) + " \u2014 " + total + " thread";
     }
 
     get currentSignature() {

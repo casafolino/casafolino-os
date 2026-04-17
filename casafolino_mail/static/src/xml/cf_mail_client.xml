@@ -149,6 +149,10 @@
                         t-on-click="onQfOutgoing">
                     <i class="fa fa-paper-plane"/> Inviati
                 </button>
+                <button t-att-class="'cf-qf-btn' + (state.hideInternal ? ' active' : '')"
+                        t-on-click="toggleHideInternal">
+                    <i class="fa fa-eye-slash"/> No interni
+                </button>
             </div>
 
             <div class="cf-mail-groupby-bar">
@@ -175,69 +179,103 @@
                 <t t-if="state.loading">
                     <div class="cf-mail-loading"><i class="fa fa-spinner fa-spin"/> Caricamento...</div>
                 </t>
-                <t t-elif="state.messages.length === 0">
+                <t t-elif="state.threads.length === 0">
                     <div class="cf-mail-empty"><i class="fa fa-inbox"/><span>Nessun messaggio</span></div>
                 </t>
                 <t t-else="">
-                    <t t-foreach="groupedMessages" t-as="group" t-key="group.label || 'all'">
+                    <t t-foreach="groupedThreads" t-as="group" t-key="group.label || 'all'">
                         <t t-if="group.label">
                             <div class="cf-mail-group-header">
                                 <span t-esc="group.label"/>
                                 <span class="cf-mail-group-count" t-esc="group.items.length"/>
                             </div>
                         </t>
-                        <t t-foreach="group.items" t-as="msg" t-key="msg.id">
-                            <div t-att-class="'cf-mail-email-item ' + (msg.is_read ? 'read' : 'unread') + (state.selectedMsg and state.selectedMsg.id === msg.id ? ' selected' : '')"
-                                 t-att-data-msg-id="msg.id" t-on-click="onSelectMsg">
-                                <input type="checkbox" class="cf-item-cb"
-                                       t-att-checked="state.selectedIds.includes(msg.id)"
-                                       t-att-data-msg-id="msg.id"
-                                       t-on-change="onItemCheckChange"
-                                       t-on-click.stop="noop"/>
-                                <div class="cf-item-avatar" t-att-style="'background:' + this.avatarColor(msg.from_name || msg.from_address)">
-                                    <t t-esc="this.avatarInitial(msg.from_name || msg.from_address)"/>
+                        <t t-foreach="group.items" t-as="thread" t-key="thread.thread_key">
+                            <!-- Thread row -->
+                            <div t-att-class="'cf-mail-email-item' + (thread.unread_count > 0 ? ' unread' : ' read') + (state.selectedMsg and state.selectedMsg.id === thread.last_msg_id ? ' selected' : '') + (thread.message_count > 1 ? ' cf-thread-row' : '')"
+                                 t-att-data-thread-key="thread.thread_key"
+                                 t-att-data-msg-count="thread.message_count"
+                                 t-att-data-last-msg-id="thread.last_msg_id"
+                                 t-on-click="onClickThread">
+                                <div class="cf-item-avatar" t-att-style="'background:' + this.avatarColor(thread.last_sender_name)">
+                                    <t t-esc="this.avatarInitial(thread.last_sender_name)"/>
                                 </div>
                                 <div class="cf-item-body">
                                     <div class="cf-item-row1">
-                                        <span class="cf-item-from" t-esc="msg.from_name || msg.from_address"/>
-                                        <span class="cf-item-date" t-esc="msg.date_short"/>
+                                        <span class="cf-item-from" t-esc="thread.last_sender_name"/>
+                                        <span class="cf-item-date" t-esc="thread.last_date_short"/>
                                     </div>
                                     <div class="cf-item-subject">
-                                        <t t-esc="msg.subject"/>
-                                        <span t-if="msg.thread_count > 0" class="cf-thread-count" t-esc="msg.thread_count + 1"/>
+                                        <t t-if="thread.message_count > 1">
+                                            <i t-att-class="'fa fa-chevron-' + (this.isThreadExpanded(thread.thread_key) ? 'down' : 'right')" style="font-size:9px;margin-right:3px;color:var(--text-muted)"/>
+                                        </t>
+                                        <t t-esc="thread.subject"/>
+                                        <span t-if="thread.message_count > 1" class="cf-thread-count" t-esc="thread.message_count"/>
                                     </div>
-                                    <div class="cf-item-snippet" t-esc="msg.snippet"/>
+                                    <div class="cf-item-snippet" t-esc="thread.last_snippet"/>
                                     <div class="cf-item-footer">
-                                        <t t-if="msg.tags and msg.tags.length > 0">
-                                            <t t-foreach="msg.tags" t-as="tag" t-key="tag.id">
+                                        <t t-if="thread.tags and thread.tags.length > 0">
+                                            <t t-foreach="thread.tags" t-as="tag" t-key="tag.id">
                                                 <span class="cf-mail-tag-pill" t-att-style="'background:' + tag.color + '22;color:' + tag.color" t-esc="tag.name"/>
                                             </t>
                                         </t>
-                                        <span t-if="msg.sender_action === 'keep'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
+                                        <span t-if="thread.sender_action === 'keep'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
                                             <i class="fa fa-check-circle"/> Tenuto
                                         </span>
-                                        <span t-if="msg.sender_action === 'exclude'" class="cf-mail-tag-pill" style="background:#ffebee;color:#c62828">
+                                        <span t-if="thread.sender_action === 'exclude'" class="cf-mail-tag-pill" style="background:#ffebee;color:#c62828">
                                             <i class="fa fa-ban"/> Escluso
                                         </span>
-                                        <span t-if="msg.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
-                                        <span t-if="msg.lead_name and state.groupBy !== 'lead'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
-                                            <i class="fa fa-handshake"/> <t t-esc="msg.lead_name"/>
+                                        <span t-if="thread.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
+                                        <span t-if="thread.lead_name and state.groupBy !== 'lead'" class="cf-mail-tag-pill" style="background:#e8f5e9;color:#2e7d32">
+                                            <i class="fa fa-handshake"/> <t t-esc="thread.lead_name"/>
                                         </span>
-                                        <span t-if="msg.assigned_user_name" class="cf-assigned-pill">
-                                            <i class="fa fa-user"/> <t t-esc="msg.assigned_user_name"/>
+                                        <span t-if="thread.assigned_user_name" class="cf-assigned-pill">
+                                            <i class="fa fa-user"/> <t t-esc="thread.assigned_user_name"/>
                                         </span>
                                     </div>
                                 </div>
                                 <div class="cf-item-actions">
-                                    <button class="cf-item-action-btn" t-att-data-msg-id="msg.id" t-on-click.stop="onQuickStar">
-                                        <i t-att-class="'fa fa-star' + (msg.is_starred ? '' : '-o')"/>
+                                    <button class="cf-item-action-btn" t-att-data-msg-id="thread.last_msg_id" t-on-click.stop="onQuickStar">
+                                        <i t-att-class="'fa fa-star' + (thread.is_starred ? '' : '-o')"/>
                                     </button>
-                                    <button class="cf-item-action-btn" t-att-data-msg-id="msg.id" t-on-click.stop="onQuickArchive">
+                                    <button class="cf-item-action-btn" t-att-data-msg-id="thread.last_msg_id" t-on-click.stop="onQuickArchive">
                                         <i class="fa fa-archive"/>
                                     </button>
                                 </div>
                             </div>
+                            <!-- Expanded thread messages -->
+                            <t t-if="thread.message_count > 1 and this.isThreadExpanded(thread.thread_key)">
+                                <t t-foreach="thread.messages" t-as="tmsg" t-key="tmsg.id">
+                                    <div t-att-class="'cf-mail-email-item cf-thread-child' + (tmsg.is_read ? ' read' : ' unread') + (state.selectedMsg and state.selectedMsg.id === tmsg.id ? ' selected' : '')"
+                                         t-att-data-msg-id="tmsg.id" t-on-click="onSelectThreadMsg">
+                                        <div class="cf-thread-child-line"/>
+                                        <div class="cf-item-avatar" style="width:28px;height:28px;font-size:11px" t-att-style="'background:' + this.avatarColor(tmsg.from_name) + ';width:28px;height:28px;font-size:11px'">
+                                            <t t-esc="this.avatarInitial(tmsg.from_name)"/>
+                                        </div>
+                                        <div class="cf-item-body">
+                                            <div class="cf-item-row1">
+                                                <span class="cf-item-from" style="font-size:12px" t-esc="tmsg.from_name"/>
+                                                <span class="cf-item-date" t-esc="tmsg.date_short"/>
+                                            </div>
+                                            <div class="cf-item-snippet" t-esc="tmsg.snippet"/>
+                                        </div>
+                                        <span t-if="tmsg.direction === 'out'" class="cf-mail-dir-badge out" style="font-size:9px;padding:1px 5px">Inviata</span>
+                                        <span t-if="tmsg.has_attachments" class="cf-attach-icon"><i class="fa fa-paperclip"/></span>
+                                    </div>
+                                </t>
+                            </t>
                         </t>
+                    </t>
+                    <!-- Load more button -->
+                    <t t-if="state.hasMoreThreads">
+                        <div class="cf-mail-load-more" t-on-click="loadMoreThreads">
+                            <t t-if="state.loadingMore">
+                                <i class="fa fa-spinner fa-spin"/> Caricamento...
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-chevron-down"/> Carica altri thread
+                            </t>
+                        </div>
                     </t>
                 </t>
             </div>
