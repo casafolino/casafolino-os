@@ -424,6 +424,18 @@ class CfMailClient extends Component {
     onQuickArchive(ev) { this.quickArchive(parseInt(ev.currentTarget.dataset.msgId), ev); }
     onDetailStar() { if (this.state.selectedMsg) this.quickStar(this.state.selectedMsg.id, null); }
     onDetailArchive() { if (this.state.selectedMsg) this.quickArchive(this.state.selectedMsg.id, null); }
+    async onDetailDelete() {
+        if (!this.state.selectedMsg) return;
+        if (!confirm("Eliminare definitivamente questa email?")) return;
+        try {
+            await this._rpc("casafolino.mail.message", "do_bulk_action", { ids: [this.state.selectedMsg.id], action: "delete" });
+            this.state.messages = this.state.messages.filter(function(m) { return m.id !== this.state.selectedMsg.id; }.bind(this));
+            this.state.selectedMsg = null;
+            this.state.msgDetail = {};
+            this.showToast("Email eliminata");
+            await this.loadMessages();
+        } catch (e) { console.error(e); }
+    }
     async onKeepSender() {
         if (!this.state.selectedMsg) return;
         const res = await rpc("/web/dataset/call_kw", {
@@ -668,7 +680,7 @@ class CfMailClient extends Component {
         el.innerHTML = "";
         const iframe = document.createElement("iframe");
         iframe.style.cssText = "width:100%;border:none;min-height:200px;pointer-events:auto;display:block;";
-        iframe.setAttribute("sandbox", "allow-same-origin");
+        iframe.setAttribute("sandbox", "allow-same-origin allow-popups allow-popups-to-escape-sandbox");
         el.appendChild(iframe);
 
         const self = this;

@@ -385,6 +385,7 @@
                     <button class="cf-detail-action-btn" t-on-click="openForward"><i class="fa fa-share"/> Inoltra</button>
                     <div class="cf-detail-action-sep"/>
                     <button class="cf-detail-action-btn" t-on-click="onDetailArchive"><i class="fa fa-archive"/> Archivia</button>
+                    <button class="cf-detail-action-btn" style="color:#d32f2f" t-on-click="onDetailDelete"><i class="fa fa-trash"/> Elimina</button>
                     <button t-att-class="'cf-detail-action-btn' + (state.selectedMsg.is_starred ? ' starred' : '')" t-on-click="onDetailStar">
                         <i class="fa fa-star"/>
                     </button>

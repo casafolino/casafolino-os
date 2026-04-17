@@ -149,6 +149,45 @@ class CasafolinoMailAccount(models.Model):
             except Exception:
                 pass
 
+    def _build_account_email_map(self):
+        """Costruisce mappa email→account_id per tutti gli account attivi. Chiamare UNA volta per sync."""
+        accounts = self.env['casafolino.mail.account'].search([('active', '=', True)])
+        return {a.email_address.lower().strip(): a.id for a in accounts if a.email_address}
+
+    def _resolve_account_id(self, sender_email, recipient_emails, cc_emails, account_map):
+        """Determina l'account_id corretto basandosi su from/to/cc.
+        1. Se il mittente è un account CasaFolino → quell'account
+        2. Se un destinatario/cc è un account CasaFolino → quell'account
+        3. Fallback → self.id (account che esegue la sync)
+        """
+        # Check mittente
+        if sender_email:
+            aid = account_map.get(sender_email.lower().strip())
+            if aid:
+                return aid
+        # Check destinatari
+        all_recipients = (recipient_emails or '') + ',' + (cc_emails or '')
+        for addr in all_recipients.split(','):
+            addr = addr.strip().lower()
+            if addr:
+                aid = account_map.get(addr)
+                if aid:
+                    return aid
+        return self.id
+
+    def _load_exclude_rules(self):
+        """Carica set di email con sender_rule exclude. Chiamare UNA volta per sync."""
+        # Nota: cf.mail.sender.rule è il vecchio modello, ma controlliamo anche casafolino.mail.blacklist
+        excluded = set()
+        try:
+            rules = self.env['cf.mail.sender.rule'].sudo().search([('action', '=', 'exclude')])
+            for r in rules:
+                if r.email:
+                    excluded.add(r.email.lower().strip())
+        except Exception:
+            pass
+        return excluded
+
     def _fetch_folder(self, imap, folder_name, direction):
         """Fetch di una singola cartella IMAP."""
         Blacklist = self.env['casafolino.mail.blacklist']
@@ -157,6 +196,10 @@ class CasafolinoMailAccount(models.Model):
         new_count = 0
         skip_count = 0
         blacklist_count = 0
+
+        # Carica mappa account e regole exclude UNA SOLA VOLTA per sync
+        account_map = self._build_account_email_map()
+        excluded_senders = self._load_exclude_rules()
 
         # Seleziona la cartella (readonly)
         status, data = imap.select('"%s"' % folder_name, readonly=True)
@@ -209,27 +252,36 @@ class CasafolinoMailAccount(models.Model):
                 if not message_id:
                     message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
 
-                # Deduplicazione: skip se Message-ID già esiste
-                existing = Message.search([('message_id_rfc', '=', message_id), ('account_id', '=', self.id)], limit=1)
-                if existing:
-                    skip_count += 1
-                    continue
-
-                # Estrai mittente
+                # Estrai mittente (serve prima della dedup per resolve account)
                 sender_name, sender_email = parseaddr(msg.get('From', ''))
                 sender_name = self._decode_header_value(sender_name)
                 sender_email = sender_email.lower().strip() if sender_email else ''
+
+                # Estrai destinatari (serve per resolve account)
+                to_raw = msg.get('To', '')
+                cc_raw = msg.get('Cc', '')
+                recipient_emails = self._extract_emails(to_raw)
+                cc_emails = self._extract_emails(cc_raw)
+
+                # Resolve account_id corretto (Bug 1 fix)
+                resolved_account_id = self._resolve_account_id(
+                    sender_email, recipient_emails, cc_emails, account_map)
+
+                # Deduplicazione: skip se Message-ID già esiste su QUALSIASI account
+                existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
+                if existing:
+                    skip_count += 1
+                    continue
 
                 # Check blacklist
                 if sender_email and Blacklist.is_blacklisted(sender_email):
                     blacklist_count += 1
                     continue
 
-                # Estrai destinatari
-                to_raw = msg.get('To', '')
-                cc_raw = msg.get('Cc', '')
-                recipient_emails = self._extract_emails(to_raw)
-                cc_emails = self._extract_emails(cc_raw)
+                # Check sender_rules exclude (Bug 4 fix)
+                if sender_email and sender_email in excluded_senders:
+                    blacklist_count += 1
+                    continue
 
                 # Estrai oggetto
                 subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
@@ -253,7 +305,7 @@ class CasafolinoMailAccount(models.Model):
 
                 # Crea record staging
                 vals = {
-                    'account_id': self.id,
+                    'account_id': resolved_account_id,
                     'message_id_rfc': message_id,
                     'imap_uid': uid_str,
                     'imap_folder': folder_name,

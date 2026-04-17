@@ -969,7 +969,7 @@ class CasafolinoMailMessage(models.Model):
 
     @api.model
     def rpc_exclude_sender(self, *args, **kw):
-        """Escludi mittente: aggiungi a blacklist e scarta tutte le email."""
+        """Escludi mittente: aggiungi a blacklist email e scarta tutte le sue email."""
         message_id = kw.get('message_id') or (args[1] if len(args) > 1 else None)
         if not message_id:
             return {'success': False}
@@ -977,15 +977,24 @@ class CasafolinoMailMessage(models.Model):
         if not msg.exists() or not msg.sender_email:
             return {'success': False}
         addr = msg.sender_email.strip().lower()
-        domain = addr.split('@')[1] if '@' in addr else ''
-        # Add to blacklist
+        # Add email to blacklist (non dominio — troppo aggressivo)
         Blacklist = self.env['casafolino.mail.blacklist'].sudo()
-        if domain and not Blacklist.search([('type', '=', 'domain'), ('value', '=', domain)], limit=1):
-            Blacklist.create({'type': 'domain', 'value': domain})
-        # Discard all from this sender
+        if not Blacklist.search([('type', '=', 'email'), ('value', '=', addr)], limit=1):
+            Blacklist.create({'type': 'email', 'value': addr})
+        # Crea anche sender_rule exclude per il fetch IMAP
+        try:
+            SenderRule = self.env['cf.mail.sender.rule'].sudo()
+            existing_rule = SenderRule.search([('email', '=', addr)], limit=1)
+            if existing_rule:
+                existing_rule.write({'action': 'exclude'})
+            else:
+                SenderRule.create({'email': addr, 'action': 'exclude'})
+        except Exception:
+            pass
+        # Discard ALL emails from this sender (new + keep)
         to_discard = self.search([
             ('sender_email', '=ilike', addr),
-            ('state', '=', 'new'),
+            ('state', 'in', ['new', 'keep']),
         ])
         if to_discard:
             to_discard.action_discard()
