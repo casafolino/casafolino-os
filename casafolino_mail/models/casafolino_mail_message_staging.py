@@ -81,6 +81,12 @@ class CasafolinoMailMessage(models.Model):
 
     body_html = fields.Html('Body HTML', sanitize=False)
     body_downloaded = fields.Boolean('Body scaricato', default=False)
+    fetch_state = fields.Selection([
+        ('pending', 'In coda'),
+        ('done', 'Scaricato'),
+        ('error', 'Errore'),
+    ], string='Fetch stato', default='pending', index=True)
+    fetch_error_msg = fields.Text('Errore fetch')
     attachment_ids = fields.One2many('ir.attachment', 'res_id',
                                       string='Allegati',
                                       domain=[('res_model', '=', 'casafolino.mail.message')])
@@ -159,27 +165,26 @@ class CasafolinoMailMessage(models.Model):
     # ── Triage actions (Step 3) ──────────────────────────────────────
 
     def action_keep(self):
-        """Marca come keep, scarica body, collega a partner."""
+        """Marca come keep (non-bloccante). Il body viene scaricato dal cron."""
+        now = fields.Datetime.now()
+        uid = self.env.user.id
+
+        # Marca tutti i record selezionati come keep + pending fetch
         for record in self:
-            record.write({
+            vals = {
                 'state': 'keep',
-                'triage_user_id': self.env.user.id,
-                'triage_date': fields.Datetime.now(),
-            })
-
-            # Scarica body se non ancora fatto
+                'triage_user_id': uid,
+                'triage_date': now,
+            }
             if not record.body_downloaded:
-                try:
-                    imap = record.account_id._get_imap_connection()
-                    record._download_body_imap(imap, record.imap_folder, record.imap_uid)
-                    imap.logout()
-                except Exception as e:
-                    _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
+                vals['fetch_state'] = 'pending'
+            else:
+                vals['fetch_state'] = 'done'
+            record.write(vals)
 
-            # Se ha un partner, attiva tracking (email visibili dalla tab Email)
-            if record.partner_id:
-                if not record.partner_id.mail_tracked:
-                    record.partner_id.sudo().mail_tracked = True
+            # Se ha un partner, attiva tracking
+            if record.partner_id and not record.partner_id.mail_tracked:
+                record.partner_id.sudo().mail_tracked = True
 
         # Auto-keep: tutte le email dallo stesso mittente ancora in 'new'
         sender_emails = set()
@@ -193,7 +198,6 @@ class CasafolinoMailMessage(models.Model):
                 ('id', 'not in', self.ids),
             ])
             if siblings:
-                # Trova il partner_id dal record appena processato per ogni sender
                 sender_partner = {}
                 for record in self:
                     if record.sender_email and record.partner_id:
@@ -201,21 +205,18 @@ class CasafolinoMailMessage(models.Model):
                 for sib in siblings:
                     sib_vals = {
                         'state': 'keep',
-                        'triage_user_id': self.env.user.id,
-                        'triage_date': fields.Datetime.now(),
+                        'triage_user_id': uid,
+                        'triage_date': now,
                     }
+                    if not sib.body_downloaded:
+                        sib_vals['fetch_state'] = 'pending'
+                    else:
+                        sib_vals['fetch_state'] = 'done'
                     pid = sender_partner.get((sib.sender_email or '').lower().strip())
                     if pid and not sib.partner_id:
                         sib_vals['partner_id'] = pid
                         sib_vals['match_type'] = 'exact'
                     sib.write(sib_vals)
-                    if not sib.body_downloaded:
-                        try:
-                            imap = sib.account_id._get_imap_connection()
-                            sib._download_body_imap(imap, sib.imap_folder, sib.imap_uid)
-                            imap.logout()
-                        except Exception as e:
-                            _logger.error("Auto-keep body error %s: %s", sib.message_id_rfc, e)
 
     def action_discard(self):
         """Marca come discard."""
@@ -298,17 +299,25 @@ class CasafolinoMailMessage(models.Model):
         self.write({
             'body_html': body_html or ('<pre>%s</pre>' % body_text),
             'body_downloaded': True,
+            'fetch_state': 'done',
+            'fetch_error_msg': False,
         })
 
-        # Crea allegati
+        # Crea allegati (resiliente a errori PIL/corrupted files)
         for att in attachments:
-            self.env['ir.attachment'].create({
-                'name': att['name'],
-                'datas': att['datas'],
-                'mimetype': att['mimetype'],
-                'res_model': 'casafolino.mail.message',
-                'res_id': self.id,
-            })
+            try:
+                self.env['ir.attachment'].create({
+                    'name': att['name'],
+                    'datas': att['datas'],
+                    'mimetype': att['mimetype'],
+                    'res_model': 'casafolino.mail.message',
+                    'res_id': self.id,
+                })
+            except Exception as e:
+                _logger.warning(
+                    "Allegato corrotto skippato per %s: %s — %s",
+                    self.message_id_rfc, att.get('name', '?'), e
+                )
 
     # ── Chatter integration (Step 4) ─────────────────────────────────
 
@@ -639,6 +648,62 @@ class CasafolinoMailMessage(models.Model):
         old.unlink()
         _logger.info("Mail cleanup: %d email scartate eliminate.", count)
 
+    @api.model
+    def _cron_fetch_pending_bodies(self):
+        """Cron: scarica body per messaggi keep con fetch_state=pending. Max 50 per run."""
+        pending = self.search([
+            ('state', '=', 'keep'),
+            ('fetch_state', '=', 'pending'),
+            ('body_downloaded', '=', False),
+        ], limit=50, order='triage_date asc')
+
+        if not pending:
+            return
+
+        _logger.info("Cron fetch bodies: %d messaggi in coda", len(pending))
+
+        # Raggruppa per account per riutilizzare la connessione IMAP
+        by_account = {}
+        for msg in pending:
+            aid = msg.account_id.id
+            if aid not in by_account:
+                by_account[aid] = []
+            by_account[aid].append(msg)
+
+        for account_id, msgs in by_account.items():
+            account = self.env['casafolino.mail.account'].browse(account_id)
+            imap = None
+            try:
+                imap = account._get_imap_connection()
+            except Exception as e:
+                _logger.error("Cron fetch: connessione IMAP fallita per %s: %s", account.email_address, e)
+                for msg in msgs:
+                    msg.write({
+                        'fetch_state': 'error',
+                        'fetch_error_msg': 'Connessione IMAP fallita: %s' % str(e)[:200],
+                    })
+                continue
+
+            for msg in msgs:
+                try:
+                    msg._download_body_imap(imap, msg.imap_folder, msg.imap_uid)
+                    # _download_body_imap sets fetch_state='done' on success
+                except Exception as e:
+                    _logger.warning("Cron fetch body error %s: %s", msg.message_id_rfc, e)
+                    msg.write({
+                        'fetch_state': 'error',
+                        'fetch_error_msg': str(e)[:500],
+                    })
+                # Commit dopo ogni messaggio per non perdere progresso
+                self.env.cr.commit()
+
+            try:
+                imap.logout()
+            except Exception:
+                pass
+
+        _logger.info("Cron fetch bodies completato: %d messaggi processati", len(pending))
+
     # ── OWL Client API ───────────────────────────────────────────────
 
     def _msg_to_dict(self, m):
@@ -874,7 +939,7 @@ class CasafolinoMailMessage(models.Model):
         if not msg.is_read:
             msg.write({'is_read': True})
 
-        # Scarica body se necessario
+        # Scarica body on-demand se non ancora fatto (non bloccante per il cron)
         if not msg.body_downloaded:
             try:
                 imap = msg.account_id._get_imap_connection()
@@ -882,6 +947,10 @@ class CasafolinoMailMessage(models.Model):
                 imap.logout()
             except Exception as e:
                 _logger.error("Error downloading body for detail %s: %s", msg.message_id_rfc, e)
+                msg.write({
+                    'fetch_state': 'error',
+                    'fetch_error_msg': str(e)[:500],
+                })
 
         result = self._msg_to_dict(msg)
         result['body_html'] = msg.body_html or ''

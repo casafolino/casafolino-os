@@ -28,6 +28,9 @@
                 <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
                 <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
                 <separator/>
+                <filter name="fetch_pending" string="Fetch in coda" domain="[('fetch_state', '=', 'pending')]"/>
+                <filter name="fetch_error" string="Fetch errore" domain="[('fetch_state', '=', 'error')]"/>
+                <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
                     <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
@@ -86,6 +89,10 @@
                        decoration-info="state == 'new'"
                        decoration-success="state == 'keep'"
                        decoration-danger="state == 'discard'"/>
+                <field name="fetch_state" string="Fetch" widget="badge" optional="show"
+                       decoration-info="fetch_state == 'pending'"
+                       decoration-success="fetch_state == 'done'"
+                       decoration-danger="fetch_state == 'error'"/>
                 <field name="is_read" column_invisible="1"/>
             </list>
         </field>

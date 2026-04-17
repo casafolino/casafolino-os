@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo></odoo>
+<odoo>
+
+    <record id="cron_fetch_pending_bodies" model="ir.cron">
+        <field name="name">Mail Hub: Scarica body email in coda</field>
+        <field name="state">code</field>
+        <field name="code">env['casafolino.mail.message']._cron_fetch_pending_bodies()</field>
+        <field name="interval_number">2</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="cron_cleanup_discarded" model="ir.cron">
+        <field name="name">Mail Hub: Pulizia email scartate (30gg)</field>
+        <field name="state">code</field>
+        <field name="code">env['casafolino.mail.message']._cron_cleanup_discarded()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+
+</odoo>
