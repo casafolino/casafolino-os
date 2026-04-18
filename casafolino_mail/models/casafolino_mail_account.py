@@ -1,7 +1,7 @@
 import email
 import imaplib
 import logging
-from datetime import timezone
+from datetime import timedelta, timezone
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 
@@ -465,6 +465,71 @@ class CasafolinoMailAccount(models.Model):
             except Exception as e:
                 account.write({'state': 'error', 'error_message': str(e)})
                 _logger.error("Cron fetch error %s: %s", account.email_address, e)
+
+    # ── Cron: Silent Partners Alert ────────────────────────────────
+
+    @api.model
+    def _cron_silent_partners_alert(self):
+        """Crea mail.activity per partner con lead aperti e silenti da X giorni."""
+        threshold = int(self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino_mail.silent_days_threshold', '21'))
+        cutoff_date = fields.Datetime.now() - timedelta(days=threshold)
+
+        # Partner con lead CRM aperti (non vinti, non persi)
+        open_leads = self.env['crm.lead'].search([
+            ('active', '=', True),
+            ('stage_id.is_won', '=', False),
+            ('probability', '<', 100),
+            ('partner_id', '!=', False),
+        ])
+        partners_with_leads = open_leads.mapped('partner_id')
+
+        Message = self.env['casafolino.mail.message']
+        Activity = self.env['mail.activity']
+        partner_model_id = self.env['ir.model']._get('res.partner').id
+        todo_type = self.env.ref('mail.mail_activity_data_todo')
+
+        silent_count = 0
+        for partner in partners_with_leads:
+            # Ultima email keep/auto_keep per questo partner
+            last_email = Message.search([
+                ('partner_id', '=', partner.id),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ], order='email_date desc', limit=1)
+
+            if last_email and last_email.email_date and last_email.email_date > cutoff_date:
+                continue  # non silente
+
+            # Evita duplicati: se esiste già activity "Riattivare" pending
+            existing = Activity.search([
+                ('res_model_id', '=', partner_model_id),
+                ('res_id', '=', partner.id),
+                ('summary', 'ilike', 'Riattivare conversazione'),
+                ('date_deadline', '>=', fields.Date.today()),
+            ], limit=1)
+            if existing:
+                continue
+
+            # Salesperson dal lead, o admin
+            related_lead = open_leads.filtered(lambda l: l.partner_id == partner)[:1]
+            user = related_lead.user_id if related_lead and related_lead.user_id else False
+            if not user:
+                user = self.env.ref('base.user_admin')
+
+            last_date_str = str(last_email.email_date.date()) if last_email and last_email.email_date else 'mai'
+            Activity.create({
+                'activity_type_id': todo_type.id,
+                'summary': 'Riattivare conversazione',
+                'note': 'Partner silente da oltre %d giorni. Ultima email: %s' % (threshold, last_date_str),
+                'date_deadline': fields.Date.today(),
+                'user_id': user.id,
+                'res_model_id': partner_model_id,
+                'res_id': partner.id,
+            })
+            silent_count += 1
+
+        _logger.info('Silent partners alert: %d activity create', silent_count)
+        return silent_count
 
     # ── OWL Client API ───────────────────────────────────────────────
 

@@ -1,3 +1,7 @@
+from datetime import timedelta
+
+from odoo import fields
+
 from . import models
 from . import wizard
 from . import controllers
@@ -30,8 +34,8 @@ def _post_init_hook(env):
             pass
 
     # ── 2. Crea unico cron V2 ──
+    model = env.ref('casafolino_mail.model_casafolino_mail_account')
     if not Cron.search([('cron_name', '=', 'CasaFolino: Mail Sync V2')]):
-        model = env.ref('casafolino_mail.model_casafolino_mail_account')
         server_action = env['ir.actions.server'].create({
             'name': 'CasaFolino Mail Sync V2 - Action',
             'model_id': model.id,
@@ -74,3 +78,28 @@ def _post_init_hook(env):
                 'priority': 1,
             },
         ])
+
+    # ── 4. Cron Silent Partners Alert ──
+    if not Cron.search([('cron_name', '=', 'CasaFolino: Silent Partners Alert')]):
+        server_action_silent = env['ir.actions.server'].create({
+            'name': 'CasaFolino Silent Partners - Action',
+            'model_id': model.id,
+            'state': 'code',
+            'code': 'model._cron_silent_partners_alert()',
+        })
+        tomorrow_7am = fields.Datetime.now().replace(
+            hour=7, minute=0, second=0) + timedelta(days=1)
+        Cron.create({
+            'cron_name': 'CasaFolino: Silent Partners Alert',
+            'ir_actions_server_id': server_action_silent.id,
+            'interval_number': 1,
+            'interval_type': 'days',
+            'nextcall': tomorrow_7am,
+            'active': True,
+            'user_id': env.ref('base.user_admin').id,
+        })
+
+    # ── 5. Config parameter: silent_days_threshold ──
+    IrConfig = env['ir.config_parameter'].sudo()
+    if not IrConfig.get_param('casafolino_mail.silent_days_threshold'):
+        IrConfig.set_param('casafolino_mail.silent_days_threshold', '21')
