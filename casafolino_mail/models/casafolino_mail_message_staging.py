@@ -947,6 +947,35 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
+    # ── Cron AI classify pending ────────────────────────────────────
+
+    @api.model
+    def _cron_ai_classify_pending(self):
+        """Classifica messaggi non ancora processati dall'AI. Max 50 per run."""
+        pending = self.search([
+            ('ai_classified_at', '=', False),
+            '|', ('ai_error', '=', False), ('ai_error', '=', ''),
+        ], limit=50, order='email_date desc')
+
+        if not pending:
+            return
+
+        _logger.info("AI classify cron: %d messaggi da classificare", len(pending))
+        classified = 0
+        for msg in pending:
+            try:
+                msg._classify_with_groq()
+                if msg.ai_classified_at:
+                    classified += 1
+                    # Re-apply policy solo se il messaggio è ancora in state='new'
+                    if msg.state == 'new':
+                        msg._apply_sender_policy()
+            except Exception as e:
+                _logger.warning("AI classify cron error msg %s: %s", msg.id, e)
+            self.env.cr.commit()
+
+        _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
+
     # ── Cron cleanup (Step 8) ────────────────────────────────────────
 
     @api.model
