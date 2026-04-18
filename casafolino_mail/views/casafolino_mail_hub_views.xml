@@ -134,7 +134,10 @@
                     </group>
                     <group string="Sync">
                         <field name="sync_start_date"/>
+                        <field name="gmail_label"/>
+                        <field name="use_allowlist"/>
                         <field name="last_fetch_datetime"/>
+                        <field name="last_successful_fetch_datetime"/>
                         <field name="fetch_inbox"/>
                         <field name="fetch_sent"/>
                     </group>

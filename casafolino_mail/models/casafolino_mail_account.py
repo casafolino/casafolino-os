@@ -34,6 +34,11 @@ class CasafolinoMailAccount(models.Model):
     ], string='Stato', default='draft')
     error_message = fields.Text('Errore')
     active = fields.Boolean(default=True)
+    gmail_label = fields.Char('Label Gmail', default='Odoo',
+        help='Label Gmail da cui pescare email. Default: Odoo')
+    use_allowlist = fields.Boolean('Usa allowlist domini', default=True,
+        help='Se attivo, importa solo da domini con sender_policy auto_keep')
+    last_successful_fetch_datetime = fields.Datetime('Ultimo fetch OK', readonly=True)
     fetch_inbox = fields.Boolean('Scarica INBOX', default=True)
     fetch_sent = fields.Boolean('Scarica Sent', default=True)
     company_domain = fields.Char('Dominio aziendale', default='casafolino.com',
@@ -129,13 +134,13 @@ class CasafolinoMailAccount(models.Model):
                 total_blacklist += bl
 
             self.write({
-                'last_fetch_datetime': fields.Datetime.now(),
                 'state': 'connected',
                 'error_message': False,
+                'last_successful_fetch_datetime': fields.Datetime.now(),
             })
 
             _logger.info(
-                "Mail fetch %s: %d nuove, %d duplicate, %d blacklisted",
+                "[%s] fetched %d, skipped %d, excluded %d",
                 self.email_address, total_new, total_skip, total_blacklist
             )
 
@@ -144,6 +149,7 @@ class CasafolinoMailAccount(models.Model):
             _logger.error("Mail fetch error %s: %s", self.email_address, e)
             raise
         finally:
+            self.write({'last_fetch_datetime': fields.Datetime.now()})
             try:
                 imap.logout()
             except Exception:
@@ -342,20 +348,19 @@ class CasafolinoMailAccount(models.Model):
                     new_msg = Message.create(vals)
                     new_count += 1
 
-                    # Se stato keep (partner tracked), scarica body
-                    if new_msg.state == 'keep':
+                    # Applica sender_policy se stato ancora 'new'
+                    if new_msg.state == 'new':
+                        new_msg._apply_sender_policy()
+
+                    # Se stato keep/auto_keep (partner tracked), scarica body
+                    if new_msg.state in ('keep', 'auto_keep'):
                         new_msg._download_body_imap(imap, folder_name, uid_str)
 
                 except Exception as e:
                     _logger.warning("Error creating mail message: %s", e)
                     continue
 
-            # Aggiorna last_fetch_datetime e committa ogni batch
-            self.write({
-                'last_fetch_datetime': fields.Datetime.now(),
-                'state': 'connected',
-                'error_message': False,
-            })
+            # Committa ogni batch
             self.env.cr.commit()
             _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
 

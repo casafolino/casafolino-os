@@ -142,6 +142,39 @@ class CasafolinoMailMessage(models.Model):
             else:
                 rec.sender_domain = ''
 
+    def _apply_sender_policy(self):
+        """Applica la prima sender_policy che matcha a questo messaggio."""
+        self.ensure_one()
+        Policy = self.env['casafolino.mail.sender_policy']
+        policy = Policy.match_sender(self.sender_email, self.subject or '')
+        if not policy:
+            return
+
+        vals = {'policy_applied_id': policy.id}
+
+        if policy.action == 'auto_keep':
+            vals['state'] = 'auto_keep'
+        elif policy.action == 'auto_discard':
+            vals['state'] = 'auto_discard'
+        elif policy.action == 'escalate':
+            vals['state'] = 'review'
+            vals['is_important'] = True
+        else:  # review
+            vals['state'] = 'review'
+
+        if policy.auto_create_partner and not self.partner_id:
+            partner = self.env['res.partner'].search(
+                [('email', '=ilike', self.sender_email)], limit=1)
+            if not partner:
+                partner = self.env['res.partner'].create({
+                    'name': self.sender_name or self.sender_email,
+                    'email': self.sender_email,
+                })
+            vals['partner_id'] = partner.id
+            vals['match_type'] = 'exact'
+
+        self.write(vals)
+
     def _compute_tracking_counts(self):
         for rec in self:
             events = self.env['casafolino.mail.tracking'].search([('message_id', '=', rec.id)])
