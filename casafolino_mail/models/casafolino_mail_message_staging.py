@@ -311,9 +311,14 @@ class CasafolinoMailMessage(models.Model):
                     timeout=15,
                 )
 
+                if resp.status_code == 429 and attempt == 0:
+                    _logger.warning("Groq rate limit (429) for message %s, retry in 20s...", self.id)
+                    time.sleep(20)
+                    continue
+
                 if resp.status_code == 429:
-                    _logger.warning("Groq rate limit (429) for message %s, skip", self.id)
-                    self.write({'ai_error': 'Rate limit 429'})
+                    self.write({'ai_error': 'Rate limit 429 dopo retry'})
+                    _logger.warning("Groq rate limit (429) for message %s after retry, skip", self.id)
                     return
 
                 if resp.status_code == 403 and attempt == 0:
@@ -951,18 +956,18 @@ class CasafolinoMailMessage(models.Model):
 
     @api.model
     def _cron_ai_classify_pending(self):
-        """Classifica messaggi non ancora processati dall'AI. Max 50 per run."""
+        """Classifica messaggi non ancora processati dall'AI. Max 25 per run, 2.5s tra chiamate."""
         pending = self.search([
             ('ai_classified_at', '=', False),
             '|', ('ai_error', '=', False), ('ai_error', '=', ''),
-        ], limit=50, order='email_date desc')
+        ], limit=25, order='email_date desc')
 
         if not pending:
             return
 
         _logger.info("AI classify cron: %d messaggi da classificare", len(pending))
         classified = 0
-        for msg in pending:
+        for idx, msg in enumerate(pending):
             try:
                 msg._classify_with_groq()
                 if msg.ai_classified_at:
@@ -973,6 +978,9 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.warning("AI classify cron error msg %s: %s", msg.id, e)
             self.env.cr.commit()
+            # Rate limit: ~24 req/min (well under Groq free tier 30 req/min)
+            if idx < len(pending) - 1:
+                time.sleep(2.5)
 
         _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
 
