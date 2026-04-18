@@ -9,6 +9,7 @@
         'security/ir.model.access.csv',
         'wizards/sale_discount_wizard.xml',
         'data/cf_treasury_cron.xml',
+        'data/sale_email_templates.xml',
         'views/cf_doc_footer_views.xml',
         'views/cf_gdo_views.xml',
         'views/cf_pl_views.xml',
