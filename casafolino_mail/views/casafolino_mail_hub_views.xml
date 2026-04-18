@@ -31,12 +31,17 @@
                 <filter name="fetch_pending" string="Fetch in coda" domain="[('fetch_state', '=', 'pending')]"/>
                 <filter name="fetch_error" string="Fetch errore" domain="[('fetch_state', '=', 'error')]"/>
                 <separator/>
+                <filter name="ai_urgent" string="Urgenti" domain="[('ai_urgency', '=', 'high')]"/>
+                <filter name="ai_action" string="Action Required" domain="[('ai_action_required', '=', True)]"/>
+                <filter name="ai_negative" string="Sentiment negativo" domain="[('ai_sentiment', '=', 'negative')]"/>
+                <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
                     <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
                     <filter name="group_account" string="Casella" context="{'group_by': 'account_id'}"/>
                     <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
                     <filter name="group_date" string="Data" context="{'group_by': 'email_date:day'}"/>
+                    <filter name="group_ai_category" string="AI Categoria" context="{'group_by': 'ai_category'}"/>
                 </group>
             </search>
         </field>
@@ -85,6 +90,16 @@
                 <field name="match_type" string="Match" optional="hide"/>
                 <field name="account_id" string="Casella"/>
                 <field name="assigned_user_ids" string="Assegnato a" widget="many2many_tags" optional="show"/>
+                <field name="ai_category" string="AI Cat." widget="badge" optional="show"
+                       decoration-info="ai_category in ('commerciale', 'fornitore')"
+                       decoration-success="ai_category == 'admin'"
+                       decoration-warning="ai_category in ('newsletter', 'personale')"
+                       decoration-danger="ai_category == 'spam'"
+                       decoration-muted="ai_category == 'interno'"/>
+                <field name="ai_sentiment" string="AI Sent." widget="badge" optional="show"
+                       decoration-success="ai_sentiment == 'positive'"
+                       decoration-warning="ai_sentiment == 'neutral'"
+                       decoration-danger="ai_sentiment == 'negative'"/>
                 <field name="state" string="Stato" widget="badge"
                        decoration-info="state in ('new', 'review')"
                        decoration-success="state in ('keep', 'auto_keep')"
