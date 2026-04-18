@@ -184,7 +184,8 @@ class CasafolinoMailMessage(models.Model):
         """Applica la prima sender_policy che matcha a questo messaggio."""
         self.ensure_one()
         Policy = self.env['casafolino.mail.sender_policy']
-        policy = Policy.match_sender(self.sender_email, self.subject or '')
+        policy = Policy.match_sender(self.sender_email, self.subject or '',
+                                     ai_category=self.ai_category)
         if not policy:
             return
 
