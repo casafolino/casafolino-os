@@ -8,17 +8,18 @@ _logger = logging.getLogger(__name__)
 class CasafolinoMailLeadScore(models.Model):
     """Lead Scoring 0-100 cross-source per res.partner con attività email.
 
-    Formula:
-        score = frequency (max 30) + recency (max 30) + engagement (max 20)
-              + lead_bonus (max 15) + sentiment_bonus (max 5)
+    Formula (v7.8.1):
+        score = frequency (max 35) + recency (max 30) + engagement (max 20)
+              + lead_bonus (max 10) + sentiment_bonus (max 5) + urgency_bonus (max 5)
 
-    - frequency_score: LEAST(30, inbound_count_90d * 2) — 15 email = max
+    - frequency_score: LEAST(35, inbound_count_90d * 2) — 18 email = max
     - recency_score: 30/22/14/7/0 per fasce 3d/7d/14d/30d/90d
-    - engagement_score: 20 se dialogo bidirezionale, 12 se risposto, 0 altrimenti
-    - lead_bonus: 15 se ha almeno un lead CRM aperto
+    - engagement_score: 20 dialogo, 15 buyer urgente senza risposta (5+ IN, 0 OUT), 12 risposto
+    - lead_bonus: 10 se ha almeno un lead CRM aperto
     - sentiment_bonus: media AI sentiment (positive=5, neutral=2, negative=0, NULL=2)
+    - urgency_bonus: 5 se ultimo IN < 3gg e mai risposto (0 OUT)
 
-    Tier: hot (80-100), warm (50-79), cold (20-49), frozen (0-19)
+    Max teorico 105 ma combinatoriamente ~95. Tier: hot (80+), warm (50-79), cold (20-49), frozen (0-19)
     """
     _name = 'casafolino.mail.lead.score'
     _description = 'Lead Scoring 0-100 — buyer ranked per priorità commerciale'
@@ -45,6 +46,7 @@ class CasafolinoMailLeadScore(models.Model):
     engagement_score = fields.Integer('Engage.', readonly=True)
     lead_bonus = fields.Integer('Lead', readonly=True)
     sentiment_bonus = fields.Integer('Sentiment', readonly=True)
+    urgency_bonus = fields.Integer('Urgency', readonly=True)
     rank = fields.Integer('Rank', readonly=True)
 
     def init(self):
@@ -100,8 +102,8 @@ class CasafolinoMailLeadScore(models.Model):
                         ms.last_inbound_date,
                         COALESCE(lc.has_open_lead, FALSE) AS has_open_lead,
 
-                        -- frequency_score (max 30)
-                        LEAST(30, ms.inbound_count_90d * 2) AS frequency_score,
+                        -- frequency_score (max 35)
+                        LEAST(35, ms.inbound_count_90d * 2) AS frequency_score,
 
                         -- recency_score (max 30)
                         CASE
@@ -116,14 +118,21 @@ class CasafolinoMailLeadScore(models.Model):
                         CASE
                             WHEN ms.outbound_count_90d >= 3 AND ms.inbound_count_90d >= 3 THEN 20
                             WHEN ms.outbound_count_90d >= 1 THEN 12
+                            WHEN ms.inbound_count_90d >= 5 AND ms.outbound_count_90d = 0 THEN 15
                             ELSE 0
                         END AS engagement_score,
 
-                        -- lead_bonus (max 15)
-                        CASE WHEN COALESCE(lc.has_open_lead, FALSE) THEN 15 ELSE 0 END AS lead_bonus,
+                        -- lead_bonus (max 10)
+                        CASE WHEN COALESCE(lc.has_open_lead, FALSE) THEN 10 ELSE 0 END AS lead_bonus,
 
                         -- sentiment_bonus (max 5)
-                        COALESCE(ROUND(sa.avg_sent)::INTEGER, 2) AS sentiment_bonus
+                        COALESCE(ROUND(sa.avg_sent)::INTEGER, 2) AS sentiment_bonus,
+
+                        -- urgency_bonus (max 5)
+                        CASE WHEN ms.last_inbound_date >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '3 days'
+                                  AND ms.outbound_count_90d = 0
+                             THEN 5 ELSE 0
+                        END AS urgency_bonus
 
                     FROM res_partner p
                     JOIN mail_stats ms ON ms.partner_id = p.id
@@ -146,20 +155,21 @@ class CasafolinoMailLeadScore(models.Model):
                     s.engagement_score,
                     s.lead_bonus,
                     s.sentiment_bonus,
-                    (s.frequency_score + s.recency_score + s.engagement_score
-                     + s.lead_bonus + s.sentiment_bonus) AS score,
+                    s.urgency_bonus,
+                    LEAST(100, s.frequency_score + s.recency_score + s.engagement_score
+                     + s.lead_bonus + s.sentiment_bonus + s.urgency_bonus) AS score,
                     CASE
-                        WHEN (s.frequency_score + s.recency_score + s.engagement_score
-                              + s.lead_bonus + s.sentiment_bonus) >= 80 THEN 'hot'
-                        WHEN (s.frequency_score + s.recency_score + s.engagement_score
-                              + s.lead_bonus + s.sentiment_bonus) >= 50 THEN 'warm'
-                        WHEN (s.frequency_score + s.recency_score + s.engagement_score
-                              + s.lead_bonus + s.sentiment_bonus) >= 20 THEN 'cold'
+                        WHEN LEAST(100, s.frequency_score + s.recency_score + s.engagement_score
+                              + s.lead_bonus + s.sentiment_bonus + s.urgency_bonus) >= 80 THEN 'hot'
+                        WHEN LEAST(100, s.frequency_score + s.recency_score + s.engagement_score
+                              + s.lead_bonus + s.sentiment_bonus + s.urgency_bonus) >= 50 THEN 'warm'
+                        WHEN LEAST(100, s.frequency_score + s.recency_score + s.engagement_score
+                              + s.lead_bonus + s.sentiment_bonus + s.urgency_bonus) >= 20 THEN 'cold'
                         ELSE 'frozen'
                     END AS tier,
                     ROW_NUMBER() OVER (
-                        ORDER BY (s.frequency_score + s.recency_score + s.engagement_score
-                                  + s.lead_bonus + s.sentiment_bonus) DESC
+                        ORDER BY LEAST(100, s.frequency_score + s.recency_score + s.engagement_score
+                                  + s.lead_bonus + s.sentiment_bonus + s.urgency_bonus) DESC
                     ) AS rank
                 FROM scored s
             )

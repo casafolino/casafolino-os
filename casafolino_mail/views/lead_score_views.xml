@@ -62,6 +62,7 @@
                 <field name="engagement_score" string="Eng" optional="hide"/>
                 <field name="lead_bonus" string="Lead+" optional="hide"/>
                 <field name="sentiment_bonus" string="Sent+" optional="hide"/>
+                <field name="urgency_bonus" string="Urg+" optional="hide"/>
                 <button name="action_open_emails" string="Email" type="object"
                         icon="fa-envelope-o" class="btn-link"/>
                 <button name="action_create_lead" string="Crea Lead" type="object"
@@ -101,6 +102,7 @@
                         <field name="engagement_score"/>
                         <field name="lead_bonus"/>
                         <field name="sentiment_bonus"/>
+                        <field name="urgency_bonus"/>
                     </group>
                     <group string="Attività 90gg">
                         <field name="inbound_count_90d"/>
