@@ -6,6 +6,9 @@ class CrmLeadMailHub(models.Model):
 
     lead_message_ids = fields.One2many(
         'casafolino.mail.message', 'lead_id', string='Email collegate')
+    source_email_id = fields.Many2one(
+        'casafolino.mail.message', string='Email di origine',
+        ondelete='set null', help='Email da cui è stato creato questo lead')
 
     def _compute_cf_email_count(self):
         """Override: conta email da casafolino.mail.message (Mail Hub)."""
