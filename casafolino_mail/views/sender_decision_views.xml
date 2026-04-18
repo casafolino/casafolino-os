@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ TRIAGE FORM (on orphan.partner model) ═════════════════════ -->
+
+    <record id="casafolino_mail_orphan_triage_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.orphan.partner.triage.form</field>
+        <field name="model">casafolino.mail.orphan.partner</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <form string="Triage Orfano" create="0" edit="0" delete="0"
+                  class="o_casafolino_triage_form">
+                <div class="o_row mb-3">
+                    <button name="action_triage_skip" string="Skip (decidi dopo)"
+                            type="object" class="btn btn-outline-secondary btn-sm"/>
+                </div>
+                <group>
+                    <group string="Partner">
+                        <field name="partner_name" string="Nome" readonly="1"
+                               style="font-size: 1.4em; font-weight: bold;"/>
+                        <field name="partner_email" string="Email" readonly="1"/>
+                        <field name="country_id" string="Paese" readonly="1"/>
+                        <field name="priority" string="Priorita" widget="badge" readonly="1"
+                               decoration-danger="priority == 'hot'"
+                               decoration-warning="priority == 'warm'"
+                               decoration-muted="priority == 'cold'"/>
+                    </group>
+                    <group string="Statistiche 90gg">
+                        <field name="inbound_count_90d" string="Email IN" readonly="1"/>
+                        <field name="outbound_count_90d" string="Email OUT" readonly="1"/>
+                        <field name="last_inbound_date" string="Ultimo IN" readonly="1"/>
+                        <field name="has_reply" string="Risposto" readonly="1"/>
+                        <field name="days_active" string="Giorni attivi" readonly="1"/>
+                    </group>
+                </group>
+                <separator string="Ultima email ricevuta"/>
+                <group>
+                    <field name="last_email_subject" string="Oggetto" readonly="1"
+                           style="font-weight: bold;"/>
+                </group>
+                <field name="last_email_body_preview" readonly="1" widget="text"
+                       nolabel="1" style="background: #f8f9fa; padding: 12px; border-radius: 4px;
+                       min-height: 80px; font-size: 0.95em; white-space: pre-wrap;"/>
+                <separator string="Azioni positive"/>
+                <div class="o_row" style="gap: 16px; padding: 12px 0; justify-content: center;">
+                    <button name="action_triage_lead"
+                            string="1 - Crea Lead"
+                            type="object"
+                            class="btn btn-success btn-lg o_triage_btn"
+                            style="padding: 16px 32px; font-size: 1.1em; min-width: 180px;"/>
+                    <button name="action_triage_assign"
+                            string="2 - Assegna Josefina"
+                            type="object"
+                            class="btn btn-primary btn-lg o_triage_btn"
+                            style="padding: 16px 32px; font-size: 1.1em; min-width: 180px;"/>
+                    <button name="action_triage_snippet"
+                            string="3 - Rispondi Snippet"
+                            type="object"
+                            class="btn btn-warning btn-lg o_triage_btn"
+                            style="padding: 16px 32px; font-size: 1.1em; min-width: 180px;"/>
+                </div>
+                <separator string="Azioni di filtro"/>
+                <div class="o_row" style="gap: 16px; padding: 12px 0; justify-content: center;">
+                    <button name="action_triage_ignore_sender"
+                            string="4 - Ignora mittente"
+                            type="object"
+                            class="btn btn-outline-danger btn-lg o_triage_btn"
+                            style="padding: 16px 32px; font-size: 1.1em; min-width: 180px;"/>
+                    <button name="action_triage_ignore_domain"
+                            string="5 - Ignora dominio"
+                            type="object"
+                            class="btn btn-outline-dark btn-lg o_triage_btn"
+                            style="padding: 16px 32px; font-size: 1.1em; min-width: 180px;"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ DECISION HISTORY — LIST ═══════════════════════════════════ -->
+
+    <record id="casafolino_mail_sender_decision_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender.decision.list</field>
+        <field name="model">casafolino.mail.sender.decision</field>
+        <field name="arch" type="xml">
+            <list string="Storico Decisioni" create="0">
+                <field name="triaged_at" string="Data"/>
+                <field name="partner_id" string="Partner"/>
+                <field name="sender_email" string="Email"/>
+                <field name="decision" string="Decisione" widget="badge"
+                       decoration-success="decision == 'lead_created'"
+                       decoration-info="decision == 'assigned'"
+                       decoration-warning="decision == 'replied'"
+                       decoration-danger="decision in ('ignored_sender', 'ignored_domain')"/>
+                <field name="triaged_by" string="Da"/>
+                <field name="lead_id" string="Lead" optional="show"/>
+                <field name="sender_policy_id" string="Policy" optional="show"/>
+                <field name="active" string="Attiva"/>
+                <field name="notes" string="Note" optional="hide"/>
+                <button name="action_undo" string="Annulla" type="object"
+                        icon="fa-undo" class="btn-link"
+                        invisible="not active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ DECISION HISTORY — SEARCH ═════════════════════════════════ -->
+
+    <record id="casafolino_mail_sender_decision_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender.decision.search</field>
+        <field name="model">casafolino.mail.sender.decision</field>
+        <field name="arch" type="xml">
+            <search string="Storico Decisioni">
+                <field name="partner_id"/>
+                <field name="sender_email"/>
+                <filter name="active_only" string="Solo attive" domain="[('active', '=', True)]"/>
+                <separator/>
+                <filter name="lead_created" string="Lead creati"
+                        domain="[('decision', '=', 'lead_created')]"/>
+                <filter name="assigned" string="Assegnati"
+                        domain="[('decision', '=', 'assigned')]"/>
+                <filter name="replied" string="Risposti"
+                        domain="[('decision', '=', 'replied')]"/>
+                <filter name="ignored_sender" string="Mittente ignorato"
+                        domain="[('decision', '=', 'ignored_sender')]"/>
+                <filter name="ignored_domain" string="Dominio ignorato"
+                        domain="[('decision', '=', 'ignored_domain')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_decision" string="Decisione"
+                            context="{'group_by': 'decision'}"/>
+                    <filter name="group_user" string="Triaged da"
+                            context="{'group_by': 'triaged_by'}"/>
+                    <filter name="group_domain" string="Dominio"
+                            context="{'group_by': 'sender_domain'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══ DECISION — FORM ═══════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_sender_decision_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender.decision.form</field>
+        <field name="model">casafolino.mail.sender.decision</field>
+        <field name="arch" type="xml">
+            <form string="Dettaglio Decisione">
+                <div class="o_row mb-3">
+                    <button name="action_undo" string="Annulla decisione"
+                            type="object" class="btn btn-warning"
+                            invisible="not active"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="sender_email"/>
+                        <field name="sender_domain"/>
+                        <field name="decision" widget="badge"/>
+                        <field name="active"/>
+                    </group>
+                    <group>
+                        <field name="triaged_by"/>
+                        <field name="triaged_at"/>
+                        <field name="lead_id" invisible="decision != 'lead_created'"/>
+                        <field name="activity_id" invisible="decision != 'assigned'"/>
+                        <field name="sender_policy_id"
+                               invisible="decision not in ('ignored_sender', 'ignored_domain')"/>
+                    </group>
+                </group>
+                <group string="Note">
+                    <field name="notes" nolabel="1"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ ACTIONS ═══════════════════════════════════════════════════ -->
+
+    <record id="action_start_orphan_triage" model="ir.actions.server">
+        <field name="name">Avvia Triage Orfani</field>
+        <field name="model_id" ref="casafolino_mail.model_casafolino_mail_orphan_partner"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_start_triage()</field>
+    </record>
+
+    <record id="action_sender_decision_history" model="ir.actions.act_window">
+        <field name="name">Storico Decisioni</field>
+        <field name="res_model">casafolino.mail.sender.decision</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_sender_decision_search"/>
+        <field name="context">{'search_default_active_only': 1}</field>
+    </record>
+
+</odoo>

@@ -21,3 +21,5 @@ access_casafolino_mail_lead_score_admin,casafolino.mail.lead.score admin,model_c
 access_casafolino_mail_snippet_user,casafolino.mail.snippet user,model_casafolino_mail_snippet,base.group_user,1,1,1,1
 access_casafolino_mail_snippet_admin,casafolino.mail.snippet admin,model_casafolino_mail_snippet,base.group_system,1,1,1,1
 access_casafolino_mail_snippet_picker_user,casafolino.mail.snippet.picker user,model_casafolino_mail_snippet_picker,base.group_user,1,1,1,1
+access_casafolino_mail_sender_decision_user,casafolino.mail.sender.decision user,model_casafolino_mail_sender_decision,base.group_user,1,1,1,0
+access_casafolino_mail_sender_decision_admin,casafolino.mail.sender.decision admin,model_casafolino_mail_sender_decision,base.group_system,1,1,1,1

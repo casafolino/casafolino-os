@@ -1,6 +1,10 @@
 import logging
+import re
 
 from odoo import api, fields, models, tools
+from odoo.exceptions import UserError
+
+from .sender_decision import FREE_EMAIL_DOMAINS
 
 _logger = logging.getLogger(__name__)
 
@@ -26,6 +30,184 @@ class CasafolinoMailOrphanPartner(models.Model):
         ('warm', 'Warm'),
         ('cold', 'Cold'),
     ], string='Priorità', readonly=True)
+
+    # ── Virtual triage fields ────────────────────────────────────────
+    is_triaged = fields.Boolean('Triaged', compute='_compute_triage_info')
+    triage_decision = fields.Char('Decisione', compute='_compute_triage_info')
+    last_email_subject = fields.Char('Ultimo oggetto', compute='_compute_last_email')
+    last_email_body_preview = fields.Text('Anteprima email', compute='_compute_last_email')
+
+    def _compute_triage_info(self):
+        Decision = self.env['casafolino.mail.sender.decision']
+        for rec in self:
+            dec = Decision.search([('partner_id', '=', rec.partner_id.id),
+                                   ('active', '=', True)], limit=1)
+            rec.is_triaged = bool(dec)
+            rec.triage_decision = dec.decision if dec else ''
+
+    def _compute_last_email(self):
+        Decision = self.env['casafolino.mail.sender.decision']
+        for rec in self:
+            subject, body = Decision._get_last_email_preview(rec.partner_id.id)
+            rec.last_email_subject = subject
+            rec.last_email_body_preview = body
+
+    # ── Triage navigation ────────────────────────────────────────────
+
+    def _action_next_orphan(self):
+        """Trova prossimo orfano non triagiato e apre form triage."""
+        triaged_ids = self.env['casafolino.mail.sender.decision'].search([
+            ('active', '=', True)
+        ]).mapped('partner_id').ids
+        next_orphan = self.search([('partner_id', 'not in', triaged_ids)], limit=1)
+        if next_orphan:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Triage Orfani',
+                'res_model': 'casafolino.mail.orphan.partner',
+                'res_id': next_orphan.id,
+                'view_mode': 'form',
+                'view_id': self.env.ref(
+                    'casafolino_mail.casafolino_mail_orphan_triage_form').id,
+                'target': 'current',
+            }
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Triage completo!',
+                'message': 'Tutti gli orfani sono stati triagiati.',
+                'type': 'success',
+                'sticky': True,
+                'next': {'type': 'ir.actions.act_window_close'},
+            },
+        }
+
+    @api.model
+    def action_start_triage(self):
+        """Entry point menu: apre primo orfano non triagiato."""
+        return self.browse()._action_next_orphan()
+
+    # ── Triage actions ───────────────────────────────────────────────
+
+    def _create_decision(self, decision, **kwargs):
+        """Helper: crea decision record."""
+        self.ensure_one()
+        vals = {
+            'partner_id': self.partner_id.id,
+            'sender_email': self.partner_email or self.partner_id.email or '',
+            'decision': decision,
+        }
+        vals.update(kwargs)
+        return self.env['casafolino.mail.sender.decision'].create(vals)
+
+    def action_triage_lead(self):
+        """Crea Lead CRM e avanza."""
+        self.ensure_one()
+        stage = self.env['crm.stage'].search(
+            [('is_won', '!=', True)], order='sequence', limit=1)
+        lead = self.env['crm.lead'].create({
+            'name': 'Triage: %s' % self.partner_name,
+            'partner_id': self.partner_id.id,
+            'email_from': self.partner_email or self.partner_id.email,
+            'type': 'opportunity',
+            'stage_id': stage.id if stage else False,
+        })
+        self._create_decision('lead_created', lead_id=lead.id)
+        return self._action_next_orphan()
+
+    def action_triage_assign(self):
+        """Assegna a Josefina via mail.activity e avanza."""
+        self.ensure_one()
+        josefina = self.env['res.users'].search(
+            [('login', 'ilike', 'josefina')], limit=1)
+        if not josefina:
+            josefina = self.env['res.users'].search(
+                [('name', 'ilike', 'josefina')], limit=1)
+        if not josefina:
+            josefina = self.env.user
+
+        partner_model_id = self.env['ir.model']._get('res.partner').id
+        todo_type = self.env.ref('mail.mail_activity_data_todo')
+        _, body_preview = self.env['casafolino.mail.sender.decision']._get_last_email_preview(
+            self.partner_id.id)
+        activity = self.env['mail.activity'].create({
+            'activity_type_id': todo_type.id,
+            'summary': 'Triage: contattare %s' % self.partner_name,
+            'note': 'Ultima email:\n%s' % (body_preview or '(nessuna)')[:2000],
+            'date_deadline': fields.Date.today(),
+            'user_id': josefina.id,
+            'res_model_id': partner_model_id,
+            'res_id': self.partner_id.id,
+        })
+        self._create_decision('assigned', activity_id=activity.id)
+        return self._action_next_orphan()
+
+    def action_triage_snippet(self):
+        """Marca come replied e apre snippet picker."""
+        self.ensure_one()
+        self._create_decision('replied')
+        last_msg = self.env['casafolino.mail.sender.decision']._get_last_email(
+            self.partner_id.id)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Seleziona Snippet',
+            'res_model': 'casafolino.mail.snippet.picker',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_id': last_msg.id if last_msg else False},
+        }
+
+    def action_triage_ignore_sender(self):
+        """Ignora mittente: crea sender_policy auto_discard per l'email."""
+        self.ensure_one()
+        email = (self.partner_email or self.partner_id.email or '').lower().strip()
+        if not email:
+            raise UserError("Il partner non ha email, impossibile creare regola.")
+
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        policy = Policy.create({
+            'name': 'Triage: ignora %s' % email,
+            'pattern_type': 'domain',
+            'pattern_value': '*%s*' % email,
+            'action': 'auto_discard',
+            'priority': 15,
+            'notes': 'Creata da triage orfano il %s, decisione di %s' % (
+                fields.Date.today(), self.env.user.name),
+        })
+        self._create_decision('ignored_sender', sender_policy_id=policy.id)
+        return self._action_next_orphan()
+
+    def action_triage_ignore_domain(self):
+        """Ignora dominio: crea sender_policy auto_discard per il dominio."""
+        self.ensure_one()
+        email = (self.partner_email or self.partner_id.email or '').lower().strip()
+        if not email or '@' not in email:
+            raise UserError("Il partner non ha email valida, impossibile estrarre dominio.")
+
+        domain = email.split('@')[1]
+        if domain in FREE_EMAIL_DOMAINS:
+            raise UserError(
+                "Impossibile ignorare il dominio %s: e' un dominio email pubblico "
+                "(gmail/yahoo/hotmail/ecc.). Usa 'Ignora mittente' per il singolo indirizzo."
+                % domain)
+
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        policy = Policy.create({
+            'name': 'Triage: ignora dominio @%s' % domain,
+            'pattern_type': 'domain',
+            'pattern_value': '*@%s*' % domain,
+            'action': 'auto_discard',
+            'priority': 10,
+            'notes': 'Triage dominio il %s da %s' % (
+                fields.Date.today(), self.env.user.name),
+        })
+        self._create_decision('ignored_domain', sender_policy_id=policy.id)
+        return self._action_next_orphan()
+
+    def action_triage_skip(self):
+        """Skip senza decisione, vai al prossimo."""
+        return self._action_next_orphan()
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)

@@ -35,11 +35,23 @@
         sequence="6"
         action="action_casafolino_mail_orphan_partner"/>
 
+    <menuitem id="menu_casafolino_mail_triage_orphan"
+        name="Triage Orfani"
+        parent="menu_casafolino_mail_root"
+        sequence="7"
+        action="action_start_orphan_triage"/>
+
     <menuitem id="menu_casafolino_mail_snippet"
         name="Snippet Library"
         parent="menu_casafolino_mail_root"
         sequence="8"
         action="action_casafolino_mail_snippet"/>
+
+    <menuitem id="menu_casafolino_mail_decision_history"
+        name="Storico Decisioni"
+        parent="menu_casafolino_mail_root"
+        sequence="9"
+        action="action_sender_decision_history"/>
 
     <menuitem id="menu_casafolino_mail_discard"
         name="Archivio Scarto"
