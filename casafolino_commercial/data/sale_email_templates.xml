@@ -359,6 +359,344 @@
         </record>
 
         <!-- ============================================================
+             IT TRANSLATIONS  (Odoo 18: JSONB via context lang)
+             ============================================================ -->
+
+        <!-- 1-IT. Preventivo — Italiano -->
+        <record id="sale.email_template_edi_sale" model="mail.template" context="{'lang': 'it_IT'}">
+            <field name="subject">{{ object.company_id.name }} - Preventivo {{ object.name }}</field>
+            <field name="body_html" type="html">
+<body style="margin:0; padding:0; background:#f4f4f4; font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4; padding:24px 0;">
+<tr><td align="center">
+<table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+    <!-- HEADER -->
+    <tr>
+        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
+            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
+            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        </td>
+    </tr>
+
+    <!-- BODY -->
+    <tr>
+        <td style="padding:32px;">
+
+            <p style="margin:0 0 16px; font-size:15px; color:#333;">
+                Gentile <t t-out="object.partner_id.name or ''"/>,
+            </p>
+            <p style="margin:0 0 24px; font-size:15px; color:#333; line-height:1.6;">
+                in allegato trova il preventivo
+                <strong style="color:#8B4513;"><t t-out="object.name"/></strong>
+                <t t-if="object.amount_total">
+                    per un importo di
+                    <strong style="color:#8B4513;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></strong>
+                </t>.
+            </p>
+
+            <!-- Order summary box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
+                <tr>
+                    <td style="padding:20px;">
+                        <table width="100%" cellpadding="4" cellspacing="0">
+                            <tr>
+                                <td style="font-size:13px; color:#666; width:40%;">Riferimento:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="object.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Data:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                            </tr>
+                            <t t-if="object.validity_date">
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Validita:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.validity_date.strftime('%d/%m/%Y')"/></td>
+                            </tr>
+                            </t>
+                            <t t-if="object.payment_term_id">
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Termini di pagamento:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                            </tr>
+                            </t>
+                            <t t-if="object.incoterm">
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Incoterm:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                            </tr>
+                            </t>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- IBAN box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+                <tr>
+                    <td style="padding:16px 20px;">
+                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Coordinate bancarie</p>
+                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
+                        <t t-if="bank_account">
+                            <p style="margin:0; font-size:14px; color:#333;">
+                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
+                            </p>
+                            <t t-if="bank_account.bank_id">
+                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
+                                <t t-out="bank_account.bank_id.name"/>
+                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
+                            </p>
+                            </t>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Terms link -->
+            <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
+                L'accettazione del presente preventivo implica l'accettazione delle nostre
+                <a t-att-href="(object.company_id.sudo().env['ir.config_parameter'].get_param('casafolino.terms_url') or '#')"
+                   style="color:#8B4513; text-decoration:underline;">Condizioni Generali di Vendita</a>.
+            </p>
+
+            <!-- CTA button -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                <tr>
+                    <td align="center">
+                        <a t-att-href="object.get_portal_url()"
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                            Visualizza Preventivo
+                        </a>
+                    </td>
+                </tr>
+            </table>
+
+            <p style="margin:0 0 8px; font-size:13px; color:#555;">
+                Per qualsiasi informazione non esiti a contattarci.
+            </p>
+
+            <!-- Dynamic signature -->
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                            <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
+                        </div>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
+                            <t t-out="object.user_id.name or 'Ufficio Commerciale'"/>
+                        </p>
+                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
+                            <t t-out="object.user_id.job_title or 'Ufficio Commerciale'"/>
+                        </p>
+                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
+                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        </p>
+                        <t t-if="object.user_id.phone">
+                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
+                            Tel: <t t-out="object.user_id.phone"/>
+                        </p>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
+            <p style="margin:0; font-size:11px; color:#a08060;">
+                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
+                  |
+                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+            </p>
+        </td>
+    </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+            </field>
+        </record>
+
+        <!-- 2-IT. Conferma Ordine — Italiano -->
+        <record id="sale.mail_template_sale_confirmation" model="mail.template" context="{'lang': 'it_IT'}">
+            <field name="subject">{{ object.company_id.name }} - Conferma Ordine {{ object.name }}</field>
+            <field name="body_html" type="html">
+<body style="margin:0; padding:0; background:#f4f4f4; font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4; padding:24px 0;">
+<tr><td align="center">
+<table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+    <!-- HEADER -->
+    <tr>
+        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
+            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
+            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        </td>
+    </tr>
+
+    <!-- CONFIRMED BANNER -->
+    <tr>
+        <td style="background:#2e7d32; padding:12px 32px; text-align:center;">
+            <p style="margin:0; color:#ffffff; font-size:14px; font-weight:600; letter-spacing:1px;">ORDINE CONFERMATO</p>
+        </td>
+    </tr>
+
+    <!-- BODY -->
+    <tr>
+        <td style="padding:32px;">
+
+            <p style="margin:0 0 16px; font-size:15px; color:#333;">
+                Gentile <t t-out="object.partner_id.name or ''"/>,
+            </p>
+            <p style="margin:0 0 24px; font-size:15px; color:#333; line-height:1.6;">
+                confermiamo che il Suo ordine
+                <strong style="color:#8B4513;"><t t-out="object.name"/></strong>
+                <t t-if="object.amount_total">
+                    per un importo di
+                    <strong style="color:#8B4513;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></strong>
+                </t>
+                e stato confermato e preso in carico.
+            </p>
+
+            <!-- Order summary box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
+                <tr>
+                    <td style="padding:20px;">
+                        <table width="100%" cellpadding="4" cellspacing="0">
+                            <tr>
+                                <td style="font-size:13px; color:#666; width:40%;">Riferimento ordine:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="object.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Data conferma:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                            </tr>
+                            <t t-if="object.payment_term_id">
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Termini di pagamento:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                            </tr>
+                            </t>
+                            <t t-if="object.incoterm">
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Incoterm:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                            </tr>
+                            </t>
+                            <t t-if="object.commitment_date">
+                            <tr>
+                                <td style="font-size:13px; color:#666;">Data consegna prevista:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.commitment_date.strftime('%d/%m/%Y')"/></td>
+                            </tr>
+                            </t>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- IBAN box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+                <tr>
+                    <td style="padding:16px 20px;">
+                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Coordinate bancarie</p>
+                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
+                        <t t-if="bank_account">
+                            <p style="margin:0; font-size:14px; color:#333;">
+                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
+                            </p>
+                            <t t-if="bank_account.bank_id">
+                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
+                                <t t-out="bank_account.bank_id.name"/>
+                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
+                            </p>
+                            </t>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Terms link -->
+            <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
+                Si ricorda che l'ordine e soggetto alle nostre
+                <a t-att-href="(object.company_id.sudo().env['ir.config_parameter'].get_param('casafolino.terms_url') or '#')"
+                   style="color:#8B4513; text-decoration:underline;">Condizioni Generali di Vendita</a>.
+            </p>
+
+            <!-- CTA button -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                <tr>
+                    <td align="center">
+                        <a t-att-href="object.get_portal_url()"
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                            Visualizza Ordine
+                        </a>
+                    </td>
+                </tr>
+            </table>
+
+            <p style="margin:0 0 8px; font-size:13px; color:#555;">
+                Per qualsiasi informazione non esiti a contattarci.
+            </p>
+
+            <!-- Dynamic signature -->
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                            <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
+                        </div>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
+                            <t t-out="object.user_id.name or 'Ufficio Commerciale'"/>
+                        </p>
+                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
+                            <t t-out="object.user_id.job_title or 'Ufficio Commerciale'"/>
+                        </p>
+                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
+                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        </p>
+                        <t t-if="object.user_id.phone">
+                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
+                            Tel: <t t-out="object.user_id.phone"/>
+                        </p>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
+            <p style="margin:0; font-size:11px; color:#a08060;">
+                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
+                  |
+                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+            </p>
+        </td>
+    </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+            </field>
+        </record>
+
+        <!-- ============================================================
              EN TRANSLATIONS  (Odoo 18: JSONB via context lang)
              ============================================================ -->
 
