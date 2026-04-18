@@ -228,28 +228,29 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_sync_full_email_history" string="Sync Email"
-                        type="object" class="oe_stat_button" icon="fa-envelope">
-                    <field name="mail_message_count" string="Email" widget="statinfo"/>
+                <button name="action_view_casafolino_emails" string="Email CRM"
+                        type="object" class="oe_stat_button" icon="fa-envelope"
+                        invisible="casafolino_email_count == 0">
+                    <field name="casafolino_email_count" string="Email" widget="statinfo"/>
                 </button>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Email" name="partner_emails">
-                    <field name="partner_message_ids" readonly="1">
-                        <list string="Email" decoration-bf="not is_read"
-                              decoration-muted="state == 'discard'"
-                              decoration-success="state == 'keep'"
-                              default_order="email_date desc">
-                            <field name="is_important" string=" " widget="boolean_favorite"/>
+                <page string="Email CRM" name="casafolino_emails">
+                    <group>
+                        <field name="casafolino_email_count" readonly="1"/>
+                        <field name="casafolino_last_email_date" readonly="1"/>
+                    </group>
+                    <field name="casafolino_mail_ids" readonly="1" nolabel="1">
+                        <list default_order="email_date desc"
+                              decoration-bf="not is_read"
+                              decoration-info="direction == 'inbound'"
+                              decoration-muted="direction == 'outbound'">
                             <field name="email_date" string="Data"/>
                             <field name="direction" string="Dir"/>
-                            <field name="subject" string="Oggetto"/>
                             <field name="sender_email" string="Mittente"/>
-                            <field name="recipient_emails" string="Destinatari" optional="hide"/>
-                            <field name="state" string="Stato" widget="badge"
-                                   decoration-info="state == 'new'"
-                                   decoration-success="state == 'keep'"
-                                   decoration-danger="state == 'discard'"/>
+                            <field name="subject" string="Oggetto"/>
+                            <field name="state" string="Stato" widget="badge"/>
+                            <field name="snippet" string="Preview" optional="show"/>
                             <field name="is_read" column_invisible="1"/>
                         </list>
                     </field>
@@ -280,16 +281,6 @@
                     </group>
                     <field name="cf_notes_commercial" nolabel="1"
                            placeholder="Note commerciali (cosa cerca, volumi, budget...)"/>
-                    <group string="Email Tracking">
-                        <group>
-                            <field name="mail_tracked"/>
-                            <field name="mail_first_sync_done"/>
-                        </group>
-                        <group>
-                            <field name="mail_last_sync"/>
-                            <field name="mail_message_count"/>
-                        </group>
-                    </group>
                 </page>
             </xpath>
         </field>

@@ -27,6 +27,15 @@ class ResPartnerMailExt(models.Model):
     partner_message_ids = fields.One2many(
         'casafolino.mail.message', 'partner_id', string='Email')
 
+    # ── Email CRM timeline fields ──
+    casafolino_mail_ids = fields.One2many(
+        'casafolino.mail.message', 'partner_id', string='Email CRM',
+        domain=[('state', 'in', ['keep', 'auto_keep'])])
+    casafolino_last_email_date = fields.Datetime(
+        'Ultima email CRM', compute='_compute_casafolino_mail_stats', store=True)
+    casafolino_email_count = fields.Integer(
+        '# Email CRM', compute='_compute_casafolino_mail_stats', store=True)
+
     # ── CRM fields ──
     cf_role = fields.Selection([
         ('buyer', 'Buyer'), ('category_manager', 'Category Manager'),
@@ -152,6 +161,26 @@ class ResPartnerMailExt(models.Model):
             partner.mail_message_count = self.env['casafolino.mail.message'].search_count([
                 ('partner_id', '=', partner.id),
             ])
+
+    @api.depends('casafolino_mail_ids.email_date', 'casafolino_mail_ids.state')
+    def _compute_casafolino_mail_stats(self):
+        for partner in self:
+            msgs = partner.casafolino_mail_ids.filtered(
+                lambda m: m.state in ('keep', 'auto_keep'))
+            partner.casafolino_email_count = len(msgs)
+            dates = msgs.mapped('email_date')
+            partner.casafolino_last_email_date = max(dates) if dates else False
+
+    def action_view_casafolino_emails(self):
+        """Apre lista email CRM del partner."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Email CRM — %s' % self.name,
+            'res_model': 'casafolino.mail.message',
+            'view_mode': 'list,form',
+            'domain': [('partner_id', '=', self.id), ('state', 'in', ['keep', 'auto_keep'])],
+        }
 
     # ── Sync storico email per contatto (Step 7) ─────────────────────
 
