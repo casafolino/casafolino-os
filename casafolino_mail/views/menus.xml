@@ -5,6 +5,25 @@
         sequence="15"
         web_icon="casafolino_mail,static/description/icon.png"/>
 
+    <menuitem id="menu_casafolino_mail_triage"
+        name="Inbox Triage"
+        parent="menu_casafolino_mail_root"
+        sequence="1"
+        action="action_casafolino_mail_message_triage"/>
+
+    <menuitem id="menu_casafolino_mail_keep"
+        name="Tenute CRM"
+        parent="menu_casafolino_mail_root"
+        sequence="2"
+        action="action_casafolino_mail_message_keep"/>
+
+    <menuitem id="menu_casafolino_mail_discard"
+        name="Archivio Scarto"
+        parent="menu_casafolino_mail_root"
+        sequence="10"
+        action="action_casafolino_mail_message_discard"
+        groups="base.group_system"/>
+
     <menuitem id="menu_casafolino_mail_config"
         name="Configurazione"
         parent="menu_casafolino_mail_root"

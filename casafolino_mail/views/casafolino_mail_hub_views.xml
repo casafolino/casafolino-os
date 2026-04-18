@@ -336,13 +336,28 @@
     </record>
 
     <record id="action_casafolino_mail_message_triage" model="ir.actions.act_window">
-        <field name="name">Email Triage</field>
+        <field name="name">Inbox Triage</field>
         <field name="res_model">casafolino.mail.message</field>
         <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['new', 'review'])]</field>
         <field name="search_view_id" ref="casafolino_mail_message_search"/>
-        <field name="context">{'search_default_state_new': 1}</field>
+        <field name="context">{'search_default_inbound': 1}</field>
     </record>
 
-    <!-- Menu centralizzati in menus.xml -->
+    <record id="action_casafolino_mail_message_keep" model="ir.actions.act_window">
+        <field name="name">Tenute CRM</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['keep', 'auto_keep'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+    </record>
+
+    <record id="action_casafolino_mail_message_discard" model="ir.actions.act_window">
+        <field name="name">Archivio Scarto</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['discard', 'auto_discard'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+    </record>
 
 </odoo>
