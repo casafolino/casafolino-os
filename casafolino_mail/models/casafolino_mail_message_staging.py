@@ -1,8 +1,12 @@
 import base64
 import email
+import json
 import logging
 import re
+import time
 import uuid
+
+import requests as req
 
 from odoo import models, fields, api
 from odoo.exceptions import AccessError
@@ -208,6 +212,179 @@ class CasafolinoMailMessage(models.Model):
             vals['match_type'] = 'exact'
 
         self.write(vals)
+
+    # ── AI Classifier — Groq ────────────────────────────────────────
+
+    _GROQ_VALID_CATEGORIES = {'commerciale', 'admin', 'fornitore', 'newsletter', 'interno', 'personale', 'spam'}
+    _GROQ_VALID_SENTIMENTS = {'positive', 'neutral', 'negative'}
+    _GROQ_VALID_LANGUAGES = {'it', 'en', 'de', 'fr', 'es', 'other'}
+    _GROQ_VALID_URGENCIES = {'high', 'medium', 'low'}
+
+    def _get_body_text_for_ai(self):
+        """Estrae testo plain dal messaggio per il classifier AI (max 2000 char)."""
+        self.ensure_one()
+        text = ''
+        if self.body_plain:
+            text = self.body_plain
+        elif self.body_html:
+            text = re.sub(r'<[^>]+>', ' ', self.body_html)
+            text = re.sub(r'\s+', ' ', text).strip()
+        elif self.snippet:
+            text = self.snippet
+        return (text or '')[:2000]
+
+    def _classify_with_groq(self):
+        """Classifica questa email con Groq API. Non solleva mai eccezioni."""
+        self.ensure_one()
+
+        # Check abilitazione
+        enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino_mail.ai_classifier_enabled', '0')
+        if enabled != '1':
+            return
+
+        # Skip se già classificato
+        if self.ai_classified_at:
+            return
+
+        # Estrai testo
+        body_text = self._get_body_text_for_ai()
+        if not body_text and not self.subject:
+            self.write({'ai_error': 'No body content'})
+            return
+
+        # API key
+        api_key = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.groq_api_key', '')
+        if not api_key:
+            self.write({'ai_error': 'Groq API key not configured'})
+            return
+
+        system_prompt = (
+            "You are an email classifier for CasaFolino, an Italian artisan gourmet food company "
+            "(B2B export, GDO retail, private label). Classify each email with JSON output only, no prose."
+        )
+        user_prompt = (
+            "Classify this email:\n"
+            "Subject: %s\n"
+            "Body (first 2000 chars): %s\n\n"
+            "Return ONLY valid JSON in this exact format:\n"
+            '{"category": "commerciale|admin|fornitore|newsletter|interno|personale|spam", '
+            '"sentiment": "positive|neutral|negative", '
+            '"language": "it|en|de|fr|es|other", '
+            '"urgency": "high|medium|low", '
+            '"action_required": true|false}\n\n'
+            "Rules:\n"
+            '- "commerciale" = buyer, distributor, retailer, customer requests, trade fairs\n'
+            '- "admin" = invoices, bank, tax, legal, HR, logistics docs\n'
+            '- "fornitore" = suppliers, raw materials, packaging, ingredients\n'
+            '- "newsletter" = marketing, promotional, mass mailing\n'
+            '- "interno" = internal @casafolino.com addresses\n'
+            '- "personale" = personal matters\n'
+            '- "spam" = unsolicited promotional, phishing\n'
+            '- urgency="high" when: explicit deadlines <7 days, complaints, legal matters, payments overdue\n'
+            '- action_required=true when recipient must reply or take action'
+        ) % (self.subject or '(no subject)', body_text or '(empty)')
+
+        headers = {
+            'Authorization': 'Bearer %s' % api_key,
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (CasaFolino Mail V2)',
+        }
+        payload = {
+            'model': 'llama-3.3-70b-versatile',
+            'messages': [
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': user_prompt},
+            ],
+            'temperature': 0.1,
+            'max_tokens': 200,
+        }
+
+        for attempt in range(2):
+            try:
+                resp = req.post(
+                    'https://api.groq.com/openai/v1/chat/completions',
+                    headers=headers,
+                    json=payload,
+                    timeout=15,
+                )
+
+                if resp.status_code == 429:
+                    _logger.warning("Groq rate limit (429) for message %s, skip", self.id)
+                    self.write({'ai_error': 'Rate limit 429'})
+                    return
+
+                if resp.status_code == 403 and attempt == 0:
+                    _logger.warning("Groq 403 (Cloudflare?) for message %s, retry...", self.id)
+                    time.sleep(1)
+                    continue
+
+                if resp.status_code != 200:
+                    self.write({'ai_error': 'HTTP %s' % resp.status_code})
+                    _logger.warning("Groq HTTP %s for message %s: %s",
+                                    resp.status_code, self.id, resp.text[:300])
+                    return
+
+                # Parse risposta
+                raw = resp.json()
+                content = raw.get('choices', [{}])[0].get('message', {}).get('content', '')
+
+                # Gestisci wrapper ```json ... ```
+                content = content.strip()
+                if content.startswith('```'):
+                    content = re.sub(r'^```\w*\n?', '', content)
+                    content = re.sub(r'\n?```$', '', content)
+                    content = content.strip()
+
+                data = json.loads(content)
+
+                vals = {
+                    'ai_classified_at': fields.Datetime.now(),
+                    'ai_raw_response': content,
+                    'ai_error': False,
+                }
+
+                cat = (data.get('category') or '').lower().strip()
+                if cat in self._GROQ_VALID_CATEGORIES:
+                    vals['ai_category'] = cat
+
+                sent = (data.get('sentiment') or '').lower().strip()
+                if sent in self._GROQ_VALID_SENTIMENTS:
+                    vals['ai_sentiment'] = sent
+
+                lang = (data.get('language') or '').lower().strip()
+                if lang in self._GROQ_VALID_LANGUAGES:
+                    vals['ai_language'] = lang
+
+                urg = (data.get('urgency') or '').lower().strip()
+                if urg in self._GROQ_VALID_URGENCIES:
+                    vals['ai_urgency'] = urg
+
+                if isinstance(data.get('action_required'), bool):
+                    vals['ai_action_required'] = data['action_required']
+
+                self.write(vals)
+                return
+
+            except json.JSONDecodeError as e:
+                self.write({
+                    'ai_error': 'JSON parse error: %s' % str(e)[:100],
+                    'ai_raw_response': content if 'content' in dir() else '',
+                    'ai_classified_at': fields.Datetime.now(),
+                })
+                return
+            except req.exceptions.Timeout:
+                self.write({'ai_error': 'Timeout 15s'})
+                _logger.warning("Groq timeout for message %s", self.id)
+                return
+            except Exception as e:
+                self.write({'ai_error': str(e)[:200]})
+                _logger.error("Groq classify error for message %s: %s", self.id, e)
+                return
+
+        # Se arriviamo qui: 2 tentativi falliti (403 retry)
+        self.write({'ai_error': 'Cloudflare 403 after retry'})
 
     def _compute_tracking_counts(self):
         for rec in self:
