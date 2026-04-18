@@ -34,12 +34,23 @@ class CasafolinoMailSenderPolicy(models.Model):
     ], string='Azione', required=True, default='review')
 
     default_owner_id = fields.Many2one('res.users', string='Responsabile default')
+    match_ai_category = fields.Selection([
+        ('commerciale', 'Commerciale'),
+        ('admin', 'Amministrativo'),
+        ('fornitore', 'Fornitore'),
+        ('newsletter', 'Newsletter'),
+        ('interno', 'Interno'),
+        ('personale', 'Personale'),
+        ('spam', 'Spam'),
+    ], string='AI Categoria richiesta',
+        help='Se valorizzato, la policy matcha solo se AI ha classificato con questa categoria')
+
     auto_create_partner = fields.Boolean('Crea contatto automaticamente',
         help='Se attivo, crea res.partner se non esiste match')
     notes = fields.Text('Note')
 
     @api.model
-    def match_sender(self, sender_email, subject=''):
+    def match_sender(self, sender_email, subject='', ai_category=None):
         """Trova la prima policy che matcha sender_email o subject.
 
         Args:
@@ -55,6 +66,11 @@ class CasafolinoMailSenderPolicy(models.Model):
         policies = self.sudo().search([('active', '=', True)], order='priority desc, id')
 
         for policy in policies:
+            # Se la policy richiede una ai_category specifica, verifica match
+            if policy.match_ai_category:
+                if ai_category != policy.match_ai_category:
+                    continue
+
             pattern = (policy.pattern_value or '').lower().strip()
 
             if policy.pattern_type == 'email_exact':

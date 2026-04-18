@@ -13,6 +13,7 @@
                 <field name="pattern_type"/>
                 <field name="pattern_value"/>
                 <field name="action"/>
+                <field name="match_ai_category" optional="show"/>
                 <field name="auto_create_partner"/>
                 <field name="default_owner_id" optional="hide"/>
                 <field name="active" optional="hide"/>
@@ -40,6 +41,7 @@
                         </group>
                         <group string="Azione">
                             <field name="action"/>
+                            <field name="match_ai_category"/>
                             <field name="auto_create_partner"/>
                             <field name="default_owner_id"/>
                         </group>
