@@ -9,6 +9,7 @@
         'security/ir.model.access.csv',
         'security/ir_rules.xml',
         'views/casafolino_mail_hub_views.xml',
+        'views/casafolino_mail_policy_views.xml',
         'views/casafolino_mail_wizard_views.xml',
         'views/menus.xml',
         'data/cf_mail_cron.xml',

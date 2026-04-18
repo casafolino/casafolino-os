@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ LIST VIEW ══════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_policy_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender_policy.list</field>
+        <field name="model">casafolino.mail.sender_policy</field>
+        <field name="arch" type="xml">
+            <list string="Regole Mittenti" editable="bottom">
+                <field name="priority"/>
+                <field name="name"/>
+                <field name="pattern_type"/>
+                <field name="pattern_value"/>
+                <field name="action"/>
+                <field name="auto_create_partner"/>
+                <field name="default_owner_id" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ FORM VIEW ══════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_policy_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender_policy.form</field>
+        <field name="model">casafolino.mail.sender_policy</field>
+        <field name="arch" type="xml">
+            <form string="Regola Mittente">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Es: REWE group → keep auto"/></h1>
+                    </div>
+                    <group>
+                        <group string="Pattern">
+                            <field name="pattern_type"/>
+                            <field name="pattern_value"/>
+                            <field name="priority"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Azione">
+                            <field name="action"/>
+                            <field name="auto_create_partner"/>
+                            <field name="default_owner_id"/>
+                        </group>
+                    </group>
+                    <group string="Note">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ SEARCH VIEW ════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_policy_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender_policy.search</field>
+        <field name="model">casafolino.mail.sender_policy</field>
+        <field name="arch" type="xml">
+            <search string="Regole Mittenti">
+                <field name="name"/>
+                <field name="pattern_value"/>
+                <filter name="active" string="Attive" domain="[('active', '=', True)]"/>
+                <filter name="auto_keep" string="Auto Keep" domain="[('action', '=', 'auto_keep')]"/>
+                <filter name="auto_discard" string="Auto Discard" domain="[('action', '=', 'auto_discard')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_action" string="Azione" context="{'group_by': 'action'}"/>
+                    <filter name="group_type" string="Tipo" context="{'group_by': 'pattern_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══ ACTION ═════════════════════════════════════════════════ -->
+
+    <record id="action_casafolino_mail_policy" model="ir.actions.act_window">
+        <field name="name">Regole Mittenti</field>
+        <field name="res_model">casafolino.mail.sender_policy</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_policy_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+</odoo>
