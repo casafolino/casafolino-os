@@ -40,7 +40,7 @@ class CasafolinoMailSlaPartner(models.Model):
                         AND l.active = TRUE
                         AND l.type = 'opportunity'
                     JOIN crm_stage s ON s.id = l.stage_id
-                        AND s.is_won = FALSE
+                        AND s.is_won IS NOT TRUE
                     GROUP BY p.id
                 ),
                 msg_stats AS (
