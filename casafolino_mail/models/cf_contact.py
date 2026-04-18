@@ -280,17 +280,17 @@ class ResPartnerMailExt(models.Model):
             },
         }
 
-    @api.depends('message_ids')
+    @api.depends('partner_message_ids', 'partner_message_ids.email_date')
     def _compute_last_contact(self):
         for p in self:
-            msgs = self.env['cf.mail.message'].search([
+            msgs = self.env['casafolino.mail.message'].search([
                 ('partner_id', '=', p.id)
-            ], order='date desc', limit=1)
-            p.cf_last_contact = msgs.date if msgs else False
+            ], order='email_date desc', limit=1)
+            p.cf_last_contact = msgs.email_date if msgs else False
 
     def _compute_email_count(self):
         for p in self:
-            p.cf_email_count = self.env['cf.mail.message'].search_count([
+            p.cf_email_count = self.env['casafolino.mail.message'].search_count([
                 ('partner_id', '=', p.id)
             ])
 
