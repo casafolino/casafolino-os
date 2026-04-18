@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '7.6.1',
+    'version': '7.7.0',
     'summary': 'Ponte selettivo Gmail → CRM per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -12,6 +12,7 @@
         'views/casafolino_mail_policy_views.xml',
         'views/casafolino_mail_wizard_views.xml',
         'views/sla_partner_views.xml',
+        'views/orphan_partner_views.xml',
         'views/menus.xml',
         'data/cf_mail_cron.xml',
         'data/cf_mail_config.xml',

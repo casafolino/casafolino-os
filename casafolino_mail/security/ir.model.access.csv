@@ -14,3 +14,5 @@ access_casafolino_mail_tracking_user,casafolino.mail.tracking user,model_casafol
 access_casafolino_mail_tracking_admin,casafolino.mail.tracking admin,model_casafolino_mail_tracking,base.group_system,1,1,1,1
 access_casafolino_mail_sla_partner_user,casafolino.mail.sla.partner user,model_casafolino_mail_sla_partner,base.group_user,1,0,0,0
 access_casafolino_mail_sla_partner_admin,casafolino.mail.sla.partner admin,model_casafolino_mail_sla_partner,base.group_system,1,0,0,0
+access_casafolino_mail_orphan_partner_user,casafolino.mail.orphan.partner user,model_casafolino_mail_orphan_partner,base.group_user,1,0,0,0
+access_casafolino_mail_orphan_partner_admin,casafolino.mail.orphan.partner admin,model_casafolino_mail_orphan_partner,base.group_system,1,0,0,0

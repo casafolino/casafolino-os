@@ -5,3 +5,4 @@ from . import casafolino_mail_sender_policy
 from . import crm_lead_ext
 from . import casafolino_mail_tracking
 from . import sla_partner
+from . import orphan_partner
