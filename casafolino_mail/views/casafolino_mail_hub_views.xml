@@ -15,9 +15,9 @@
                 <field name="sender_name"/>
                 <field name="sender_domain"/>
                 <field name="partner_id"/>
-                <filter name="state_new" string="Da valutare" domain="[('state', '=', 'new')]"/>
-                <filter name="state_keep" string="Tenute" domain="[('state', '=', 'keep')]"/>
-                <filter name="state_discard" string="Scartate" domain="[('state', '=', 'discard')]"/>
+                <filter name="state_new" string="Da valutare" domain="[('state', 'in', ['new', 'review'])]"/>
+                <filter name="state_keep" string="Tenute" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_discard" string="Scartate" domain="[('state', 'in', ['discard', 'auto_discard'])]"/>
                 <separator/>
                 <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
                 <filter name="read" string="Letti" domain="[('is_read', '=', True)]"/>
@@ -68,9 +68,9 @@
         <field name="model">casafolino.mail.message</field>
         <field name="arch" type="xml">
             <list string="Email Triage"
-                  decoration-muted="state == 'discard'"
-                  decoration-success="state == 'keep'"
-                  decoration-info="state == 'new'"
+                  decoration-muted="state in ('discard', 'auto_discard')"
+                  decoration-success="state in ('keep', 'auto_keep')"
+                  decoration-info="state in ('new', 'review')"
                   decoration-bf="not is_read"
                   multi_edit="1">
                 <field name="is_important" string=" " widget="boolean_favorite"/>
@@ -86,9 +86,9 @@
                 <field name="account_id" string="Casella"/>
                 <field name="assigned_user_ids" string="Assegnato a" widget="many2many_tags" optional="show"/>
                 <field name="state" string="Stato" widget="badge"
-                       decoration-info="state == 'new'"
-                       decoration-success="state == 'keep'"
-                       decoration-danger="state == 'discard'"/>
+                       decoration-info="state in ('new', 'review')"
+                       decoration-success="state in ('keep', 'auto_keep')"
+                       decoration-danger="state in ('discard', 'auto_discard')"/>
                 <field name="fetch_state" string="Fetch" widget="badge" optional="show"
                        decoration-info="fetch_state == 'pending'"
                        decoration-success="fetch_state == 'done'"
@@ -155,11 +155,11 @@
                 <div class="o_row mb-3">
                     <button name="action_keep" string="Tieni"
                             type="object" class="btn btn-success"
-                            invisible="state != 'new'"/>
+                            invisible="state not in ('new', 'review', 'auto_discard')"/>
                     <button name="action_discard" string="Scarta"
                             type="object" class="btn btn-danger"
-                            invisible="state != 'new'"/>
-                    <button name="action_blacklist_domain" string="Blacklist Dominio"
+                            invisible="state not in ('new', 'review', 'auto_keep')"/>
+                    <button name="action_blacklist_domain" string="Scarta Dominio"
                             type="object" class="btn btn-warning"/>
                     <button name="action_create_partner" string="Crea Contatto"
                             type="object" class="btn btn-secondary"

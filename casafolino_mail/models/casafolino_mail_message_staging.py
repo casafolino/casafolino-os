@@ -67,9 +67,15 @@ class CasafolinoMailMessage(models.Model):
 
     state = fields.Selection([
         ('new', 'Nuova'),
+        ('auto_keep', 'Tenuta (auto)'),
         ('keep', 'Tenuta'),
+        ('auto_discard', 'Scartata (auto)'),
         ('discard', 'Scartata'),
+        ('review', 'Da valutare'),
     ], string='Stato', default='new', index=True)
+
+    policy_applied_id = fields.Many2one('casafolino.mail.sender_policy',
+        string='Regola applicata', ondelete='set null')
 
     partner_id = fields.Many2one('res.partner', string='Contatto')
     match_type = fields.Selection([
