@@ -201,6 +201,56 @@ class CasafolinoMailMessage(models.Model):
             aid = rec.account_id.id if rec.account_id else 0
             rec.thread_key = '%s::%s' % (norm, aid) if norm else ''
 
+    # ── Quick Convert → CRM Lead ────────────────────────────────────
+
+    def action_create_lead(self):
+        """Crea un crm.lead pre-compilato da questa email."""
+        self.ensure_one()
+
+        # Assicura partner
+        partner = self.partner_id
+        if not partner and self.sender_email:
+            partner = self.env['res.partner'].search(
+                [('email', '=ilike', self.sender_email)], limit=1)
+            if not partner:
+                partner = self.env['res.partner'].create({
+                    'name': self.sender_name or self.sender_email,
+                    'email': self.sender_email,
+                })
+                self.partner_id = partner
+
+        # Determina salesperson dalla policy o utente corrente
+        user_id = self.env.user.id
+        if self.policy_applied_id and self.policy_applied_id.default_owner_id:
+            user_id = self.policy_applied_id.default_owner_id.id
+
+        lead_vals = {
+            'name': self.subject or 'Email da %s' % self.sender_email,
+            'partner_id': partner.id if partner else False,
+            'email_from': self.sender_email,
+            'description': (self.body_html or self.snippet or '')[:3000],
+            'user_id': user_id,
+            'source_email_id': self.id,
+        }
+
+        # UTM source "Email" se esiste
+        try:
+            lead_vals['source_id'] = self.env.ref('utm.utm_source_email').id
+        except Exception:
+            pass
+
+        lead = self.env['crm.lead'].create(lead_vals)
+        self.write({'lead_id': lead.id, 'state': 'keep'})
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lead creato',
+            'res_model': 'crm.lead',
+            'res_id': lead.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
     # ── Triage actions (Step 3) ──────────────────────────────────────
 
     def action_keep(self):

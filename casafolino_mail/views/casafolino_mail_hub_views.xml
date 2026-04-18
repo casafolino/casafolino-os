@@ -164,6 +164,9 @@
                             invisible="state not in ('new', 'review', 'auto_keep')"/>
                     <button name="action_blacklist_domain" string="Scarta Dominio"
                             type="object" class="btn btn-warning"/>
+                    <button name="action_create_lead" string="Crea Lead CRM"
+                            type="object" class="btn btn-primary"
+                            invisible="lead_id"/>
                     <button name="action_create_partner" string="Crea Contatto"
                             type="object" class="btn btn-secondary"
                             invisible="partner_id != False"/>
