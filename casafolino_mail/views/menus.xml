@@ -17,6 +17,12 @@
         sequence="2"
         action="action_casafolino_mail_message_keep"/>
 
+    <menuitem id="menu_casafolino_mail_sla"
+        name="SLA Buyer"
+        parent="menu_casafolino_mail_root"
+        sequence="5"
+        action="action_casafolino_mail_sla_partner"/>
+
     <menuitem id="menu_casafolino_mail_discard"
         name="Archivio Scarto"
         parent="menu_casafolino_mail_root"
