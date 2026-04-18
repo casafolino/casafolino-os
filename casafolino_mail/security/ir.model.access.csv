@@ -1,25 +1,12 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cf_mail_account_user,cf.mail.account user,model_cf_mail_account,,1,1,1,0
-access_cf_mail_account_admin,cf.mail.account admin,model_cf_mail_account,base.group_system,1,1,1,1
-access_cf_mail_message_user,cf.mail.message user,model_cf_mail_message,,1,1,1,1
-access_cf_mail_message_admin,cf.mail.message admin,model_cf_mail_message,base.group_system,1,1,1,1
-access_cf_mail_tag_user,cf.mail.tag user,model_cf_mail_tag,,1,1,1,0
-access_cf_mail_tag_admin,cf.mail.tag admin,model_cf_mail_tag,base.group_system,1,1,1,1
 access_cf_contact_tag_user,cf.contact.tag user,model_cf_contact_tag,,1,1,1,0
 access_cf_contact_tag_admin,cf.contact.tag admin,model_cf_contact_tag,base.group_system,1,1,1,1
-access_cf_mail_compose,access_cf_mail_compose,model_cf_mail_compose,base.group_user,1,1,1,1
-access_cf_mail_sender_rule_user,cf.mail.sender.rule user,model_cf_mail_sender_rule,,1,1,1,1
-access_cf_mail_sender_rule_admin,cf.mail.sender.rule admin,model_cf_mail_sender_rule,base.group_system,1,1,1,1
 access_casafolino_mail_account_user,casafolino.mail.account user,model_casafolino_mail_account,base.group_user,1,1,1,0
 access_casafolino_mail_account_admin,casafolino.mail.account admin,model_casafolino_mail_account,base.group_system,1,1,1,1
 access_casafolino_mail_message_user,casafolino.mail.message user,model_casafolino_mail_message,base.group_user,1,1,1,1
 access_casafolino_mail_message_admin,casafolino.mail.message admin,model_casafolino_mail_message,base.group_system,1,1,1,1
-access_casafolino_mail_blacklist_user,casafolino.mail.blacklist user,model_casafolino_mail_blacklist,base.group_user,1,1,1,0
-access_casafolino_mail_blacklist_admin,casafolino.mail.blacklist admin,model_casafolino_mail_blacklist,base.group_system,1,1,1,1
 access_casafolino_assign_partner_wizard,casafolino.mail.assign.partner.wizard,model_casafolino_mail_assign_partner_wizard,base.group_user,1,1,1,1
 access_casafolino_assign_lead_wizard,casafolino.mail.assign.lead.wizard,model_casafolino_mail_assign_lead_wizard,base.group_user,1,1,1,1
 access_casafolino_assign_user_wizard,casafolino.mail.assign.user.wizard,model_casafolino_mail_assign_user_wizard,base.group_user,1,1,1,1
-access_cf_mail_template_user,cf.mail.template user,model_cf_mail_template,base.group_user,1,0,0,0
-access_cf_mail_template_admin,cf.mail.template admin,model_cf_mail_template,base.group_system,1,1,1,1
 access_casafolino_mail_tracking_user,casafolino.mail.tracking user,model_casafolino_mail_tracking,base.group_user,1,0,0,0
 access_casafolino_mail_tracking_admin,casafolino.mail.tracking admin,model_casafolino_mail_tracking,base.group_system,1,1,1,1

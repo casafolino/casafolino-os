@@ -350,19 +350,29 @@ class CasafolinoMailMessage(models.Model):
         }
         self.env['mail.message'].sudo().create(msg_vals)
 
-    # ── Blacklist + Quick actions (Step 6) ────────────────────────────
+    # ── Domain discard + Quick actions ────────────────────────────
 
     def action_blacklist_domain(self):
-        """Aggiunge il dominio alla blacklist e scarta tutte le email new da quel dominio."""
-        Blacklist = self.env['casafolino.mail.blacklist'].sudo()
+        """Crea sender_policy auto_discard per il dominio e scarta le email new."""
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
         domains_done = set()
 
         for record in self:
             domain = record.sender_domain
             if domain and domain not in domains_done:
-                existing = Blacklist.search([('type', '=', 'domain'), ('value', '=', domain)], limit=1)
+                existing = Policy.search([
+                    ('pattern_type', '=', 'domain'),
+                    ('pattern_value', '=', domain),
+                    ('action', '=', 'auto_discard'),
+                ], limit=1)
                 if not existing:
-                    Blacklist.create({'type': 'domain', 'value': domain})
+                    Policy.create({
+                        'name': 'Auto-discard: %s' % domain,
+                        'pattern_type': 'domain',
+                        'pattern_value': domain,
+                        'action': 'auto_discard',
+                        'priority': 70,
+                    })
                 domains_done.add(domain)
 
         # Scarta TUTTE le email new da questi domini
@@ -1046,20 +1056,20 @@ class CasafolinoMailMessage(models.Model):
         if not msg.exists() or not msg.sender_email:
             return {'success': False}
         addr = msg.sender_email.strip().lower()
-        # Add email to blacklist (non dominio — troppo aggressivo)
-        Blacklist = self.env['casafolino.mail.blacklist'].sudo()
-        if not Blacklist.search([('type', '=', 'email'), ('value', '=', addr)], limit=1):
-            Blacklist.create({'type': 'email', 'value': addr})
-        # Crea anche sender_rule exclude per il fetch IMAP
-        try:
-            SenderRule = self.env['cf.mail.sender.rule'].sudo()
-            existing_rule = SenderRule.search([('email', '=', addr)], limit=1)
-            if existing_rule:
-                existing_rule.write({'action': 'exclude'})
-            else:
-                SenderRule.create({'email': addr, 'action': 'exclude'})
-        except Exception:
-            pass
+        # Crea sender_policy auto_discard per questa email
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        existing = Policy.search([
+            ('pattern_type', '=', 'email_exact'),
+            ('pattern_value', '=', addr),
+        ], limit=1)
+        if not existing:
+            Policy.create({
+                'name': 'Block: %s' % addr,
+                'pattern_type': 'email_exact',
+                'pattern_value': addr,
+                'action': 'auto_discard',
+                'priority': 90,
+            })
         # Discard ALL emails from this sender (new + keep)
         to_discard = self.search([
             ('sender_email', '=ilike', addr),
@@ -1704,7 +1714,7 @@ class CasafolinoMailMessage(models.Model):
         domain = [
             ('res_model', 'in', [False, '', 'res.partner', 'crm.lead',
                                   'product.template', 'casafolino.mail.message',
-                                  'cf.mail.template']),
+                                  ]),
             ('type', '=', 'binary'),
         ]
         if search_term:
@@ -1751,5 +1761,5 @@ class CasafolinoMailMessage(models.Model):
 
     @api.model
     def get_templates(self, *args, **kw):
-        """Proxy per cf.mail.template.get_templates."""
-        return self.env['cf.mail.template'].get_templates()
+        """Templates non più disponibili (vecchio stack rimosso)."""
+        return []

@@ -98,18 +98,6 @@
         </field>
     </record>
 
-    <record id="casafolino_mail_blacklist_list" model="ir.ui.view">
-        <field name="name">casafolino.mail.blacklist.list</field>
-        <field name="model">casafolino.mail.blacklist</field>
-        <field name="arch" type="xml">
-            <list string="Blacklist" editable="bottom">
-                <field name="type"/>
-                <field name="value"/>
-                <field name="notes"/>
-            </list>
-        </field>
-    </record>
-
     <!-- ══════════════════════════════════════════════════════════════
          3) FORM VIEWS
          ══════════════════════════════════════════════════════════════ -->
@@ -219,20 +207,6 @@
                         </group>
                     </page>
                 </notebook>
-            </form>
-        </field>
-    </record>
-
-    <record id="casafolino_mail_blacklist_form" model="ir.ui.view">
-        <field name="name">casafolino.mail.blacklist.form</field>
-        <field name="model">casafolino.mail.blacklist</field>
-        <field name="arch" type="xml">
-            <form string="Blacklist">
-                <group>
-                    <field name="type"/>
-                    <field name="value"/>
-                    <field name="notes"/>
-                </group>
             </form>
         </field>
     </record>
@@ -366,37 +340,6 @@
         <field name="context">{'search_default_state_new': 1}</field>
     </record>
 
-    <record id="action_casafolino_mail_blacklist" model="ir.actions.act_window">
-        <field name="name">Blacklist</field>
-        <field name="res_model">casafolino.mail.blacklist</field>
-        <field name="view_mode">list,form</field>
-    </record>
-
-    <!-- ══════════════════════════════════════════════════════════════
-         6) MENU (dopo le actions che referenziano)
-         ══════════════════════════════════════════════════════════════ -->
-
-    <menuitem id="menu_casafolino_mail_hub_root"
-              name="Mail Hub"
-              parent="casafolino_mail.menu_cf_mail_root"
-              sequence="50"/>
-
-    <menuitem id="menu_casafolino_mail_triage"
-              name="Email Triage"
-              parent="menu_casafolino_mail_hub_root"
-              action="action_casafolino_mail_message_triage"
-              sequence="10"/>
-
-    <menuitem id="menu_casafolino_mail_accounts"
-              name="Account IMAP"
-              parent="menu_casafolino_mail_hub_root"
-              action="action_casafolino_mail_account"
-              sequence="20"/>
-
-    <menuitem id="menu_casafolino_mail_blacklist"
-              name="Blacklist"
-              parent="menu_casafolino_mail_hub_root"
-              action="action_casafolino_mail_blacklist"
-              sequence="30"/>
+    <!-- Menu centralizzati in menus.xml -->
 
 </odoo>

@@ -176,21 +176,21 @@ class CasafolinoMailAccount(models.Model):
         return self.id
 
     def _load_exclude_rules(self):
-        """Carica set di email con sender_rule exclude. Chiamare UNA volta per sync."""
-        # Nota: cf.mail.sender.rule è il vecchio modello, ma controlliamo anche casafolino.mail.blacklist
+        """Carica set di email/domini da escludere da sender_policy auto_discard."""
         excluded = set()
         try:
-            rules = self.env['cf.mail.sender.rule'].sudo().search([('action', '=', 'exclude')])
-            for r in rules:
-                if r.email:
-                    excluded.add(r.email.lower().strip())
+            policies = self.env['casafolino.mail.sender_policy'].sudo().search([
+                ('action', '=', 'auto_discard'), ('active', '=', True)
+            ])
+            for p in policies:
+                if p.pattern_type == 'email_exact' and p.pattern_value:
+                    excluded.add(p.pattern_value.lower().strip())
         except Exception:
             pass
         return excluded
 
     def _fetch_folder(self, imap, folder_name, direction):
         """Fetch di una singola cartella IMAP."""
-        Blacklist = self.env['casafolino.mail.blacklist']
         Message = self.env['casafolino.mail.message']
 
         new_count = 0
@@ -273,12 +273,7 @@ class CasafolinoMailAccount(models.Model):
                     skip_count += 1
                     continue
 
-                # Check blacklist
-                if sender_email and Blacklist.is_blacklisted(sender_email):
-                    blacklist_count += 1
-                    continue
-
-                # Check sender_rules exclude (Bug 4 fix)
+                # Check sender_policy exclude
                 if sender_email and sender_email in excluded_senders:
                     blacklist_count += 1
                     continue
