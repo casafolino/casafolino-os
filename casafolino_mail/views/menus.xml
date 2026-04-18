@@ -17,6 +17,12 @@
         sequence="2"
         action="action_casafolino_mail_message_keep"/>
 
+    <menuitem id="menu_casafolino_mail_lead_score"
+        name="Lead Scoring TOP 20"
+        parent="menu_casafolino_mail_root"
+        sequence="3"
+        action="action_casafolino_mail_lead_score"/>
+
     <menuitem id="menu_casafolino_mail_sla"
         name="SLA Buyer"
         parent="menu_casafolino_mail_root"
