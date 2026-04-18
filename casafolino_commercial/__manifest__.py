@@ -35,6 +35,7 @@
             'casafolino_commercial/static/src/js/cf_treasury_categories.js',
         ],
     },
+    'pre_init_hook': '_pre_init_sale_templates',
     'installable': True,
     'license': 'LGPL-3',
 }
