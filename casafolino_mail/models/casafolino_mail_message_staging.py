@@ -86,7 +86,41 @@ class CasafolinoMailMessage(models.Model):
     ], string='Tipo match', default='none')
 
     body_html = fields.Html('Body HTML', sanitize=False)
+    body_plain = fields.Text('Body testo')
     body_downloaded = fields.Boolean('Body scaricato', default=False)
+
+    # ── AI Classifier fields ────────────────────────────────────────
+    ai_category = fields.Selection([
+        ('commerciale', 'Commerciale'),
+        ('admin', 'Amministrativo'),
+        ('fornitore', 'Fornitore'),
+        ('newsletter', 'Newsletter'),
+        ('interno', 'Interno'),
+        ('personale', 'Personale'),
+        ('spam', 'Spam'),
+    ], string='AI Categoria')
+    ai_sentiment = fields.Selection([
+        ('positive', 'Positivo'),
+        ('neutral', 'Neutro'),
+        ('negative', 'Negativo'),
+    ], string='AI Sentiment')
+    ai_language = fields.Selection([
+        ('it', 'Italiano'),
+        ('en', 'English'),
+        ('de', 'Deutsch'),
+        ('fr', 'Français'),
+        ('es', 'Español'),
+        ('other', 'Altro'),
+    ], string='AI Lingua')
+    ai_urgency = fields.Selection([
+        ('high', 'Alta'),
+        ('medium', 'Media'),
+        ('low', 'Bassa'),
+    ], string='AI Urgenza')
+    ai_action_required = fields.Boolean('AI Action Required', default=False)
+    ai_classified_at = fields.Datetime('AI Classificato il')
+    ai_raw_response = fields.Text('AI Risposta raw')
+    ai_error = fields.Char('AI Errore')
     fetch_state = fields.Selection([
         ('pending', 'In coda'),
         ('done', 'Scaricato'),
