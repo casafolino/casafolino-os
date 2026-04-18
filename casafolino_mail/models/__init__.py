@@ -7,3 +7,5 @@ from . import casafolino_mail_tracking
 from . import sla_partner
 from . import orphan_partner
 from . import lead_score
+from . import snippet
+from . import snippet_picker

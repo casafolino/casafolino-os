@@ -35,6 +35,12 @@
         sequence="6"
         action="action_casafolino_mail_orphan_partner"/>
 
+    <menuitem id="menu_casafolino_mail_snippet"
+        name="Snippet Library"
+        parent="menu_casafolino_mail_root"
+        sequence="8"
+        action="action_casafolino_mail_snippet"/>
+
     <menuitem id="menu_casafolino_mail_discard"
         name="Archivio Scarto"
         parent="menu_casafolino_mail_root"

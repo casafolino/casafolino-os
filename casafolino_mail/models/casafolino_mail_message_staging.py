@@ -779,6 +779,18 @@ class CasafolinoMailMessage(models.Model):
         if self.partner_id:
             return self.partner_id.action_enrich_007()
 
+    def action_open_snippet_picker(self):
+        """Apre wizard selezione snippet per questa email."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Seleziona Snippet',
+            'res_model': 'casafolino.mail.snippet.picker',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_id': self.id},
+        }
+
     # ── Parse body from already-fetched message (Step 7) ─────────────
 
     def _parse_and_save_body(self, msg_obj):

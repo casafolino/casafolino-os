@@ -188,6 +188,9 @@
                     <button name="action_launch_007" string="Agente 007"
                             type="object" class="btn btn-info"
                             invisible="partner_id == False"/>
+                    <button name="action_open_snippet_picker" string="Snippet"
+                            type="object" class="btn btn-secondary"
+                            invisible="direction != 'inbound'"/>
                 </div>
                 <group>
                     <group string="Email">

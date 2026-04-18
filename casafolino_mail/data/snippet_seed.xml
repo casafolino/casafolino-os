@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data noupdate="1">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         LISTINO / PREZZI
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_listino_it" model="casafolino.mail.snippet">
+        <field name="name">Listino prezzi — invio</field>
+        <field name="code">listino_send</field>
+        <field name="category">listino</field>
+        <field name="language">it</field>
+        <field name="subject">Listino CasaFolino — prodotti artigianali calabresi</field>
+        <field name="body">Gentile {partner_name},
+
+Grazie per il Suo interesse verso i prodotti CasaFolino.
+
+In allegato trova il nostro listino aggiornato con la gamma completa: confetture, conserve, sughi e specialita calabresi.
+
+I prezzi indicati sono EXW Pianopoli (CZ). Per quotazioni FOB/CIF non esiti a richiedere.
+
+Resto a disposizione per qualsiasi chiarimento.
+
+Cordiali saluti,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_listino_en" model="casafolino.mail.snippet">
+        <field name="name">Price list — sending</field>
+        <field name="code">listino_send</field>
+        <field name="category">listino</field>
+        <field name="language">en</field>
+        <field name="subject">CasaFolino Price List — artisan Calabrian products</field>
+        <field name="body">Dear {partner_name},
+
+Thank you for your interest in {our_name} products.
+
+Please find attached our updated price list featuring our full range: jams, preserves, sauces and Calabrian specialties.
+
+Prices quoted are EXW Pianopoli (Italy). We are happy to provide FOB/CIF quotations upon request.
+
+Please do not hesitate to reach out with any questions.
+
+Best regards,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_listino_de" model="casafolino.mail.snippet">
+        <field name="name">Preisliste — Versand</field>
+        <field name="code">listino_send</field>
+        <field name="category">listino</field>
+        <field name="language">de</field>
+        <field name="subject">CasaFolino Preisliste — handwerkliche kalabrische Produkte</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Vielen Dank fuer Ihr Interesse an den Produkten von {our_name}.
+
+Anbei finden Sie unsere aktuelle Preisliste mit unserem gesamten Sortiment: Konfitueren, Konserven, Saucen und kalabrische Spezialitaeten.
+
+Die angegebenen Preise verstehen sich EXW Pianopoli (Italien). Gerne erstellen wir Ihnen FOB/CIF-Angebote auf Anfrage.
+
+Fuer Rueckfragen stehe ich Ihnen jederzeit gerne zur Verfuegung.
+
+Mit freundlichen Gruessen,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         CAMPIONI
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_campioni_it" model="casafolino.mail.snippet">
+        <field name="name">Richiesta campioni — standard</field>
+        <field name="code">samples_request</field>
+        <field name="category">campioni</field>
+        <field name="language">it</field>
+        <field name="subject">Re: Campionatura CasaFolino</field>
+        <field name="body">Gentile {partner_name},
+
+Grazie per il Vostro interesse nei nostri prodotti.
+
+Saremo lieti di inviarVi una campionatura: ci confermi cortesemente l'indirizzo completo di spedizione e la selezione di prodotti di Suo interesse dal nostro catalogo allegato.
+
+I costi di spedizione sono a nostro carico per ordini oltre 500 EUR; diversamente li quoteremo separatamente.
+
+Resto a disposizione,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_campioni_en" model="casafolino.mail.snippet">
+        <field name="name">Sample request — standard</field>
+        <field name="code">samples_request</field>
+        <field name="category">campioni</field>
+        <field name="language">en</field>
+        <field name="subject">Re: CasaFolino samples</field>
+        <field name="body">Dear {partner_name},
+
+Thank you for your interest in our products.
+
+We would be happy to send you a sample box. Could you please confirm your full shipping address and the product selection you are interested in from our attached catalogue?
+
+Shipping costs are on us for orders above EUR 500; otherwise we will quote them separately.
+
+Looking forward to hearing from you,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_campioni_de" model="casafolino.mail.snippet">
+        <field name="name">Musteranfrage — Standard</field>
+        <field name="code">samples_request</field>
+        <field name="category">campioni</field>
+        <field name="language">de</field>
+        <field name="subject">Re: CasaFolino Muster</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Vielen Dank fuer Ihr Interesse an unseren Produkten.
+
+Gerne senden wir Ihnen ein Musterpaket zu. Koennten Sie uns bitte Ihre vollstaendige Lieferadresse und die gewuenschte Produktauswahl aus unserem beigefuegten Katalog bestaetigen?
+
+Die Versandkosten uebernehmen wir bei Bestellungen ueber 500 EUR; andernfalls werden diese separat angeboten.
+
+Mit freundlichen Gruessen,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         MOQ / PALLETIZZAZIONE
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_moq_it" model="casafolino.mail.snippet">
+        <field name="name">MOQ e palletizzazione</field>
+        <field name="code">moq_pallet</field>
+        <field name="category">moq</field>
+        <field name="language">it</field>
+        <field name="subject">Re: MOQ e condizioni logistiche CasaFolino</field>
+        <field name="body">Gentile {partner_name},
+
+Ecco le informazioni tecniche richieste:
+
+- MOQ: 1 pallet misto (min. 1 cartone per referenza)
+- Pallet standard: 80x120 cm EPAL, altezza max 180 cm
+- Cartoni per pallet: variabile per formato (dettagli in scheda tecnica allegata)
+- Lead time: 15-20 giorni lavorativi dalla conferma ordine
+- Incoterms: EXW Pianopoli / FOB Gioia Tauro / CIF a richiesta
+
+Per il primo ordine consigliamo un pallet misto con le nostre best-seller.
+
+A disposizione per preventivo dettagliato,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_moq_en" model="casafolino.mail.snippet">
+        <field name="name">MOQ and palletisation</field>
+        <field name="code">moq_pallet</field>
+        <field name="category">moq</field>
+        <field name="language">en</field>
+        <field name="subject">Re: MOQ and logistics — CasaFolino</field>
+        <field name="body">Dear {partner_name},
+
+Here are the technical details you requested:
+
+- MOQ: 1 mixed pallet (min. 1 case per SKU)
+- Standard pallet: 80x120 cm EPAL, max height 180 cm
+- Cases per pallet: varies by format (see attached spec sheet)
+- Lead time: 15-20 working days from order confirmation
+- Incoterms: EXW Pianopoli / FOB Gioia Tauro / CIF on request
+
+For a first order we recommend a mixed pallet with our best-sellers.
+
+Happy to provide a detailed quotation,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_moq_de" model="casafolino.mail.snippet">
+        <field name="name">MOQ und Palettierung</field>
+        <field name="code">moq_pallet</field>
+        <field name="category">moq</field>
+        <field name="language">de</field>
+        <field name="subject">Re: MOQ und Logistik — CasaFolino</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Hier die gewuenschten technischen Informationen:
+
+- MOQ: 1 Mischpalette (min. 1 Karton pro Artikel)
+- Standardpalette: 80x120 cm EPAL, max. Hoehe 180 cm
+- Kartons pro Palette: je nach Format (siehe beigefuegtes Datenblatt)
+- Lieferzeit: 15-20 Werktage ab Auftragsbestaetigung
+- Incoterms: EXW Pianopoli / FOB Gioia Tauro / CIF auf Anfrage
+
+Fuer eine Erstbestellung empfehlen wir eine Mischpalette mit unseren Bestsellern.
+
+Gerne erstellen wir ein detailliertes Angebot,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         CERTIFICAZIONI
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_cert_it" model="casafolino.mail.snippet">
+        <field name="name">Certificazioni disponibili</field>
+        <field name="code">certifications</field>
+        <field name="category">certificazioni</field>
+        <field name="language">it</field>
+        <field name="subject">Re: Certificazioni CasaFolino</field>
+        <field name="body">Gentile {partner_name},
+
+Di seguito le certificazioni attive di {our_name}:
+
+- BRC Food Safety (Grade A)
+- IFS Food (Higher Level)
+- Biologico EU (IT-BIO-009)
+- HACCP interno
+- Registrazione FDA (per export USA)
+
+Possiamo inviare copia dei certificati su richiesta. Per requisiti specifici del Vostro mercato, non esitate a comunicarceli.
+
+Cordiali saluti,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_cert_en" model="casafolino.mail.snippet">
+        <field name="name">Certifications available</field>
+        <field name="code">certifications</field>
+        <field name="category">certificazioni</field>
+        <field name="language">en</field>
+        <field name="subject">Re: CasaFolino Certifications</field>
+        <field name="body">Dear {partner_name},
+
+Please find below our current certifications:
+
+- BRC Food Safety (Grade A)
+- IFS Food (Higher Level)
+- EU Organic (IT-BIO-009)
+- In-house HACCP
+- FDA registration (for US export)
+
+We can provide copies of all certificates upon request. Should you have specific requirements for your market, please let us know.
+
+Kind regards,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_cert_de" model="casafolino.mail.snippet">
+        <field name="name">Verfuegbare Zertifizierungen</field>
+        <field name="code">certifications</field>
+        <field name="category">certificazioni</field>
+        <field name="language">de</field>
+        <field name="subject">Re: CasaFolino Zertifizierungen</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Nachfolgend unsere aktuellen Zertifizierungen:
+
+- BRC Food Safety (Grade A)
+- IFS Food (Higher Level)
+- EU-Bio (IT-BIO-009)
+- Internes HACCP
+- FDA-Registrierung (fuer US-Export)
+
+Gerne senden wir Ihnen Kopien aller Zertifikate auf Anfrage zu. Sollten Sie spezifische Anforderungen fuer Ihren Markt haben, teilen Sie uns diese bitte mit.
+
+Mit freundlichen Gruessen,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         FOLLOW-UP
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_followup_it" model="casafolino.mail.snippet">
+        <field name="name">Follow-up post contatto</field>
+        <field name="code">follow_up_contact</field>
+        <field name="category">follow_up</field>
+        <field name="language">it</field>
+        <field name="subject">Follow-up — CasaFolino</field>
+        <field name="body">Gentile {partner_name},
+
+Mi permetto di ricontattarLa a seguito del nostro recente scambio.
+
+Volevo verificare se avesse avuto modo di valutare la nostra proposta e se possiamo assisterLa con ulteriori informazioni o un campione mirato.
+
+Rimango a disposizione per una call o un incontro nei prossimi giorni.
+
+Cordiali saluti,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_followup_en" model="casafolino.mail.snippet">
+        <field name="name">Follow-up after contact</field>
+        <field name="code">follow_up_contact</field>
+        <field name="category">follow_up</field>
+        <field name="language">en</field>
+        <field name="subject">Follow-up — CasaFolino</field>
+        <field name="body">Dear {partner_name},
+
+I am following up on our recent exchange.
+
+I wanted to check whether you had the chance to review our proposal and if we can assist with any additional information or a targeted sample.
+
+I am available for a call or meeting in the coming days.
+
+Best regards,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_followup_de" model="casafolino.mail.snippet">
+        <field name="name">Follow-up nach Kontakt</field>
+        <field name="code">follow_up_contact</field>
+        <field name="category">follow_up</field>
+        <field name="language">de</field>
+        <field name="subject">Follow-up — CasaFolino</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Ich erlaube mir, an unseren kuerzlichen Austausch anzuknuepfen.
+
+Ich wollte nachfragen, ob Sie Gelegenheit hatten, unser Angebot zu pruefen, und ob wir Ihnen mit weiteren Informationen oder einem gezielten Muster behilflich sein koennen.
+
+Gerne stehe ich fuer ein Gespraech oder ein Treffen in den naechsten Tagen zur Verfuegung.
+
+Mit freundlichen Gruessen,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         RINGRAZIAMENTO
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_thanks_it" model="casafolino.mail.snippet">
+        <field name="name">Ringraziamento post ordine</field>
+        <field name="code">thanks_order</field>
+        <field name="category">ringraziamento</field>
+        <field name="language">it</field>
+        <field name="subject">Grazie per l'ordine — CasaFolino</field>
+        <field name="body">Gentile {partner_name},
+
+La ringrazio per la fiducia accordata a {our_name} con questo ordine.
+
+Il nostro team sta preparando la spedizione e La terremo aggiornata sullo stato di avanzamento. La conferma di spedizione Le arrivera non appena la merce sara pronta.
+
+Per qualsiasi necessita, non esiti a contattarci.
+
+Con gratitudine,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_thanks_en" model="casafolino.mail.snippet">
+        <field name="name">Thank you post order</field>
+        <field name="code">thanks_order</field>
+        <field name="category">ringraziamento</field>
+        <field name="language">en</field>
+        <field name="subject">Thank you for your order — CasaFolino</field>
+        <field name="body">Dear {partner_name},
+
+Thank you for placing your trust in {our_name} with this order.
+
+Our team is preparing the shipment and we will keep you updated on progress. You will receive a shipping confirmation as soon as the goods are ready.
+
+Please do not hesitate to reach out if you need anything.
+
+With gratitude,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_thanks_de" model="casafolino.mail.snippet">
+        <field name="name">Dankeschoen nach Bestellung</field>
+        <field name="code">thanks_order</field>
+        <field name="category">ringraziamento</field>
+        <field name="language">de</field>
+        <field name="subject">Vielen Dank fuer Ihre Bestellung — CasaFolino</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Wir bedanken uns herzlich fuer Ihr Vertrauen in {our_name} mit dieser Bestellung.
+
+Unser Team bereitet den Versand vor und wir halten Sie ueber den Fortschritt auf dem Laufenden. Die Versandbestaetigung erhalten Sie, sobald die Ware bereit ist.
+
+Fuer Rueckfragen stehen wir jederzeit gerne zur Verfuegung.
+
+Mit freundlichen Gruessen,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         DOCUMENTI RICHIESTI
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_docs_it" model="casafolino.mail.snippet">
+        <field name="name">Richiesta documenti mancanti</field>
+        <field name="code">docs_request</field>
+        <field name="category">documenti</field>
+        <field name="language">it</field>
+        <field name="subject">Re: Documentazione richiesta</field>
+        <field name="body">Gentile {partner_name},
+
+Per procedere con la Sua richiesta, avremmo bisogno della seguente documentazione:
+
+- Scheda anagrafica azienda (ragione sociale, P.IVA, indirizzo)
+- Referente acquisti (nome, email, telefono)
+- Eventuali requisiti specifici del Vostro mercato (etichettatura, certificazioni)
+
+Appena ricevuto, procederemo con la quotazione personalizzata.
+
+Grazie per la collaborazione,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_docs_en" model="casafolino.mail.snippet">
+        <field name="name">Missing documents request</field>
+        <field name="code">docs_request</field>
+        <field name="category">documenti</field>
+        <field name="language">en</field>
+        <field name="subject">Re: Documentation required</field>
+        <field name="body">Dear {partner_name},
+
+In order to proceed with your request, we would need the following documentation:
+
+- Company details (legal name, VAT number, address)
+- Purchasing contact (name, email, phone)
+- Any specific requirements for your market (labelling, certifications)
+
+Once received, we will prepare a customised quotation.
+
+Thank you for your cooperation,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_docs_de" model="casafolino.mail.snippet">
+        <field name="name">Fehlende Dokumente anfordern</field>
+        <field name="code">docs_request</field>
+        <field name="category">documenti</field>
+        <field name="language">de</field>
+        <field name="subject">Re: Erforderliche Dokumentation</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Um mit Ihrer Anfrage fortfahren zu koennen, benoetigen wir folgende Unterlagen:
+
+- Firmendaten (Firmenname, USt-IdNr., Adresse)
+- Einkaufskontakt (Name, E-Mail, Telefon)
+- Eventuelle marktspezifische Anforderungen (Etikettierung, Zertifizierungen)
+
+Nach Erhalt erstellen wir Ihnen ein individuelles Angebot.
+
+Vielen Dank fuer Ihre Zusammenarbeit,
+{my_signature}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         ALTRO (follow-up silenzio)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="snippet_silence_it" model="casafolino.mail.snippet">
+        <field name="name">Follow-up silenzio partner</field>
+        <field name="code">silence_followup</field>
+        <field name="category">altro</field>
+        <field name="language">it</field>
+        <field name="subject">Ci fa piacere restare in contatto — CasaFolino</field>
+        <field name="body">Gentile {partner_name},
+
+Non avendo Suo riscontro da qualche settimana, volevo assicurarmi che tutto procedesse bene.
+
+Se ci sono novita o se possiamo supportarLa in qualsiasi modo, saremo lieti di sentirLa. Alleghiamo il nostro catalogo aggiornato nel caso volesse valutare nuove referenze.
+
+Un caro saluto,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_silence_en" model="casafolino.mail.snippet">
+        <field name="name">Silence follow-up</field>
+        <field name="code">silence_followup</field>
+        <field name="category">altro</field>
+        <field name="language">en</field>
+        <field name="subject">Keeping in touch — CasaFolino</field>
+        <field name="body">Dear {partner_name},
+
+As we have not heard from you in a while, I wanted to make sure everything is going well on your end.
+
+Should there be any news or if we can support you in any way, we would be happy to hear from you. We are attaching our updated catalogue in case you would like to explore new references.
+
+Warm regards,
+{my_signature}</field>
+    </record>
+
+    <record id="snippet_silence_de" model="casafolino.mail.snippet">
+        <field name="name">Nachfassen bei Stille</field>
+        <field name="code">silence_followup</field>
+        <field name="category">altro</field>
+        <field name="language">de</field>
+        <field name="subject">Wir bleiben gerne in Kontakt — CasaFolino</field>
+        <field name="body">Sehr geehrte/r {partner_name},
+
+Da wir seit einiger Zeit nichts von Ihnen gehoert haben, wollte ich mich vergewissern, dass bei Ihnen alles gut laeuft.
+
+Sollte es Neuigkeiten geben oder wir Sie in irgendeiner Weise unterstuetzen koennen, wuerden wir uns freuen, von Ihnen zu hoeren. Anbei unser aktualisierter Katalog, falls Sie neue Produkte entdecken moechten.
+
+Herzliche Gruesse,
+{my_signature}</field>
+    </record>
+
+</data>
+</odoo>

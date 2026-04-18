@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ SEARCH VIEW ══════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_snippet_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.search</field>
+        <field name="model">casafolino.mail.snippet</field>
+        <field name="arch" type="xml">
+            <search string="Snippet">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="body"/>
+                <filter name="active" string="Attivi" domain="[('active', '=', True)]"/>
+                <filter name="most_used" string="Più usati" domain="[('usage_count', '>', 0)]"/>
+                <separator/>
+                <filter name="cat_listino" string="Listino" domain="[('category', '=', 'listino')]"/>
+                <filter name="cat_campioni" string="Campioni" domain="[('category', '=', 'campioni')]"/>
+                <filter name="cat_moq" string="MOQ" domain="[('category', '=', 'moq')]"/>
+                <filter name="cat_cert" string="Certificazioni" domain="[('category', '=', 'certificazioni')]"/>
+                <filter name="cat_follow" string="Follow-up" domain="[('category', '=', 'follow_up')]"/>
+                <separator/>
+                <filter name="lang_it" string="IT" domain="[('language', '=', 'it')]"/>
+                <filter name="lang_en" string="EN" domain="[('language', '=', 'en')]"/>
+                <filter name="lang_de" string="DE" domain="[('language', '=', 'de')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_cat" string="Categoria" context="{'group_by': 'category'}"/>
+                    <filter name="group_lang" string="Lingua" context="{'group_by': 'language'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══ LIST VIEW ═════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_snippet_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.list</field>
+        <field name="model">casafolino.mail.snippet</field>
+        <field name="arch" type="xml">
+            <list string="Snippet Library">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category" widget="badge"/>
+                <field name="language" widget="badge"/>
+                <field name="subject" optional="show"/>
+                <field name="last_used" string="Ultimo uso"/>
+                <field name="usage_count" string="# Usi"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ FORM VIEW ═════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_snippet_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.form</field>
+        <field name="model">casafolino.mail.snippet</field>
+        <field name="arch" type="xml">
+            <form string="Snippet">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Titolo snippet"/></h1>
+                    </div>
+                    <group>
+                        <group string="Identificazione">
+                            <field name="code"/>
+                            <field name="category"/>
+                            <field name="language"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Statistiche">
+                            <field name="usage_count"/>
+                            <field name="last_used"/>
+                        </group>
+                    </group>
+                    <group string="Oggetto email suggerito">
+                        <field name="subject" nolabel="1"
+                               placeholder="Es: Re: Richiesta listino CasaFolino"/>
+                    </group>
+                    <group string="Testo snippet">
+                        <field name="body" nolabel="1" widget="text"
+                               placeholder="Usa {partner_name}, {partner_company}, {our_name}, {my_name}, {my_signature} come placeholder"/>
+                    </group>
+                    <group string="Note interne">
+                        <field name="notes" nolabel="1"
+                               placeholder="Quando usare questo snippet, contesto, ecc."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ ACTION ═════════════════════════════════════════════════════ -->
+
+    <record id="action_casafolino_mail_snippet" model="ir.actions.act_window">
+        <field name="name">Snippet Library</field>
+        <field name="res_model">casafolino.mail.snippet</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_snippet_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+</odoo>

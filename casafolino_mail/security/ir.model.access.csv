@@ -18,3 +18,6 @@ access_casafolino_mail_orphan_partner_user,casafolino.mail.orphan.partner user,m
 access_casafolino_mail_orphan_partner_admin,casafolino.mail.orphan.partner admin,model_casafolino_mail_orphan_partner,base.group_system,1,0,0,0
 access_casafolino_mail_lead_score_user,casafolino.mail.lead.score user,model_casafolino_mail_lead_score,base.group_user,1,0,0,0
 access_casafolino_mail_lead_score_admin,casafolino.mail.lead.score admin,model_casafolino_mail_lead_score,base.group_system,1,0,0,0
+access_casafolino_mail_snippet_user,casafolino.mail.snippet user,model_casafolino_mail_snippet,base.group_user,1,1,1,1
+access_casafolino_mail_snippet_admin,casafolino.mail.snippet admin,model_casafolino_mail_snippet,base.group_system,1,1,1,1
+access_casafolino_mail_snippet_picker_user,casafolino.mail.snippet.picker user,model_casafolino_mail_snippet_picker,base.group_user,1,1,1,1
