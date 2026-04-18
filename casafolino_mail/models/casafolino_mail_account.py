@@ -1,6 +1,7 @@
 import email
 import imaplib
 import logging
+from datetime import timezone
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 
@@ -287,10 +288,12 @@ class CasafolinoMailAccount(models.Model):
                 # Estrai oggetto
                 subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
 
-                # Estrai data
+                # Estrai data — Odoo richiede datetime naive UTC
                 date_str = msg.get('Date', '')
                 try:
                     email_date = parsedate_to_datetime(date_str)
+                    if email_date.tzinfo is not None:
+                        email_date = email_date.astimezone(timezone.utc).replace(tzinfo=None)
                 except Exception:
                     email_date = fields.Datetime.now()
 
