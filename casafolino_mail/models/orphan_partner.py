@@ -31,11 +31,38 @@ class CasafolinoMailOrphanPartner(models.Model):
         ('cold', 'Cold'),
     ], string='Priorità', readonly=True)
 
-    # ── Virtual triage fields ────────────────────────────────────────
-    is_triaged = fields.Boolean('Triaged', compute='_compute_triage_info')
-    triage_decision = fields.Char('Decisione', compute='_compute_triage_info')
-    last_email_subject = fields.Char('Ultimo oggetto', compute='_compute_last_email')
-    last_email_body_preview = fields.Text('Anteprima email', compute='_compute_last_email')
+    # ── Virtual triage fields (store=False obbligatorio su SQL view) ──
+    is_triaged = fields.Boolean(
+        'Triaged', compute='_compute_triage_info',
+        store=False, readonly=True, search='_search_is_triaged')
+    triage_decision = fields.Char(
+        'Decisione', compute='_compute_triage_info',
+        store=False, readonly=True, search='_search_triage_decision')
+    last_email_subject = fields.Char(
+        'Ultimo oggetto', compute='_compute_last_email',
+        store=False, readonly=True)
+    last_email_body_preview = fields.Text(
+        'Anteprima email', compute='_compute_last_email',
+        store=False, readonly=True)
+
+    def _search_is_triaged(self, operator, value):
+        """Search su campo compute: filtra orfani triaged/non triaged."""
+        triaged_partner_ids = self.env['casafolino.mail.sender.decision'].search([
+            ('active', '=', True)
+        ]).mapped('partner_id').ids
+        # Normalizza: is_triaged = True  →  partner_id in triaged
+        #             is_triaged = False →  partner_id not in triaged
+        if (operator == '=' and value) or (operator == '!=' and not value):
+            return [('partner_id', 'in', triaged_partner_ids)]
+        return [('partner_id', 'not in', triaged_partner_ids)]
+
+    def _search_triage_decision(self, operator, value):
+        """Search su campo compute: filtra per tipo decisione."""
+        domain = [('active', '=', True)]
+        if value:
+            domain.append(('decision', operator, value))
+        decisions = self.env['casafolino.mail.sender.decision'].search(domain)
+        return [('partner_id', 'in', decisions.mapped('partner_id').ids)]
 
     def _compute_triage_info(self):
         Decision = self.env['casafolino.mail.sender.decision']
