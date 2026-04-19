@@ -20,11 +20,11 @@
 <tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <!-- HEADER -->
+    <!-- HEADER MARRONE CON LOGO -->
     <tr>
-        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
-            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
-            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        <td style="background:#8B4513; padding:22px 32px; text-align:center;">
+            <img t-att-src="'/logo.png?company=%s' % object.company_id.id" alt="CasaFolino" style="max-height:60px; margin-bottom:8px;"/>
+            <p style="margin:4px 0 0; color:#E8D5B7; font-size:10px; letter-spacing:3px; text-transform:uppercase;">ITALIAN FOOD EXCELLENCE</p>
         </td>
     </tr>
 
@@ -45,7 +45,7 @@
                 </t>.
             </p>
 
-            <!-- Order summary box -->
+            <!-- RIEPILOGO ORDINE COMPLETO -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px;">
@@ -56,51 +56,57 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px; color:#666;">Data:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.date_order)"/></td>
                             </tr>
                             <t t-if="object.validity_date">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Validita:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.validity_date.strftime('%d/%m/%Y')"/></td>
+                                <td style="font-size:13px; color:#666;">Validità offerta:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.validity_date)"/></td>
                             </tr>
                             </t>
-                            <t t-if="object.payment_term_id">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Termini di pagamento:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name if object.payment_term_id else 'Bonifico 30 gg data fattura'"/></td>
                             </tr>
-                            </t>
-                            <t t-if="object.incoterm">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Incoterm:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                                <td style="font-size:13px; color:#666;">Totale:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></td>
                             </tr>
-                            </t>
                         </table>
                     </td>
                 </tr>
             </table>
 
-            <!-- IBAN box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+            <!-- BOX COORDINATE BANCARIE — LOOP BANK_IDS ATTIVI -->
+            <t t-set="active_banks" t-value="object.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+            <t t-if="active_banks">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6f1; border-left:3px solid #8B4513; border-radius:4px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:16px 20px;">
-                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Coordinate bancarie</p>
-                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
-                        <t t-if="bank_account">
-                            <p style="margin:0; font-size:14px; color:#333;">
-                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
-                            </p>
-                            <t t-if="bank_account.bank_id">
-                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
-                                <t t-out="bank_account.bank_id.name"/>
-                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
-                            </p>
+                        <p style="margin:0 0 12px; font-size:12px; color:#8B4513; text-transform:uppercase; letter-spacing:1px; font-weight:600;">COORDINATE BANCARIE</p>
+                        <t t-foreach="active_banks" t-as="bank">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:4px 0;">
+                                        <p style="margin:0; font-size:13px; color:#555; font-weight:600;"><t t-out="bank.bank_id.name or bank.bank_name or ''"/></p>
+                                        <p style="margin:2px 0 0; font-size:14px; color:#333;"><strong>IBAN:</strong> <t t-out="bank.acc_number"/></p>
+                                        <t t-if="bank.bank_id.bic">
+                                        <p style="margin:2px 0 0; font-size:13px; color:#555;">BIC: <t t-out="bank.bank_id.bic"/></p>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                            <t t-if="not bank_last">
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-bottom:1px dashed #d9cdb8; padding:6px 0;"></td></tr></table>
                             </t>
                         </t>
+                        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e8ddd0; padding-top:10px; margin-top:8px;">
+                            <p style="margin:0; font-size:12px; color:#666;">Incoterm: EXW Lamezia Terme (CZ), Italia</p>
+                        </td></tr></table>
                     </td>
                 </tr>
             </table>
+            </t>
 
             <!-- Terms link -->
             <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
@@ -114,7 +120,7 @@
                 <tr>
                     <td align="center">
                         <a t-att-href="object.get_portal_url()"
-                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:12px 28px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
                             Visualizza Preventivo
                         </a>
                     </td>
@@ -125,46 +131,61 @@
                 Per qualsiasi informazione non esiti a contattarci.
             </p>
 
-            <!-- Dynamic signature -->
+            <!-- FIRMA DINAMICA DA USER_ID -->
+            <t t-if="object.user_id">
             <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:top;">
-                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">
                             <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
-                        </div>
+                        </td></tr></table>
                     </td>
                     <td style="vertical-align:top;">
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
-                            <t t-out="object.user_id.name or 'Ufficio Commerciale'"/>
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">
+                            <t t-out="object.user_id.name"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            <t t-out="object.user_id.job_title or 'Ufficio Commerciale'"/>
+                        <p style="margin:2px 0 0; font-size:13px; color:#888;">
+                            <t t-out="object.user_id.function or 'Managing Partner'"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
-                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a t-att-href="'mailto:' + (object.user_id.email or '')" style="color:#8B4513; text-decoration:none;"><t t-out="object.user_id.email or ''"/></a>
+                            <t t-if="object.user_id.phone or object.user_id.mobile">
+                                <span style="color:#888;"> — </span>
+                                <span style="color:#555;"><t t-out="object.user_id.phone or object.user_id.mobile"/></span>
+                            </t>
                         </p>
-                        <t t-if="object.user_id.phone">
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            Tel: <t t-out="object.user_id.phone"/>
-                        </p>
-                        </t>
                     </td>
                 </tr>
             </table>
+            </t>
+            <t t-if="not object.user_id">
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">C</td></tr></table>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">Team CasaFolino</p>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a href="mailto:commerciale@casafolino.com" style="color:#8B4513; text-decoration:none;">commerciale@casafolino.com</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            </t>
 
         </td>
     </tr>
 
-    <!-- FOOTER -->
+    <!-- FOOTER BEIGE -->
     <tr>
-        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
-            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
-            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
-            <p style="margin:0; font-size:11px; color:#a08060;">
-                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
-                  |
-                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+        <td style="background:#f4f1ec; padding:18px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#333; font-weight:700;">CasaFolino SRL Società Benefit</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#666;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
+            <p style="margin:0 0 6px; font-size:11px;">
+                <a href="https://www.casafolino.com" style="color:#8B4513; text-decoration:none;">casafolino.com</a>
             </p>
+            <p style="margin:0; font-size:11px; color:#888; font-style:italic;">Artigianalità italiana dal 1962</p>
         </td>
     </tr>
 
@@ -195,11 +216,11 @@
 <tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <!-- HEADER -->
+    <!-- HEADER MARRONE CON LOGO -->
     <tr>
-        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
-            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
-            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        <td style="background:#8B4513; padding:22px 32px; text-align:center;">
+            <img t-att-src="'/logo.png?company=%s' % object.company_id.id" alt="CasaFolino" style="max-height:60px; margin-bottom:8px;"/>
+            <p style="margin:4px 0 0; color:#E8D5B7; font-size:10px; letter-spacing:3px; text-transform:uppercase;">ITALIAN FOOD EXCELLENCE</p>
         </td>
     </tr>
 
@@ -225,10 +246,10 @@
                     per un importo di
                     <strong style="color:#8B4513;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></strong>
                 </t>
-                e stato confermato e preso in carico.
+                è stato confermato e preso in carico.
             </p>
 
-            <!-- Order summary box -->
+            <!-- RIEPILOGO ORDINE COMPLETO -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px;">
@@ -239,24 +260,20 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px; color:#666;">Data conferma:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.date_order)"/></td>
                             </tr>
-                            <t t-if="object.payment_term_id">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Termini di pagamento:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name if object.payment_term_id else 'Bonifico 30 gg data fattura'"/></td>
                             </tr>
-                            </t>
-                            <t t-if="object.incoterm">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Incoterm:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                                <td style="font-size:13px; color:#666;">Totale:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></td>
                             </tr>
-                            </t>
                             <t t-if="object.commitment_date">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Data consegna prevista:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.commitment_date.strftime('%d/%m/%Y')"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.commitment_date)"/></td>
                             </tr>
                             </t>
                         </table>
@@ -264,30 +281,40 @@
                 </tr>
             </table>
 
-            <!-- IBAN box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+            <!-- BOX COORDINATE BANCARIE — LOOP BANK_IDS ATTIVI -->
+            <t t-set="active_banks" t-value="object.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+            <t t-if="active_banks">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6f1; border-left:3px solid #8B4513; border-radius:4px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:16px 20px;">
-                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Coordinate bancarie</p>
-                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
-                        <t t-if="bank_account">
-                            <p style="margin:0; font-size:14px; color:#333;">
-                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
-                            </p>
-                            <t t-if="bank_account.bank_id">
-                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
-                                <t t-out="bank_account.bank_id.name"/>
-                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
-                            </p>
+                        <p style="margin:0 0 12px; font-size:12px; color:#8B4513; text-transform:uppercase; letter-spacing:1px; font-weight:600;">COORDINATE BANCARIE</p>
+                        <t t-foreach="active_banks" t-as="bank">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:4px 0;">
+                                        <p style="margin:0; font-size:13px; color:#555; font-weight:600;"><t t-out="bank.bank_id.name or bank.bank_name or ''"/></p>
+                                        <p style="margin:2px 0 0; font-size:14px; color:#333;"><strong>IBAN:</strong> <t t-out="bank.acc_number"/></p>
+                                        <t t-if="bank.bank_id.bic">
+                                        <p style="margin:2px 0 0; font-size:13px; color:#555;">BIC: <t t-out="bank.bank_id.bic"/></p>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                            <t t-if="not bank_last">
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-bottom:1px dashed #d9cdb8; padding:6px 0;"></td></tr></table>
                             </t>
                         </t>
+                        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e8ddd0; padding-top:10px; margin-top:8px;">
+                            <p style="margin:0; font-size:12px; color:#666;">Incoterm: EXW Lamezia Terme (CZ), Italia</p>
+                        </td></tr></table>
                     </td>
                 </tr>
             </table>
+            </t>
 
             <!-- Terms link -->
             <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
-                Si ricorda che l'ordine e soggetto alle nostre
+                Si ricorda che l'ordine è soggetto alle nostre
                 <a t-att-href="(object.company_id.sudo().env['ir.config_parameter'].get_param('casafolino.terms_url') or '#')"
                    style="color:#8B4513; text-decoration:underline;">Condizioni Generali di Vendita</a>.
             </p>
@@ -297,7 +324,7 @@
                 <tr>
                     <td align="center">
                         <a t-att-href="object.get_portal_url()"
-                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:12px 28px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
                             Visualizza Ordine
                         </a>
                     </td>
@@ -308,46 +335,61 @@
                 Per qualsiasi informazione non esiti a contattarci.
             </p>
 
-            <!-- Dynamic signature -->
+            <!-- FIRMA DINAMICA DA USER_ID -->
+            <t t-if="object.user_id">
             <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:top;">
-                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">
                             <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
-                        </div>
+                        </td></tr></table>
                     </td>
                     <td style="vertical-align:top;">
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
-                            <t t-out="object.user_id.name or 'Ufficio Commerciale'"/>
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">
+                            <t t-out="object.user_id.name"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            <t t-out="object.user_id.job_title or 'Ufficio Commerciale'"/>
+                        <p style="margin:2px 0 0; font-size:13px; color:#888;">
+                            <t t-out="object.user_id.function or 'Managing Partner'"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
-                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a t-att-href="'mailto:' + (object.user_id.email or '')" style="color:#8B4513; text-decoration:none;"><t t-out="object.user_id.email or ''"/></a>
+                            <t t-if="object.user_id.phone or object.user_id.mobile">
+                                <span style="color:#888;"> — </span>
+                                <span style="color:#555;"><t t-out="object.user_id.phone or object.user_id.mobile"/></span>
+                            </t>
                         </p>
-                        <t t-if="object.user_id.phone">
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            Tel: <t t-out="object.user_id.phone"/>
-                        </p>
-                        </t>
                     </td>
                 </tr>
             </table>
+            </t>
+            <t t-if="not object.user_id">
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">C</td></tr></table>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">Team CasaFolino</p>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a href="mailto:commerciale@casafolino.com" style="color:#8B4513; text-decoration:none;">commerciale@casafolino.com</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            </t>
 
         </td>
     </tr>
 
-    <!-- FOOTER -->
+    <!-- FOOTER BEIGE -->
     <tr>
-        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
-            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
-            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
-            <p style="margin:0; font-size:11px; color:#a08060;">
-                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
-                  |
-                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+        <td style="background:#f4f1ec; padding:18px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#333; font-weight:700;">CasaFolino SRL Società Benefit</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#666;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
+            <p style="margin:0 0 6px; font-size:11px;">
+                <a href="https://www.casafolino.com" style="color:#8B4513; text-decoration:none;">casafolino.com</a>
             </p>
+            <p style="margin:0; font-size:11px; color:#888; font-style:italic;">Artigianalità italiana dal 1962</p>
         </td>
     </tr>
 
@@ -371,11 +413,11 @@
 <tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <!-- HEADER -->
+    <!-- HEADER MARRONE CON LOGO -->
     <tr>
-        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
-            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
-            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        <td style="background:#8B4513; padding:22px 32px; text-align:center;">
+            <img t-att-src="'/logo.png?company=%s' % object.company_id.id" alt="CasaFolino" style="max-height:60px; margin-bottom:8px;"/>
+            <p style="margin:4px 0 0; color:#E8D5B7; font-size:10px; letter-spacing:3px; text-transform:uppercase;">ITALIAN FOOD EXCELLENCE</p>
         </td>
     </tr>
 
@@ -395,7 +437,7 @@
                 </t>.
             </p>
 
-            <!-- Order summary box -->
+            <!-- RIEPILOGO ORDINE COMPLETO -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px;">
@@ -406,51 +448,57 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px; color:#666;">Data:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.date_order)"/></td>
                             </tr>
                             <t t-if="object.validity_date">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Validita:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.validity_date.strftime('%d/%m/%Y')"/></td>
+                                <td style="font-size:13px; color:#666;">Validità offerta:</td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.validity_date)"/></td>
                             </tr>
                             </t>
-                            <t t-if="object.payment_term_id">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Termini di pagamento:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name if object.payment_term_id else 'Bonifico 30 gg data fattura'"/></td>
                             </tr>
-                            </t>
-                            <t t-if="object.incoterm">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Incoterm:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                                <td style="font-size:13px; color:#666;">Totale:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></td>
                             </tr>
-                            </t>
                         </table>
                     </td>
                 </tr>
             </table>
 
-            <!-- IBAN box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+            <!-- BOX COORDINATE BANCARIE — LOOP BANK_IDS ATTIVI -->
+            <t t-set="active_banks" t-value="object.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+            <t t-if="active_banks">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6f1; border-left:3px solid #8B4513; border-radius:4px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:16px 20px;">
-                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Coordinate bancarie</p>
-                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
-                        <t t-if="bank_account">
-                            <p style="margin:0; font-size:14px; color:#333;">
-                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
-                            </p>
-                            <t t-if="bank_account.bank_id">
-                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
-                                <t t-out="bank_account.bank_id.name"/>
-                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
-                            </p>
+                        <p style="margin:0 0 12px; font-size:12px; color:#8B4513; text-transform:uppercase; letter-spacing:1px; font-weight:600;">COORDINATE BANCARIE</p>
+                        <t t-foreach="active_banks" t-as="bank">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:4px 0;">
+                                        <p style="margin:0; font-size:13px; color:#555; font-weight:600;"><t t-out="bank.bank_id.name or bank.bank_name or ''"/></p>
+                                        <p style="margin:2px 0 0; font-size:14px; color:#333;"><strong>IBAN:</strong> <t t-out="bank.acc_number"/></p>
+                                        <t t-if="bank.bank_id.bic">
+                                        <p style="margin:2px 0 0; font-size:13px; color:#555;">BIC: <t t-out="bank.bank_id.bic"/></p>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                            <t t-if="not bank_last">
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-bottom:1px dashed #d9cdb8; padding:6px 0;"></td></tr></table>
                             </t>
                         </t>
+                        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e8ddd0; padding-top:10px; margin-top:8px;">
+                            <p style="margin:0; font-size:12px; color:#666;">Incoterm: EXW Lamezia Terme (CZ), Italia</p>
+                        </td></tr></table>
                     </td>
                 </tr>
             </table>
+            </t>
 
             <!-- Terms link -->
             <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
@@ -464,7 +512,7 @@
                 <tr>
                     <td align="center">
                         <a t-att-href="object.get_portal_url()"
-                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:12px 28px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
                             Visualizza Preventivo
                         </a>
                     </td>
@@ -475,46 +523,61 @@
                 Per qualsiasi informazione non esiti a contattarci.
             </p>
 
-            <!-- Dynamic signature -->
+            <!-- FIRMA DINAMICA DA USER_ID -->
+            <t t-if="object.user_id">
             <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:top;">
-                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">
                             <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
-                        </div>
+                        </td></tr></table>
                     </td>
                     <td style="vertical-align:top;">
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
-                            <t t-out="object.user_id.name or 'Ufficio Commerciale'"/>
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">
+                            <t t-out="object.user_id.name"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            <t t-out="object.user_id.job_title or 'Ufficio Commerciale'"/>
+                        <p style="margin:2px 0 0; font-size:13px; color:#888;">
+                            <t t-out="object.user_id.function or 'Managing Partner'"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
-                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a t-att-href="'mailto:' + (object.user_id.email or '')" style="color:#8B4513; text-decoration:none;"><t t-out="object.user_id.email or ''"/></a>
+                            <t t-if="object.user_id.phone or object.user_id.mobile">
+                                <span style="color:#888;"> — </span>
+                                <span style="color:#555;"><t t-out="object.user_id.phone or object.user_id.mobile"/></span>
+                            </t>
                         </p>
-                        <t t-if="object.user_id.phone">
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            Tel: <t t-out="object.user_id.phone"/>
-                        </p>
-                        </t>
                     </td>
                 </tr>
             </table>
+            </t>
+            <t t-if="not object.user_id">
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">C</td></tr></table>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">Team CasaFolino</p>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a href="mailto:commerciale@casafolino.com" style="color:#8B4513; text-decoration:none;">commerciale@casafolino.com</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            </t>
 
         </td>
     </tr>
 
-    <!-- FOOTER -->
+    <!-- FOOTER BEIGE -->
     <tr>
-        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
-            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
-            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
-            <p style="margin:0; font-size:11px; color:#a08060;">
-                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
-                  |
-                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+        <td style="background:#f4f1ec; padding:18px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#333; font-weight:700;">CasaFolino SRL Società Benefit</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#666;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
+            <p style="margin:0 0 6px; font-size:11px;">
+                <a href="https://www.casafolino.com" style="color:#8B4513; text-decoration:none;">casafolino.com</a>
             </p>
+            <p style="margin:0; font-size:11px; color:#888; font-style:italic;">Artigianalità italiana dal 1962</p>
         </td>
     </tr>
 
@@ -534,11 +597,11 @@
 <tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <!-- HEADER -->
+    <!-- HEADER MARRONE CON LOGO -->
     <tr>
-        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
-            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
-            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        <td style="background:#8B4513; padding:22px 32px; text-align:center;">
+            <img t-att-src="'/logo.png?company=%s' % object.company_id.id" alt="CasaFolino" style="max-height:60px; margin-bottom:8px;"/>
+            <p style="margin:4px 0 0; color:#E8D5B7; font-size:10px; letter-spacing:3px; text-transform:uppercase;">ITALIAN FOOD EXCELLENCE</p>
         </td>
     </tr>
 
@@ -563,10 +626,10 @@
                     per un importo di
                     <strong style="color:#8B4513;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></strong>
                 </t>
-                e stato confermato e preso in carico.
+                è stato confermato e preso in carico.
             </p>
 
-            <!-- Order summary box -->
+            <!-- RIEPILOGO ORDINE COMPLETO -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px;">
@@ -577,24 +640,20 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px; color:#666;">Data conferma:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.date_order)"/></td>
                             </tr>
-                            <t t-if="object.payment_term_id">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Termini di pagamento:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name if object.payment_term_id else 'Bonifico 30 gg data fattura'"/></td>
                             </tr>
-                            </t>
-                            <t t-if="object.incoterm">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Incoterm:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                                <td style="font-size:13px; color:#666;">Totale:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></td>
                             </tr>
-                            </t>
                             <t t-if="object.commitment_date">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Data consegna prevista:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.commitment_date.strftime('%d/%m/%Y')"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.commitment_date)"/></td>
                             </tr>
                             </t>
                         </table>
@@ -602,30 +661,40 @@
                 </tr>
             </table>
 
-            <!-- IBAN box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+            <!-- BOX COORDINATE BANCARIE — LOOP BANK_IDS ATTIVI -->
+            <t t-set="active_banks" t-value="object.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+            <t t-if="active_banks">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6f1; border-left:3px solid #8B4513; border-radius:4px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:16px 20px;">
-                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Coordinate bancarie</p>
-                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
-                        <t t-if="bank_account">
-                            <p style="margin:0; font-size:14px; color:#333;">
-                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
-                            </p>
-                            <t t-if="bank_account.bank_id">
-                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
-                                <t t-out="bank_account.bank_id.name"/>
-                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
-                            </p>
+                        <p style="margin:0 0 12px; font-size:12px; color:#8B4513; text-transform:uppercase; letter-spacing:1px; font-weight:600;">COORDINATE BANCARIE</p>
+                        <t t-foreach="active_banks" t-as="bank">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:4px 0;">
+                                        <p style="margin:0; font-size:13px; color:#555; font-weight:600;"><t t-out="bank.bank_id.name or bank.bank_name or ''"/></p>
+                                        <p style="margin:2px 0 0; font-size:14px; color:#333;"><strong>IBAN:</strong> <t t-out="bank.acc_number"/></p>
+                                        <t t-if="bank.bank_id.bic">
+                                        <p style="margin:2px 0 0; font-size:13px; color:#555;">BIC: <t t-out="bank.bank_id.bic"/></p>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                            <t t-if="not bank_last">
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-bottom:1px dashed #d9cdb8; padding:6px 0;"></td></tr></table>
                             </t>
                         </t>
+                        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e8ddd0; padding-top:10px; margin-top:8px;">
+                            <p style="margin:0; font-size:12px; color:#666;">Incoterm: EXW Lamezia Terme (CZ), Italia</p>
+                        </td></tr></table>
                     </td>
                 </tr>
             </table>
+            </t>
 
             <!-- Terms link -->
             <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
-                Si ricorda che l'ordine e soggetto alle nostre
+                Si ricorda che l'ordine è soggetto alle nostre
                 <a t-att-href="(object.company_id.sudo().env['ir.config_parameter'].get_param('casafolino.terms_url') or '#')"
                    style="color:#8B4513; text-decoration:underline;">Condizioni Generali di Vendita</a>.
             </p>
@@ -635,7 +704,7 @@
                 <tr>
                     <td align="center">
                         <a t-att-href="object.get_portal_url()"
-                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:12px 28px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
                             Visualizza Ordine
                         </a>
                     </td>
@@ -646,46 +715,61 @@
                 Per qualsiasi informazione non esiti a contattarci.
             </p>
 
-            <!-- Dynamic signature -->
+            <!-- FIRMA DINAMICA DA USER_ID -->
+            <t t-if="object.user_id">
             <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:top;">
-                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">
                             <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
-                        </div>
+                        </td></tr></table>
                     </td>
                     <td style="vertical-align:top;">
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
-                            <t t-out="object.user_id.name or 'Ufficio Commerciale'"/>
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">
+                            <t t-out="object.user_id.name"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            <t t-out="object.user_id.job_title or 'Ufficio Commerciale'"/>
+                        <p style="margin:2px 0 0; font-size:13px; color:#888;">
+                            <t t-out="object.user_id.function or 'Managing Partner'"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
-                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a t-att-href="'mailto:' + (object.user_id.email or '')" style="color:#8B4513; text-decoration:none;"><t t-out="object.user_id.email or ''"/></a>
+                            <t t-if="object.user_id.phone or object.user_id.mobile">
+                                <span style="color:#888;"> — </span>
+                                <span style="color:#555;"><t t-out="object.user_id.phone or object.user_id.mobile"/></span>
+                            </t>
                         </p>
-                        <t t-if="object.user_id.phone">
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            Tel: <t t-out="object.user_id.phone"/>
-                        </p>
-                        </t>
                     </td>
                 </tr>
             </table>
+            </t>
+            <t t-if="not object.user_id">
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">C</td></tr></table>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">Team CasaFolino</p>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a href="mailto:commerciale@casafolino.com" style="color:#8B4513; text-decoration:none;">commerciale@casafolino.com</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            </t>
 
         </td>
     </tr>
 
-    <!-- FOOTER -->
+    <!-- FOOTER BEIGE -->
     <tr>
-        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
-            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
-            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
-            <p style="margin:0; font-size:11px; color:#a08060;">
-                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
-                  |
-                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+        <td style="background:#f4f1ec; padding:18px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#333; font-weight:700;">CasaFolino SRL Società Benefit</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#666;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italia</p>
+            <p style="margin:0 0 6px; font-size:11px;">
+                <a href="https://www.casafolino.com" style="color:#8B4513; text-decoration:none;">casafolino.com</a>
             </p>
+            <p style="margin:0; font-size:11px; color:#888; font-style:italic;">Artigianalità italiana dal 1962</p>
         </td>
     </tr>
 
@@ -709,11 +793,11 @@
 <tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <!-- HEADER -->
+    <!-- HEADER WITH LOGO -->
     <tr>
-        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
-            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
-            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        <td style="background:#8B4513; padding:22px 32px; text-align:center;">
+            <img t-att-src="'/logo.png?company=%s' % object.company_id.id" alt="CasaFolino" style="max-height:60px; margin-bottom:8px;"/>
+            <p style="margin:4px 0 0; color:#E8D5B7; font-size:10px; letter-spacing:3px; text-transform:uppercase;">ITALIAN FOOD EXCELLENCE</p>
         </td>
     </tr>
 
@@ -733,7 +817,7 @@
                 </t>.
             </p>
 
-            <!-- Order summary box -->
+            <!-- ORDER SUMMARY -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px;">
@@ -744,51 +828,57 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px; color:#666;">Date:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.date_order)"/></td>
                             </tr>
                             <t t-if="object.validity_date">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Valid until:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.validity_date.strftime('%d/%m/%Y')"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.validity_date)"/></td>
                             </tr>
                             </t>
-                            <t t-if="object.payment_term_id">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Payment terms:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name if object.payment_term_id else 'Bank transfer 30 days from invoice date'"/></td>
                             </tr>
-                            </t>
-                            <t t-if="object.incoterm">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Incoterm:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                                <td style="font-size:13px; color:#666;">Total:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></td>
                             </tr>
-                            </t>
                         </table>
                     </td>
                 </tr>
             </table>
 
-            <!-- IBAN box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+            <!-- BANK DETAILS — LOOP ACTIVE BANK_IDS -->
+            <t t-set="active_banks" t-value="object.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+            <t t-if="active_banks">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6f1; border-left:3px solid #8B4513; border-radius:4px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:16px 20px;">
-                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Bank details</p>
-                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
-                        <t t-if="bank_account">
-                            <p style="margin:0; font-size:14px; color:#333;">
-                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
-                            </p>
-                            <t t-if="bank_account.bank_id">
-                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
-                                <t t-out="bank_account.bank_id.name"/>
-                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
-                            </p>
+                        <p style="margin:0 0 12px; font-size:12px; color:#8B4513; text-transform:uppercase; letter-spacing:1px; font-weight:600;">BANK DETAILS</p>
+                        <t t-foreach="active_banks" t-as="bank">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:4px 0;">
+                                        <p style="margin:0; font-size:13px; color:#555; font-weight:600;"><t t-out="bank.bank_id.name or bank.bank_name or ''"/></p>
+                                        <p style="margin:2px 0 0; font-size:14px; color:#333;"><strong>IBAN:</strong> <t t-out="bank.acc_number"/></p>
+                                        <t t-if="bank.bank_id.bic">
+                                        <p style="margin:2px 0 0; font-size:13px; color:#555;">BIC: <t t-out="bank.bank_id.bic"/></p>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                            <t t-if="not bank_last">
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-bottom:1px dashed #d9cdb8; padding:6px 0;"></td></tr></table>
                             </t>
                         </t>
+                        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e8ddd0; padding-top:10px; margin-top:8px;">
+                            <p style="margin:0; font-size:12px; color:#666;">Incoterm: EXW Lamezia Terme (CZ), Italy</p>
+                        </td></tr></table>
                     </td>
                 </tr>
             </table>
+            </t>
 
             <!-- Terms link -->
             <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
@@ -802,7 +892,7 @@
                 <tr>
                     <td align="center">
                         <a t-att-href="object.get_portal_url()"
-                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:12px 28px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
                             View Quotation
                         </a>
                     </td>
@@ -813,46 +903,61 @@
                 Should you have any questions, please do not hesitate to contact us.
             </p>
 
-            <!-- Dynamic signature -->
+            <!-- DYNAMIC SIGNATURE -->
+            <t t-if="object.user_id">
             <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:top;">
-                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">
                             <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
-                        </div>
+                        </td></tr></table>
                     </td>
                     <td style="vertical-align:top;">
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
-                            <t t-out="object.user_id.name or 'Sales Department'"/>
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">
+                            <t t-out="object.user_id.name"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            <t t-out="object.user_id.job_title or 'Sales Department'"/>
+                        <p style="margin:2px 0 0; font-size:13px; color:#888;">
+                            <t t-out="object.user_id.function or 'Managing Partner'"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
-                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a t-att-href="'mailto:' + (object.user_id.email or '')" style="color:#8B4513; text-decoration:none;"><t t-out="object.user_id.email or ''"/></a>
+                            <t t-if="object.user_id.phone or object.user_id.mobile">
+                                <span style="color:#888;"> — </span>
+                                <span style="color:#555;"><t t-out="object.user_id.phone or object.user_id.mobile"/></span>
+                            </t>
                         </p>
-                        <t t-if="object.user_id.phone">
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            Phone: <t t-out="object.user_id.phone"/>
-                        </p>
-                        </t>
                     </td>
                 </tr>
             </table>
+            </t>
+            <t t-if="not object.user_id">
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">C</td></tr></table>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">Team CasaFolino</p>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a href="mailto:commerciale@casafolino.com" style="color:#8B4513; text-decoration:none;">commerciale@casafolino.com</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            </t>
 
         </td>
     </tr>
 
     <!-- FOOTER -->
     <tr>
-        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
-            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
-            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italy</p>
-            <p style="margin:0; font-size:11px; color:#a08060;">
-                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
-                  |
-                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+        <td style="background:#f4f1ec; padding:18px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#333; font-weight:700;">CasaFolino SRL Società Benefit</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#666;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italy</p>
+            <p style="margin:0 0 6px; font-size:11px;">
+                <a href="https://www.casafolino.com" style="color:#8B4513; text-decoration:none;">casafolino.com</a>
             </p>
+            <p style="margin:0; font-size:11px; color:#888; font-style:italic;">Italian craftsmanship since 1962</p>
         </td>
     </tr>
 
@@ -872,11 +977,11 @@
 <tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <!-- HEADER -->
+    <!-- HEADER WITH LOGO -->
     <tr>
-        <td style="background:#8B4513; padding:24px 32px; text-align:center;">
-            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:700; letter-spacing:1px;">CASAFOLINO</h1>
-            <p style="margin:4px 0 0; color:#f0dcc0; font-size:12px; letter-spacing:2px;">ITALIAN FOOD EXCELLENCE</p>
+        <td style="background:#8B4513; padding:22px 32px; text-align:center;">
+            <img t-att-src="'/logo.png?company=%s' % object.company_id.id" alt="CasaFolino" style="max-height:60px; margin-bottom:8px;"/>
+            <p style="margin:4px 0 0; color:#E8D5B7; font-size:10px; letter-spacing:3px; text-transform:uppercase;">ITALIAN FOOD EXCELLENCE</p>
         </td>
     </tr>
 
@@ -904,7 +1009,7 @@
                 has been confirmed and is being processed.
             </p>
 
-            <!-- Order summary box -->
+            <!-- ORDER SUMMARY -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf6f1; border:1px solid #e8ddd0; border-radius:6px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px;">
@@ -915,24 +1020,20 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px; color:#666;">Confirmation date:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.date_order and object.date_order.strftime('%d/%m/%Y') or ''"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.date_order)"/></td>
                             </tr>
-                            <t t-if="object.payment_term_id">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Payment terms:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="object.payment_term_id.name if object.payment_term_id else 'Bank transfer 30 days from invoice date'"/></td>
                             </tr>
-                            </t>
-                            <t t-if="object.incoterm">
                             <tr>
-                                <td style="font-size:13px; color:#666;">Incoterm:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.incoterm.code"/> - <t t-out="object.incoterm.name"/></td>
+                                <td style="font-size:13px; color:#666;">Total:</td>
+                                <td style="font-size:13px; color:#333; font-weight:600;"><t t-out="format_amount(object.amount_total, object.currency_id)"/></td>
                             </tr>
-                            </t>
                             <t t-if="object.commitment_date">
                             <tr>
                                 <td style="font-size:13px; color:#666;">Expected delivery date:</td>
-                                <td style="font-size:13px; color:#333;"><t t-out="object.commitment_date.strftime('%d/%m/%Y')"/></td>
+                                <td style="font-size:13px; color:#333;"><t t-out="format_date(object.commitment_date)"/></td>
                             </tr>
                             </t>
                         </table>
@@ -940,26 +1041,36 @@
                 </tr>
             </table>
 
-            <!-- IBAN box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ed; border:1px solid #c8dcc0; border-radius:6px; margin-bottom:24px;">
+            <!-- BANK DETAILS — LOOP ACTIVE BANK_IDS -->
+            <t t-set="active_banks" t-value="object.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+            <t t-if="active_banks">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6f1; border-left:3px solid #8B4513; border-radius:4px; margin-bottom:24px;">
                 <tr>
                     <td style="padding:16px 20px;">
-                        <p style="margin:0 0 4px; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Bank details</p>
-                        <t t-set="bank_account" t-value="object.company_id.partner_id.bank_ids[:1]"/>
-                        <t t-if="bank_account">
-                            <p style="margin:0; font-size:14px; color:#333;">
-                                <strong>IBAN:</strong> <t t-out="bank_account.acc_number"/>
-                            </p>
-                            <t t-if="bank_account.bank_id">
-                            <p style="margin:4px 0 0; font-size:13px; color:#555;">
-                                <t t-out="bank_account.bank_id.name"/>
-                                <t t-if="bank_account.bank_id.bic"> - BIC: <t t-out="bank_account.bank_id.bic"/></t>
-                            </p>
+                        <p style="margin:0 0 12px; font-size:12px; color:#8B4513; text-transform:uppercase; letter-spacing:1px; font-weight:600;">BANK DETAILS</p>
+                        <t t-foreach="active_banks" t-as="bank">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:4px 0;">
+                                        <p style="margin:0; font-size:13px; color:#555; font-weight:600;"><t t-out="bank.bank_id.name or bank.bank_name or ''"/></p>
+                                        <p style="margin:2px 0 0; font-size:14px; color:#333;"><strong>IBAN:</strong> <t t-out="bank.acc_number"/></p>
+                                        <t t-if="bank.bank_id.bic">
+                                        <p style="margin:2px 0 0; font-size:13px; color:#555;">BIC: <t t-out="bank.bank_id.bic"/></p>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                            <t t-if="not bank_last">
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-bottom:1px dashed #d9cdb8; padding:6px 0;"></td></tr></table>
                             </t>
                         </t>
+                        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #e8ddd0; padding-top:10px; margin-top:8px;">
+                            <p style="margin:0; font-size:12px; color:#666;">Incoterm: EXW Lamezia Terme (CZ), Italy</p>
+                        </td></tr></table>
                     </td>
                 </tr>
             </table>
+            </t>
 
             <!-- Terms link -->
             <p style="margin:0 0 24px; font-size:13px; color:#555; line-height:1.5;">
@@ -973,7 +1084,7 @@
                 <tr>
                     <td align="center">
                         <a t-att-href="object.get_portal_url()"
-                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:14px 36px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
+                           style="display:inline-block; background:#8B4513; color:#ffffff; padding:12px 28px; border-radius:6px; text-decoration:none; font-size:15px; font-weight:600;">
                             View Order
                         </a>
                     </td>
@@ -984,46 +1095,61 @@
                 Should you have any questions, please do not hesitate to contact us.
             </p>
 
-            <!-- Dynamic signature -->
+            <!-- DYNAMIC SIGNATURE -->
+            <t t-if="object.user_id">
             <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
                 <tr>
                     <td style="padding-right:16px; vertical-align:top;">
-                        <div style="width:48px; height:48px; background:#8B4513; border-radius:50%; text-align:center; line-height:48px; color:#fff; font-size:18px; font-weight:700;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">
                             <t t-out="(object.user_id.name or 'C')[0:1].upper()"/>
-                        </div>
+                        </td></tr></table>
                     </td>
                     <td style="vertical-align:top;">
-                        <p style="margin:0; font-size:14px; font-weight:600; color:#333;">
-                            <t t-out="object.user_id.name or 'Sales Department'"/>
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">
+                            <t t-out="object.user_id.name"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            <t t-out="object.user_id.job_title or 'Sales Department'"/>
+                        <p style="margin:2px 0 0; font-size:13px; color:#888;">
+                            <t t-out="object.user_id.function or 'Managing Partner'"/>
                         </p>
-                        <p style="margin:2px 0 0; font-size:13px; color:#8B4513;">
-                            <t t-out="object.user_id.email or 'commerciale@casafolino.com'"/>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a t-att-href="'mailto:' + (object.user_id.email or '')" style="color:#8B4513; text-decoration:none;"><t t-out="object.user_id.email or ''"/></a>
+                            <t t-if="object.user_id.phone or object.user_id.mobile">
+                                <span style="color:#888;"> — </span>
+                                <span style="color:#555;"><t t-out="object.user_id.phone or object.user_id.mobile"/></span>
+                            </t>
                         </p>
-                        <t t-if="object.user_id.phone">
-                        <p style="margin:2px 0 0; font-size:13px; color:#555;">
-                            Phone: <t t-out="object.user_id.phone"/>
-                        </p>
-                        </t>
                     </td>
                 </tr>
             </table>
+            </t>
+            <t t-if="not object.user_id">
+            <table cellpadding="0" cellspacing="0" style="margin-top:24px; border-top:1px solid #e8e8e8; padding-top:16px;">
+                <tr>
+                    <td style="padding-right:16px; vertical-align:top;">
+                        <table cellpadding="0" cellspacing="0" style="width:70px; height:70px; background:#8B4513; border-radius:50%;"><tr><td align="center" valign="middle" style="color:#fff; font-size:24px; font-weight:700;">C</td></tr></table>
+                    </td>
+                    <td style="vertical-align:top;">
+                        <p style="margin:0; font-size:15px; font-weight:700; color:#333;">Team CasaFolino</p>
+                        <p style="margin:4px 0 0; font-size:13px;">
+                            <a href="mailto:commerciale@casafolino.com" style="color:#8B4513; text-decoration:none;">commerciale@casafolino.com</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            </t>
 
         </td>
     </tr>
 
     <!-- FOOTER -->
     <tr>
-        <td style="background:#3e2210; padding:20px 32px; text-align:center;">
-            <p style="margin:0 0 4px; font-size:12px; color:#d4b896; font-weight:600;">CasaFolino Srls</p>
-            <p style="margin:0 0 4px; font-size:11px; color:#a08060;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italy</p>
-            <p style="margin:0; font-size:11px; color:#a08060;">
-                <a href="mailto:commerciale@casafolino.com" style="color:#d4b896; text-decoration:none;">commerciale@casafolino.com</a>
-                  |
-                <a href="https://www.casafolino.com" style="color:#d4b896; text-decoration:none;">www.casafolino.com</a>
+        <td style="background:#f4f1ec; padding:18px 32px; text-align:center;">
+            <p style="margin:0 0 4px; font-size:12px; color:#333; font-weight:700;">CasaFolino SRL Società Benefit</p>
+            <p style="margin:0 0 4px; font-size:11px; color:#666;">Via Prunia, 1 — 88046 Lamezia Terme (CZ), Italy</p>
+            <p style="margin:0 0 6px; font-size:11px;">
+                <a href="https://www.casafolino.com" style="color:#8B4513; text-decoration:none;">casafolino.com</a>
             </p>
+            <p style="margin:0; font-size:11px; color:#888; font-style:italic;">Italian craftsmanship since 1962</p>
         </td>
     </tr>
 
