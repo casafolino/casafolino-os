@@ -96,10 +96,10 @@
     <record id="view_crm_lead_search_mail_v3" model="ir.ui.view">
         <field name="name">crm.lead.search.mail.v3.auto</field>
         <field name="model">crm.lead</field>
-        <field name="inherit_id" ref="crm.view_crm_lead_opportunity_filter"/>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <xpath expr="//filter[@name='myactivities']" position="after">
+            <xpath expr="//search" position="inside">
                 <separator/>
                 <filter string="Auto-created F6" name="auto_created_f6"
                         domain="[('cf_auto_created', '=', True)]"/>
