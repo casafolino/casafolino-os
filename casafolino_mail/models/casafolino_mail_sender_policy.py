@@ -97,3 +97,43 @@ class CasafolinoMailSenderPolicy(models.Model):
                                     policy.id, pattern)
 
         return self.browse()  # empty recordset
+
+    @api.model
+    def _cron_backfill_policies(self):
+        """Cron 96: safety-net re-evaluation of new/review inbound messages.
+
+        Re-applies active policies to messages still in new/review that may
+        have been imported before the matching policy existed.
+        """
+        Msg = self.env['casafolino.mail.message'].sudo()
+        msgs = Msg.search([
+            ('state', 'in', ['new', 'review']),
+            ('direction', '=', 'inbound'),
+        ], limit=2000)
+
+        updated = 0
+        for msg in msgs:
+            policy = self.match_sender(
+                msg.sender_email, msg.subject or '',
+                ai_category=getattr(msg, 'ai_category', None))
+            if not policy:
+                continue
+            # Skip if same policy already applied
+            if msg.policy_applied_id.id == policy.id:
+                continue
+
+            state_map = {
+                'auto_keep': 'auto_keep',
+                'auto_discard': 'auto_discard',
+                'escalate': 'review',
+                'review': 'review',
+            }
+            new_state = state_map.get(policy.action, 'review')
+            vals = {'state': new_state, 'policy_applied_id': policy.id}
+            if policy.action == 'escalate':
+                vals['is_important'] = True
+            msg.write(vals)
+            updated += 1
+
+        if updated:
+            _logger.info("[sender policy] Cron backfill: updated %d messages", updated)

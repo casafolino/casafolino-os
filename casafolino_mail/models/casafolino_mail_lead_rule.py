@@ -27,6 +27,9 @@ class CasafolinoMailLeadRule(models.Model):
     require_subject_keywords = fields.Char(
         help="Comma-separated keywords (any match) in subject or body. Leave empty for no filter.")
     exclude_partners_with_open_lead = fields.Boolean(default=True)
+    exclude_internal_domains = fields.Char(
+        default='casafolino.com,casafolino.it',
+        help="Comma-separated domains to exclude from auto-link (internal emails).")
 
     # Output config
     sales_team_id = fields.Many2one('crm.team')
@@ -86,6 +89,10 @@ class CasafolinoMailLeadRule(models.Model):
         if self.require_subject_keywords:
             keywords = [k.strip().lower() for k in self.require_subject_keywords.split(',') if k.strip()]
 
+        internal_domains = set()
+        if self.exclude_internal_domains:
+            internal_domains = {d.strip().lower() for d in self.exclude_internal_domains.split(',') if d.strip()}
+
         created = 0
         source = self._get_or_create_source()
 
@@ -102,6 +109,12 @@ class CasafolinoMailLeadRule(models.Model):
                 continue
 
             for partner in partners:
+                # Skip internal domains (e.g. @casafolino.com)
+                if internal_domains and partner.email:
+                    partner_domain = (partner.email or '').split('@')[-1].lower().strip()
+                    if partner_domain in internal_domains:
+                        continue
+
                 # Check hotness
                 intel = Intel.search([('partner_id', '=', partner.id)], limit=1)
                 hotness = intel.hotness_score if intel else 0

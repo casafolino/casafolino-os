@@ -184,6 +184,10 @@ class CasafolinoMailTriageWizard(models.TransientModel):
             'notes': 'Creata da triage orfano il %s, decisione di %s' % (
                 fields.Date.today(), self.env.user.name),
         })
+        # Retroactive apply: update existing new/review messages from this sender
+        self._retroactive_apply_policy(policy, [
+            ('sender_email', '=ilike', email),
+        ])
         self._create_decision('ignored_sender', sender_policy_id=policy.id)
         return self._open_next_orphan()
 
@@ -211,8 +215,41 @@ class CasafolinoMailTriageWizard(models.TransientModel):
             'notes': 'Triage dominio il %s da %s' % (
                 fields.Date.today(), self.env.user.name),
         })
+        # Retroactive apply: update existing new/review messages from this domain
+        self._retroactive_apply_policy(policy, [
+            ('sender_domain', '=ilike', domain),
+        ])
         self._create_decision('ignored_domain', sender_policy_id=policy.id)
         return self._open_next_orphan()
+
+    def _retroactive_apply_policy(self, policy, extra_domain):
+        """Apply a newly created policy retroactively to existing new/review messages.
+
+        Args:
+            policy: casafolino.mail.sender_policy record
+            extra_domain: list of domain tuples to filter messages (e.g. sender_email match)
+        """
+        Msg = self.env['casafolino.mail.message'].sudo()
+        domain = [
+            ('state', 'in', ['new', 'review']),
+            ('direction', '=', 'inbound'),
+        ] + extra_domain
+        msgs = Msg.search(domain)
+        if msgs:
+            state_map = {
+                'auto_keep': 'auto_keep',
+                'auto_discard': 'auto_discard',
+                'escalate': 'review',
+                'review': 'review',
+            }
+            new_state = state_map.get(policy.action, 'review')
+            vals = {'state': new_state, 'policy_applied_id': policy.id}
+            if policy.action == 'escalate':
+                vals['is_important'] = True
+            msgs.write(vals)
+            _logger.info(
+                "[triage wizard] Retroactive apply policy %s to %d messages",
+                policy.name, len(msgs))
 
     def action_triage_skip(self):
         """Skip senza decisione, vai al prossimo."""
