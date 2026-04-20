@@ -35,6 +35,11 @@
                 <filter name="ai_action" string="Action Required" domain="[('ai_action_required', '=', True)]"/>
                 <filter name="ai_negative" string="Sentiment negativo" domain="[('ai_sentiment', '=', 'negative')]"/>
                 <separator/>
+                <filter name="intent_quote" string="Richiesta preventivo" domain="[('intent_detected', '=', 'request_quote')]"/>
+                <filter name="intent_order" string="Ordine" domain="[('intent_detected', '=', 'order')]"/>
+                <filter name="intent_complaint" string="Reclamo" domain="[('intent_detected', '=', 'complaint')]"/>
+                <filter name="intent_followup" string="Follow-up" domain="[('intent_detected', '=', 'follow_up')]"/>
+                <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
                     <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
@@ -42,6 +47,7 @@
                     <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
                     <filter name="group_date" string="Data" context="{'group_by': 'email_date:day'}"/>
                     <filter name="group_ai_category" string="AI Categoria" context="{'group_by': 'ai_category'}"/>
+                    <filter name="group_intent" string="Intent" context="{'group_by': 'intent_detected'}"/>
                 </group>
             </search>
         </field>
@@ -100,6 +106,11 @@
                        decoration-success="ai_sentiment == 'positive'"
                        decoration-warning="ai_sentiment == 'neutral'"
                        decoration-danger="ai_sentiment == 'negative'"/>
+                <field name="intent_detected" string="Intent" widget="badge" optional="show"
+                       decoration-danger="intent_detected == 'complaint'"
+                       decoration-success="intent_detected in ('order', 'request_quote')"
+                       decoration-info="intent_detected in ('info_request', 'meeting_request')"
+                       decoration-warning="intent_detected in ('follow_up', 'payment')"/>
                 <field name="state" string="Stato" widget="badge"
                        decoration-info="state in ('new', 'review')"
                        decoration-success="state in ('keep', 'auto_keep')"
@@ -220,6 +231,22 @@
                     </page>
                     <page string="Allegati" name="attachments" invisible="not body_downloaded">
                         <field name="attachment_ids"/>
+                    </page>
+                    <page string="AI &amp; Intent" name="ai_intent">
+                        <group>
+                            <group string="Intent">
+                                <field name="intent_detected" widget="badge"/>
+                            </group>
+                            <group string="AI Classification">
+                                <field name="ai_category" widget="badge"/>
+                                <field name="ai_sentiment" widget="badge"/>
+                                <field name="ai_language"/>
+                                <field name="ai_urgency" widget="badge"/>
+                                <field name="ai_action_required"/>
+                                <field name="ai_classified_at"/>
+                                <field name="ai_error"/>
+                            </group>
+                        </group>
                     </page>
                     <page string="Tecnico" name="technical">
                         <group>

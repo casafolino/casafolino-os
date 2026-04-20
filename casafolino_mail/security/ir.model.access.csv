@@ -24,3 +24,7 @@ access_casafolino_mail_snippet_picker_user,casafolino.mail.snippet.picker user,m
 access_casafolino_mail_triage_wizard_user,casafolino.mail.triage.wizard user,model_casafolino_mail_triage_wizard,base.group_user,1,1,1,1
 access_casafolino_mail_sender_decision_user,casafolino.mail.sender.decision user,model_casafolino_mail_sender_decision,base.group_user,1,1,1,0
 access_casafolino_mail_sender_decision_admin,casafolino.mail.sender.decision admin,model_casafolino_mail_sender_decision,base.group_system,1,1,1,1
+access_casafolino_partner_intelligence_user,casafolino.partner.intelligence user,model_casafolino_partner_intelligence,base.group_user,1,0,0,0
+access_casafolino_partner_intelligence_admin,casafolino.partner.intelligence admin,model_casafolino_partner_intelligence,base.group_system,1,1,1,1
+access_casafolino_mail_outbox_user,casafolino.mail.outbox user,model_casafolino_mail_outbox,base.group_user,1,1,1,0
+access_casafolino_mail_outbox_admin,casafolino.mail.outbox admin,model_casafolino_mail_outbox,base.group_system,1,1,1,1
