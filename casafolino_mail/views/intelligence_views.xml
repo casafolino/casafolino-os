@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Intelligence — Search
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_partner_intelligence_search" model="ir.ui.view">
+        <field name="name">casafolino.partner.intelligence.search</field>
+        <field name="model">casafolino.partner.intelligence</field>
+        <field name="arch" type="xml">
+            <search string="Intelligence">
+                <field name="partner_id"/>
+                <filter name="hot" string="Hot" domain="[('hotness_tier', '=', 'hot')]"/>
+                <filter name="warm" string="Warm" domain="[('hotness_tier', '=', 'warm')]"/>
+                <filter name="active_tier" string="Active" domain="[('hotness_tier', '=', 'active')]"/>
+                <filter name="cold" string="Cold" domain="[('hotness_tier', '=', 'cold')]"/>
+                <filter name="dormant" string="Dormant" domain="[('hotness_tier', '=', 'dormant')]"/>
+                <separator/>
+                <filter name="has_nba" string="Con NBA" domain="[('nba_text', '!=', '')]"/>
+                <filter name="nba_critical" string="NBA Critico" domain="[('nba_urgency', '=', 'critical')]"/>
+                <filter name="nba_high" string="NBA Alto" domain="[('nba_urgency', '=', 'high')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_tier" string="Tier" context="{'group_by': 'hotness_tier'}"/>
+                    <filter name="group_nba_urgency" string="NBA Urgenza" context="{'group_by': 'nba_urgency'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Intelligence — List
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_partner_intelligence_list" model="ir.ui.view">
+        <field name="name">casafolino.partner.intelligence.list</field>
+        <field name="model">casafolino.partner.intelligence</field>
+        <field name="arch" type="xml">
+            <list string="Partner Intelligence"
+                  decoration-danger="hotness_tier == 'dormant'"
+                  decoration-warning="hotness_tier == 'cold'"
+                  decoration-success="hotness_tier == 'hot'"
+                  default_order="hotness_score desc">
+                <field name="partner_id"/>
+                <field name="hotness_score" string="Score"/>
+                <field name="hotness_tier" string="Tier" widget="badge"
+                       decoration-success="hotness_tier == 'hot'"
+                       decoration-info="hotness_tier == 'warm'"
+                       decoration-warning="hotness_tier in ('active', 'cold')"
+                       decoration-danger="hotness_tier == 'dormant'"/>
+                <field name="nba_text" string="NBA"/>
+                <field name="nba_urgency" string="Urgenza" widget="badge"
+                       decoration-danger="nba_urgency in ('critical', 'high')"
+                       decoration-warning="nba_urgency == 'medium'"
+                       decoration-info="nba_urgency in ('low', 'info')"/>
+                <field name="nba_from_llm" string="LLM"/>
+                <field name="last_rebuild_at" string="Ultimo rebuild"/>
+                <field name="nba_computed_at" string="NBA aggiornato"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Intelligence — Form
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_partner_intelligence_form" model="ir.ui.view">
+        <field name="name">casafolino.partner.intelligence.form</field>
+        <field name="model">casafolino.partner.intelligence</field>
+        <field name="arch" type="xml">
+            <form string="Partner Intelligence">
+                <group>
+                    <group string="Partner">
+                        <field name="partner_id"/>
+                        <field name="pinned_hot"/>
+                        <field name="pinned_ignore"/>
+                    </group>
+                    <group string="Hotness">
+                        <field name="hotness_score"/>
+                        <field name="hotness_tier" widget="badge"/>
+                        <field name="last_rebuild_at"/>
+                    </group>
+                </group>
+                <group string="Next Best Action">
+                    <field name="nba_text"/>
+                    <field name="nba_urgency" widget="badge"/>
+                    <field name="nba_rule_id"/>
+                    <field name="nba_from_llm"/>
+                    <field name="nba_computed_at"/>
+                </group>
+                <group string="Componenti Hotness">
+                    <field name="hotness_components_json" widget="text"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Intelligence — Action + Menu
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="action_casafolino_partner_intelligence" model="ir.actions.act_window">
+        <field name="name">Partner Intelligence</field>
+        <field name="res_model">casafolino.partner.intelligence</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_partner_intelligence_search"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Outbox — List + Form + Action
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_outbox_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.outbox.list</field>
+        <field name="model">casafolino.mail.outbox</field>
+        <field name="arch" type="xml">
+            <list string="Coda invio"
+                  decoration-success="state == 'sent'"
+                  decoration-danger="state == 'error'"
+                  decoration-info="state == 'queued'"
+                  decoration-warning="state == 'sending'">
+                <field name="create_date" string="Accodato"/>
+                <field name="account_id"/>
+                <field name="to_emails" string="A"/>
+                <field name="subject"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'queued'"
+                       decoration-warning="state == 'sending'"
+                       decoration-success="state == 'sent'"
+                       decoration-danger="state == 'error'"/>
+                <field name="retry_count" string="Tentativi"/>
+                <field name="sent_at"/>
+                <field name="error_message" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_outbox_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.outbox.form</field>
+        <field name="model">casafolino.mail.outbox</field>
+        <field name="arch" type="xml">
+            <form string="Email in coda">
+                <group>
+                    <group string="Email">
+                        <field name="account_id"/>
+                        <field name="to_emails"/>
+                        <field name="cc_emails"/>
+                        <field name="bcc_emails"/>
+                        <field name="subject"/>
+                    </group>
+                    <group string="Stato">
+                        <field name="state" widget="badge"/>
+                        <field name="priority"/>
+                        <field name="retry_count"/>
+                        <field name="max_retries"/>
+                        <field name="sent_at"/>
+                        <field name="message_id_rfc"/>
+                    </group>
+                </group>
+                <field name="body_html" widget="html" readonly="1"/>
+                <field name="error_message" invisible="state != 'error'" readonly="1"/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_casafolino_mail_outbox" model="ir.actions.act_window">
+        <field name="name">Coda Invio</field>
+        <field name="res_model">casafolino.mail.outbox</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

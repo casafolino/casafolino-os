@@ -30,3 +30,5 @@ access_mail_v3_signature_user,casafolino.mail.signature.user,model_casafolino_ma
 access_mail_v3_signature_admin,casafolino.mail.signature.admin,model_casafolino_mail_signature,casafolino_mail.group_mail_v3_admin,1,1,1,1
 access_mail_v3_intelligence_user,casafolino.partner.intelligence.user,model_casafolino_partner_intelligence,casafolino_mail.group_mail_v3_user,1,0,0,0
 access_mail_v3_intelligence_admin,casafolino.partner.intelligence.admin,model_casafolino_partner_intelligence,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_casafolino_mail_outbox_user,casafolino.mail.outbox user,model_casafolino_mail_outbox,base.group_user,1,1,1,0
+access_casafolino_mail_outbox_admin,casafolino.mail.outbox admin,model_casafolino_mail_outbox,base.group_system,1,1,1,1

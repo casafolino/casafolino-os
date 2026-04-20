@@ -357,6 +357,12 @@ class CasafolinoMailAccount(models.Model):
                     except Exception as e:
                         _logger.warning("AI classify error msg %s: %s", new_msg.id, e)
 
+                    # Intent detection (keyword-based, non-blocking)
+                    try:
+                        new_msg._detect_intent()
+                    except Exception as e:
+                        _logger.warning("Intent detect error msg %s: %s", new_msg.id, e)
+
                     # Applica sender_policy se stato ancora 'new'
                     if new_msg.state == 'new':
                         new_msg._apply_sender_policy()

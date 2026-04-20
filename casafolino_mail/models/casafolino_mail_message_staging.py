@@ -93,6 +93,21 @@ class CasafolinoMailMessage(models.Model):
     body_plain = fields.Text('Body testo')
     body_downloaded = fields.Boolean('Body scaricato', default=False)
 
+    # ── Intent Detection ───────────────────────────────────────────
+    intent_detected = fields.Selection([
+        ('request_quote', 'Richiesta preventivo'),
+        ('order', 'Ordine'),
+        ('complaint', 'Reclamo'),
+        ('follow_up', 'Follow-up'),
+        ('intro', 'Presentazione'),
+        ('info_request', 'Richiesta info'),
+        ('meeting_request', 'Richiesta incontro'),
+        ('payment', 'Pagamento'),
+        ('shipping', 'Spedizione'),
+        ('thank_you', 'Ringraziamento'),
+        ('other', 'Altro'),
+    ], string='Intent')
+
     # ── AI Classifier fields ────────────────────────────────────────
     ai_category = fields.Selection([
         ('commerciale', 'Commerciale'),
@@ -137,6 +152,7 @@ class CasafolinoMailMessage(models.Model):
     triage_user_id = fields.Many2one('res.users', string='Triage da')
     triage_date = fields.Datetime('Data triage')
     is_read = fields.Boolean('Letta', default=False)
+    imap_flags_synced = fields.Boolean('IMAP flags synced', default=False)
     is_important = fields.Boolean('Importante', default=False)
     assigned_user_ids = fields.Many2many(
         'res.users', 'casafolino_mail_message_user_rel',
@@ -447,6 +463,119 @@ class CasafolinoMailMessage(models.Model):
 
         # Se arriviamo qui: 2 tentativi falliti (403 retry)
         self.write({'ai_error': 'Cloudflare 403 after retry'})
+
+    # ── Intent Detection — keyword matcher IT/EN/DE ─────────────────
+
+    _INTENT_KEYWORDS = {
+        'request_quote': {
+            'it': ['preventivo', 'quotazione', 'listino prezzi', 'offerta', 'prezzo unitario',
+                   'richiesta prezzi', 'condizioni commerciali', 'catalogo prezzi'],
+            'en': ['quote', 'quotation', 'price list', 'pricing', 'unit price',
+                   'price request', 'commercial terms', 'rfi', 'rfq'],
+            'de': ['angebot', 'preisliste', 'preisanfrage', 'konditionen',
+                   'stückpreis', 'angebotanfrage', 'handelskonditionen'],
+        },
+        'order': {
+            'it': ['ordine', 'conferma ordine', 'ordiniamo', 'vorremmo ordinare',
+                   'acquisto', 'po number', 'buono d\'ordine'],
+            'en': ['order', 'purchase order', 'po number', 'we would like to order',
+                   'confirm order', 'place an order'],
+            'de': ['bestellung', 'bestellen', 'auftrag', 'bestellnummer',
+                   'auftragsbestätigung', 'wir möchten bestellen'],
+        },
+        'complaint': {
+            'it': ['reclamo', 'lamentela', 'problema', 'difetto', 'danneggiato',
+                   'non conforme', 'contestazione', 'insoddisfatto', 'delusione'],
+            'en': ['complaint', 'issue', 'problem', 'defect', 'damaged',
+                   'not acceptable', 'disappointed', 'unsatisfied', 'claim'],
+            'de': ['reklamation', 'beschwerde', 'problem', 'mangelhaft', 'beschädigt',
+                   'nicht akzeptabel', 'beanstandung', 'enttäuscht'],
+        },
+        'follow_up': {
+            'it': ['sollecito', 'aggiornamento', 'stato dell\'ordine', 'a che punto',
+                   'news', 'novità', 'riscontro', 'promemoria'],
+            'en': ['follow up', 'following up', 'status update', 'any update',
+                   'checking in', 'reminder', 'status of', 'any news'],
+            'de': ['nachfrage', 'statusupdate', 'wie ist der stand', 'erinnerung',
+                   'rückmeldung', 'gibt es neuigkeiten'],
+        },
+        'intro': {
+            'it': ['presentazione', 'mi presento', 'vorrei presentare', 'primo contatto',
+                   'piacere di', 'ci presentiamo', 'la nostra azienda'],
+            'en': ['introduction', 'introducing', 'first contact', 'pleased to meet',
+                   'would like to introduce', 'our company'],
+            'de': ['vorstellung', 'möchte mich vorstellen', 'erstkontakt',
+                   'unser unternehmen', 'gestatten sie'],
+        },
+        'info_request': {
+            'it': ['informazioni', 'dettagli', 'scheda tecnica', 'specifiche',
+                   'vorrei sapere', 'potrebbe inviarmi', 'documentazione'],
+            'en': ['information', 'details', 'spec sheet', 'specifications',
+                   'could you send', 'would like to know', 'documentation'],
+            'de': ['informationen', 'details', 'datenblatt', 'spezifikationen',
+                   'könnten sie mir senden', 'unterlagen'],
+        },
+        'meeting_request': {
+            'it': ['incontro', 'appuntamento', 'riunione', 'videochiamata', 'call',
+                   'ci vediamo', 'fissare un incontro', 'disponibilità'],
+            'en': ['meeting', 'appointment', 'call', 'video call', 'schedule',
+                   'let\'s meet', 'availability', 'set up a call'],
+            'de': ['treffen', 'termin', 'besprechung', 'videokonferenz',
+                   'verfügbarkeit', 'termin vereinbaren'],
+        },
+        'payment': {
+            'it': ['pagamento', 'fattura', 'bonifico', 'scadenza', 'saldo',
+                   'rimessa', 'ricevuta', 'coordinate bancarie'],
+            'en': ['payment', 'invoice', 'wire transfer', 'due date', 'balance',
+                   'remittance', 'receipt', 'bank details'],
+            'de': ['zahlung', 'rechnung', 'überweisung', 'fälligkeitsdatum',
+                   'bankverbindung', 'kontoauszug'],
+        },
+        'shipping': {
+            'it': ['spedizione', 'consegna', 'tracking', 'pallet', 'trasporto',
+                   'resa', 'incoterms', 'container', 'logistica'],
+            'en': ['shipping', 'delivery', 'tracking', 'shipment', 'transport',
+                   'incoterms', 'container', 'logistics', 'freight'],
+            'de': ['versand', 'lieferung', 'tracking', 'sendung', 'transport',
+                   'incoterms', 'fracht', 'logistik'],
+        },
+        'thank_you': {
+            'it': ['grazie', 'ringraziamento', 'ottimo lavoro', 'perfetto',
+                   'complimenti', 'eccellente'],
+            'en': ['thank you', 'thanks', 'great job', 'perfect', 'excellent',
+                   'well done', 'appreciated'],
+            'de': ['danke', 'vielen dank', 'ausgezeichnet', 'perfekt',
+                   'hervorragend', 'gut gemacht'],
+        },
+    }
+
+    def _detect_intent(self):
+        """Detect email intent via keyword matching (IT/EN/DE). Non-blocking."""
+        self.ensure_one()
+        text = ((self.subject or '') + ' ' + (self.snippet or '')).lower()
+        if self.body_plain:
+            text += ' ' + self.body_plain[:1000].lower()
+        elif self.body_html:
+            clean = re.sub(r'<[^>]+>', ' ', self.body_html[:2000])
+            text += ' ' + clean.lower()
+
+        if not text.strip():
+            return
+
+        best_intent = None
+        best_score = 0
+        for intent, lang_keywords in self._INTENT_KEYWORDS.items():
+            score = 0
+            for lang, keywords in lang_keywords.items():
+                for kw in keywords:
+                    if kw in text:
+                        score += 1
+            if score > best_score:
+                best_score = score
+                best_intent = intent
+
+        if best_intent and best_score >= 1:
+            self.write({'intent_detected': best_intent})
 
     def _compute_tracking_counts(self):
         for rec in self:

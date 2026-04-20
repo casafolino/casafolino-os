@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.8.0.1',
+    'version': '18.0.8.2.0',
     'summary': 'Cockpit commerciale Mail V3 + Intelligence per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -13,6 +13,7 @@
         'security/ir_rules.xml',
         # existing views
         'views/casafolino_mail_hub_views.xml',
+        'views/intelligence_views.xml',
         'views/casafolino_mail_policy_views.xml',
         'views/casafolino_mail_wizard_views.xml',
         'views/sla_partner_views.xml',

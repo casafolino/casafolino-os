@@ -53,10 +53,22 @@
         sequence="9"
         action="action_sender_decision_history"/>
 
+    <menuitem id="menu_casafolino_mail_intelligence"
+        name="Partner Intelligence"
+        parent="menu_casafolino_mail_root"
+        sequence="4"
+        action="action_casafolino_partner_intelligence"/>
+
+    <menuitem id="menu_casafolino_mail_outbox"
+        name="Coda Invio"
+        parent="menu_casafolino_mail_root"
+        sequence="10"
+        action="action_casafolino_mail_outbox"/>
+
     <menuitem id="menu_casafolino_mail_discard"
         name="Archivio Scarto"
         parent="menu_casafolino_mail_root"
-        sequence="10"
+        sequence="11"
         action="action_casafolino_mail_message_discard"
         groups="base.group_system"/>
 
