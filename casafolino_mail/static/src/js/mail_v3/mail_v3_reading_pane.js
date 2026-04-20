@@ -9,9 +9,12 @@ export class ReadingPane extends Component {
         const messages = this.props.messages || [];
         if (messages.length === 0) return null;
 
-        // Find last inbound and last outbound
-        const inbound = [...messages].reverse().find(m => m.direction === 'inbound' || m.direction_computed === 'inbound');
-        const outbound = [...messages].reverse().find(m => m.direction === 'outbound' || m.direction_computed === 'outbound');
+        const inbound = [...messages].reverse().find(
+            m => m.direction === 'inbound' || m.direction_computed === 'inbound'
+        );
+        const outbound = [...messages].reverse().find(
+            m => m.direction === 'outbound' || m.direction_computed === 'outbound'
+        );
 
         if (!inbound) return null;
 
@@ -21,9 +24,7 @@ export class ReadingPane extends Component {
 
         if (outbound) {
             const lastOutDate = new Date(outbound.email_date);
-            if (lastOutDate > lastInDate) {
-                return null; // We replied
-            }
+            if (lastOutDate > lastInDate) return null;
             const daysSinceReply = Math.floor((now - lastOutDate) / (1000 * 60 * 60 * 24));
             if (daysSinceReply > 3) {
                 return {
@@ -39,7 +40,6 @@ export class ReadingPane extends Component {
                 icon: '\u26a0\ufe0f',
             };
         }
-
         return null;
     }
 
@@ -48,26 +48,27 @@ export class ReadingPane extends Component {
     }
 
     onReply(msgId) {
-        if (this.props.onReply) {
-            this.props.onReply('reply', msgId);
-        }
+        if (this.props.onReply) this.props.onReply(msgId);
     }
 
     onReplyAll(msgId) {
-        if (this.props.onReply) {
-            this.props.onReply('reply_all', msgId);
-        }
+        if (this.props.onReplyAll) this.props.onReplyAll(msgId);
     }
 
     onForward(msgId) {
-        if (this.props.onReply) {
-            this.props.onReply('forward', msgId);
-        }
+        if (this.props.onForward) this.props.onForward(msgId);
+    }
+
+    onAiReply(msgId) {
+        if (this.props.onAiReply) this.props.onAiReply(msgId);
     }
 
     formatDate(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);
-        return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('it-IT', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        });
     }
 }

@@ -32,6 +32,11 @@
               <div class="mv3-message__to" t-if="msg.recipient_emails">
                 A: <t t-out="msg.recipient_emails"/>
               </div>
+              <div t-if="msg.intent_detected" class="mv3-message__intent">
+                <span class="mv3-badge mv3-badge--intent">
+                  <t t-out="msg.intent_detected"/>
+                </span>
+              </div>
               <div class="mv3-message__body">
                 <iframe class="mv3-message__iframe"
                         sandbox="allow-same-origin allow-popups"
@@ -51,10 +56,13 @@
                   <i class="fa fa-reply"/> Rispondi
                 </button>
                 <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onReplyAll(msg.id)">
-                  <i class="fa fa-reply-all"/> Rispondi a tutti
+                  <i class="fa fa-reply-all"/> Tutti
                 </button>
                 <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onForward(msg.id)">
                   <i class="fa fa-share"/> Inoltra
+                </button>
+                <button class="btn btn-sm btn-outline-primary mv3-ai-reply-btn" t-on-click="() => this.onAiReply(msg.id)">
+                  🤖 AI
                 </button>
                 <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onAction('toggle_star', msg.id)">
                   <i t-att-class="msg.is_starred ? 'fa fa-star text-warning' : 'fa fa-star-o'"/>
