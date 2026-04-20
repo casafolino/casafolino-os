@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_casafolino_mail_compose_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.compose.wizard.form</field>
+        <field name="model">casafolino.mail.compose.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Componi email">
+                <group>
+                    <field name="account_id" options="{'no_create': True}"/>
+                    <field name="to_emails"/>
+                    <field name="cc_emails"/>
+                    <field name="bcc_emails"/>
+                    <field name="subject"/>
+                </group>
+                <field name="body_html" widget="html"
+                       options="{'style-inline': true}"
+                       class="oe_edit_only"/>
+                <group>
+                    <field name="attachment_ids" widget="many2many_binary"/>
+                </group>
+                <field name="in_reply_to_message_id" invisible="1"/>
+                <footer>
+                    <button name="action_send" string="Invia" type="object"
+                            class="btn-primary"/>
+                    <button name="action_save_draft" string="Salva bozza" type="object"
+                            class="btn-secondary"/>
+                    <button string="Annulla" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

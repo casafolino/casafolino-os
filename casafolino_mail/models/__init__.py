@@ -18,3 +18,4 @@ from . import casafolino_partner_intelligence
 from . import res_users
 from . import casafolino_mail_flag_sync
 from . import casafolino_mail_outbox
+from . import casafolino_mail_compose_wizard
