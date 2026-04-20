@@ -128,12 +128,12 @@ def migrate(cr, version):
     if not cr.fetchone():
         cr.execute("""
             INSERT INTO ir_cron (
-                cron_name, model_name, code, interval_number, interval_type,
+                cron_name, model_id, code, interval_number, interval_type,
                 numbercall, active, priority,
                 create_uid, create_date, write_uid, write_date
             ) VALUES (
                 'Mail V3: Smart Snooze Checker',
-                'casafolino.mail.snooze',
+                (SELECT id FROM ir_model WHERE model = 'casafolino.mail.snooze' LIMIT 1),
                 'model._cron_check_snooze()',
                 15, 'minutes',
                 -1, true, 10,
@@ -147,12 +147,12 @@ def migrate(cr, version):
     if not cr.fetchone():
         cr.execute("""
             INSERT INTO ir_cron (
-                cron_name, model_name, code, interval_number, interval_type,
+                cron_name, model_id, code, interval_number, interval_type,
                 numbercall, active, priority,
                 create_uid, create_date, write_uid, write_date
             ) VALUES (
                 'Mail V3: Scheduled Send Dispatch',
-                'casafolino.mail.draft',
+                (SELECT id FROM ir_model WHERE model = 'casafolino.mail.draft' LIMIT 1),
                 'model._cron_scheduled_send()',
                 1, 'minutes',
                 -1, true, 5,
