@@ -1,0 +1,519 @@
+// ── Mail V3 Variables ──────────────────────────────────────
+$mv3-primary: #5A6E3A;
+$mv3-hot: #E74C3C;
+$mv3-warm: #F39C12;
+$mv3-active: #3498DB;
+$mv3-cold: #AED6F1;
+$mv3-dormant: #95A5A6;
+$mv3-bg: #FDFDFC;
+$mv3-border: #E5E5E3;
+$mv3-font-base: 13px;
+$mv3-line-height: 1.45;
+
+// ── Layout ────────────────────────────────────────────────
+.mv3-client {
+    display: flex;
+    height: 100vh;
+    font-size: $mv3-font-base;
+    line-height: $mv3-line-height;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: $mv3-bg;
+}
+
+.mv3-client__sidebar-left {
+    width: 220px;
+    flex: 0 0 220px;
+    border-right: 1px solid $mv3-border;
+    background: #F8F8F6;
+    overflow-y: auto;
+}
+
+.mv3-client__thread-list {
+    width: 380px;
+    flex: 0 0 380px;
+    border-right: 1px solid $mv3-border;
+    overflow-y: auto;
+}
+
+.mv3-client__reading-pane {
+    flex: 1;
+    background: $mv3-bg;
+    overflow-y: auto;
+}
+
+.mv3-client__sidebar-360 {
+    width: 360px;
+    flex: 0 0 360px;
+    border-left: 1px solid $mv3-border;
+    overflow-y: auto;
+    background: #FAFAF8;
+}
+
+// ── Sidebar Left ──────────────────────────────────────────
+.mv3-sidebar-left {
+    padding: 16px;
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 700;
+        color: $mv3-primary;
+        margin: 0;
+    }
+
+    &__compose {
+        font-size: 12px;
+    }
+
+    &__account-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+
+        &:hover { background: rgba($mv3-primary, 0.08); }
+        &--active { background: rgba($mv3-primary, 0.15); font-weight: 600; }
+    }
+
+    &__account-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    &__account-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__badge {
+        background: $mv3-primary;
+        color: white;
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+}
+
+// ── Thread List ───────────────────────────────────────────
+.mv3-thread-list {
+    &__header {
+        padding: 12px 16px;
+        border-bottom: 1px solid $mv3-border;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    &__loading, &__empty {
+        padding: 24px;
+        text-align: center;
+        color: #999;
+    }
+}
+
+.mv3-thread-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid $mv3-border;
+    cursor: pointer;
+    transition: background 0.1s;
+
+    &--unread .mv3-thread-item__subject { font-weight: 700; }
+    &--unread .mv3-thread-item__participant { font-weight: 700; }
+    &:hover { background: #F8F8F6; }
+    &--selected { background: #EEF2E6; border-left: 3px solid $mv3-primary; }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    &__account-badge {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    &__participant {
+        flex: 1;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__silent-gap {
+        font-size: 11px;
+        color: #A0522D;
+        white-space: nowrap;
+    }
+
+    &__subject {
+        margin: 4px 0;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__preview {
+        font-size: 12px;
+        color: #666;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    &__badges {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+    }
+}
+
+// ── Badges ────────────────────────────────────────────────
+.mv3-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    background: #F0F0F0;
+    color: #555;
+
+    &--hot { background: $mv3-hot; color: white; }
+    &--warm { background: $mv3-warm; color: white; }
+    &--active { background: $mv3-active; color: white; }
+    &--cold { background: $mv3-cold; color: #333; }
+    &--dormant { background: $mv3-dormant; color: white; }
+    &--attachment { background: #E3F2FD; color: #1976D2; }
+    &--lead { background: #FFF3E0; color: #F57C00; }
+}
+
+// ── Hotness Badge ─────────────────────────────────────────
+.mv3-hotness-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+
+    &--hot { background: $mv3-hot; }
+    &--warm { background: $mv3-warm; }
+    &--active { background: $mv3-active; }
+    &--cold { background: $mv3-cold; color: #333; }
+    &--dormant { background: $mv3-dormant; }
+}
+
+// ── Time Gap ──────────────────────────────────────────────
+.mv3-time-gap {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-top: 4px;
+
+    &--ok { color: #666; background: #F0F0F0; }
+    &--warning { color: #A0522D; background: #FFF3E0; }
+    &--critical { color: white; background: $mv3-hot; }
+}
+
+// ── Reading Pane ──────────────────────────────────────────
+.mv3-reading-pane {
+    &__loading, &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #999;
+        gap: 12px;
+    }
+
+    &__header {
+        padding: 16px 20px;
+        border-bottom: 1px solid $mv3-border;
+    }
+
+    &__subject {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    &__messages {
+        padding: 0 20px 20px;
+    }
+}
+
+.mv3-message {
+    padding: 16px 0;
+    border-bottom: 1px solid $mv3-border;
+
+    &--outbound {
+        background: rgba($mv3-primary, 0.03);
+        margin: 0 -20px;
+        padding: 16px 20px;
+    }
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 4px;
+    }
+
+    &__from {
+        font-size: 13px;
+    }
+
+    &__email {
+        color: #999;
+        font-size: 11px;
+        margin-left: 4px;
+    }
+
+    &__date {
+        font-size: 11px;
+        color: #999;
+        white-space: nowrap;
+    }
+
+    &__to {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 8px;
+    }
+
+    &__body {
+        margin: 12px 0;
+    }
+
+    &__iframe {
+        width: 100%;
+        min-height: 200px;
+        border: none;
+        background: white;
+    }
+
+    &__attachments {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 8px 0;
+    }
+
+    &__attachment {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: #F0F0F0;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #333;
+        text-decoration: none;
+
+        &:hover { background: #E0E0E0; }
+    }
+
+    &__actions {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+    }
+}
+
+// ── Sidebar 360 ───────────────────────────────────────────
+.mv3-sidebar360 {
+    padding: 16px;
+
+    &__loading {
+        text-align: center;
+        padding: 24px;
+        color: #999;
+    }
+
+    &__block {
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid $mv3-border;
+
+        h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #999;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+    }
+}
+
+.mv3-company-block {
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 4px;
+
+        h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+        }
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: #666;
+    }
+
+    &__vat { margin-left: 8px; }
+
+    &__website {
+        margin-top: 4px;
+        a { color: $mv3-primary; font-size: 12px; }
+    }
+}
+
+.mv3-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.mv3-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba($mv3-primary, 0.1);
+    color: $mv3-primary;
+}
+
+.mv3-person-block {
+    &__name { font-weight: 600; }
+    &__role { font-size: 12px; color: #666; }
+    &__email, &__phone {
+        font-size: 12px;
+        margin-top: 4px;
+        i { width: 14px; }
+    }
+}
+
+.mv3-relation-block__row,
+.mv3-business-block__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+}
+
+.mv3-relation-block__label,
+.mv3-business-block__label {
+    color: #666;
+}
+
+.mv3-actions-block {
+    &__buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    &__btn {
+        font-size: 12px;
+        text-align: left;
+        padding: 6px 10px;
+    }
+}
+
+// ── Compose ───────────────────────────────────────────────
+.mv3-compose-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mv3-compose {
+    background: white;
+    border-radius: 8px;
+    width: 700px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid $mv3-border;
+
+        h4 { margin: 0; font-size: 15px; }
+    }
+
+    &__body {
+        padding: 12px 16px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    &__field {
+        margin-bottom: 8px;
+
+        label {
+            font-size: 12px;
+            color: #666;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        &--body { flex: 1; }
+
+        textarea {
+            resize: vertical;
+            font-size: 13px;
+        }
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 16px;
+        border-top: 1px solid $mv3-border;
+    }
+
+    &__footer-right {
+        display: flex;
+        gap: 8px;
+    }
+}
