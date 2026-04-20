@@ -44,6 +44,7 @@
         # V3 data
         'data/mail_v3_config.xml',
         'data/mail_v3_signatures_seed.xml',
+        'data/mail_v3_templates_seed.xml',
     ],
     'assets': {
         'web.assets_backend': [
