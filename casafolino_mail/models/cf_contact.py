@@ -16,6 +16,7 @@ class ResPartnerMailExt(models.Model):
 
     # Campi extra tipo HubSpot/Zoho
     cf_job_title = fields.Char('Ruolo / Posizione')
+    mv3_private_notes = fields.Text('Note private Mail V3')
 
     # ── Mail Hub tracking fields ──
     mail_tracked = fields.Boolean('Mail Tracked', default=False,
