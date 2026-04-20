@@ -34,6 +34,8 @@ def _hotness_emoji(tier):
 
 class MailV3Controller(http.Controller):
 
+    # ── Thread List ──────────────────────────────────────────────────
+
     @http.route('/cf/mail/v3/threads/list', type='json', auth='user')
     def threads_list(self, **kw):
         account_ids = kw.get('account_ids')
@@ -41,15 +43,26 @@ class MailV3Controller(http.Controller):
         limit = min(int(kw.get('limit', 50)), 200)
         offset = int(kw.get('offset', 0))
         filters = kw.get('filters', {})
+        folder = kw.get('folder')
 
         domain = []
         if account_ids:
             domain.append(('account_id', 'in', account_ids))
-        # else: no account filter — record rules handle visibility
 
-        # Filter archived
         if not filters.get('show_archived'):
             domain.append(('is_archived', '=', False))
+
+        # Folder filters
+        if folder == 'starred':
+            # Find threads with at least one starred message
+            starred_msgs = request.env['casafolino.mail.message'].search([
+                ('is_starred', '=', True), ('is_deleted', '=', False),
+            ])
+            starred_thread_ids = starred_msgs.mapped('thread_id').ids
+            domain.append(('id', 'in', starred_thread_ids))
+        elif folder == 'trash':
+            domain = [d for d in domain if d[0] != 'is_archived']
+            domain.append(('is_archived', '=', True))
 
         threads = request.env['casafolino.mail.thread'].search(
             domain, limit=limit, offset=offset,
@@ -58,7 +71,6 @@ class MailV3Controller(http.Controller):
 
         result = []
         for t in threads:
-            # Get main participant (first non-company email)
             try:
                 participants = json.loads(t.participant_emails or '[]')
             except (json.JSONDecodeError, TypeError):
@@ -68,7 +80,6 @@ class MailV3Controller(http.Controller):
             external = [p for p in participants if company_domain not in p]
             main_participant = external[0] if external else (participants[0] if participants else '')
 
-            # Preview from last message
             last_msg = request.env['casafolino.mail.message'].search([
                 ('thread_id', '=', t.id),
                 ('is_deleted', '=', False),
@@ -80,14 +91,12 @@ class MailV3Controller(http.Controller):
             elif last_msg and last_msg.body_plain:
                 preview = last_msg.body_plain[:100]
 
-            # Silent days
             silent_days = 0
             if t.last_message_date:
                 from odoo import fields as odoo_fields
                 delta = odoo_fields.Datetime.now() - t.last_message_date
                 silent_days = delta.days
 
-            # Hotness from snapshot or partner intelligence
             hotness_score = t.hotness_snapshot or 0
             hotness_tier = ''
             hotness_emoji_str = ''
@@ -104,7 +113,6 @@ class MailV3Controller(http.Controller):
             if hotness_tier:
                 hotness_emoji_str = _hotness_emoji(hotness_tier)
 
-            # Attachment count
             att_count = 0
             if t.has_attachments:
                 att_count = request.env['ir.attachment'].search_count([
@@ -112,7 +120,6 @@ class MailV3Controller(http.Controller):
                     ('res_id', 'in', t.message_ids.ids),
                 ])
 
-            # Lead open
             lead_open = False
             if t.partner_ids:
                 lead = request.env['crm.lead'].sudo().search([
@@ -148,6 +155,8 @@ class MailV3Controller(http.Controller):
 
         return {'threads': result, 'total': total}
 
+    # ── Thread Messages ──────────────────────────────────────────────
+
     @http.route('/cf/mail/v3/thread/<int:thread_id>/messages', type='json', auth='user')
     def thread_messages(self, thread_id, **kw):
         thread = request.env['casafolino.mail.thread'].browse(thread_id)
@@ -176,6 +185,7 @@ class MailV3Controller(http.Controller):
                 'is_read': m.is_read,
                 'is_starred': m.is_starred,
                 'is_archived': m.is_archived,
+                'intent_detected': m.intent_detected or '',
                 'partner_id': m.partner_id.id if m.partner_id else False,
                 'partner_name': m.partner_id.name if m.partner_id else '',
                 'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''}
@@ -193,6 +203,8 @@ class MailV3Controller(http.Controller):
         ])
         messages.action_mark_read()
         return {'success': True}
+
+    # ── Message Actions ──────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/message/<int:msg_id>/<string:action>', type='json', auth='user')
     def message_action(self, msg_id, action, **kw):
@@ -217,14 +229,15 @@ class MailV3Controller(http.Controller):
         getattr(msg, method)()
         return {'success': True}
 
+    # ── Draft CRUD ───────────────────────────────────────────────────
+
     @http.route('/cf/mail/v3/draft/create', type='json', auth='user')
     def draft_create(self, **kw):
         account_id = kw.get('account_id')
         in_reply_to_id = kw.get('in_reply_to_message_id')
-        mode = kw.get('mode', 'new')  # reply, reply_all, forward, new
+        mode = kw.get('mode', 'new')
 
         if not account_id:
-            # Use first account of user
             account = request.env['casafolino.mail.account'].search([
                 ('responsible_user_id', '=', request.env.uid),
                 ('active', '=', True),
@@ -247,7 +260,6 @@ class MailV3Controller(http.Controller):
                 vals['in_reply_to_message_id'] = orig.id
 
                 if mode == 'reply':
-                    # Reply to sender
                     if orig.direction == 'inbound':
                         prefilled['to'] = orig.sender_email or ''
                     else:
@@ -267,7 +279,6 @@ class MailV3Controller(http.Controller):
                     prefilled['to'] = ''
                     prefilled['subject'] = 'Fwd: ' + _normalize_subject(orig.subject or '')
 
-                # Quoted body
                 quote_date = str(orig.email_date)[:16] if orig.email_date else ''
                 quote_from = orig.sender_name or orig.sender_email or ''
                 prefilled['body_html'] = (
@@ -278,7 +289,6 @@ class MailV3Controller(http.Controller):
                     '</div>' % (quote_date, quote_from, orig.body_html or orig.body_plain or '')
                 )
 
-        # Set signature
         sig = request.env['casafolino.mail.signature'].search([
             ('account_id', '=', account_id),
             ('is_default', '=', True),
@@ -322,20 +332,21 @@ class MailV3Controller(http.Controller):
             return {'success': False, 'error': 'Draft not found'}
         return draft.action_send()
 
+    # ── Sidebar 360 ──────────────────────────────────────────────────
+
     @http.route('/cf/mail/v3/partner/<int:partner_id>/sidebar_360', type='json', auth='user')
     def partner_sidebar_360(self, partner_id, **kw):
         partner = request.env['res.partner'].browse(partner_id)
         if not partner.exists():
             return {}
 
-        # Company info
         company = partner if partner.is_company else partner.parent_id
         person = partner if not partner.is_company else False
 
-        # Company block
+        # ── Company block ──
         company_data = {}
+        intel = None
         if company and company.exists():
-            # Hotness
             intel = request.env['casafolino.partner.intelligence'].search([
                 ('partner_id', '=', company.id)
             ], limit=1)
@@ -356,7 +367,7 @@ class MailV3Controller(http.Controller):
                 'tags': [{'id': t.id, 'name': t.name} for t in (company.category_id or [])],
             }
 
-        # Person block
+        # ── Person block ──
         person_data = {}
         if person and person.exists():
             person_data = {
@@ -368,10 +379,26 @@ class MailV3Controller(http.Controller):
                 'image_url': '/web/image/res.partner/%s/avatar_128' % person.id,
             }
 
-        # Relation block
-        relation_data = {}
+        # ── NBA block ──
+        nba_data = {}
+        if intel and not intel.pinned_ignore and intel.nba_text:
+            nba_data = {
+                'nba_text': intel.nba_text,
+                'nba_urgency': intel.nba_urgency or 'info',
+                'nba_rule_id': intel.nba_rule_id or 0,
+                'nba_from_llm': intel.nba_from_llm or False,
+                'partner_id': company.id if company else partner_id,
+            }
+
+        # ── Relation block ──
+        p_ids = [partner_id]
+        if company:
+            p_ids += company.child_ids.ids
+            p_ids.append(company.id)
+        p_ids = list(set(p_ids))
+
         msg_domain = [
-            ('partner_id', 'in', [partner_id] + (company.child_ids.ids if company else [])),
+            ('partner_id', 'in', p_ids),
             ('state', 'in', ['keep', 'auto_keep']),
         ]
         total_emails = request.env['casafolino.mail.message'].search_count(msg_domain)
@@ -385,17 +412,10 @@ class MailV3Controller(http.Controller):
             'first_contact': str(first_msg.email_date)[:10] if first_msg and first_msg.email_date else '',
             'total_emails': total_emails,
             'last_reply': str(last_reply.email_date)[:10] if last_reply and last_reply.email_date else '',
-            'avg_response_time': '',
         }
 
-        # Business block
+        # ── Business block ──
         business_data = {}
-        p_ids = [partner_id]
-        if company:
-            p_ids += company.child_ids.ids
-            p_ids.append(company.id)
-        p_ids = list(set(p_ids))
-
         try:
             from datetime import date
             year_start = date(date.today().year, 1, 1)
@@ -429,7 +449,51 @@ class MailV3Controller(http.Controller):
             _logger.warning('[mail v3] Business block error: %s', e)
             business_data = {'ytd_revenue': 0, 'open_orders': 0, 'overdue': 0}
 
-        # Quick actions
+        # ── Pipeline block ──
+        pipeline_data = []
+        try:
+            leads = request.env['crm.lead'].sudo().search([
+                ('partner_id', 'in', p_ids),
+                ('active', '=', True),
+            ], order='expected_revenue desc', limit=5)
+            for lead in leads:
+                pipeline_data.append({
+                    'id': lead.id,
+                    'name': lead.name or '',
+                    'stage': lead.stage_id.name if lead.stage_id else '',
+                    'revenue': lead.expected_revenue or 0,
+                    'probability': lead.probability or 0,
+                    'is_won': lead.stage_id.is_won if lead.stage_id else False,
+                })
+        except Exception as e:
+            _logger.warning('[mail v3] Pipeline block error: %s', e)
+
+        # ── Timeline block ──
+        timeline_data = []
+        try:
+            timeline_msgs = request.env['casafolino.mail.message'].search([
+                ('partner_id', 'in', p_ids),
+                ('state', 'in', ['keep', 'auto_keep']),
+                ('is_deleted', '=', False),
+            ], order='email_date desc', limit=5)
+            for m in timeline_msgs:
+                timeline_data.append({
+                    'id': m.id,
+                    'subject': (m.subject or '')[:60],
+                    'date': str(m.email_date)[:10] if m.email_date else '',
+                    'direction': m.direction or 'inbound',
+                    'intent': m.intent_detected or '',
+                })
+        except Exception as e:
+            _logger.warning('[mail v3] Timeline block error: %s', e)
+
+        # ── Notes block ──
+        notes_data = ''
+        if partner.exists():
+            target = company if company and company.exists() else partner
+            notes_data = target.mv3_private_notes or '' if hasattr(target, 'mv3_private_notes') else ''
+
+        # ── Quick actions ──
         quick_actions = [
             {'key': 'reply', 'label': 'Rispondi', 'icon': 'fa-reply'},
             {'key': 'new_lead', 'label': 'Nuovo lead', 'icon': 'fa-bullseye'},
@@ -441,14 +505,42 @@ class MailV3Controller(http.Controller):
         return {
             'company': company_data,
             'person': person_data,
+            'nba': nba_data,
             'relation': relation_data,
             'business': business_data,
+            'pipeline': pipeline_data,
+            'timeline': timeline_data,
+            'notes': notes_data,
             'quick_actions': quick_actions,
+            'partner_id': partner_id,
         }
+
+    # ── NBA Endpoints ────────────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/partner/<int:partner_id>/nba/dismiss', type='json', auth='user')
+    def partner_nba_dismiss(self, partner_id, **kw):
+        intel = request.env['casafolino.partner.intelligence'].search([
+            ('partner_id', '=', partner_id)
+        ], limit=1)
+        if intel:
+            intel.write({'pinned_ignore': True})
+        return {'success': True}
+
+    # ── Partner Notes ────────────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/partner/<int:partner_id>/notes', type='json', auth='user', methods=['POST'])
+    def partner_notes_save(self, partner_id, **kw):
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'success': False}
+        notes = kw.get('notes', '')
+        partner.write({'mv3_private_notes': notes})
+        return {'success': True}
+
+    # ── Accounts Summary ─────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/accounts/summary', type='json', auth='user')
     def accounts_summary(self, **kw):
-        # Record rules handle visibility: admin sees all, others see own
         accounts = request.env['casafolino.mail.account'].search([
             ('active', '=', True),
         ])
@@ -461,6 +553,10 @@ class MailV3Controller(http.Controller):
                 ('state', 'in', ['keep', 'auto_keep']),
                 ('is_deleted', '=', False),
             ])
+            # Generate initials from name
+            name_parts = (a.name or 'U').split()
+            initials = ''.join([p[0].upper() for p in name_parts[:2]]) if name_parts else 'U'
+
             result.append({
                 'id': a.id,
                 'name': a.name or a.email_address,
@@ -468,6 +564,192 @@ class MailV3Controller(http.Controller):
                 'unread_count': unread,
                 'last_sync': str(a.last_fetch_datetime) if a.last_fetch_datetime else '',
                 'state': a.state or 'draft',
+                'initials': initials,
             })
 
         return {'accounts': result}
+
+    # ── Full-text Search ─────────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/search', type='json', auth='user')
+    def search(self, **kw):
+        query = kw.get('query', '')
+        limit = min(int(kw.get('limit', 50)), 200)
+
+        if not query or len(query) < 2:
+            return {'results': []}
+
+        cr = request.env.cr
+        cr.execute("""
+            SELECT m.id, m.subject, m.sender_email, m.email_date, m.thread_id,
+                   ts_rank(
+                       to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_text,'')),
+                       plainto_tsquery('simple', %s)
+                   ) as rank
+            FROM casafolino_mail_message m
+            WHERE m.state IN ('keep', 'auto_keep')
+              AND m.is_deleted = false
+              AND to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_text,''))
+                  @@ plainto_tsquery('simple', %s)
+              AND m.account_id IN (
+                  SELECT id FROM casafolino_mail_account WHERE active = true
+              )
+            ORDER BY rank DESC, m.email_date DESC
+            LIMIT %s
+        """, (query, query, limit))
+
+        rows = cr.dictfetchall()
+        results = []
+        for r in rows:
+            results.append({
+                'id': r['id'],
+                'subject': r['subject'] or '',
+                'sender_email': r['sender_email'] or '',
+                'email_date': str(r['email_date'])[:16] if r['email_date'] else '',
+                'thread_id': r['thread_id'],
+            })
+
+        return {'results': results}
+
+    # ── Reply Assistant AI ───────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/message/<int:message_id>/reply_assistant', type='json', auth='user')
+    def reply_assistant(self, message_id, **kw):
+        import requests as http_requests
+
+        msg = request.env['casafolino.mail.message'].browse(message_id)
+        if not msg.exists():
+            return {'error': 'Message not found'}
+
+        partner = msg.partner_id
+        intel = None
+        if partner:
+            intel = request.env['casafolino.partner.intelligence'].search([
+                ('partner_id', '=', partner.id)
+            ], limit=1)
+
+        # Thread history (last 3)
+        thread_msgs = []
+        if msg.thread_id:
+            thread_msgs = msg.thread_id.message_ids.sorted('email_date', reverse=True)[:3]
+
+        context_text = (
+            "Azienda: %s\n"
+            "Paese: %s\n"
+            "Intent email: %s\n"
+            "Hotness: %s\n"
+            "Oggetto: %s\n"
+            "Body ultima email: %s\n"
+            "Ultimi scambi: %s"
+        ) % (
+            partner.name if partner else 'Sconosciuto',
+            partner.country_id.name if partner and partner.country_id else 'N/A',
+            msg.intent_detected or 'general',
+            '%s %s' % (intel.hotness_tier, intel.hotness_score) if intel else 'N/A',
+            msg.subject or '',
+            (msg.body_text or msg.body_html or '')[:500],
+            ', '.join([(m.subject or '')[:50] for m in thread_msgs]),
+        )
+
+        prompt = (
+            "Sei l'assistente email di Antonio Folino, CEO di CasaFolino (food export italiano).\n"
+            "CONTESTO:\n%s\n\n"
+            "Genera 3 bozze di risposta email in italiano, professionali ma calde.\n"
+            "Formato JSON (solo JSON, nient'altro):\n"
+            '{"bozze": [\n'
+            '  {"tipo": "Diretta", "testo": "..."},\n'
+            '  {"tipo": "Relazionale", "testo": "..."},\n'
+            '  {"tipo": "Proattiva", "testo": "..."}\n'
+            ']}\n\n'
+            "Regole:\n"
+            "- Diretta: 3-4 righe, risposta secca al punto\n"
+            "- Relazionale: 4-5 righe, richiamo a storia/contesto, poi risposta\n"
+            "- Proattiva: 5-6 righe, risposta + proposta prossimo step (call, invio materiale, meeting)\n"
+            "- Non firmare (la firma viene aggiunta automaticamente)\n"
+            "- Non inventare date, numeri, prezzi"
+        ) % context_text
+
+        ICP = request.env['ir.config_parameter'].sudo()
+        api_key = ICP.get_param('casafolino.groq_api_key')
+        if not api_key:
+            return {'error': 'Groq API key not configured'}
+
+        try:
+            r = http_requests.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                headers={'Authorization': 'Bearer %s' % api_key, 'Content-Type': 'application/json'},
+                json={
+                    'model': 'llama-3.3-70b-versatile',
+                    'messages': [{'role': 'user', 'content': prompt}],
+                    'max_tokens': 800,
+                    'temperature': 0.5,
+                    'response_format': {'type': 'json_object'},
+                },
+                timeout=20,
+            )
+            r.raise_for_status()
+            content = r.json()['choices'][0]['message']['content']
+            data = json.loads(content)
+            return {'bozze': data.get('bozze', [])}
+        except Exception as e:
+            _logger.error('[mail v3] Reply assistant fail: %s', e)
+            return {'error': str(e)[:200]}
+
+    # ── Compose Wizard Action ────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/compose/open', type='json', auth='user')
+    def compose_open(self, **kw):
+        """Return action dict to open compose wizard with pre-filled values."""
+        account_id = kw.get('account_id')
+        mode = kw.get('mode', 'new')
+        reply_to_id = kw.get('reply_to_id')
+        prefilled_body = kw.get('prefilled_body', '')
+
+        if not account_id:
+            account = request.env['casafolino.mail.account'].search([
+                ('responsible_user_id', '=', request.env.uid),
+                ('active', '=', True),
+            ], limit=1)
+            account_id = account.id if account else False
+
+        ctx = {
+            'default_account_id': account_id,
+        }
+
+        if reply_to_id and mode in ('reply', 'reply_all', 'forward'):
+            orig = request.env['casafolino.mail.message'].browse(reply_to_id)
+            if orig.exists():
+                ctx['default_in_reply_to_message_id'] = orig.id
+
+                if mode == 'reply':
+                    ctx['default_to_emails'] = orig.sender_email if orig.direction == 'inbound' else orig.recipient_emails
+                    ctx['default_subject'] = 'Re: ' + _normalize_subject(orig.subject or '')
+                elif mode == 'reply_all':
+                    ctx['default_to_emails'] = orig.sender_email if orig.direction == 'inbound' else orig.recipient_emails
+                    ctx['default_cc_emails'] = orig.cc_emails or ''
+                    ctx['default_subject'] = 'Re: ' + _normalize_subject(orig.subject or '')
+                elif mode == 'forward':
+                    ctx['default_to_emails'] = ''
+                    ctx['default_subject'] = 'Fwd: ' + _normalize_subject(orig.subject or '')
+
+                quote_date = str(orig.email_date)[:16] if orig.email_date else ''
+                quote_from = orig.sender_name or orig.sender_email or ''
+                quoted = (
+                    '<br><br>'
+                    '<div style="border-left:2px solid #ccc;padding-left:12px;margin-left:4px;color:#666;">'
+                    '<p>Il %s, %s ha scritto:</p>'
+                    '%s'
+                    '</div>' % (quote_date, quote_from, orig.body_html or orig.body_plain or '')
+                )
+                ctx['default_body_html'] = (prefilled_body or '') + quoted
+
+        if prefilled_body and 'default_body_html' not in ctx:
+            ctx['default_body_html'] = prefilled_body
+
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'casafolino.mail.compose.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': ctx,
+        }

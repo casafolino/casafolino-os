@@ -6,7 +6,8 @@
         <i class="fa fa-spinner fa-spin"/>
       </div>
       <div t-if="!props.loading and props.data" class="mv3-sidebar360__content">
-        <!-- Company Block -->
+
+        <!-- 1. Company / Identity Block -->
         <div class="mv3-sidebar360__block mv3-company-block" t-if="props.data.company and props.data.company.name">
           <div class="mv3-company-block__header">
             <h3 t-out="props.data.company.name"/>
@@ -17,7 +18,7 @@
             </span>
           </div>
           <div class="mv3-company-block__meta">
-            <t t-if="props.data.company.country_flag">
+            <t t-if="props.data.company.country">
               <span t-out="props.data.company.country"/>
             </t>
             <span t-if="props.data.company.vat" class="mv3-company-block__vat">
@@ -36,7 +37,26 @@
           </div>
         </div>
 
-        <!-- Person Block -->
+        <!-- 2. NBA Block (sticky) -->
+        <div t-if="props.data.nba and props.data.nba.nba_text"
+             t-att-class="'mv3-nba-block mv3-nba-block--' + (props.data.nba.nba_urgency || 'info')">
+          <div class="mv3-nba-block__icon">🎯</div>
+          <div class="mv3-nba-block__body">
+            <div class="mv3-nba-block__label">Next Best Action</div>
+            <div class="mv3-nba-block__text" t-out="props.data.nba.nba_text"/>
+            <div t-if="props.data.nba.nba_from_llm" class="mv3-nba-block__meta">
+              <span>🤖 AI suggestion</span>
+            </div>
+            <div t-elif="props.data.nba.nba_rule_id" class="mv3-nba-block__meta">
+              <span>Regola #<t t-out="props.data.nba.nba_rule_id"/></span>
+            </div>
+          </div>
+          <button class="mv3-nba-block__dismiss"
+                  t-on-click="dismissNba"
+                  title="Ignora suggerimento">×</button>
+        </div>
+
+        <!-- 3. Person Block -->
         <div class="mv3-sidebar360__block mv3-person-block" t-if="props.data.person and props.data.person.name">
           <h4>Contatto</h4>
           <div class="mv3-person-block__name" t-out="props.data.person.name"/>
@@ -49,7 +69,7 @@
           </div>
         </div>
 
-        <!-- Relation Block -->
+        <!-- 4. Relation Block -->
         <div class="mv3-sidebar360__block mv3-relation-block" t-if="props.data.relation">
           <h4>Relazione</h4>
           <div class="mv3-relation-block__row">
@@ -66,7 +86,7 @@
           </div>
         </div>
 
-        <!-- Business Block -->
+        <!-- 5. Business Block -->
         <div class="mv3-sidebar360__block mv3-business-block" t-if="props.data.business">
           <h4>Business</h4>
           <div class="mv3-business-block__row">
@@ -84,7 +104,49 @@
           </div>
         </div>
 
-        <!-- Quick Actions Block -->
+        <!-- 6. Pipeline Block -->
+        <div class="mv3-sidebar360__block mv3-pipeline-block"
+             t-if="props.data.pipeline and props.data.pipeline.length > 0">
+          <h4>Pipeline</h4>
+          <t t-foreach="props.data.pipeline" t-as="lead" t-key="lead.id">
+            <div class="mv3-pipeline-block__item">
+              <div class="mv3-pipeline-block__name" t-out="lead.name"/>
+              <div class="mv3-pipeline-block__meta">
+                <span class="mv3-pipeline-block__stage" t-out="lead.stage"/>
+                <span t-if="lead.revenue" class="mv3-pipeline-block__revenue">
+                  €<t t-out="Math.round(lead.revenue).toLocaleString('it-IT')"/>
+                </span>
+              </div>
+            </div>
+          </t>
+        </div>
+
+        <!-- 7. Timeline Block -->
+        <div class="mv3-sidebar360__block mv3-timeline-block"
+             t-if="props.data.timeline and props.data.timeline.length > 0">
+          <h4>Timeline</h4>
+          <t t-foreach="props.data.timeline" t-as="ev" t-key="ev.id">
+            <div class="mv3-timeline-block__item">
+              <span class="mv3-timeline-block__icon" t-out="this.getDirectionIcon(ev.direction)"/>
+              <div class="mv3-timeline-block__detail">
+                <div class="mv3-timeline-block__subject" t-out="ev.subject"/>
+                <div class="mv3-timeline-block__date" t-out="ev.date"/>
+              </div>
+            </div>
+          </t>
+        </div>
+
+        <!-- 8. Private Notes Block -->
+        <div class="mv3-sidebar360__block mv3-notes-block">
+          <h4>Note private</h4>
+          <textarea class="mv3-notes-block__textarea"
+                    t-att-value="state.notesValue"
+                    t-on-input="onNotesInput"
+                    placeholder="Scrivi note private su questo partner..."
+                    rows="3"/>
+        </div>
+
+        <!-- 9. Quick Actions Block -->
         <div class="mv3-sidebar360__block mv3-actions-block" t-if="props.data.quick_actions">
           <h4>Azioni rapide</h4>
           <div class="mv3-actions-block__buttons">
@@ -96,6 +158,7 @@
             </t>
           </div>
         </div>
+
       </div>
     </div>
   </t>

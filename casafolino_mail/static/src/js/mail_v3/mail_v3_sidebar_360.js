@@ -1,9 +1,16 @@
 /** @odoo-module **/
-import { Component } from "@odoo/owl";
+import { Component, useState } from "@odoo/owl";
 
 export class Sidebar360 extends Component {
     static template = "casafolino_mail.Sidebar360";
     static props = ["*"];
+
+    setup() {
+        this.state = useState({
+            notesValue: (this.props.data && this.props.data.notes) || '',
+        });
+        this._notesSaveTimeout = null;
+    }
 
     getHotnessClass(tier) {
         return 'mv3-hotness-badge--' + (tier || 'dormant');
@@ -18,5 +25,36 @@ export class Sidebar360 extends Component {
         if (this.props.onQuickAction) {
             this.props.onQuickAction(key);
         }
+    }
+
+    dismissNba() {
+        const partnerId = this.props.data && this.props.data.nba && this.props.data.nba.partner_id;
+        if (partnerId && this.props.onDismissNba) {
+            this.props.onDismissNba(partnerId);
+        }
+    }
+
+    onNotesInput(ev) {
+        this.state.notesValue = ev.target.value;
+        if (this._notesSaveTimeout) clearTimeout(this._notesSaveTimeout);
+        this._notesSaveTimeout = setTimeout(() => {
+            this._saveNotes();
+        }, 1000);
+    }
+
+    _saveNotes() {
+        const partnerId = this.props.data && this.props.data.partner_id;
+        if (partnerId && this.props.onSaveNotes) {
+            this.props.onSaveNotes(partnerId, this.state.notesValue);
+        }
+    }
+
+    getDirectionIcon(direction) {
+        return direction === 'outbound' ? '↗️' : '↙️';
+    }
+
+    formatTimelineDate(dateStr) {
+        if (!dateStr) return '';
+        return dateStr;
     }
 }
