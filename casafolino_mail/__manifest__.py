@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.8.4.0',
+    'version': '18.0.8.5.0',
     'summary': 'Cockpit commerciale Mail V3 + Intelligence per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -26,6 +26,11 @@
         # V3 views + menus
         'views/mail_v3_compose_wizard_views.xml',
         'views/feedback_views.xml',
+        # F6 views (actions before menus)
+        'views/lead_rule_views.xml',
+        'views/followup_rule_views.xml',
+        'views/mail_template_views.xml',
+        'views/sale_order_views.xml',
         # menus AFTER all action definitions
         'views/menus.xml',
         'views/mail_v3_menus.xml',

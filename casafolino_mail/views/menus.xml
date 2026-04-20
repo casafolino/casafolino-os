@@ -102,4 +102,22 @@
         parent="menu_casafolino_mail_config"
         sequence="2"
         action="action_casafolino_mail_policy"/>
+
+    <menuitem id="menu_casafolino_mail_lead_rules"
+        name="Regole Auto-link Lead"
+        parent="menu_casafolino_mail_config"
+        sequence="3"
+        action="action_casafolino_mail_lead_rule"/>
+
+    <menuitem id="menu_casafolino_mail_followup_rules"
+        name="Regole Follow-up"
+        parent="menu_casafolino_mail_config"
+        sequence="4"
+        action="action_casafolino_mail_followup_rule"/>
+
+    <menuitem id="menu_casafolino_mail_templates"
+        name="Template Email"
+        parent="menu_casafolino_mail_config"
+        sequence="5"
+        action="action_casafolino_mail_template"/>
 </odoo>
