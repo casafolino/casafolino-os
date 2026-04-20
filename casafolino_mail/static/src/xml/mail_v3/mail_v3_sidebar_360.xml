@@ -35,6 +35,10 @@
               <span class="mv3-tag"><t t-out="tag.name"/></span>
             </t>
           </div>
+          <div class="mv3-company-block__feedback">
+            <button class="btn btn-xs btn-outline-success" t-on-click="pinHot" title="Pin Hot">🔥 Pin Hot</button>
+            <button class="btn btn-xs btn-outline-secondary" t-on-click="pinIgnore" title="Pin Ignore">🚫 Ignora</button>
+          </div>
         </div>
 
         <!-- 2. NBA Block (sticky) -->

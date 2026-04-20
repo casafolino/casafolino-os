@@ -38,24 +38,67 @@ export class MailV3Client extends Component {
             replyAssistantMessageId: null,
             // Settings drawer
             settingsVisible: false,
+            settingsTab: 'signatures',
+            signatures: [],
+            preferences: {},
+            groqTestResult: null,
             // Shortcuts help
             shortcutsHelpVisible: false,
+            // Dark mode
+            darkMode: false,
+            // Snooze popup
+            snoozePopupVisible: false,
+            snoozeThreadId: null,
+            snoozeCustomDate: '',
+            snoozeType: 'until_date',
+            // Undo send
+            undoToast: false,
+            undoOutboxId: null,
+            undoCountdown: 10,
+            // Bulk selection
+            bulkMode: false,
+            selectedThreadIds: [],
+            // Mobile
+            mobileView: null, // null = desktop, 'list' | 'reading' | 'sidebar'
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
+        this._undoTimer = null;
+        this._undoCountdownTimer = null;
 
         onWillStart(async () => {
             await this.loadAccounts();
             await this.loadThreads();
+            await this._loadPreferences();
+            this._detectMobile();
         });
 
         onMounted(() => {
             document.addEventListener('keydown', this._keyHandler);
+            window.addEventListener('resize', () => this._detectMobile());
         });
 
         onWillUnmount(() => {
             document.removeEventListener('keydown', this._keyHandler);
+            if (this._undoTimer) clearTimeout(this._undoTimer);
+            if (this._undoCountdownTimer) clearInterval(this._undoCountdownTimer);
         });
+    }
+
+    // ── Mobile detection ────────────────────────────────────────
+
+    _detectMobile() {
+        if (window.innerWidth <= 768) {
+            if (!this.state.mobileView) {
+                this.state.mobileView = 'list';
+            }
+        } else {
+            this.state.mobileView = null;
+        }
+    }
+
+    mobileBack() {
+        this.state.mobileView = 'list';
     }
 
     // ── Data loading ────────────────────────────────────────────
@@ -72,13 +115,14 @@ export class MailV3Client extends Component {
     async loadThreads() {
         this.state.loading.threads = true;
         try {
+            const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
             const res = await rpc('/cf/mail/v3/threads/list', {
                 account_ids: this.state.selectedAccountIds,
                 state: 'keep',
                 limit: 50,
                 offset: 0,
                 filters: {},
-                folder: this.state.activeFolder === 'inbox' ? null : this.state.activeFolder,
+                folder: folder,
             });
             this.state.threads = res.threads || [];
             this.state.totalThreads = res.total || 0;
@@ -94,6 +138,12 @@ export class MailV3Client extends Component {
         const idx = this.state.threads.findIndex(t => t.id === threadId);
         this.state.selectedThreadIndex = idx;
         this.state.loading.messages = true;
+
+        // Mobile: switch to reading pane
+        if (this.state.mobileView) {
+            this.state.mobileView = 'reading';
+        }
+
         try {
             const res = await rpc('/cf/mail/v3/thread/' + threadId + '/messages');
             this.state.messages = res.messages || [];
@@ -208,14 +258,13 @@ export class MailV3Client extends Component {
     }
 
     onSelectDraft(body) {
-        // Close assistant, open compose with selected AI draft
         const msgId = this.state.replyAssistantMessageId;
         this.state.replyAssistantVisible = false;
         this.state.replyAssistantMessageId = null;
         this._openComposeWizard('reply', msgId, body);
     }
 
-    // ── NBA dismiss ─────────────────────────────────────────────
+    // ── NBA dismiss + Calibration Feedback ──────────────────────
 
     async dismissNba(partnerId) {
         try {
@@ -225,6 +274,16 @@ export class MailV3Client extends Component {
             }
         } catch (e) {
             console.error('[mail v3] NBA dismiss error:', e);
+        }
+    }
+
+    async logFeedback(partnerId, actionType) {
+        try {
+            await rpc('/cf/mail/v3/partner/' + partnerId + '/feedback', {
+                action_type: actionType,
+            });
+        } catch (e) {
+            console.error('[mail v3] feedback error:', e);
         }
     }
 
@@ -238,14 +297,228 @@ export class MailV3Client extends Component {
         }
     }
 
+    // ── Dark Mode ───────────────────────────────────────────────
+
+    async toggleDarkMode() {
+        const newMode = !this.state.darkMode;
+        this.state.darkMode = newMode;
+        try {
+            await rpc('/cf/mail/v3/user/dark_mode', { enabled: newMode });
+        } catch (e) {
+            console.error('[mail v3] dark mode toggle error:', e);
+        }
+    }
+
+    // ── Snooze ──────────────────────────────────────────────────
+
+    openSnoozePopup(threadId) {
+        this.state.snoozeThreadId = threadId || this.state.selectedThreadId;
+        this.state.snoozePopupVisible = true;
+        this.state.snoozeCustomDate = '';
+        this.state.snoozeType = 'until_date';
+    }
+
+    closeSnoozePopup() {
+        this.state.snoozePopupVisible = false;
+    }
+
+    onSnoozeCustomDateChange(ev) {
+        this.state.snoozeCustomDate = ev.target.value;
+    }
+
+    onSnoozeTypeChange(ev) {
+        this.state.snoozeType = ev.target.value;
+    }
+
+    async snoozePreset(preset) {
+        const now = new Date();
+        let wake;
+        switch (preset) {
+            case 'tonight':
+                wake = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0);
+                if (wake <= now) wake.setDate(wake.getDate() + 1);
+                break;
+            case 'tomorrow':
+                wake = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0);
+                break;
+            case 'monday': {
+                const daysUntilMonday = (8 - now.getDay()) % 7 || 7;
+                wake = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday, 9, 0);
+                break;
+            }
+            case 'week':
+                wake = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                wake.setHours(9, 0, 0, 0);
+                break;
+        }
+        await this._doSnooze(wake.toISOString().slice(0, 19).replace('T', ' '));
+    }
+
+    async confirmSnooze() {
+        if (this.state.snoozeCustomDate) {
+            const wake = this.state.snoozeCustomDate.replace('T', ' ') + ':00';
+            await this._doSnooze(wake);
+        }
+    }
+
+    async _doSnooze(wakeAt) {
+        const threadId = this.state.snoozeThreadId || this.state.selectedThreadId;
+        if (!threadId) return;
+        try {
+            await rpc('/cf/mail/v3/thread/' + threadId + '/snooze', {
+                snooze_type: this.state.snoozeType,
+                wake_at: wakeAt,
+            });
+            this.state.snoozePopupVisible = false;
+            await this.loadThreads();
+        } catch (e) {
+            console.error('[mail v3] snooze error:', e);
+        }
+    }
+
+    // ── Undo Send ───────────────────────────────────────────────
+
+    showUndoToast(outboxId) {
+        this.state.undoToast = true;
+        this.state.undoOutboxId = outboxId;
+        this.state.undoCountdown = 10;
+
+        this._undoCountdownTimer = setInterval(() => {
+            this.state.undoCountdown--;
+            if (this.state.undoCountdown <= 0) {
+                this._clearUndoToast();
+            }
+        }, 1000);
+
+        this._undoTimer = setTimeout(() => {
+            this._clearUndoToast();
+        }, 10500);
+    }
+
+    _clearUndoToast() {
+        this.state.undoToast = false;
+        this.state.undoOutboxId = null;
+        if (this._undoTimer) { clearTimeout(this._undoTimer); this._undoTimer = null; }
+        if (this._undoCountdownTimer) { clearInterval(this._undoCountdownTimer); this._undoCountdownTimer = null; }
+    }
+
+    async undoSend() {
+        if (!this.state.undoOutboxId) return;
+        try {
+            await rpc('/cf/mail/v3/outbox/' + this.state.undoOutboxId + '/undo');
+            this._clearUndoToast();
+        } catch (e) {
+            console.error('[mail v3] undo send error:', e);
+        }
+    }
+
+    // ── Bulk Actions ────────────────────────────────────────────
+
+    toggleThreadSelect(threadId) {
+        const ids = this.state.selectedThreadIds || [];
+        const idx = ids.indexOf(threadId);
+        if (idx >= 0) {
+            ids.splice(idx, 1);
+        } else {
+            ids.push(threadId);
+        }
+        this.state.selectedThreadIds = [...ids];
+        this.state.bulkMode = ids.length > 0;
+    }
+
+    clearBulkSelection() {
+        this.state.selectedThreadIds = [];
+        this.state.bulkMode = false;
+    }
+
+    async bulkAction(action) {
+        if (!this.state.selectedThreadIds.length) return;
+        try {
+            await rpc('/cf/mail/v3/threads/bulk', {
+                action: action,
+                thread_ids: this.state.selectedThreadIds,
+            });
+            this.clearBulkSelection();
+            await this.loadThreads();
+        } catch (e) {
+            console.error('[mail v3] bulk action error:', e);
+        }
+    }
+
+    openBulkSnooze() {
+        this.state.snoozeThreadId = null; // bulk mode uses selectedThreadIds
+        this.state.snoozePopupVisible = true;
+    }
+
     // ── Settings ────────────────────────────────────────────────
 
-    openSettings() {
+    async openSettings() {
         this.state.settingsVisible = true;
+        this.state.settingsTab = 'signatures';
+        await this._loadSignatures();
     }
 
     closeSettings() {
         this.state.settingsVisible = false;
+    }
+
+    async _loadPreferences() {
+        try {
+            const prefs = await rpc('/cf/mail/v3/user/preferences');
+            this.state.preferences = prefs;
+            this.state.darkMode = prefs.dark_mode || false;
+        } catch (e) {
+            console.error('[mail v3] load preferences error:', e);
+        }
+    }
+
+    async _loadSignatures() {
+        try {
+            const res = await rpc('/cf/mail/v3/signatures');
+            this.state.signatures = res.signatures || [];
+        } catch (e) {
+            console.error('[mail v3] load signatures error:', e);
+        }
+    }
+
+    async onSettingChange(ev) {
+        const field = ev.target.dataset.field;
+        const value = ev.target.value;
+        this.state.preferences[field] = value;
+        await this._savePreference(field, value);
+    }
+
+    async onSettingToggle(ev) {
+        const field = ev.target.dataset.field;
+        const value = ev.target.checked;
+        this.state.preferences[field] = value;
+        await this._savePreference(field, value);
+    }
+
+    async onAiTempChange(ev) {
+        const value = parseFloat(ev.target.value);
+        this.state.preferences.ai_temperature = value;
+        await this._savePreference('ai_temperature', value);
+    }
+
+    async _savePreference(field, value) {
+        try {
+            const payload = {};
+            payload[field] = value;
+            await rpc('/cf/mail/v3/user/preferences/save', payload);
+        } catch (e) {
+            console.error('[mail v3] save preference error:', e);
+        }
+    }
+
+    async testGroqConnection() {
+        this.state.groqTestResult = null;
+        try {
+            const res = await rpc('/cf/mail/v3/settings/test_groq');
+            this.state.groqTestResult = res;
+        } catch (e) {
+            this.state.groqTestResult = { success: false, error: 'Network error' };
+        }
     }
 
     // ── Search ──────────────────────────────────────────────────
@@ -288,78 +561,79 @@ export class MailV3Client extends Component {
     // ── Keyboard Shortcuts ──────────────────────────────────────
 
     _onKeyDown(ev) {
-        // Skip when focus is on input/textarea/contenteditable
         const tag = ev.target.tagName;
         const editable = ev.target.getAttribute('contenteditable');
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable === 'true') {
-            // Allow Cmd+Enter in inputs
-            if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
-                // Handled by compose wizard natively
-            }
             return;
         }
 
         const threads = this.state.threads || [];
 
         switch (ev.key) {
-            case 'j': // Next thread
+            case 'j':
                 ev.preventDefault();
                 if (this.state.selectedThreadIndex < threads.length - 1) {
-                    const nextIdx = this.state.selectedThreadIndex + 1;
-                    this.selectThread(threads[nextIdx].id);
+                    this.selectThread(threads[this.state.selectedThreadIndex + 1].id);
                 }
                 break;
-            case 'k': // Prev thread
+            case 'k':
                 ev.preventDefault();
                 if (this.state.selectedThreadIndex > 0) {
-                    const prevIdx = this.state.selectedThreadIndex - 1;
-                    this.selectThread(threads[prevIdx].id);
+                    this.selectThread(threads[this.state.selectedThreadIndex - 1].id);
                 }
                 break;
-            case 'r': // Reply
+            case 'r':
                 ev.preventDefault();
-                if (!ev.shiftKey) {
-                    this._shortcutReply('reply');
-                }
+                if (!ev.shiftKey) this._shortcutReply('reply');
                 break;
-            case 'R': // Reply all (Shift+R)
+            case 'R':
                 ev.preventDefault();
                 this._shortcutReply('reply_all');
                 break;
-            case 'f': // Forward
+            case 'f':
                 ev.preventDefault();
                 this._shortcutReply('forward');
                 break;
-            case 'a': // AI reply assistant
+            case 'a':
                 ev.preventDefault();
                 this._shortcutAiReply();
                 break;
-            case 'e': // Archive
+            case 'e':
                 ev.preventDefault();
                 this._shortcutAction('archive');
                 break;
-            case '#': // Delete
+            case '#':
                 ev.preventDefault();
                 this._shortcutAction('delete_soft');
                 break;
-            case 's': // Star
+            case 's':
                 ev.preventDefault();
                 this._shortcutAction('toggle_star');
                 break;
-            case 'u': // Mark unread
+            case 'u':
                 ev.preventDefault();
                 this._shortcutAction('mark_unread');
                 break;
-            case 'c': // Compose new
+            case 'c':
                 ev.preventDefault();
                 this.openComposeNew();
                 break;
-            case '/': // Focus search
+            case 'x':
+                ev.preventDefault();
+                if (this.state.selectedThreadId) {
+                    this.toggleThreadSelect(this.state.selectedThreadId);
+                }
+                break;
+            case 'z':
+                ev.preventDefault();
+                this.openSnoozePopup();
+                break;
+            case '/':
                 ev.preventDefault();
                 const searchInput = document.querySelector('.mv3-search__input');
                 if (searchInput) searchInput.focus();
                 break;
-            case '?': // Shortcuts help
+            case '?':
                 ev.preventDefault();
                 this.state.shortcutsHelpVisible = !this.state.shortcutsHelpVisible;
                 break;
@@ -369,8 +643,7 @@ export class MailV3Client extends Component {
     _shortcutReply(mode) {
         const msgs = this.state.messages || [];
         if (msgs.length > 0) {
-            const lastMsg = msgs[msgs.length - 1];
-            this._openComposeWizard(mode, lastMsg.id);
+            this._openComposeWizard(mode, msgs[msgs.length - 1].id);
         }
     }
 

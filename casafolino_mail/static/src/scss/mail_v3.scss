@@ -972,3 +972,288 @@ $mv3-line-height: 1.45;
         font-size: 10px;
     }
 }
+
+// ── F5: Dark Mode ────────────────────────────────────────────
+[data-theme="dark"] {
+    .mv3-client {
+        background: #1a1a1a;
+        color: #e0e0e0;
+    }
+    .mv3-client__sidebar-left { background: #141414; border-color: #333; }
+    .mv3-client__thread-list { border-color: #333; }
+    .mv3-client__reading-pane { background: #1a1a1a; }
+    .mv3-client__sidebar-360 { background: #141414; border-color: #333; }
+    .mv3-thread-item { border-color: #333; &:hover { background: #252525; } }
+    .mv3-thread-item--selected { background: #1e2d15; border-left-color: $mv3-primary; }
+    .mv3-search__input { background: #252525; color: #e0e0e0; border-color: #444; }
+    .mv3-message { border-color: #333; }
+    .mv3-message--outbound { background: #1e2d15; }
+    .mv3-sidebar360 .mv3-company-block,
+    .mv3-sidebar360 .mv3-person-block,
+    .mv3-sidebar360 .mv3-notes-block { border-color: #333; }
+    .mv3-modal-overlay { background: rgba(0,0,0,0.7); }
+    .mv3-shortcuts-help, .mv3-settings-drawer, .mv3-snooze-popup { background: #222; color: #e0e0e0; }
+    .mv3-nba-block { &--critical { background: #3d1515; } &--high { background: #3d2815; } }
+    .mv3-search-results { background: #222; border-color: #444; }
+    .mv3-search-results__item:hover { background: #333; }
+}
+
+// ── F5: Dark Mode Toggle ─────────────────────────────────────
+.mv3-dark-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    &:hover { background: rgba(0,0,0,0.05); }
+}
+[data-theme="dark"] .mv3-dark-toggle:hover { background: rgba(255,255,255,0.1); }
+
+// ── F5: Snooze Popup ─────────────────────────────────────────
+.mv3-snooze-popup {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    z-index: 1100;
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        h4 { margin: 0; }
+    }
+
+    &__presets {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    &__preset {
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 10px 16px;
+        cursor: pointer;
+        text-align: left;
+        font-size: 13px;
+        transition: all 0.15s;
+        &:hover { background: rgba($mv3-primary, 0.1); border-color: $mv3-primary; }
+    }
+
+    &__custom, &__type {
+        margin-bottom: 12px;
+        label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+    }
+}
+
+// ── F5: Undo Send Toast ──────────────────────────────────────
+.mv3-undo-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    z-index: 9999;
+    animation: mv3-toast-in 0.3s ease;
+
+    &__btn {
+        background: $mv3-primary;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 16px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        &:hover { background: darken($mv3-primary, 10%); }
+    }
+}
+
+@keyframes mv3-toast-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+// ── F5: Bulk Actions Toolbar ─────────────────────────────────
+.mv3-bulk-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba($mv3-primary, 0.1);
+    border-bottom: 1px solid rgba($mv3-primary, 0.2);
+
+    &__count {
+        font-size: 12px;
+        font-weight: 600;
+        color: $mv3-primary;
+    }
+
+    &__btn {
+        background: none;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 13px;
+        &:hover { background: rgba($mv3-primary, 0.1); border-color: $mv3-primary; }
+    }
+}
+
+// ── F5: Mobile Responsive ────────────────────────────────────
+.mv3-mobile-back {
+    padding: 12px 16px;
+    border-bottom: 1px solid $mv3-border;
+    cursor: pointer;
+    font-size: 13px;
+    color: $mv3-primary;
+    font-weight: 500;
+    &:hover { background: rgba($mv3-primary, 0.05); }
+}
+
+@media (max-width: 768px) {
+    .mv3-client {
+        flex-direction: column;
+
+        &__sidebar-left {
+            width: 100%;
+            flex: 0 0 auto;
+            height: auto;
+            flex-direction: row;
+            overflow-x: auto;
+            padding: 8px;
+            border-right: none;
+            border-bottom: 1px solid $mv3-border;
+        }
+
+        &__thread-list,
+        &__reading-pane,
+        &__sidebar-360 {
+            width: 100%;
+            flex: 1;
+        }
+
+        &__thread-list { flex: 0 0 auto; }
+        &__sidebar-360 { border-left: none; border-top: 1px solid $mv3-border; }
+    }
+
+    // Mobile navigation: single-pane
+    .mv3-client--mobile-view-list {
+        .mv3-client__reading-pane,
+        .mv3-client__sidebar-360 { display: none; }
+        .mv3-client__thread-list { flex: 1; overflow-y: auto; }
+    }
+
+    .mv3-client--mobile-view-reading {
+        .mv3-client__thread-list,
+        .mv3-client__sidebar-360 { display: none; }
+        .mv3-client__reading-pane { flex: 1; }
+    }
+
+    .mv3-client--mobile-view-sidebar {
+        .mv3-client__thread-list,
+        .mv3-client__reading-pane { display: none; }
+        .mv3-client__sidebar-360 { flex: 1; }
+    }
+
+    // Sidebar left horizontal on mobile
+    .mv3-sidebar-left {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        height: auto !important;
+        padding: 4px 8px !important;
+        gap: 8px;
+    }
+
+    .mv3-sidebar-left__divider { display: none; }
+    .mv3-sidebar-left__spacer { display: none; }
+}
+
+// ── F5: Settings Drawer Tabs ─────────────────────────────────
+.mv3-settings-drawer__tabs {
+    display: flex;
+    border-bottom: 1px solid $mv3-border;
+    margin-bottom: 16px;
+}
+
+.mv3-settings-drawer__tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    &:hover { color: $mv3-primary; }
+    &.active {
+        color: $mv3-primary;
+        border-bottom-color: $mv3-primary;
+    }
+}
+
+.mv3-settings-drawer__field {
+    margin-bottom: 12px;
+    label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+    select, input[type="range"] { width: 100%; }
+}
+
+.mv3-settings-drawer__item {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    &:last-child { border-bottom: none; }
+}
+
+// ── F5: Analytics ────────────────────────────────────────────
+.mv3-analytics {
+    max-width: 1200px;
+    margin: 0 auto;
+
+    &__card {
+        background: white;
+        border: 1px solid $mv3-border;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    &__card-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: $mv3-primary;
+    }
+
+    &__card-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+    }
+}
+
+// ── F5: Thread checkbox (bulk mode) ──────────────────────────
+.mv3-thread-item__checkbox {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    cursor: pointer;
+    accent-color: $mv3-primary;
+}

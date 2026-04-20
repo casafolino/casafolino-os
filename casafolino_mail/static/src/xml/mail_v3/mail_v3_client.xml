@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates>
   <t t-name="casafolino_mail.MailV3Client">
-    <div class="mv3-client">
+    <div t-att-class="'mv3-client' + (state.mobileView ? ' mv3-client--mobile-view-' + state.mobileView : '')"
+         t-att-data-theme="state.darkMode ? 'dark' : 'light'">
       <!-- Sidebar Left compact -->
       <div class="mv3-client__sidebar-left">
         <SidebarLeft
@@ -27,7 +28,36 @@
                     t-on-click="clearSearch">
               <i class="fa fa-times"/>
             </button>
+            <!-- Dark mode toggle -->
+            <button class="mv3-dark-toggle" t-on-click="toggleDarkMode"
+                    t-att-title="state.darkMode ? 'Light mode' : 'Dark mode'">
+              <t t-if="state.darkMode">☀️</t>
+              <t t-else="">🌙</t>
+            </button>
           </div>
+        </div>
+
+        <!-- Bulk actions toolbar -->
+        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-bulk-toolbar">
+          <span class="mv3-bulk-toolbar__count">
+            <t t-out="state.selectedThreadIds.length"/> selezionati
+          </span>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('mark_read')" title="Letti">
+            <i class="fa fa-envelope-open-o"/>
+          </button>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('mark_unread')" title="Non letti">
+            <i class="fa fa-envelope"/>
+          </button>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('archive')" title="Archivia">
+            <i class="fa fa-archive"/>
+          </button>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('delete')" title="Elimina">
+            <i class="fa fa-trash"/>
+          </button>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="openBulkSnooze" title="Snooze">💤</button>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="clearBulkSelection" title="Deseleziona">
+            <i class="fa fa-times"/>
+          </button>
         </div>
 
         <!-- Search results -->
@@ -54,12 +84,19 @@
             accounts="state.accounts"
             loading="state.loading.threads"
             selectedThreadId="state.selectedThreadId"
-            onSelect.bind="selectThread"/>
+            selectedThreadIds="state.selectedThreadIds"
+            bulkMode="state.bulkMode"
+            onSelect.bind="selectThread"
+            onToggleSelect.bind="toggleThreadSelect"/>
         </div>
       </div>
 
       <!-- Reading Pane -->
       <div class="mv3-client__reading-pane">
+        <!-- Mobile back button -->
+        <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
+          <i class="fa fa-arrow-left"/> Torna alla lista
+        </div>
         <ReadingPane
           messages="state.messages"
           loading="state.loading.messages"
@@ -67,7 +104,8 @@
           onReply.bind="openReply"
           onReplyAll.bind="openReplyAll"
           onForward.bind="openForward"
-          onAiReply.bind="openReplyAssistant"/>
+          onAiReply.bind="openReplyAssistant"
+          onSnooze.bind="openSnoozePopup"/>
       </div>
 
       <!-- Sidebar 360 -->
@@ -76,7 +114,8 @@
           data="state.sidebar360Data"
           loading="state.loading.sidebar"
           onDismissNba.bind="dismissNba"
-          onSaveNotes.bind="saveNotes"/>
+          onSaveNotes.bind="saveNotes"
+          onFeedback.bind="logFeedback"/>
       </div>
 
       <!-- Reply Assistant Modal -->
@@ -85,6 +124,49 @@
         messageId="state.replyAssistantMessageId"
         onSelectDraft.bind="onSelectDraft"
         onClose.bind="closeReplyAssistant"/>
+
+      <!-- Snooze Popup -->
+      <div t-if="state.snoozePopupVisible" class="mv3-modal-overlay" t-on-click="closeSnoozePopup">
+        <div class="mv3-snooze-popup" t-on-click.stop="">
+          <div class="mv3-snooze-popup__header">
+            <h4>Snooze</h4>
+            <button class="btn btn-sm btn-link" t-on-click="closeSnoozePopup">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-snooze-popup__body">
+            <div class="mv3-snooze-popup__presets">
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('tonight')">🌙 Stasera 18:00</button>
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('tomorrow')">☀️ Domani 9:00</button>
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('monday')">📅 Lunedì 9:00</button>
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('week')">📆 Tra 1 settimana</button>
+            </div>
+            <div class="mv3-snooze-popup__custom">
+              <label>Data e ora personalizzata:</label>
+              <input type="datetime-local" class="form-control form-control-sm"
+                     t-att-value="state.snoozeCustomDate"
+                     t-on-change="onSnoozeCustomDateChange"/>
+            </div>
+            <div class="mv3-snooze-popup__type">
+              <label>Tipo:</label>
+              <select class="form-control form-control-sm" t-on-change="onSnoozeTypeChange">
+                <option value="until_date">Fino a data</option>
+                <option value="until_reply">Fino a risposta</option>
+                <option value="if_no_reply_by">Se non risponde entro</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm mt-2" t-on-click="confirmSnooze">Conferma Snooze</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Undo Send Toast -->
+      <div t-if="state.undoToast" class="mv3-undo-toast">
+        <span>Email inviata</span>
+        <button class="mv3-undo-toast__btn" t-on-click="undoSend">
+          Annulla (<t t-out="state.undoCountdown"/>s)
+        </button>
+      </div>
 
       <!-- Shortcuts Help Modal -->
       <div t-if="state.shortcutsHelpVisible" class="mv3-modal-overlay" t-on-click="closeShortcutsHelp">
@@ -107,13 +189,15 @@
             <div class="mv3-shortcuts-help__row"><kbd>s</kbd> Speciale</div>
             <div class="mv3-shortcuts-help__row"><kbd>u</kbd> Segna non letto</div>
             <div class="mv3-shortcuts-help__row"><kbd>c</kbd> Nuovo messaggio</div>
+            <div class="mv3-shortcuts-help__row"><kbd>x</kbd> Seleziona thread</div>
+            <div class="mv3-shortcuts-help__row"><kbd>z</kbd> Snooze</div>
             <div class="mv3-shortcuts-help__row"><kbd>/</kbd> Cerca</div>
             <div class="mv3-shortcuts-help__row"><kbd>?</kbd> Questa guida</div>
           </div>
         </div>
       </div>
 
-      <!-- Settings Drawer -->
+      <!-- Settings Drawer (4 tabs) -->
       <div t-if="state.settingsVisible" class="mv3-modal-overlay" t-on-click="closeSettings">
         <div class="mv3-settings-drawer" t-on-click.stop="">
           <div class="mv3-settings-drawer__header">
@@ -122,23 +206,102 @@
               <i class="fa fa-times"/>
             </button>
           </div>
+          <div class="mv3-settings-drawer__tabs">
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'signatures' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'signatures'">Firme</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'display' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'display'">Visualizzazione</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'ai' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'ai'">AI</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'account' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'account'">Account</button>
+          </div>
           <div class="mv3-settings-drawer__body">
-            <div class="mv3-settings-drawer__section">
-              <h5>Account</h5>
+            <!-- Tab: Firme -->
+            <div t-if="state.settingsTab === 'signatures'">
+              <t t-foreach="state.signatures" t-as="sig" t-key="sig.id">
+                <div class="mv3-settings-drawer__item">
+                  <strong t-out="sig.name"/>
+                  <span t-if="sig.is_default" class="badge bg-success ms-2">Default</span>
+                  <div class="text-muted small" t-out="sig.account_name"/>
+                </div>
+              </t>
+              <p t-if="!state.signatures || state.signatures.length === 0" class="text-muted">Nessuna firma configurata</p>
+            </div>
+            <!-- Tab: Visualizzazione -->
+            <div t-if="state.settingsTab === 'display'">
+              <div class="mv3-settings-drawer__field">
+                <label>Reading pane:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="reading_pane_position">
+                  <option value="right" t-att-selected="state.preferences.reading_pane_position === 'right'">Destra</option>
+                  <option value="bottom" t-att-selected="state.preferences.reading_pane_position === 'bottom'">Sotto</option>
+                  <option value="off" t-att-selected="state.preferences.reading_pane_position === 'off'">Disattivato</option>
+                </select>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Densità lista:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="thread_list_density">
+                  <option value="compact" t-att-selected="state.preferences.thread_list_density === 'compact'">Compatto</option>
+                  <option value="comfortable" t-att-selected="state.preferences.thread_list_density === 'comfortable'">Comodo</option>
+                  <option value="spacious" t-att-selected="state.preferences.thread_list_density === 'spacious'">Spazioso</option>
+                </select>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Font size:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="font_size">
+                  <option value="small" t-att-selected="state.preferences.font_size === 'small'">Piccolo</option>
+                  <option value="medium" t-att-selected="state.preferences.font_size === 'medium'">Medio</option>
+                  <option value="large" t-att-selected="state.preferences.font_size === 'large'">Grande</option>
+                </select>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>
+                  <input type="checkbox" t-att-checked="state.preferences.keyboard_shortcuts"
+                         t-on-change="onSettingToggle" data-field="keyboard_shortcuts"/>
+                  Scorciatoie tastiera
+                </label>
+              </div>
+            </div>
+            <!-- Tab: AI -->
+            <div t-if="state.settingsTab === 'ai'">
+              <div class="mv3-settings-drawer__field">
+                <label>
+                  <input type="checkbox" t-att-checked="state.preferences.ai_reply_enabled"
+                         t-on-change="onSettingToggle" data-field="ai_reply_enabled"/>
+                  Reply Assistant attivo
+                </label>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Temperature: <t t-out="state.preferences.ai_temperature"/></label>
+                <input type="range" min="0.1" max="1.0" step="0.1"
+                       t-att-value="state.preferences.ai_temperature"
+                       t-on-input="onAiTempChange" class="form-range"/>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Modello:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="ai_model">
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                  <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                </select>
+              </div>
+              <button class="btn btn-outline-secondary btn-sm mt-2" t-on-click="testGroqConnection">
+                Test connessione Groq
+              </button>
+              <div t-if="state.groqTestResult" class="mt-2">
+                <span t-if="state.groqTestResult.success" class="text-success">Connesso</span>
+                <span t-else="" class="text-danger" t-out="state.groqTestResult.error"/>
+              </div>
+            </div>
+            <!-- Tab: Account -->
+            <div t-if="state.settingsTab === 'account'">
               <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
                 <div class="mv3-settings-drawer__item">
                   <strong t-out="acc.name"/>
-                  <span class="text-muted" t-out="acc.email"/>
+                  <div class="text-muted small" t-out="acc.email"/>
+                  <div class="text-muted small">Stato: <t t-out="acc.state"/></div>
                 </div>
               </t>
-            </div>
-            <div class="mv3-settings-drawer__section">
-              <h5>Scorciatoie</h5>
-              <p class="text-muted">Premi <kbd>?</kbd> per vedere tutte le scorciatoie</p>
-            </div>
-            <div class="mv3-settings-drawer__section">
-              <h5>AI Settings</h5>
-              <p class="text-muted">Groq LLM per risposte guidate e NBA engine</p>
             </div>
           </div>
         </div>

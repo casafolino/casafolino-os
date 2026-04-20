@@ -34,6 +34,20 @@ export class Sidebar360 extends Component {
         }
     }
 
+    pinHot() {
+        const partnerId = this.props.data && this.props.data.partner_id;
+        if (partnerId && this.props.onFeedback) {
+            this.props.onFeedback(partnerId, 'pinned_hot');
+        }
+    }
+
+    pinIgnore() {
+        const partnerId = this.props.data && this.props.data.partner_id;
+        if (partnerId && this.props.onFeedback) {
+            this.props.onFeedback(partnerId, 'pinned_ignore');
+        }
+    }
+
     onNotesInput(ev) {
         this.state.notesValue = ev.target.value;
         if (this._notesSaveTimeout) clearTimeout(this._notesSaveTimeout);

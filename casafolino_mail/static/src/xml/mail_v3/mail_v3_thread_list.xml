@@ -16,6 +16,10 @@
              t-att-class="{'mv3-thread-item--unread': !thread.is_read, 'mv3-thread-item--selected': props.selectedThreadId === thread.id}"
              t-on-click="() => this.selectThread(thread.id)">
           <div class="mv3-thread-item__header">
+            <input t-if="props.bulkMode" type="checkbox"
+                   class="mv3-thread-item__checkbox"
+                   t-att-checked="this.isSelected(thread.id)"
+                   t-on-click.stop="() => this.toggleSelect(thread.id)"/>
             <span class="mv3-thread-item__account-badge"
                   t-att-style="'background:' + this.getAccountColor(thread.account_id)"/>
             <span class="mv3-thread-item__participant" t-out="thread.main_participant"/>

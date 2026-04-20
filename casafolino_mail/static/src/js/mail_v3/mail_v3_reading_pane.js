@@ -63,6 +63,10 @@ export class ReadingPane extends Component {
         if (this.props.onAiReply) this.props.onAiReply(msgId);
     }
 
+    onSnooze(msgId) {
+        if (this.props.onSnooze) this.props.onSnooze();
+    }
+
     formatDate(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);

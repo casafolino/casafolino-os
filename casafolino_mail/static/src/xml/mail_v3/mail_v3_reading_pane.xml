@@ -70,6 +70,9 @@
                 <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onAction('archive', msg.id)">
                   <i class="fa fa-archive"/>
                 </button>
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onSnooze(msg.id)" title="Snooze">
+                  💤
+                </button>
                 <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.onAction('delete_soft', msg.id)">
                   <i class="fa fa-trash"/>
                 </button>

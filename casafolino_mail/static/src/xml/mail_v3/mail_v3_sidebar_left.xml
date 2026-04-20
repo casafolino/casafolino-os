@@ -43,6 +43,16 @@
         <span>⭐</span>
       </div>
       <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'snoozed'}"
+           t-on-click="() => this.selectFolder('snoozed')" title="Snoozed">
+        <span>💤</span>
+      </div>
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'scheduled'}"
+           t-on-click="() => this.selectFolder('scheduled')" title="Programmate">
+        <span>⏰</span>
+      </div>
+      <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'sent'}"
            t-on-click="() => this.selectFolder('sent')" title="Inviati">
         <span>📤</span>
