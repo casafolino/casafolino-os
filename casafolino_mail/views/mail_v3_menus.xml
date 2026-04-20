@@ -1,0 +1,14 @@
+<odoo>
+  <data>
+    <record id="action_mail_v3_client" model="ir.actions.client">
+      <field name="name">Mail V3</field>
+      <field name="tag">cf_mail_v3_client</field>
+    </record>
+    <menuitem id="menu_mail_v3_root"
+              name="Mail V3"
+              action="action_mail_v3_client"
+              parent="casafolino_mail.menu_casafolino_mail_root"
+              groups="group_mail_v3_beta"
+              sequence="1"/>
+  </data>
+</odoo>
