@@ -26,3 +26,4 @@ class ResUsersMailV3(models.Model):
     mv3_ai_reply_enabled = fields.Boolean('AI Reply attivo', default=True)
     mv3_ai_temperature = fields.Float('AI Temperature', default=0.5)
     mv3_ai_model = fields.Char('AI Model', default='llama-3.3-70b-versatile')
+    mv3_undo_send_seconds = fields.Integer('Undo Send Timer (sec)', default=10)
