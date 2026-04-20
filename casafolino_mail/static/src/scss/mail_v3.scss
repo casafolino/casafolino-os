@@ -686,7 +686,7 @@ $mv3-line-height: 1.45;
     }
 }
 
-// ── Compose (legacy overlay — kept for backward compat) ──
+// ── Compose Overlay (F8 Outlook-style) ────────────────────
 .mv3-compose-overlay {
     position: fixed;
     top: 0;
@@ -700,42 +700,174 @@ $mv3-line-height: 1.45;
     justify-content: center;
 }
 
-.mv3-compose {
-    background: white;
+.mv3-compose-container {
+    display: flex;
+    max-width: 1100px;
+    max-height: 85vh;
     border-radius: 8px;
-    width: 700px;
-    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+// ── Template Panel (left sidebar) ──────────────────────
+.mv3-template-panel {
+    width: 260px;
+    flex: 0 0 260px;
+    background: #FAFAF8;
+    border-right: 1px solid $mv3-border;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
 
     &__header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 16px;
+        padding: 10px 12px;
+        border-bottom: 1px solid $mv3-border;
+        strong { font-size: 13px; }
+    }
+
+    &__search {
+        padding: 8px 12px;
+        border-bottom: 1px solid $mv3-border;
+    }
+
+    &__list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 0;
+    }
+
+    &__item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+        position: relative;
+        transition: background 0.15s;
+        &:hover { background: rgba($mv3-primary, 0.08); }
+    }
+
+    &__item-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    &__lang-badge {
+        font-size: 14px;
+    }
+
+    &__name {
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__item-meta {
+        margin-top: 3px;
+        .badge { font-size: 10px; font-weight: 400; }
+    }
+
+    &__preview {
+        position: absolute;
+        left: 100%;
+        top: 0;
+        width: 300px;
+        background: white;
+        border: 1px solid $mv3-border;
+        border-radius: 6px;
+        padding: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        z-index: 10;
+        max-height: 200px;
+        overflow: hidden;
+    }
+
+    &__preview-body {
+        font-size: 11px;
+        color: #555;
+        line-height: 1.4;
+    }
+
+    &__empty {
+        padding: 16px 12px;
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+    }
+}
+
+// ── Main Compose Panel ─────────────────────────────────
+.mv3-compose {
+    background: white;
+    width: 700px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px;
         border-bottom: 1px solid $mv3-border;
         h4 { margin: 0; font-size: 15px; }
     }
 
+    &__header-left, &__header-right {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
     &__body {
-        padding: 12px 16px;
+        padding: 8px 16px;
         flex: 1;
         overflow-y: auto;
     }
 
     &__field {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         label {
             font-size: 12px;
             color: #666;
             display: block;
             margin-bottom: 2px;
         }
-        &--body { flex: 1; }
-        textarea {
-            resize: vertical;
-            font-size: 13px;
+    }
+
+    &__editor-wrap {
+        border: 1px solid $mv3-border;
+        border-radius: 4px;
+        margin: 8px 0;
+        min-height: 200px;
+        transition: border-color 0.2s;
+        &--dragover {
+            border-color: $mv3-primary;
+            background: rgba($mv3-primary, 0.03);
+        }
+    }
+
+    &__editor {
+        padding: 12px;
+        min-height: 200px;
+        font-size: 13px;
+        line-height: 1.5;
+        outline: none;
+        font-family: system-ui, -apple-system, sans-serif;
+        &:empty::before {
+            content: attr(data-placeholder);
+            color: #aaa;
+            pointer-events: none;
+        }
+        img.mv3-inline-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 4px 0;
         }
     }
 
@@ -747,10 +879,204 @@ $mv3-line-height: 1.45;
         border-top: 1px solid $mv3-border;
     }
 
+    &__footer-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
     &__footer-right {
         display: flex;
         gap: 8px;
     }
+}
+
+// ── Toolbar (Outlook-style) ────────────────────────────
+.mv3-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 4px 12px;
+    border-bottom: 1px solid $mv3-border;
+    background: #FAFAF8;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+
+    &__group {
+        display: flex;
+        align-items: center;
+        gap: 1px;
+    }
+
+    &__sep {
+        width: 1px;
+        height: 20px;
+        background: $mv3-border;
+        margin: 0 6px;
+    }
+
+    &__btn {
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        padding: 3px 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #444;
+        line-height: 1;
+        &:hover {
+            background: rgba($mv3-primary, 0.1);
+            border-color: rgba($mv3-primary, 0.2);
+        }
+    }
+
+    &__dropdown-wrap {
+        position: relative;
+    }
+
+    &__dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid $mv3-border;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 20;
+        min-width: 80px;
+    }
+
+    &__dropdown-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        &:hover { background: rgba($mv3-primary, 0.1); }
+    }
+
+    &__color-grid {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid $mv3-border;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 20;
+        display: grid;
+        grid-template-columns: repeat(6, 24px);
+        gap: 2px;
+        padding: 6px;
+    }
+
+    &__color-swatch {
+        width: 24px;
+        height: 24px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        cursor: pointer;
+        &:hover { border-color: #333; transform: scale(1.1); }
+    }
+}
+
+// ── Emoji Picker ───────────────────────────────────────
+.mv3-emoji-picker {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid $mv3-border;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    z-index: 20;
+    width: 280px;
+    padding: 8px;
+
+    &__search {
+        margin-bottom: 6px;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 2px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    &__btn {
+        background: none;
+        border: none;
+        font-size: 18px;
+        padding: 2px;
+        cursor: pointer;
+        border-radius: 4px;
+        line-height: 1;
+        &:hover { background: rgba($mv3-primary, 0.1); }
+    }
+}
+
+// ── Autosave Label ─────────────────────────────────────
+.mv3-autosave-label {
+    font-size: 11px;
+    color: #888;
+    &--saving { color: #F39C12; }
+    &--error { color: $mv3-hot; }
+}
+
+// ── Preview Modal ──────────────────────────────────────
+.mv3-preview-modal {
+    background: white;
+    border-radius: 8px;
+    width: 650px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid $mv3-border;
+        h5 { margin: 0; font-size: 14px; }
+    }
+
+    &__body {
+        padding: 16px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: #555;
+        line-height: 1.8;
+    }
+
+    &__content {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    &__footer {
+        padding: 8px 16px;
+        border-top: 1px solid $mv3-border;
+        text-align: right;
+    }
+}
+
+// ── Signature separator ────────────────────────────────
+.mv3-signature-separator {
+    border-top: 1px solid #ccc;
+    margin-top: 16px;
+    padding-top: 12px;
 }
 
 // ── Modal Overlay (shared) ───────────────────────────────
