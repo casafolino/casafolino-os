@@ -45,14 +45,7 @@ class MailV3Controller(http.Controller):
         domain = []
         if account_ids:
             domain.append(('account_id', 'in', account_ids))
-        else:
-            # All accounts for current user
-            accounts = request.env['casafolino.mail.account'].search([
-                ('responsible_user_id', '=', request.env.uid),
-                ('active', '=', True),
-            ])
-            if accounts:
-                domain.append(('account_id', 'in', accounts.ids))
+        # else: no account filter — record rules handle visibility
 
         # Filter archived
         if not filters.get('show_archived'):
@@ -455,16 +448,10 @@ class MailV3Controller(http.Controller):
 
     @http.route('/cf/mail/v3/accounts/summary', type='json', auth='user')
     def accounts_summary(self, **kw):
+        # Record rules handle visibility: admin sees all, others see own
         accounts = request.env['casafolino.mail.account'].search([
-            ('responsible_user_id', '=', request.env.uid),
             ('active', '=', True),
         ])
-
-        # Also include accounts where user is admin
-        if request.env.user.has_group('casafolino_mail.group_mail_v3_admin'):
-            accounts = request.env['casafolino.mail.account'].search([
-                ('active', '=', True),
-            ])
 
         result = []
         for a in accounts:
