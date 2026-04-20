@@ -1260,3 +1260,84 @@ class MailV3Controller(http.Controller):
                 cleaned = int(m.group(1))
 
         return {'success': True, 'cleaned': cleaned}
+
+    # ── F8: Template List Endpoint ─────────────────────────────────
+
+    @http.route('/cf/mail/v3/templates/list', type='json', auth='user')
+    def templates_list(self, **kw):
+        """Return all templates accessible to the user, optionally filtered by account."""
+        account_id = kw.get('account_id')
+        domain = []
+        if account_id:
+            domain = ['|', ('account_ids', '=', False), ('account_ids', 'in', [account_id])]
+
+        templates = request.env['casafolino.mail.template'].search(domain, order='sequence, name')
+        result = []
+        for t in templates:
+            result.append({
+                'id': t.id,
+                'name': t.name or '',
+                'description': t.description or '',
+                'subject': t.subject or '',
+                'language': t.language or '',
+                'category': t.category or '',
+                'usage_count': t.usage_count,
+                'sequence': t.sequence,
+            })
+        return {'templates': result}
+
+    # ── F8: Template Preview Endpoint ──────────────────────────────
+
+    @http.route('/cf/mail/v3/template/<int:template_id>/preview', type='json', auth='user')
+    def template_preview(self, template_id, **kw):
+        """Render template with partner data for preview."""
+        partner_id = int(kw.get('partner_id') or 0)
+        thread_id = kw.get('thread_id')
+
+        Template = request.env['casafolino.mail.template']
+        template = Template.browse(template_id)
+        if not template.exists():
+            return {'subject': '', 'body_html': ''}
+
+        if partner_id:
+            rendered = Template.render_template(template_id, partner_id, thread_id)
+            return {
+                'subject': rendered.get('subject', ''),
+                'body_html': rendered.get('body_html', ''),
+            }
+        return {
+            'subject': template.subject or '',
+            'body_html': template.body_html or '',
+        }
+
+    # ── F8: Partner Language Detection ─────────────────────────────
+
+    COUNTRY_TO_LANG = {
+        'IT': 'it_IT', 'SM': 'it_IT', 'VA': 'it_IT',
+        'DE': 'de_DE', 'AT': 'de_DE', 'CH': 'de_DE', 'LI': 'de_DE',
+        'ES': 'es_ES', 'MX': 'es_ES', 'AR': 'es_ES', 'CL': 'es_ES',
+        'CO': 'es_ES', 'PE': 'es_ES',
+        'FR': 'fr_FR', 'BE': 'fr_FR', 'LU': 'fr_FR', 'MC': 'fr_FR',
+        'CA': 'fr_FR',
+    }
+
+    @http.route('/cf/mail/v3/partner/detect_language', type='json', auth='user')
+    def partner_detect_language(self, **kw):
+        """Detect partner language from country code."""
+        partner_id = int(kw.get('partner_id') or 0)
+        email = kw.get('email', '')
+
+        partner = None
+        if partner_id:
+            partner = request.env['res.partner'].browse(partner_id)
+        elif email:
+            partner = request.env['res.partner'].search([
+                ('email', '=ilike', email.strip()),
+            ], limit=1)
+
+        if not partner or not partner.exists():
+            return {'lang': 'en_US'}
+
+        country_code = partner.country_id.code if partner.country_id else ''
+        lang = self.COUNTRY_TO_LANG.get(country_code, 'en_US')
+        return {'lang': lang, 'country_code': country_code}
