@@ -643,3 +643,110 @@ class CasafolinoMailAccount(models.Model):
         for a in acc:
             a._fetch_emails()
         return {'success': True}
+
+    # ── SMTP Send — Mail V3 ─────────────────────────────────────────
+
+    def _smtp_send(self, draft):
+        """Invia email da draft via SMTP.
+
+        Returns: casafolino.mail.message outbound creato.
+        Raises: SMTPException after 3 retry.
+        """
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+
+        self.ensure_one()
+
+        # 1. Build MIME
+        msg = MIMEMultipart('alternative')
+        msg['From'] = '"%s" <%s>' % (self.name, self.email_address)
+        msg['To'] = draft.to_emails or ''
+        if draft.cc_emails:
+            msg['Cc'] = draft.cc_emails
+        if draft.bcc_emails:
+            msg['Bcc'] = draft.bcc_emails
+        msg['Subject'] = draft.subject or '(no subject)'
+
+        # In-Reply-To + References
+        if draft.in_reply_to_message_id:
+            orig = draft.in_reply_to_message_id
+            if orig.message_id_rfc:
+                msg['In-Reply-To'] = orig.message_id_rfc
+                msg['References'] = orig.message_id_rfc
+
+        # Body con firma
+        body = draft.body_html or ''
+        sig = draft.signature_id
+        if not sig:
+            sig = self.env['casafolino.mail.signature'].search([
+                ('account_id', '=', self.id),
+                ('is_default', '=', True),
+            ], limit=1)
+        if sig and sig.body_html:
+            body = body + '<br><br>' + sig.body_html
+
+        msg.attach(MIMEText(body, 'html'))
+
+        # Attachments
+        for att in draft.attachment_ids:
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(att.raw or b'')
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition',
+                            'attachment; filename="%s"' % (att.name or 'file'))
+            msg.attach(part)
+
+        # 2. Submit SMTP con retry
+        last_exc = None
+        for attempt in (1, 2, 3):
+            try:
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=30) as server:
+                    server.login(self.email_address, self.imap_password)
+                    server.send_message(msg)
+                _logger.info('[mail v3] SMTP attempt %d/3 OK from %s', attempt, self.email_address)
+                break
+            except smtplib.SMTPException as e:
+                last_exc = e
+                _logger.warning('[mail v3] SMTP attempt %d/3 failed: %s', attempt, e)
+                if attempt < 3:
+                    import time as _time
+                    _time.sleep({1: 5, 2: 15}[attempt])
+        else:
+            raise last_exc
+
+        # 3. IMAP APPEND to Sent folder
+        try:
+            imap = self._get_imap_connection()
+            sent_folder = self.sent_folder or '[Gmail]/Sent Mail'
+            imap.append(sent_folder, '\\Seen', None, msg.as_bytes())
+            imap.logout()
+        except Exception as e:
+            _logger.warning('[mail v3] IMAP APPEND failed: %s', e)
+
+        # 4. Create message record
+        new_msg = self.env['casafolino.mail.message'].create({
+            'account_id': self.id,
+            'direction': 'outbound',
+            'state': 'keep',
+            'fetch_state': 'done',
+            'body_downloaded': True,
+            'sender_email': self.email_address,
+            'sender_name': self.name,
+            'recipient_emails': draft.to_emails or '',
+            'cc_emails': draft.cc_emails or '',
+            'subject': draft.subject,
+            'body_html': body,
+            'email_date': fields.Datetime.now(),
+            'is_read': True,
+            'reply_to_message_id': draft.in_reply_to_message_id.id if draft.in_reply_to_message_id else False,
+        })
+
+        # 5. Delete draft
+        draft.unlink()
+
+        _logger.info('[mail v3] SMTP send OK from %s to %s, msg_id=%s',
+                      self.email_address, draft.to_emails, new_msg.id)
+        return new_msg

@@ -148,6 +148,49 @@ class CasafolinoMailMessage(models.Model):
     tracking_click_count = fields.Integer(compute='_compute_tracking_counts', string='Click')
     thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
 
+    # ── Mail V3 fields ─────────────────────────────────────────────
+    thread_id = fields.Many2one('casafolino.mail.thread', string='Thread V3',
+                                 ondelete='set null', index=True)
+    is_starred = fields.Boolean('Importante V3', default=False)
+    is_archived = fields.Boolean('Archiviata', default=False, index=True)
+    is_deleted = fields.Boolean('Eliminata (soft)', default=False, index=True)
+    reply_to_message_id = fields.Many2one('casafolino.mail.message',
+                                           string='In risposta a',
+                                           ondelete='set null')
+    direction_computed = fields.Selection([
+        ('inbound', 'Ricevuta'),
+        ('outbound', 'Inviata'),
+    ], string='Direzione V3', compute='_compute_direction_v3', store=True)
+
+    @api.depends('direction')
+    def _compute_direction_v3(self):
+        for rec in self:
+            rec.direction_computed = rec.direction or 'inbound'
+
+    # ── Mail V3 actions ────────────────────────────────────────────
+
+    def action_mark_read(self):
+        self.write({'is_read': True})
+
+    def action_mark_unread(self):
+        self.write({'is_read': False})
+
+    def action_archive(self):
+        self.write({'is_archived': True})
+
+    def action_unarchive(self):
+        self.write({'is_archived': False})
+
+    def action_delete_soft(self):
+        self.write({'is_deleted': True})
+
+    def action_restore(self):
+        self.write({'is_deleted': False})
+
+    def action_toggle_star(self):
+        for rec in self:
+            rec.is_starred = not rec.is_starred
+
     _SUBJECT_PREFIX_RE = re.compile(
         r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
         re.IGNORECASE,
@@ -171,6 +214,19 @@ class CasafolinoMailMessage(models.Model):
             ON casafolino_mail_message (message_id_rfc, account_id)
             WHERE message_id_rfc IS NOT NULL AND message_id_rfc != ''
         """)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        if not self.env.context.get('skip_thread_upsert'):
+            Thread = self.env['casafolino.mail.thread']
+            for rec in records:
+                if rec.state in ('keep', 'auto_keep'):
+                    try:
+                        Thread._upsert_from_message(rec)
+                    except Exception as e:
+                        _logger.warning('[mail v3] Thread upsert fail msg %s: %s', rec.id, e)
+        return records
 
     @api.depends('sender_email')
     def _compute_sender_domain(self):

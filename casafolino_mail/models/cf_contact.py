@@ -120,6 +120,52 @@ class ResPartnerMailExt(models.Model):
         ('nome_azienda', 'Da nome azienda'), ('nome_persona', 'Da nome persona'),
     ], string='Arricchito da')
 
+    # ── Mail V3 fields ─────────────────────────────────────────────
+    mail_v3_thread_count = fields.Integer('Thread V3', compute='_compute_mail_v3_stats')
+    mail_v3_unread_count = fields.Integer('Non letti V3', compute='_compute_mail_v3_stats')
+    mail_v3_last_inbound_at = fields.Datetime('Ultima inbound V3',
+                                               compute='_compute_mail_v3_dates', store=True)
+    mail_v3_last_outbound_at = fields.Datetime('Ultima outbound V3',
+                                                compute='_compute_mail_v3_dates', store=True)
+    mail_v3_response_time_avg_hours = fields.Float('Tempo risposta medio (h)',
+                                                    compute='_compute_mail_v3_dates', store=True)
+    intelligence_id = fields.Many2one('casafolino.partner.intelligence',
+                                       string='Intelligence',
+                                       compute='_compute_intelligence_id', store=True)
+    hotness_score = fields.Integer('Hotness', related='intelligence_id.hotness_score',
+                                    store=True, index=True)
+
+    def _compute_mail_v3_stats(self):
+        for partner in self:
+            threads = self.env['casafolino.mail.thread'].search([
+                ('partner_ids', 'in', [partner.id]),
+            ])
+            partner.mail_v3_thread_count = len(threads)
+            partner.mail_v3_unread_count = sum(t.unread_count for t in threads)
+
+    @api.depends('partner_message_ids.email_date', 'partner_message_ids.direction')
+    def _compute_mail_v3_dates(self):
+        for partner in self:
+            msgs = self.env['casafolino.mail.message'].search([
+                ('partner_id', '=', partner.id),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ], order='email_date desc')
+
+            inbound = msgs.filtered(lambda m: m.direction == 'inbound')
+            outbound = msgs.filtered(lambda m: m.direction == 'outbound')
+
+            partner.mail_v3_last_inbound_at = inbound[0].email_date if inbound else False
+            partner.mail_v3_last_outbound_at = outbound[0].email_date if outbound else False
+            partner.mail_v3_response_time_avg_hours = 0.0
+
+    @api.depends()
+    def _compute_intelligence_id(self):
+        for partner in self:
+            intel = self.env['casafolino.partner.intelligence'].search([
+                ('partner_id', '=', partner.id),
+            ], limit=1)
+            partner.intelligence_id = intel.id if intel else False
+
     cf_department = fields.Char('Reparto')
     cf_linkedin = fields.Char('LinkedIn')
     cf_instagram = fields.Char('Instagram')
