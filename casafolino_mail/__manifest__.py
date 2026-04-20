@@ -23,10 +23,11 @@
         'views/snippet_picker_views.xml',
         'views/triage_wizard_views.xml',
         'views/sender_decision_views.xml',
-        'views/menus.xml',
         # V3 views + menus
         'views/mail_v3_compose_wizard_views.xml',
         'views/feedback_views.xml',
+        # menus AFTER all action definitions
+        'views/menus.xml',
         'views/mail_v3_menus.xml',
         # existing data
         'data/snippet_seed.xml',
