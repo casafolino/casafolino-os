@@ -45,21 +45,45 @@
                         <field name="subject" placeholder="Oggetto con {{variabili}}"/>
                     </group>
                     <field name="body_html" widget="html"
-                           options="{'style-inline': true}"/>
+                           options="{'style-inline': true, 'collaborative': false}"/>
                     <group string="Variabili disponibili">
                         <div class="text-muted">
+                            <strong>Partner:</strong>
                             <code>{{partner_name}}</code>,
                             <code>{{partner_first_name}}</code>,
                             <code>{{partner_country}}</code>,
                             <code>{{partner_city}}</code>,
                             <code>{{partner_language}}</code>,
+                            <code>{{partner_full_address}}</code>,
+                            <code>{{partner_vat}}</code>,
+                            <code>{{partner_company_type}}</code>
+                            <br/>
+                            <strong>Ordini:</strong>
                             <code>{{last_order_date}}</code>,
                             <code>{{last_order_number}}</code>,
-                            <code>{{days_since_last_contact}}</code>,
+                            <code>{{total_orders_ytd}}</code>,
+                            <code>{{total_revenue_ytd}}</code>,
+                            <code>{{top_product}}</code>
+                            <br/>
+                            <strong>Thread:</strong>
+                            <code>{{thread_subject}}</code>,
+                            <code>{{thread_message_count}}</code>,
+                            <code>{{thread_first_email_date}}</code>,
+                            <code>{{thread_attachment_count}}</code>
+                            <br/>
+                            <strong>Account:</strong>
                             <code>{{sender_name}}</code>,
                             <code>{{sender_signature}}</code>,
+                            <code>{{account_email}}</code>,
+                            <code>{{account_signature_name}}</code>,
+                            <code>{{account_manager_name}}</code>
+                            <br/>
+                            <strong>Utilità:</strong>
                             <code>{{today_date}}</code>,
-                            <code>{{thread_subject}}</code>
+                            <code>{{days_since_last_contact}}</code>,
+                            <code>{{months_since_last_contact}}</code>,
+                            <code>{{current_season}}</code>,
+                            <code>{{partner_time_zone}}</code>
                         </div>
                     </group>
                 </sheet>
