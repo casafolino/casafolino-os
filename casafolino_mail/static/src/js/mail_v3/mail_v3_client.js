@@ -187,7 +187,38 @@ export class MailV3Client extends Component {
 
     onFolderChange(folder) {
         this.state.activeFolder = folder;
-        this.loadThreads();
+        if (folder === 'scheduled') {
+            this._loadScheduled();
+        } else {
+            this.loadThreads();
+        }
+    }
+
+    async _loadScheduled() {
+        this.state.loading.threads = true;
+        try {
+            const res = await rpc('/cf/mail/v3/scheduled');
+            // Map drafts to thread-like objects for display
+            this.state.threads = (res.drafts || []).map(d => ({
+                id: d.id,
+                subject: d.subject || '(Senza oggetto)',
+                main_participant: d.to_emails || '',
+                is_read: true,
+                unread_count: 0,
+                preview: 'Programmata: ' + (d.scheduled_send_at || '').slice(0, 16),
+                silent_days: 0,
+                hotness_score: 0,
+                hotness_tier: '',
+                hotness_emoji: '',
+                attachment_count: 0,
+                lead_open: false,
+                is_draft: true,
+            }));
+            this.state.totalThreads = this.state.threads.length;
+        } catch (e) {
+            console.error('[mail v3] load scheduled error:', e);
+        }
+        this.state.loading.threads = false;
     }
 
     async onMessageAction(action, msgId) {

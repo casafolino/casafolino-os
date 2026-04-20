@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from odoo import models, fields, api
 
@@ -23,29 +24,35 @@ class CasafolinoMailComposeWizard(models.TransientModel):
     in_reply_to_message_id = fields.Many2one('casafolino.mail.message',
                                               string='In risposta a',
                                               ondelete='set null')
+    scheduled_send_at = fields.Datetime('Programma invio')
 
-    def action_send(self):
-        """Invia via outbox queue."""
-        self.ensure_one()
-        account = self.account_id
-        if not account:
-            return {'type': 'ir.actions.act_window_close'}
-
-        # Signature
+    def _get_sig_and_headers(self):
+        """Get signature HTML and reply headers."""
         sig = self.env['casafolino.mail.signature'].search([
-            ('account_id', '=', account.id),
+            ('account_id', '=', self.account_id.id),
             ('is_default', '=', True),
         ], limit=1)
         sig_html = sig.body_html if sig else ''
-
-        # In-Reply-To header
         in_reply_to = ''
         references = ''
         if self.in_reply_to_message_id:
             in_reply_to = self.in_reply_to_message_id.message_id_rfc or ''
             references = in_reply_to
+        return sig_html, in_reply_to, references
 
-        self.env['casafolino.mail.outbox'].queue_send(
+    def action_send(self):
+        """Invia via outbox queue con 10s undo window."""
+        self.ensure_one()
+        account = self.account_id
+        if not account:
+            return {'type': 'ir.actions.act_window_close'}
+
+        sig_html, in_reply_to, references = self._get_sig_and_headers()
+
+        now = fields.Datetime.now()
+        undo_until = now + timedelta(seconds=10)
+
+        outbox = self.env['casafolino.mail.outbox'].queue_send(
             account_id=account.id,
             to_emails=self.to_emails or '',
             subject=self.subject or '',
@@ -58,8 +65,36 @@ class CasafolinoMailComposeWizard(models.TransientModel):
             attachment_ids=self.attachment_ids.ids if self.attachment_ids else None,
             source_message_id=self.in_reply_to_message_id.id if self.in_reply_to_message_id else False,
         )
+        outbox.write({'state': 'undoable', 'undo_until': undo_until})
 
-        _logger.info('[mail v3] Compose wizard queued email to %s', self.to_emails)
+        _logger.info('[mail v3] Compose wizard queued email to %s (undoable)', self.to_emails)
+        return {'type': 'ir.actions.act_window_close'}
+
+    def action_schedule(self):
+        """Programma invio a data specificata."""
+        self.ensure_one()
+        if not self.scheduled_send_at:
+            return {'type': 'ir.actions.act_window_close'}
+
+        sig_html, _, _ = self._get_sig_and_headers()
+
+        draft_vals = {
+            'account_id': self.account_id.id,
+            'user_id': self.env.uid,
+            'to_emails': self.to_emails or '',
+            'cc_emails': self.cc_emails or '',
+            'bcc_emails': self.bcc_emails or '',
+            'subject': self.subject or '',
+            'body_html': self.body_html or '',
+            'in_reply_to_message_id': self.in_reply_to_message_id.id if self.in_reply_to_message_id else False,
+            'scheduled_send_at': self.scheduled_send_at,
+            'is_scheduled': True,
+        }
+        if self.attachment_ids:
+            draft_vals['attachment_ids'] = [(6, 0, self.attachment_ids.ids)]
+
+        self.env['casafolino.mail.draft'].create(draft_vals)
+        _logger.info('[mail v3] Scheduled send for %s at %s', self.to_emails, self.scheduled_send_at)
         return {'type': 'ir.actions.act_window_close'}
 
     def action_save_draft(self):

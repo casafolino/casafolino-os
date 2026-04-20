@@ -19,9 +19,15 @@
                     <field name="attachment_ids" widget="many2many_binary"/>
                 </group>
                 <field name="in_reply_to_message_id" invisible="1"/>
+                <group>
+                    <field name="scheduled_send_at" string="Programma invio (opzionale)"/>
+                </group>
                 <footer>
                     <button name="action_send" string="Invia" type="object"
                             class="btn-primary"/>
+                    <button name="action_schedule" string="Programma invio" type="object"
+                            class="btn-warning"
+                            invisible="not scheduled_send_at"/>
                     <button name="action_save_draft" string="Salva bozza" type="object"
                             class="btn-secondary"/>
                     <button string="Annulla" special="cancel"/>
