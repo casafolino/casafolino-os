@@ -98,15 +98,54 @@ Diagnosticato su `folinofood_stage` il 20/04/2026:
 
 ---
 
+## Rev2 — Completamento UX + Filtro F6 (2026-04-20)
+
+### Fix 5: _open_next_orphan esclude current partner
+**File:** `models/triage_wizard.py`
+
+- `_open_next_orphan(exclude_partner_ids=None)`: nuovo parametro opzionale
+- Tutti i callers passano `[self.partner_id.id]` → Skip non torna sullo stesso partner
+- Queue vuota → notification con count decisioni + `sticky: False` + `act_window_close`
+
+### Fix 6: Bottone "Tieni contatto"
+**File:** `models/triage_wizard.py` + `views/triage_wizard_views.xml`
+
+- `action_triage_keep()`: crea decisione `'kept'`, partner non riappare in queue
+- Decision type `'kept'` aggiunto a `sender_decision.py`
+- Bottone btn-info posizionato prima di "Crea Lead" nel wizard
+
+### Fix 7: F6 Auto-link esclude partner ignored/discarded
+**File:** `models/casafolino_mail_lead_rule.py`
+
+- `_get_excluded_partner_ids()`: raccoglie partner con decisione ignored_sender/ignored_domain + partner matching policy auto_discard
+- `_run_rule()`: skip partner in excluded set prima di creare lead
+- Log: `[cron 94] Rule X: N partners excluded (ignored/discarded)`
+
+---
+
+## Acceptance Criteria Rev2 (5 AC aggiuntivi)
+
+| AC | Descrizione | Stato |
+|----|-------------|-------|
+| AC-R1 | Skip su partner X → apre partner Y diverso (o notifica se queue vuota) | ✅ |
+| AC-R2 | "Tieni contatto" crea decisione kept, partner non riappare | ✅ |
+| AC-R3 | Cron 94 Auto-link log "N partners excluded" > 0 | ✅ |
+| AC-R4 | Queue vuota → notification success + wizard chiuso | ✅ |
+| AC-R5 | Retroactive apply su Ignore Sender funziona (da 4aca931) | ✅ |
+
+---
+
 ## File modificati
 
 ```
 casafolino_mail/__manifest__.py                          # version bump
-casafolino_mail/models/triage_wizard.py                  # retroactive apply
+casafolino_mail/models/triage_wizard.py                  # retroactive apply + open_next fix + keep
+casafolino_mail/models/sender_decision.py                # 'kept' decision type
 casafolino_mail/models/casafolino_mail_sender_policy.py  # cron 96 backfill
-casafolino_mail/models/casafolino_mail_lead_rule.py      # exclude_internal_domains
-casafolino_mail/migrations/18.0.8.5.1/post-migrate.py   # NEW
-casafolino_mail/docs/report_f6_5.md                      # NEW (this file)
+casafolino_mail/models/casafolino_mail_lead_rule.py      # exclude_internal + excluded partners
+casafolino_mail/views/triage_wizard_views.xml            # bottone Tieni
+casafolino_mail/migrations/18.0.8.5.1/post-migrate.py   # seed + cron
+casafolino_mail/docs/report_f6_5.md                      # this file
 ```
 
 ---
