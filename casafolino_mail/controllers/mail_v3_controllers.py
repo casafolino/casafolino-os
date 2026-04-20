@@ -1238,3 +1238,25 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/user/undo_seconds', type='json', auth='user')
     def user_undo_seconds(self, **kw):
         return {'undo_seconds': request.env.user.mv3_undo_send_seconds or 0}
+
+    # ── F7: Triage Auto-Cleanup Noreply (§3.7) ─────────────────────
+
+    @http.route('/cf/mail/v3/triage/autoclean_noreply', type='json', auth='user', methods=['POST'])
+    def triage_autoclean_noreply(self, **kw):
+        """Admin endpoint: auto-ignora tutti gli orfani con email noreply-like."""
+        if not request.env.user.has_group('base.group_system'):
+            return {'success': False, 'error': 'Admin only'}
+
+        Orphan = request.env['casafolino.mail.orphan.partner']
+        result = Orphan.action_bulk_autoclean_noreply()
+
+        # Count cleaned from notification message
+        cleaned = 0
+        if result.get('params', {}).get('message'):
+            msg = result['params']['message']
+            import re as _re
+            m = _re.search(r'(\d+)', msg)
+            if m:
+                cleaned = int(m.group(1))
+
+        return {'success': True, 'cleaned': cleaned}

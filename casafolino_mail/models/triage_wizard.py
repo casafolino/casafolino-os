@@ -1,4 +1,5 @@
 import logging
+import re as _re
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -6,6 +7,13 @@ from odoo.exceptions import UserError
 from .sender_decision import FREE_EMAIL_DOMAINS
 
 _logger = logging.getLogger(__name__)
+
+_BUYER_KEYWORDS = _re.compile(
+    r'\b(quote|offer|sample|interesse|prezzo|listino|buyer|importer|'
+    r'distributor|distribuire|campioni|offerta|pricing|price list|catalogo|'
+    r'import|export|wholesale|bulk order)\b',
+    _re.IGNORECASE)
+
 
 
 class CasafolinoMailTriageWizard(models.TransientModel):
@@ -32,6 +40,40 @@ class CasafolinoMailTriageWizard(models.TransientModel):
     # Email preview, popolati al create
     last_email_subject = fields.Char('Ultimo oggetto', readonly=True)
     last_email_body_preview = fields.Text('Anteprima email', readonly=True)
+
+    # ── Info Enrichment (F7 §3.8) ────────────────────────────────────
+    sender_tld = fields.Char('TLD', compute='_compute_enrichment', store=False)
+    partner_website_detected = fields.Char('Sito web', compute='_compute_enrichment', store=False)
+    is_likely_buyer = fields.Boolean('Probabile buyer', compute='_compute_enrichment', store=False)
+    similar_partners_count = fields.Integer('Partner simili', compute='_compute_enrichment', store=False)
+
+    @api.depends('partner_email', 'last_email_subject', 'last_email_body_preview')
+    def _compute_enrichment(self):
+        for rec in self:
+            email = (rec.partner_email or '').lower().strip()
+            # TLD
+            if '@' in email:
+                domain = email.split('@')[1]
+                parts = domain.split('.')
+                rec.sender_tld = '.' + parts[-1] if parts else ''
+                # Website (non-free domains)
+                if domain not in FREE_EMAIL_DOMAINS:
+                    rec.partner_website_detected = domain
+                else:
+                    rec.partner_website_detected = ''
+                # Similar partners count (same domain)
+                rec.similar_partners_count = self.env['res.partner'].search_count([
+                    ('email', '=ilike', '%%@' + domain),
+                    ('id', '!=', rec.partner_id.id),
+                ])
+            else:
+                rec.sender_tld = ''
+                rec.partner_website_detected = ''
+                rec.similar_partners_count = 0
+
+            # Is likely buyer
+            text = (rec.last_email_subject or '') + ' ' + (rec.last_email_body_preview or '')
+            rec.is_likely_buyer = bool(_BUYER_KEYWORDS.search(text))
 
     # Campo editabile
     notes = fields.Text('Note')

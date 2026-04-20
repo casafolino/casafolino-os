@@ -32,6 +32,17 @@
                         <field name="days_active" string="Giorni attivi" readonly="1"/>
                     </group>
                 </group>
+                <separator string="Indizi"/>
+                <group>
+                    <group>
+                        <field name="sender_tld" string="TLD" readonly="1"/>
+                        <field name="partner_website_detected" string="Sito web" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="is_likely_buyer" string="Probabile buyer" readonly="1" widget="boolean"/>
+                        <field name="similar_partners_count" string="Partner stesso dominio" readonly="1"/>
+                    </group>
+                </group>
                 <separator string="Ultima email ricevuta"/>
                 <group>
                     <field name="last_email_subject" string="Oggetto" readonly="1"
