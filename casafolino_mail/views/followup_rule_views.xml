@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Followup Rule List -->
+    <record id="view_casafolino_mail_followup_rule_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.followup.rule.list</field>
+        <field name="model">casafolino.mail.followup.rule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="min_hotness"/>
+                <field name="no_reply_days"/>
+                <field name="action_type"/>
+                <field name="last_run"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Followup Rule Form -->
+    <record id="view_casafolino_mail_followup_rule_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.followup.rule.form</field>
+        <field name="model">casafolino.mail.followup.rule</field>
+        <field name="arch" type="xml">
+            <form string="Regola Follow-up">
+                <header>
+                    <button name="action_run_now" string="Esegui ora" type="object"
+                            class="btn-primary" icon="fa-play"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome regola"/></h1>
+                    </div>
+                    <group>
+                        <group string="Condizioni trigger">
+                            <field name="min_hotness"/>
+                            <field name="no_reply_days"/>
+                            <field name="min_outbound_messages"/>
+                            <field name="max_thread_age_days"/>
+                        </group>
+                        <group string="Azione">
+                            <field name="action_type"/>
+                            <field name="activity_type_id"/>
+                            <field name="activity_summary"/>
+                            <field name="activity_note"/>
+                            <field name="activity_user_field"/>
+                            <field name="activity_user_id"
+                                   invisible="activity_user_field != 'fixed'"/>
+                            <field name="activity_deadline_days"/>
+                        </group>
+                    </group>
+                    <group string="Dedup e info">
+                        <field name="skip_if_activity_last_days"/>
+                        <field name="last_run" readonly="1"/>
+                        <field name="sequence"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Followup Rule Action -->
+    <record id="action_casafolino_mail_followup_rule" model="ir.actions.act_window">
+        <field name="name">Regole Follow-up</field>
+        <field name="res_model">casafolino.mail.followup.rule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
