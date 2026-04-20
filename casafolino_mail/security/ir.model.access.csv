@@ -38,3 +38,11 @@ access_mail_v3_intel_feedback_user,casafolino.partner.intelligence.feedback user
 access_mail_v3_intel_feedback_admin,casafolino.partner.intelligence.feedback admin,model_casafolino_partner_intelligence_feedback,casafolino_mail.group_mail_v3_admin,1,1,1,1
 access_mail_v3_response_metric_user,casafolino.mail.response.metric user,model_casafolino_mail_response_metric,casafolino_mail.group_mail_v3_user,1,0,0,0
 access_mail_v3_response_metric_admin,casafolino.mail.response.metric admin,model_casafolino_mail_response_metric,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_lead_rule_user,casafolino.mail.lead.rule user,model_casafolino_mail_lead_rule,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_lead_rule_admin,casafolino.mail.lead.rule admin,model_casafolino_mail_lead_rule,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_followup_rule_user,casafolino.mail.followup.rule user,model_casafolino_mail_followup_rule,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_followup_rule_admin,casafolino.mail.followup.rule admin,model_casafolino_mail_followup_rule,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_template_user,casafolino.mail.template user,model_casafolino_mail_template,casafolino_mail.group_mail_v3_user,1,1,0,0
+access_mail_v3_template_admin,casafolino.mail.template admin,model_casafolino_mail_template,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_quote_wizard_user,casafolino.mail.quote.wizard user,model_casafolino_mail_quote_wizard,base.group_user,1,1,1,1
+access_mail_v3_quote_wizard_line_user,casafolino.mail.quote.wizard.line user,model_casafolino_mail_quote_wizard_line,base.group_user,1,1,1,1

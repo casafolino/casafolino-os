@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Lead Rule List -->
+    <record id="view_casafolino_mail_lead_rule_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.lead.rule.list</field>
+        <field name="model">casafolino.mail.lead.rule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="min_outbound_messages"/>
+                <field name="min_hotness"/>
+                <field name="max_thread_age_days"/>
+                <field name="estimated_revenue"/>
+                <field name="lead_created_count"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Lead Rule Form -->
+    <record id="view_casafolino_mail_lead_rule_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.lead.rule.form</field>
+        <field name="model">casafolino.mail.lead.rule</field>
+        <field name="arch" type="xml">
+            <form string="Regola Auto-link Lead">
+                <header>
+                    <button name="action_run_now" string="Esegui ora" type="object"
+                            class="btn-primary" icon="fa-play"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome regola"/></h1>
+                    </div>
+                    <group>
+                        <group string="Condizioni trigger (AND)">
+                            <field name="min_outbound_messages"/>
+                            <field name="min_thread_age_days"/>
+                            <field name="max_thread_age_days"/>
+                            <field name="min_hotness"/>
+                            <field name="require_subject_keywords"
+                                   placeholder="fiera,sample,campione"/>
+                            <field name="exclude_partners_with_open_lead"/>
+                        </group>
+                        <group string="Output lead">
+                            <field name="sales_team_id"/>
+                            <field name="user_id"/>
+                            <field name="stage_id"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="estimated_revenue"/>
+                        </group>
+                    </group>
+                    <group string="Statistiche">
+                        <field name="lead_created_count"/>
+                        <field name="sequence"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Lead Rule Action -->
+    <record id="action_casafolino_mail_lead_rule" model="ir.actions.act_window">
+        <field name="name">Regole Auto-link Lead</field>
+        <field name="res_model">casafolino.mail.lead.rule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- CRM Lead extension: smart button + tab -->
+    <record id="view_crm_lead_form_mail_v3_thread" model="ir.ui.view">
+        <field name="name">crm.lead.form.mail.v3.thread</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_mail_v3_thread" string="Thread Mail V3"
+                        type="object" class="oe_stat_button" icon="fa-envelope"
+                        invisible="not cf_mail_thread_id"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Storico Email" name="mail_v3_history"
+                      invisible="not cf_mail_thread_id">
+                    <group>
+                        <field name="cf_mail_thread_id" readonly="1"/>
+                        <field name="cf_auto_created" readonly="1"/>
+                        <field name="cf_mail_lead_rule_id" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- CRM Lead list: filter Auto-created -->
+    <record id="view_crm_lead_search_mail_v3" model="ir.ui.view">
+        <field name="name">crm.lead.search.mail.v3.auto</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_lead_opportunity_filter"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='myactivities']" position="after">
+                <separator/>
+                <filter string="Auto-created F6" name="auto_created_f6"
+                        domain="[('cf_auto_created', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

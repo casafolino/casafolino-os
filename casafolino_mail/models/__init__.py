@@ -22,3 +22,8 @@ from . import casafolino_mail_compose_wizard
 from . import casafolino_mail_snooze
 from . import casafolino_partner_intelligence_feedback
 from . import casafolino_mail_response_metric
+from . import casafolino_mail_lead_rule
+from . import casafolino_mail_followup_rule
+from . import casafolino_mail_template
+from . import casafolino_mail_quote_wizard
+from . import sale_order_ext

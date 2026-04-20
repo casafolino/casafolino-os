@@ -1087,3 +1087,135 @@ class MailV3Controller(http.Controller):
         account_ids = kw.get('account_ids')
         Metric = request.env['casafolino.mail.response.metric']
         return Metric.get_analytics(days=days, account_ids=account_ids)
+
+    # ── F6: Auto-link Leads ─────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/leads/auto_create', type='json', auth='user')
+    def leads_auto_create(self, **kw):
+        if not request.env.user.has_group('casafolino_mail.group_mail_v3_admin'):
+            return {'success': False, 'error': 'Admin only'}
+        Rule = request.env['casafolino.mail.lead.rule']
+        rule_id = kw.get('rule_id')
+        if rule_id:
+            rules = Rule.browse(int(rule_id))
+        else:
+            rules = Rule.search([('active', '=', True)])
+        total = 0
+        lead_ids = []
+        for rule in rules:
+            count = rule._run_rule()
+            total += count
+        if total:
+            leads = request.env['crm.lead'].search([
+                ('cf_auto_created', '=', True),
+            ], order='create_date desc', limit=total)
+            lead_ids = leads.ids
+        return {'success': True, 'count': total, 'lead_ids': lead_ids}
+
+    # ── F6: Quote Wizard Open ───────────────────────────────────────
+
+    @http.route('/cf/mail/v3/thread/<int:thread_id>/quote/open_wizard', type='json', auth='user')
+    def quote_open_wizard(self, thread_id, **kw):
+        Thread = request.env['casafolino.mail.thread']
+        thread = Thread.browse(thread_id)
+        if not thread.exists():
+            return {'success': False, 'error': 'Thread not found'}
+        partner = thread.partner_ids[:1]
+        return {
+            'success': True,
+            'action': {
+                'type': 'ir.actions.act_window',
+                'res_model': 'casafolino.mail.quote.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_thread_id': thread.id,
+                    'default_partner_id': partner.id if partner else False,
+                },
+            },
+        }
+
+    # ── F6: Commercial Context ──────────────────────────────────────
+
+    @http.route('/cf/mail/v3/partner/<int:partner_id>/commercial_context', type='json', auth='user')
+    def commercial_context(self, partner_id, **kw):
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'success': False, 'error': 'Partner not found'}
+
+        # Sale orders last 12 months
+        cutoff = fields.Datetime.now() - timedelta(days=365)
+        SaleOrder = request.env['sale.order']
+        orders = SaleOrder.search([
+            ('partner_id', '=', partner_id),
+            ('state', 'in', ['sale', 'done']),
+            ('date_order', '>=', cutoff),
+        ], order='date_order desc')
+
+        # Top 5 SKU by qty
+        top_skus = []
+        try:
+            groups = request.env['sale.report'].read_group(
+                domain=[('partner_id', '=', partner_id), ('state', 'in', ['sale', 'done'])],
+                fields=['product_id', 'product_uom_qty:sum'],
+                groupby=['product_id'],
+                orderby='product_uom_qty desc',
+                limit=5,
+            )
+            for g in groups:
+                if g.get('product_id'):
+                    top_skus.append({
+                        'product_id': g['product_id'][0],
+                        'name': g['product_id'][1],
+                        'qty': g.get('product_uom_qty', 0),
+                    })
+        except Exception:
+            pass
+
+        # Open leads
+        open_leads = request.env['crm.lead'].search_count([
+            ('partner_id', '=', partner_id),
+            ('stage_id.is_won', '=', False),
+            ('active', '=', True),
+        ])
+
+        # Open quotes
+        open_quotes = SaleOrder.search_count([
+            ('partner_id', '=', partner_id),
+            ('state', 'in', ['draft', 'sent']),
+        ])
+
+        return {
+            'success': True,
+            'data': {
+                'total_revenue_12m': sum(orders.mapped('amount_total')),
+                'order_count_12m': len(orders),
+                'last_order_date': orders[0].date_order.strftime('%d/%m/%Y') if orders and orders[0].date_order else None,
+                'last_order_number': orders[0].name if orders else None,
+                'top_skus': top_skus,
+                'open_leads_count': open_leads,
+                'open_quotes_count': open_quotes,
+                'pricelist': partner.property_product_pricelist.name if partner.property_product_pricelist else '-',
+                'payment_term': partner.property_payment_term_id.name if partner.property_payment_term_id else '-',
+                'preferred_language': partner.lang or '-',
+            },
+        }
+
+    # ── F6: Template Render Preview ─────────────────────────────────
+
+    @http.route('/cf/mail/v3/template/render', type='json', auth='user')
+    def template_render(self, **kw):
+        template_id = int(kw.get('template_id', 0))
+        partner_id = int(kw.get('partner_id', 0))
+        thread_id = kw.get('thread_id')
+        if not template_id or not partner_id:
+            return {'success': False, 'error': 'template_id and partner_id required'}
+        Template = request.env['casafolino.mail.template']
+        rendered = Template.render_template(template_id, partner_id, thread_id)
+        return {'success': True, 'rendered': rendered}
+
+    # ── F6: User Undo Seconds ───────────────────────────────────────
+
+    @http.route('/cf/mail/v3/user/undo_seconds', type='json', auth='user')
+    def user_undo_seconds(self, **kw):
+        return {'undo_seconds': request.env.user.mv3_undo_send_seconds or 0}
