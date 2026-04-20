@@ -11,3 +11,8 @@ from . import snippet
 from . import snippet_picker
 from . import sender_decision
 from . import triage_wizard
+from . import casafolino_mail_thread
+from . import casafolino_mail_draft
+from . import casafolino_mail_signature
+from . import casafolino_partner_intelligence
+from . import res_users
