@@ -1,5 +1,6 @@
 /** @odoo-module **/
 import { Component, useState } from "@odoo/owl";
+import { rpc } from "@web/core/network/rpc";
 
 export class Sidebar360 extends Component {
     static template = "casafolino_mail.Sidebar360";
@@ -8,8 +9,12 @@ export class Sidebar360 extends Component {
     setup() {
         this.state = useState({
             notesValue: (this.props.data && this.props.data.notes) || '',
+            commercialExpanded: false,
+            commercialData: null,
+            commercialLoading: false,
         });
         this._notesSaveTimeout = null;
+        this._commercialCache = {};
     }
 
     getHotnessClass(tier) {
@@ -70,5 +75,60 @@ export class Sidebar360 extends Component {
     formatTimelineDate(dateStr) {
         if (!dateStr) return '';
         return dateStr;
+    }
+
+    // ── F6: Commercial Context ──────────────────────────────────────
+
+    async toggleCommercialContext() {
+        this.state.commercialExpanded = !this.state.commercialExpanded;
+        if (this.state.commercialExpanded && !this.state.commercialData) {
+            await this._loadCommercialContext();
+        }
+    }
+
+    async _loadCommercialContext() {
+        const partnerId = this.props.data && this.props.data.partner_id;
+        if (!partnerId) return;
+
+        if (this._commercialCache[partnerId]) {
+            this.state.commercialData = this._commercialCache[partnerId];
+            return;
+        }
+
+        this.state.commercialLoading = true;
+        try {
+            const res = await rpc('/cf/mail/v3/partner/' + partnerId + '/commercial_context', {});
+            if (res && res.success) {
+                this.state.commercialData = res.data;
+                this._commercialCache[partnerId] = res.data;
+            }
+        } catch (e) {
+            console.error('[sidebar360] commercial context error:', e);
+        }
+        this.state.commercialLoading = false;
+    }
+
+    openPartnerForm() {
+        const partnerId = this.props.data && this.props.data.partner_id;
+        if (partnerId && this.props.onQuickAction) {
+            this.props.onQuickAction('open_partner');
+        }
+    }
+
+    // ── F6: Quote Wizard ────────────────────────────────────────────
+
+    async openQuoteWizard() {
+        const threadId = this.props.data && this.props.data.thread_id;
+        if (!threadId) return;
+        try {
+            const res = await rpc('/cf/mail/v3/thread/' + threadId + '/quote/open_wizard', {});
+            if (res && res.success && res.action) {
+                if (this.props.onDoAction) {
+                    this.props.onDoAction(res.action);
+                }
+            }
+        } catch (e) {
+            console.error('[sidebar360] quote wizard error:', e);
+        }
     }
 }

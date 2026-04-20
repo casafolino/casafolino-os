@@ -115,7 +115,8 @@
           loading="state.loading.sidebar"
           onDismissNba.bind="dismissNba"
           onSaveNotes.bind="saveNotes"
-          onFeedback.bind="logFeedback"/>
+          onFeedback.bind="logFeedback"
+          onDoAction.bind="doAction"/>
       </div>
 
       <!-- Reply Assistant Modal -->

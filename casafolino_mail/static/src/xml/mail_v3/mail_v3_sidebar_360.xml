@@ -125,6 +125,59 @@
           </t>
         </div>
 
+        <!-- 6b. Commercial Context Block (F6) -->
+        <div class="mv3-sidebar360__block mv3-commercial-block">
+          <div class="mv3-commercial-block__header" t-on-click="toggleCommercialContext">
+            <h4>💼 Commercial Context</h4>
+            <i t-att-class="'fa ' + (state.commercialExpanded ? 'fa-chevron-up' : 'fa-chevron-down')"/>
+          </div>
+          <div t-if="state.commercialExpanded and state.commercialData" class="mv3-commercial-block__body">
+            <div class="mv3-commercial-block__kpis">
+              <div class="mv3-commercial-block__kpi">
+                <span class="mv3-commercial-block__kpi-label">Fatturato 12m</span>
+                <span class="mv3-commercial-block__kpi-value" t-out="this.formatCurrency(state.commercialData.total_revenue_12m)"/>
+              </div>
+              <div class="mv3-commercial-block__kpi">
+                <span class="mv3-commercial-block__kpi-label"># Ordini</span>
+                <span class="mv3-commercial-block__kpi-value" t-out="state.commercialData.order_count_12m"/>
+              </div>
+              <div class="mv3-commercial-block__kpi">
+                <span class="mv3-commercial-block__kpi-label">Ultimo ordine</span>
+                <span class="mv3-commercial-block__kpi-value" t-out="state.commercialData.last_order_date || '-'"/>
+              </div>
+            </div>
+            <div t-if="state.commercialData.top_skus and state.commercialData.top_skus.length" class="mv3-commercial-block__skus">
+              <strong>Top 5 SKU</strong>
+              <t t-foreach="state.commercialData.top_skus" t-as="sku" t-key="sku.product_id">
+                <div class="mv3-commercial-block__sku-row">
+                  <span t-out="sku.name"/> <small class="text-muted">(<t t-out="Math.round(sku.qty)"/> pz)</small>
+                </div>
+              </t>
+            </div>
+            <div class="mv3-commercial-block__counts">
+              <span>Lead aperti: <strong t-out="state.commercialData.open_leads_count"/></span>
+              <span>Quote aperte: <strong t-out="state.commercialData.open_quotes_count"/></span>
+            </div>
+            <div class="mv3-commercial-block__meta">
+              <span>Listino: <t t-out="state.commercialData.pricelist || '-'"/></span>
+              <span>Pagamento: <t t-out="state.commercialData.payment_term || '-'"/></span>
+            </div>
+            <button class="btn btn-sm btn-outline-primary mt-2" t-on-click="openPartnerForm">
+              Apri partner completo
+            </button>
+          </div>
+          <div t-if="state.commercialExpanded and state.commercialLoading" class="text-center p-2">
+            <i class="fa fa-spinner fa-spin"/>
+          </div>
+        </div>
+
+        <!-- 6c. Quick Convert Quote (F6) -->
+        <div class="mv3-sidebar360__block mv3-quote-block" t-if="props.data.partner_id">
+          <button class="btn btn-sm btn-warning w-100" t-on-click="openQuoteWizard">
+            💰 Crea offerta
+          </button>
+        </div>
+
         <!-- 7. Timeline Block -->
         <div class="mv3-sidebar360__block mv3-timeline-block"
              t-if="props.data.timeline and props.data.timeline.length > 0">

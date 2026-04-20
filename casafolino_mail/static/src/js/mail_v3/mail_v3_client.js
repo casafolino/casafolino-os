@@ -328,6 +328,20 @@ export class MailV3Client extends Component {
         }
     }
 
+    async doAction(action) {
+        try {
+            await this.actionService.doAction(action, {
+                onClose: async () => {
+                    if (this.state.selectedThreadId) {
+                        await this.selectThread(this.state.selectedThreadId);
+                    }
+                },
+            });
+        } catch (e) {
+            console.error('[mail v3] doAction error:', e);
+        }
+    }
+
     // ── Dark Mode ───────────────────────────────────────────────
 
     async toggleDarkMode() {
