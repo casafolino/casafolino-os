@@ -383,14 +383,9 @@ class CasafolinoMailMessage(models.Model):
                     timeout=15,
                 )
 
-                if resp.status_code == 429 and attempt == 0:
-                    _logger.warning("Groq rate limit (429) for message %s, retry in 20s...", self.id)
-                    time.sleep(20)
-                    continue
-
                 if resp.status_code == 429:
-                    self.write({'ai_error': 'Rate limit 429 dopo retry'})
-                    _logger.warning("Groq rate limit (429) for message %s after retry, skip", self.id)
+                    self.write({'ai_error': 'Rate limit 429'})
+                    _logger.warning("Groq rate limit (429) for message %s, skip (will retry later)", self.id)
                     return
 
                 if resp.status_code == 403 and attempt == 0:

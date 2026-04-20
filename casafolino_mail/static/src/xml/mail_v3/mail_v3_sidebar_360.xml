@@ -3,7 +3,11 @@
   <t t-name="casafolino_mail.Sidebar360">
     <div class="mv3-sidebar360">
       <div t-if="props.loading" class="mv3-sidebar360__loading">
-        <i class="fa fa-spinner fa-spin"/>
+        <i class="fa fa-spinner fa-spin"/> Caricamento...
+      </div>
+      <div t-if="!props.loading and !props.data" class="mv3-sidebar360__error">
+        <i class="fa fa-exclamation-triangle" style="color:#999;"/>
+        <p style="color:#999;font-size:12px;">Dati non disponibili</p>
       </div>
       <div t-if="!props.loading and props.data" class="mv3-sidebar360__content">
 

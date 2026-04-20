@@ -148,33 +148,43 @@ export class MailV3Client extends Component {
             const res = await rpc('/cf/mail/v3/thread/' + threadId + '/messages');
             this.state.messages = res.messages || [];
 
-            await rpc('/cf/mail/v3/thread/' + threadId + '/mark_all_read');
+            rpc('/cf/mail/v3/thread/' + threadId + '/mark_all_read').catch(() => {});
 
             const thread = this.state.threads.find(t => t.id === threadId);
             if (thread) {
                 thread.unread_count = 0;
                 thread.is_read = true;
             }
-
-            // Load sidebar 360 for main partner
-            const inbound = this.state.messages.find(
-                m => m.direction_computed === 'inbound' || m.direction === 'inbound'
-            );
-            const partnerId = inbound ? inbound.partner_id : null;
-            if (partnerId) {
-                this.state.loading.sidebar = true;
-                const sidebar = await rpc('/cf/mail/v3/partner/' + partnerId + '/sidebar_360');
-                this.state.sidebar360Data = sidebar;
-                this.state.selectedPartner = partnerId;
-                this.state.loading.sidebar = false;
-            } else {
-                this.state.sidebar360Data = null;
-                this.state.selectedPartner = null;
-            }
         } catch (e) {
-            console.error('[mail v3] selectThread error:', e);
+            console.error('[mail v3] selectThread messages error:', e);
         }
         this.state.loading.messages = false;
+
+        // Load sidebar 360 separately — never blocks message rendering
+        const inbound = this.state.messages.find(
+            m => m.direction_computed === 'inbound' || m.direction === 'inbound'
+        );
+        const partnerId = inbound ? inbound.partner_id : null;
+        if (partnerId) {
+            this._loadSidebar360(partnerId);
+        } else {
+            this.state.sidebar360Data = null;
+            this.state.selectedPartner = null;
+        }
+    }
+
+    async _loadSidebar360(partnerId) {
+        this.state.loading.sidebar = true;
+        try {
+            const sidebar = await rpc('/cf/mail/v3/partner/' + partnerId + '/sidebar_360');
+            this.state.sidebar360Data = sidebar;
+            this.state.selectedPartner = partnerId;
+        } catch (e) {
+            console.error('[mail v3] sidebar 360 load error:', e);
+            this.state.sidebar360Data = null;
+            this.state.selectedPartner = null;
+        }
+        this.state.loading.sidebar = false;
     }
 
     // ── Callbacks from children ─────────────────────────────────
@@ -325,6 +335,38 @@ export class MailV3Client extends Component {
             await rpc('/cf/mail/v3/partner/' + partnerId + '/notes', { notes: notes });
         } catch (e) {
             console.error('[mail v3] Notes save error:', e);
+        }
+    }
+
+    onSidebarQuickAction(key) {
+        const msgs = this.state.messages || [];
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+        switch (key) {
+            case 'reply':
+                if (lastMsg) this.openReply(lastMsg.id);
+                break;
+            case 'open_partner':
+                if (this.state.selectedPartner) {
+                    this.actionService.doAction({
+                        type: 'ir.actions.act_window',
+                        res_model: 'res.partner',
+                        res_id: this.state.selectedPartner,
+                        views: [[false, 'form']],
+                        target: 'current',
+                    });
+                }
+                break;
+            case 'new_lead':
+                this.actionService.doAction({
+                    type: 'ir.actions.act_window',
+                    res_model: 'crm.lead',
+                    views: [[false, 'form']],
+                    target: 'current',
+                    context: { default_partner_id: this.state.selectedPartner },
+                });
+                break;
+            default:
+                break;
         }
     }
 

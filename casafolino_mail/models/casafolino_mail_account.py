@@ -351,11 +351,9 @@ class CasafolinoMailAccount(models.Model):
                     new_msg = Message.create(vals)
                     new_count += 1
 
-                    # AI classify (before policy, so policy can use ai_category)
-                    try:
-                        new_msg._classify_with_groq()
-                    except Exception as e:
-                        _logger.warning("AI classify error msg %s: %s", new_msg.id, e)
+                    # AI classify — deferred if no key or rate limited
+                    # Classification runs in separate cron to not block ingestion
+                    pass
 
                     # Intent detection (keyword-based, non-blocking)
                     try:

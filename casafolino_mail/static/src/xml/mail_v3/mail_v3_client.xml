@@ -113,6 +113,7 @@
         <Sidebar360
           data="state.sidebar360Data"
           loading="state.loading.sidebar"
+          onQuickAction.bind="onSidebarQuickAction"
           onDismissNba.bind="dismissNba"
           onSaveNotes.bind="saveNotes"
           onFeedback.bind="logFeedback"
