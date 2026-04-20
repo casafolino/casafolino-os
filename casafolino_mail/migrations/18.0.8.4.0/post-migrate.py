@@ -1,11 +1,45 @@
 """F5 migration: snooze model, feedback model, new fields, cron reactivation."""
 import logging
+from odoo import api, SUPERUSER_ID
 
 _logger = logging.getLogger(__name__)
 
 
+def _ensure_cron(env, name, model, code, interval_number, interval_type):
+    """Create cron via ORM if not already present (idempotent)."""
+    Cron = env['ir.cron'].sudo()
+    existing = Cron.search([('cron_name', 'ilike', name)], limit=1)
+    if existing:
+        _logger.info("[mail v3 F5] Cron '%s' already exists (id=%s)", name, existing.id)
+        return existing
+
+    model_rec = env['ir.model'].search([('model', '=', model)], limit=1)
+    if not model_rec:
+        _logger.error("[mail v3 F5] Model %s not found, skip cron '%s'", model, name)
+        return None
+
+    server_action = env['ir.actions.server'].create({
+        'name': name + ' - Action',
+        'model_id': model_rec.id,
+        'state': 'code',
+        'code': code,
+    })
+
+    cron = Cron.create({
+        'cron_name': name,
+        'ir_actions_server_id': server_action.id,
+        'interval_number': interval_number,
+        'interval_type': interval_type,
+        'active': True,
+        'user_id': env.ref('base.user_admin').id,
+    })
+    _logger.info("[mail v3 F5] Created cron '%s' (id=%s)", name, cron.id)
+    return cron
+
+
 def migrate(cr, version):
     _logger.info('[mail v3 F5] Starting migration 18.0.8.4.0')
+    env = api.Environment(cr, SUPERUSER_ID, {})
 
     # ── 1. Add is_snoozed column to thread ──
     cr.execute("""
@@ -124,42 +158,18 @@ def migrate(cr, version):
     """)
 
     # ── 8. Cron 92: Smart Snooze Checker (every 15 min) ──
-    cr.execute("SELECT 1 FROM ir_cron WHERE cron_name ILIKE '%Smart Snooze%' LIMIT 1")
-    if not cr.fetchone():
-        cr.execute("""
-            INSERT INTO ir_cron (
-                cron_name, model_id, code, interval_number, interval_type,
-                numbercall, active, priority,
-                create_uid, create_date, write_uid, write_date
-            ) VALUES (
-                'Mail V3: Smart Snooze Checker',
-                (SELECT id FROM ir_model WHERE model = 'casafolino.mail.snooze' LIMIT 1),
-                'model._cron_check_snooze()',
-                15, 'minutes',
-                -1, true, 10,
-                1, NOW(), 1, NOW()
-            );
-        """)
-        _logger.info('[mail v3 F5] Created cron: Smart Snooze Checker')
+    _ensure_cron(env,
+                 name='Mail V3: Smart Snooze Checker',
+                 model='casafolino.mail.snooze',
+                 code='model._cron_check_snooze()',
+                 interval_number=15, interval_type='minutes')
 
     # ── 9. Cron 93: Scheduled Send Dispatch (every minute) ──
-    cr.execute("SELECT 1 FROM ir_cron WHERE cron_name ILIKE '%Scheduled Send%' LIMIT 1")
-    if not cr.fetchone():
-        cr.execute("""
-            INSERT INTO ir_cron (
-                cron_name, model_id, code, interval_number, interval_type,
-                numbercall, active, priority,
-                create_uid, create_date, write_uid, write_date
-            ) VALUES (
-                'Mail V3: Scheduled Send Dispatch',
-                (SELECT id FROM ir_model WHERE model = 'casafolino.mail.draft' LIMIT 1),
-                'model._cron_scheduled_send()',
-                1, 'minutes',
-                -1, true, 5,
-                1, NOW(), 1, NOW()
-            );
-        """)
-        _logger.info('[mail v3 F5] Created cron: Scheduled Send Dispatch')
+    _ensure_cron(env,
+                 name='Mail V3: Scheduled Send Dispatch',
+                 model='casafolino.mail.draft',
+                 code='model._cron_scheduled_send()',
+                 interval_number=1, interval_type='minutes')
 
     # ── 10. Reactivate crons 82/83/84 (disabled during F2 deploy) ──
     cr.execute("""
