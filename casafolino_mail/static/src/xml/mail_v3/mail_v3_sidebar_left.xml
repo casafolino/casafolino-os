@@ -2,34 +2,63 @@
 <templates>
   <t t-name="casafolino_mail.SidebarLeft">
     <div class="mv3-sidebar-left">
-      <div class="mv3-sidebar-left__header">
-        <h3 class="mv3-sidebar-left__title">Mail V3</h3>
-        <button class="btn btn-sm btn-primary mv3-sidebar-left__compose"
-                t-on-click="onComposeNew">
-          <i class="fa fa-pencil"/> Scrivi
-        </button>
+      <!-- Compose button -->
+      <div class="mv3-sidebar-left__icon mv3-sidebar-left__compose-btn"
+           t-on-click="onComposeNew" title="Nuovo messaggio (c)">
+        <i class="fa fa-pencil-square-o"/>
       </div>
-      <div class="mv3-sidebar-left__accounts">
-        <div class="mv3-sidebar-left__account-item"
-             t-att-class="{'mv3-sidebar-left__account-item--active': !state.selectedAccountId}"
-             t-on-click="selectAll">
-          <i class="fa fa-inbox"/> Tutti
-          <span class="mv3-sidebar-left__badge" t-if="totalUnread > 0">
-            <t t-out="totalUnread"/>
+
+      <div class="mv3-sidebar-left__divider"/>
+
+      <!-- Tutti (inbox) -->
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': !state.selectedAccountId and state.activeFolder === 'inbox'}"
+           t-on-click="selectAll" title="Tutti">
+        <span>📬</span>
+        <span class="mv3-sidebar-left__badge" t-if="totalUnread > 0">
+          <t t-out="totalUnread > 99 ? '99+' : totalUnread"/>
+        </span>
+      </div>
+
+      <!-- Account avatars -->
+      <t t-foreach="props.accounts" t-as="account" t-key="account.id">
+        <div class="mv3-sidebar-left__avatar"
+             t-att-class="{'mv3-sidebar-left__avatar--active': state.selectedAccountId === account.id}"
+             t-att-style="'background:' + this.getAccountColor(account_index)"
+             t-on-click="() => this.selectAccount(account.id)"
+             t-att-title="account.name + ' (' + account.email + ') — ' + (account.unread_count || 0) + ' non lette'">
+          <t t-out="account.initials || 'U'"/>
+          <span class="mv3-sidebar-left__badge" t-if="account.unread_count > 0">
+            <t t-out="account.unread_count > 99 ? '99+' : account.unread_count"/>
           </span>
         </div>
-        <t t-foreach="props.accounts" t-as="account" t-key="account.id">
-          <div class="mv3-sidebar-left__account-item"
-               t-att-class="{'mv3-sidebar-left__account-item--active': state.selectedAccountId === account.id}"
-               t-on-click="() => this.selectAccount(account.id)">
-            <span class="mv3-sidebar-left__account-dot"
-                  t-att-style="'background:#5A6E3A'"/>
-            <span class="mv3-sidebar-left__account-name"><t t-out="account.name"/></span>
-            <span class="mv3-sidebar-left__badge" t-if="account.unread_count > 0">
-              <t t-out="account.unread_count"/>
-            </span>
-          </div>
-        </t>
+      </t>
+
+      <div class="mv3-sidebar-left__divider"/>
+
+      <!-- Folder icons -->
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'starred'}"
+           t-on-click="() => this.selectFolder('starred')" title="Speciali">
+        <span>⭐</span>
+      </div>
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'sent'}"
+           t-on-click="() => this.selectFolder('sent')" title="Inviati">
+        <span>📤</span>
+      </div>
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'trash'}"
+           t-on-click="() => this.selectFolder('trash')" title="Cestino">
+        <span>🗑️</span>
+      </div>
+
+      <!-- Spacer -->
+      <div class="mv3-sidebar-left__spacer"/>
+
+      <!-- Settings -->
+      <div class="mv3-sidebar-left__icon" t-on-click="onOpenSettings" title="Impostazioni">
+        <span>⚙️</span>
       </div>
     </div>
   </t>

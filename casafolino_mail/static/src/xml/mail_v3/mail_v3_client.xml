@@ -2,39 +2,147 @@
 <templates>
   <t t-name="casafolino_mail.MailV3Client">
     <div class="mv3-client">
+      <!-- Sidebar Left compact -->
       <div class="mv3-client__sidebar-left">
         <SidebarLeft
           accounts="state.accounts"
           onAccountChange.bind="onAccountChange"
-          onComposeNew.bind="() => this.openCompose('new', null)"/>
+          onFolderChange.bind="onFolderChange"
+          onComposeNew.bind="openComposeNew"
+          onOpenSettings.bind="openSettings"/>
       </div>
+
+      <!-- Thread List with search -->
       <div class="mv3-client__thread-list">
-        <ThreadList
-          threads="state.threads"
-          accounts="state.accounts"
-          loading="state.loading.threads"
-          selectedThreadId="state.selectedThreadId"
-          onSelect.bind="selectThread"/>
+        <div class="mv3-search">
+          <div class="mv3-search__wrapper">
+            <i class="fa fa-search mv3-search__icon"/>
+            <input class="mv3-search__input"
+                   type="text"
+                   placeholder="Cerca email..."
+                   t-att-value="state.searchQuery"
+                   t-on-input="onSearchInput"/>
+            <button t-if="state.searchQuery"
+                    class="mv3-search__clear"
+                    t-on-click="clearSearch">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search results -->
+        <div t-if="state.searchResults" class="mv3-search-results">
+          <div class="mv3-search-results__header">
+            <t t-out="state.searchResults.length"/> risultati
+          </div>
+          <t t-foreach="state.searchResults" t-as="sr" t-key="sr.id">
+            <div class="mv3-search-results__item"
+                 t-on-click="() => this.onSearchResultClick(sr.thread_id)">
+              <div class="mv3-search-results__subject" t-out="sr.subject"/>
+              <div class="mv3-search-results__meta">
+                <span t-out="sr.sender_email"/>
+                <span t-out="sr.email_date"/>
+              </div>
+            </div>
+          </t>
+        </div>
+
+        <!-- Thread list -->
+        <div t-if="!state.searchResults">
+          <ThreadList
+            threads="state.threads"
+            accounts="state.accounts"
+            loading="state.loading.threads"
+            selectedThreadId="state.selectedThreadId"
+            onSelect.bind="selectThread"/>
+        </div>
       </div>
+
+      <!-- Reading Pane -->
       <div class="mv3-client__reading-pane">
         <ReadingPane
           messages="state.messages"
           loading="state.loading.messages"
           onAction.bind="onMessageAction"
-          onReply.bind="(mode, msgId) => this.openCompose(mode, msgId)"/>
+          onReply.bind="openReply"
+          onReplyAll.bind="openReplyAll"
+          onForward.bind="openForward"
+          onAiReply.bind="openReplyAssistant"/>
       </div>
+
+      <!-- Sidebar 360 -->
       <div class="mv3-client__sidebar-360" t-if="state.sidebar360Data">
         <Sidebar360
           data="state.sidebar360Data"
-          loading="state.loading.sidebar"/>
+          loading="state.loading.sidebar"
+          onDismissNba.bind="dismissNba"
+          onSaveNotes.bind="saveNotes"/>
       </div>
-      <ComposeWizard
-        t-if="state.composeVisible"
-        draftId="state.composeDraftId"
-        prefilled="state.composePrefilled"
-        mode="state.composeMode"
-        onSent.bind="onComposeSent"
-        onClose.bind="closeCompose"/>
+
+      <!-- Reply Assistant Modal -->
+      <ReplyAssistant
+        t-if="state.replyAssistantVisible"
+        messageId="state.replyAssistantMessageId"
+        onSelectDraft.bind="onSelectDraft"
+        onClose.bind="closeReplyAssistant"/>
+
+      <!-- Shortcuts Help Modal -->
+      <div t-if="state.shortcutsHelpVisible" class="mv3-modal-overlay" t-on-click="closeShortcutsHelp">
+        <div class="mv3-shortcuts-help" t-on-click.stop="">
+          <div class="mv3-shortcuts-help__header">
+            <h4>Scorciatoie tastiera</h4>
+            <button class="btn btn-sm btn-link" t-on-click="closeShortcutsHelp">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-shortcuts-help__body">
+            <div class="mv3-shortcuts-help__row"><kbd>j</kbd> Thread successivo</div>
+            <div class="mv3-shortcuts-help__row"><kbd>k</kbd> Thread precedente</div>
+            <div class="mv3-shortcuts-help__row"><kbd>r</kbd> Rispondi</div>
+            <div class="mv3-shortcuts-help__row"><kbd>R</kbd> Rispondi a tutti</div>
+            <div class="mv3-shortcuts-help__row"><kbd>f</kbd> Inoltra</div>
+            <div class="mv3-shortcuts-help__row"><kbd>a</kbd> Risposta guidata AI</div>
+            <div class="mv3-shortcuts-help__row"><kbd>e</kbd> Archivia</div>
+            <div class="mv3-shortcuts-help__row"><kbd>#</kbd> Elimina</div>
+            <div class="mv3-shortcuts-help__row"><kbd>s</kbd> Speciale</div>
+            <div class="mv3-shortcuts-help__row"><kbd>u</kbd> Segna non letto</div>
+            <div class="mv3-shortcuts-help__row"><kbd>c</kbd> Nuovo messaggio</div>
+            <div class="mv3-shortcuts-help__row"><kbd>/</kbd> Cerca</div>
+            <div class="mv3-shortcuts-help__row"><kbd>?</kbd> Questa guida</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Drawer -->
+      <div t-if="state.settingsVisible" class="mv3-modal-overlay" t-on-click="closeSettings">
+        <div class="mv3-settings-drawer" t-on-click.stop="">
+          <div class="mv3-settings-drawer__header">
+            <h4>Impostazioni</h4>
+            <button class="btn btn-sm btn-link" t-on-click="closeSettings">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-settings-drawer__body">
+            <div class="mv3-settings-drawer__section">
+              <h5>Account</h5>
+              <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
+                <div class="mv3-settings-drawer__item">
+                  <strong t-out="acc.name"/>
+                  <span class="text-muted" t-out="acc.email"/>
+                </div>
+              </t>
+            </div>
+            <div class="mv3-settings-drawer__section">
+              <h5>Scorciatoie</h5>
+              <p class="text-muted">Premi <kbd>?</kbd> per vedere tutte le scorciatoie</p>
+            </div>
+            <div class="mv3-settings-drawer__section">
+              <h5>AI Settings</h5>
+              <p class="text-muted">Groq LLM per risposte guidate e NBA engine</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </t>
 </templates>
