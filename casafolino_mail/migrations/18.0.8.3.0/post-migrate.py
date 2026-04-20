@@ -18,17 +18,10 @@ def migrate(cr, version):
 
     # ── 2. Ensure tsvector GIN index for full-text search ──
     cr.execute("""
-        SELECT 1 FROM pg_indexes
-        WHERE indexname = 'idx_cf_mail_msg_fts'
+        CREATE INDEX IF NOT EXISTS idx_cf_mail_msg_fts
+        ON casafolino_mail_message
+        USING GIN(to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_plain,'')))
     """)
-    if not cr.fetchone():
-        cr.execute("""
-            CREATE INDEX idx_cf_mail_msg_fts
-            ON casafolino_mail_message
-            USING GIN(to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_text,'')))
-        """)
-        _logger.info('[mail v3] Created GIN index idx_cf_mail_msg_fts')
-    else:
-        _logger.info('[mail v3] GIN index idx_cf_mail_msg_fts already exists')
+    _logger.info('[mail v3] Ensured GIN index idx_cf_mail_msg_fts exists')
 
     _logger.info('[mail v3] F4 post-migrate complete')

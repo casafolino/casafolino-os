@@ -583,13 +583,13 @@ class MailV3Controller(http.Controller):
         cr.execute("""
             SELECT m.id, m.subject, m.sender_email, m.email_date, m.thread_id,
                    ts_rank(
-                       to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_text,'')),
+                       to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_plain,'')),
                        plainto_tsquery('simple', %s)
                    ) as rank
             FROM casafolino_mail_message m
             WHERE m.state IN ('keep', 'auto_keep')
               AND m.is_deleted = false
-              AND to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_text,''))
+              AND to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_plain,''))
                   @@ plainto_tsquery('simple', %s)
               AND m.account_id IN (
                   SELECT id FROM casafolino_mail_account WHERE active = true
@@ -647,7 +647,7 @@ class MailV3Controller(http.Controller):
             msg.intent_detected or 'general',
             '%s %s' % (intel.hotness_tier, intel.hotness_score) if intel else 'N/A',
             msg.subject or '',
-            (msg.body_text or msg.body_html or '')[:500],
+            (msg.body_plain or msg.body_html or '')[:500],
             ', '.join([(m.subject or '')[:50] for m in thread_msgs]),
         )
 
