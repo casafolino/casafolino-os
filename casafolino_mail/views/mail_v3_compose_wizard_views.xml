@@ -7,6 +7,8 @@
             <form string="Componi email">
                 <group>
                     <field name="account_id" options="{'no_create': True}"/>
+                    <field name="template_id" options="{'no_create': True}"
+                           string="Template"/>
                     <field name="to_emails"/>
                     <field name="cc_emails"/>
                     <field name="bcc_emails"/>

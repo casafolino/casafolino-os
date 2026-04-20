@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Template List -->
+    <record id="view_casafolino_mail_template_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.template.list</field>
+        <field name="model">casafolino.mail.template</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="language"/>
+                <field name="subject"/>
+                <field name="usage_count"/>
+                <field name="last_used"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Template Form -->
+    <record id="view_casafolino_mail_template_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.template.form</field>
+        <field name="model">casafolino.mail.template</field>
+        <field name="arch" type="xml">
+            <form string="Template Email">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome template"/></h1>
+                        <field name="description" placeholder="Descrizione breve"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category"/>
+                            <field name="language"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="account_ids" widget="many2many_tags"/>
+                            <field name="default_signature_id"/>
+                            <field name="usage_count" readonly="1"/>
+                            <field name="last_used" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Contenuto">
+                        <field name="subject" placeholder="Oggetto con {{variabili}}"/>
+                    </group>
+                    <field name="body_html" widget="html"
+                           options="{'style-inline': true}"/>
+                    <group string="Variabili disponibili">
+                        <div class="text-muted">
+                            <code>{{partner_name}}</code>,
+                            <code>{{partner_first_name}}</code>,
+                            <code>{{partner_country}}</code>,
+                            <code>{{partner_city}}</code>,
+                            <code>{{partner_language}}</code>,
+                            <code>{{last_order_date}}</code>,
+                            <code>{{last_order_number}}</code>,
+                            <code>{{days_since_last_contact}}</code>,
+                            <code>{{sender_name}}</code>,
+                            <code>{{sender_signature}}</code>,
+                            <code>{{today_date}}</code>,
+                            <code>{{thread_subject}}</code>
+                        </div>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Template Search -->
+    <record id="view_casafolino_mail_template_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.template.search</field>
+        <field name="model">casafolino.mail.template</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="language"/>
+                <filter string="Italiano" name="it" domain="[('language', '=', 'it_IT')]"/>
+                <filter string="English" name="en" domain="[('language', '=', 'en_US')]"/>
+                <filter string="Deutsch" name="de" domain="[('language', '=', 'de_DE')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Categoria" name="group_category" context="{'group_by': 'category'}"/>
+                    <filter string="Lingua" name="group_language" context="{'group_by': 'language'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Template Action -->
+    <record id="action_casafolino_mail_template" model="ir.actions.act_window">
+        <field name="name">Template Email</field>
+        <field name="res_model">casafolino.mail.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
