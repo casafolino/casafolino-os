@@ -21,18 +21,19 @@ $mv3-line-height: 1.45;
 }
 
 .mv3-client__sidebar-left {
-    width: 220px;
-    flex: 0 0 220px;
+    width: 70px;
+    flex: 0 0 70px;
     border-right: 1px solid $mv3-border;
-    background: #F8F8F6;
-    overflow-y: auto;
+    background: #FAFAF8;
 }
 
 .mv3-client__thread-list {
-    width: 380px;
-    flex: 0 0 380px;
+    width: 420px;
+    flex: 0 0 420px;
     border-right: 1px solid $mv3-border;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .mv3-client__reading-pane {
@@ -49,67 +50,166 @@ $mv3-line-height: 1.45;
     background: #FAFAF8;
 }
 
-// ── Sidebar Left ──────────────────────────────────────────
+// ── Sidebar Left (compact 70px) ──────────────────────────
 .mv3-sidebar-left {
-    padding: 16px;
+    width: 70px;
+    flex: 0 0 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0;
+    height: 100%;
 
-    &__header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
+    &__compose-btn {
+        color: white !important;
+        background: $mv3-primary !important;
+        border-radius: 12px !important;
+
+        &:hover {
+            background: darken($mv3-primary, 8%) !important;
+            transform: scale(1.08);
+        }
     }
 
-    &__title {
-        font-size: 16px;
-        font-weight: 700;
-        color: $mv3-primary;
-        margin: 0;
-    }
-
-    &__compose {
-        font-size: 12px;
-    }
-
-    &__account-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-
-        &:hover { background: rgba($mv3-primary, 0.08); }
-        &--active { background: rgba($mv3-primary, 0.15); font-weight: 600; }
-    }
-
-    &__account-dot {
-        width: 8px;
-        height: 8px;
+    &__avatar {
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: white;
+        cursor: pointer;
+        position: relative;
+        transition: transform 0.1s;
+        flex-shrink: 0;
+
+        &:hover { transform: scale(1.08); }
+        &--active { box-shadow: 0 0 0 3px $mv3-primary; }
+    }
+
+    &__icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #666;
+        cursor: pointer;
+        border-radius: 10px;
+        position: relative;
+        flex-shrink: 0;
+        transition: background 0.1s;
+
+        &:hover { background: #EEE; color: #333; }
+        &--active { background: #EEF2E6; color: $mv3-primary; }
+    }
+
+    &__badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: $mv3-hot;
+        color: white;
+        border-radius: 10px;
+        font-size: 10px;
+        padding: 1px 5px;
+        min-width: 18px;
+        text-align: center;
+        font-weight: 600;
+        line-height: 16px;
+    }
+
+    &__divider {
+        width: 32px;
+        height: 1px;
+        background: #E0E0E0;
+        margin: 4px 0;
         flex-shrink: 0;
     }
 
-    &__account-name {
+    &__spacer {
         flex: 1;
+    }
+}
+
+// ── Search ───────────────────────────────────────────────
+.mv3-search {
+    padding: 8px 12px;
+    border-bottom: 1px solid $mv3-border;
+
+    &__wrapper {
+        display: flex;
+        align-items: center;
+        background: #F0F0EE;
+        border-radius: 8px;
+        padding: 0 10px;
+        gap: 6px;
+    }
+
+    &__icon { color: #999; font-size: 12px; }
+
+    &__input {
+        border: none;
+        background: transparent;
+        flex: 1;
+        padding: 7px 0;
+        font-size: 13px;
+        outline: none;
+
+        &::placeholder { color: #AAA; }
+    }
+
+    &__clear {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        padding: 2px;
+        &:hover { color: #333; }
+    }
+}
+
+.mv3-search-results {
+    &__header {
+        padding: 8px 16px;
+        font-size: 11px;
+        color: #999;
+        border-bottom: 1px solid $mv3-border;
+    }
+
+    &__item {
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid $mv3-border;
+        &:hover { background: #F8F8F6; }
+    }
+
+    &__subject {
+        font-size: 13px;
+        font-weight: 600;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    &__badge {
-        background: $mv3-primary;
-        color: white;
-        font-size: 10px;
-        padding: 1px 6px;
-        border-radius: 10px;
-        font-weight: 600;
+    &__meta {
+        font-size: 11px;
+        color: #999;
+        display: flex;
+        gap: 8px;
     }
 }
 
 // ── Thread List ───────────────────────────────────────────
 .mv3-thread-list {
+    flex: 1;
+    overflow-y: auto;
+
     &__header {
         padding: 12px 16px;
         border-bottom: 1px solid $mv3-border;
@@ -204,6 +304,7 @@ $mv3-line-height: 1.45;
     &--dormant { background: $mv3-dormant; color: white; }
     &--attachment { background: #E3F2FD; color: #1976D2; }
     &--lead { background: #FFF3E0; color: #F57C00; }
+    &--intent { background: #E8F5E9; color: #2E7D32; font-weight: 600; }
 }
 
 // ── Hotness Badge ─────────────────────────────────────────
@@ -282,9 +383,7 @@ $mv3-line-height: 1.45;
         margin-bottom: 4px;
     }
 
-    &__from {
-        font-size: 13px;
-    }
+    &__from { font-size: 13px; }
 
     &__email {
         color: #999;
@@ -304,9 +403,11 @@ $mv3-line-height: 1.45;
         margin-bottom: 8px;
     }
 
-    &__body {
-        margin: 12px 0;
+    &__intent {
+        margin-bottom: 8px;
     }
+
+    &__body { margin: 12px 0; }
 
     &__iframe {
         width: 100%;
@@ -340,6 +441,17 @@ $mv3-line-height: 1.45;
         display: flex;
         gap: 4px;
         margin-top: 8px;
+        flex-wrap: wrap;
+    }
+}
+
+.mv3-ai-reply-btn {
+    border-color: $mv3-primary !important;
+    color: $mv3-primary !important;
+    font-weight: 600;
+
+    &:hover {
+        background: rgba($mv3-primary, 0.1) !important;
     }
 }
 
@@ -410,6 +522,56 @@ $mv3-line-height: 1.45;
     color: $mv3-primary;
 }
 
+// ── NBA Block (sticky) ───────────────────────────────────
+.mv3-nba-block {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    border-left: 4px solid;
+    margin-bottom: 12px;
+    border-radius: 0 6px 6px 0;
+
+    &--critical { background: #FFEBEE; border-left-color: #C62828; }
+    &--high     { background: #FFF3E0; border-left-color: #E65100; }
+    &--medium   { background: #FFF9E6; border-left-color: $mv3-warm; }
+    &--low      { background: #F0F4C3; border-left-color: #9E9D24; }
+    &--info     { background: #E3F2FD; border-left-color: #1976D2; }
+
+    &__icon { font-size: 22px; line-height: 1; }
+    &__body { flex: 1; min-width: 0; }
+    &__label {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: #666;
+        letter-spacing: 0.5px;
+    }
+    &__text {
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 1.3;
+        margin-top: 3px;
+    }
+    &__meta {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+    }
+    &__dismiss {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #999;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0 4px;
+        &:hover { color: #333; }
+    }
+}
+
+// ── Person Block ─────────────────────────────────────────
 .mv3-person-block {
     &__name { font-weight: 600; }
     &__role { font-size: 12px; color: #666; }
@@ -420,6 +582,7 @@ $mv3-line-height: 1.45;
     }
 }
 
+// ── Relation + Business rows ─────────────────────────────
 .mv3-relation-block__row,
 .mv3-business-block__row {
     display: flex;
@@ -433,6 +596,82 @@ $mv3-line-height: 1.45;
     color: #666;
 }
 
+// ── Pipeline Block ───────────────────────────────────────
+.mv3-pipeline-block {
+    &__item {
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        &:last-child { border-bottom: none; }
+    }
+    &__name {
+        font-size: 12px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    &__meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #666;
+        margin-top: 2px;
+    }
+    &__stage {
+        background: #E3F2FD;
+        color: #1976D2;
+        padding: 1px 6px;
+        border-radius: 8px;
+        font-size: 10px;
+    }
+    &__revenue {
+        font-weight: 600;
+        color: $mv3-primary;
+    }
+}
+
+// ── Timeline Block ───────────────────────────────────────
+.mv3-timeline-block {
+    &__item {
+        display: flex;
+        gap: 8px;
+        padding: 4px 0;
+        align-items: flex-start;
+    }
+    &__icon { font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    &__detail { min-width: 0; flex: 1; }
+    &__subject {
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    &__date {
+        font-size: 10px;
+        color: #999;
+    }
+}
+
+// ── Notes Block ──────────────────────────────────────────
+.mv3-notes-block {
+    &__textarea {
+        width: 100%;
+        border: 1px solid $mv3-border;
+        border-radius: 6px;
+        padding: 8px;
+        font-size: 12px;
+        resize: vertical;
+        min-height: 60px;
+        font-family: inherit;
+
+        &:focus {
+            outline: none;
+            border-color: $mv3-primary;
+        }
+    }
+}
+
+// ── Quick Actions ────────────────────────────────────────
 .mv3-actions-block {
     &__buttons {
         display: flex;
@@ -447,7 +686,7 @@ $mv3-line-height: 1.45;
     }
 }
 
-// ── Compose ───────────────────────────────────────────────
+// ── Compose (legacy overlay — kept for backward compat) ──
 .mv3-compose-overlay {
     position: fixed;
     top: 0;
@@ -476,7 +715,6 @@ $mv3-line-height: 1.45;
         align-items: center;
         padding: 12px 16px;
         border-bottom: 1px solid $mv3-border;
-
         h4 { margin: 0; font-size: 15px; }
     }
 
@@ -488,16 +726,13 @@ $mv3-line-height: 1.45;
 
     &__field {
         margin-bottom: 8px;
-
         label {
             font-size: 12px;
             color: #666;
             display: block;
             margin-bottom: 2px;
         }
-
         &--body { flex: 1; }
-
         textarea {
             resize: vertical;
             font-size: 13px;
@@ -515,5 +750,225 @@ $mv3-line-height: 1.45;
     &__footer-right {
         display: flex;
         gap: 8px;
+    }
+}
+
+// ── Modal Overlay (shared) ───────────────────────────────
+.mv3-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+// ── Reply Assistant Modal ────────────────────────────────
+.mv3-reply-assistant {
+    background: white;
+    border-radius: 12px;
+    width: 720px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid $mv3-border;
+        h4 { margin: 0; font-size: 16px; }
+    }
+
+    &__body {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    &__loading {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+        p { margin-top: 12px; }
+    }
+
+    &__cards {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    &__card {
+        border: 1px solid $mv3-border;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        transition: border-color 0.15s, box-shadow 0.15s;
+
+        &:hover {
+            border-color: $mv3-primary;
+            box-shadow: 0 2px 8px rgba($mv3-primary, 0.15);
+        }
+    }
+
+    &__card-header {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+        strong { font-size: 14px; }
+    }
+
+    &__card-icon { font-size: 20px; }
+
+    &__card-body {
+        font-size: 13px;
+        line-height: 1.5;
+        color: #333;
+        white-space: pre-wrap;
+    }
+
+    &__card-action {
+        margin-top: 8px;
+        font-size: 12px;
+        color: $mv3-primary;
+        font-weight: 600;
+    }
+}
+
+// ── Shortcuts Help ───────────────────────────────────────
+.mv3-shortcuts-help {
+    background: white;
+    border-radius: 12px;
+    width: 400px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid $mv3-border;
+        h4 { margin: 0; }
+    }
+
+    &__body {
+        padding: 16px 20px;
+    }
+
+    &__row {
+        display: flex;
+        gap: 12px;
+        padding: 6px 0;
+        font-size: 13px;
+        align-items: center;
+
+        kbd {
+            background: #F0F0F0;
+            border: 1px solid #DDD;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            min-width: 28px;
+            text-align: center;
+        }
+    }
+}
+
+// ── Settings Drawer ──────────────────────────────────────
+.mv3-settings-drawer {
+    background: white;
+    border-radius: 12px;
+    width: 500px;
+    max-height: 80vh;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid $mv3-border;
+        h4 { margin: 0; }
+    }
+
+    &__body {
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    &__section {
+        margin-bottom: 20px;
+        h5 {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+        }
+    }
+
+    &__item {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        strong { display: block; font-size: 13px; }
+        .text-muted { font-size: 12px; }
+    }
+}
+
+// ── Drop zone (compose attachments) ──────────────────────
+.mv3-dropzone {
+    border: 2px dashed $mv3-border;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    margin-top: 8px;
+    transition: border-color 0.2s, background 0.2s;
+
+    &--active {
+        border-color: $mv3-primary;
+        background: rgba($mv3-primary, 0.05);
+        color: $mv3-primary;
+    }
+}
+
+.mv3-attachment-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: #F0F0F0;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    &__remove {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 14px;
+        &:hover { color: $mv3-hot; }
+    }
+
+    &__size {
+        color: #999;
+        font-size: 10px;
     }
 }
