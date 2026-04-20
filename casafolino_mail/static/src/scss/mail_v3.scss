@@ -1257,3 +1257,77 @@ $mv3-line-height: 1.45;
     cursor: pointer;
     accent-color: $mv3-primary;
 }
+
+// ── F6: Commercial Context Panel ────────────────────────────
+.mv3-commercial-block {
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        padding: 4px 0;
+        h4 { margin: 0; font-size: 13px; }
+        i { color: #999; font-size: 11px; }
+    }
+
+    &__body {
+        padding-top: 8px;
+    }
+
+    &__kpis {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    &__kpi {
+        text-align: center;
+        padding: 6px 4px;
+        background: rgba($mv3-primary, 0.05);
+        border-radius: 6px;
+    }
+
+    &__kpi-label {
+        font-size: 10px;
+        color: #888;
+        display: block;
+    }
+
+    &__kpi-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    &__skus {
+        margin-bottom: 8px;
+        strong { font-size: 11px; color: #666; }
+    }
+
+    &__sku-row {
+        font-size: 12px;
+        padding: 2px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    &__counts {
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        margin-bottom: 6px;
+        span { color: #555; }
+    }
+
+    &__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: #888;
+    }
+}
+
+.mv3-quote-block {
+    padding: 4px 0;
+}
