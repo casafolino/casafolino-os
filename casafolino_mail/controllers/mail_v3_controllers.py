@@ -691,28 +691,47 @@ class MailV3Controller(http.Controller):
         ICP = request.env['ir.config_parameter'].sudo()
         api_key = ICP.get_param('casafolino.groq_api_key')
         if not api_key:
-            return {'error': 'Groq API key not configured'}
+            return {'error': 'Risposta AI non disponibile al momento. Chiave API non configurata.'}
 
-        try:
-            r = http_requests.post(
-                'https://api.groq.com/openai/v1/chat/completions',
-                headers={'Authorization': 'Bearer %s' % api_key, 'Content-Type': 'application/json'},
-                json={
-                    'model': 'llama-3.3-70b-versatile',
-                    'messages': [{'role': 'user', 'content': prompt}],
-                    'max_tokens': 800,
-                    'temperature': 0.5,
-                    'response_format': {'type': 'json_object'},
-                },
-                timeout=20,
-            )
-            r.raise_for_status()
-            content = r.json()['choices'][0]['message']['content']
-            data = json.loads(content)
-            return {'bozze': data.get('bozze', [])}
-        except Exception as e:
-            _logger.error('[mail v3] Reply assistant fail: %s', e)
-            return {'error': str(e)[:200]}
+        # Retry with exponential backoff (AC9)
+        base_delay = 2
+        max_retries = 3
+        last_error = ''
+        for attempt in range(max_retries):
+            try:
+                r = http_requests.post(
+                    'https://api.groq.com/openai/v1/chat/completions',
+                    headers={'Authorization': 'Bearer %s' % api_key, 'Content-Type': 'application/json'},
+                    json={
+                        'model': 'llama-3.3-70b-versatile',
+                        'messages': [{'role': 'user', 'content': prompt}],
+                        'max_tokens': 800,
+                        'temperature': 0.5,
+                        'response_format': {'type': 'json_object'},
+                    },
+                    timeout=20,
+                )
+                if r.status_code == 429:
+                    retry_after = int(r.headers.get('retry-after', base_delay * (2 ** attempt)))
+                    wait = min(retry_after, 8)
+                    _logger.warning('[mail v3] Groq 429, retry %d/%d in %ds', attempt + 1, max_retries, wait)
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(wait)
+                        continue
+                    return {'error': 'Risposta AI non disponibile al momento. Riprova tra qualche secondo.'}
+                r.raise_for_status()
+                content = r.json()['choices'][0]['message']['content']
+                data = json.loads(content)
+                return {'bozze': data.get('bozze', [])}
+            except Exception as e:
+                last_error = str(e)[:200]
+                _logger.warning('[mail v3] Reply assistant attempt %d fail: %s', attempt + 1, last_error)
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(base_delay * (2 ** attempt))
+                    continue
+        return {'error': 'Risposta AI non disponibile dopo %d tentativi. Riprova tra qualche secondo.' % max_retries}
 
     # ── Compose Wizard Action ────────────────────────────────────────
 
