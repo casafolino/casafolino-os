@@ -42,6 +42,11 @@
                        min-height: 80px; font-size: 0.95em; white-space: pre-wrap;"/>
                 <separator string="Azioni positive"/>
                 <div class="o_row" style="gap: 16px; padding: 12px 0; justify-content: center;">
+                    <button name="action_triage_keep"
+                            string="Tieni contatto"
+                            type="object"
+                            class="btn btn-info btn-lg o_triage_btn"
+                            style="padding: 16px 32px; font-size: 1.1em; min-width: 180px;"/>
                     <button name="action_triage_lead"
                             string="1 - Crea Lead"
                             type="object"

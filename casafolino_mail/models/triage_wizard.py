@@ -39,17 +39,22 @@ class CasafolinoMailTriageWizard(models.TransientModel):
     # ── Navigation ───────────────────────────────────────────────────
 
     @api.model
-    def _open_next_orphan(self):
-        """Trova prossimo orfano non triagiato, crea wizard, apre form."""
+    def _open_next_orphan(self, exclude_partner_ids=None):
+        """Trova prossimo orfano non triagiato, crea wizard, apre form.
+
+        Args:
+            exclude_partner_ids: list of partner IDs to exclude (usually the current one)
+        """
         Orphan = self.env['casafolino.mail.orphan.partner']
         Decision = self.env['casafolino.mail.sender.decision']
 
         triaged_ids = Decision.search([
             ('active', '=', True)
         ]).mapped('partner_id').ids
+        exclude_ids = list(set(triaged_ids + (exclude_partner_ids or [])))
 
         next_orphan = Orphan.search([
-            ('partner_id', 'not in', triaged_ids)
+            ('partner_id', 'not in', exclude_ids)
         ], limit=1)
 
         if not next_orphan:
@@ -58,9 +63,9 @@ class CasafolinoMailTriageWizard(models.TransientModel):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Triage completo!',
-                    'message': 'Tutti gli orfani sono stati triagiati.',
+                    'message': 'Tutti gli orfani triagiati. (%d decisioni attive)' % len(triaged_ids),
                     'type': 'success',
-                    'sticky': True,
+                    'sticky': False,
                     'next': {'type': 'ir.actions.act_window_close'},
                 },
             }
@@ -124,7 +129,7 @@ class CasafolinoMailTriageWizard(models.TransientModel):
             'stage_id': stage.id if stage else False,
         })
         self._create_decision('lead_created', lead_id=lead.id)
-        return self._open_next_orphan()
+        return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
 
     def action_triage_assign(self):
         """Assegna a Josefina via mail.activity e avanza."""
@@ -150,7 +155,7 @@ class CasafolinoMailTriageWizard(models.TransientModel):
             'res_id': self.partner_id.id,
         })
         self._create_decision('assigned', activity_id=activity.id)
-        return self._open_next_orphan()
+        return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
 
     def action_triage_snippet(self):
         """Marca come replied e apre snippet picker."""
@@ -189,7 +194,7 @@ class CasafolinoMailTriageWizard(models.TransientModel):
             ('sender_email', '=ilike', email),
         ])
         self._create_decision('ignored_sender', sender_policy_id=policy.id)
-        return self._open_next_orphan()
+        return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
 
     def action_triage_ignore_domain(self):
         """Ignora dominio: crea sender_policy auto_discard per il dominio."""
@@ -220,7 +225,7 @@ class CasafolinoMailTriageWizard(models.TransientModel):
             ('sender_domain', '=ilike', domain),
         ])
         self._create_decision('ignored_domain', sender_policy_id=policy.id)
-        return self._open_next_orphan()
+        return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
 
     def _retroactive_apply_policy(self, policy, extra_domain):
         """Apply a newly created policy retroactively to existing new/review messages.
@@ -251,6 +256,14 @@ class CasafolinoMailTriageWizard(models.TransientModel):
                 "[triage wizard] Retroactive apply policy %s to %d messages",
                 policy.name, len(msgs))
 
+    def action_triage_keep(self):
+        """Tieni partner come contatto valido, nessuna policy, nessun discard.
+        Crea decisione 'kept' per rimuoverlo dalla queue."""
+        self.ensure_one()
+        self._create_decision('kept', notes='Contatto valido, tenuto da triage orfano')
+        return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
+
     def action_triage_skip(self):
         """Skip senza decisione, vai al prossimo."""
-        return self._open_next_orphan()
+        self.ensure_one()
+        return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
