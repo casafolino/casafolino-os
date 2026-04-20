@@ -93,6 +93,12 @@ class CasafolinoMailLeadRule(models.Model):
         if self.exclude_internal_domains:
             internal_domains = {d.strip().lower() for d in self.exclude_internal_domains.split(',') if d.strip()}
 
+        # F6.5: exclude partners with ignored/discarded decisions or policies
+        excluded_partner_ids = set(self._get_excluded_partner_ids())
+        if excluded_partner_ids:
+            _logger.info('[cron 94] Rule %s: %d partners excluded (ignored/discarded)',
+                         self.name, len(excluded_partner_ids))
+
         created = 0
         source = self._get_or_create_source()
 
@@ -109,6 +115,10 @@ class CasafolinoMailLeadRule(models.Model):
                 continue
 
             for partner in partners:
+                # F6.5: skip ignored/discarded partners
+                if partner.id in excluded_partner_ids:
+                    continue
+
                 # Skip internal domains (e.g. @casafolino.com)
                 if internal_domains and partner.email:
                     partner_domain = (partner.email or '').split('@')[-1].lower().strip()
@@ -208,6 +218,32 @@ class CasafolinoMailLeadRule(models.Model):
         if not source:
             source = Source.create({'name': 'Mail V3 Auto-link'})
         return source
+
+    def _get_excluded_partner_ids(self):
+        """Partner esclusi da auto-link: hanno decisione ignore o policy discard."""
+        Decision = self.env['casafolino.mail.sender.decision'].sudo()
+        ignored_decisions = Decision.search([
+            ('active', '=', True),
+            ('decision', 'in', ['ignored_sender', 'ignored_domain']),
+        ])
+        ignored_ids = ignored_decisions.mapped('partner_id').ids
+
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        discard_policies = Policy.search([
+            ('active', '=', True),
+            ('action', '=', 'auto_discard'),
+        ])
+
+        discard_ids = []
+        if discard_policies:
+            Partner = self.env['res.partner'].sudo()
+            for policy in discard_policies:
+                if policy.pattern_type == 'domain':
+                    val = policy.pattern_value.replace('*', '%')
+                    partners = Partner.search([('email', '=ilike', val)])
+                    discard_ids.extend(partners.ids)
+
+        return list(set(ignored_ids + discard_ids))
 
     @api.model
     def _cron_auto_link_leads(self):
