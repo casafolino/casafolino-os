@@ -1,14 +1,15 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '7.11.0',
+    'version': '18.0.8.1.0',
     'summary': 'Ponte selettivo Gmail → CRM per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
-    'depends': ['base', 'mail', 'web', 'utm', 'crm', 'casafolino_crm_export'],
+    'depends': ['base', 'mail', 'web', 'utm', 'crm', 'sale', 'account', 'contacts', 'casafolino_crm_export'],
     'data': [
         'security/ir.model.access.csv',
         'security/ir_rules.xml',
         'views/casafolino_mail_hub_views.xml',
+        'views/intelligence_views.xml',
         'views/casafolino_mail_policy_views.xml',
         'views/casafolino_mail_wizard_views.xml',
         'views/sla_partner_views.xml',
