@@ -16,6 +16,8 @@ export class ComposeWizard extends Component {
             sending: false,
             showBcc: false,
             error: '',
+            attachments: [],
+            dragOver: false,
         });
 
         this._autosaveTimer = null;
@@ -29,29 +31,78 @@ export class ComposeWizard extends Component {
         });
     }
 
-    onToChange(ev) {
-        this.state.to = ev.target.value;
+    onToChange(ev) { this.state.to = ev.target.value; }
+    onCcChange(ev) { this.state.cc = ev.target.value; }
+    onBccChange(ev) { this.state.bcc = ev.target.value; }
+    onSubjectChange(ev) { this.state.subject = ev.target.value; }
+    onBodyChange(ev) { this.state.body = ev.target.value; }
+    toggleBcc() { this.state.showBcc = !this.state.showBcc; }
+
+    // ── Drag & Drop ─────────────────────────────────────────
+
+    onDragOver(ev) {
+        ev.preventDefault();
+        this.state.dragOver = true;
     }
 
-    onCcChange(ev) {
-        this.state.cc = ev.target.value;
+    onDragLeave(ev) {
+        ev.preventDefault();
+        this.state.dragOver = false;
     }
 
-    onBccChange(ev) {
-        this.state.bcc = ev.target.value;
+    async onDrop(ev) {
+        ev.preventDefault();
+        this.state.dragOver = false;
+        const files = ev.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+        for (const file of files) {
+            await this._uploadFile(file);
+        }
     }
 
-    onSubjectChange(ev) {
-        this.state.subject = ev.target.value;
+    async onFileSelect(ev) {
+        const files = ev.target.files;
+        if (!files || files.length === 0) return;
+        for (const file of files) {
+            await this._uploadFile(file);
+        }
+        ev.target.value = '';
     }
 
-    onBodyChange(ev) {
-        this.state.body = ev.target.value;
+    async _uploadFile(file) {
+        try {
+            const formData = new FormData();
+            formData.append('ufile', file);
+            formData.append('csrf_token', odoo.csrf_token);
+
+            const res = await fetch('/web/binary/upload_attachment', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+            if (data && data[0] && data[0].id) {
+                this.state.attachments.push({
+                    id: data[0].id,
+                    name: file.name,
+                    size: file.size,
+                });
+            }
+        } catch (e) {
+            console.error('[mail v3] upload error:', e);
+        }
     }
 
-    toggleBcc() {
-        this.state.showBcc = !this.state.showBcc;
+    removeAttachment(index) {
+        this.state.attachments.splice(index, 1);
     }
+
+    formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ── Autosave & Send ─────────────────────────────────────
 
     async autosave() {
         if (!this.props.draftId) return;
@@ -62,6 +113,7 @@ export class ComposeWizard extends Component {
                 bcc_emails: this.state.bcc,
                 subject: this.state.subject,
                 body_html: this.state.body,
+                attachment_ids: this.state.attachments.map(a => a.id),
             });
         } catch (e) {
             console.warn('[mail v3] autosave error:', e);
@@ -75,16 +127,12 @@ export class ComposeWizard extends Component {
         }
         this.state.sending = true;
         this.state.error = '';
-
-        // Save latest values first
         await this.autosave();
 
         try {
             const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/send');
             if (res.success) {
-                if (this.props.onSent) {
-                    this.props.onSent();
-                }
+                if (this.props.onSent) this.props.onSent();
             } else {
                 this.state.error = res.error || 'Errore invio';
             }
@@ -95,8 +143,6 @@ export class ComposeWizard extends Component {
     }
 
     discard() {
-        if (this.props.onClose) {
-            this.props.onClose();
-        }
+        if (this.props.onClose) this.props.onClose();
     }
 }

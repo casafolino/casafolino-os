@@ -41,6 +41,33 @@
                       t-att-value="state.body" t-on-input="onBodyChange"
                       placeholder="Scrivi il messaggio..."/>
           </div>
+
+          <!-- Drag & drop zone -->
+          <div t-att-class="'mv3-dropzone' + (state.dragOver ? ' mv3-dropzone--active' : '')"
+               t-on-dragover="onDragOver"
+               t-on-dragleave="onDragLeave"
+               t-on-drop="onDrop">
+            <i class="fa fa-cloud-upload"/> Trascina file qui o
+            <label class="btn btn-sm btn-link" style="cursor:pointer; padding:0; margin:0;">
+              sfoglia
+              <input type="file" multiple="multiple" style="display:none"
+                     t-on-change="onFileSelect"/>
+            </label>
+          </div>
+
+          <!-- Attachment previews -->
+          <div t-if="state.attachments.length > 0" class="mv3-attachment-preview">
+            <t t-foreach="state.attachments" t-as="att" t-key="att.id">
+              <div class="mv3-attachment-preview__item">
+                <i class="fa fa-paperclip"/>
+                <span t-out="att.name"/>
+                <span class="mv3-attachment-preview__size" t-out="this.formatFileSize(att.size)"/>
+                <button class="mv3-attachment-preview__remove"
+                        t-on-click="() => this.removeAttachment(att_index)">×</button>
+              </div>
+            </t>
+          </div>
+
           <div t-if="state.error" class="alert alert-danger mt-2">
             <t t-out="state.error"/>
           </div>
