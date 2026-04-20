@@ -65,10 +65,23 @@
         sequence="10"
         action="action_casafolino_mail_outbox"/>
 
+    <menuitem id="menu_casafolino_mail_feedback"
+        name="Calibration Feedback"
+        parent="menu_casafolino_mail_intelligence"
+        sequence="2"
+        action="action_intelligence_feedback"/>
+
+    <menuitem id="menu_casafolino_mail_analytics"
+        name="Analytics"
+        parent="menu_casafolino_mail_root"
+        sequence="11"
+        action="action_mail_v3_analytics"
+        groups="casafolino_mail.group_mail_v3_admin"/>
+
     <menuitem id="menu_casafolino_mail_discard"
         name="Archivio Scarto"
         parent="menu_casafolino_mail_root"
-        sequence="11"
+        sequence="12"
         action="action_casafolino_mail_message_discard"
         groups="base.group_system"/>
 

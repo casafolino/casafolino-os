@@ -19,3 +19,6 @@ from . import res_users
 from . import casafolino_mail_flag_sync
 from . import casafolino_mail_outbox
 from . import casafolino_mail_compose_wizard
+from . import casafolino_mail_snooze
+from . import casafolino_partner_intelligence_feedback
+from . import casafolino_mail_response_metric

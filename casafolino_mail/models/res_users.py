@@ -18,3 +18,11 @@ class ResUsersMailV3(models.Model):
     ], string='Densità lista', default='comfortable')
     mail_v3_keyboard_shortcuts_enabled = fields.Boolean('Shortcut tastiera', default=True)
     mail_v3_dark_mode = fields.Boolean('Dark mode', default=False)
+    mv3_font_size = fields.Selection([
+        ('small', 'Piccolo'),
+        ('medium', 'Medio'),
+        ('large', 'Grande'),
+    ], string='Dimensione font', default='medium')
+    mv3_ai_reply_enabled = fields.Boolean('AI Reply attivo', default=True)
+    mv3_ai_temperature = fields.Float('AI Temperature', default=0.5)
+    mv3_ai_model = fields.Char('AI Model', default='llama-3.3-70b-versatile')

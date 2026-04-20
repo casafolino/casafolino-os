@@ -36,10 +36,12 @@ class CasafolinoMailOutbox(models.Model):
     ], string='Priorita', default='0')
     state = fields.Selection([
         ('queued', 'In coda'),
+        ('undoable', 'Annullabile'),
         ('sending', 'Invio in corso'),
         ('sent', 'Inviato'),
         ('error', 'Errore'),
     ], string='Stato', default='queued', index=True)
+    undo_until = fields.Datetime('Annullabile fino a')
     error_message = fields.Text('Errore')
     retry_count = fields.Integer('Tentativi', default=0)
     max_retries = fields.Integer('Max tentativi', default=3)
@@ -223,6 +225,16 @@ class CasafolinoMailOutbox(models.Model):
     @api.model
     def _cron_process_outbox(self):
         """Process queued emails. Runs every 2 minutes."""
+        now = fields.Datetime.now()
+
+        # Transition undoable → queued when undo window expires
+        expired_undo = self.search([
+            ('state', '=', 'undoable'),
+            ('undo_until', '<=', now),
+        ])
+        if expired_undo:
+            expired_undo.write({'state': 'queued'})
+
         items = self.search([
             ('state', '=', 'queued'),
         ], order='priority desc, create_date asc', limit=20)

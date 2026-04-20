@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Search view -->
+    <record id="view_intelligence_feedback_search" model="ir.ui.view">
+        <field name="name">casafolino.partner.intelligence.feedback.search</field>
+        <field name="model">casafolino.partner.intelligence.feedback</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="action_type"/>
+                <filter string="Pinned Hot" name="pinned_hot" domain="[('action_type', '=', 'pinned_hot')]"/>
+                <filter string="Pinned Ignore" name="pinned_ignore" domain="[('action_type', '=', 'pinned_ignore')]"/>
+                <filter string="NBA Utile" name="nba_useful" domain="[('action_type', '=', 'nba_useful')]"/>
+                <filter string="NBA Ignorato" name="nba_dismissed" domain="[('action_type', '=', 'nba_dismissed')]"/>
+                <filter string="Lead Creato" name="lead_created" domain="[('action_type', '=', 'manual_lead_created')]"/>
+                <separator/>
+                <filter string="Ultimo mese" name="last_month" domain="[('date', '>=', (context_today() - datetime.timedelta(days=30)).strftime('%%Y-%%m-%%d'))]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Azione" name="group_action" context="{'group_by': 'action_type'}"/>
+                    <filter string="Utente" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Partner" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Data" name="group_date" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- List view -->
+    <record id="view_intelligence_feedback_list" model="ir.ui.view">
+        <field name="name">casafolino.partner.intelligence.feedback.list</field>
+        <field name="model">casafolino.partner.intelligence.feedback</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="action_type"/>
+                <field name="hotness_at_action"/>
+                <field name="nba_text_at_action"/>
+                <field name="nba_rule_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view -->
+    <record id="view_intelligence_feedback_form" model="ir.ui.view">
+        <field name="name">casafolino.partner.intelligence.feedback.form</field>
+        <field name="model">casafolino.partner.intelligence.feedback</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="user_id"/>
+                            <field name="action_type"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="hotness_at_action"/>
+                            <field name="nba_text_at_action"/>
+                            <field name="nba_rule_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="context_json"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_intelligence_feedback" model="ir.actions.act_window">
+        <field name="name">Calibration Feedback</field>
+        <field name="res_model">casafolino.partner.intelligence.feedback</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_intelligence_feedback_search"/>
+        <field name="context">{'search_default_last_month': 1}</field>
+    </record>
+
+    <!-- Analytics action (client action for V3 dashboard) -->
+    <record id="action_mail_v3_analytics" model="ir.actions.client">
+        <field name="name">Mail V3 Analytics</field>
+        <field name="tag">cf_mail_v3_analytics</field>
+    </record>
+
+</odoo>

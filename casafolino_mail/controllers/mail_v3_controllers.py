@@ -1,8 +1,9 @@
 import json
 import logging
 import re
+from datetime import timedelta
 
-from odoo import http
+from odoo import http, fields
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
@@ -52,14 +53,22 @@ class MailV3Controller(http.Controller):
         if not filters.get('show_archived'):
             domain.append(('is_archived', '=', False))
 
+        # Hide snoozed threads by default (unless viewing snoozed folder)
+        if folder != 'snoozed':
+            domain.append(('is_snoozed', '=', False))
+
         # Folder filters
         if folder == 'starred':
-            # Find threads with at least one starred message
             starred_msgs = request.env['casafolino.mail.message'].search([
                 ('is_starred', '=', True), ('is_deleted', '=', False),
             ])
             starred_thread_ids = starred_msgs.mapped('thread_id').ids
             domain.append(('id', 'in', starred_thread_ids))
+        elif folder == 'sent':
+            domain.append(('has_outbound', '=', True))
+        elif folder == 'snoozed':
+            domain = [d for d in domain if d[0] != 'is_snoozed']
+            domain.append(('is_snoozed', '=', True))
         elif folder == 'trash':
             domain = [d for d in domain if d[0] != 'is_archived']
             domain.append(('is_archived', '=', True))
@@ -524,6 +533,9 @@ class MailV3Controller(http.Controller):
         ], limit=1)
         if intel:
             intel.write({'pinned_ignore': True})
+            # Log calibration feedback
+            from odoo.addons.casafolino_mail.models.casafolino_partner_intelligence_feedback import IntelligenceFeedback
+            IntelligenceFeedback._log_feedback(request.env, partner_id, 'nba_dismissed')
         return {'success': True}
 
     # ── Partner Notes ────────────────────────────────────────────────
@@ -579,24 +591,30 @@ class MailV3Controller(http.Controller):
         if not query or len(query) < 2:
             return {'results': []}
 
+        # Use ORM search to respect record rules, then full-text on accessible IDs
+        Message = request.env['casafolino.mail.message']
+        accessible_ids = Message.search([
+            ('state', 'in', ['keep', 'auto_keep']),
+            ('is_deleted', '=', False),
+        ]).ids
+
+        if not accessible_ids:
+            return {'results': []}
+
         cr = request.env.cr
         cr.execute("""
-            SELECT m.id, m.subject, m.sender_email, m.email_date, m.thread_id,
+            SELECT id, subject, sender_email, email_date, thread_id,
                    ts_rank(
                        to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_plain,'')),
                        plainto_tsquery('simple', %s)
                    ) as rank
-            FROM casafolino_mail_message m
-            WHERE m.state IN ('keep', 'auto_keep')
-              AND m.is_deleted = false
+            FROM casafolino_mail_message
+            WHERE id = ANY(%s)
               AND to_tsvector('simple', coalesce(subject,'')||' '||coalesce(body_plain,''))
                   @@ plainto_tsquery('simple', %s)
-              AND m.account_id IN (
-                  SELECT id FROM casafolino_mail_account WHERE active = true
-              )
-            ORDER BY rank DESC, m.email_date DESC
+            ORDER BY rank DESC, email_date DESC
             LIMIT %s
-        """, (query, query, limit))
+        """, (query, accessible_ids, query, limit))
 
         rows = cr.dictfetchall()
         results = []
@@ -607,6 +625,7 @@ class MailV3Controller(http.Controller):
                 'sender_email': r['sender_email'] or '',
                 'email_date': str(r['email_date'])[:16] if r['email_date'] else '',
                 'thread_id': r['thread_id'],
+                'snippet': '',
             })
 
         return {'results': results}
@@ -753,3 +772,318 @@ class MailV3Controller(http.Controller):
             'target': 'new',
             'context': ctx,
         }
+
+    # ── Smart Snooze ───────────────────────────���────────────────────
+
+    @http.route('/cf/mail/v3/thread/<int:thread_id>/snooze', type='json', auth='user')
+    def snooze_thread(self, thread_id, **kw):
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not thread.exists():
+            return {'success': False, 'error': 'Thread not found'}
+
+        snooze_type = kw.get('snooze_type', 'until_date')
+        wake_at = kw.get('wake_at')
+        deadline_days = int(kw.get('deadline_days', 3))
+        note = kw.get('note', '')
+
+        vals = {
+            'thread_id': thread_id,
+            'user_id': request.env.uid,
+            'snooze_type': snooze_type,
+            'deadline_days': deadline_days,
+            'note': note,
+            'snoozed_at': fields.Datetime.now(),
+        }
+        if wake_at:
+            vals['wake_at'] = wake_at
+
+        request.env['casafolino.mail.snooze'].create(vals)
+        thread.write({'is_snoozed': True})
+
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/snooze/<int:snooze_id>/unsnooze', type='json', auth='user')
+    def unsnooze(self, snooze_id, **kw):
+        snooze = request.env['casafolino.mail.snooze'].browse(snooze_id)
+        if not snooze.exists():
+            return {'success': False, 'error': 'Snooze not found'}
+        snooze.thread_id.write({'is_snoozed': False})
+        snooze.write({'active': False})
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/thread/<int:thread_id>/unsnooze', type='json', auth='user')
+    def unsnooze_thread(self, thread_id, **kw):
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not thread.exists():
+            return {'success': False}
+        thread.write({'is_snoozed': False})
+        snoozes = request.env['casafolino.mail.snooze'].search([
+            ('thread_id', '=', thread_id), ('active', '=', True),
+        ])
+        snoozes.write({'active': False})
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/snoozes', type='json', auth='user')
+    def list_snoozes(self, **kw):
+        snoozes = request.env['casafolino.mail.snooze'].search([
+            ('user_id', '=', request.env.uid),
+            ('active', '=', True),
+        ])
+        result = []
+        for s in snoozes:
+            result.append({
+                'id': s.id,
+                'thread_id': s.thread_id.id,
+                'thread_subject': s.thread_id.subject or '',
+                'snooze_type': s.snooze_type,
+                'wake_at': str(s.wake_at) if s.wake_at else '',
+                'deadline_days': s.deadline_days,
+                'note': s.note or '',
+            })
+        return {'snoozes': result}
+
+    # ── Undo Send ───────────────────────��───────────────────────────
+
+    @http.route('/cf/mail/v3/draft/<int:draft_id>/send_undoable', type='json', auth='user')
+    def draft_send_undoable(self, draft_id, **kw):
+        """Send draft via outbox with 10s undo window."""
+        draft = request.env['casafolino.mail.draft'].browse(draft_id)
+        if not draft.exists():
+            return {'success': False, 'error': 'Draft not found'}
+
+        now = fields.Datetime.now()
+        undo_until = now + timedelta(seconds=10)
+
+        outbox = request.env['casafolino.mail.outbox'].queue_send(
+            account_id=draft.account_id.id,
+            to_emails=draft.to_emails or '',
+            subject=draft.subject or '',
+            body_html=draft.body_html or '',
+            cc_emails=draft.cc_emails or '',
+            bcc_emails=draft.bcc_emails or '',
+            signature_html=draft.signature_id.body_html if draft.signature_id else '',
+            in_reply_to=draft.in_reply_to_message_id.message_id_rfc if draft.in_reply_to_message_id else '',
+            attachment_ids=draft.attachment_ids.ids or None,
+            source_message_id=draft.in_reply_to_message_id.id if draft.in_reply_to_message_id else False,
+        )
+        outbox.write({'state': 'undoable', 'undo_until': undo_until})
+
+        # Delete draft after queuing
+        draft.unlink()
+
+        return {
+            'success': True,
+            'outbox_id': outbox.id,
+            'undo_until': str(undo_until),
+        }
+
+    @http.route('/cf/mail/v3/outbox/<int:outbox_id>/undo', type='json', auth='user')
+    def undo_send(self, outbox_id, **kw):
+        outbox = request.env['casafolino.mail.outbox'].browse(outbox_id)
+        if not outbox.exists():
+            return {'success': False, 'error': 'Non trovato'}
+        if outbox.state != 'undoable':
+            return {'success': False, 'error': 'Non più annullabile'}
+
+        # Restore as draft
+        draft = request.env['casafolino.mail.draft'].create({
+            'account_id': outbox.account_id.id,
+            'user_id': request.env.uid,
+            'to_emails': outbox.to_emails,
+            'cc_emails': outbox.cc_emails,
+            'bcc_emails': outbox.bcc_emails,
+            'subject': outbox.subject,
+            'body_html': outbox.body_html,
+            'in_reply_to_message_id': outbox.source_message_id.id if outbox.source_message_id else False,
+        })
+        outbox.unlink()
+        return {'success': True, 'draft_id': draft.id}
+
+    # ── Scheduled Send ────────────────────────��─────────────────────
+
+    @http.route('/cf/mail/v3/draft/<int:draft_id>/schedule', type='json', auth='user')
+    def draft_schedule(self, draft_id, **kw):
+        draft = request.env['casafolino.mail.draft'].browse(draft_id)
+        if not draft.exists():
+            return {'success': False, 'error': 'Draft not found'}
+        scheduled_at = kw.get('scheduled_send_at')
+        if not scheduled_at:
+            return {'success': False, 'error': 'Data richiesta'}
+        draft.write({
+            'scheduled_send_at': scheduled_at,
+            'is_scheduled': True,
+        })
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/draft/<int:draft_id>/unschedule', type='json', auth='user')
+    def draft_unschedule(self, draft_id, **kw):
+        draft = request.env['casafolino.mail.draft'].browse(draft_id)
+        if not draft.exists():
+            return {'success': False}
+        draft.write({'is_scheduled': False, 'scheduled_send_at': False})
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/scheduled', type='json', auth='user')
+    def list_scheduled(self, **kw):
+        drafts = request.env['casafolino.mail.draft'].search([
+            ('user_id', '=', request.env.uid),
+            ('is_scheduled', '=', True),
+        ], order='scheduled_send_at asc')
+        result = []
+        for d in drafts:
+            result.append({
+                'id': d.id,
+                'to_emails': d.to_emails or '',
+                'subject': d.subject or '',
+                'scheduled_send_at': str(d.scheduled_send_at) if d.scheduled_send_at else '',
+            })
+        return {'drafts': result}
+
+    # ── Dark Mode ────────────────────────���──────────────────────────
+
+    @http.route('/cf/mail/v3/user/dark_mode', type='json', auth='user')
+    def toggle_dark_mode(self, **kw):
+        user = request.env.user
+        enabled = kw.get('enabled')
+        if enabled is None:
+            enabled = not user.mail_v3_dark_mode
+        user.sudo().write({'mail_v3_dark_mode': bool(enabled)})
+        return {'success': True, 'dark_mode': bool(enabled)}
+
+    @http.route('/cf/mail/v3/user/preferences', type='json', auth='user')
+    def get_user_preferences(self, **kw):
+        user = request.env.user
+        return {
+            'dark_mode': user.mail_v3_dark_mode,
+            'reading_pane_position': user.mail_v3_reading_pane_position or 'right',
+            'thread_list_density': user.mail_v3_thread_list_density or 'comfortable',
+            'keyboard_shortcuts': user.mail_v3_keyboard_shortcuts_enabled,
+            'font_size': user.mv3_font_size or 'medium',
+            'ai_reply_enabled': user.mv3_ai_reply_enabled,
+            'ai_temperature': user.mv3_ai_temperature or 0.5,
+            'ai_model': user.mv3_ai_model or 'llama-3.3-70b-versatile',
+        }
+
+    @http.route('/cf/mail/v3/user/preferences/save', type='json', auth='user')
+    def save_user_preferences(self, **kw):
+        user = request.env.user
+        vals = {}
+        field_map = {
+            'dark_mode': 'mail_v3_dark_mode',
+            'reading_pane_position': 'mail_v3_reading_pane_position',
+            'thread_list_density': 'mail_v3_thread_list_density',
+            'keyboard_shortcuts': 'mail_v3_keyboard_shortcuts_enabled',
+            'font_size': 'mv3_font_size',
+            'ai_reply_enabled': 'mv3_ai_reply_enabled',
+            'ai_temperature': 'mv3_ai_temperature',
+            'ai_model': 'mv3_ai_model',
+        }
+        for key, field in field_map.items():
+            if key in kw:
+                vals[field] = kw[key]
+        if vals:
+            user.sudo().write(vals)
+        return {'success': True}
+
+    # ── Settings: Signatures ────────────────────���───────────────────
+
+    @http.route('/cf/mail/v3/signatures', type='json', auth='user')
+    def list_signatures(self, **kw):
+        sigs = request.env['casafolino.mail.signature'].search([])
+        return {'signatures': [{
+            'id': s.id,
+            'name': s.name or '',
+            'body_html': s.body_html or '',
+            'is_default': s.is_default,
+            'account_id': s.account_id.id if s.account_id else False,
+            'account_name': s.account_id.name if s.account_id else '',
+        } for s in sigs]}
+
+    # ── Settings: AI Test Connection ───────────────��────────────────
+
+    @http.route('/cf/mail/v3/settings/test_groq', type='json', auth='user')
+    def test_groq_connection(self, **kw):
+        import requests as http_requests
+        ICP = request.env['ir.config_parameter'].sudo()
+        api_key = ICP.get_param('casafolino.groq_api_key')
+        if not api_key:
+            return {'success': False, 'error': 'API key non configurata'}
+        try:
+            r = http_requests.get(
+                'https://api.groq.com/openai/v1/models',
+                headers={'Authorization': 'Bearer %s' % api_key},
+                timeout=10,
+            )
+            r.raise_for_status()
+            models = [m['id'] for m in r.json().get('data', [])]
+            return {'success': True, 'models': models}
+        except Exception as e:
+            return {'success': False, 'error': str(e)[:200]}
+
+    # ── Bulk Actions ─────────────────────────��──────────────────────
+
+    @http.route('/cf/mail/v3/threads/bulk', type='json', auth='user')
+    def threads_bulk_action(self, **kw):
+        action = kw.get('action')
+        thread_ids = kw.get('thread_ids', [])
+        if not action or not thread_ids:
+            return {'success': False, 'error': 'Missing action or ids'}
+
+        threads = request.env['casafolino.mail.thread'].browse(thread_ids)
+        processed = 0
+
+        for thread in threads:
+            msgs = thread.message_ids.filtered(lambda m: not m.is_deleted)
+            if action == 'mark_read':
+                msgs.filtered(lambda m: not m.is_read).action_mark_read()
+            elif action == 'mark_unread':
+                msgs.filtered(lambda m: m.is_read).action_mark_unread()
+            elif action == 'archive':
+                msgs.action_archive()
+            elif action == 'delete':
+                msgs.action_delete_soft()
+            elif action == 'star':
+                for m in msgs:
+                    if not m.is_starred:
+                        m.action_toggle_star()
+            elif action == 'unstar':
+                for m in msgs:
+                    if m.is_starred:
+                        m.action_toggle_star()
+            elif action == 'snooze':
+                wake_at = kw.get('wake_at')
+                if wake_at:
+                    request.env['casafolino.mail.snooze'].create({
+                        'thread_id': thread.id,
+                        'user_id': request.env.uid,
+                        'snooze_type': 'until_date',
+                        'wake_at': wake_at,
+                    })
+                    thread.write({'is_snoozed': True})
+            processed += 1
+
+        return {'success': True, 'processed': processed}
+
+    # ── Calibration Feedback ───────────────────��────────────────────
+
+    @http.route('/cf/mail/v3/partner/<int:partner_id>/feedback', type='json', auth='user')
+    def partner_feedback(self, partner_id, **kw):
+        action_type = kw.get('action_type')
+        if not action_type:
+            return {'success': False, 'error': 'action_type required'}
+
+        from odoo.addons.casafolino_mail.models.casafolino_partner_intelligence_feedback import IntelligenceFeedback
+        IntelligenceFeedback._log_feedback(
+            request.env, partner_id, action_type,
+            extra=kw.get('context')
+        )
+        return {'success': True}
+
+    # ── Response Time Analytics ──────────────���──────────────────────
+
+    @http.route('/cf/mail/v3/analytics', type='json', auth='user')
+    def analytics(self, **kw):
+        days = int(kw.get('days', 30))
+        account_ids = kw.get('account_ids')
+        Metric = request.env['casafolino.mail.response.metric']
+        return Metric.get_analytics(days=days, account_ids=account_ids)

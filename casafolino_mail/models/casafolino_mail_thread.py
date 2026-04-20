@@ -38,6 +38,8 @@ class CasafolinoMailThread(models.Model):
         ('all_discard', 'Tutti discard'),
     ], string='Stato aggregato', default='all_keep')
     hotness_snapshot = fields.Integer('Hotness snapshot', default=0)
+    is_snoozed = fields.Boolean('Snoozed', default=False, index=True)
+    has_outbound = fields.Boolean('Ha outbound', compute='_compute_has_outbound', store=True)
     message_ids = fields.One2many('casafolino.mail.message', 'thread_id', string='Messaggi')
 
     _sql_constraints = [
@@ -53,6 +55,13 @@ class CasafolinoMailThread(models.Model):
             thread.message_count = len(msgs)
             thread.unread_count = len(msgs.filtered(lambda m: not m.is_read))
             thread.has_attachments = any(m.body_downloaded and m.attachment_ids for m in msgs)
+
+    @api.depends('message_ids', 'message_ids.direction')
+    def _compute_has_outbound(self):
+        for thread in self:
+            thread.has_outbound = any(
+                m.direction == 'outbound' for m in thread.message_ids if not m.is_deleted
+            )
 
     @api.depends('message_ids.is_archived')
     def _compute_is_archived(self):

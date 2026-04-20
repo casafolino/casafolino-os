@@ -33,3 +33,8 @@ access_mail_v3_intelligence_admin,casafolino.partner.intelligence.admin,model_ca
 access_casafolino_mail_outbox_user,casafolino.mail.outbox user,model_casafolino_mail_outbox,base.group_user,1,1,1,0
 access_casafolino_mail_outbox_admin,casafolino.mail.outbox admin,model_casafolino_mail_outbox,base.group_system,1,1,1,1
 access_casafolino_mail_compose_wizard_user,casafolino.mail.compose.wizard user,model_casafolino_mail_compose_wizard,base.group_user,1,1,1,1
+access_mail_v3_snooze_user,casafolino.mail.snooze user,model_casafolino_mail_snooze,casafolino_mail.group_mail_v3_user,1,1,1,1
+access_mail_v3_intel_feedback_user,casafolino.partner.intelligence.feedback user,model_casafolino_partner_intelligence_feedback,casafolino_mail.group_mail_v3_user,1,1,1,0
+access_mail_v3_intel_feedback_admin,casafolino.partner.intelligence.feedback admin,model_casafolino_partner_intelligence_feedback,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_response_metric_user,casafolino.mail.response.metric user,model_casafolino_mail_response_metric,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_response_metric_admin,casafolino.mail.response.metric admin,model_casafolino_mail_response_metric,casafolino_mail.group_mail_v3_admin,1,1,1,1
