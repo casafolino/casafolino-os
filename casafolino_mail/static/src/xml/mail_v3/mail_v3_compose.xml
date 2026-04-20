@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.ComposeWizard">
+    <div class="mv3-compose-overlay">
+      <div class="mv3-compose">
+        <div class="mv3-compose__header">
+          <h4>
+            <t t-if="props.mode === 'reply'">Rispondi</t>
+            <t t-elif="props.mode === 'reply_all'">Rispondi a tutti</t>
+            <t t-elif="props.mode === 'forward'">Inoltra</t>
+            <t t-else="">Nuovo messaggio</t>
+          </h4>
+          <button class="btn btn-sm btn-link" t-on-click="discard">
+            <i class="fa fa-times"/>
+          </button>
+        </div>
+        <div class="mv3-compose__body">
+          <div class="mv3-compose__field">
+            <label>A:</label>
+            <input type="text" class="form-control form-control-sm"
+                   t-att-value="state.to" t-on-input="onToChange"
+                   placeholder="email@esempio.com"/>
+          </div>
+          <div class="mv3-compose__field">
+            <label>CC:</label>
+            <input type="text" class="form-control form-control-sm"
+                   t-att-value="state.cc" t-on-input="onCcChange"/>
+          </div>
+          <div class="mv3-compose__field" t-if="state.showBcc">
+            <label>BCC:</label>
+            <input type="text" class="form-control form-control-sm"
+                   t-att-value="state.bcc" t-on-input="onBccChange"/>
+          </div>
+          <div class="mv3-compose__field">
+            <label>Oggetto:</label>
+            <input type="text" class="form-control form-control-sm"
+                   t-att-value="state.subject" t-on-input="onSubjectChange"/>
+          </div>
+          <div class="mv3-compose__field mv3-compose__field--body">
+            <textarea class="form-control" rows="12"
+                      t-att-value="state.body" t-on-input="onBodyChange"
+                      placeholder="Scrivi il messaggio..."/>
+          </div>
+          <div t-if="state.error" class="alert alert-danger mt-2">
+            <t t-out="state.error"/>
+          </div>
+        </div>
+        <div class="mv3-compose__footer">
+          <button class="btn btn-sm btn-link" t-on-click="toggleBcc">
+            <t t-out="state.showBcc ? 'Nascondi BCC' : 'Mostra BCC'"/>
+          </button>
+          <div class="mv3-compose__footer-right">
+            <button class="btn btn-sm btn-outline-secondary" t-on-click="discard">Annulla</button>
+            <button class="btn btn-sm btn-primary" t-on-click="send" t-att-disabled="state.sending">
+              <i t-att-class="state.sending ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/>
+              Invia
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

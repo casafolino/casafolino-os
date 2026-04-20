@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.SidebarLeft">
+    <div class="mv3-sidebar-left">
+      <div class="mv3-sidebar-left__header">
+        <h3 class="mv3-sidebar-left__title">Mail V3</h3>
+        <button class="btn btn-sm btn-primary mv3-sidebar-left__compose"
+                t-on-click="onComposeNew">
+          <i class="fa fa-pencil"/> Scrivi
+        </button>
+      </div>
+      <div class="mv3-sidebar-left__accounts">
+        <div class="mv3-sidebar-left__account-item"
+             t-att-class="{'mv3-sidebar-left__account-item--active': !state.selectedAccountId}"
+             t-on-click="selectAll">
+          <i class="fa fa-inbox"/> Tutti
+          <span class="mv3-sidebar-left__badge" t-if="totalUnread > 0">
+            <t t-out="totalUnread"/>
+          </span>
+        </div>
+        <t t-foreach="props.accounts" t-as="account" t-key="account.id">
+          <div class="mv3-sidebar-left__account-item"
+               t-att-class="{'mv3-sidebar-left__account-item--active': state.selectedAccountId === account.id}"
+               t-on-click="() => this.selectAccount(account.id)">
+            <span class="mv3-sidebar-left__account-dot"
+                  t-att-style="'background:#5A6E3A'"/>
+            <span class="mv3-sidebar-left__account-name"><t t-out="account.name"/></span>
+            <span class="mv3-sidebar-left__badge" t-if="account.unread_count > 0">
+              <t t-out="account.unread_count"/>
+            </span>
+          </div>
+        </t>
+      </div>
+    </div>
+  </t>
+</templates>

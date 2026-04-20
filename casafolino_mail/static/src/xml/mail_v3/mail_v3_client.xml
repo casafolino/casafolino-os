@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.MailV3Client">
+    <div class="mv3-client">
+      <div class="mv3-client__sidebar-left">
+        <SidebarLeft
+          accounts="state.accounts"
+          onAccountChange.bind="onAccountChange"
+          onComposeNew.bind="() => this.openCompose('new', null)"/>
+      </div>
+      <div class="mv3-client__thread-list">
+        <ThreadList
+          threads="state.threads"
+          accounts="state.accounts"
+          loading="state.loading.threads"
+          selectedThreadId="state.selectedThreadId"
+          onSelect.bind="selectThread"/>
+      </div>
+      <div class="mv3-client__reading-pane">
+        <ReadingPane
+          messages="state.messages"
+          loading="state.loading.messages"
+          onAction.bind="onMessageAction"
+          onReply.bind="(mode, msgId) => this.openCompose(mode, msgId)"/>
+      </div>
+      <div class="mv3-client__sidebar-360" t-if="state.sidebar360Data">
+        <Sidebar360
+          data="state.sidebar360Data"
+          loading="state.loading.sidebar"/>
+      </div>
+      <ComposeWizard
+        t-if="state.composeVisible"
+        draftId="state.composeDraftId"
+        prefilled="state.composePrefilled"
+        mode="state.composeMode"
+        onSent.bind="onComposeSent"
+        onClose.bind="closeCompose"/>
+    </div>
+  </t>
+</templates>

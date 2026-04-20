@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.Sidebar360">
+    <div class="mv3-sidebar360">
+      <div t-if="props.loading" class="mv3-sidebar360__loading">
+        <i class="fa fa-spinner fa-spin"/>
+      </div>
+      <div t-if="!props.loading and props.data" class="mv3-sidebar360__content">
+        <!-- Company Block -->
+        <div class="mv3-sidebar360__block mv3-company-block" t-if="props.data.company and props.data.company.name">
+          <div class="mv3-company-block__header">
+            <h3 t-out="props.data.company.name"/>
+            <span t-if="props.data.company.hotness_score"
+                  t-att-class="'mv3-hotness-badge ' + this.getHotnessClass(props.data.company.hotness_tier)">
+              <t t-out="props.data.company.hotness_emoji"/>
+              <strong t-out="props.data.company.hotness_score"/>/100
+            </span>
+          </div>
+          <div class="mv3-company-block__meta">
+            <t t-if="props.data.company.country_flag">
+              <span t-out="props.data.company.country"/>
+            </t>
+            <span t-if="props.data.company.vat" class="mv3-company-block__vat">
+              P.IVA: <t t-out="props.data.company.vat"/>
+            </span>
+          </div>
+          <div t-if="props.data.company.website" class="mv3-company-block__website">
+            <a t-att-href="props.data.company.website" target="_blank">
+              <t t-out="props.data.company.website"/>
+            </a>
+          </div>
+          <div class="mv3-tags" t-if="props.data.company.tags and props.data.company.tags.length > 0">
+            <t t-foreach="props.data.company.tags" t-as="tag" t-key="tag.id">
+              <span class="mv3-tag"><t t-out="tag.name"/></span>
+            </t>
+          </div>
+        </div>
+
+        <!-- Person Block -->
+        <div class="mv3-sidebar360__block mv3-person-block" t-if="props.data.person and props.data.person.name">
+          <h4>Contatto</h4>
+          <div class="mv3-person-block__name" t-out="props.data.person.name"/>
+          <div t-if="props.data.person.role" class="mv3-person-block__role" t-out="props.data.person.role"/>
+          <div t-if="props.data.person.email" class="mv3-person-block__email">
+            <i class="fa fa-envelope-o"/> <t t-out="props.data.person.email"/>
+          </div>
+          <div t-if="props.data.person.phone" class="mv3-person-block__phone">
+            <i class="fa fa-phone"/> <t t-out="props.data.person.phone"/>
+          </div>
+        </div>
+
+        <!-- Relation Block -->
+        <div class="mv3-sidebar360__block mv3-relation-block" t-if="props.data.relation">
+          <h4>Relazione</h4>
+          <div class="mv3-relation-block__row">
+            <span class="mv3-relation-block__label">Primo contatto</span>
+            <span t-out="props.data.relation.first_contact || '-'"/>
+          </div>
+          <div class="mv3-relation-block__row">
+            <span class="mv3-relation-block__label">Email totali</span>
+            <span t-out="props.data.relation.total_emails"/>
+          </div>
+          <div class="mv3-relation-block__row">
+            <span class="mv3-relation-block__label">Ultima risposta</span>
+            <span t-out="props.data.relation.last_reply || '-'"/>
+          </div>
+        </div>
+
+        <!-- Business Block -->
+        <div class="mv3-sidebar360__block mv3-business-block" t-if="props.data.business">
+          <h4>Business</h4>
+          <div class="mv3-business-block__row">
+            <span class="mv3-business-block__label">Fatturato YTD</span>
+            <span t-out="this.formatCurrency(props.data.business.ytd_revenue)"/>
+          </div>
+          <div class="mv3-business-block__row">
+            <span class="mv3-business-block__label">Ordini aperti</span>
+            <span t-out="props.data.business.open_orders"/>
+          </div>
+          <div class="mv3-business-block__row">
+            <span class="mv3-business-block__label">Scaduto</span>
+            <span t-att-class="props.data.business.overdue > 0 ? 'text-danger fw-bold' : ''"
+                  t-out="props.data.business.overdue"/>
+          </div>
+        </div>
+
+        <!-- Quick Actions Block -->
+        <div class="mv3-sidebar360__block mv3-actions-block" t-if="props.data.quick_actions">
+          <h4>Azioni rapide</h4>
+          <div class="mv3-actions-block__buttons">
+            <t t-foreach="props.data.quick_actions" t-as="action" t-key="action.key">
+              <button class="btn btn-sm btn-outline-secondary mv3-actions-block__btn"
+                      t-on-click="() => this.onQuickAction(action.key)">
+                <i t-att-class="'fa ' + action.icon"/> <t t-out="action.label"/>
+              </button>
+            </t>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>
