@@ -37,13 +37,15 @@ def migrate(cr, version):
     import json
     name_json = json.dumps({'en_US': 'Mail Hub: Backfill AI Classification - Action'})
     cr.execute("""
-        INSERT INTO ir_act_server (name, model_id, state, code, binding_type)
+        INSERT INTO ir_act_server (name, type, model_id, state, code, binding_type, usage)
         VALUES (
             %s::jsonb,
+            'ir.actions.server',
             %s,
             'code',
             'model._cron_backfill_ai_classification()',
-            'action'
+            'action',
+            'ir_cron'
         ) RETURNING id
     """, (name_json, model_id))
     sa_id = cr.fetchone()[0]
