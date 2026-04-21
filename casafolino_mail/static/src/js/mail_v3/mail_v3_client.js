@@ -273,6 +273,11 @@ export class MailV3Client extends Component {
                 reply_to_id: replyToId || false,
                 prefilled_body: prefilled_body || '',
             });
+            if (!action || !action.views || !Array.isArray(action.views)) {
+                console.error("[mail v3] malformed action from backend", action);
+                this.notification.add("Errore apertura composer. Contatta supporto.", { type: "danger" });
+                return;
+            }
             await this.actionService.doAction(action, {
                 onClose: async () => {
                     await this.loadThreads();

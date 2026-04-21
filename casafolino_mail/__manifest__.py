@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.9.0.5',
+    'version': '18.0.9.0.6',
     'summary': 'Cockpit commerciale Mail V3 + Intelligence per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',

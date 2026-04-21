@@ -788,6 +788,7 @@ class MailV3Controller(http.Controller):
             'type': 'ir.actions.act_window',
             'res_model': 'casafolino.mail.compose.wizard',
             'view_mode': 'form',
+            'views': [(False, 'form')],
             'target': 'new',
             'context': ctx,
         }
