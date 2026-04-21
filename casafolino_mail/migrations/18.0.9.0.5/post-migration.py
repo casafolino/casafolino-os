@@ -57,14 +57,14 @@ def migrate(cr, version):
     """, (name_json, model_id))
     sa_id = cr.fetchone()[0]
 
-    # Create cron (Odoo 18: no numbercall column)
+    # Create cron (Odoo 18: nextcall is NOT NULL)
     cr.execute("""
         INSERT INTO ir_cron (
             cron_name, ir_actions_server_id, interval_number, interval_type,
-            active, user_id, priority
+            active, user_id, priority, nextcall
         ) VALUES (
             'Mail Hub: Backfill AI Classification',
-            %s, 10, 'minutes', true, %s, 15
+            %s, 10, 'minutes', true, %s, 15, NOW() + INTERVAL '10 minutes'
         )
     """, (sa_id, user_id))
 
