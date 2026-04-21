@@ -1236,9 +1236,10 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.warning("AI classify cron error msg %s: %s", msg.id, e)
             self.env.cr.commit()
-            # Rate limit: ~24 req/min (well under Groq free tier 30 req/min)
-            if idx < len(pending) - 1:
-                time.sleep(2.5)
+            # On 429, stop batch immediately — don't sleep and block cron thread
+            if msg.ai_error == 'Rate limit 429':
+                _logger.info("AI classify cron: 429 hit, stopping batch at %d/%d", idx + 1, len(pending))
+                break
 
         _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
 
@@ -1262,31 +1263,23 @@ class CasafolinoMailMessage(models.Model):
 
         success = 0
         failed = 0
+        rate_limited = False
         for idx, msg in enumerate(pending):
-            retry_count = 0
-            max_retries = 3
-            while retry_count <= max_retries:
-                try:
-                    msg._classify_with_groq()
-                    if msg.ai_classified_at:
-                        success += 1
-                    elif msg.ai_error == 'Rate limit 429' and retry_count < max_retries:
-                        wait = 2 ** (retry_count + 1)  # 2, 4, 8 seconds
-                        _logger.info("[backfill_ai] 429 backoff %ds msg %s", wait, msg.id)
-                        time.sleep(wait)
-                        retry_count += 1
-                        msg.write({'ai_error': False})
-                        continue
-                    else:
-                        failed += 1
-                    break
-                except Exception as e:
-                    _logger.warning("[backfill_ai] error msg %s: %s", msg.id, e)
+            if rate_limited:
+                break  # Stop batch on 429 — don't block cron thread
+            try:
+                msg._classify_with_groq()
+                if msg.ai_classified_at:
+                    success += 1
+                elif msg.ai_error == 'Rate limit 429':
+                    _logger.info("[backfill_ai] 429 hit at msg %s, stopping batch", msg.id)
+                    rate_limited = True
+                else:
                     failed += 1
-                    break
+            except Exception as e:
+                _logger.warning("[backfill_ai] error msg %s: %s", msg.id, e)
+                failed += 1
             self.env.cr.commit()
-            if idx < len(pending) - 1:
-                time.sleep(0.2)
 
         remaining = self.search_count([
             ('ai_classified_at', '=', False),
