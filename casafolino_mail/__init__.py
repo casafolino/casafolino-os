@@ -103,3 +103,21 @@ def _post_init_hook(env):
     IrConfig = env['ir.config_parameter'].sudo()
     if not IrConfig.get_param('casafolino_mail.silent_days_threshold'):
         IrConfig.set_param('casafolino_mail.silent_days_threshold', '21')
+
+    # ── 6. Cron Backfill AI Classification (F9) ──
+    msg_model = env.ref('casafolino_mail.model_casafolino_mail_message')
+    if not Cron.search([('cron_name', '=', 'Mail Hub: Backfill AI Classification')]):
+        sa_backfill = env['ir.actions.server'].create({
+            'name': 'Mail Hub: Backfill AI Classification - Action',
+            'model_id': msg_model.id,
+            'state': 'code',
+            'code': 'model._cron_backfill_ai_classification()',
+        })
+        Cron.create({
+            'cron_name': 'Mail Hub: Backfill AI Classification',
+            'ir_actions_server_id': sa_backfill.id,
+            'interval_number': 10,
+            'interval_type': 'minutes',
+            'active': True,
+            'user_id': env.ref('base.user_admin').id,
+        })
