@@ -91,33 +91,57 @@
         </div>
       </div>
 
-      <!-- Reading Pane -->
-      <div class="mv3-client__reading-pane">
-        <!-- Mobile back button -->
-        <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
-          <i class="fa fa-arrow-left"/> Torna alla lista
+      <!-- Main area: reading pane (top) + 360 panel (bottom) -->
+      <div class="mv3-client__main-area">
+        <!-- Reading Pane -->
+        <div class="mv3-client__reading-pane">
+          <!-- Mobile back button -->
+          <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
+            <i class="fa fa-arrow-left"/> Torna alla lista
+          </div>
+          <ReadingPane
+            messages="state.messages"
+            loading="state.loading.messages"
+            onAction.bind="onMessageAction"
+            onReply.bind="openReply"
+            onReplyAll.bind="openReplyAll"
+            onForward.bind="openForward"
+            onAiReply.bind="openReplyAssistant"
+            onSnooze.bind="openSnoozePopup"/>
         </div>
-        <ReadingPane
-          messages="state.messages"
-          loading="state.loading.messages"
-          onAction.bind="onMessageAction"
-          onReply.bind="openReply"
-          onReplyAll.bind="openReplyAll"
-          onForward.bind="openForward"
-          onAiReply.bind="openReplyAssistant"
-          onSnooze.bind="openSnoozePopup"/>
+
+        <!-- Bottom Panel 360 -->
+        <div t-att-class="'mv3-client__bottom-360' + (state.panel360Collapsed ? ' mv3-client__bottom-360--collapsed' : '')"
+             t-if="state.sidebar360Data">
+          <div class="mv3-bottom-360__toggle" t-on-click="togglePanel360">
+            <i t-att-class="'fa ' + (state.panel360Collapsed ? 'fa-chevron-up' : 'fa-chevron-down')"/>
+            <span class="ms-2">360°</span>
+          </div>
+          <div class="mv3-bottom-360__content" t-if="!state.panel360Collapsed">
+            <Sidebar360
+              data="state.sidebar360Data"
+              loading="state.loading.sidebar"
+              onQuickAction.bind="onSidebarQuickAction"
+              onDismissNba.bind="dismissNba"
+              onSaveNotes.bind="saveNotes"
+              onFeedback.bind="logFeedback"
+              onDoAction.bind="doAction"/>
+          </div>
+        </div>
       </div>
 
-      <!-- Sidebar 360 -->
-      <div class="mv3-client__sidebar-360" t-if="state.sidebar360Data">
-        <Sidebar360
-          data="state.sidebar360Data"
-          loading="state.loading.sidebar"
-          onQuickAction.bind="onSidebarQuickAction"
-          onDismissNba.bind="dismissNba"
-          onSaveNotes.bind="saveNotes"
-          onFeedback.bind="logFeedback"
-          onDoAction.bind="doAction"/>
+      <!-- Compose Wizard Overlay (F10) -->
+      <div t-if="state.composeVisible" class="mv3-compose-overlay">
+        <div class="mv3-compose-overlay__backdrop" t-on-click="onComposeClose"/>
+        <div class="mv3-compose-overlay__panel">
+          <ComposeWizard
+            draftId="state.composeDraftId"
+            prefilled="state.composePrefilled"
+            mode="state.composeMode"
+            accountId="state.composeAccountId"
+            onSent.bind="onComposeSent"
+            onClose.bind="onComposeClose"/>
+        </div>
       </div>
 
       <!-- Reply Assistant Modal -->

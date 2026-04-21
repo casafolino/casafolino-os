@@ -193,6 +193,12 @@
                      invisible="not is_current_user_in_cc">
                     <strong>Sei in CC</strong> — non sei il destinatario principale di questa email.
                 </div>
+                <div class="alert alert-info" role="alert"
+                     invisible="body_downloaded">
+                    <strong>Body non scaricato</strong> — il contenuto di questa email non è ancora disponibile.
+                    <button name="action_download_body_now" type="object"
+                            class="btn btn-sm btn-primary ms-2">Scarica ora</button>
+                </div>
                 <field name="is_current_user_in_cc" invisible="1"/>
                 <div class="o_row mb-3">
                     <button name="action_keep" string="Tieni"

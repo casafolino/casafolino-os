@@ -1193,6 +1193,23 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
+    def action_download_body_now(self):
+        """Scarica body on-demand per questo messaggio (button UI)."""
+        self.ensure_one()
+        if self.body_downloaded:
+            return
+        try:
+            imap = self.account_id._get_imap_connection()
+            self._download_body_imap(imap, self.imap_folder, self.imap_uid)
+            imap.logout()
+            self.env.cr.commit()
+        except Exception as e:
+            self.write({
+                'fetch_state': 'error',
+                'fetch_error_msg': 'Download manuale fallito: %s' % str(e)[:200],
+            })
+            _logger.error("Manual body download error for %s: %s", self.id, e)
+
     # ── Cron AI classify pending ────────────────────────────────────
 
     @api.model

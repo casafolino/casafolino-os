@@ -231,6 +231,114 @@ class ResPartnerMailExt(models.Model):
             'domain': [('partner_id', '=', self.id), ('state', 'in', ['keep', 'auto_keep'])],
         }
 
+    # ── F10 WP3: Partner enrichment from domain ──────────────────────
+
+    def action_enrich_from_domain(self):
+        """Resolve company from email domain for person contacts."""
+        self.ensure_one()
+        if self.is_company or self.parent_id:
+            return  # Already a company or already linked
+
+        email = self.email
+        if not email or '@' in email is False:
+            return
+
+        domain = email.split('@')[1].lower().strip()
+
+        # Skip generic domains
+        generic = {
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+            'icloud.com', 'mail.com', 'protonmail.com', 'live.com', 'msn.com',
+            'gmx.de', 'web.de', 'libero.it', 'virgilio.it', 'alice.it',
+            't-online.de', 'wanadoo.fr', 'orange.fr', 'free.fr', 'proton.me',
+        }
+        if domain in generic:
+            return
+
+        # Step 1: Search existing company by domain
+        company = self.env['res.partner'].search([
+            ('is_company', '=', True),
+            '|', '|',
+            ('website', 'ilike', domain),
+            ('email', 'ilike', '@' + domain),
+            ('company_name', 'ilike', domain.split('.')[0]),
+        ], limit=1)
+
+        if company:
+            self.write({'parent_id': company.id})
+            _logger.info("[WP3] Linked person %s to existing company %s via domain %s",
+                         self.id, company.id, domain)
+            return {'company_id': company.id, 'company_name': company.name, 'source': 'existing'}
+
+        # Step 2: Try Groq + Serper to resolve company
+        serper_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.serper_api_key', '')
+        groq_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.groq_api_key', '')
+
+        company_name = domain.split('.')[0].capitalize()
+        company_country = ''
+
+        if serper_key:
+            try:
+                sr = requests.post(
+                    "https://google.serper.dev/search",
+                    headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
+                    json={"q": "%s company" % domain, "num": 3},
+                    timeout=10,
+                )
+                if sr.ok:
+                    snippets = []
+                    for item in sr.json().get("organic", [])[:3]:
+                        snippets.append("%s: %s" % (item.get('title', ''), item.get('snippet', '')))
+                    search_text = '\n'.join(snippets)
+
+                    if groq_key and search_text:
+                        resp = requests.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            headers={"Authorization": "Bearer %s" % groq_key, "Content-Type": "application/json"},
+                            json={
+                                "model": "llama-3.3-70b-versatile",
+                                "messages": [
+                                    {"role": "system", "content": "Extract company name and country from search results. Return JSON only: {\"name\": \"...\", \"country\": \"...\"}"},
+                                    {"role": "user", "content": "Domain: %s\nSearch results:\n%s" % (domain, search_text)},
+                                ],
+                                "temperature": 0.1,
+                                "max_tokens": 100,
+                            },
+                            timeout=15,
+                        )
+                        if resp.ok:
+                            content = resp.json().get('choices', [{}])[0].get('message', {}).get('content', '')
+                            content = content.strip()
+                            if content.startswith('```'):
+                                content = re.sub(r'^```\w*\n?', '', content)
+                                content = re.sub(r'\n?```$', '', content).strip()
+                            data = json.loads(content)
+                            if data.get('name'):
+                                company_name = data['name']
+                            if data.get('country'):
+                                company_country = data['country']
+            except Exception as e:
+                _logger.warning("[WP3] Serper/Groq error for domain %s: %s", domain, e)
+
+        # Step 3: Create company partner
+        company_vals = {
+            'name': company_name,
+            'is_company': True,
+            'website': 'https://%s' % domain,
+        }
+        if company_country:
+            country = self.env['res.country'].search([
+                '|', ('name', 'ilike', company_country), ('code', '=ilike', company_country)
+            ], limit=1)
+            if country:
+                company_vals['country_id'] = country.id
+
+        new_company = self.env['res.partner'].create(company_vals)
+        self.write({'parent_id': new_company.id})
+        _logger.info("[WP3] Created company %s (id=%s) for person %s from domain %s",
+                     company_name, new_company.id, self.id, domain)
+        return {'company_id': new_company.id, 'company_name': company_name, 'source': 'created'}
+
     # ── Sync storico email per contatto (Step 7) ─────────────────────
 
     def action_sync_full_email_history(self):

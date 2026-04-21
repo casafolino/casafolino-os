@@ -11,7 +11,19 @@
       </div>
       <div t-if="!props.loading and props.data" class="mv3-sidebar360__content">
 
-        <!-- 1. Company / Identity Block -->
+        <!-- 1a. Company missing — enrich placeholder (F10 WP3) -->
+        <div class="mv3-sidebar360__block mv3-company-block mv3-company-block--missing"
+             t-if="(!props.data.company or !props.data.company.name) and props.data.person and props.data.person.id">
+          <div class="mv3-company-block__header">
+            <h3 style="color:#999;">Azienda non identificata</h3>
+          </div>
+          <button class="btn btn-sm btn-outline-primary mt-2"
+                  t-on-click="enrichFromDomain">
+            <i class="fa fa-search"/> Arricchisci da dominio
+          </button>
+        </div>
+
+        <!-- 1b. Company / Identity Block -->
         <div class="mv3-sidebar360__block mv3-company-block" t-if="props.data.company and props.data.company.name">
           <div class="mv3-company-block__header">
             <h3 t-out="props.data.company.name"/>

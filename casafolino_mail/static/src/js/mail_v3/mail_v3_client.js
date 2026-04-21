@@ -9,10 +9,11 @@ import { ThreadList } from "./mail_v3_thread_list";
 import { ReadingPane } from "./mail_v3_reading_pane";
 import { Sidebar360 } from "./mail_v3_sidebar_360";
 import { ReplyAssistant } from "./mail_v3_reply_assistant";
+import { ComposeWizard } from "./mail_v3_compose";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
-    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, ReplyAssistant };
+    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, ReplyAssistant, ComposeWizard };
     static props = ["*"];
 
     setup() {
@@ -60,6 +61,14 @@ export class MailV3Client extends Component {
             selectedThreadIds: [],
             // Mobile
             mobileView: null, // null = desktop, 'list' | 'reading' | 'sidebar'
+            // Compose overlay (F10: OWL ComposeWizard)
+            composeVisible: false,
+            composeDraftId: null,
+            composePrefilled: null,
+            composeMode: 'new',
+            composeAccountId: null,
+            // 360 panel collapse (F10 WP5)
+            panel360Collapsed: false,
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
@@ -267,28 +276,44 @@ export class MailV3Client extends Component {
             : (this.state.accounts.length > 0 ? this.state.accounts[0].id : null);
 
         try {
-            const action = await rpc('/cf/mail/v3/compose/open', {
+            // Create draft via RPC to get prefilled data + draftId
+            const result = await rpc('/cf/mail/v3/compose/prepare', {
                 account_id: accountId,
                 mode: mode,
                 reply_to_id: replyToId || false,
                 prefilled_body: prefilled_body || '',
             });
-            if (!action || !action.views || !Array.isArray(action.views)) {
-                console.error("[mail v3] malformed action from backend", action);
-                this.notification.add("Errore apertura composer. Contatta supporto.", { type: "danger" });
+            if (!result || !result.draft_id) {
+                console.error("[mail v3] compose prepare failed", result);
                 return;
             }
-            await this.actionService.doAction(action, {
-                onClose: async () => {
-                    await this.loadThreads();
-                    if (this.state.selectedThreadId) {
-                        await this.selectThread(this.state.selectedThreadId);
-                    }
-                },
-            });
+            // Show OWL ComposeWizard overlay
+            this.state.composeDraftId = result.draft_id;
+            this.state.composePrefilled = result.prefilled || {};
+            this.state.composeMode = mode;
+            this.state.composeAccountId = accountId;
+            this.state.composeVisible = true;
         } catch (e) {
             console.error('[mail v3] compose open error:', e);
         }
+    }
+
+    async onComposeSent() {
+        this.state.composeVisible = false;
+        this.state.composeDraftId = null;
+        await this.loadThreads();
+        if (this.state.selectedThreadId) {
+            await this.selectThread(this.state.selectedThreadId);
+        }
+    }
+
+    onComposeClose() {
+        this.state.composeVisible = false;
+        this.state.composeDraftId = null;
+    }
+
+    togglePanel360() {
+        this.state.panel360Collapsed = !this.state.panel360Collapsed;
     }
 
     // ── Reply Assistant ─────────────────────────────────────────

@@ -12,6 +12,7 @@ export class Sidebar360 extends Component {
             commercialExpanded: false,
             commercialData: null,
             commercialLoading: false,
+            enriching: false,
         });
         this._notesSaveTimeout = null;
         this._commercialCache = {};
@@ -51,6 +52,24 @@ export class Sidebar360 extends Component {
         if (partnerId && this.props.onFeedback) {
             this.props.onFeedback(partnerId, 'pinned_ignore');
         }
+    }
+
+    async enrichFromDomain() {
+        const personId = this.props.data && this.props.data.person && this.props.data.person.id;
+        if (!personId) return;
+        this.state.enriching = true;
+        try {
+            const result = await rpc('/cf/mail/v3/partner/' + personId + '/enrich_domain');
+            if (result && result.success && result.company_name) {
+                // Update company block in-place
+                if (!this.props.data.company) this.props.data.company = {};
+                this.props.data.company.name = result.company_name;
+                this.props.data.company.id = result.company_id;
+            }
+        } catch (e) {
+            console.error('[360] enrich domain error:', e);
+        }
+        this.state.enriching = false;
     }
 
     onNotesInput(ev) {

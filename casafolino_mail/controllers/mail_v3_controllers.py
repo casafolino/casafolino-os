@@ -524,6 +524,23 @@ class MailV3Controller(http.Controller):
             'partner_id': partner_id,
         }
 
+    # ── F10 WP3: Domain Enrichment ─────────────────────────────────
+
+    @http.route('/cf/mail/v3/partner/<int:partner_id>/enrich_domain', type='json', auth='user')
+    def partner_enrich_domain(self, partner_id, **kw):
+        """Trigger domain-based company enrichment for a person contact."""
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'success': False, 'error': 'Partner not found'}
+        if partner.is_company or partner.parent_id:
+            return {'success': True, 'message': 'Already linked to company',
+                    'company_id': (partner.parent_id.id if partner.parent_id else partner.id)}
+        result = partner.action_enrich_from_domain()
+        if result and result.get('company_id'):
+            return {'success': True, 'company_id': result['company_id'],
+                    'company_name': result.get('company_name', ''), 'source': result.get('source', '')}
+        return {'success': False, 'error': 'Could not resolve company from domain'}
+
     # ── NBA Endpoints ────────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/partner/<int:partner_id>/nba/dismiss', type='json', auth='user')
@@ -791,6 +808,89 @@ class MailV3Controller(http.Controller):
             'views': [(False, 'form')],
             'target': 'new',
             'context': ctx,
+        }
+
+    # ── Compose Prepare (F10: OWL ComposeWizard) ──────────────────
+
+    @http.route('/cf/mail/v3/compose/prepare', type='json', auth='user')
+    def compose_prepare(self, **kw):
+        """Create draft and return prefilled data for OWL ComposeWizard."""
+        account_id = kw.get('account_id')
+        mode = kw.get('mode', 'new')
+        reply_to_id = kw.get('reply_to_id')
+        prefilled_body = kw.get('prefilled_body', '')
+
+        if not account_id:
+            account = request.env['casafolino.mail.account'].search([
+                ('responsible_user_id', '=', request.env.uid),
+                ('active', '=', True),
+            ], limit=1)
+            account_id = account.id if account else False
+
+        prefilled = {
+            'to': '',
+            'cc': '',
+            'bcc': '',
+            'subject': '',
+            'body_html': prefilled_body or '',
+            'signature_html': '',
+        }
+
+        # Load signature
+        if account_id:
+            sig = request.env['casafolino.mail.signature'].search([
+                ('account_id', '=', account_id),
+                ('is_default', '=', True),
+            ], limit=1)
+            if not sig:
+                sig = request.env['casafolino.mail.signature'].search([
+                    ('account_id', '=', account_id),
+                ], limit=1)
+            if sig:
+                prefilled['signature_html'] = sig.body_html or ''
+
+        if reply_to_id and mode in ('reply', 'reply_all', 'forward'):
+            orig = request.env['casafolino.mail.message'].browse(reply_to_id)
+            if orig.exists():
+                if mode == 'reply':
+                    prefilled['to'] = orig.sender_email if orig.direction == 'inbound' else (orig.recipient_emails or '')
+                    prefilled['subject'] = 'Re: ' + _normalize_subject(orig.subject or '')
+                elif mode == 'reply_all':
+                    prefilled['to'] = orig.sender_email if orig.direction == 'inbound' else (orig.recipient_emails or '')
+                    prefilled['cc'] = orig.cc_emails or ''
+                    prefilled['subject'] = 'Re: ' + _normalize_subject(orig.subject or '')
+                elif mode == 'forward':
+                    prefilled['subject'] = 'Fwd: ' + _normalize_subject(orig.subject or '')
+
+                quote_date = str(orig.email_date)[:16] if orig.email_date else ''
+                quote_from = orig.sender_name or orig.sender_email or ''
+                quoted = (
+                    '<br><br>'
+                    '<div style="border-left:2px solid #ccc;padding-left:12px;margin-left:4px;color:#666;">'
+                    '<p>Il %s, %s ha scritto:</p>'
+                    '%s'
+                    '</div>' % (quote_date, quote_from, orig.body_html or orig.body_plain or '')
+                )
+                prefilled['body_html'] = (prefilled_body or '') + quoted
+
+        # Create draft
+        draft_vals = {
+            'account_id': account_id,
+            'user_id': request.env.uid,
+            'to_emails': prefilled['to'],
+            'cc_emails': prefilled['cc'],
+            'bcc_emails': prefilled['bcc'],
+            'subject': prefilled['subject'],
+            'body_html': prefilled['body_html'],
+        }
+        if reply_to_id:
+            draft_vals['in_reply_to_message_id'] = reply_to_id
+
+        draft = request.env['casafolino.mail.draft'].create(draft_vals)
+
+        return {
+            'draft_id': draft.id,
+            'prefilled': prefilled,
         }
 
     # ── Smart Snooze ───────────────────────────���────────────────────
