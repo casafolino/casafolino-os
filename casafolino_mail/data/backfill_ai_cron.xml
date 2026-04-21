@@ -3,7 +3,7 @@
 
     <record id="cron_backfill_ai_classification" model="ir.cron">
         <field name="name">Mail Hub: Backfill AI Classification</field>
-        <field name="model_id" eval="env.ref('casafolino_mail.model_casafolino_mail_message').id"/>
+        <field name="model_id" search="[('model', '=', 'casafolino.mail.message')]"/>
         <field name="state">code</field>
         <field name="code">model._cron_backfill_ai_classification()</field>
         <field name="interval_number">10</field>
