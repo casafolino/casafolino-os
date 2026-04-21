@@ -302,7 +302,7 @@ class CasafolinoMailTriageWizard(models.TransientModel):
         """Tieni partner come contatto valido, nessuna policy, nessun discard.
         Crea decisione 'kept' per rimuoverlo dalla queue."""
         self.ensure_one()
-        self._create_decision('kept', notes='Contatto valido, tenuto da triage orfano')
+        self._create_decision('kept', notes='Contatto valido, gestito da triage orfano')
         return self._open_next_orphan(exclude_partner_ids=[self.partner_id.id])
 
     def action_triage_skip(self):

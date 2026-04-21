@@ -35,7 +35,7 @@ class CasafolinoMailSenderDecision(models.Model):
         ('lead_created', 'Lead creato'),
         ('assigned', 'Assegnato'),
         ('replied', 'Risposto con snippet'),
-        ('kept', 'Tenuto (valido)'),
+        ('kept', 'Gestito (valido)'),
         ('ignored_sender', 'Ignorato mittente'),
         ('ignored_domain', 'Ignorato dominio'),
     ], string='Decisione', required=True)

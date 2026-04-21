@@ -54,6 +54,8 @@ class ResPartnerMailExt(models.Model):
         ('linkedin', 'LinkedIn'), ('cold_call', 'Cold call'),
         ('inbound', 'Inbound'), ('other', 'Other'),
     ], string='Canale acquisizione')
+    account_owner_id = fields.Many2one('res.users', string='Account owner',
+        help='Responsabile commerciale CasaFolino per questo contatto')
     cf_fair_met = fields.Char('Fiera incontro')
     cf_notes_commercial = fields.Text('Note commerciali')
     cf_last_contact_date = fields.Date('Data ultimo contatto')

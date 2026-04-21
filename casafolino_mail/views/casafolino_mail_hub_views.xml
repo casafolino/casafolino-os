@@ -16,7 +16,7 @@
                 <field name="sender_domain"/>
                 <field name="partner_id"/>
                 <filter name="state_new" string="Da valutare" domain="[('state', 'in', ['new', 'review'])]"/>
-                <filter name="state_keep" string="Tenute" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_keep" string="Gestite" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
                 <filter name="state_discard" string="Scartate" domain="[('state', 'in', ['discard', 'auto_discard'])]"/>
                 <separator/>
                 <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
@@ -39,6 +39,12 @@
                 <filter name="intent_order" string="Ordine" domain="[('intent_detected', '=', 'order')]"/>
                 <filter name="intent_complaint" string="Reclamo" domain="[('intent_detected', '=', 'complaint')]"/>
                 <filter name="intent_followup" string="Follow-up" domain="[('intent_detected', '=', 'follow_up')]"/>
+                <separator/>
+                <filter name="my_account" string="Mia casella" domain="[('account_id.responsible_user_id', '=', uid)]"/>
+                <filter name="my_threads" string="Gestiti da me" domain="[('triage_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="only_to" string="Solo TO (no CC)" domain="[('is_current_user_in_cc', '=', False)]"/>
+                <filter name="in_cc" string="Sei in CC" domain="[('is_current_user_in_cc', '=', True)]"/>
                 <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
@@ -94,7 +100,9 @@
                 <field name="snippet" string="Preview" optional="show"/>
                 <field name="partner_id" string="Contatto"/>
                 <field name="match_type" string="Match" optional="hide"/>
-                <field name="account_id" string="Casella"/>
+                <field name="is_current_user_in_cc" string="CC" widget="boolean" optional="show"/>
+                <field name="account_id" string="Casella" widget="badge"
+                       decoration-info="True"/>
                 <field name="assigned_user_ids" string="Assegnato a" widget="many2many_tags" optional="show"/>
                 <field name="ai_category" string="AI Cat." widget="badge" optional="show"
                        decoration-info="ai_category in ('commerciale', 'fornitore')"
@@ -181,6 +189,11 @@
         <field name="model">casafolino.mail.message</field>
         <field name="arch" type="xml">
             <form string="Email">
+                <div class="alert alert-warning" role="alert"
+                     invisible="not is_current_user_in_cc">
+                    <strong>Sei in CC</strong> — non sei il destinatario principale di questa email.
+                </div>
+                <field name="is_current_user_in_cc" invisible="1"/>
                 <div class="o_row mb-3">
                     <button name="action_keep" string="Tieni"
                             type="object" class="btn btn-success"
@@ -221,7 +234,7 @@
                         <field name="state" widget="badge"/>
                         <field name="assigned_user_ids" widget="many2many_tags"/>
                         <field name="lead_id"/>
-                        <field name="triage_user_id"/>
+                        <field name="triage_user_id" string="Gestito da"/>
                         <field name="triage_date"/>
                     </group>
                 </group>
@@ -308,6 +321,7 @@
                         </group>
                         <group>
                             <field name="function"/>
+                            <field name="account_owner_id" string="Account owner"/>
                         </group>
                     </group>
                     <group string="Origine">
@@ -384,7 +398,7 @@
     </record>
 
     <record id="action_casafolino_mail_message_keep" model="ir.actions.act_window">
-        <field name="name">Tenute CRM</field>
+        <field name="name">Gestite CRM</field>
         <field name="res_model">casafolino.mail.message</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state', 'in', ['keep', 'auto_keep'])]</field>
@@ -397,6 +411,16 @@
         <field name="view_mode">list,form</field>
         <field name="domain">[('state', 'in', ['discard', 'auto_discard'])]</field>
         <field name="search_view_id" ref="casafolino_mail_message_search"/>
+    </record>
+
+    <!-- F9: Inbox Unificata — tutte le email gestite, default filtro mio account -->
+    <record id="action_casafolino_mail_inbox_unified" model="ir.actions.act_window">
+        <field name="name">Inbox Unificata</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['keep', 'auto_keep'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_my_account': 1}</field>
     </record>
 
 </odoo>

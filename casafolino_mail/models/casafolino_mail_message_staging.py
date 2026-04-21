@@ -71,8 +71,8 @@ class CasafolinoMailMessage(models.Model):
 
     state = fields.Selection([
         ('new', 'Nuova'),
-        ('auto_keep', 'Tenuta (auto)'),
-        ('keep', 'Tenuta'),
+        ('auto_keep', 'Gestita (auto)'),
+        ('keep', 'Gestita'),
         ('auto_discard', 'Scartata (auto)'),
         ('discard', 'Scartata'),
         ('review', 'Da valutare'),
@@ -177,6 +177,55 @@ class CasafolinoMailMessage(models.Model):
         ('inbound', 'Ricevuta'),
         ('outbound', 'Inviata'),
     ], string='Direzione V3', compute='_compute_direction_v3', store=True)
+
+    # ── F9: CC badge ──────────────────────────────────────────────
+    is_current_user_in_cc = fields.Boolean(
+        'Sei in CC', compute='_compute_is_current_user_in_cc',
+        search='_search_is_current_user_in_cc')
+
+    @api.depends_context('uid')
+    def _compute_is_current_user_in_cc(self):
+        user = self.env.user
+        my_emails = set()
+        if user.email:
+            my_emails.add(user.email.lower().strip())
+        # Include all IMAP account addresses the user is responsible for
+        accounts = self.env['casafolino.mail.account'].sudo().search([
+            ('responsible_user_id', '=', user.id),
+        ])
+        for acc in accounts:
+            if acc.email_address:
+                my_emails.add(acc.email_address.lower().strip())
+        for rec in self:
+            in_cc = False
+            if rec.cc_emails and my_emails:
+                cc_lower = rec.cc_emails.lower()
+                for addr in my_emails:
+                    if addr in cc_lower:
+                        in_cc = True
+                        break
+            rec.is_current_user_in_cc = in_cc
+
+    def _search_is_current_user_in_cc(self, operator, value):
+        user = self.env.user
+        emails = []
+        if user.email:
+            emails.append(user.email.lower().strip())
+        accounts = self.env['casafolino.mail.account'].sudo().search([
+            ('responsible_user_id', '=', user.id),
+        ])
+        for acc in accounts:
+            if acc.email_address:
+                emails.append(acc.email_address.lower().strip())
+        if not emails:
+            return [('id', '=', 0)] if (operator == '=' and value) else [('id', '!=', 0)]
+        # Build domain: cc_emails ilike any of user's emails
+        domain = ['|'] * (len(emails) - 1)
+        for addr in emails:
+            domain.append(('cc_emails', 'ilike', addr))
+        if (operator == '=' and not value) or (operator == '!=' and value):
+            return ['!'] + domain
+        return domain
 
     @api.depends('direction')
     def _compute_direction_v3(self):
@@ -1175,6 +1224,75 @@ class CasafolinoMailMessage(models.Model):
                 time.sleep(2.5)
 
         _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
+
+    # ── Cron backfill AI classification (F9) ────────────────────────
+
+    @api.model
+    def _cron_backfill_ai_classification(self):
+        """Backfill AI classification su messaggi storici non classificati.
+        Batch 50, rate limit 200ms, backoff esponenziale su 429."""
+        batch_size = 50
+        pending = self.search([
+            ('ai_classified_at', '=', False),
+            ('ai_error', 'in', [False, '', 'Rate limit 429']),
+            ('body_downloaded', '=', True),
+            '|', ('body_html', '!=', False), ('body_plain', '!=', False),
+        ], limit=batch_size, order='id desc')
+
+        if not pending:
+            _logger.info("[backfill_ai] nessun messaggio da classificare")
+            return
+
+        success = 0
+        failed = 0
+        for idx, msg in enumerate(pending):
+            retry_count = 0
+            max_retries = 3
+            while retry_count <= max_retries:
+                try:
+                    msg._classify_with_groq()
+                    if msg.ai_classified_at:
+                        success += 1
+                    elif msg.ai_error == 'Rate limit 429' and retry_count < max_retries:
+                        wait = 2 ** (retry_count + 1)  # 2, 4, 8 seconds
+                        _logger.info("[backfill_ai] 429 backoff %ds msg %s", wait, msg.id)
+                        time.sleep(wait)
+                        retry_count += 1
+                        msg.write({'ai_error': False})
+                        continue
+                    else:
+                        failed += 1
+                    break
+                except Exception as e:
+                    _logger.warning("[backfill_ai] error msg %s: %s", msg.id, e)
+                    failed += 1
+                    break
+            self.env.cr.commit()
+            if idx < len(pending) - 1:
+                time.sleep(0.2)
+
+        remaining = self.search_count([
+            ('ai_classified_at', '=', False),
+            ('ai_error', 'in', [False, '', 'Rate limit 429']),
+            ('body_downloaded', '=', True),
+            '|', ('body_html', '!=', False), ('body_plain', '!=', False),
+        ])
+        _logger.info("[backfill_ai] processed=%d success=%d failed=%d remaining=%d",
+                      len(pending), success, failed, remaining)
+
+    @api.model
+    def get_ai_coverage_stats(self):
+        """Ritorna statistiche copertura AI classification."""
+        total = self.search_count([])
+        classified = self.search_count([('ai_classified_at', '!=', False)])
+        unclassified = total - classified
+        pct = round(100.0 * classified / total, 1) if total else 0.0
+        return {
+            'total': total,
+            'classified': classified,
+            'unclassified': unclassified,
+            'coverage_pct': pct,
+        }
 
     # ── Cron cleanup (Step 8) ────────────────────────────────────────
 

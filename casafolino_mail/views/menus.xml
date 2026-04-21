@@ -5,6 +5,12 @@
         sequence="15"
         web_icon="casafolino_mail,static/description/icon.png"/>
 
+    <menuitem id="menu_casafolino_mail_inbox_unified"
+        name="Inbox Unificata"
+        parent="menu_casafolino_mail_root"
+        sequence="0"
+        action="action_casafolino_mail_inbox_unified"/>
+
     <menuitem id="menu_casafolino_mail_triage"
         name="Inbox Triage"
         parent="menu_casafolino_mail_root"
@@ -12,7 +18,7 @@
         action="action_casafolino_mail_message_triage"/>
 
     <menuitem id="menu_casafolino_mail_keep"
-        name="Tenute CRM"
+        name="Gestite CRM"
         parent="menu_casafolino_mail_root"
         sequence="2"
         action="action_casafolino_mail_message_keep"/>
@@ -120,4 +126,11 @@
         parent="menu_casafolino_mail_config"
         sequence="5"
         action="action_casafolino_mail_template"/>
+
+    <menuitem id="menu_casafolino_mail_backfill_ai"
+        name="Backfill AI"
+        parent="menu_casafolino_mail_config"
+        sequence="6"
+        action="action_casafolino_mail_backfill_ai"
+        groups="casafolino_mail.group_mail_v3_admin"/>
 </odoo>
