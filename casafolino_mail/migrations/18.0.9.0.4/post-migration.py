@@ -33,6 +33,13 @@ def migrate(cr, version):
         row = cr.fetchone()
     user_id = row[0] if row else 1
 
+    # Cleanup orphan server actions from failed previous migrations
+    cr.execute("""
+        DELETE FROM ir_act_server
+        WHERE name::text ILIKE '%Backfill AI Classification%'
+          AND id NOT IN (SELECT ir_actions_server_id FROM ir_cron WHERE ir_actions_server_id IS NOT NULL)
+    """)
+
     # Create server action (Odoo 18: name is JSONB for translations)
     import json
     name_json = json.dumps({'en_US': 'Mail Hub: Backfill AI Classification - Action'})
@@ -50,14 +57,14 @@ def migrate(cr, version):
     """, (name_json, model_id))
     sa_id = cr.fetchone()[0]
 
-    # Create cron
+    # Create cron (Odoo 18: no numbercall column)
     cr.execute("""
         INSERT INTO ir_cron (
             cron_name, ir_actions_server_id, interval_number, interval_type,
-            numbercall, active, user_id, priority
+            active, user_id, priority
         ) VALUES (
             'Mail Hub: Backfill AI Classification',
-            %s, 10, 'minutes', -1, true, %s, 15
+            %s, 10, 'minutes', true, %s, 15
         )
     """, (sa_id, user_id))
 
