@@ -33,17 +33,19 @@ def migrate(cr, version):
         row = cr.fetchone()
     user_id = row[0] if row else 1
 
-    # Create server action
+    # Create server action (Odoo 18: name is JSONB for translations)
+    import json
+    name_json = json.dumps({'en_US': 'Mail Hub: Backfill AI Classification - Action'})
     cr.execute("""
         INSERT INTO ir_act_server (name, model_id, state, code, binding_type)
         VALUES (
-            'Mail Hub: Backfill AI Classification - Action',
+            %s::jsonb,
             %s,
             'code',
             'model._cron_backfill_ai_classification()',
             'action'
         ) RETURNING id
-    """, (model_id,))
+    """, (name_json, model_id))
     sa_id = cr.fetchone()[0]
 
     # Create cron
