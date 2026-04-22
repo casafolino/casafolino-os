@@ -77,7 +77,7 @@
         <field name="arch" type="xml">
             <list string="Email Triage"
                   decoration-muted="state in ('discard', 'auto_discard')"
-                  decoration-success="state in ('keep', 'auto_keep')"
+                  decoration-success="state in ('keep', 'auto_keep', 'auto_attached')"
                   decoration-info="state in ('new', 'review')"
                   decoration-bf="not is_read"
                   multi_edit="1">
@@ -179,6 +179,7 @@
                             invisible="state not in ('new', 'review', 'auto_discard')"/>
                     <button name="action_discard" string="Scarta"
                             type="object" class="btn btn-danger"
+                            confirm="Eliminare definitivamente questa email da Odoo? (Gmail resta intatto)"
                             invisible="state not in ('new', 'review', 'auto_keep')"/>
                     <button name="action_blacklist_domain" string="Scarta Dominio"
                             type="object" class="btn btn-warning"/>

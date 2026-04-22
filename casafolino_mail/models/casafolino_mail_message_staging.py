@@ -526,12 +526,8 @@ class CasafolinoMailMessage(models.Model):
                     sib.write(sib_vals)
 
     def action_discard(self):
-        """Marca come discard."""
-        self.write({
-            'state': 'discard',
-            'triage_user_id': self.env.user.id,
-            'triage_date': fields.Datetime.now(),
-        })
+        """Hard delete record (v11). Gmail originale resta intatto."""
+        self.unlink()
 
     # ── Body download (Step 3) ───────────────────────────────────────
 
