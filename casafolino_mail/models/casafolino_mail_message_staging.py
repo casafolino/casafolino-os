@@ -1033,6 +1033,44 @@ class CasafolinoMailMessage(models.Model):
 
         _logger.info("Cron fetch bodies completato: %d messaggi processati", len(pending))
 
+    # ── Auto-attach email to open leads (v11 cron) ─────────────────
+
+    @api.model
+    def _cron_auto_attach_leads(self):
+        """Cron: collega email new a lead aperti dello stesso partner.
+
+        Se partner ha 1+ lead open → attach al più recente (MAX create_date).
+        Stato → auto_attached. Batch max 100 per run.
+        """
+        emails = self.search([
+            ('state', '=', 'new'),
+            ('partner_id', '!=', False),
+        ], limit=100, order='email_date desc')
+
+        if not emails:
+            return
+
+        attached = 0
+        for msg in emails:
+            # Cerca lead aperti per questo partner
+            leads = self.env['crm.lead'].search([
+                ('partner_id', '=', msg.partner_id.id),
+                ('active', '=', True),
+                ('stage_id.is_won', '=', False),
+                ('probability', '<', 100),
+            ], order='create_date desc', limit=1)
+
+            if leads:
+                msg.write({
+                    'lead_id': leads[0].id,
+                    'state': 'auto_attached',
+                })
+                attached += 1
+
+        if attached:
+            _logger.info("Auto-attach leads: %d email collegate su %d processate",
+                         attached, len(emails))
+
     # ── OWL Client API ───────────────────────────────────────────────
 
     def _msg_to_dict(self, m):
