@@ -35,10 +35,25 @@ def _hotness_emoji(tier):
 
 class MailV3Controller(http.Controller):
 
+    def _get_user_account_ids(self):
+        """Return IDs of accounts owned by current user."""
+        return request.env['casafolino.mail.account'].search([
+            ('responsible_user_id', '=', request.env.uid),
+            ('active', '=', True),
+        ]).ids
+
+    def _check_thread_ownership(self, thread):
+        """Return True if thread belongs to current user's accounts."""
+        return thread.exists() and thread.account_id.id in self._get_user_account_ids()
+
     # ── Thread List ──────────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/threads/list', type='json', auth='user')
     def threads_list(self, **kw):
+        user_accounts = self._get_user_account_ids()
+        if not user_accounts:
+            return {'threads': [], 'total': 0}
+
         account_ids = kw.get('account_ids')
         state = kw.get('state', 'keep')
         limit = min(int(kw.get('limit', 50)), 200)
@@ -46,9 +61,13 @@ class MailV3Controller(http.Controller):
         filters = kw.get('filters', {})
         folder = kw.get('folder')
 
-        domain = []
+        # Intersect requested accounts with user's own accounts
         if account_ids:
-            domain.append(('account_id', 'in', account_ids))
+            account_ids = [a for a in account_ids if a in user_accounts]
+        else:
+            account_ids = user_accounts
+
+        domain = [('account_id', 'in', account_ids)]
 
         if not filters.get('show_archived'):
             domain.append(('is_archived', '=', False))
@@ -169,7 +188,7 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/thread/<int:thread_id>/messages', type='json', auth='user')
     def thread_messages(self, thread_id, **kw):
         thread = request.env['casafolino.mail.thread'].browse(thread_id)
-        if not thread.exists():
+        if not self._check_thread_ownership(thread):
             return {'messages': []}
 
         messages = request.env['casafolino.mail.message'].search([
@@ -206,6 +225,9 @@ class MailV3Controller(http.Controller):
 
     @http.route('/cf/mail/v3/thread/<int:thread_id>/mark_all_read', type='json', auth='user')
     def thread_mark_all_read(self, thread_id, **kw):
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not self._check_thread_ownership(thread):
+            return {'success': False, 'error': 'Not your thread'}
         messages = request.env['casafolino.mail.message'].search([
             ('thread_id', '=', thread_id),
             ('is_read', '=', False),
@@ -220,6 +242,8 @@ class MailV3Controller(http.Controller):
         msg = request.env['casafolino.mail.message'].browse(msg_id)
         if not msg.exists():
             return {'success': False, 'error': 'Message not found'}
+        if msg.account_id.id not in self._get_user_account_ids():
+            return {'success': False, 'error': 'Not your message'}
 
         action_map = {
             'mark_read': 'action_mark_read',
@@ -571,6 +595,7 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/accounts/summary', type='json', auth='user')
     def accounts_summary(self, **kw):
         accounts = request.env['casafolino.mail.account'].search([
+            ('responsible_user_id', '=', request.env.uid),
             ('active', '=', True),
         ])
 
@@ -609,8 +634,12 @@ class MailV3Controller(http.Controller):
             return {'results': []}
 
         # Use ORM search to respect record rules, then full-text on accessible IDs
+        user_accounts = self._get_user_account_ids()
+        if not user_accounts:
+            return {'results': []}
         Message = request.env['casafolino.mail.message']
         accessible_ids = Message.search([
+            ('account_id', 'in', user_accounts),
             ('state', 'in', ['keep', 'auto_keep']),
             ('is_deleted', '=', False),
         ]).ids
@@ -898,7 +927,7 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/thread/<int:thread_id>/snooze', type='json', auth='user')
     def snooze_thread(self, thread_id, **kw):
         thread = request.env['casafolino.mail.thread'].browse(thread_id)
-        if not thread.exists():
+        if not self._check_thread_ownership(thread):
             return {'success': False, 'error': 'Thread not found'}
 
         snooze_type = kw.get('snooze_type', 'until_date')
@@ -1149,7 +1178,10 @@ class MailV3Controller(http.Controller):
         if not action or not thread_ids:
             return {'success': False, 'error': 'Missing action or ids'}
 
-        threads = request.env['casafolino.mail.thread'].browse(thread_ids)
+        user_accounts = self._get_user_account_ids()
+        threads = request.env['casafolino.mail.thread'].browse(thread_ids).filtered(
+            lambda t: t.account_id.id in user_accounts
+        )
         processed = 0
 
         for thread in threads:
@@ -1204,7 +1236,12 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/analytics', type='json', auth='user')
     def analytics(self, **kw):
         days = int(kw.get('days', 30))
+        user_accounts = self._get_user_account_ids()
         account_ids = kw.get('account_ids')
+        if account_ids:
+            account_ids = [a for a in account_ids if a in user_accounts]
+        else:
+            account_ids = user_accounts
         Metric = request.env['casafolino.mail.response.metric']
         return Metric.get_analytics(days=days, account_ids=account_ids)
 
