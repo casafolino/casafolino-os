@@ -27,6 +27,7 @@
         'data/cf_utm_sources.xml',
         'data/casafolino_mail_server_actions.xml',
         'data/casafolino_mail_hub_cron.xml',
+        'data/cleanup_legacy_menus.xml',
     ],
     'assets': {
         'web.assets_backend': [

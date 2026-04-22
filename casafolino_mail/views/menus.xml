@@ -17,18 +17,6 @@
         sequence="0"
         action="action_mail_v3_analytics"/>
 
-    <menuitem id="menu_casafolino_mail_triage"
-        name="Inbox Triage"
-        parent="menu_casafolino_mail_root"
-        sequence="1"
-        action="action_casafolino_mail_message_triage"/>
-
-    <menuitem id="menu_casafolino_mail_keep"
-        name="Tenute CRM"
-        parent="menu_casafolino_mail_root"
-        sequence="2"
-        action="action_casafolino_mail_message_keep"/>
-
     <menuitem id="menu_casafolino_mail_lead_score"
         name="Lead Scoring TOP 20"
         parent="menu_casafolino_mail_root"
@@ -64,13 +52,6 @@
         parent="menu_casafolino_mail_root"
         sequence="9"
         action="action_sender_decision_history"/>
-
-    <menuitem id="menu_casafolino_mail_discard"
-        name="Archivio Scarto"
-        parent="menu_casafolino_mail_root"
-        sequence="10"
-        action="action_casafolino_mail_message_discard"
-        groups="base.group_system"/>
 
     <menuitem id="menu_casafolino_mail_config"
         name="Configurazione"
