@@ -33,3 +33,4 @@ access_casafolino_mail_template_user,casafolino.mail.template user,model_casafol
 access_casafolino_partner_intelligence_user,casafolino.partner.intelligence user,model_casafolino_partner_intelligence,base.group_user,1,0,0,0
 access_casafolino_mail_response_metric_user,casafolino.mail.response.metric user,model_casafolino_mail_response_metric,base.group_user,1,0,0,0
 access_casafolino_mail_lead_rule_user,casafolino.mail.lead.rule user,model_casafolino_mail_lead_rule,base.group_user,1,1,1,1
+access_casafolino_partner_intelligence_feedback_user,casafolino.partner.intelligence.feedback user,model_casafolino_partner_intelligence_feedback,base.group_user,1,1,1,0
