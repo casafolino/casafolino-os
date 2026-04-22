@@ -143,6 +143,8 @@ class CasafolinoMailMessage(models.Model):
         'res.users', 'casafolino_mail_message_user_rel',
         'message_id', 'user_id', string='Assegnato a')
     lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
+    lead_name = fields.Char('Lead', compute='_compute_lead_info', store=False)
+    lead_stage_class = fields.Char('Lead Stage CSS', compute='_compute_lead_info', store=False)
     tracking_token = fields.Char('Tracking Token', index=True)
     tracking_ids = fields.One2many('casafolino.mail.tracking', 'message_id', string='Tracking')
     tracking_open_count = fields.Integer(compute='_compute_tracking_counts', string='Aperture')
@@ -180,6 +182,21 @@ class CasafolinoMailMessage(models.Model):
                 rec.sender_domain = rec.sender_email.split('@')[1].lower().strip()
             else:
                 rec.sender_domain = ''
+
+    def _compute_lead_info(self):
+        for rec in self:
+            if rec.lead_id:
+                name = rec.lead_id.name or ''
+                rec.lead_name = name[:30] + ('...' if len(name) > 30 else '')
+                if rec.lead_id.stage_id and rec.lead_id.stage_id.is_won:
+                    rec.lead_stage_class = 'success'
+                elif not rec.lead_id.active:
+                    rec.lead_stage_class = 'secondary'
+                else:
+                    rec.lead_stage_class = 'info'
+            else:
+                rec.lead_name = ''
+                rec.lead_stage_class = ''
 
     def _apply_sender_policy(self):
         """Applica la prima sender_policy che matcha a questo messaggio."""
@@ -496,6 +513,19 @@ class CasafolinoMailMessage(models.Model):
                         sib_vals['partner_id'] = pid
                         sib_vals['match_type'] = 'exact'
                     sib.write(sib_vals)
+
+    def action_open_lead(self):
+        """Apre il lead collegato in nuova tab."""
+        self.ensure_one()
+        if not self.lead_id:
+            return
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'crm.lead',
+            'res_id': self.lead_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def action_discard(self):
         """Hard delete record (v11). Gmail originale resta intatto."""

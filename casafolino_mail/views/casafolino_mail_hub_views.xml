@@ -88,6 +88,7 @@
                 <field name="sender_email" string="Email"/>
                 <field name="sender_domain" string="Dominio"/>
                 <field name="subject" string="Oggetto"/>
+                <field name="lead_name" string="Lead" optional="show"/>
                 <field name="snippet" string="Preview" optional="show"/>
                 <field name="partner_id" string="Contatto"/>
                 <field name="match_type" string="Match" optional="hide"/>
@@ -195,6 +196,13 @@
                     <button name="action_open_snippet_picker" string="Snippet"
                             type="object" class="btn btn-secondary"
                             invisible="direction != 'inbound'"/>
+                </div>
+                <div class="alert alert-info p-2 mb-2" role="alert"
+                     invisible="not lead_id">
+                    <button name="action_open_lead" type="object"
+                            class="btn btn-link p-0">
+                        <span class="fa fa-link"/> LEAD: <field name="lead_name" readonly="1"/>
+                    </button>
                 </div>
                 <group>
                     <group string="Email">
