@@ -24,3 +24,12 @@ access_casafolino_mail_snippet_picker_user,casafolino.mail.snippet.picker user,m
 access_casafolino_mail_triage_wizard_user,casafolino.mail.triage.wizard user,model_casafolino_mail_triage_wizard,base.group_user,1,1,1,1
 access_casafolino_mail_sender_decision_user,casafolino.mail.sender.decision user,model_casafolino_mail_sender_decision,base.group_user,1,1,1,0
 access_casafolino_mail_sender_decision_admin,casafolino.mail.sender.decision admin,model_casafolino_mail_sender_decision,base.group_system,1,1,1,1
+access_casafolino_mail_thread_user,casafolino.mail.thread user,model_casafolino_mail_thread,base.group_user,1,1,1,1
+access_casafolino_mail_draft_user,casafolino.mail.draft user,model_casafolino_mail_draft,base.group_user,1,1,1,1
+access_casafolino_mail_outbox_user,casafolino.mail.outbox user,model_casafolino_mail_outbox,base.group_user,1,1,1,0
+access_casafolino_mail_snooze_user,casafolino.mail.snooze user,model_casafolino_mail_snooze,base.group_user,1,1,1,1
+access_casafolino_mail_signature_user,casafolino.mail.signature user,model_casafolino_mail_signature,base.group_user,1,1,1,1
+access_casafolino_mail_template_user,casafolino.mail.template user,model_casafolino_mail_template,base.group_user,1,1,1,0
+access_casafolino_partner_intelligence_user,casafolino.partner.intelligence user,model_casafolino_partner_intelligence,base.group_user,1,0,0,0
+access_casafolino_mail_response_metric_user,casafolino.mail.response.metric user,model_casafolino_mail_response_metric,base.group_user,1,0,0,0
+access_casafolino_mail_lead_rule_user,casafolino.mail.lead.rule user,model_casafolino_mail_lead_rule,base.group_user,1,1,1,1
