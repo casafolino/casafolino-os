@@ -1101,6 +1101,75 @@ class CasafolinoMailMessage(models.Model):
             _logger.info("Auto-attach leads: %d email collegate su %d processate",
                          attached, len(emails))
 
+    # ── Digest mittenti fuori-CRM (v11 cron) ────────────────────────
+
+    @api.model
+    def _cron_digest_fuori_crm(self):
+        """Cron settimanale: invia digest top-20 domini fuori-CRM ad Antonio.
+
+        Analizza email filtrate dalla whitelist (non scaricate) contando
+        i domini più frequenti negli header IMAP degli ultimi 7 giorni.
+        Usa i log applicativi per conteggio — alternativa: query diretta.
+        """
+        from collections import Counter
+        from datetime import timedelta
+
+        cutoff = fields.Datetime.now() - timedelta(days=7)
+
+        # Conta domini mittente di email NON in CRM (state=new senza partner)
+        # In v11 le email fuori-CRM non vengono create, quindi contiamo
+        # i domini con email create nell'ultima settimana raggruppati
+        self.env.cr.execute("""
+            SELECT sender_domain, COUNT(*) as cnt
+            FROM casafolino_mail_message
+            WHERE email_date >= %s
+              AND partner_id IS NULL
+              AND direction = 'inbound'
+              AND sender_domain IS NOT NULL
+              AND sender_domain != ''
+            GROUP BY sender_domain
+            ORDER BY cnt DESC
+            LIMIT 20
+        """, [cutoff])
+        rows = self.env.cr.fetchall()
+
+        if not rows:
+            return
+
+        # Costruisci HTML digest
+        lines = []
+        for domain, count in rows:
+            lines.append('<tr><td style="padding:4px 8px;">%s</td>'
+                         '<td style="padding:4px 8px;text-align:right;">%d</td></tr>'
+                         % (domain, count))
+
+        body = """
+        <h3>Digest Settimanale — Mittenti Fuori CRM</h3>
+        <p>Top 20 domini non riconosciuti negli ultimi 7 giorni:</p>
+        <table border="1" cellpadding="4" style="border-collapse:collapse;">
+            <tr><th>Dominio</th><th>Email</th></tr>
+            %s
+        </table>
+        <p><em>Per aggiungere un dominio al CRM: crea un contatto azienda con email @dominio
+        oppure aggiungi il dominio nel campo "Domini email extra".</em></p>
+        """ % '\n'.join(lines)
+
+        # Invia ad Antonio
+        try:
+            antonio = self.env['res.users'].search([
+                ('login', '=', 'antonio@casafolino.com')
+            ], limit=1)
+            if antonio and antonio.partner_id:
+                mail = self.env['mail.mail'].sudo().create({
+                    'subject': 'Digest Mittenti Fuori-CRM — Settimana %s' % fields.Date.today().isocalendar()[1],
+                    'body_html': body,
+                    'email_to': 'antonio@casafolino.com',
+                    'auto_delete': True,
+                })
+                mail.send()
+        except Exception as e:
+            _logger.warning("Digest fuori-CRM send error: %s", e)
+
     # ── OWL Client API ───────────────────────────────────────────────
 
     def _msg_to_dict(self, m):
