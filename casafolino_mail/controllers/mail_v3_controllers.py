@@ -157,6 +157,17 @@ class MailV3Controller(http.Controller):
                 ], limit=1)
                 lead_open = bool(lead)
 
+            # Badge data: keep state and lead name from messages
+            active_msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            has_keep_message = any(
+                m.state in ('keep', 'auto_keep') for m in active_msgs
+            )
+            lead_name = ''
+            for m in active_msgs:
+                if m.lead_id:
+                    lead_name = m.lead_id.name or ''
+                    break
+
             result.append({
                 'id': t.id,
                 'subject': t.subject or '',
@@ -178,6 +189,8 @@ class MailV3Controller(http.Controller):
                 'hotness_emoji': hotness_emoji_str,
                 'attachment_count': att_count,
                 'lead_open': lead_open,
+                'has_keep_message': has_keep_message,
+                'lead_name': lead_name,
                 'partner_ids': t.partner_ids.ids,
             })
 
