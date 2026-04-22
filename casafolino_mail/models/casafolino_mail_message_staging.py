@@ -73,6 +73,7 @@ class CasafolinoMailMessage(models.Model):
         ('new', 'Nuova'),
         ('auto_keep', 'Tenuta (auto)'),
         ('keep', 'Tenuta'),
+        ('auto_attached', 'Auto-collegata Lead'),
         ('auto_discard', 'Scartata (auto)'),
         ('discard', 'Scartata'),
         ('review', 'Da valutare'),

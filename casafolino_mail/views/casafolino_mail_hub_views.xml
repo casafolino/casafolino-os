@@ -15,9 +15,12 @@
                 <field name="sender_name"/>
                 <field name="sender_domain"/>
                 <field name="partner_id"/>
-                <filter name="state_new" string="Da valutare" domain="[('state', 'in', ['new', 'review'])]"/>
-                <filter name="state_keep" string="Tenute" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_new" string="Da valutare" domain="[('state', '=', 'new')]"/>
+                <filter name="state_keep" string="Keep archiviate" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_lead" string="Con Lead" domain="[('lead_id', '!=', False)]"/>
+                <filter name="state_auto_attached" string="Auto-collegate" domain="[('state', '=', 'auto_attached')]"/>
                 <filter name="state_discard" string="Scartate" domain="[('state', 'in', ['discard', 'auto_discard'])]"/>
+                <filter name="my_mailbox" string="La mia casella" domain="[('account_id.responsible_user_id', '=', uid)]"/>
                 <separator/>
                 <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
                 <filter name="read" string="Letti" domain="[('is_read', '=', True)]"/>
@@ -360,6 +363,16 @@
         <field name="domain">[('state', 'in', ['new', 'review'])]</field>
         <field name="search_view_id" ref="casafolino_mail_message_search"/>
         <field name="context">{'search_default_inbound': 1}</field>
+    </record>
+
+    <!-- La Mia Casella — personal mailbox filtered by responsible_user_id -->
+    <record id="action_casafolino_mail_my_mailbox" model="ir.actions.act_window">
+        <field name="name">La Mia Casella</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('account_id.responsible_user_id', '=', uid)]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_state_new': 1}</field>
     </record>
 
     <record id="action_casafolino_mail_message_keep" model="ir.actions.act_window">

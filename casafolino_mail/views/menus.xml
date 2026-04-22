@@ -5,6 +5,12 @@
         sequence="15"
         web_icon="casafolino_mail,static/description/icon.png"/>
 
+    <menuitem id="menu_casafolino_mail_my_mailbox"
+        name="La Mia Casella"
+        parent="menu_casafolino_mail_root"
+        sequence="0"
+        action="action_casafolino_mail_my_mailbox"/>
+
     <menuitem id="menu_casafolino_mail_triage"
         name="Inbox Triage"
         parent="menu_casafolino_mail_root"
