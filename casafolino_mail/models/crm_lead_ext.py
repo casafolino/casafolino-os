@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 
 class CrmLeadMailHub(models.Model):
@@ -17,3 +18,10 @@ class CrmLeadMailHub(models.Model):
             lead.cf_email_count = HubMsg.search_count([
                 ('lead_id', '=', lead.id),
             ])
+
+    def action_import_email_history(self):
+        """Importa storico email per il partner di questo lead."""
+        self.ensure_one()
+        if not self.partner_id:
+            raise UserError("Questo lead non ha un contatto associato.")
+        return self.partner_id.action_sync_full_email_history()

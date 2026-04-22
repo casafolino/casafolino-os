@@ -263,6 +263,9 @@
                         invisible="casafolino_email_count == 0">
                     <field name="casafolino_email_count" string="Email" widget="statinfo"/>
                 </button>
+                <button name="action_sync_full_email_history" string="Importa Email"
+                        type="object" class="oe_stat_button" icon="fa-download"
+                        confirm="Importare tutto lo storico email da IMAP per questo contatto?"/>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email CRM" name="casafolino_emails">
@@ -332,6 +335,12 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_import_email_history" string="Importa Email"
+                        type="object" class="oe_stat_button" icon="fa-download"
+                        invisible="not partner_id"
+                        confirm="Importare tutto lo storico email IMAP per il contatto di questo lead?"/>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email" name="lead_emails">
                     <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
