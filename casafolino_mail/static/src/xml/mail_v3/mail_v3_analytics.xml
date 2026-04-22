@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.MailV3Analytics">
+    <div class="mv3-analytics p-4">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="mb-0">Mail V3 Analytics</h2>
+        <div class="d-flex align-items-center gap-2">
+          <label class="mb-0">Periodo:</label>
+          <select class="form-control form-control-sm" style="width:auto" t-on-change="onDaysChange">
+            <option value="7" t-att-selected="state.days === 7">7 giorni</option>
+            <option value="14" t-att-selected="state.days === 14">14 giorni</option>
+            <option value="30" t-att-selected="state.days === 30">30 giorni</option>
+            <option value="60" t-att-selected="state.days === 60">60 giorni</option>
+            <option value="90" t-att-selected="state.days === 90">90 giorni</option>
+          </select>
+        </div>
+      </div>
+
+      <div t-if="state.loading" class="text-center py-5">
+        <i class="fa fa-spinner fa-spin fa-2x"/>
+      </div>
+
+      <div t-if="!state.loading and state.data">
+        <!-- KPI Cards -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="mv3-analytics__card">
+              <div class="mv3-analytics__card-value" t-out="state.data.total_inbound"/>
+              <div class="mv3-analytics__card-label">Email Ricevute</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mv3-analytics__card">
+              <div class="mv3-analytics__card-value" t-out="state.data.total_outbound"/>
+              <div class="mv3-analytics__card-label">Email Inviate</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mv3-analytics__card">
+              <div class="mv3-analytics__card-value" t-out="state.data.active_threads"/>
+              <div class="mv3-analytics__card-label">Thread Attivi</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mv3-analytics__card">
+              <div class="mv3-analytics__card-value" t-out="state.data.hot_partners"/>
+              <div class="mv3-analytics__card-label">Partner Hot/Warm</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Per-Account Stats -->
+        <h4>Per Account</h4>
+        <div class="table-responsive mb-4">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th class="text-end">Ricevute</th>
+                <th class="text-end">Inviate</th>
+                <th class="text-end">Totale</th>
+                <th class="text-end">Tempo medio risposta (h)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <t t-foreach="state.data.account_stats" t-as="acc" t-key="acc.account_id">
+                <tr>
+                  <td t-out="acc.account_name"/>
+                  <td class="text-end" t-out="acc.inbound_count"/>
+                  <td class="text-end" t-out="acc.outbound_count"/>
+                  <td class="text-end" t-out="acc.total"/>
+                  <td class="text-end">
+                    <span t-att-class="acc.avg_response_hours > 24 ? 'text-danger fw-bold' : (acc.avg_response_hours > 4 ? 'text-warning' : 'text-success')"
+                          t-out="acc.avg_response_hours"/>
+                  </td>
+                </tr>
+              </t>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Top 10 Partners -->
+        <h4>Top 10 Partner (volume email)</h4>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Partner</th>
+                <th class="text-end">Email</th>
+                <th class="text-end">Ultima email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <t t-foreach="state.data.top_partners" t-as="p" t-key="p.partner_id">
+                <tr>
+                  <td t-out="p_index + 1"/>
+                  <td t-out="p.partner_name"/>
+                  <td class="text-end" t-out="p.email_count"/>
+                  <td class="text-end" t-out="p.last_email"/>
+                </tr>
+              </t>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

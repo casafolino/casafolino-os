@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.ComposeWizard">
+    <div class="mv3-compose-overlay">
+      <div class="mv3-compose-container">
+
+        <!-- Template Panel (left sidebar) -->
+        <div t-if="state.showTemplatePanel" class="mv3-template-panel">
+          <div class="mv3-template-panel__header">
+            <strong>Template</strong>
+            <button class="btn btn-sm btn-link" t-on-click="toggleTemplatePanel">
+              <i class="fa fa-chevron-left"/>
+            </button>
+          </div>
+          <div class="mv3-template-panel__search">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Cerca template..."
+                   t-att-value="state.templateSearch"
+                   t-on-input="onTemplateSearchInput"/>
+            <select class="form-select form-select-sm mt-1"
+                    t-on-change="onTemplateLangFilter">
+              <option value="">Tutte le lingue</option>
+              <option value="it_IT">Italiano</option>
+              <option value="en_US">English</option>
+              <option value="de_DE">Deutsch</option>
+              <option value="es_ES">Espanol</option>
+              <option value="fr_FR">Francais</option>
+            </select>
+          </div>
+          <div class="mv3-template-panel__list">
+            <t t-foreach="filteredTemplates" t-as="tpl" t-key="tpl.id">
+              <div class="mv3-template-panel__item"
+                   t-on-click="() => this.applyTemplate(tpl)"
+                   t-on-mouseenter="() => this.onTemplateHover(tpl)"
+                   t-on-mouseleave="onTemplateLeave">
+                <div class="mv3-template-panel__item-header">
+                  <span class="mv3-template-panel__lang-badge" t-out="this.getLangBadge(tpl.language)"/>
+                  <span class="mv3-template-panel__name" t-out="tpl.name"/>
+                </div>
+                <div class="mv3-template-panel__item-meta">
+                  <span class="badge bg-secondary me-1" t-out="this.getCategoryLabel(tpl.category)"/>
+                  <span t-if="this.isTemplateDetectedLang(tpl)"
+                        class="badge bg-success">Suggerito</span>
+                </div>
+                <!-- Hover preview tooltip -->
+                <div t-if="state.hoveredTemplate === tpl.id"
+                     class="mv3-template-panel__preview">
+                  <div t-out="state.hoveredPreviewHtml" class="mv3-template-panel__preview-body"/>
+                </div>
+              </div>
+            </t>
+            <div t-if="filteredTemplates.length === 0" class="mv3-template-panel__empty">
+              Nessun template trovato
+            </div>
+          </div>
+        </div>
+
+        <!-- Main composer -->
+        <div class="mv3-compose">
+          <div class="mv3-compose__header">
+            <div class="mv3-compose__header-left">
+              <button t-if="!state.showTemplatePanel" class="btn btn-sm btn-outline-secondary me-2"
+                      t-on-click="toggleTemplatePanel" title="Template">
+                <i class="fa fa-file-text-o"/>
+              </button>
+              <h4>
+                <t t-if="props.mode === 'reply'">Rispondi</t>
+                <t t-elif="props.mode === 'reply_all'">Rispondi a tutti</t>
+                <t t-elif="props.mode === 'forward'">Inoltra</t>
+                <t t-else="">Nuovo messaggio</t>
+              </h4>
+            </div>
+            <div class="mv3-compose__header-right">
+              <button class="btn btn-sm btn-outline-secondary me-1" t-on-click="openPreviewModal"
+                      title="Anteprima finale">
+                <i class="fa fa-eye"/> Anteprima
+              </button>
+              <button class="btn btn-sm btn-link" t-on-click="discard">
+                <i class="fa fa-times"/>
+              </button>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="mv3-toolbar">
+            <div class="mv3-toolbar__group">
+              <button class="mv3-toolbar__btn" t-on-click="cmdBold" title="Grassetto"><b>B</b></button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdItalic" title="Corsivo"><i>I</i></button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdUnderline" title="Sottolineato"><u>U</u></button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdStrikethrough" title="Barrato"><s>S</s></button>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <div class="mv3-toolbar__dropdown-wrap">
+                <button class="mv3-toolbar__btn" t-on-click="toggleFontSizeDropdown" title="Dimensione font">
+                  <i class="fa fa-text-height"/>
+                </button>
+                <div t-if="state.showFontSizeDropdown" class="mv3-toolbar__dropdown">
+                  <t t-foreach="this.constructor.FONT_SIZES" t-as="fs" t-key="fs.value">
+                    <button class="mv3-toolbar__dropdown-item"
+                            t-on-click="() => this.cmdFontSize(fs.value)"
+                            t-out="fs.label"/>
+                  </t>
+                </div>
+              </div>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <div class="mv3-toolbar__dropdown-wrap">
+                <button class="mv3-toolbar__btn" t-on-click="toggleFontColorPicker" title="Colore testo">
+                  <i class="fa fa-font" style="color: #E74C3C;"/>
+                </button>
+                <div t-if="state.showFontColorPicker" class="mv3-toolbar__color-grid">
+                  <t t-foreach="this.constructor.COLOR_PALETTE" t-as="c" t-key="c">
+                    <button class="mv3-toolbar__color-swatch"
+                            t-attf-style="background: {{c}}"
+                            t-on-click="() => this.cmdFontColor(c)"/>
+                  </t>
+                </div>
+              </div>
+              <div class="mv3-toolbar__dropdown-wrap">
+                <button class="mv3-toolbar__btn" t-on-click="toggleBgColorPicker" title="Colore sfondo">
+                  <i class="fa fa-paint-brush"/>
+                </button>
+                <div t-if="state.showBgColorPicker" class="mv3-toolbar__color-grid">
+                  <t t-foreach="this.constructor.COLOR_PALETTE" t-as="c" t-key="c">
+                    <button class="mv3-toolbar__color-swatch"
+                            t-attf-style="background: {{c}}"
+                            t-on-click="() => this.cmdBgColor(c)"/>
+                  </t>
+                </div>
+              </div>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <button class="mv3-toolbar__btn" t-on-click="cmdOrderedList" title="Elenco numerato">
+                <i class="fa fa-list-ol"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdUnorderedList" title="Elenco puntato">
+                <i class="fa fa-list-ul"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdIndent" title="Aumenta rientro">
+                <i class="fa fa-indent"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdOutdent" title="Riduci rientro">
+                <i class="fa fa-outdent"/>
+              </button>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <button class="mv3-toolbar__btn" t-on-click="cmdAlignLeft" title="Allinea sinistra">
+                <i class="fa fa-align-left"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdAlignCenter" title="Allinea centro">
+                <i class="fa fa-align-center"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdAlignRight" title="Allinea destra">
+                <i class="fa fa-align-right"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdAlignJustify" title="Giustifica">
+                <i class="fa fa-align-justify"/>
+              </button>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <button class="mv3-toolbar__btn" t-on-click="cmdLink" title="Inserisci link">
+                <i class="fa fa-link"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdHR" title="Linea orizzontale">
+                <i class="fa fa-minus"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdRemoveFormat" title="Rimuovi formato">
+                <i class="fa fa-eraser"/>
+              </button>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <button class="mv3-toolbar__btn" t-on-click="cmdUndo" title="Annulla">
+                <i class="fa fa-undo"/>
+              </button>
+              <button class="mv3-toolbar__btn" t-on-click="cmdRedo" title="Ripeti">
+                <i class="fa fa-repeat"/>
+              </button>
+            </div>
+            <div class="mv3-toolbar__sep"/>
+            <div class="mv3-toolbar__group">
+              <div class="mv3-toolbar__dropdown-wrap">
+                <button class="mv3-toolbar__btn" t-on-click="toggleEmojiPicker" title="Emoji">
+                  <span style="font-size: 14px;">&#x1F642;</span>
+                </button>
+                <div t-if="state.showEmojiPicker" class="mv3-emoji-picker">
+                  <input type="text" class="form-control form-control-sm mv3-emoji-picker__search"
+                         placeholder="Cerca emoji..."
+                         t-att-value="state.emojiSearch"
+                         t-on-input="onEmojiSearchInput"/>
+                  <div class="mv3-emoji-picker__grid">
+                    <t t-foreach="filteredEmojis" t-as="em" t-key="em.e">
+                      <button class="mv3-emoji-picker__btn"
+                              t-on-click="() => this.insertEmoji(em.e)"
+                              t-out="em.e"/>
+                    </t>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fields -->
+          <div class="mv3-compose__body">
+            <div class="mv3-compose__field">
+              <label>A:</label>
+              <input type="text" class="form-control form-control-sm"
+                     t-att-value="state.to" t-on-input="onToChange"
+                     placeholder="email@esempio.com"/>
+            </div>
+            <div class="mv3-compose__field">
+              <label>CC:</label>
+              <input type="text" class="form-control form-control-sm"
+                     t-att-value="state.cc" t-on-input="onCcChange"/>
+            </div>
+            <div class="mv3-compose__field" t-if="state.showBcc">
+              <label>BCC:</label>
+              <input type="text" class="form-control form-control-sm"
+                     t-att-value="state.bcc" t-on-input="onBccChange"/>
+            </div>
+            <div class="mv3-compose__field">
+              <label>Oggetto:</label>
+              <input type="text" class="form-control form-control-sm"
+                     t-att-value="state.subject" t-on-input="onSubjectChange"/>
+            </div>
+
+            <!-- Rich body editor (contenteditable) -->
+            <div class="mv3-compose__editor-wrap"
+                 t-on-dragover="onDragOver"
+                 t-on-dragleave="onDragLeave"
+                 t-on-drop="onDrop"
+                 t-att-class="state.dragOver ? 'mv3-compose__editor-wrap--dragover' : ''">
+              <div class="mv3-compose__editor"
+                   t-ref="editor"
+                   contenteditable="true"
+                   t-on-input="onEditorInput"
+                   t-on-paste="onEditorPaste"
+                   data-placeholder="Scrivi il messaggio..."/>
+            </div>
+
+            <!-- Drag & drop zone for non-image files -->
+            <div t-att-class="'mv3-dropzone' + (state.dragOver ? ' mv3-dropzone--active' : '')">
+              <i class="fa fa-cloud-upload"/> Trascina file qui o
+              <label class="btn btn-sm btn-link" style="cursor:pointer; padding:0; margin:0;">
+                sfoglia
+                <input type="file" multiple="multiple" style="display:none"
+                       t-on-change="onFileSelect"/>
+              </label>
+            </div>
+
+            <!-- Attachment previews -->
+            <div t-if="state.attachments.length > 0" class="mv3-attachment-preview">
+              <t t-foreach="state.attachments" t-as="att" t-key="att.id">
+                <div class="mv3-attachment-preview__item">
+                  <i class="fa fa-paperclip"/>
+                  <span t-out="att.name"/>
+                  <span class="mv3-attachment-preview__size" t-out="this.formatFileSize(att.size)"/>
+                  <button class="mv3-attachment-preview__remove"
+                          t-on-click="() => this.removeAttachment(att_index)">&#xd7;</button>
+                </div>
+              </t>
+            </div>
+
+            <div t-if="state.error" class="alert alert-danger mt-2">
+              <t t-out="state.error"/>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="mv3-compose__footer">
+            <div class="mv3-compose__footer-left">
+              <button class="btn btn-sm btn-link" t-on-click="toggleBcc">
+                <t t-out="state.showBcc ? 'Nascondi BCC' : 'Mostra BCC'"/>
+              </button>
+              <span t-if="autosaveLabel"
+                    t-att-class="'mv3-autosave-label' + (state.saveStatus === 'saving' ? ' mv3-autosave-label--saving' : '') + (state.saveStatus === 'error' ? ' mv3-autosave-label--error' : '')">
+                <i t-if="state.saveStatus === 'saving'" class="fa fa-spinner fa-spin"/>
+                <t t-out="autosaveLabel"/>
+              </span>
+            </div>
+            <div class="mv3-compose__footer-right">
+              <button class="btn btn-sm btn-outline-secondary" t-on-click="discard">Annulla</button>
+              <button class="btn btn-sm btn-primary" t-on-click="send" t-att-disabled="state.sending">
+                <i t-att-class="state.sending ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/>
+                Invia
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Modal -->
+      <div t-if="state.showPreviewModal" class="mv3-modal-overlay" t-on-click="closePreviewModal">
+        <div class="mv3-preview-modal" t-on-click.stop="">
+          <div class="mv3-preview-modal__header">
+            <h5>Anteprima finale</h5>
+            <button class="btn btn-sm btn-link" t-on-click="closePreviewModal">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div t-if="state.previewData" class="mv3-preview-modal__body">
+            <div class="mv3-preview-modal__meta">
+              <div><strong>Da:</strong> <t t-out="state.previewData.from"/></div>
+              <div><strong>A:</strong> <t t-out="state.previewData.to"/></div>
+              <div><strong>Oggetto:</strong> <t t-out="state.previewData.subject"/></div>
+            </div>
+            <hr/>
+            <div class="mv3-preview-modal__content" t-out="state.previewData.body_html"/>
+          </div>
+          <div class="mv3-preview-modal__footer">
+            <button class="btn btn-sm btn-secondary" t-on-click="closePreviewModal">Chiudi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>
