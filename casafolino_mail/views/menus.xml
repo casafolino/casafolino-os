@@ -9,7 +9,13 @@
         name="La Mia Casella"
         parent="menu_casafolino_mail_root"
         sequence="0"
-        action="action_casafolino_mail_my_mailbox"/>
+        action="action_mail_v3_client"/>
+
+    <menuitem id="menu_casafolino_mail_analytics"
+        name="Analytics"
+        parent="menu_casafolino_mail_root"
+        sequence="0"
+        action="action_mail_v3_analytics"/>
 
     <menuitem id="menu_casafolino_mail_triage"
         name="Inbox Triage"

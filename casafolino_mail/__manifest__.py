@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.12.0.0',
+    'version': '18.0.12.1.0',
     'summary': 'Filtro selettivo Gmail → CRM con triage personale per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -19,6 +19,7 @@
         'views/triage_wizard_views.xml',
         'views/sender_decision_views.xml',
         'views/create_lead_wizard_views.xml',
+        'data/mail_v3_client_action.xml',
         'views/menus.xml',
         'data/snippet_seed.xml',
         'data/cf_mail_cron.xml',
@@ -29,9 +30,30 @@
     ],
     'assets': {
         'web.assets_backend': [
+            # V11 existing
             'casafolino_mail/static/src/js/snippet_clipboard.js',
             'casafolino_mail/static/src/xml/snippet_clipboard.xml',
             'casafolino_mail/static/src/js/triage_shortcuts.js',
+            # V3 SCSS
+            'casafolino_mail/static/src/scss/mail_v3.scss',
+            # V3 OWL components — JS
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_client.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_sidebar_left.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_thread_list.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_reading_pane.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_compose.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_sidebar_360.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_reply_assistant.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_analytics.js',
+            # V3 OWL components — XML templates
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_client.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_sidebar_left.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_thread_list.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_reading_pane.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_compose.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_sidebar_360.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_reply_assistant.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_analytics.xml',
         ],
     },
     'post_init_hook': '_post_init_hook',
