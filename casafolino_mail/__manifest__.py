@@ -18,6 +18,7 @@
         'views/snippet_picker_views.xml',
         'views/triage_wizard_views.xml',
         'views/sender_decision_views.xml',
+        'views/create_lead_wizard_views.xml',
         'views/menus.xml',
         'data/snippet_seed.xml',
         'data/cf_mail_cron.xml',
