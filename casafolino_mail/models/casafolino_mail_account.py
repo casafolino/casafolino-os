@@ -13,6 +13,7 @@ _logger = logging.getLogger(__name__)
 
 class CasafolinoMailAccount(models.Model):
     _name = 'casafolino.mail.account'
+    _inherit = ['casafolino.mail.sender.filter']
     _description = 'Account Email IMAP — Mail Hub'
     _order = 'name'
 
@@ -197,16 +198,19 @@ class CasafolinoMailAccount(models.Model):
         return excluded
 
     def _fetch_folder(self, imap, folder_name, direction):
-        """Fetch di una singola cartella IMAP."""
+        """Fetch di una singola cartella IMAP — whitelist CRM-based (v11).
+
+        Solo email da mittenti riconosciuti nel CRM vengono scaricate.
+        Outbound (inviate) sempre scaricate.
+        """
         Message = self.env['casafolino.mail.message']
 
         new_count = 0
         skip_count = 0
-        blacklist_count = 0
+        filtered_out = 0
 
-        # Carica mappa account e regole exclude UNA SOLA VOLTA per sync
+        # Carica mappa account UNA SOLA VOLTA per sync
         account_map = self._build_account_email_map()
-        excluded_senders = self._load_exclude_rules()
 
         # Seleziona la cartella (readonly)
         status, data = imap.select('"%s"' % folder_name, readonly=True)
@@ -237,18 +241,16 @@ class CasafolinoMailAccount(models.Model):
             for uid in batch:
                 uid_str = uid.decode()
 
-                # Scarica solo header (no body — snippet viene dal Subject)
+                # Scarica solo header (no body)
                 status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
                 if status2 != 'OK':
                     continue
 
-                # Parsa gli header
                 raw_header = None
                 for part in header_data:
                     if isinstance(part, tuple):
                         raw_header = part[1]
                         break
-
                 if not raw_header:
                     continue
 
@@ -259,31 +261,54 @@ class CasafolinoMailAccount(models.Model):
                 if not message_id:
                     message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
 
-                # Estrai mittente (serve prima della dedup per resolve account)
-                sender_name, sender_email = parseaddr(msg.get('From', ''))
+                # Estrai mittente
+                sender_name, sender_email_addr = parseaddr(msg.get('From', ''))
                 sender_name = self._decode_header_value(sender_name)
-                sender_email = sender_email.lower().strip() if sender_email else ''
+                sender_email_addr = sender_email_addr.lower().strip() if sender_email_addr else ''
 
-                # Estrai destinatari (serve per resolve account)
+                # Estrai destinatari
                 to_raw = msg.get('To', '')
                 cc_raw = msg.get('Cc', '')
                 recipient_emails = self._extract_emails(to_raw)
                 cc_emails = self._extract_emails(cc_raw)
 
-                # Resolve account_id corretto (Bug 1 fix)
+                # Resolve account_id corretto
                 resolved_account_id = self._resolve_account_id(
-                    sender_email, recipient_emails, cc_emails, account_map)
+                    sender_email_addr, recipient_emails, cc_emails, account_map)
 
-                # Deduplicazione: skip se Message-ID già esiste su QUALSIASI account
+                # Deduplicazione: skip se Message-ID già esiste
                 existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
                 if existing:
                     skip_count += 1
                     continue
 
-                # Check sender_policy exclude
-                if sender_email and sender_email in excluded_senders:
-                    blacklist_count += 1
-                    continue
+                # Determina direction effettiva
+                actual_direction = direction
+                if direction == 'inbound' and sender_email_addr == self.email_address.lower():
+                    actual_direction = 'outbound'
+
+                # ── WHITELIST FILTER (v11) ──
+                # Outbound: sempre scaricata, match partner dal destinatario
+                # Inbound: solo se mittente in CRM
+                partner_id = False
+                match_type = 'none'
+
+                if actual_direction == 'outbound':
+                    # Per outbound, match partner dal destinatario esterno
+                    ext_email = self._get_external_email(sender_email_addr, recipient_emails)
+                    if ext_email and ext_email != sender_email_addr:
+                        allowed, pid, mt = self.is_sender_allowed(ext_email)
+                        if allowed:
+                            partner_id = pid
+                            match_type = mt
+                else:
+                    # Inbound: whitelist check sul mittente
+                    allowed, pid, mt = self.is_sender_allowed(sender_email_addr)
+                    if not allowed:
+                        filtered_out += 1
+                        continue  # Skip — mittente fuori CRM
+                    partner_id = pid
+                    match_type = mt
 
                 # Estrai oggetto
                 subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
@@ -297,24 +322,14 @@ class CasafolinoMailAccount(models.Model):
                 except Exception:
                     email_date = fields.Datetime.now()
 
-                # Determina direction effettiva
-                actual_direction = direction
-                if direction == 'inbound' and sender_email == self.email_address.lower():
-                    actual_direction = 'outbound'
-
-                # Matching con res.partner
-                partner_id, match_type = self._match_partner(
-                    sender_email, recipient_emails, actual_direction
-                )
-
-                # Crea record staging
+                # Crea record staging — tutte le email ammesse partono come 'new'
                 vals = {
                     'account_id': resolved_account_id,
                     'message_id_rfc': message_id,
                     'imap_uid': uid_str,
                     'imap_folder': folder_name,
                     'direction': actual_direction,
-                    'sender_email': sender_email,
+                    'sender_email': sender_email_addr,
                     'sender_name': sender_name,
                     'recipient_emails': recipient_emails,
                     'cc_emails': cc_emails,
@@ -323,47 +338,15 @@ class CasafolinoMailAccount(models.Model):
                     'state': 'new',
                     'partner_id': partner_id,
                     'match_type': match_type,
+                    'fetch_state': 'pending',
                 }
-
-                # Email inviate → sempre keep (le hai inviate tu)
-                if actual_direction == 'outbound':
-                    vals['state'] = 'keep'
-                # Se il partner è tracked, scarica subito body e metti in keep
-                elif partner_id:
-                    partner = self.env['res.partner'].browse(partner_id)
-                    if partner.mail_tracked:
-                        vals['state'] = 'keep'
-
-                # Auto-keep: se esistono già email keep dallo stesso mittente su questo account
-                if vals['state'] == 'new' and sender_email:
-                    prev_keep = Message.search([
-                        ('sender_email', '=ilike', sender_email),
-                        ('account_id', '=', self.id),
-                        ('state', '=', 'keep'),
-                    ], limit=1)
-                    if prev_keep:
-                        vals['state'] = 'keep'
-                        if prev_keep.partner_id and not vals.get('partner_id'):
-                            vals['partner_id'] = prev_keep.partner_id.id
-                            vals['match_type'] = 'exact'
 
                 try:
                     new_msg = Message.create(vals)
                     new_count += 1
 
-                    # AI classify (before policy, so policy can use ai_category)
-                    try:
-                        new_msg._classify_with_groq()
-                    except Exception as e:
-                        _logger.warning("AI classify error msg %s: %s", new_msg.id, e)
-
-                    # Applica sender_policy se stato ancora 'new'
-                    if new_msg.state == 'new':
-                        new_msg._apply_sender_policy()
-
-                    # Se stato keep/auto_keep (partner tracked), scarica body
-                    if new_msg.state in ('keep', 'auto_keep'):
-                        new_msg._download_body_imap(imap, folder_name, uid_str)
+                    # Scarica body subito (email ammessa dalla whitelist)
+                    new_msg._download_body_imap(imap, folder_name, uid_str)
 
                 except Exception as e:
                     _logger.warning("Error creating mail message: %s", e)
@@ -373,7 +356,11 @@ class CasafolinoMailAccount(models.Model):
             self.env.cr.commit()
             _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
 
-        return new_count, skip_count, blacklist_count
+        _logger.info(
+            "[%s] %s: fetched %d, skipped-dedup %d, filtered-out %d",
+            self.email_address, folder_name, new_count, skip_count, filtered_out
+        )
+        return new_count, skip_count, filtered_out
 
     # ── Helper methods ────────────────────────────────────────��───────
 
