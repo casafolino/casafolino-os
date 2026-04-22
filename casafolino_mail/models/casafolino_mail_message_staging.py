@@ -151,6 +151,17 @@ class CasafolinoMailMessage(models.Model):
     tracking_click_count = fields.Integer(compute='_compute_tracking_counts', string='Click')
     thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
 
+    # ── V3 restore fields ──────────────────────────────────────────
+    is_starred = fields.Boolean('Starred', default=False)
+    is_deleted = fields.Boolean('Deleted', default=False, index=True)
+    is_snoozed = fields.Boolean('Snoozed', default=False)
+    direction_computed = fields.Selection([
+        ('inbound', 'Ricevuta'),
+        ('outbound', 'Inviata'),
+    ], string='Direzione (indexed)', compute='_compute_direction_computed',
+       store=True, index=True)
+    hotness_snapshot = fields.Char('Hotness snapshot')
+
     _SUBJECT_PREFIX_RE = re.compile(
         r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
         re.IGNORECASE,
@@ -176,6 +187,11 @@ class CasafolinoMailMessage(models.Model):
         """)
 
     @api.depends('sender_email')
+    @api.depends('direction')
+    def _compute_direction_computed(self):
+        for rec in self:
+            rec.direction_computed = rec.direction
+
     def _compute_sender_domain(self):
         for rec in self:
             if rec.sender_email and '@' in rec.sender_email:
