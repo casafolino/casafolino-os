@@ -16,6 +16,13 @@ def migrate(cr, version):
 
     cr.execute("""
         UPDATE casafolino_mail_message
+        SET is_archived = FALSE
+        WHERE is_archived IS NULL;
+    """)
+    _logger.info("post-migrate: is_archived defaults set (%d rows)", cr.rowcount)
+
+    cr.execute("""
+        UPDATE casafolino_mail_message
         SET is_deleted = FALSE
         WHERE is_deleted IS NULL;
     """)

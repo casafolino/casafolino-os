@@ -149,9 +149,15 @@ class CasafolinoMailMessage(models.Model):
     thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
 
     # ── V3 restore fields ──────────────────────────────────────────
+    thread_id = fields.Many2one('casafolino.mail.thread', string='Thread V3',
+                                 ondelete='set null', index=True)
     is_starred = fields.Boolean('Starred', default=False)
+    is_archived = fields.Boolean('Archiviata', default=False, index=True)
     is_deleted = fields.Boolean('Deleted', default=False, index=True)
     is_snoozed = fields.Boolean('Snoozed', default=False)
+    reply_to_message_id = fields.Many2one('casafolino.mail.message',
+                                           string='In risposta a',
+                                           ondelete='set null')
     direction_computed = fields.Selection([
         ('inbound', 'Ricevuta'),
         ('outbound', 'Inviata'),

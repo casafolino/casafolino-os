@@ -9,9 +9,12 @@ def migrate(cr, version):
 
     cr.execute("""
         ALTER TABLE casafolino_mail_message
+            ADD COLUMN IF NOT EXISTS thread_id INTEGER,
             ADD COLUMN IF NOT EXISTS is_starred BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE,
             ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE,
             ADD COLUMN IF NOT EXISTS is_snoozed BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS reply_to_message_id INTEGER,
             ADD COLUMN IF NOT EXISTS direction_computed VARCHAR,
             ADD COLUMN IF NOT EXISTS hotness_snapshot VARCHAR;
     """)
