@@ -273,6 +273,12 @@
                         </list>
                     </field>
                 </page>
+                <page string="Mail Config" name="mail_config">
+                    <group string="Domini Email Extra" invisible="not is_company">
+                        <field name="email_domains_extra"
+                               placeholder="aldi-sued.de, aldi.com, aldi-nord.de"/>
+                    </group>
+                </page>
                 <page string="CRM Info" name="crm_info">
                     <group string="Ruolo Commerciale">
                         <group>
