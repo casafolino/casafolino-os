@@ -1,4 +1,5 @@
 from . import cf_contact
+from . import sender_filter
 from . import casafolino_mail_account
 from . import casafolino_mail_message_staging
 from . import casafolino_mail_sender_policy
