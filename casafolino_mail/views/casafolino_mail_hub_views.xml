@@ -343,7 +343,16 @@
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email" name="lead_emails">
-                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+                    <field name="lead_message_ids" nolabel="1">
+                        <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
+                            <field name="email_date"/>
+                            <field name="direction" widget="badge"/>
+                            <field name="sender_email"/>
+                            <field name="subject"/>
+                            <field name="state" widget="badge"/>
+                            <field name="is_read" widget="boolean_toggle"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>
@@ -358,7 +367,16 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='emails']" position="replace">
                 <page string="Email" name="emails">
-                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+                    <field name="lead_message_ids" nolabel="1">
+                        <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
+                            <field name="email_date"/>
+                            <field name="direction" widget="badge"/>
+                            <field name="sender_email"/>
+                            <field name="subject"/>
+                            <field name="state" widget="badge"/>
+                            <field name="is_read" widget="boolean_toggle"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>
