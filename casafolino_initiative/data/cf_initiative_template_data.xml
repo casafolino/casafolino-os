@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- OC_STANDARD: A11 -> A01 -> A02 -> A03 -> A04 -> A06 -> A05 -> A07 -> A12 -->
+    <record id="template_oc_standard" model="cf.initiative.template">
+        <field name="name">OC Standard</field>
+        <field name="code">OC_STANDARD</field>
+        <field name="family_id" ref="family_oc"/>
+        <field name="variant_id" ref="variant_oc_standard"/>
+        <field name="atom_ids" eval="[(6, 0, [
+            ref('atom_a11'), ref('atom_a01'), ref('atom_a02'),
+            ref('atom_a03'), ref('atom_a04'), ref('atom_a06'),
+            ref('atom_a05'), ref('atom_a07'), ref('atom_a12'),
+        ])]"/>
+        <field name="description">Pipeline commerciale standard: dal brief alla review</field>
+    </record>
+
+    <!-- EV_MEDIUM: A11 -> A13 -> A14 -> A02 -> A15 -> A12 -->
+    <record id="template_ev_medium" model="cf.initiative.template">
+        <field name="name">EV Medium</field>
+        <field name="code">EV_MEDIUM</field>
+        <field name="family_id" ref="family_ev"/>
+        <field name="variant_id" ref="variant_ev_medium"/>
+        <field name="atom_ids" eval="[(6, 0, [
+            ref('atom_a11'), ref('atom_a13'), ref('atom_a14'),
+            ref('atom_a02'), ref('atom_a15'), ref('atom_a12'),
+        ])]"/>
+        <field name="description">Evento medio: logistica, kit, lead capture, review</field>
+    </record>
+
+    <!-- CE_STANDARD: A11 -> A16 -> A17 -> A06 -> A18 -> A03 -> A04 -->
+    <record id="template_ce_standard" model="cf.initiative.template">
+        <field name="name">CE Standard</field>
+        <field name="code">CE_STANDARD</field>
+        <field name="family_id" ref="family_ce"/>
+        <field name="variant_id" ref="variant_ce_standard"/>
+        <field name="atom_ids" eval="[(6, 0, [
+            ref('atom_a11'), ref('atom_a16'), ref('atom_a17'),
+            ref('atom_a06'), ref('atom_a18'), ref('atom_a03'),
+            ref('atom_a04'),
+        ])]"/>
+        <field name="description">Campionatura standard: brief, mockup, stampa, invio</field>
+    </record>
+
+</odoo>

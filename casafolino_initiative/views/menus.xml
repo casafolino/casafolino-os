@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu -->
+    <menuitem id="menu_initiative_root"
+              name="Iniziative"
+              web_icon="casafolino_initiative,static/description/icon.png"
+              sequence="45"/>
+
+    <!-- Main items -->
+    <menuitem id="menu_initiative_list"
+              name="Iniziative"
+              parent="menu_initiative_root"
+              action="action_cf_initiative"
+              sequence="10"/>
+
+    <menuitem id="menu_initiative_wizard"
+              name="Nuova Iniziativa"
+              parent="menu_initiative_root"
+              action="action_cf_initiative_wizard"
+              sequence="20"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_initiative_config"
+              name="Configurazione"
+              parent="menu_initiative_root"
+              sequence="90"
+              groups="group_initiative_manager"/>
+
+    <menuitem id="menu_initiative_family"
+              name="Famiglie"
+              parent="menu_initiative_config"
+              action="action_cf_initiative_family"
+              sequence="10"/>
+
+    <menuitem id="menu_initiative_variant"
+              name="Varianti"
+              parent="menu_initiative_config"
+              action="action_cf_initiative_variant"
+              sequence="20"/>
+
+    <menuitem id="menu_initiative_template"
+              name="Template"
+              parent="menu_initiative_config"
+              action="action_cf_initiative_template"
+              sequence="30"/>
+
+    <menuitem id="menu_initiative_atom"
+              name="Catalogo Atomi"
+              parent="menu_initiative_config"
+              action="action_cf_initiative_atom"
+              sequence="40"/>
+
+    <menuitem id="menu_initiative_tag"
+              name="Tag"
+              parent="menu_initiative_config"
+              action="action_cf_initiative_tag"
+              sequence="50"/>
+
+</odoo>

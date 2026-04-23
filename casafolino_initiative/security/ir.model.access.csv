@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_initiative_user,cf.initiative.user,model_cf_initiative,group_initiative_user,1,1,1,0
+access_cf_initiative_manager,cf.initiative.manager,model_cf_initiative,group_initiative_manager,1,1,1,1
+access_cf_initiative_family_user,cf.initiative.family.user,model_cf_initiative_family,group_initiative_user,1,0,0,0
+access_cf_initiative_family_manager,cf.initiative.family.manager,model_cf_initiative_family,group_initiative_manager,1,1,1,1
+access_cf_initiative_variant_user,cf.initiative.variant.user,model_cf_initiative_variant,group_initiative_user,1,0,0,0
+access_cf_initiative_variant_manager,cf.initiative.variant.manager,model_cf_initiative_variant,group_initiative_manager,1,1,1,1
+access_cf_initiative_template_user,cf.initiative.template.user,model_cf_initiative_template,group_initiative_user,1,0,0,0
+access_cf_initiative_template_manager,cf.initiative.template.manager,model_cf_initiative_template,group_initiative_manager,1,1,1,1
+access_cf_initiative_atom_user,cf.initiative.atom.user,model_cf_initiative_atom,group_initiative_user,1,0,0,0
+access_cf_initiative_atom_manager,cf.initiative.atom.manager,model_cf_initiative_atom,group_initiative_manager,1,1,1,1
+access_cf_initiative_atom_line_user,cf.initiative.atom.line.user,model_cf_initiative_atom_line,group_initiative_user,1,1,1,1
+access_cf_initiative_atom_line_manager,cf.initiative.atom.line.manager,model_cf_initiative_atom_line,group_initiative_manager,1,1,1,1
+access_cf_initiative_tag_user,cf.initiative.tag.user,model_cf_initiative_tag,group_initiative_user,1,0,0,0
+access_cf_initiative_tag_manager,cf.initiative.tag.manager,model_cf_initiative_tag,group_initiative_manager,1,1,1,1
+access_cf_initiative_wizard_user,cf.initiative.wizard.user,model_cf_initiative_wizard,group_initiative_user,1,1,1,1

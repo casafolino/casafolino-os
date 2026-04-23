@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="family_oc" model="cf.initiative.family">
+        <field name="name">Opportunità Commerciale</field>
+        <field name="code">OC</field>
+        <field name="description">Pipeline commerciale: dal lead alla fatturazione</field>
+        <field name="icon">fa-handshake-o</field>
+        <field name="sequence">1</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="family_ev" model="cf.initiative.family">
+        <field name="name">Evento</field>
+        <field name="code">EV</field>
+        <field name="description">Fiere, degustazioni, eventi B2B</field>
+        <field name="icon">fa-calendar</field>
+        <field name="sequence">2</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="family_ce" model="cf.initiative.family">
+        <field name="name">Campionatura / Etichetta</field>
+        <field name="code">CE</field>
+        <field name="description">Sample kit, etichette private label, mockup grafici</field>
+        <field name="icon">fa-tags</field>
+        <field name="sequence">3</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="family_sp" model="cf.initiative.family">
+        <field name="name">Sviluppo Prodotto</field>
+        <field name="code">SP</field>
+        <field name="description">NPD, prototipo, shelf-life, scheda tecnica</field>
+        <field name="icon">fa-flask</field>
+        <field name="sequence">4</field>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="family_co" model="cf.initiative.family">
+        <field name="name">Certificazione</field>
+        <field name="code">CO</field>
+        <field name="description">BRC, IFS, Bio, Kosher, audit</field>
+        <field name="icon">fa-certificate</field>
+        <field name="sequence">5</field>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="family_cv" model="cf.initiative.family">
+        <field name="name">Comunicazione / Visual</field>
+        <field name="code">CV</field>
+        <field name="description">Shooting, asset grafici, packaging design</field>
+        <field name="icon">fa-camera</field>
+        <field name="sequence">6</field>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="family_ps" model="cf.initiative.family">
+        <field name="name">Post-Vendita</field>
+        <field name="code">PS</field>
+        <field name="description">Complaint, NC cliente, onboarding</field>
+        <field name="icon">fa-life-ring</field>
+        <field name="sequence">7</field>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="family_cb" model="cf.initiative.family">
+        <field name="name">Competitive Intelligence</field>
+        <field name="code">CB</field>
+        <field name="description">Benchmark, analisi competitor, market intel</field>
+        <field name="icon">fa-binoculars</field>
+        <field name="sequence">8</field>
+        <field name="active" eval="False"/>
+    </record>
+
+</odoo>

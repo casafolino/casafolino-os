@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- OC variants -->
+    <record id="variant_oc_quick" model="cf.initiative.variant">
+        <field name="name">Quick Win</field>
+        <field name="code">OC_QUICK</field>
+        <field name="family_id" ref="family_oc"/>
+        <field name="description">Opportunita veloce, ciclo breve</field>
+        <field name="sequence">1</field>
+    </record>
+
+    <record id="variant_oc_standard" model="cf.initiative.variant">
+        <field name="name">Standard</field>
+        <field name="code">OC_STANDARD</field>
+        <field name="family_id" ref="family_oc"/>
+        <field name="description">Pipeline commerciale standard</field>
+        <field name="sequence">2</field>
+    </record>
+
+    <record id="variant_oc_strategic" model="cf.initiative.variant">
+        <field name="name">Strategic</field>
+        <field name="code">OC_STRATEGIC</field>
+        <field name="family_id" ref="family_oc"/>
+        <field name="description">Opportunita strategica, ciclo lungo</field>
+        <field name="sequence">3</field>
+    </record>
+
+    <!-- EV variants -->
+    <record id="variant_ev_small" model="cf.initiative.variant">
+        <field name="name">Small</field>
+        <field name="code">EV_SMALL</field>
+        <field name="family_id" ref="family_ev"/>
+        <field name="description">Evento piccolo / degustazione</field>
+        <field name="sequence">1</field>
+    </record>
+
+    <record id="variant_ev_medium" model="cf.initiative.variant">
+        <field name="name">Medium</field>
+        <field name="code">EV_MEDIUM</field>
+        <field name="family_id" ref="family_ev"/>
+        <field name="description">Fiera medio formato</field>
+        <field name="sequence">2</field>
+    </record>
+
+    <record id="variant_ev_full" model="cf.initiative.variant">
+        <field name="name">Full</field>
+        <field name="code">EV_FULL</field>
+        <field name="family_id" ref="family_ev"/>
+        <field name="description">Fiera internazionale grande formato</field>
+        <field name="sequence">3</field>
+    </record>
+
+    <!-- CE variants -->
+    <record id="variant_ce_standard" model="cf.initiative.variant">
+        <field name="name">Standard</field>
+        <field name="code">CE_STANDARD</field>
+        <field name="family_id" ref="family_ce"/>
+        <field name="description">Campionatura ed etichettatura standard</field>
+        <field name="sequence">1</field>
+    </record>
+
+    <record id="variant_ce_express" model="cf.initiative.variant">
+        <field name="name">Express</field>
+        <field name="code">CE_EXPRESS</field>
+        <field name="family_id" ref="family_ce"/>
+        <field name="description">Campionatura rapida</field>
+        <field name="sequence">2</field>
+    </record>
+
+    <record id="variant_ce_complex" model="cf.initiative.variant">
+        <field name="name">Complex</field>
+        <field name="code">CE_COMPLEX</field>
+        <field name="family_id" ref="family_ce"/>
+        <field name="description">Campionatura complessa con etichetta custom</field>
+        <field name="sequence">3</field>
+    </record>
+
+</odoo>

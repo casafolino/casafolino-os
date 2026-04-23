@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cf_initiative_family_form" model="ir.ui.view">
+        <field name="name">cf.initiative.family.form</field>
+        <field name="model">cf.initiative.family</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="icon"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                    </group>
+                    <group string="Varianti">
+                        <field name="variant_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="name"/>
+                                <field name="code"/>
+                                <field name="description"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_initiative_family_list" model="ir.ui.view">
+        <field name="name">cf.initiative.family.list</field>
+        <field name="model">cf.initiative.family</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="icon"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_cf_initiative_family" model="ir.actions.act_window">
+        <field name="name">Famiglie</field>
+        <field name="res_model">cf.initiative.family</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cf_initiative_atom_form" model="ir.ui.view">
+        <field name="name">cf.initiative.atom.form</field>
+        <field name="model">cf.initiative.atom</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="is_core"/>
+                        </group>
+                        <group>
+                            <field name="default_user_id"/>
+                            <field name="default_duration_days"/>
+                            <field name="odoo_object_type"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                    </group>
+                    <group>
+                        <field name="email_template_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_initiative_atom_list" model="ir.ui.view">
+        <field name="name">cf.initiative.atom.list</field>
+        <field name="model">cf.initiative.atom</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="is_core"/>
+                <field name="default_user_id"/>
+                <field name="default_duration_days"/>
+                <field name="odoo_object_type"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_cf_initiative_atom" model="ir.actions.act_window">
+        <field name="name">Catalogo Atomi</field>
+        <field name="res_model">cf.initiative.atom</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

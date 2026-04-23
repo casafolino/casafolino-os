@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Core atoms (13) -->
+    <record id="atom_a01" model="cf.initiative.atom">
+        <field name="name">Qualifica Lead</field>
+        <field name="code">A01</field>
+        <field name="description">Qualificazione iniziale del lead commerciale</field>
+        <field name="default_duration_days">2</field>
+        <field name="odoo_object_type">crm_lead</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">1</field>
+    </record>
+
+    <record id="atom_a02" model="cf.initiative.atom">
+        <field name="name">Invio Listino</field>
+        <field name="code">A02</field>
+        <field name="description">Invio listino prezzi al contatto</field>
+        <field name="default_duration_days">1</field>
+        <field name="odoo_object_type">mail_activity</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">2</field>
+    </record>
+
+    <record id="atom_a03" model="cf.initiative.atom">
+        <field name="name">Invio Sample Kit Standard</field>
+        <field name="code">A03</field>
+        <field name="description">Spedizione campionatura standard</field>
+        <field name="default_duration_days">3</field>
+        <field name="odoo_object_type">stock_picking</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">3</field>
+    </record>
+
+    <record id="atom_a04" model="cf.initiative.atom">
+        <field name="name">Follow-up Post-Contatto</field>
+        <field name="code">A04</field>
+        <field name="description">Follow-up dopo primo contatto o invio campioni</field>
+        <field name="default_duration_days">7</field>
+        <field name="odoo_object_type">mail_activity</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">4</field>
+    </record>
+
+    <record id="atom_a05" model="cf.initiative.atom">
+        <field name="name">Emissione Offerta</field>
+        <field name="code">A05</field>
+        <field name="description">Creazione e invio offerta commerciale</field>
+        <field name="default_duration_days">3</field>
+        <field name="odoo_object_type">sale_order</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">5</field>
+    </record>
+
+    <record id="atom_a06" model="cf.initiative.atom">
+        <field name="name">Approvazione Cliente</field>
+        <field name="code">A06</field>
+        <field name="description">Attesa approvazione/conferma dal cliente</field>
+        <field name="default_duration_days">5</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">6</field>
+    </record>
+
+    <record id="atom_a07" model="cf.initiative.atom">
+        <field name="name">Conferma Ordine</field>
+        <field name="code">A07</field>
+        <field name="description">Conferma ordine di vendita</field>
+        <field name="default_duration_days">1</field>
+        <field name="odoo_object_type">sale_order</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">7</field>
+    </record>
+
+    <record id="atom_a08" model="cf.initiative.atom">
+        <field name="name">Spedizione</field>
+        <field name="code">A08</field>
+        <field name="description">Preparazione e spedizione merce</field>
+        <field name="default_duration_days">2</field>
+        <field name="odoo_object_type">stock_picking</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">8</field>
+    </record>
+
+    <record id="atom_a09" model="cf.initiative.atom">
+        <field name="name">Fatturazione</field>
+        <field name="code">A09</field>
+        <field name="description">Emissione fattura</field>
+        <field name="default_duration_days">1</field>
+        <field name="odoo_object_type">account_move</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">9</field>
+    </record>
+
+    <record id="atom_a10" model="cf.initiative.atom">
+        <field name="name">Sollecito Pagamento</field>
+        <field name="code">A10</field>
+        <field name="description">Sollecito pagamento scaduto</field>
+        <field name="default_duration_days">15</field>
+        <field name="odoo_object_type">mail_activity</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="atom_a11" model="cf.initiative.atom">
+        <field name="name">Brief Avvio</field>
+        <field name="code">A11</field>
+        <field name="description">Kick-off brief iniziativa</field>
+        <field name="default_duration_days">2</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">11</field>
+    </record>
+
+    <record id="atom_a12" model="cf.initiative.atom">
+        <field name="name">Debrief / Review</field>
+        <field name="code">A12</field>
+        <field name="description">Review finale e chiusura iniziativa</field>
+        <field name="default_duration_days">3</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">12</field>
+    </record>
+
+    <record id="atom_a27" model="cf.initiative.atom">
+        <field name="name">Competitive Intel / Benchmark</field>
+        <field name="code">A27</field>
+        <field name="description">Analisi competitiva e benchmark di mercato</field>
+        <field name="default_duration_days">5</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="True"/>
+        <field name="sequence">27</field>
+    </record>
+
+    <!-- Specialist atoms (18) -->
+    <record id="atom_a13" model="cf.initiative.atom">
+        <field name="name">Prenotazione Logistica Evento</field>
+        <field name="code">A13</field>
+        <field name="description">Prenotazione stand, logistica, trasporti per evento</field>
+        <field name="default_duration_days">21</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">13</field>
+    </record>
+
+    <record id="atom_a14" model="cf.initiative.atom">
+        <field name="name">Preparazione Kit Fiera</field>
+        <field name="code">A14</field>
+        <field name="description">Preparazione materiale e prodotti per fiera</field>
+        <field name="default_duration_days">10</field>
+        <field name="odoo_object_type">stock_picking</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">14</field>
+    </record>
+
+    <record id="atom_a15" model="cf.initiative.atom">
+        <field name="name">Capture Lead Live</field>
+        <field name="code">A15</field>
+        <field name="description">Acquisizione lead durante evento dal vivo</field>
+        <field name="default_duration_days">0</field>
+        <field name="odoo_object_type">crm_lead</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">15</field>
+    </record>
+
+    <record id="atom_a16" model="cf.initiative.atom">
+        <field name="name">Brief Etichetta</field>
+        <field name="code">A16</field>
+        <field name="description">Brief per progettazione etichetta</field>
+        <field name="default_duration_days">2</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">16</field>
+    </record>
+
+    <record id="atom_a17" model="cf.initiative.atom">
+        <field name="name">Mockup Grafico Etichetta</field>
+        <field name="code">A17</field>
+        <field name="description">Creazione mockup grafico per etichetta</field>
+        <field name="default_duration_days">7</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">17</field>
+    </record>
+
+    <record id="atom_a18" model="cf.initiative.atom">
+        <field name="name">Stampa Etichette</field>
+        <field name="code">A18</field>
+        <field name="description">Ordine e stampa etichette</field>
+        <field name="default_duration_days">10</field>
+        <field name="odoo_object_type">stock_picking</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">18</field>
+    </record>
+
+    <record id="atom_a19" model="cf.initiative.atom">
+        <field name="name">Brief Prodotto Nuovo (NPD)</field>
+        <field name="code">A19</field>
+        <field name="description">Brief per sviluppo nuovo prodotto</field>
+        <field name="default_duration_days">3</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">19</field>
+    </record>
+
+    <record id="atom_a20" model="cf.initiative.atom">
+        <field name="name">Prototipo Laboratorio</field>
+        <field name="code">A20</field>
+        <field name="description">Sviluppo prototipo in laboratorio</field>
+        <field name="default_duration_days">14</field>
+        <field name="odoo_object_type">mrp_production</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="atom_a21" model="cf.initiative.atom">
+        <field name="name">Scheda Tecnica + Allergeni</field>
+        <field name="code">A21</field>
+        <field name="description">Compilazione scheda tecnica e matrice allergeni</field>
+        <field name="default_duration_days">7</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">21</field>
+    </record>
+
+    <record id="atom_a22" model="cf.initiative.atom">
+        <field name="name">Test Shelf-Life</field>
+        <field name="code">A22</field>
+        <field name="description">Test di stabilita e shelf-life prodotto</field>
+        <field name="default_duration_days">60</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">22</field>
+    </record>
+
+    <record id="atom_a23" model="cf.initiative.atom">
+        <field name="name">Richiesta Documenti Certificazione</field>
+        <field name="code">A23</field>
+        <field name="description">Raccolta documenti per certificazione</field>
+        <field name="default_duration_days">5</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">23</field>
+    </record>
+
+    <record id="atom_a24" model="cf.initiative.atom">
+        <field name="name">Audit / Verifica Certificazione</field>
+        <field name="code">A24</field>
+        <field name="description">Audit o verifica per certificazione</field>
+        <field name="default_duration_days">2</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">24</field>
+    </record>
+
+    <record id="atom_a25" model="cf.initiative.atom">
+        <field name="name">Shooting / Produzione Asset</field>
+        <field name="code">A25</field>
+        <field name="description">Sessione fotografica e produzione asset visivi</field>
+        <field name="default_duration_days">14</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">25</field>
+    </record>
+
+    <record id="atom_a26" model="cf.initiative.atom">
+        <field name="name">Milestone Review</field>
+        <field name="code">A26</field>
+        <field name="description">Review di milestone intermedia</field>
+        <field name="default_duration_days">1</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">26</field>
+    </record>
+
+    <record id="atom_a28" model="cf.initiative.atom">
+        <field name="name">Onboarding Cliente Nuovo</field>
+        <field name="code">A28</field>
+        <field name="description">Processo di onboarding nuovo cliente</field>
+        <field name="default_duration_days">7</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">28</field>
+    </record>
+
+    <record id="atom_a29" model="cf.initiative.atom">
+        <field name="name">Creazione Referenza + EAN</field>
+        <field name="code">A29</field>
+        <field name="description">Creazione anagrafica prodotto con codice EAN</field>
+        <field name="default_duration_days">5</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">29</field>
+    </record>
+
+    <record id="atom_a30" model="cf.initiative.atom">
+        <field name="name">Gestione Complaint / NC Cliente</field>
+        <field name="code">A30</field>
+        <field name="description">Gestione reclamo o non conformita dal cliente</field>
+        <field name="default_duration_days">10</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="atom_a31" model="cf.initiative.atom">
+        <field name="name">Reminder Rinnovo Certificazione</field>
+        <field name="code">A31</field>
+        <field name="description">Promemoria scadenza e rinnovo certificazione</field>
+        <field name="default_duration_days">90</field>
+        <field name="odoo_object_type">project_task</field>
+        <field name="is_core" eval="False"/>
+        <field name="sequence">31</field>
+    </record>
+
+</odoo>

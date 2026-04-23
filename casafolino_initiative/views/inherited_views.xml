@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- CRM Lead -->
+    <record id="view_crm_lead_form_initiative" model="ir.ui.view">
+        <field name="name">crm.lead.form.initiative</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Project -->
+    <record id="view_project_form_initiative" model="ir.ui.view">
+        <field name="name">project.project.form.initiative</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Project Task -->
+    <record id="view_project_task_form_initiative" model="ir.ui.view">
+        <field name="name">project.task.form.initiative</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Sale Order -->
+    <record id="view_sale_order_form_initiative" model="ir.ui.view">
+        <field name="name">sale.order.form.initiative</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Account Move -->
+    <record id="view_account_move_form_initiative" model="ir.ui.view">
+        <field name="name">account.move.form.initiative</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Stock Picking -->
+    <record id="view_stock_picking_form_initiative" model="ir.ui.view">
+        <field name="name">stock.picking.form.initiative</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- MRP Production -->
+    <record id="view_mrp_production_form_initiative" model="ir.ui.view">
+        <field name="name">mrp.production.form.initiative</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Iniziativa" name="initiative">
+                    <group>
+                        <field name="initiative_id"/>
+                        <field name="cf_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

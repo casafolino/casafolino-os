@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cf_initiative_wizard_form" model="ir.ui.view">
+        <field name="name">cf.initiative.wizard.form</field>
+        <field name="model">cf.initiative.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="step" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+
+                <!-- Step 1: Famiglia -->
+                <group string="Step 1: Scegli Famiglia" invisible="step != '1_family'">
+                    <field name="family_id" widget="radio"
+                           options="{'horizontal': true}"/>
+                </group>
+
+                <!-- Step 2: Variante -->
+                <group string="Step 2: Scegli Variante" invisible="step != '2_variant'">
+                    <field name="variant_id"/>
+                </group>
+
+                <!-- Step 3: Padre -->
+                <group string="Step 3: Iniziativa Madre (opzionale)" invisible="step != '3_parent'">
+                    <field name="parent_id"/>
+                </group>
+
+                <!-- Step 4: Config -->
+                <group string="Step 4: Configurazione" invisible="step != '4_config'">
+                    <group>
+                        <field name="name" required="step == '4_config'"/>
+                        <field name="partner_id"/>
+                        <field name="user_id"/>
+                    </group>
+                    <group>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="budget"/>
+                    </group>
+                    <group>
+                        <field name="tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                    </group>
+                </group>
+
+                <footer>
+                    <button name="action_prev" string="Indietro" type="object"
+                            class="btn-secondary"
+                            invisible="step == '1_family'"/>
+                    <button name="action_next" string="Avanti" type="object"
+                            class="btn-primary"
+                            invisible="step == '4_config'"/>
+                    <button name="action_create" string="Crea Iniziativa" type="object"
+                            class="btn-primary"
+                            invisible="step != '4_config'"/>
+                    <button string="Annulla" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cf_initiative_wizard" model="ir.actions.act_window">
+        <field name="name">Nuova Iniziativa</field>
+        <field name="res_model">cf.initiative.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

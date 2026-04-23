@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- FAIR tags (5) -->
+    <record id="tag_fair_sial_canada" model="cf.initiative.tag">
+        <field name="name">SIAL Canada 2026</field>
+        <field name="code">FAIR:SIAL-CANADA-2026</field>
+        <field name="category">fair</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_fair_anuga" model="cf.initiative.tag">
+        <field name="name">Anuga 2025</field>
+        <field name="code">FAIR:ANUGA-2025</field>
+        <field name="category">fair</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_fair_cibus" model="cf.initiative.tag">
+        <field name="name">Cibus 2026</field>
+        <field name="code">FAIR:CIBUS-2026</field>
+        <field name="category">fair</field>
+        <field name="color">3</field>
+    </record>
+    <record id="tag_fair_tuttofood" model="cf.initiative.tag">
+        <field name="name">TuttoFood 2026</field>
+        <field name="code">FAIR:TUTTOFOOD-2026</field>
+        <field name="category">fair</field>
+        <field name="color">4</field>
+    </record>
+    <record id="tag_fair_fancy_food" model="cf.initiative.tag">
+        <field name="name">Fancy Food 2026</field>
+        <field name="code">FAIR:FANCY-FOOD-2026</field>
+        <field name="category">fair</field>
+        <field name="color">5</field>
+    </record>
+
+    <!-- CAMPAIGN tags (5) -->
+    <record id="tag_campaign_bf" model="cf.initiative.tag">
+        <field name="name">Black Friday 2026</field>
+        <field name="code">CAMPAIGN:BF-2026</field>
+        <field name="category">campaign</field>
+        <field name="color">6</field>
+    </record>
+    <record id="tag_campaign_xmas" model="cf.initiative.tag">
+        <field name="name">Natale 2026</field>
+        <field name="code">CAMPAIGN:XMAS-2026</field>
+        <field name="category">campaign</field>
+        <field name="color">7</field>
+    </record>
+    <record id="tag_campaign_pasqua" model="cf.initiative.tag">
+        <field name="name">Pasqua 2026</field>
+        <field name="code">CAMPAIGN:PASQUA-2026</field>
+        <field name="category">campaign</field>
+        <field name="color">8</field>
+    </record>
+    <record id="tag_campaign_summer" model="cf.initiative.tag">
+        <field name="name">Summer 2026</field>
+        <field name="code">CAMPAIGN:SUMMER-2026</field>
+        <field name="category">campaign</field>
+        <field name="color">9</field>
+    </record>
+    <record id="tag_campaign_launch" model="cf.initiative.tag">
+        <field name="name">Product Launch Q3</field>
+        <field name="code">CAMPAIGN:LAUNCH-Q3-2026</field>
+        <field name="category">campaign</field>
+        <field name="color">10</field>
+    </record>
+
+    <!-- STRATEGIC tags (5) -->
+    <record id="tag_strategic_pl" model="cf.initiative.tag">
+        <field name="name">Private Label</field>
+        <field name="code">STRATEGIC:PRIVATE-LABEL</field>
+        <field name="category">strategic</field>
+        <field name="color">11</field>
+    </record>
+    <record id="tag_strategic_bio" model="cf.initiative.tag">
+        <field name="name">Linea Bio</field>
+        <field name="code">STRATEGIC:BIO</field>
+        <field name="category">strategic</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_strategic_premium" model="cf.initiative.tag">
+        <field name="name">Premium Line</field>
+        <field name="code">STRATEGIC:PREMIUM</field>
+        <field name="category">strategic</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_strategic_horeca" model="cf.initiative.tag">
+        <field name="name">HoReCa Channel</field>
+        <field name="code">STRATEGIC:HORECA</field>
+        <field name="category">strategic</field>
+        <field name="color">3</field>
+    </record>
+    <record id="tag_strategic_gdo" model="cf.initiative.tag">
+        <field name="name">GDO Channel</field>
+        <field name="code">STRATEGIC:GDO</field>
+        <field name="category">strategic</field>
+        <field name="color">4</field>
+    </record>
+
+    <!-- MARKET tags (5) -->
+    <record id="tag_market_usa" model="cf.initiative.tag">
+        <field name="name">USA Market</field>
+        <field name="code">MARKET:USA</field>
+        <field name="category">market</field>
+        <field name="color">5</field>
+    </record>
+    <record id="tag_market_canada" model="cf.initiative.tag">
+        <field name="name">Canada Market</field>
+        <field name="code">MARKET:CANADA</field>
+        <field name="category">market</field>
+        <field name="color">6</field>
+    </record>
+    <record id="tag_market_uk" model="cf.initiative.tag">
+        <field name="name">UK Market</field>
+        <field name="code">MARKET:UK</field>
+        <field name="category">market</field>
+        <field name="color">7</field>
+    </record>
+    <record id="tag_market_dach" model="cf.initiative.tag">
+        <field name="name">DACH Market</field>
+        <field name="code">MARKET:DACH</field>
+        <field name="category">market</field>
+        <field name="color">8</field>
+    </record>
+    <record id="tag_market_japan" model="cf.initiative.tag">
+        <field name="name">Japan Market</field>
+        <field name="code">MARKET:JAPAN</field>
+        <field name="category">market</field>
+        <field name="color">9</field>
+    </record>
+
+</odoo>
