@@ -14,8 +14,6 @@
                         <field name="initiative_id"/>
                         <field name="cf_tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
-                        <field name="source_atom_line_id" readonly="1"
-                               invisible="not source_atom_line_id"/>
                     </group>
                 </page>
             </xpath>
@@ -54,8 +52,6 @@
                         <field name="initiative_id"/>
                         <field name="cf_tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
-                        <field name="source_atom_line_id" readonly="1"
-                               invisible="not source_atom_line_id"/>
                     </group>
                 </page>
             </xpath>
@@ -75,8 +71,6 @@
                         <field name="initiative_id"/>
                         <field name="cf_tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
-                        <field name="source_atom_line_id" readonly="1"
-                               invisible="not source_atom_line_id"/>
                     </group>
                 </page>
             </xpath>
@@ -96,8 +90,6 @@
                         <field name="initiative_id"/>
                         <field name="cf_tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
-                        <field name="source_atom_line_id" readonly="1"
-                               invisible="not source_atom_line_id"/>
                     </group>
                 </page>
             </xpath>
@@ -117,8 +109,6 @@
                         <field name="initiative_id"/>
                         <field name="cf_tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
-                        <field name="source_atom_line_id" readonly="1"
-                               invisible="not source_atom_line_id"/>
                     </group>
                 </page>
             </xpath>
@@ -138,8 +128,6 @@
                         <field name="initiative_id"/>
                         <field name="cf_tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
-                        <field name="source_atom_line_id" readonly="1"
-                               invisible="not source_atom_line_id"/>
                     </group>
                 </page>
             </xpath>
