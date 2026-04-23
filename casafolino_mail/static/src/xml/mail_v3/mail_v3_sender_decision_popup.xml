@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates>
   <t t-name="casafolino_mail.SenderDecisionPopup">
-    <div class="mv3-sender-decision" t-if="!state.decided">
+    <div class="mv3-sender-decision">
       <div class="mv3-sender-decision__banner">
         <!-- Avatar + sender info -->
         <div class="mv3-sender-decision__sender">

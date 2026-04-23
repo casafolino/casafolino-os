@@ -9,7 +9,6 @@ export class SenderDecisionPopup extends Component {
     setup() {
         this.state = useState({
             loading: false,
-            decided: false,
         });
     }
 
@@ -20,13 +19,17 @@ export class SenderDecisionPopup extends Component {
         return parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
     }
 
+    async _keepSender() {
+        await rpc('/cf/mail/v3/sender_decision/keep', {
+            email: this.props.senderEmail,
+        });
+    }
+
     async onKeep() {
+        if (this.state.loading) return;
         this.state.loading = true;
         try {
-            await rpc('/cf/mail/v3/sender_decision/keep', {
-                email: this.props.senderEmail,
-            });
-            this.state.decided = true;
+            await this._keepSender();
             if (this.props.onDecision) this.props.onDecision('kept');
         } catch (e) {
             console.error('[sender decision] keep error:', e);
@@ -35,12 +38,12 @@ export class SenderDecisionPopup extends Component {
     }
 
     async onDismiss() {
+        if (this.state.loading) return;
         this.state.loading = true;
         try {
             const res = await rpc('/cf/mail/v3/sender_decision/dismiss', {
                 email: this.props.senderEmail,
             });
-            this.state.decided = true;
             if (this.props.onDismiss) {
                 this.props.onDismiss(this.props.senderEmail, res.undo_token, res.pending_deletion_count);
             }
@@ -51,13 +54,27 @@ export class SenderDecisionPopup extends Component {
     }
 
     async onCreateLead() {
-        await this.onKeep();
-        if (this.props.onCreateLead) this.props.onCreateLead();
+        if (this.state.loading) return;
+        this.state.loading = true;
+        try {
+            await this._keepSender();
+            if (this.props.onCreateLead) this.props.onCreateLead();
+        } catch (e) {
+            console.error('[sender decision] create lead error:', e);
+        }
+        this.state.loading = false;
     }
 
     async onCreateProject() {
-        await this.onKeep();
-        if (this.props.onCreateProject) this.props.onCreateProject();
+        if (this.state.loading) return;
+        this.state.loading = true;
+        try {
+            await this._keepSender();
+            if (this.props.onCreateProject) this.props.onCreateProject();
+        } catch (e) {
+            console.error('[sender decision] create project error:', e);
+        }
+        this.state.loading = false;
     }
 
     onDefer() {
