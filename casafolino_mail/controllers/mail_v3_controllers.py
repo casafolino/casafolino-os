@@ -194,7 +194,8 @@ class MailV3Controller(http.Controller):
                 'partner_ids': t.partner_ids.ids,
             })
 
-        return {'threads': result, 'total': total}
+        has_more = (offset + len(result)) < total
+        return {'threads': result, 'total': total, 'has_more': has_more}
 
     # ── Thread Messages ──────────────────────────────────────────────
 
