@@ -58,6 +58,7 @@ export class SenderDecisionPopup extends Component {
         this.state.loading = true;
         try {
             await this._keepSender();
+            // Call parent handler INSTEAD of onDecision — parent handles visibility
             if (this.props.onCreateLead) this.props.onCreateLead();
         } catch (e) {
             console.error('[sender decision] create lead error:', e);
@@ -70,6 +71,7 @@ export class SenderDecisionPopup extends Component {
         this.state.loading = true;
         try {
             await this._keepSender();
+            // Call parent handler INSTEAD of onDecision — parent handles visibility
             if (this.props.onCreateProject) this.props.onCreateProject();
         } catch (e) {
             console.error('[sender decision] create project error:', e);

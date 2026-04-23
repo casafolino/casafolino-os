@@ -63,8 +63,6 @@ class CasafolinoMailSenderPreference(models.Model):
             'code': "model.browse(%d)._cascade_delete_emails()" % self.id,
             'active': True,
             'nextcall': run_at,
-            'numbercall': 1,
-            'doall': False,
         })
         return token
 
@@ -75,7 +73,7 @@ class CasafolinoMailSenderPreference(models.Model):
             # Cancel scheduled cron
             cron = self.env['ir.cron'].sudo().search([
                 ('name', '=', 'Dismiss cascade: %s' % self.email),
-                ('numbercall', '=', 1),
+                ('active', '=', True),
             ], limit=1, order='id desc')
             if cron:
                 cron.unlink()
@@ -116,6 +114,13 @@ class CasafolinoMailSenderPreference(models.Model):
         count = len(deleted_ids)
         self.write({'dismissed_email_count': count})
         _logger.info("Cascade delete: %d emails from %s", count, self.email)
+        # Auto-disable this one-shot cron after execution
+        cron = self.env['ir.cron'].sudo().search([
+            ('name', '=', 'Dismiss cascade: %s' % self.email),
+            ('active', '=', True),
+        ], limit=1)
+        if cron:
+            cron.write({'active': False})
 
     def _trigger_imap_recovery(self, recover_days):
         """Trigger IMAP recovery for sender emails in the last N days."""
