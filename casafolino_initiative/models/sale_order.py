@@ -1,5 +1,13 @@
 from odoo import api, fields, models
 
+SALE_STATE_TO_ATOM = {
+    'draft': 'in_progress',
+    'sent': 'in_progress',
+    'sale': 'done',
+    'cancel': 'skipped',
+}
+SALE_CRITICAL_FIELDS = {'state'}
+
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -7,6 +15,8 @@ class SaleOrder(models.Model):
     initiative_id = fields.Many2one('cf.initiative', ondelete='set null', index=True,
                                     string='Iniziativa')
     cf_tag_ids = fields.Many2many('cf.initiative.tag', string='Tag Iniziativa')
+    source_atom_line_id = fields.Many2one('cf.initiative.atom.line', readonly=True,
+                                          string='Atomo origine')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -22,4 +32,15 @@ class SaleOrder(models.Model):
             initiative = self.env['cf.initiative'].browse(vals['initiative_id'])
             if initiative.tag_ids:
                 vals['cf_tag_ids'] = [(6, 0, initiative.tag_ids.ids)]
-        return super().write(vals)
+        res = super().write(vals)
+        if not SALE_CRITICAL_FIELDS.intersection(vals):
+            return res
+        for order in self:
+            if order.state in SALE_STATE_TO_ATOM:
+                atom_line = self.env['cf.initiative.atom.line'].search([
+                    ('generated_model', '=', 'sale.order'),
+                    ('generated_res_id', '=', order.id),
+                ], limit=1)
+                if atom_line:
+                    atom_line.state = SALE_STATE_TO_ATOM[order.state]
+        return res

@@ -20,6 +20,29 @@
                             <field name="sequence"/>
                         </group>
                     </group>
+                    <group string="Generazione F2">
+                        <group>
+                            <field name="generate_on_create"/>
+                            <field name="subject_template"/>
+                        </group>
+                        <group>
+                            <field name="task_stage_default"
+                                   invisible="odoo_object_type != 'project_task'"/>
+                            <field name="activity_type_id"
+                                   invisible="odoo_object_type != 'mail_activity'"/>
+                            <field name="picking_type_id"
+                                   invisible="odoo_object_type != 'stock_picking'"/>
+                            <field name="journal_id"
+                                   invisible="odoo_object_type != 'account_move'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="body_template"/>
+                    </group>
+                    <group>
+                        <field name="sample_product_ids" widget="many2many_tags"
+                               invisible="odoo_object_type != 'stock_picking'"/>
+                    </group>
                     <group>
                         <field name="description"/>
                     </group>
@@ -43,6 +66,7 @@
                 <field name="default_user_id"/>
                 <field name="default_duration_days"/>
                 <field name="odoo_object_type"/>
+                <field name="generate_on_create"/>
             </list>
         </field>
     </record>

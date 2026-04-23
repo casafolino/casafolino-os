@@ -25,6 +25,12 @@
                                 class="oe_stat_button" icon="fa-list-ol">
                             <field name="atom_count" widget="statinfo" string="Atomi"/>
                         </button>
+                        <button name="action_generate_pending" type="object"
+                                class="oe_stat_button" icon="fa-cogs"
+                                invisible="pending_atom_count == 0">
+                            <field name="pending_atom_count" widget="statinfo"
+                                   string="Da Generare"/>
+                        </button>
                         <button name="action_view_leads" type="object"
                                 class="oe_stat_button" icon="fa-star"
                                 invisible="lead_count == 0">
@@ -81,6 +87,7 @@
                             <field name="date_end"/>
                             <field name="budget"/>
                             <field name="currency_id" invisible="1"/>
+                            <field name="project_id" readonly="1"/>
                         </group>
                     </group>
                     <group>
@@ -101,6 +108,18 @@
                                            decoration-warning="state == 'in_progress'"
                                            decoration-success="state == 'done'"
                                            decoration-muted="state == 'skipped'"/>
+                                    <field name="generation_state" widget="badge"
+                                           decoration-muted="generation_state == 'pending'"
+                                           decoration-success="generation_state == 'generated'"
+                                           decoration-danger="generation_state == 'error'"
+                                           decoration-info="generation_state == 'manual'"/>
+                                    <field name="generated_ref" widget="reference"/>
+                                    <button name="action_generate" type="object"
+                                            string="Genera" icon="fa-play"
+                                            invisible="generation_state != 'manual'"/>
+                                    <button name="action_regenerate" type="object"
+                                            string="Rigenera" icon="fa-refresh"
+                                            invisible="generation_state != 'error'"/>
                                     <field name="note"/>
                                 </list>
                             </field>
