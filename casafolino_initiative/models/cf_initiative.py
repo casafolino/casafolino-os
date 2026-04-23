@@ -51,10 +51,6 @@ class CfInitiative(models.Model):
     # Content
     description = fields.Html()
 
-    # F2: Progetto Odoo dedicato
-    project_id = fields.Many2one('project.project', string='Progetto Odoo',
-                                 help="Project che ospita i task generati dagli atomi")
-
     # Figli Odoo
     crm_lead_ids = fields.One2many('crm.lead', 'initiative_id', string='Lead')
     project_ids = fields.One2many('project.project', 'initiative_id', string='Progetti')
@@ -70,7 +66,6 @@ class CfInitiative(models.Model):
     move_count = fields.Integer(compute='_compute_object_counts')
     picking_count = fields.Integer(compute='_compute_object_counts')
     production_count = fields.Integer(compute='_compute_object_counts')
-    pending_atom_count = fields.Integer(compute='_compute_pending_atom_count')
 
     @api.depends('child_ids')
     def _compute_child_count(self):
@@ -81,13 +76,6 @@ class CfInitiative(models.Model):
     def _compute_atom_count(self):
         for rec in self:
             rec.atom_count = len(rec.atom_line_ids)
-
-    @api.depends('atom_line_ids.generation_state')
-    def _compute_pending_atom_count(self):
-        for rec in self:
-            rec.pending_atom_count = len(rec.atom_line_ids.filtered(
-                lambda l: l.generation_state == 'pending'
-            ))
 
     @api.depends('crm_lead_ids', 'project_ids', 'sale_order_ids',
                  'account_move_ids', 'stock_picking_ids', 'mrp_production_ids')
@@ -113,30 +101,7 @@ class CfInitiative(models.Model):
         return super().create(vals_list)
 
     def action_start(self):
-        self.ensure_one()
-        # Auto-create project se mancante
-        if not self.project_id:
-            self.project_id = self.env['project.project'].create({
-                'name': f'{self.code} — {self.name}',
-                'initiative_id': self.id,
-                'user_id': self.user_id.id,
-                'partner_id': self.partner_id.id if self.partner_id else False,
-            })
-        # Genera atomi pending con generate_on_create=True
-        generator = self.env['cf.initiative.atom.generator']
-        for line in self.atom_line_ids:
-            if line.generation_state == 'pending' and line.atom_id.generate_on_create:
-                generator.generate(line)
-            elif line.generation_state == 'pending' and not line.atom_id.generate_on_create:
-                line.generation_state = 'manual'
-        self.state = 'in_progress'
-
-    def action_generate_pending(self):
-        """Smart button: generate all pending atoms."""
-        self.ensure_one()
-        generator = self.env['cf.initiative.atom.generator']
-        for line in self.atom_line_ids.filtered(lambda l: l.generation_state == 'pending'):
-            generator.generate(line)
+        self.write({'state': 'in_progress'})
 
     def action_done(self):
         self.write({'state': 'done'})
