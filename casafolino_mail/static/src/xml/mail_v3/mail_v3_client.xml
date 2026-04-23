@@ -121,7 +121,10 @@
               onReplyAll.bind="openReplyAll"
               onForward.bind="openForward"
               onAiReply.bind="openReplyAssistant"
-              onSnooze.bind="openSnoozePopup"/>
+              onSnooze.bind="openSnoozePopup"
+              onCreateLead.bind="onSenderCreateLead"
+              onCreateProject.bind="onSenderCreateProject"
+              onDismissSender.bind="onQuickDismissSender"/>
           </div>
         </div>
 

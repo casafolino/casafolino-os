@@ -67,6 +67,18 @@ export class ReadingPane extends Component {
         if (this.props.onSnooze) this.props.onSnooze();
     }
 
+    onCreateLead() {
+        if (this.props.onCreateLead) this.props.onCreateLead();
+    }
+
+    onCreateProject() {
+        if (this.props.onCreateProject) this.props.onCreateProject();
+    }
+
+    onDismissSender() {
+        if (this.props.onDismissSender) this.props.onDismissSender();
+    }
+
     formatDate(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);

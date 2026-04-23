@@ -2224,3 +2224,68 @@ $mv3-line-height: 1.45;
     gap: 8px;
     justify-content: flex-end;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// V12.7: Quick Actions — 3 groups with separators
+// ═══════════════════════════════════════════════════════════════
+
+.mv3-quick-actions {
+    padding: 10px 16px;
+    border-top: 1px solid $mv3-border;
+    background: #FAFAF8;
+}
+
+.mv3-quick-actions__row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.mv3-qa-btn {
+    font-size: 12px;
+    padding: 5px 10px;
+    background: transparent;
+    border: 0.5px solid rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    color: #444;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    transition: background 0.15s;
+
+    &:hover { background: rgba(0, 0, 0, 0.04); }
+
+    i { font-size: 12px; }
+
+    &--blue {
+        background: #E6F1FB;
+        color: #0C447C;
+        border-color: transparent;
+        &:hover { background: #D0E4F5; }
+    }
+
+    &--purple {
+        background: #EEEDFE;
+        color: #3C3489;
+        border-color: transparent;
+        &:hover { background: #DDDCF8; }
+    }
+
+    &--red {
+        background: #FCEBEB;
+        color: #A32D2D;
+        border-color: transparent;
+        &:hover { background: #F5D5D5; }
+    }
+}
+
+.mv3-qa-separator {
+    width: 1px;
+    height: 22px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 2px;
+    flex-shrink: 0;
+}

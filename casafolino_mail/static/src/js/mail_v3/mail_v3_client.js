@@ -911,6 +911,20 @@ export class MailV3Client extends Component {
         });
     }
 
+    // ── Quick Action: Dismiss current sender from reading pane ──
+
+    async onQuickDismissSender() {
+        const email = this.state.senderEmail;
+        if (!email) return;
+        try {
+            const res = await rpc('/cf/mail/v3/sender_decision/dismiss', { email: email });
+            this._showDismissUndoToast(email, res.undo_token, res.pending_deletion_count);
+            await this.loadThreads();
+        } catch (e) {
+            console.error('[mail v3] quick dismiss error:', e);
+        }
+    }
+
     // ── Dismiss Undo Toast ─────────────────────────────────────
 
     _showDismissUndoToast(email, token, count) {
