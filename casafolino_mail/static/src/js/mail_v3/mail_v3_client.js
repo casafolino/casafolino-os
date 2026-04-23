@@ -8,12 +8,13 @@ import { SidebarLeft } from "./mail_v3_sidebar_left";
 import { ThreadList } from "./mail_v3_thread_list";
 import { ReadingPane } from "./mail_v3_reading_pane";
 import { Sidebar360 } from "./mail_v3_sidebar_360";
+import { MailV3Insight360TabBar } from "./mail_v3_insight_360_tabbar";
 import { ReplyAssistant } from "./mail_v3_reply_assistant";
 import { ComposeWizard } from "./mail_v3_compose";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
-    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, ReplyAssistant, ComposeWizard };
+    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard };
     static props = ["*"];
 
     setup() {
@@ -69,6 +70,8 @@ export class MailV3Client extends Component {
             composeAccountId: null,
             // 360 panel collapse (F10 WP5)
             panel360Collapsed: false,
+            // V12.4: sender email for 360 tabbar
+            senderEmail: '',
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
@@ -174,6 +177,7 @@ export class MailV3Client extends Component {
             m => m.direction_computed === 'inbound' || m.direction === 'inbound'
         );
         const partnerId = inbound ? inbound.partner_id : null;
+        this.state.senderEmail = inbound ? (inbound.sender_email || '') : '';
         if (partnerId) {
             this._loadSidebar360(partnerId);
         } else {
@@ -314,6 +318,11 @@ export class MailV3Client extends Component {
 
     togglePanel360() {
         this.state.panel360Collapsed = !this.state.panel360Collapsed;
+    }
+
+    onPartnerCreated(partnerId) {
+        this.state.selectedPartner = partnerId;
+        this._loadSidebar360(partnerId);
     }
 
     // ── Reply Assistant ─────────────────────────────────────────
