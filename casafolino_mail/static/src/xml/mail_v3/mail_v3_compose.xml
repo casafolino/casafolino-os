@@ -241,6 +241,23 @@
                    t-on-input="onEditorInput"
                    t-on-paste="onEditorPaste"
                    data-placeholder="Scrivi il messaggio..."/>
+              <!-- Snippet autocomplete popup -->
+              <div t-if="state.snippetVisible" class="mv3-snippet-popup">
+                <div class="mv3-snippet-popup__header">
+                  <i class="fa fa-code"/> Snippet: <span t-out="state.snippetQuery"/>
+                </div>
+                <t t-foreach="state.snippetResults" t-as="snip" t-key="snip.id">
+                  <div t-att-class="'mv3-snippet-popup__item' + (state.snippetSelectedIndex === snip_index ? ' mv3-snippet-popup__item--active' : '')"
+                       t-on-click="() => this.onSnippetClick(snip)">
+                    <div class="mv3-snippet-popup__code" t-out="snip.code"/>
+                    <div class="mv3-snippet-popup__name" t-out="snip.name"/>
+                    <span class="badge bg-secondary ms-auto" t-out="snip.language"/>
+                  </div>
+                </t>
+                <div class="mv3-snippet-popup__hint">
+                  <kbd>↑↓</kbd> naviga · <kbd>Tab</kbd>/<kbd>Enter</kbd> inserisci · <kbd>Esc</kbd> chiudi
+                </div>
+              </div>
             </div>
 
             <!-- Drag & drop zone for non-image files -->

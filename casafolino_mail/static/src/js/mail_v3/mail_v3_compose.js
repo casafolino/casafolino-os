@@ -120,12 +120,23 @@ export class ComposeWizard extends Component {
             showBgColorPicker: false,
             // Signature
             signatureHtml: this.props.prefilled?.signature_html || '',
+            // Snippet autocomplete
+            snippetVisible: false,
+            snippetResults: [],
+            snippetSelectedIndex: 0,
+            snippetQuery: '',
         });
 
         this._autosaveTimer = null;
         this._autosaveDebounce = null;
+        this._snippetDebounce = null;
 
         onMounted(() => {
+            // Snippet slash-command listener
+            if (this.editorRef.el) {
+                this.editorRef.el.addEventListener('keyup', this._onEditorKeyup.bind(this));
+                this.editorRef.el.addEventListener('keydown', this._onEditorKeydown.bind(this));
+            }
             if (this.editorRef.el && this.state.body) {
                 this.editorRef.el.innerHTML = this.state.body;
             }
@@ -510,6 +521,101 @@ export class ComposeWizard extends Component {
 
     isTemplateDetectedLang(tpl) {
         return this.state.detectedLang && tpl.language === this.state.detectedLang;
+    }
+
+    // ── Snippet Autocomplete ───────────────────────────────
+
+    _getSlashQuery() {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+        const range = sel.getRangeAt(0);
+        const node = range.startContainer;
+        if (node.nodeType !== Node.TEXT_NODE) return null;
+        const text = node.textContent.substring(0, range.startOffset);
+        const match = text.match(/(?:^|\s)(\/\S*)$/);
+        if (!match) return null;
+        return { query: match[1], node, offset: range.startOffset, matchStart: range.startOffset - match[1].length };
+    }
+
+    _onEditorKeydown(ev) {
+        if (!this.state.snippetVisible) return;
+        if (ev.key === 'ArrowDown') {
+            ev.preventDefault();
+            this.state.snippetSelectedIndex = Math.min(
+                this.state.snippetSelectedIndex + 1, this.state.snippetResults.length - 1);
+        } else if (ev.key === 'ArrowUp') {
+            ev.preventDefault();
+            this.state.snippetSelectedIndex = Math.max(this.state.snippetSelectedIndex - 1, 0);
+        } else if (ev.key === 'Enter' || ev.key === 'Tab') {
+            if (this.state.snippetResults.length > 0) {
+                ev.preventDefault();
+                this._applySnippet(this.state.snippetResults[this.state.snippetSelectedIndex]);
+            }
+        } else if (ev.key === 'Escape') {
+            ev.preventDefault();
+            this.state.snippetVisible = false;
+        }
+    }
+
+    _onEditorKeyup(ev) {
+        if (['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(ev.key)) return;
+        const slashData = this._getSlashQuery();
+        if (!slashData || slashData.query.length < 2) {
+            this.state.snippetVisible = false;
+            return;
+        }
+        this.state.snippetQuery = slashData.query;
+        if (this._snippetDebounce) clearTimeout(this._snippetDebounce);
+        this._snippetDebounce = setTimeout(() => this._fetchSnippets(slashData.query), 200);
+    }
+
+    async _fetchSnippets(query) {
+        try {
+            const res = await rpc('/cf/mail/v3/snippets/list', { code_prefix: query });
+            this.state.snippetResults = res.snippets || [];
+            this.state.snippetSelectedIndex = 0;
+            this.state.snippetVisible = this.state.snippetResults.length > 0;
+        } catch (e) {
+            this.state.snippetVisible = false;
+        }
+    }
+
+    async _applySnippet(snippet) {
+        this.state.snippetVisible = false;
+        try {
+            const res = await rpc('/cf/mail/v3/snippets/apply', {
+                snippet_id: snippet.id,
+                partner_id: this.props.prefilled?.partner_id || false,
+            });
+            if (res.success && res.body) {
+                // Replace /code with snippet body in editor
+                const slashData = this._getSlashQuery();
+                if (slashData) {
+                    const { node, matchStart, offset } = slashData;
+                    const before = node.textContent.substring(0, matchStart);
+                    const after = node.textContent.substring(offset);
+                    node.textContent = before + after;
+                    // Insert rendered HTML at cursor
+                    const sel = window.getSelection();
+                    const range = document.createRange();
+                    range.setStart(node, matchStart);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    document.execCommand('insertHTML', false, res.body);
+                }
+                if (res.subject && !this.state.subject) {
+                    this.state.subject = res.subject;
+                }
+                this._syncBody();
+            }
+        } catch (e) {
+            console.error('[mail v3] snippet apply error:', e);
+        }
+    }
+
+    onSnippetClick(snippet) {
+        this._applySnippet(snippet);
     }
 
     // ── Preview Modal ───────────────────────────────────────
