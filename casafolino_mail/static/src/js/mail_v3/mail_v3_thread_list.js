@@ -1,9 +1,38 @@
 /** @odoo-module **/
-import { Component } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useRef } from "@odoo/owl";
 
 export class ThreadList extends Component {
     static template = "casafolino_mail.ThreadList";
     static props = ["*"];
+
+    setup() {
+        this.listRef = useRef("threadListContainer");
+        this._onScroll = this._onScroll.bind(this);
+
+        onMounted(() => {
+            const el = this.listRef.el;
+            if (el) {
+                el.addEventListener('scroll', this._onScroll);
+            }
+        });
+
+        onWillUnmount(() => {
+            const el = this.listRef.el;
+            if (el) {
+                el.removeEventListener('scroll', this._onScroll);
+            }
+        });
+    }
+
+    _onScroll() {
+        const el = this.listRef.el;
+        if (!el) return;
+        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
+            if (this.props.hasMore && !this.props.loadingMore && this.props.onLoadMore) {
+                this.props.onLoadMore();
+            }
+        }
+    }
 
     selectThread(threadId) {
         this.props.onSelect(threadId);

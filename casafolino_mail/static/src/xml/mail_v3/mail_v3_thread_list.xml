@@ -3,7 +3,10 @@
   <t t-name="casafolino_mail.ThreadList">
     <div class="mv3-thread-list">
       <div class="mv3-thread-list__header">
-        <span class="mv3-thread-list__title">Conversazioni</span>
+        <span class="mv3-thread-list__title">
+          Conversazioni
+          <t t-if="props.totalThreads"> (<t t-out="props.totalThreads"/>)</t>
+        </span>
       </div>
       <div t-if="props.loading" class="mv3-thread-list__loading">
         <i class="fa fa-spinner fa-spin"/> Caricamento...
@@ -11,43 +14,53 @@
       <div t-if="!props.loading and (!props.threads or props.threads.length === 0)" class="mv3-thread-list__empty">
         Nessuna conversazione
       </div>
-      <t t-foreach="props.threads" t-as="thread" t-key="thread.id">
-        <div class="mv3-thread-item"
-             t-att-class="{'mv3-thread-item--unread': !thread.is_read, 'mv3-thread-item--selected': props.selectedThreadId === thread.id}"
-             t-on-click="() => this.selectThread(thread.id)">
-          <div class="mv3-thread-item__header">
-            <input t-if="props.bulkMode" type="checkbox"
-                   class="mv3-thread-item__checkbox"
-                   t-att-checked="this.isSelected(thread.id)"
-                   t-on-click.stop="() => this.toggleSelect(thread.id)"/>
-            <span class="mv3-thread-item__account-badge"
-                  t-att-style="'background:' + this.getAccountColor(thread.account_id)"/>
-            <span class="mv3-thread-item__participant" t-out="thread.main_participant"/>
-            <span t-if="thread.silent_days > 3" class="mv3-thread-item__silent-gap">
-              <t t-out="'\u23f1\ufe0f ' + thread.silent_days + 'd'"/>
-            </span>
+      <div class="mv3-thread-list__scroll" t-ref="threadListContainer">
+        <t t-foreach="props.threads" t-as="thread" t-key="thread.id">
+          <div class="mv3-thread-item"
+               t-att-class="{'mv3-thread-item--unread': !thread.is_read, 'mv3-thread-item--selected': props.selectedThreadId === thread.id}"
+               t-on-click="() => this.selectThread(thread.id)">
+            <div class="mv3-thread-item__header">
+              <input t-if="props.bulkMode" type="checkbox"
+                     class="mv3-thread-item__checkbox"
+                     t-att-checked="this.isSelected(thread.id)"
+                     t-on-click.stop="() => this.toggleSelect(thread.id)"/>
+              <span class="mv3-thread-item__account-badge"
+                    t-att-style="'background:' + this.getAccountColor(thread.account_id)"/>
+              <span class="mv3-thread-item__participant" t-out="thread.main_participant"/>
+              <span t-if="thread.silent_days > 3" class="mv3-thread-item__silent-gap">
+                <t t-out="'\u23f1\ufe0f ' + thread.silent_days + 'd'"/>
+              </span>
+            </div>
+            <div class="mv3-thread-item__subject" t-out="thread.subject"/>
+            <div class="mv3-thread-item__keep-lead-badges">
+              <span t-if="thread.has_keep_message" class="badge bg-success mv3-badge-keep">Tenuto</span>
+              <span t-if="thread.lead_name" class="badge bg-primary mv3-badge-lead">
+                Lead: <t t-esc="thread.lead_name.length > 20 ? thread.lead_name.slice(0, 20) + '\u2026' : thread.lead_name"/>
+              </span>
+            </div>
+            <div class="mv3-thread-item__preview" t-out="thread.preview"/>
+            <div class="mv3-thread-item__badges">
+              <span t-if="thread.hotness_score" t-att-class="'mv3-badge mv3-badge--' + thread.hotness_tier">
+                <t t-out="thread.hotness_emoji"/> <t t-out="thread.hotness_score"/>
+              </span>
+              <span t-if="thread.attachment_count" class="mv3-badge mv3-badge--attachment">
+                <t t-out="'\ud83d\udcce ' + thread.attachment_count"/>
+              </span>
+              <span t-if="thread.lead_open" class="mv3-badge mv3-badge--lead">
+                <t t-out="'\ud83d\udcbc Lead aperto'"/>
+              </span>
+            </div>
           </div>
-          <div class="mv3-thread-item__subject" t-out="thread.subject"/>
-          <div class="mv3-thread-item__keep-lead-badges">
-            <span t-if="thread.has_keep_message" class="badge bg-success mv3-badge-keep">Tenuto</span>
-            <span t-if="thread.lead_name" class="badge bg-primary mv3-badge-lead">
-              Lead: <t t-esc="thread.lead_name.length > 20 ? thread.lead_name.slice(0, 20) + '\u2026' : thread.lead_name"/>
-            </span>
-          </div>
-          <div class="mv3-thread-item__preview" t-out="thread.preview"/>
-          <div class="mv3-thread-item__badges">
-            <span t-if="thread.hotness_score" t-att-class="'mv3-badge mv3-badge--' + thread.hotness_tier">
-              <t t-out="thread.hotness_emoji"/> <t t-out="thread.hotness_score"/>
-            </span>
-            <span t-if="thread.attachment_count" class="mv3-badge mv3-badge--attachment">
-              <t t-out="'\ud83d\udcce ' + thread.attachment_count"/>
-            </span>
-            <span t-if="thread.lead_open" class="mv3-badge mv3-badge--lead">
-              <t t-out="'\ud83d\udcbc Lead aperto'"/>
-            </span>
-          </div>
+        </t>
+        <!-- Infinite scroll footer -->
+        <div t-if="props.loadingMore" class="mv3-thread-list__footer">
+          <i class="fa fa-spinner fa-spin"/> Caricamento...
         </div>
-      </t>
+        <div t-if="!props.loadingMore and !props.hasMore and props.threads and props.threads.length > 0"
+             class="mv3-thread-list__footer mv3-thread-list__footer--end">
+          Fine delle conversazioni
+        </div>
+      </div>
     </div>
   </t>
 </templates>

@@ -83,11 +83,15 @@
             threads="state.threads"
             accounts="state.accounts"
             loading="state.loading.threads"
+            loadingMore="state.loading.threadsMore"
+            hasMore="state.hasMoreThreads"
+            totalThreads="state.totalThreads"
             selectedThreadId="state.selectedThreadId"
             selectedThreadIds="state.selectedThreadIds"
             bulkMode="state.bulkMode"
             onSelect.bind="selectThread"
-            onToggleSelect.bind="toggleThreadSelect"/>
+            onToggleSelect.bind="toggleThreadSelect"
+            onLoadMore.bind="loadMoreThreads"/>
         </div>
       </div>
 

@@ -30,8 +30,10 @@ export class MailV3Client extends Component {
             messages: [],
             selectedPartner: null,
             sidebar360Data: null,
-            loading: { threads: false, messages: false, sidebar: false },
+            loading: { threads: false, messages: false, sidebar: false, threadsMore: false },
             totalThreads: 0,
+            threadsOffset: 0,
+            hasMoreThreads: false,
             // Search
             searchQuery: '',
             searchResults: null,
@@ -126,6 +128,8 @@ export class MailV3Client extends Component {
 
     async loadThreads() {
         this.state.loading.threads = true;
+        this.state.threadsOffset = 0;
+        this.state.hasMoreThreads = false;
         try {
             const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
             const res = await rpc('/cf/mail/v3/threads/list', {
@@ -138,11 +142,37 @@ export class MailV3Client extends Component {
             });
             this.state.threads = res.threads || [];
             this.state.totalThreads = res.total || 0;
+            this.state.hasMoreThreads = res.has_more || false;
+            this.state.threadsOffset = this.state.threads.length;
             this.state.searchResults = null;
         } catch (e) {
             console.error('[mail v3] loadThreads error:', e);
         }
         this.state.loading.threads = false;
+    }
+
+    async loadMoreThreads() {
+        if (this.state.loading.threadsMore || !this.state.hasMoreThreads) return;
+        this.state.loading.threadsMore = true;
+        try {
+            const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
+            const res = await rpc('/cf/mail/v3/threads/list', {
+                account_ids: this.state.selectedAccountIds,
+                state: 'keep',
+                limit: 50,
+                offset: this.state.threadsOffset,
+                filters: {},
+                folder: folder,
+            });
+            const newThreads = res.threads || [];
+            this.state.threads = [...this.state.threads, ...newThreads];
+            this.state.totalThreads = res.total || this.state.totalThreads;
+            this.state.hasMoreThreads = res.has_more || false;
+            this.state.threadsOffset += newThreads.length;
+        } catch (e) {
+            console.error('[mail v3] loadMoreThreads error:', e);
+        }
+        this.state.loading.threadsMore = false;
     }
 
     async selectThread(threadId) {
