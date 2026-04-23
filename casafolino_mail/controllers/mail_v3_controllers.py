@@ -1492,3 +1492,394 @@ class MailV3Controller(http.Controller):
         country_code = partner.country_id.code if partner.country_id else ''
         lang = self.COUNTRY_TO_LANG.get(country_code, 'en_US')
         return {'lang': lang, 'country_code': country_code}
+
+    # ═══════════════════════════════════════════════════════════════════
+    # V12.4: Insight 360 Tab Bar Endpoints
+    # ═══════════════════════════════════════════════════════════════════
+
+    @http.route('/cf/mail/v3/insight360/contact', type='json', auth='user')
+    def insight360_contact(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {}
+        return {
+            'id': partner.id,
+            'name': partner.name or '',
+            'email': partner.email or '',
+            'phone': partner.phone or '',
+            'mobile': partner.mobile or '',
+            'function': partner.function or '',
+            'lang': partner.lang or '',
+            'avatar_url': '/web/image/res.partner/%d/avatar_128' % partner.id,
+        }
+
+    @http.route('/cf/mail/v3/insight360/company', type='json', auth='user')
+    def insight360_company(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {}
+        company = partner if partner.is_company else partner.parent_id
+        if not company or not company.exists():
+            return {'name': ''}
+        return {
+            'id': company.id,
+            'name': company.name or '',
+            'vat': company.vat or '',
+            'country_code': company.country_id.code if company.country_id else '',
+            'country_name': company.country_id.name if company.country_id else '',
+            'industry_name': company.industry_id.name if company.industry_id else '',
+            'employee_count': company.employee if hasattr(company, 'employee') else 0,
+            'website': company.website or '',
+        }
+
+    @http.route('/cf/mail/v3/insight360/leads', type='json', auth='user')
+    def insight360_leads(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {'leads': []}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'leads': []}
+        p_ids = [partner_id]
+        if partner.parent_id:
+            p_ids.append(partner.parent_id.id)
+        leads = request.env['crm.lead'].sudo().search([
+            ('partner_id', 'in', p_ids),
+        ], order='date_deadline desc', limit=20)
+        result = []
+        for lead in leads:
+            result.append({
+                'id': lead.id,
+                'name': lead.name or '',
+                'stage': lead.stage_id.name if lead.stage_id else '',
+                'stage_id': lead.stage_id.id if lead.stage_id else False,
+                'expected_revenue': lead.expected_revenue or 0,
+                'probability': lead.probability or 0,
+                'date_deadline': str(lead.date_deadline) if lead.date_deadline else '',
+                'user_name': lead.user_id.name if lead.user_id else '',
+            })
+        return {'leads': result}
+
+    @http.route('/cf/mail/v3/insight360/timeline', type='json', auth='user')
+    def insight360_timeline(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {'events': []}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'events': []}
+        p_ids = [partner_id]
+        if partner.parent_id:
+            p_ids.append(partner.parent_id.id)
+        if partner.is_company:
+            p_ids += partner.child_ids.ids
+
+        events = []
+
+        # Emails
+        try:
+            emails = request.env['casafolino.mail.message'].search([
+                ('partner_id', 'in', p_ids),
+                ('state', 'in', ['keep', 'auto_keep']),
+                ('is_deleted', '=', False),
+            ], order='email_date desc', limit=10)
+            for m in emails:
+                events.append({
+                    'type': 'email_out' if m.direction == 'outbound' else 'email_in',
+                    'date': str(m.email_date) if m.email_date else '',
+                    'title': (m.subject or '')[:80],
+                    'icon': 'fa-reply' if m.direction == 'outbound' else 'fa-envelope',
+                })
+        except Exception as e:
+            _logger.warning('[insight360] timeline emails error: %s', e)
+
+        # Sales
+        try:
+            orders = request.env['sale.order'].sudo().search([
+                ('partner_id', 'in', p_ids),
+                ('state', 'in', ['sale', 'done']),
+            ], order='date_order desc', limit=5)
+            for o in orders:
+                events.append({
+                    'type': 'order',
+                    'date': str(o.date_order) if o.date_order else '',
+                    'title': '%s (%s)' % (o.name, o.state),
+                    'icon': 'fa-shopping-cart',
+                })
+        except Exception as e:
+            _logger.warning('[insight360] timeline orders error: %s', e)
+
+        # Leads
+        try:
+            leads = request.env['crm.lead'].sudo().search([
+                ('partner_id', 'in', p_ids),
+            ], order='create_date desc', limit=5)
+            for l in leads:
+                events.append({
+                    'type': 'lead',
+                    'date': str(l.create_date) if l.create_date else '',
+                    'title': l.name or '',
+                    'icon': 'fa-bullseye',
+                })
+        except Exception as e:
+            _logger.warning('[insight360] timeline leads error: %s', e)
+
+        # Sort all by date desc, take top 20
+        events.sort(key=lambda x: x.get('date', ''), reverse=True)
+        return {'events': events[:20]}
+
+    @http.route('/cf/mail/v3/insight360/revenue', type='json', auth='user')
+    def insight360_revenue(self, **kw):
+        from datetime import date
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {}
+        p_ids = [partner_id]
+        if partner.parent_id:
+            p_ids.append(partner.parent_id.id)
+        if partner.is_company:
+            p_ids += partner.child_ids.ids
+
+        Move = request.env['account.move'].sudo()
+        base_domain = [
+            ('partner_id', 'in', p_ids),
+            ('move_type', '=', 'out_invoice'),
+            ('state', '=', 'posted'),
+        ]
+
+        today = date.today()
+        ytd_start = date(today.year, 1, 1)
+        prev_start = date(today.year - 1, 1, 1)
+        prev_end = date(today.year - 1, 12, 31)
+
+        ytd_invoices = Move.search(base_domain + [('invoice_date', '>=', ytd_start)])
+        ytd_total = sum(inv.amount_untaxed_signed for inv in ytd_invoices)
+
+        prev_invoices = Move.search(base_domain + [
+            ('invoice_date', '>=', prev_start),
+            ('invoice_date', '<=', prev_end),
+        ])
+        prev_year_total = sum(inv.amount_untaxed_signed for inv in prev_invoices)
+
+        all_invoices = Move.search(base_domain)
+        all_time_total = sum(inv.amount_untaxed_signed for inv in all_invoices)
+
+        last_order = request.env['sale.order'].sudo().search([
+            ('partner_id', 'in', p_ids),
+            ('state', 'in', ['sale', 'done']),
+        ], order='date_order desc', limit=1)
+
+        return {
+            'ytd_total': round(ytd_total, 2),
+            'prev_year_total': round(prev_year_total, 2),
+            'all_time_total': round(all_time_total, 2),
+            'last_order_date': str(last_order.date_order) if last_order and last_order.date_order else '',
+            'last_order_ref': last_order.name if last_order else '',
+            'currency': 'EUR',
+        }
+
+    @http.route('/cf/mail/v3/insight360/orders', type='json', auth='user')
+    def insight360_orders(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {'orders': []}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'orders': []}
+        orders = request.env['sale.order'].sudo().search([
+            ('partner_id', '=', partner_id),
+        ], order='date_order desc', limit=20)
+        result = []
+        for o in orders:
+            result.append({
+                'id': o.id,
+                'name': o.name or '',
+                'date_order': str(o.date_order) if o.date_order else '',
+                'amount_total': o.amount_total or 0,
+                'state': o.state or '',
+                'currency': o.currency_id.name if o.currency_id else 'EUR',
+            })
+        return {'orders': result}
+
+    @http.route('/cf/mail/v3/insight360/notes', type='json', auth='user', methods=['POST'])
+    def insight360_notes(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        new_comment = kw.get('new_comment')
+        if not partner_id:
+            return {'comment_plain': '', 'last_updated_date': ''}
+        partner = request.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'comment_plain': '', 'last_updated_date': ''}
+        if new_comment is not None:
+            partner.sudo().write({'comment': new_comment})
+            return {'success': True}
+        return {
+            'comment_plain': partner.comment or '',
+            'last_updated_date': str(partner.write_date)[:10] if partner.write_date else '',
+        }
+
+    @http.route('/cf/mail/v3/insight360/activities', type='json', auth='user')
+    def insight360_activities(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {'activities': []}
+        activities = request.env['mail.activity'].sudo().search([
+            ('res_model', '=', 'res.partner'),
+            ('res_id', '=', partner_id),
+        ], order='date_deadline asc')
+        result = []
+        for a in activities:
+            result.append({
+                'id': a.id,
+                'summary': a.summary or a.note or '',
+                'activity_type_name': a.activity_type_id.name if a.activity_type_id else '',
+                'date_deadline': str(a.date_deadline) if a.date_deadline else '',
+                'user_name': a.user_id.name if a.user_id else '',
+                'state': a.state or '',
+            })
+        return {'activities': result}
+
+    @http.route('/cf/mail/v3/insight360/products', type='json', auth='user')
+    def insight360_products(self, **kw):
+        partner_id = int(kw.get('partner_id') or 0)
+        if not partner_id:
+            return {'products': []}
+        try:
+            cr = request.env.cr
+            cr.execute("""
+                SELECT pt.name->>'en_US' as product_name,
+                       SUM(sol.product_uom_qty) as qty_total,
+                       MAX(so.date_order) as last_order_date,
+                       SUM(sol.price_subtotal) as total_amount
+                FROM sale_order_line sol
+                JOIN sale_order so ON so.id = sol.order_id
+                JOIN product_product pp ON pp.id = sol.product_id
+                JOIN product_template pt ON pt.id = pp.product_tmpl_id
+                WHERE so.partner_id = %s
+                  AND so.state IN ('sale', 'done')
+                GROUP BY pt.id, pt.name
+                ORDER BY qty_total DESC
+                LIMIT 10
+            """, (partner_id,))
+            rows = cr.dictfetchall()
+            products = []
+            for r in rows:
+                products.append({
+                    'product_name': r['product_name'] or '',
+                    'qty_total': round(r['qty_total'] or 0, 1),
+                    'last_order_date': str(r['last_order_date'])[:10] if r['last_order_date'] else '',
+                    'total_amount': round(r['total_amount'] or 0, 2),
+                })
+            return {'products': products}
+        except Exception as e:
+            _logger.warning('[insight360] products error: %s', e)
+            return {'products': []}
+
+    @http.route('/cf/mail/v3/insight360/ai_insight', type='json', auth='user')
+    def insight360_ai_insight(self, **kw):
+        thread_id = int(kw.get('thread_id') or 0)
+        if not thread_id:
+            return {'intent': 'N/D', 'sentiment': 'N/D', 'hotness_score': 'N/D'}
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not thread.exists():
+            return {'intent': 'N/D', 'sentiment': 'N/D', 'hotness_score': 'N/D'}
+        # Get last message
+        last_msg = request.env['casafolino.mail.message'].search([
+            ('thread_id', '=', thread_id),
+            ('is_deleted', '=', False),
+        ], order='email_date desc', limit=1)
+        if not last_msg:
+            return {'intent': 'N/D', 'sentiment': 'N/D', 'hotness_score': 'N/D'}
+
+        # Defensive getattr for all AI fields
+        intent = getattr(last_msg, 'intent_detected', None) or 'N/D'
+        sentiment = getattr(last_msg, 'sentiment', None) or 'N/D'
+
+        # Hotness from thread or intel
+        hotness_score = getattr(thread, 'hotness_snapshot', None) or 0
+        hotness_tier = ''
+        if hotness_score >= 80:
+            hotness_tier = 'hot'
+        elif hotness_score >= 60:
+            hotness_tier = 'warm'
+        elif hotness_score >= 40:
+            hotness_tier = 'active'
+        elif hotness_score >= 20:
+            hotness_tier = 'cold'
+        elif hotness_score > 0:
+            hotness_tier = 'dormant'
+
+        classification_date = getattr(last_msg, 'classification_date', None)
+        if not classification_date:
+            classification_date = getattr(last_msg, 'write_date', None)
+
+        suggested = getattr(last_msg, 'suggested_reply_hint', None) or ''
+
+        return {
+            'intent': intent,
+            'sentiment': sentiment,
+            'hotness_score': hotness_score,
+            'hotness_tier': hotness_tier,
+            'last_ai_classification_date': str(classification_date)[:10] if classification_date else '',
+            'suggested_reply_hint': suggested,
+        }
+
+    @http.route('/cf/mail/v3/insight360/create_contact', type='json', auth='user', methods=['POST'])
+    def insight360_create_contact(self, **kw):
+        email = kw.get('email', '').strip()
+        name = kw.get('name', '').strip()
+        company_name = kw.get('company_name', '').strip()
+        thread_id = int(kw.get('thread_id') or 0)
+
+        if not email:
+            return {'success': False, 'message': 'Email richiesta'}
+
+        # Check existing
+        existing = request.env['res.partner'].search([
+            ('email', '=ilike', email),
+        ], limit=1)
+        if existing:
+            # Link to thread if needed
+            if thread_id:
+                thread = request.env['casafolino.mail.thread'].browse(thread_id)
+                if thread.exists() and existing.id not in thread.partner_ids.ids:
+                    thread.write({'partner_ids': [(4, existing.id)]})
+            return {'success': True, 'partner_id': existing.id, 'message': 'Contatto esistente collegato'}
+
+        vals = {
+            'name': name or email.split('@')[0],
+            'email': email,
+            'is_company': False,
+        }
+
+        # Company handling
+        if company_name:
+            company = request.env['res.partner'].search([
+                ('name', '=ilike', company_name),
+                ('is_company', '=', True),
+            ], limit=1)
+            if not company:
+                company = request.env['res.partner'].create({
+                    'name': company_name,
+                    'is_company': True,
+                })
+            vals['parent_id'] = company.id
+
+        partner = request.env['res.partner'].create(vals)
+
+        # Link to thread
+        if thread_id:
+            thread = request.env['casafolino.mail.thread'].browse(thread_id)
+            if thread.exists():
+                thread.write({'partner_ids': [(4, partner.id)]})
+
+        return {'success': True, 'partner_id': partner.id, 'message': 'Contatto creato'}
