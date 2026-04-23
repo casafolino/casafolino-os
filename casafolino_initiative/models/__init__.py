@@ -3,6 +3,7 @@ from . import cf_initiative_family
 from . import cf_initiative_variant
 from . import cf_initiative_atom
 from . import cf_initiative_template
+from . import cf_initiative_atom_generator
 from . import cf_initiative
 from . import cf_initiative_atom_line
 from . import crm_lead
