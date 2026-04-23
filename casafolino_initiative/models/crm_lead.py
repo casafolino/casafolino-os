@@ -7,8 +7,6 @@ class CrmLead(models.Model):
     initiative_id = fields.Many2one('cf.initiative', ondelete='set null', index=True,
                                     string='Iniziativa')
     cf_tag_ids = fields.Many2many('cf.initiative.tag', string='Tag Iniziativa')
-    source_atom_line_id = fields.Many2one('cf.initiative.atom.line', readonly=True,
-                                          string='Atomo origine')
 
     @api.model_create_multi
     def create(self, vals_list):
