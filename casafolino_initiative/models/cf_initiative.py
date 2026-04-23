@@ -11,7 +11,7 @@ class CfInitiative(models.Model):
     code = fields.Char(readonly=True, copy=False, default='New')
 
     # Classificazione
-    family_id = fields.Many2one('cf.initiative.family', required=True, tracking=True)
+    family_id = fields.Many2one('cf.initiative.family', required=True, tracking=True, group_expand='_read_group_family_ids')
     variant_id = fields.Many2one('cf.initiative.variant', required=True,
                                  domain="[('family_id', '=', family_id)]", tracking=True)
 
@@ -67,6 +67,9 @@ class CfInitiative(models.Model):
     picking_count = fields.Integer(compute='_compute_object_counts')
     production_count = fields.Integer(compute='_compute_object_counts')
 
+    @api.model
+    def _read_group_family_ids(self, families, domain):
+        return self.env['cf.initiative.family'].search([('active', '=', True)], order='sequence, id')
     @api.depends('child_ids')
     def _compute_child_count(self):
         for rec in self:

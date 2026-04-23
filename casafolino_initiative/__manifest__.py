@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Iniziative',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'summary': 'Sistema Iniziative — orchestrazione oggetti Odoo con famiglie, atomi e tag campagna',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
