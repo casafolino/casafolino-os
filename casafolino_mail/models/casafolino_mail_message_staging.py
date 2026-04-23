@@ -198,6 +198,22 @@ class CasafolinoMailMessage(models.Model):
         for rec in self:
             rec.direction_computed = rec.direction
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        if self.env.context.get('skip_thread_upsert'):
+            return records
+        Thread = self.env['casafolino.mail.thread']
+        for rec in records:
+            if not rec.thread_id:
+                try:
+                    Thread._upsert_from_message(rec)
+                except Exception as e:
+                    _logger.warning(
+                        "Thread upsert failed for message %s: %s", rec.id, e
+                    )
+        return records
+
     def _compute_sender_domain(self):
         for rec in self:
             if rec.sender_email and '@' in rec.sender_email:
