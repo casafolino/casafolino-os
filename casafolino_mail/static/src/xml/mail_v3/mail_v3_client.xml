@@ -103,15 +103,26 @@
           <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
             <i class="fa fa-arrow-left"/> Torna alla lista
           </div>
-          <ReadingPane
-            messages="state.messages"
-            loading="state.loading.messages"
-            onAction.bind="onMessageAction"
-            onReply.bind="openReply"
-            onReplyAll.bind="openReplyAll"
-            onForward.bind="openForward"
-            onAiReply.bind="openReplyAssistant"
-            onSnooze.bind="openSnoozePopup"/>
+          <!-- V12.6: Sender Decision Popup (above reading pane) -->
+          <SenderDecisionPopup
+            t-if="state.senderDecisionVisible"
+            senderEmail="state.senderDecisionEmail"
+            senderName="state.senderDecisionName"
+            onDecision.bind="onSenderDecision"
+            onDismiss.bind="onSenderDismiss"
+            onCreateLead.bind="onSenderCreateLead"
+            onCreateProject.bind="onSenderCreateProject"/>
+          <div t-att-class="'mv3-reading-pane-wrapper' + (state.senderDecisionVisible ? ' mv3-reading-pane-wrapper--dimmed' : '')">
+            <ReadingPane
+              messages="state.messages"
+              loading="state.loading.messages"
+              onAction.bind="onMessageAction"
+              onReply.bind="openReply"
+              onReplyAll.bind="openReplyAll"
+              onForward.bind="openForward"
+              onAiReply.bind="openReplyAssistant"
+              onSnooze.bind="openSnoozePopup"/>
+          </div>
         </div>
 
         <!-- V12.4: Insight 360 Tab Bar (replaces old accordion) -->
@@ -188,6 +199,24 @@
         <button class="mv3-undo-toast__btn" t-on-click="undoSend">
           Annulla (<t t-out="state.undoCountdown"/>s)
         </button>
+      </div>
+
+      <!-- V12.6: Dismiss Undo Toast -->
+      <div t-if="state.dismissUndoToast" class="mv3-dismiss-undo-toast">
+        <span>Mittente <strong t-out="state.dismissUndoEmail"/> dismesso.</span>
+        <button class="mv3-dismiss-undo-toast__btn" t-on-click="cancelDismiss">
+          Annulla (<t t-out="state.dismissUndoCountdown"/>s)
+        </button>
+      </div>
+
+      <!-- V12.6: Dismissed Senders Panel -->
+      <div t-if="state.dismissedSendersVisible" class="mv3-modal-overlay" t-on-click="closeDismissedSenders">
+        <div class="mv3-dismissed-panel" t-on-click.stop="">
+          <DismissedSenders onRestored.bind="onDismissedRestored"/>
+          <button class="btn btn-sm btn-link mv3-dismissed-panel__close" t-on-click="closeDismissedSenders">
+            <i class="fa fa-times"/>
+          </button>
+        </div>
       </div>
 
       <!-- Shortcuts Help Modal -->

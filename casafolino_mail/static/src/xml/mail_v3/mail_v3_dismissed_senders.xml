@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.DismissedSenders">
+    <div class="mv3-dismissed-senders">
+      <div class="mv3-dismissed-senders__header">
+        <h5>Mittenti dismessi</h5>
+      </div>
+      <div class="mv3-dismissed-senders__search">
+        <input type="text" class="form-control form-control-sm"
+               placeholder="Cerca mittente..."
+               t-att-value="state.search"
+               t-on-input="onSearchInput"/>
+      </div>
+      <div t-if="state.loading" class="mv3-dismissed-senders__loading">
+        <i class="fa fa-spinner fa-spin"/> Caricamento...
+      </div>
+      <div t-if="!state.loading and state.dismissed.length === 0" class="mv3-dismissed-senders__empty">
+        Nessun mittente dismesso
+      </div>
+      <table t-if="!state.loading and state.dismissed.length > 0" class="mv3-dismissed-senders__table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Data</th>
+            <th>Cancellate</th>
+            <th/>
+          </tr>
+        </thead>
+        <tbody>
+          <t t-foreach="state.dismissed" t-as="item" t-key="item.email">
+            <tr>
+              <td t-out="item.email"/>
+              <td t-out="this.formatDate(item.decided_at)"/>
+              <td t-out="item.dismissed_email_count"/>
+              <td>
+                <button class="btn btn-sm btn-outline-success"
+                        t-on-click="() => this.openRestoreDialog(item.email)">
+                  Riabilita
+                </button>
+              </td>
+            </tr>
+          </t>
+        </tbody>
+      </table>
+
+      <!-- Restore dialog -->
+      <div t-if="state.restoreDialog" class="mv3-dismissed-senders__restore-dialog">
+        <div class="mv3-dismissed-senders__restore-content">
+          <h6>Riabilita <t t-out="state.restoreDialog"/></h6>
+          <p>Vuoi recuperare le email storiche di questo mittente?</p>
+          <div class="mv3-dismissed-senders__restore-options">
+            <label>
+              <input type="radio" name="restore_days" value="0"
+                     t-att-checked="state.restoreDays === 0"
+                     t-on-change="onRestoreDaysChange"/>
+              Solo nuove da oggi
+            </label>
+            <label>
+              <input type="radio" name="restore_days" value="7"
+                     t-att-checked="state.restoreDays === 7"
+                     t-on-change="onRestoreDaysChange"/>
+              Ultimi 7 giorni
+            </label>
+            <label>
+              <input type="radio" name="restore_days" value="30"
+                     t-att-checked="state.restoreDays === 30"
+                     t-on-change="onRestoreDaysChange"/>
+              Ultimi 30 giorni
+            </label>
+            <label>
+              <input type="radio" name="restore_days" value="365"
+                     t-att-checked="state.restoreDays === 365"
+                     t-on-change="onRestoreDaysChange"/>
+              Tutto
+            </label>
+          </div>
+          <div class="mv3-dismissed-senders__restore-actions">
+            <button class="btn btn-sm btn-success" t-on-click="confirmRestore">Conferma</button>
+            <button class="btn btn-sm btn-secondary" t-on-click="closeRestoreDialog">Annulla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

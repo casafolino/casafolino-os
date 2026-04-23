@@ -11,10 +11,12 @@ import { Sidebar360 } from "./mail_v3_sidebar_360";
 import { MailV3Insight360TabBar } from "./mail_v3_insight_360_tabbar";
 import { ReplyAssistant } from "./mail_v3_reply_assistant";
 import { ComposeWizard } from "./mail_v3_compose";
+import { SenderDecisionPopup } from "./mail_v3_sender_decision_popup";
+import { DismissedSenders } from "./mail_v3_dismissed_senders";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
-    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard };
+    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard, SenderDecisionPopup, DismissedSenders };
     static props = ["*"];
 
     setup() {
@@ -74,11 +76,25 @@ export class MailV3Client extends Component {
             panel360Collapsed: false,
             // V12.4: sender email for 360 tabbar
             senderEmail: '',
+            // V12.6: Sender decision
+            senderDecisionVisible: false,
+            senderDecisionEmail: '',
+            senderDecisionName: '',
+            // V12.6: Dismiss undo toast
+            dismissUndoToast: false,
+            dismissUndoEmail: '',
+            dismissUndoToken: '',
+            dismissUndoCount: 0,
+            dismissUndoCountdown: 10,
+            // V12.6: Dismissed senders folder
+            dismissedSendersVisible: false,
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
         this._undoTimer = null;
         this._undoCountdownTimer = null;
+        this._dismissUndoTimer = null;
+        this._dismissUndoCountdownTimer = null;
 
         onWillStart(async () => {
             await this.loadAccounts();
@@ -214,6 +230,12 @@ export class MailV3Client extends Component {
             this.state.sidebar360Data = null;
             this.state.selectedPartner = null;
         }
+
+        // V12.6: Check sender decision status for popup
+        this.state.senderDecisionVisible = false;
+        if (inbound && inbound.sender_email) {
+            this._checkSenderDecision(inbound.sender_email, inbound.sender_name || '');
+        }
     }
 
     async _loadSidebar360(partnerId) {
@@ -240,8 +262,11 @@ export class MailV3Client extends Component {
 
     onFolderChange(folder) {
         this.state.activeFolder = folder;
+        this.state.dismissedSendersVisible = false;
         if (folder === 'scheduled') {
             this._loadScheduled();
+        } else if (folder === 'dismissed') {
+            this.state.dismissedSendersVisible = true;
         } else {
             this.loadThreads();
         }
@@ -819,6 +844,129 @@ export class MailV3Client extends Component {
 
     closeShortcutsHelp() {
         this.state.shortcutsHelpVisible = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // V12.6: Sender Decision
+    // ═══════════════════════════════════════════════════════════════
+
+    async _checkSenderDecision(email, name) {
+        try {
+            const res = await rpc('/cf/mail/v3/sender_decision/get', { email: email });
+            if (res.status === 'pending') {
+                this.state.senderDecisionEmail = email;
+                this.state.senderDecisionName = name;
+                this.state.senderDecisionVisible = true;
+            }
+        } catch (e) {
+            console.error('[mail v3] sender decision check error:', e);
+        }
+    }
+
+    onSenderDecision(decision) {
+        this.state.senderDecisionVisible = false;
+        // Refresh thread list to update pending badge
+        this.loadThreads();
+    }
+
+    onSenderDismiss(email, undoToken, count) {
+        this.state.senderDecisionVisible = false;
+        this._showDismissUndoToast(email, undoToken, count);
+        // Refresh thread list to remove dismissed threads
+        this.loadThreads();
+    }
+
+    onSenderCreateLead() {
+        this.state.senderDecisionVisible = false;
+        const partnerId = this.state.selectedPartner;
+        const threadId = this.state.selectedThreadId;
+        this.actionService.doAction({
+            type: 'ir.actions.act_window',
+            res_model: 'casafolino.mail.create.lead.wizard',
+            view_mode: 'form',
+            views: [[false, 'form']],
+            target: 'new',
+            context: {
+                default_partner_id: partnerId || false,
+                default_thread_id: threadId || false,
+            },
+        });
+    }
+
+    onSenderCreateProject() {
+        this.state.senderDecisionVisible = false;
+        const email = this.state.senderDecisionEmail;
+        const threadId = this.state.selectedThreadId;
+        const partnerId = this.state.selectedPartner;
+        this.actionService.doAction({
+            type: 'ir.actions.act_window',
+            res_model: 'cf.initiative',
+            views: [[false, 'form']],
+            target: 'current',
+            context: {
+                default_source_email: email,
+                default_source_thread_id: threadId,
+                default_partner_id: partnerId || false,
+            },
+        });
+    }
+
+    // ── Dismiss Undo Toast ─────────────────────────────────────
+
+    _showDismissUndoToast(email, token, count) {
+        this.state.dismissUndoToast = true;
+        this.state.dismissUndoEmail = email;
+        this.state.dismissUndoToken = token;
+        this.state.dismissUndoCount = count;
+        this.state.dismissUndoCountdown = 10;
+
+        if (this._dismissUndoCountdownTimer) clearInterval(this._dismissUndoCountdownTimer);
+        if (this._dismissUndoTimer) clearTimeout(this._dismissUndoTimer);
+
+        this._dismissUndoCountdownTimer = setInterval(() => {
+            this.state.dismissUndoCountdown--;
+            if (this.state.dismissUndoCountdown <= 0) {
+                this._clearDismissUndoToast();
+            }
+        }, 1000);
+
+        this._dismissUndoTimer = setTimeout(() => {
+            this._clearDismissUndoToast();
+        }, 10500);
+    }
+
+    _clearDismissUndoToast() {
+        this.state.dismissUndoToast = false;
+        if (this._dismissUndoTimer) { clearTimeout(this._dismissUndoTimer); this._dismissUndoTimer = null; }
+        if (this._dismissUndoCountdownTimer) { clearInterval(this._dismissUndoCountdownTimer); this._dismissUndoCountdownTimer = null; }
+    }
+
+    async cancelDismiss() {
+        if (!this.state.dismissUndoToken) return;
+        try {
+            await rpc('/cf/mail/v3/sender_decision/cancel_dismiss', {
+                undo_token: this.state.dismissUndoToken,
+            });
+            this._clearDismissUndoToast();
+            await this.loadThreads();
+        } catch (e) {
+            console.error('[mail v3] cancel dismiss error:', e);
+        }
+    }
+
+    // ── Dismissed Senders Folder ───────────────────────────────
+
+    openDismissedSenders() {
+        this.state.dismissedSendersVisible = true;
+        this.state.activeFolder = 'dismissed';
+    }
+
+    closeDismissedSenders() {
+        this.state.dismissedSendersVisible = false;
+    }
+
+    onDismissedRestored() {
+        this.loadThreads();
     }
 }
 

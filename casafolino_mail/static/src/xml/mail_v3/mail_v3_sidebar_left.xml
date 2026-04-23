@@ -62,6 +62,11 @@
            t-on-click="() => this.selectFolder('trash')" title="Cestino">
         <span>🗑️</span>
       </div>
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'dismissed'}"
+           t-on-click="() => this.selectFolder('dismissed')" title="Mittenti dismessi">
+        <span>🔄</span>
+      </div>
 
       <!-- Spacer -->
       <div class="mv3-sidebar-left__spacer"/>

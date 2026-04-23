@@ -1927,3 +1927,300 @@ $mv3-line-height: 1.45;
         font-style: italic;
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// V12.6: Sender Decision Popup
+// ═══════════════════════════════════════════════════════════════
+
+.mv3-sender-decision {
+    background: #FFF9E6;
+    border-bottom: 2px solid #F5C842;
+    padding: 16px 20px;
+    animation: mv3-slide-down 0.2s ease;
+}
+
+@keyframes mv3-slide-down {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.mv3-sender-decision__sender {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.mv3-sender-decision__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: $mv3-primary;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.mv3-sender-decision__info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.mv3-sender-decision__email {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.mv3-sender-decision__badge-new {
+    background: #F5C842;
+    color: #7C6200;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.mv3-sender-decision__question {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.mv3-sender-decision__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    max-width: 400px;
+}
+
+.mv3-sender-decision__btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover { background: #f5f5f5; }
+    &:disabled { opacity: 0.5; cursor: wait; }
+
+    &--keep {
+        border-color: $mv3-primary;
+        color: $mv3-primary;
+        &:hover { background: rgba(90, 110, 58, 0.08); }
+    }
+    &--dismiss {
+        border-color: $mv3-hot;
+        color: $mv3-hot;
+        &:hover { background: rgba(231, 76, 60, 0.08); }
+    }
+    &--lead {
+        border-color: $mv3-active;
+        color: $mv3-active;
+        &:hover { background: rgba(52, 152, 219, 0.08); }
+    }
+    &--project {
+        border-color: #8E44AD;
+        color: #8E44AD;
+        &:hover { background: rgba(142, 68, 173, 0.08); }
+    }
+}
+
+.mv3-sender-decision__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.mv3-sender-decision__defer {
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    text-decoration: underline;
+    &:hover { color: #333; }
+}
+
+.mv3-sender-decision__hint {
+    font-size: 11px;
+    color: #999;
+    font-style: italic;
+}
+
+// Reading pane dimmed when popup visible
+.mv3-reading-pane-wrapper--dimmed {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+// ── Pending sender badge in thread list ──
+.mv3-badge--pending {
+    background: #FFF3CD;
+    color: #856404;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// V12.6: Dismiss Undo Toast
+// ═══════════════════════════════════════════════════════════════
+
+.mv3-dismiss-undo-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #333;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    animation: mv3-slide-up 0.2s ease;
+    font-size: 13px;
+}
+
+@keyframes mv3-slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.mv3-dismiss-undo-toast__btn {
+    background: $mv3-primary;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    &:hover { background: darken($mv3-primary, 8%); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// V12.6: Dismissed Senders Panel
+// ═══════════════════════════════════════════════════════════════
+
+.mv3-dismissed-panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 700px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.mv3-dismissed-panel__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.mv3-dismissed-senders__header h5 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.mv3-dismissed-senders__search {
+    margin-bottom: 12px;
+}
+
+.mv3-dismissed-senders__loading,
+.mv3-dismissed-senders__empty {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+}
+
+.mv3-dismissed-senders__table {
+    width: 100%;
+    font-size: 13px;
+    border-collapse: collapse;
+
+    th {
+        background: #f8f8f8;
+        padding: 8px 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 1px solid #eee;
+    }
+
+    td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    tr:hover td {
+        background: #fafafa;
+    }
+}
+
+.mv3-dismissed-senders__restore-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+}
+
+.mv3-dismissed-senders__restore-content {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+
+    h6 {
+        margin: 0 0 8px;
+        font-size: 14px;
+    }
+
+    p {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 12px;
+    }
+}
+
+.mv3-dismissed-senders__restore-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+}
+
+.mv3-dismissed-senders__restore-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}

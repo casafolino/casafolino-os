@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.12.5.0',
+    'version': '18.0.12.6.0',
     'summary': 'Filtro selettivo Gmail → CRM con triage personale per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -47,6 +47,8 @@
             'casafolino_mail/static/src/js/mail_v3/mail_v3_insight_360_tabbar.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_reply_assistant.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_analytics.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_sender_decision_popup.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_dismissed_senders.js',
             # V3 OWL components — XML templates
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_client.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_sidebar_left.xml',
@@ -57,6 +59,8 @@
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_insight_360_tabbar.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_reply_assistant.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_analytics.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_sender_decision_popup.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_dismissed_senders.xml',
         ],
     },
     'post_init_hook': '_post_init_hook',

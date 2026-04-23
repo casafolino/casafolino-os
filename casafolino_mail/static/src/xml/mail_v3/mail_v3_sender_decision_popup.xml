@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.SenderDecisionPopup">
+    <div class="mv3-sender-decision" t-if="!state.decided">
+      <div class="mv3-sender-decision__banner">
+        <!-- Avatar + sender info -->
+        <div class="mv3-sender-decision__sender">
+          <div class="mv3-sender-decision__avatar">
+            <t t-out="senderInitials"/>
+          </div>
+          <div class="mv3-sender-decision__info">
+            <span class="mv3-sender-decision__email" t-out="props.senderEmail"/>
+            <span class="mv3-sender-decision__badge-new">Mittente nuovo</span>
+          </div>
+        </div>
+        <div class="mv3-sender-decision__question">
+          Cosa vuoi fare di questo mittente?
+        </div>
+        <!-- 2x2 action grid -->
+        <div class="mv3-sender-decision__grid">
+          <button class="mv3-sender-decision__btn mv3-sender-decision__btn--keep"
+                  t-att-disabled="state.loading"
+                  t-on-click="onKeep">
+            <i class="fa fa-check"/> Tieni
+          </button>
+          <button class="mv3-sender-decision__btn mv3-sender-decision__btn--dismiss"
+                  t-att-disabled="state.loading"
+                  t-on-click="onDismiss">
+            <i class="fa fa-ban"/> Dismetti
+          </button>
+          <button class="mv3-sender-decision__btn mv3-sender-decision__btn--lead"
+                  t-att-disabled="state.loading"
+                  t-on-click="onCreateLead">
+            <i class="fa fa-bullseye"/> Crea Lead
+          </button>
+          <button class="mv3-sender-decision__btn mv3-sender-decision__btn--project"
+                  t-att-disabled="state.loading"
+                  t-on-click="onCreateProject">
+            <i class="fa fa-rocket"/> Crea Progetto
+          </button>
+        </div>
+        <div class="mv3-sender-decision__footer">
+          <a class="mv3-sender-decision__defer" t-on-click="onDefer">Decido dopo</a>
+          <span class="mv3-sender-decision__hint">Dismetti cancella email dal DB; Gmail le conserva</span>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>
