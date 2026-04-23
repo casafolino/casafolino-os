@@ -282,6 +282,17 @@ class CasafolinoMailAccount(models.Model):
                     skip_count += 1
                     continue
 
+                # ── V12.6: Skip dismissed senders ──
+                Preference = self.env['casafolino.mail.sender_preference']
+                pref = Preference.search([
+                    ('email', '=ilike', sender_email_addr),
+                    ('account_id', '=', resolved_account_id),
+                ], limit=1)
+                if pref and pref.status == 'dismissed':
+                    filtered_out += 1
+                    _logger.info("Skipped dismissed sender: %s", sender_email_addr)
+                    continue
+
                 # Determina direction effettiva
                 actual_direction = direction
                 if direction == 'inbound' and sender_email_addr == self.email_address.lower():
@@ -347,6 +358,17 @@ class CasafolinoMailAccount(models.Model):
 
                     # Scarica body subito (email ammessa dalla whitelist)
                     new_msg._download_body_imap(imap, folder_name, uid_str)
+
+                    # ── V12.6: Auto-create sender preference if new sender ──
+                    if actual_direction == 'inbound' and sender_email_addr and not pref:
+                        try:
+                            Preference.sudo().create({
+                                'email': sender_email_addr.lower().strip(),
+                                'account_id': resolved_account_id,
+                                'status': 'pending',
+                            })
+                        except Exception:
+                            pass  # ON CONFLICT — already exists
 
                 except Exception as e:
                     _logger.warning("Error creating mail message: %s", e)
