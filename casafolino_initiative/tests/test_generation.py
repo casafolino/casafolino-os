@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from odoo import fields
 from odoo.tests.common import TransactionCase
 
@@ -14,43 +12,46 @@ class TestAtomGeneration(TransactionCase):
         cls.tag_sial = cls.env.ref('casafolino_initiative.tag_fair_sial_canada')
         cls.partner = cls.env['res.partner'].create({'name': 'Test Partner F2'})
 
-        # Ensure A11 has generate_on_create=True and subject_template
+        # Ensure atom configs for tests
         cls.atom_a11 = cls.env['cf.initiative.atom'].search([('code', '=', 'A11')], limit=1)
         cls.atom_a11.write({
             'generate_on_create': True,
             'subject_template': 'Brief avvio — {{object.initiative_id.name}}',
         })
-        # Ensure A01 is manual
         cls.atom_a01 = cls.env['cf.initiative.atom'].search([('code', '=', 'A01')], limit=1)
         cls.atom_a01.write({'generate_on_create': False})
-        # Ensure A05 (sale_order) has generate_on_create=True
         cls.atom_a05 = cls.env['cf.initiative.atom'].search([('code', '=', 'A05')], limit=1)
         cls.atom_a05.write({
             'generate_on_create': True,
             'subject_template': 'Offerta {{object.initiative_id.partner_id.name}}',
         })
-        # Ensure A02 (mail_activity) has generate_on_create=True
         cls.atom_a02 = cls.env['cf.initiative.atom'].search([('code', '=', 'A02')], limit=1)
         cls.atom_a02.write({
             'generate_on_create': True,
             'subject_template': 'Invio listino a {{object.initiative_id.partner_id.name}}',
         })
 
-    def _create_initiative(self, name='Test F2', **kwargs):
-        vals = {
-            'name': name,
+    def _create_initiative_via_wizard(self, name='Test F2', partner=None, tag_ids=None):
+        """Create initiative via wizard to get atom_lines populated from template."""
+        partner = partner if partner is not None else self.partner
+        if tag_ids is None:
+            tag_ids = [(6, 0, [self.tag_sial.id])]
+        wiz_vals = {
             'family_id': self.family_oc.id,
             'variant_id': self.variant_oc_std.id,
-            'partner_id': self.partner.id,
-            'tag_ids': [(6, 0, [self.tag_sial.id])],
+            'name': name,
+            'partner_id': partner.id if partner else False,
+            'step': '4_config',
             'date_start': fields.Date.today(),
+            'tag_ids': tag_ids,
         }
-        vals.update(kwargs)
-        return self.env['cf.initiative'].create(vals)
+        wiz = self.env['cf.initiative.wizard'].create(wiz_vals)
+        result = wiz.action_create()
+        return self.env['cf.initiative'].browse(result['res_id'])
 
     def test_generate_project_task(self):
         """A11 (project_task) generates a task linked to initiative project."""
-        ini = self._create_initiative('Task Gen Test')
+        ini = self._create_initiative_via_wizard('Task Gen Test')
         ini.action_start()
         line_a11 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A11')
         self.assertEqual(line_a11.generation_state, 'generated')
@@ -63,7 +64,7 @@ class TestAtomGeneration(TransactionCase):
 
     def test_generate_mail_activity(self):
         """A02 (mail_activity) generates an activity on the initiative."""
-        ini = self._create_initiative('Activity Gen Test')
+        ini = self._create_initiative_via_wizard('Activity Gen Test')
         ini.action_start()
         line_a02 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A02')
         self.assertEqual(line_a02.generation_state, 'generated')
@@ -74,7 +75,7 @@ class TestAtomGeneration(TransactionCase):
 
     def test_generate_sale_order(self):
         """A05 (sale_order) generates a draft SO with partner and tags."""
-        ini = self._create_initiative('SO Gen Test')
+        ini = self._create_initiative_via_wizard('SO Gen Test')
         ini.action_start()
         line_a05 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A05')
         self.assertEqual(line_a05.generation_state, 'generated')
@@ -86,7 +87,7 @@ class TestAtomGeneration(TransactionCase):
 
     def test_bidirectional_sync_task(self):
         """Closing/reopening a generated task syncs atom_line state."""
-        ini = self._create_initiative('Sync Test')
+        ini = self._create_initiative_via_wizard('Sync Test')
         ini.action_start()
         line_a11 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A11')
         task = self.env['project.task'].browse(line_a11.generated_res_id)
@@ -99,7 +100,7 @@ class TestAtomGeneration(TransactionCase):
 
     def test_template_rendering(self):
         """Subject template renders with initiative context."""
-        ini = self._create_initiative('Render Test')
+        ini = self._create_initiative_via_wizard('Render Test')
         ini.action_start()
         line_a11 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A11')
         task = self.env['project.task'].browse(line_a11.generated_res_id)
@@ -107,19 +108,37 @@ class TestAtomGeneration(TransactionCase):
 
     def test_error_handling(self):
         """Atom generation error does not block other atoms."""
-        ini = self._create_initiative('Error Test', partner_id=False)
+        # Create without partner via direct create + manual atom lines
+        ini = self.env['cf.initiative'].create({
+            'name': 'Error Test',
+            'family_id': self.family_oc.id,
+            'variant_id': self.variant_oc_std.id,
+            'partner_id': False,
+            'date_start': fields.Date.today(),
+        })
+        # Manually add A05 (sale_order, needs partner) and A11 (project_task, no partner needed)
+        self.env['cf.initiative.atom.line'].create([
+            {
+                'initiative_id': ini.id,
+                'atom_id': self.atom_a05.id,
+                'sequence': 10,
+            },
+            {
+                'initiative_id': ini.id,
+                'atom_id': self.atom_a11.id,
+                'sequence': 20,
+            },
+        ])
         ini.action_start()
-        # A05 (sale_order) should fail without partner
         line_a05 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A05')
         self.assertEqual(line_a05.generation_state, 'error')
         self.assertTrue(line_a05.generation_error)
-        # A11 (project_task) should still succeed
         line_a11 = ini.atom_line_ids.filtered(lambda l: l.atom_id.code == 'A11')
         self.assertEqual(line_a11.generation_state, 'generated')
 
     def test_auto_create_project(self):
         """action_start auto-creates project.project for initiative."""
-        ini = self._create_initiative('Project Auto Test')
+        ini = self._create_initiative_via_wizard('Project Auto Test')
         self.assertFalse(ini.project_id)
         ini.action_start()
         self.assertTrue(ini.project_id)
@@ -127,17 +146,7 @@ class TestAtomGeneration(TransactionCase):
 
     def test_generate_on_start(self):
         """Wizard creates atom_lines in pending; action_start triggers generation."""
-        wiz = self.env['cf.initiative.wizard'].create({
-            'family_id': self.family_oc.id,
-            'variant_id': self.variant_oc_std.id,
-            'name': 'Start Test',
-            'partner_id': self.partner.id,
-            'step': '4_config',
-            'date_start': fields.Date.today(),
-            'tag_ids': [(6, 0, [self.tag_sial.id])],
-        })
-        result = wiz.action_create()
-        ini = self.env['cf.initiative'].browse(result['res_id'])
+        ini = self._create_initiative_via_wizard('Start Test')
         # All should be pending in draft
         self.assertTrue(all(
             l.generation_state == 'pending' for l in ini.atom_line_ids
