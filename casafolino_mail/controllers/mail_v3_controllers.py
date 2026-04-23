@@ -113,7 +113,7 @@ class MailV3Controller(http.Controller):
 
         threads = request.env['casafolino.mail.thread'].search(
             domain, limit=limit, offset=offset,
-            order='last_message_date desc')
+            order='last_message_date desc, id desc')
         total = request.env['casafolino.mail.thread'].search_count(domain)
 
         result = []
@@ -261,7 +261,7 @@ class MailV3Controller(http.Controller):
                 'is_read': m.is_read,
                 'is_starred': m.is_starred,
                 'is_archived': m.is_archived,
-                'intent_detected': m.intent_detected or '',
+                'intent_detected': getattr(m, 'intent_detected', '') or '',
                 'partner_id': m.partner_id.id if m.partner_id else False,
                 'partner_name': m.partner_id.name if m.partner_id else '',
                 'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''}
@@ -563,7 +563,7 @@ class MailV3Controller(http.Controller):
                     'subject': (m.subject or '')[:60],
                     'date': str(m.email_date)[:10] if m.email_date else '',
                     'direction': m.direction or 'inbound',
-                    'intent': m.intent_detected or '',
+                    'intent': getattr(m, 'intent_detected', '') or '',
                 })
         except Exception as e:
             _logger.warning('[mail v3] Timeline block error: %s', e)
@@ -757,7 +757,7 @@ class MailV3Controller(http.Controller):
         ) % (
             partner.name if partner else 'Sconosciuto',
             partner.country_id.name if partner and partner.country_id else 'N/A',
-            msg.intent_detected or 'general',
+            getattr(msg, 'intent_detected', '') or 'general',
             '%s %s' % (intel.hotness_tier, intel.hotness_score) if intel else 'N/A',
             msg.subject or '',
             (msg.body_plain or msg.body_html or '')[:500],
