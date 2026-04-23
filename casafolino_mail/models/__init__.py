@@ -23,3 +23,4 @@ from . import casafolino_mail_response_metric
 from . import casafolino_mail_lead_rule
 from . import casafolino_partner_intelligence_feedback
 from . import res_users
+from . import casafolino_mail_sender_preference
