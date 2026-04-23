@@ -230,7 +230,6 @@
                 <field name="child_count"/>
                 <field name="tag_ids"/>
                 <field name="family_id"/>
-                <field name="color"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_content">
