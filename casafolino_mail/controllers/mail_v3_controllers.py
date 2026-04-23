@@ -310,6 +310,28 @@ class MailV3Controller(http.Controller):
         getattr(msg, method)()
         return {'success': True}
 
+    # ── Delete Single Message ───────────────────────────────────────
+
+    @http.route('/cf/mail/v3/message/delete_single', type='json', auth='user')
+    def message_delete_single(self, **kw):
+        message_id = int(kw.get('message_id', 0))
+        if not message_id:
+            return {'success': False, 'error': 'message_id required'}
+        user_accounts = self._get_user_account_ids()
+        msg = request.env['casafolino.mail.message'].sudo().search([
+            ('id', '=', message_id),
+            ('account_id', 'in', user_accounts),
+        ], limit=1)
+        if not msg:
+            return {'success': False, 'error': 'Message not found or no access'}
+        thread = msg.thread_id
+        msg.unlink()
+        thread_deleted = False
+        if thread and thread.exists() and not thread.message_ids:
+            thread.unlink()
+            thread_deleted = True
+        return {'success': True, 'thread_deleted': thread_deleted}
+
     # ── Draft CRUD ───────────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/draft/create', type='json', auth='user')
@@ -1624,6 +1646,49 @@ class MailV3Controller(http.Controller):
         return {
             'subject': template.subject or '',
             'body_html': template.body_html or '',
+        }
+
+    # ── V12.8: Snippet Endpoints ────────────────────────────────────
+
+    @http.route('/cf/mail/v3/snippets/list', type='json', auth='user')
+    def snippets_list(self, **kw):
+        code_prefix = (kw.get('code_prefix') or '').strip()
+        domain = [('active', '=', True)]
+        if code_prefix:
+            domain.append(('code', 'ilike', code_prefix))
+        snippets = request.env['casafolino.mail.snippet'].sudo().search(
+            domain, order='usage_count desc, name', limit=10)
+        return {
+            'snippets': [{
+                'id': s.id,
+                'name': s.name,
+                'code': s.code,
+                'language': s.language,
+                'category': s.category,
+                'subject': s.subject or '',
+                'body': s.body,
+            } for s in snippets],
+        }
+
+    @http.route('/cf/mail/v3/snippets/apply', type='json', auth='user')
+    def snippet_apply(self, **kw):
+        snippet_id = int(kw.get('snippet_id', 0))
+        partner_id = int(kw.get('partner_id') or 0)
+        s = request.env['casafolino.mail.snippet'].sudo().browse(snippet_id)
+        if not s.exists():
+            return {'success': False}
+        # Render with partner data if available
+        partner = request.env['res.partner'].browse(partner_id) if partner_id else None
+        user = request.env.user
+        rendered_body = s._render_snippet(partner=partner, user=user)
+        s.sudo().write({
+            'usage_count': (s.usage_count or 0) + 1,
+            'last_used': fields.Datetime.now(),
+        })
+        return {
+            'success': True,
+            'body': rendered_body,
+            'subject': s.subject or '',
         }
 
     # ── F8: Partner Language Detection ─────────────────────────────

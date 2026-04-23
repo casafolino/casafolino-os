@@ -2280,6 +2280,24 @@ $mv3-line-height: 1.45;
         border-color: transparent;
         &:hover { background: #F5D5D5; }
     }
+
+    &--red-soft {
+        background: rgba(250, 180, 180, 0.25);
+        color: #7a2d2d;
+        border-color: transparent;
+        &:hover { background: rgba(250, 180, 180, 0.4); }
+    }
+
+    &--armed {
+        background: #E74C3C !important;
+        color: #fff !important;
+        animation: mv3-pulse-armed 0.6s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes mv3-pulse-armed {
+    from { opacity: 1; }
+    to { opacity: 0.8; }
 }
 
 .mv3-qa-separator {
@@ -2288,4 +2306,69 @@ $mv3-line-height: 1.45;
     background: rgba(0, 0, 0, 0.1);
     margin: 0 2px;
     flex-shrink: 0;
+}
+
+// ── Snippet Autocomplete Popup ────────────────────────
+.mv3-snippet-popup {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 380px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid $mv3-border;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    padding: 4px 0;
+
+    &__header {
+        padding: 6px 12px;
+        font-size: 11px;
+        color: #888;
+        border-bottom: 1px solid $mv3-border;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.1s;
+
+        &:hover, &--active {
+            background: rgba($mv3-primary, 0.08);
+        }
+    }
+
+    &__code {
+        font-family: monospace;
+        font-size: 12px;
+        color: $mv3-primary;
+        font-weight: 600;
+        min-width: 80px;
+    }
+
+    &__name {
+        font-size: 12px;
+        color: #444;
+        flex: 1;
+    }
+
+    &__hint {
+        padding: 4px 12px;
+        font-size: 10px;
+        color: #aaa;
+        border-top: 1px solid $mv3-border;
+
+        kbd {
+            font-size: 10px;
+            padding: 1px 4px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+    }
 }

@@ -124,7 +124,8 @@
               onSnooze.bind="openSnoozePopup"
               onCreateLead.bind="onSenderCreateLead"
               onCreateProject.bind="onSenderCreateProject"
-              onDismissSender.bind="onQuickDismissSender"/>
+              onDismissSender.bind="onQuickDismissSender"
+              onDeleteEmail.bind="onDeleteEmail"/>
           </div>
         </div>
 

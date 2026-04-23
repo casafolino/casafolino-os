@@ -86,6 +86,12 @@
                   <button class="mv3-qa-btn" t-on-click="() => this.onAction('archive', msg.id)">
                     <i class="fa fa-archive"/> Archivia
                   </button>
+                  <button t-att-class="'mv3-qa-btn mv3-qa-btn--red-soft' + (state.deleteConfirmMsgId === msg.id ? ' mv3-qa-btn--armed' : '')"
+                          t-on-click="() => this.onDeleteEmail(msg.id)">
+                    <i class="fa fa-trash-o"/>
+                    <t t-if="state.deleteConfirmMsgId === msg.id">Conferma?</t>
+                    <t t-else="">Cancella</t>
+                  </button>
                 </div>
               </div>
             </div>

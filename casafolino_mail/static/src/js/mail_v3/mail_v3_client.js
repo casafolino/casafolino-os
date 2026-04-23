@@ -311,6 +311,24 @@ export class MailV3Client extends Component {
         }
     }
 
+    async onDeleteEmail(msgId) {
+        try {
+            const result = await rpc('/cf/mail/v3/message/delete_single', { message_id: msgId });
+            if (result.success) {
+                if (result.thread_deleted) {
+                    this.state.selectedThreadId = null;
+                    this.state.messages = [];
+                    await this.loadThreads();
+                } else {
+                    const res = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/messages');
+                    this.state.messages = res.messages || [];
+                }
+            }
+        } catch (e) {
+            console.error('[mail v3] delete email error:', e);
+        }
+    }
+
     // ── Compose (wizard action) ─────────────────────────────────
 
     openComposeNew() {
