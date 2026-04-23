@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.12.2.0',
+    'version': '18.0.12.3.0',
     'summary': 'Filtro selettivo Gmail → CRM con triage personale per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
