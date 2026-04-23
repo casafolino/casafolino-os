@@ -76,6 +76,25 @@ class MailV3Controller(http.Controller):
         if folder != 'snoozed':
             domain.append(('is_snoozed', '=', False))
 
+        # ── V12.6: Build dismissed sender set for filtering ──
+        dismissed_emails = set()
+        Preference = request.env['casafolino.mail.sender_preference']
+        dismissed_prefs = Preference.search([
+            ('account_id', 'in', account_ids),
+            ('status', '=', 'dismissed'),
+        ])
+        for dp in dismissed_prefs:
+            dismissed_emails.add((dp.email or '').lower().strip())
+
+        # Build pending sender set for badge
+        pending_emails = set()
+        pending_prefs = Preference.search([
+            ('account_id', 'in', account_ids),
+            ('status', '=', 'pending'),
+        ])
+        for pp in pending_prefs:
+            pending_emails.add((pp.email or '').lower().strip())
+
         # Folder filters
         if folder == 'starred':
             starred_msgs = request.env['casafolino.mail.message'].search([
@@ -168,6 +187,20 @@ class MailV3Controller(http.Controller):
                     lead_name = m.lead_id.name or ''
                     break
 
+            # V12.6: Check if any message sender is pending decision
+            has_pending_sender = False
+            thread_has_dismissed = False
+            for m in active_msgs:
+                se = (m.sender_email or '').lower().strip()
+                if se in pending_emails:
+                    has_pending_sender = True
+                if se in dismissed_emails:
+                    thread_has_dismissed = True
+
+            # Skip threads where ALL senders are dismissed
+            if thread_has_dismissed and not has_pending_sender and not has_keep_message:
+                continue
+
             result.append({
                 'id': t.id,
                 'subject': t.subject or '',
@@ -192,6 +225,7 @@ class MailV3Controller(http.Controller):
                 'has_keep_message': has_keep_message,
                 'lead_name': lead_name,
                 'partner_ids': t.partner_ids.ids,
+                'has_pending_sender': has_pending_sender,
             })
 
         has_more = (offset + len(result)) < total
@@ -1390,6 +1424,136 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/user/undo_seconds', type='json', auth='user')
     def user_undo_seconds(self, **kw):
         return {'undo_seconds': request.env.user.mv3_undo_send_seconds or 0}
+
+    # ═══════════════════════════════════════════════════════════════════
+    # V12.6: Sender Decision Endpoints
+    # ═══════════════════════════════════════════════════════════════════
+
+    @http.route('/cf/mail/v3/sender_decision/get', type='json', auth='user')
+    def sender_decision_get(self, **kw):
+        email = (kw.get('email') or '').strip().lower()
+        if not email:
+            return {'status': 'unknown'}
+        user_accounts = self._get_user_account_ids()
+        pref = request.env['casafolino.mail.sender_preference'].search([
+            ('email', '=ilike', email),
+            ('account_id', 'in', user_accounts),
+        ], limit=1)
+        if not pref:
+            return {'status': 'unknown'}
+        return {
+            'status': pref.status,
+            'decided_at': str(pref.decided_at) if pref.decided_at else '',
+            'dismissed_email_count': pref.dismissed_email_count,
+        }
+
+    @http.route('/cf/mail/v3/sender_decision/keep', type='json', auth='user')
+    def sender_decision_keep(self, **kw):
+        email = (kw.get('email') or '').strip().lower()
+        if not email:
+            return {'success': False, 'error': 'Email required'}
+        user_accounts = self._get_user_account_ids()
+        pref = request.env['casafolino.mail.sender_preference'].search([
+            ('email', '=ilike', email),
+            ('account_id', 'in', user_accounts),
+        ], limit=1)
+        if not pref:
+            # Auto-create as kept
+            if user_accounts:
+                pref = request.env['casafolino.mail.sender_preference'].create({
+                    'email': email,
+                    'account_id': user_accounts[0],
+                    'status': 'kept',
+                    'decided_at': fields.Datetime.now(),
+                    'decided_by_id': request.env.uid,
+                })
+            return {'success': True, 'status': 'kept'}
+        pref.action_keep()
+        return {'success': True, 'status': 'kept'}
+
+    @http.route('/cf/mail/v3/sender_decision/dismiss', type='json', auth='user')
+    def sender_decision_dismiss(self, **kw):
+        email = (kw.get('email') or '').strip().lower()
+        if not email:
+            return {'success': False, 'error': 'Email required'}
+        user_accounts = self._get_user_account_ids()
+        pref = request.env['casafolino.mail.sender_preference'].search([
+            ('email', '=ilike', email),
+            ('account_id', 'in', user_accounts),
+        ], limit=1)
+        if not pref:
+            return {'success': False, 'error': 'Sender not found'}
+        # Count emails that will be deleted
+        pending_count = request.env['casafolino.mail.message'].search_count([
+            ('sender_email', '=ilike', email),
+            ('account_id', 'in', user_accounts),
+        ])
+        undo_token = pref.action_dismiss()
+        return {
+            'success': True,
+            'pending_deletion_count': pending_count,
+            'undo_token': undo_token,
+        }
+
+    @http.route('/cf/mail/v3/sender_decision/cancel_dismiss', type='json', auth='user')
+    def sender_decision_cancel_dismiss(self, **kw):
+        token = kw.get('undo_token', '')
+        if not token:
+            return {'success': False, 'error': 'Token required'}
+        user_accounts = self._get_user_account_ids()
+        pref = request.env['casafolino.mail.sender_preference'].search([
+            ('undo_token', '=', token),
+            ('account_id', 'in', user_accounts),
+        ], limit=1)
+        if not pref:
+            return {'success': False, 'error': 'Invalid or expired token'}
+        ok = pref.action_cancel_dismiss(token)
+        return {'success': ok}
+
+    @http.route('/cf/mail/v3/sender_decision/defer', type='json', auth='user')
+    def sender_decision_defer(self, **kw):
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/sender_decision/list_dismissed', type='json', auth='user')
+    def sender_decision_list_dismissed(self, **kw):
+        search_term = (kw.get('search') or '').strip()
+        user_accounts = self._get_user_account_ids()
+        domain = [
+            ('account_id', 'in', user_accounts),
+            ('status', '=', 'dismissed'),
+        ]
+        if search_term:
+            domain.append(('email', 'ilike', search_term))
+        prefs = request.env['casafolino.mail.sender_preference'].search(
+            domain, order='decided_at desc', limit=200)
+        result = []
+        for p in prefs:
+            result.append({
+                'email': p.email,
+                'decided_at': str(p.decided_at) if p.decided_at else '',
+                'dismissed_email_count': p.dismissed_email_count,
+            })
+        return {'dismissed': result}
+
+    @http.route('/cf/mail/v3/sender_decision/restore', type='json', auth='user')
+    def sender_decision_restore(self, **kw):
+        email = (kw.get('email') or '').strip().lower()
+        recover_days = int(kw.get('recover_days') or 0)
+        if not email:
+            return {'success': False, 'error': 'Email required'}
+        user_accounts = self._get_user_account_ids()
+        pref = request.env['casafolino.mail.sender_preference'].search([
+            ('email', '=ilike', email),
+            ('account_id', 'in', user_accounts),
+            ('status', '=', 'dismissed'),
+        ], limit=1)
+        if not pref:
+            return {'success': False, 'error': 'Dismissed sender not found'}
+        pref.action_restore(recover_days)
+        msg = 'Mittente riabilitato'
+        if recover_days > 0:
+            msg += '. Recovery IMAP avviato per ultimi %d giorni.' % recover_days
+        return {'success': True, 'message': msg}
 
     # ── F7: Triage Auto-Cleanup Noreply (§3.7) ─────────────────────
 
