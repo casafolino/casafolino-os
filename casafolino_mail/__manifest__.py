@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.12.11.0',
-    'summary': 'Filtro selettivo Gmail → CRM con triage personale per CasaFolino',
+    'version': '18.0.13.0.0',
+    'summary': 'Pipeline fetch RAW → classificazione → MESSAGE per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': ['base', 'mail', 'web', 'utm', 'crm', 'casafolino_crm_export'],
@@ -18,6 +18,7 @@
         'views/snippet_picker_views.xml',
         'views/triage_wizard_views.xml',
         'views/sender_decision_views.xml',
+        'views/casafolino_mail_raw_views.xml',
         'views/create_lead_wizard_views.xml',
         'data/mail_v3_client_action.xml',
         'views/menus.xml',

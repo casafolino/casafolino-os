@@ -70,26 +70,8 @@ def _post_init_hook(env):
             'user_id': env.ref('base.user_admin').id,
         })
 
-    # ── 2b. Trigger fetch immediato post-install/update ──
-    _logger.info("[casafolino_mail] Post-init: triggering initial fetch")
-    try:
-        accounts = env['casafolino.mail.account'].sudo().search([
-            ('state', '=', 'connected'),
-        ])
-        for acc in accounts:
-            try:
-                acc._fetch_emails()
-            except Exception as e:
-                _logger.warning(
-                    "[casafolino_mail] Initial fetch failed for %s: %s",
-                    acc.name, e,
-                )
-        _logger.info(
-            "[casafolino_mail] Post-init fetch done: %d accounts processed",
-            len(accounts),
-        )
-    except Exception as e:
-        _logger.error("[casafolino_mail] Post-init fetch block error: %s", e)
+    # ── 2b. V13: No immediate fetch — cron pipeline handles it ──
+    _logger.info("[casafolino_mail] Post-init: fetch deferred to cron pipeline (V13)")
 
     # ── 3. Seed sender_policy di esempio ──
     Policy = env['casafolino.mail.sender_policy'].sudo()
@@ -153,3 +135,61 @@ def _post_init_hook(env):
     IrConfig = env['ir.config_parameter'].sudo()
     if not IrConfig.get_param('casafolino_mail.silent_days_threshold'):
         IrConfig.set_param('casafolino_mail.silent_days_threshold', '21')
+
+    # ── 6. Cron Triage RAW (dedup + idempotent) ──
+    raw_model = env.ref('casafolino_mail.model_casafolino_mail_raw')
+    all_triage_crons = Cron.search([('cron_name', 'ilike', 'CasaFolino%Triage RAW%')])
+    if all_triage_crons:
+        keep_triage = all_triage_crons[0]
+        dupes_triage = all_triage_crons - keep_triage
+        if dupes_triage:
+            _logger.info(
+                "[casafolino_mail] Removing %d duplicate Triage RAW crons: %s",
+                len(dupes_triage), dupes_triage.ids,
+            )
+            dupes_triage.unlink()
+    else:
+        sa_triage = env['ir.actions.server'].create({
+            'name': 'CasaFolino Triage RAW - Action',
+            'model_id': raw_model.id,
+            'state': 'code',
+            'code': 'model._cron_triage_raw()',
+        })
+        Cron.create({
+            'cron_name': 'CasaFolino Triage RAW - Action',
+            'ir_actions_server_id': sa_triage.id,
+            'interval_number': 5,
+            'interval_type': 'minutes',
+            'active': True,
+            'user_id': env.ref('base.user_admin').id,
+        })
+
+    # ── 7. Cron Cleanup RAW (dedup + idempotent) ──
+    all_cleanup_crons = Cron.search([('cron_name', 'ilike', 'CasaFolino%Cleanup RAW%')])
+    if all_cleanup_crons:
+        keep_cleanup = all_cleanup_crons[0]
+        dupes_cleanup = all_cleanup_crons - keep_cleanup
+        if dupes_cleanup:
+            _logger.info(
+                "[casafolino_mail] Removing %d duplicate Cleanup RAW crons: %s",
+                len(dupes_cleanup), dupes_cleanup.ids,
+            )
+            dupes_cleanup.unlink()
+    else:
+        sa_cleanup = env['ir.actions.server'].create({
+            'name': 'CasaFolino Cleanup RAW - Action',
+            'model_id': raw_model.id,
+            'state': 'code',
+            'code': 'model._cron_cleanup_raw()',
+        })
+        tomorrow_3am = fields.Datetime.now().replace(
+            hour=3, minute=0, second=0) + timedelta(days=1)
+        Cron.create({
+            'cron_name': 'CasaFolino Cleanup RAW - Action',
+            'ir_actions_server_id': sa_cleanup.id,
+            'interval_number': 1,
+            'interval_type': 'days',
+            'nextcall': tomorrow_3am,
+            'active': True,
+            'user_id': env.ref('base.user_admin').id,
+        })
