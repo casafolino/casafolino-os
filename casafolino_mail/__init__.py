@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 
 def _post_init_hook(env):
     """Setup iniziale modulo Mail CRM V2."""
-    Cron = env['ir.cron'].sudo()
+    Cron = env['ir.cron'].sudo().with_context(active_test=False)
 
     # ── 1. Elimina cron orfani del vecchio stack ──
     old_cron_names = [

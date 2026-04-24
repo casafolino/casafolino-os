@@ -8,7 +8,8 @@ def migrate(cr, version):
     from odoo import api, SUPERUSER_ID
 
     env = api.Environment(cr, SUPERUSER_ID, {})
-    Cron = env['ir.cron'].sudo()
+    # active_test=False to also find crons disabled during deploy
+    Cron = env['ir.cron'].sudo().with_context(active_test=False)
 
     # ── 1. Dedup Mail Sync V2 crons, update interval to 5 min ──
     all_sync = Cron.search([('cron_name', 'ilike', 'Mail Sync V2')])
@@ -27,17 +28,24 @@ def migrate(cr, version):
     else:
         _logger.warning("[casafolino_mail] migrate: no Mail Sync V2 cron found")
 
-    # ── 2. Dedup Silent Partners crons ──
-    all_silent = Cron.search([('cron_name', 'ilike', 'Silent Partners')])
-    if all_silent:
-        keep_s = all_silent[0]
-        dupes_s = all_silent - keep_s
-        if dupes_s:
+    # ── 2. Dedup all other CasaFolino crons ──
+    dedup_patterns = [
+        'Silent Partners',
+        'AI Classify',
+        'Body Fetch Pending',
+        'Auto-Attach Email',
+        'Digest Mittenti',
+    ]
+    for pattern in dedup_patterns:
+        crons = Cron.search([('cron_name', 'ilike', pattern)])
+        if len(crons) > 1:
+            keep_c = crons[0]
+            dupes_c = crons - keep_c
             _logger.info(
-                "[casafolino_mail] migrate: removing %d duplicate Silent Partners crons: %s",
-                len(dupes_s), dupes_s.ids,
+                "[casafolino_mail] migrate: removing %d duplicate '%s' crons: %s",
+                len(dupes_c), pattern, dupes_c.ids,
             )
-            dupes_s.unlink()
+            dupes_c.unlink()
 
     # ── 3. Trigger immediate fetch for connected accounts ──
     _logger.info("[casafolino_mail] migrate: triggering immediate fetch")
