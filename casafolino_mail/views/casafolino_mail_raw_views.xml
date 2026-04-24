@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List view -->
+    <record id="view_casafolino_mail_raw_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.raw.list</field>
+        <field name="model">casafolino.mail.raw</field>
+        <field name="arch" type="xml">
+            <list string="Email RAW" default_order="fetched_at desc"
+                  decoration-muted="triage_state == 'discarded'"
+                  decoration-success="triage_state == 'promoted'"
+                  decoration-danger="triage_state == 'error'"
+                  decoration-info="triage_state == 'pending'">
+                <field name="fetched_at"/>
+                <field name="account_id"/>
+                <field name="sender_email"/>
+                <field name="sender_name"/>
+                <field name="subject"/>
+                <field name="direction"/>
+                <field name="imap_folder"/>
+                <field name="has_attachments"/>
+                <field name="triage_state"/>
+                <field name="triage_reason"/>
+                <field name="triage_at"/>
+                <field name="promoted_message_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view -->
+    <record id="view_casafolino_mail_raw_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.raw.form</field>
+        <field name="model">casafolino.mail.raw</field>
+        <field name="arch" type="xml">
+            <form string="Email RAW">
+                <header>
+                    <button name="action_force_promote" string="Force Promote"
+                            type="object" class="btn-primary"
+                            invisible="triage_state == 'promoted'"/>
+                    <button name="action_force_discard" string="Force Discard"
+                            type="object" class="btn-secondary"
+                            invisible="triage_state == 'promoted'"/>
+                    <field name="triage_state" widget="statusbar"
+                           statusbar_visible="pending,promoted,discarded"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Email">
+                            <field name="account_id"/>
+                            <field name="sender_email"/>
+                            <field name="sender_name"/>
+                            <field name="recipient_emails"/>
+                            <field name="cc_emails"/>
+                            <field name="subject"/>
+                            <field name="email_date"/>
+                            <field name="direction"/>
+                            <field name="has_attachments"/>
+                        </group>
+                        <group string="IMAP">
+                            <field name="uid"/>
+                            <field name="message_id"/>
+                            <field name="imap_folder"/>
+                            <field name="fetched_at"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Preview" name="preview">
+                            <field name="body_preview"/>
+                        </page>
+                        <page string="Triage" name="triage">
+                            <group>
+                                <field name="triage_state"/>
+                                <field name="triage_reason"/>
+                                <field name="triage_at"/>
+                                <field name="promoted_message_id"/>
+                                <field name="error_message"/>
+                            </group>
+                        </page>
+                        <page string="Headers RAW" name="headers">
+                            <field name="headers_raw"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search view -->
+    <record id="view_casafolino_mail_raw_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.raw.search</field>
+        <field name="model">casafolino.mail.raw</field>
+        <field name="arch" type="xml">
+            <search string="Email RAW">
+                <field name="sender_email"/>
+                <field name="subject"/>
+                <field name="sender_name"/>
+                <filter name="pending" string="Pending" domain="[('triage_state', '=', 'pending')]"/>
+                <filter name="promoted" string="Promoted" domain="[('triage_state', '=', 'promoted')]"/>
+                <filter name="discarded" string="Discarded" domain="[('triage_state', '=', 'discarded')]"/>
+                <filter name="error" string="Error" domain="[('triage_state', '=', 'error')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter name="by_state" string="Stato Triage" context="{'group_by': 'triage_state'}"/>
+                    <filter name="by_account" string="Account" context="{'group_by': 'account_id'}"/>
+                    <filter name="by_direction" string="Direzione" context="{'group_by': 'direction'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_casafolino_mail_raw" model="ir.actions.act_window">
+        <field name="name">Email RAW (Admin)</field>
+        <field name="res_model">casafolino.mail.raw</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_casafolino_mail_raw_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+    <!-- Menu under Mail Hub settings (admin only) -->
+    <menuitem id="menu_casafolino_mail_raw"
+              name="Email RAW (Debug)"
+              parent="casafolino_mail.menu_casafolino_mail_config"
+              action="action_casafolino_mail_raw"
+              sequence="90"
+              groups="base.group_system"/>
+
+</odoo>
