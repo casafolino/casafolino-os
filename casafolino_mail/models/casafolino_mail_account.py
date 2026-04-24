@@ -55,9 +55,9 @@ class CasafolinoMailAccount(models.Model):
         self.ensure_one()
         try:
             if self.imap_use_ssl:
-                imap = imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
+                imap = imaplib.IMAP4_SSL(self.imap_host, self.imap_port, timeout=60)
             else:
-                imap = imaplib.IMAP4(self.imap_host, self.imap_port)
+                imap = imaplib.IMAP4(self.imap_host, self.imap_port, timeout=60)
             imap.login(self.email_address, self.imap_password)
             return imap
         except Exception as e:
@@ -357,7 +357,7 @@ class CasafolinoMailAccount(models.Model):
                     new_count += 1
 
                     # Scarica body subito (email ammessa dalla whitelist)
-                    new_msg._download_body_imap(imap, folder_name, uid_str)
+                    # Body download deferred to cron 85 (Body Fetch Pending)
 
                     # ── V12.6: Auto-create sender preference if new sender ──
                     if actual_direction == 'inbound' and sender_email_addr and not pref:
