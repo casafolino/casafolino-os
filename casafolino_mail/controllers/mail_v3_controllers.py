@@ -187,18 +187,22 @@ class MailV3Controller(http.Controller):
                     lead_name = m.lead_id.name or ''
                     break
 
-            # V12.6: Check if any message sender is pending decision
+            # V12.8: Check if ALL inbound senders in thread are dismissed
             has_pending_sender = False
-            thread_has_dismissed = False
+            all_inbound_dismissed = True
+            has_inbound = False
             for m in active_msgs:
                 se = (m.sender_email or '').lower().strip()
                 if se in pending_emails:
                     has_pending_sender = True
-                if se in dismissed_emails:
-                    thread_has_dismissed = True
+                direction = m.direction or m.direction_computed or 'inbound'
+                if direction == 'inbound' and se:
+                    has_inbound = True
+                    if se not in dismissed_emails:
+                        all_inbound_dismissed = False
 
-            # Skip threads where ALL senders are dismissed
-            if thread_has_dismissed and not has_pending_sender and not has_keep_message:
+            # Skip thread if ALL inbound senders are dismissed (regardless of message state)
+            if has_inbound and all_inbound_dismissed and not has_pending_sender:
                 continue
 
             result.append({
@@ -1499,18 +1503,38 @@ class MailV3Controller(http.Controller):
         if not email:
             return {'success': False, 'error': 'Email required'}
         user_accounts = self._get_user_account_ids()
-        pref = request.env['casafolino.mail.sender_preference'].search([
+        Preference = request.env['casafolino.mail.sender_preference']
+        # V12.8: Dismiss cross-account — find ALL preferences for this email
+        prefs = Preference.search([
             ('email', '=ilike', email),
             ('account_id', 'in', user_accounts),
-        ], limit=1)
-        if not pref:
+        ])
+        if not prefs:
             return {'success': False, 'error': 'Sender not found'}
-        # Count emails that will be deleted
+        # Count emails that will be deleted across all accounts
         pending_count = request.env['casafolino.mail.message'].search_count([
             ('sender_email', '=ilike', email),
             ('account_id', 'in', user_accounts),
         ])
-        undo_token = pref.action_dismiss()
+        # Dismiss all preferences, use token from the first one
+        undo_token = None
+        for pref in prefs:
+            token = pref.action_dismiss()
+            if not undo_token:
+                undo_token = token
+        # Create missing preferences for accounts that don't have one yet
+        existing_account_ids = set(prefs.mapped('account_id').ids)
+        for acc_id in user_accounts:
+            if acc_id not in existing_account_ids:
+                try:
+                    new_pref = Preference.sudo().create({
+                        'email': email,
+                        'account_id': acc_id,
+                        'status': 'pending',
+                    })
+                    new_pref.action_dismiss()
+                except Exception:
+                    pass  # UNIQUE constraint — already exists
         return {
             'success': True,
             'pending_deletion_count': pending_count,
@@ -1530,6 +1554,21 @@ class MailV3Controller(http.Controller):
         if not pref:
             return {'success': False, 'error': 'Invalid or expired token'}
         ok = pref.action_cancel_dismiss(token)
+        # V12.8: Also revert all sibling preferences for this email
+        if ok:
+            siblings = request.env['casafolino.mail.sender_preference'].search([
+                ('email', '=ilike', pref.email),
+                ('account_id', 'in', user_accounts),
+                ('status', '=', 'dismissed'),
+                ('id', '!=', pref.id),
+            ])
+            for sib in siblings:
+                sib.write({
+                    'status': 'pending',
+                    'undo_token': False,
+                    'decided_at': False,
+                    'decided_by_id': False,
+                })
         return {'success': ok}
 
     @http.route('/cf/mail/v3/sender_decision/defer', type='json', auth='user')

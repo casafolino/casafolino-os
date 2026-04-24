@@ -99,20 +99,30 @@ class CasafolinoMailSenderPreference(models.Model):
             self._trigger_imap_recovery(recover_days)
 
     def _cascade_delete_emails(self):
-        """Delete all emails from this sender in DB. Fast SQL."""
+        """Delete all emails from this sender across ALL dismissed accounts."""
         self.ensure_one()
         if self.status != 'dismissed':
             _logger.info("Cascade skip: %s no longer dismissed", self.email)
             return
+        # V12.8: Cross-account cascade — collect all dismissed account IDs for this sender
+        all_dismissed = self.search([
+            ('email', '=ilike', self.email),
+            ('status', '=', 'dismissed'),
+        ])
+        account_ids = all_dismissed.mapped('account_id').ids
+        if not account_ids:
+            account_ids = [self.account_id.id]
         cr = self.env.cr
         cr.execute("""
             DELETE FROM casafolino_mail_message
-            WHERE sender_email = %s AND account_id = %s
+            WHERE sender_email ILIKE %s AND account_id IN %s
             RETURNING id
-        """, (self.email, self.account_id.id))
+        """, (self.email, tuple(account_ids)))
         deleted_ids = cr.fetchall()
         count = len(deleted_ids)
-        self.write({'dismissed_email_count': count})
+        # Update count on all dismissed preferences
+        for pref in all_dismissed:
+            pref.write({'dismissed_email_count': count})
         _logger.info("Cascade delete: %d emails from %s", count, self.email)
         # Auto-disable this one-shot cron after execution
         cron = self.env['ir.cron'].sudo().search([
