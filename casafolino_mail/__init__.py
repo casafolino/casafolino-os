@@ -37,15 +37,23 @@ def _post_init_hook(env):
             pass
 
     # ── 2. Crea/aggiorna unico cron V2 (intervallo 5 min) ──
+    # NOTE: In Odoo 18 cron_name is a related field from ir.actions.server.name,
+    # so we search with ilike to match both legacy and current naming.
     model = env.ref('casafolino_mail.model_casafolino_mail_account')
-    existing_cron = Cron.search([('cron_name', '=', 'CasaFolino: Mail Sync V2')], limit=1)
-    if existing_cron:
-        if existing_cron.interval_number != 5 or existing_cron.interval_type != 'minutes':
-            existing_cron.write({
-                'interval_number': 5,
-                'interval_type': 'minutes',
-            })
-            _logger.info("[casafolino_mail] Cron 82 interval updated to 5 minutes")
+    all_sync_crons = Cron.search([('cron_name', 'ilike', 'Mail Sync V2')])
+    if all_sync_crons:
+        # Keep first (oldest), delete duplicates
+        keep = all_sync_crons[0]
+        dupes = all_sync_crons - keep
+        if dupes:
+            _logger.info(
+                "[casafolino_mail] Removing %d duplicate Mail Sync V2 crons: %s",
+                len(dupes), dupes.ids,
+            )
+            dupes.unlink()
+        if keep.interval_number != 5 or keep.interval_type != 'minutes':
+            keep.write({'interval_number': 5, 'interval_type': 'minutes'})
+            _logger.info("[casafolino_mail] Cron %d interval updated to 5 minutes", keep.id)
     else:
         server_action = env['ir.actions.server'].create({
             'name': 'CasaFolino Mail Sync V2 - Action',
@@ -54,7 +62,7 @@ def _post_init_hook(env):
             'code': 'model._cron_fetch_all_accounts()',
         })
         Cron.create({
-            'cron_name': 'CasaFolino: Mail Sync V2',
+            'cron_name': 'CasaFolino Mail Sync V2 - Action',
             'ir_actions_server_id': server_action.id,
             'interval_number': 5,
             'interval_type': 'minutes',
@@ -111,8 +119,18 @@ def _post_init_hook(env):
             },
         ])
 
-    # ── 4. Cron Silent Partners Alert ──
-    if not Cron.search([('cron_name', '=', 'CasaFolino: Silent Partners Alert')]):
+    # ── 4. Cron Silent Partners Alert (dedup + idempotent) ──
+    all_silent_crons = Cron.search([('cron_name', 'ilike', 'Silent Partners')])
+    if all_silent_crons:
+        keep_silent = all_silent_crons[0]
+        dupes_silent = all_silent_crons - keep_silent
+        if dupes_silent:
+            _logger.info(
+                "[casafolino_mail] Removing %d duplicate Silent Partners crons: %s",
+                len(dupes_silent), dupes_silent.ids,
+            )
+            dupes_silent.unlink()
+    else:
         server_action_silent = env['ir.actions.server'].create({
             'name': 'CasaFolino Silent Partners - Action',
             'model_id': model.id,
@@ -122,7 +140,7 @@ def _post_init_hook(env):
         tomorrow_7am = fields.Datetime.now().replace(
             hour=7, minute=0, second=0) + timedelta(days=1)
         Cron.create({
-            'cron_name': 'CasaFolino: Silent Partners Alert',
+            'cron_name': 'CasaFolino Silent Partners - Action',
             'ir_actions_server_id': server_action_silent.id,
             'interval_number': 1,
             'interval_type': 'days',
