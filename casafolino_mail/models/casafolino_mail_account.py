@@ -198,26 +198,29 @@ class CasafolinoMailAccount(models.Model):
         return excluded
 
     def _fetch_folder(self, imap, folder_name, direction):
-        """Fetch V13: scarica header + preview in casafolino.mail.raw.
+        """Dispatcher: legacy (MESSAGE) o RAW in base a feature flag."""
+        use_raw = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.use_raw_pipeline', 'false'
+        ).lower() == 'true'
+        if use_raw:
+            return self._fetch_folder_raw(imap, folder_name, direction)
+        return self._fetch_folder_legacy(imap, folder_name, direction)
 
-        Nessun filtro, nessuna whitelist, nessuna classificazione.
-        Il cron triage processa i RAW separatamente.
-        """
-        Raw = self.env['casafolino.mail.raw']
+    def _fetch_folder_legacy(self, imap, folder_name, direction):
+        """Fetch legacy: whitelist CRM-based, scrive in casafolino.mail.message."""
+        Message = self.env['casafolino.mail.message']
 
         new_count = 0
         skip_count = 0
+        filtered_out = 0
 
-        # Carica mappa account UNA SOLA VOLTA per sync
         account_map = self._build_account_email_map()
 
-        # Seleziona la cartella (readonly)
         status, data = imap.select('"%s"' % folder_name, readonly=True)
         if status != 'OK':
             _logger.warning("Cannot select folder %s: %s", folder_name, data)
             return 0, 0, 0
 
-        # Costruisci criterio di ricerca — formato data IMAP: 01-Jan-2025
         if self.last_fetch_datetime:
             since_date = self.last_fetch_datetime.strftime('%d-%b-%Y')
         else:
@@ -232,7 +235,6 @@ class CasafolinoMailAccount(models.Model):
         uid_list = msg_ids[0].split()
         _logger.info("Folder %s: %d email trovate dal %s", folder_name, len(uid_list), since_date)
 
-        # Processa in batch da 50
         batch_size = 50
         for i in range(0, len(uid_list), batch_size):
             batch = uid_list[i:i + batch_size]
@@ -240,7 +242,166 @@ class CasafolinoMailAccount(models.Model):
             for uid in batch:
                 uid_str = uid.decode()
 
-                # Scarica header + preview body (primi 500 byte)
+                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
+                if status2 != 'OK':
+                    continue
+
+                raw_header = None
+                for part in header_data:
+                    if isinstance(part, tuple):
+                        raw_header = part[1]
+                        break
+                if not raw_header:
+                    continue
+
+                msg = email.message_from_bytes(raw_header)
+
+                message_id = msg.get('Message-ID', '').strip()
+                if not message_id:
+                    message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
+
+                sender_name, sender_email_addr = parseaddr(msg.get('From', ''))
+                sender_name = self._decode_header_value(sender_name)
+                sender_email_addr = sender_email_addr.lower().strip() if sender_email_addr else ''
+
+                to_raw = msg.get('To', '')
+                cc_raw = msg.get('Cc', '')
+                recipient_emails = self._extract_emails(to_raw)
+                cc_emails = self._extract_emails(cc_raw)
+
+                resolved_account_id = self._resolve_account_id(
+                    sender_email_addr, recipient_emails, cc_emails, account_map)
+
+                existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
+                if existing:
+                    skip_count += 1
+                    continue
+
+                Preference = self.env['casafolino.mail.sender_preference']
+                pref = Preference.search([
+                    ('email', '=ilike', sender_email_addr),
+                    ('account_id', '=', resolved_account_id),
+                ], limit=1)
+                if pref and pref.status == 'dismissed':
+                    filtered_out += 1
+                    continue
+
+                actual_direction = direction
+                if direction == 'inbound' and sender_email_addr == self.email_address.lower():
+                    actual_direction = 'outbound'
+
+                partner_id = False
+                match_type = 'none'
+
+                if actual_direction == 'outbound':
+                    ext_email = self._get_external_email(sender_email_addr, recipient_emails)
+                    if ext_email and ext_email != sender_email_addr:
+                        allowed, pid, mt = self.is_sender_allowed(ext_email)
+                        if allowed:
+                            partner_id = pid
+                            match_type = mt
+                else:
+                    allowed, pid, mt = self.is_sender_allowed(sender_email_addr)
+                    if not allowed:
+                        filtered_out += 1
+                        continue
+                    partner_id = pid
+                    match_type = mt
+
+                subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
+
+                date_str = msg.get('Date', '')
+                try:
+                    email_date = parsedate_to_datetime(date_str)
+                    if email_date.tzinfo is not None:
+                        email_date = email_date.astimezone(timezone.utc).replace(tzinfo=None)
+                except Exception:
+                    email_date = fields.Datetime.now()
+
+                vals = {
+                    'account_id': resolved_account_id,
+                    'message_id_rfc': message_id,
+                    'imap_uid': uid_str,
+                    'imap_folder': folder_name,
+                    'direction': actual_direction,
+                    'sender_email': sender_email_addr,
+                    'sender_name': sender_name,
+                    'recipient_emails': recipient_emails,
+                    'cc_emails': cc_emails,
+                    'subject': subject,
+                    'email_date': email_date,
+                    'state': 'new',
+                    'partner_id': partner_id,
+                    'match_type': match_type,
+                    'fetch_state': 'pending',
+                }
+
+                try:
+                    Message.create(vals)
+                    new_count += 1
+
+                    if actual_direction == 'inbound' and sender_email_addr and not pref:
+                        try:
+                            Preference.sudo().create({
+                                'email': sender_email_addr.lower().strip(),
+                                'account_id': resolved_account_id,
+                                'status': 'pending',
+                            })
+                        except Exception:
+                            pass
+
+                except Exception as e:
+                    _logger.warning("Error creating mail message: %s", e)
+                    continue
+
+            self.env.cr.commit()
+            _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
+
+        _logger.info(
+            "[%s] %s: fetched %d, skipped-dedup %d, filtered-out %d",
+            self.email_address, folder_name, new_count, skip_count, filtered_out
+        )
+        return new_count, skip_count, filtered_out
+
+    def _fetch_folder_raw(self, imap, folder_name, direction):
+        """Fetch V13: scarica header + preview in casafolino.mail.raw.
+
+        Nessun filtro, nessuna whitelist, nessuna classificazione.
+        Il cron triage processa i RAW separatamente.
+        """
+        Raw = self.env['casafolino.mail.raw']
+
+        new_count = 0
+        skip_count = 0
+
+        account_map = self._build_account_email_map()
+
+        status, data = imap.select('"%s"' % folder_name, readonly=True)
+        if status != 'OK':
+            _logger.warning("Cannot select folder %s: %s", folder_name, data)
+            return 0, 0, 0
+
+        if self.last_fetch_datetime:
+            since_date = self.last_fetch_datetime.strftime('%d-%b-%Y')
+        else:
+            since_date = self.sync_start_date.strftime('%d-%b-%Y')
+
+        search_criteria = '(SINCE %s)' % since_date
+        status, msg_ids = imap.search(None, search_criteria)
+
+        if status != 'OK' or not msg_ids[0]:
+            return 0, 0, 0
+
+        uid_list = msg_ids[0].split()
+        _logger.info("Folder %s: %d email trovate dal %s", folder_name, len(uid_list), since_date)
+
+        batch_size = 50
+        for i in range(0, len(uid_list), batch_size):
+            batch = uid_list[i:i + batch_size]
+
+            for uid in batch:
+                uid_str = uid.decode()
+
                 status2, fetch_data = imap.fetch(
                     uid, '(BODY.PEEK[HEADER] BODY.PEEK[TEXT]<0.500>)')
                 if status2 != 'OK':
@@ -261,27 +422,22 @@ class CasafolinoMailAccount(models.Model):
 
                 msg = email.message_from_bytes(raw_header)
 
-                # Estrai Message-ID
                 message_id = msg.get('Message-ID', '').strip()
                 if not message_id:
                     message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
 
-                # Estrai mittente
                 sender_name, sender_email_addr = parseaddr(msg.get('From', ''))
                 sender_name = self._decode_header_value(sender_name)
                 sender_email_addr = sender_email_addr.lower().strip() if sender_email_addr else ''
 
-                # Estrai destinatari
                 to_raw = msg.get('To', '')
                 cc_raw = msg.get('Cc', '')
                 recipient_emails = self._extract_emails(to_raw)
                 cc_emails = self._extract_emails(cc_raw)
 
-                # Resolve account_id corretto
                 resolved_account_id = self._resolve_account_id(
                     sender_email_addr, recipient_emails, cc_emails, account_map)
 
-                # Deduplicazione: skip se message_id già in RAW o MESSAGE
                 existing_raw = Raw.search([
                     ('account_id', '=', resolved_account_id),
                     ('message_id', '=', message_id),
@@ -296,15 +452,12 @@ class CasafolinoMailAccount(models.Model):
                     skip_count += 1
                     continue
 
-                # Determina direction effettiva
                 actual_direction = direction
                 if direction == 'inbound' and sender_email_addr == self.email_address.lower():
                     actual_direction = 'outbound'
 
-                # Estrai oggetto
                 subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
 
-                # Estrai data — Odoo richiede datetime naive UTC
                 date_str = msg.get('Date', '')
                 try:
                     email_date = parsedate_to_datetime(date_str)
@@ -313,7 +466,6 @@ class CasafolinoMailAccount(models.Model):
                 except Exception:
                     email_date = fields.Datetime.now()
 
-                # Body preview
                 body_preview = ''
                 if raw_preview:
                     try:
@@ -321,14 +473,11 @@ class CasafolinoMailAccount(models.Model):
                     except Exception:
                         body_preview = ''
 
-                # Detect attachments from Content-Type header
                 content_type = msg.get('Content-Type', '')
                 has_attachments = 'multipart/mixed' in content_type.lower()
 
-                # Headers raw as text
                 headers_text = raw_header.decode('utf-8', errors='ignore')
 
-                # Crea record RAW
                 vals = {
                     'account_id': resolved_account_id,
                     'uid': uid_str,
@@ -354,7 +503,6 @@ class CasafolinoMailAccount(models.Model):
                     _logger.warning("Error creating RAW record: %s", e)
                     continue
 
-            # Committa ogni batch
             self.env.cr.commit()
             _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
 
