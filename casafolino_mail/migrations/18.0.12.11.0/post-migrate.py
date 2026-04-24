@@ -12,7 +12,7 @@ def migrate(cr, version):
     Cron = env['ir.cron'].sudo().with_context(active_test=False)
 
     # ── 1. Dedup Mail Sync V2 crons, update interval to 5 min ──
-    all_sync = Cron.search([('cron_name', 'ilike', 'Mail Sync V2')])
+    all_sync = Cron.search([('cron_name', 'ilike', 'CasaFolino%Mail Sync V2%')])
     if all_sync:
         keep = all_sync[0]
         dupes = all_sync - keep
@@ -30,11 +30,11 @@ def migrate(cr, version):
 
     # ── 2. Dedup all other CasaFolino crons ──
     dedup_patterns = [
-        'Silent Partners',
-        'AI Classify',
-        'Body Fetch Pending',
-        'Auto-Attach Email',
-        'Digest Mittenti',
+        'CasaFolino%Silent Partners%',
+        'CasaFolino%AI Classify%',
+        'CasaFolino%Body Fetch%',
+        'CasaFolino%Auto-Attach%',
+        'CasaFolino%Digest Mittenti%',
     ]
     for pattern in dedup_patterns:
         crons = Cron.search([('cron_name', 'ilike', pattern)])

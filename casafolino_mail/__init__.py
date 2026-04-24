@@ -40,7 +40,7 @@ def _post_init_hook(env):
     # NOTE: In Odoo 18 cron_name is a related field from ir.actions.server.name,
     # so we search with ilike to match both legacy and current naming.
     model = env.ref('casafolino_mail.model_casafolino_mail_account')
-    all_sync_crons = Cron.search([('cron_name', 'ilike', 'Mail Sync V2')])
+    all_sync_crons = Cron.search([('cron_name', 'ilike', 'CasaFolino%Mail Sync V2%')])
     if all_sync_crons:
         # Keep first (oldest), delete duplicates
         keep = all_sync_crons[0]
@@ -120,7 +120,7 @@ def _post_init_hook(env):
         ])
 
     # ── 4. Cron Silent Partners Alert (dedup + idempotent) ──
-    all_silent_crons = Cron.search([('cron_name', 'ilike', 'Silent Partners')])
+    all_silent_crons = Cron.search([('cron_name', 'ilike', 'CasaFolino%Silent Partners%')])
     if all_silent_crons:
         keep_silent = all_silent_crons[0]
         dupes_silent = all_silent_crons - keep_silent
