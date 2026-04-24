@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from odoo import fields
@@ -5,6 +6,8 @@ from odoo import fields
 from . import models
 from . import wizard
 from . import controllers
+
+_logger = logging.getLogger(__name__)
 
 
 def _post_init_hook(env):
@@ -33,9 +36,17 @@ def _post_init_hook(env):
         except Exception:
             pass
 
-    # ── 2. Crea unico cron V2 ──
+    # ── 2. Crea/aggiorna unico cron V2 (intervallo 5 min) ──
     model = env.ref('casafolino_mail.model_casafolino_mail_account')
-    if not Cron.search([('cron_name', '=', 'CasaFolino: Mail Sync V2')]):
+    existing_cron = Cron.search([('cron_name', '=', 'CasaFolino: Mail Sync V2')], limit=1)
+    if existing_cron:
+        if existing_cron.interval_number != 5 or existing_cron.interval_type != 'minutes':
+            existing_cron.write({
+                'interval_number': 5,
+                'interval_type': 'minutes',
+            })
+            _logger.info("[casafolino_mail] Cron 82 interval updated to 5 minutes")
+    else:
         server_action = env['ir.actions.server'].create({
             'name': 'CasaFolino Mail Sync V2 - Action',
             'model_id': model.id,
@@ -45,11 +56,32 @@ def _post_init_hook(env):
         Cron.create({
             'cron_name': 'CasaFolino: Mail Sync V2',
             'ir_actions_server_id': server_action.id,
-            'interval_number': 15,
+            'interval_number': 5,
             'interval_type': 'minutes',
             'active': True,
             'user_id': env.ref('base.user_admin').id,
         })
+
+    # ── 2b. Trigger fetch immediato post-install/update ──
+    _logger.info("[casafolino_mail] Post-init: triggering initial fetch")
+    try:
+        accounts = env['casafolino.mail.account'].sudo().search([
+            ('state', '=', 'connected'),
+        ])
+        for acc in accounts:
+            try:
+                acc._fetch_emails()
+            except Exception as e:
+                _logger.warning(
+                    "[casafolino_mail] Initial fetch failed for %s: %s",
+                    acc.name, e,
+                )
+        _logger.info(
+            "[casafolino_mail] Post-init fetch done: %d accounts processed",
+            len(accounts),
+        )
+    except Exception as e:
+        _logger.error("[casafolino_mail] Post-init fetch block error: %s", e)
 
     # ── 3. Seed sender_policy di esempio ──
     Policy = env['casafolino.mail.sender_policy'].sudo()
