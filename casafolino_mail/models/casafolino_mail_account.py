@@ -198,16 +198,15 @@ class CasafolinoMailAccount(models.Model):
         return excluded
 
     def _fetch_folder(self, imap, folder_name, direction):
-        """Fetch di una singola cartella IMAP — whitelist CRM-based (v11).
+        """Fetch V13: scarica header + preview in casafolino.mail.raw.
 
-        Solo email da mittenti riconosciuti nel CRM vengono scaricate.
-        Outbound (inviate) sempre scaricate.
+        Nessun filtro, nessuna whitelist, nessuna classificazione.
+        Il cron triage processa i RAW separatamente.
         """
-        Message = self.env['casafolino.mail.message']
+        Raw = self.env['casafolino.mail.raw']
 
         new_count = 0
         skip_count = 0
-        filtered_out = 0
 
         # Carica mappa account UNA SOLA VOLTA per sync
         account_map = self._build_account_email_map()
@@ -241,16 +240,22 @@ class CasafolinoMailAccount(models.Model):
             for uid in batch:
                 uid_str = uid.decode()
 
-                # Scarica solo header (no body)
-                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
+                # Scarica header + preview body (primi 500 byte)
+                status2, fetch_data = imap.fetch(
+                    uid, '(BODY.PEEK[HEADER] BODY.PEEK[TEXT]<0.500>)')
                 if status2 != 'OK':
                     continue
 
                 raw_header = None
-                for part in header_data:
+                raw_preview = None
+                for part in fetch_data:
                     if isinstance(part, tuple):
-                        raw_header = part[1]
-                        break
+                        desc = part[0].decode() if isinstance(part[0], bytes) else str(part[0])
+                        if 'HEADER' in desc.upper():
+                            raw_header = part[1]
+                        elif 'TEXT' in desc.upper():
+                            raw_preview = part[1]
+
                 if not raw_header:
                     continue
 
@@ -276,50 +281,25 @@ class CasafolinoMailAccount(models.Model):
                 resolved_account_id = self._resolve_account_id(
                     sender_email_addr, recipient_emails, cc_emails, account_map)
 
-                # Deduplicazione: skip se Message-ID già esiste
-                existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
-                if existing:
+                # Deduplicazione: skip se message_id già in RAW o MESSAGE
+                existing_raw = Raw.search([
+                    ('account_id', '=', resolved_account_id),
+                    ('message_id', '=', message_id),
+                ], limit=1)
+                if existing_raw:
                     skip_count += 1
                     continue
-
-                # ── V12.6: Skip dismissed senders ──
-                Preference = self.env['casafolino.mail.sender_preference']
-                pref = Preference.search([
-                    ('email', '=ilike', sender_email_addr),
-                    ('account_id', '=', resolved_account_id),
+                existing_msg = self.env['casafolino.mail.message'].search([
+                    ('message_id_rfc', '=', message_id),
                 ], limit=1)
-                if pref and pref.status == 'dismissed':
-                    filtered_out += 1
-                    _logger.info("Skipped dismissed sender: %s", sender_email_addr)
+                if existing_msg:
+                    skip_count += 1
                     continue
 
                 # Determina direction effettiva
                 actual_direction = direction
                 if direction == 'inbound' and sender_email_addr == self.email_address.lower():
                     actual_direction = 'outbound'
-
-                # ── WHITELIST FILTER (v11) ──
-                # Outbound: sempre scaricata, match partner dal destinatario
-                # Inbound: solo se mittente in CRM
-                partner_id = False
-                match_type = 'none'
-
-                if actual_direction == 'outbound':
-                    # Per outbound, match partner dal destinatario esterno
-                    ext_email = self._get_external_email(sender_email_addr, recipient_emails)
-                    if ext_email and ext_email != sender_email_addr:
-                        allowed, pid, mt = self.is_sender_allowed(ext_email)
-                        if allowed:
-                            partner_id = pid
-                            match_type = mt
-                else:
-                    # Inbound: whitelist check sul mittente
-                    allowed, pid, mt = self.is_sender_allowed(sender_email_addr)
-                    if not allowed:
-                        filtered_out += 1
-                        continue  # Skip — mittente fuori CRM
-                    partner_id = pid
-                    match_type = mt
 
                 # Estrai oggetto
                 subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
@@ -333,45 +313,45 @@ class CasafolinoMailAccount(models.Model):
                 except Exception:
                     email_date = fields.Datetime.now()
 
-                # Crea record staging — tutte le email ammesse partono come 'new'
+                # Body preview
+                body_preview = ''
+                if raw_preview:
+                    try:
+                        body_preview = raw_preview.decode('utf-8', errors='ignore')[:500]
+                    except Exception:
+                        body_preview = ''
+
+                # Detect attachments from Content-Type header
+                content_type = msg.get('Content-Type', '')
+                has_attachments = 'multipart/mixed' in content_type.lower()
+
+                # Headers raw as text
+                headers_text = raw_header.decode('utf-8', errors='ignore')
+
+                # Crea record RAW
                 vals = {
                     'account_id': resolved_account_id,
-                    'message_id_rfc': message_id,
-                    'imap_uid': uid_str,
-                    'imap_folder': folder_name,
-                    'direction': actual_direction,
+                    'uid': uid_str,
+                    'message_id': message_id,
+                    'subject': subject,
                     'sender_email': sender_email_addr,
                     'sender_name': sender_name,
                     'recipient_emails': recipient_emails,
                     'cc_emails': cc_emails,
-                    'subject': subject,
                     'email_date': email_date,
-                    'state': 'new',
-                    'partner_id': partner_id,
-                    'match_type': match_type,
-                    'fetch_state': 'pending',
+                    'body_preview': body_preview,
+                    'has_attachments': has_attachments,
+                    'headers_raw': headers_text,
+                    'imap_folder': folder_name,
+                    'direction': actual_direction,
+                    'triage_state': 'pending',
                 }
 
                 try:
-                    new_msg = Message.create(vals)
+                    Raw.create(vals)
                     new_count += 1
-
-                    # Scarica body subito (email ammessa dalla whitelist)
-                    # Body download deferred to cron 85 (Body Fetch Pending)
-
-                    # ── V12.6: Auto-create sender preference if new sender ──
-                    if actual_direction == 'inbound' and sender_email_addr and not pref:
-                        try:
-                            Preference.sudo().create({
-                                'email': sender_email_addr.lower().strip(),
-                                'account_id': resolved_account_id,
-                                'status': 'pending',
-                            })
-                        except Exception:
-                            pass  # ON CONFLICT — already exists
-
                 except Exception as e:
-                    _logger.warning("Error creating mail message: %s", e)
+                    _logger.warning("Error creating RAW record: %s", e)
                     continue
 
             # Committa ogni batch
@@ -379,10 +359,10 @@ class CasafolinoMailAccount(models.Model):
             _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
 
         _logger.info(
-            "[%s] %s: fetched %d, skipped-dedup %d, filtered-out %d",
-            self.email_address, folder_name, new_count, skip_count, filtered_out
+            "[%s] %s: raw fetched %d, skipped-dedup %d",
+            self.email_address, folder_name, new_count, skip_count
         )
-        return new_count, skip_count, filtered_out
+        return new_count, skip_count, 0
 
     # ── Helper methods ────────────────────────────────────────��───────
 
