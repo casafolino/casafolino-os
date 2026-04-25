@@ -85,20 +85,20 @@ def migrate(cr, version):
         '%cleanup_discarded%',
     ]
     for pattern in orphan_patterns:
-        # Delete cron entries
+        # Delete cron entries (code is jsonb in Odoo 18, cast to text)
         cr.execute("""
             DELETE FROM ir_cron
             WHERE id IN (
                 SELECT c.id FROM ir_cron c
                 JOIN ir_act_server s ON c.ir_actions_server_id = s.id
-                WHERE s.code ILIKE %s OR s.name ILIKE %s
+                WHERE s.code::text ILIKE %s OR s.name ILIKE %s
             )
         """, (pattern, pattern))
         deleted_crons = cr.rowcount
         # Delete orphan server actions
         cr.execute("""
             DELETE FROM ir_act_server
-            WHERE (code ILIKE %s OR name ILIKE %s)
+            WHERE (code::text ILIKE %s OR name ILIKE %s)
               AND id NOT IN (SELECT ir_actions_server_id FROM ir_cron WHERE ir_actions_server_id IS NOT NULL)
         """, (pattern, pattern))
         deleted_actions = cr.rowcount
