@@ -369,7 +369,7 @@ class CasafolinoMailAccount(models.Model):
         Nessun filtro, nessuna whitelist, nessuna classificazione.
         Il cron triage processa i RAW separatamente.
         """
-        Raw = self.env['casafolino.mail.raw']
+        Raw = self.env['casafolino.mail.raw'].sudo()
 
         new_count = 0
         skip_count = 0
