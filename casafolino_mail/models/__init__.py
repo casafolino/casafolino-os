@@ -25,3 +25,5 @@ from . import casafolino_partner_intelligence_feedback
 from . import res_users
 from . import casafolino_mail_sender_preference
 from . import casafolino_mail_raw
+from . import casafolino_mail_folder
+from . import casafolino_mail_folder_rule

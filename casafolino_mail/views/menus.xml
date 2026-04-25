@@ -53,6 +53,12 @@
         sequence="9"
         action="action_sender_decision_history"/>
 
+    <menuitem id="menu_casafolino_mail_folder_rules"
+        name="Regole Smistamento"
+        parent="menu_casafolino_mail_root"
+        sequence="10"
+        action="action_casafolino_mail_folder_rule"/>
+
     <menuitem id="menu_casafolino_mail_config"
         name="Configurazione"
         parent="menu_casafolino_mail_root"
@@ -70,4 +76,16 @@
         parent="menu_casafolino_mail_config"
         sequence="2"
         action="action_casafolino_mail_policy"/>
+
+    <menuitem id="menu_casafolino_mail_folders_admin"
+        name="Cartelle"
+        parent="menu_casafolino_mail_config"
+        sequence="3"
+        action="action_casafolino_mail_folder"/>
+
+    <menuitem id="menu_casafolino_mail_folder_rules_admin"
+        name="Regole Smistamento"
+        parent="menu_casafolino_mail_config"
+        sequence="4"
+        action="action_casafolino_mail_folder_rule"/>
 </odoo>

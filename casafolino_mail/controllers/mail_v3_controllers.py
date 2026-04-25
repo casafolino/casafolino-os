@@ -111,6 +111,17 @@ class MailV3Controller(http.Controller):
             domain = [d for d in domain if d[0] != 'is_archived']
             domain.append(('is_archived', '=', True))
 
+        # V14: Folder-based filtering (numeric folder_id)
+        folder_id = kw.get('folder_id')
+        if folder_id:
+            folder_id = int(folder_id)
+            folder_msgs = request.env['casafolino.mail.message'].search([
+                ('folder_id', '=', folder_id),
+                ('is_deleted', '=', False),
+            ])
+            folder_thread_ids = folder_msgs.mapped('thread_id').ids
+            domain.append(('id', 'in', folder_thread_ids))
+
         threads = request.env['casafolino.mail.thread'].search(
             domain, limit=limit, offset=offset,
             order='last_message_date desc, id desc')
@@ -2152,3 +2163,140 @@ class MailV3Controller(http.Controller):
                 thread.write({'partner_ids': [(4, partner.id)]})
 
         return {'success': True, 'partner_id': partner.id, 'message': 'Contatto creato'}
+
+    # ── V14: Folder endpoints ─────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/folders/list', type='json', auth='user')
+    def folders_list(self, **kw):
+        """Return folder tree for user's accounts."""
+        user_accounts = self._get_user_account_ids()
+        if not user_accounts:
+            return {'folders': []}
+
+        Folder = request.env['casafolino.mail.folder']
+        folders = Folder.search([
+            ('account_id', 'in', user_accounts),
+        ], order='account_id, sequence, id')
+
+        result = []
+        for f in folders:
+            result.append({
+                'id': f.id,
+                'name': f.name,
+                'account_id': f.account_id.id,
+                'account_name': f.account_id.name,
+                'icon': f.icon or '',
+                'color': f.color,
+                'sequence': f.sequence,
+                'is_system': f.is_system,
+                'system_code': f.system_code or '',
+                'parent_folder_id': f.parent_folder_id.id if f.parent_folder_id else False,
+                'folder_path': f.folder_path or f.name,
+                'message_count': f.message_count,
+                'unread_count': f.unread_count,
+            })
+
+        return {'folders': result}
+
+    @http.route('/cf/mail/v3/folder/create', type='json', auth='user', methods=['POST'])
+    def folder_create(self, **kw):
+        """Create a custom folder."""
+        name = (kw.get('name') or '').strip()
+        account_id = int(kw.get('account_id') or 0)
+        parent_folder_id = int(kw.get('parent_folder_id') or 0) or False
+        icon = kw.get('icon', '\U0001f4c1')
+        color = int(kw.get('color') or 0)
+
+        if not name or not account_id:
+            return {'success': False, 'message': 'Nome e account richiesti'}
+
+        user_accounts = self._get_user_account_ids()
+        if account_id not in user_accounts:
+            return {'success': False, 'message': 'Account non autorizzato'}
+
+        try:
+            folder = request.env['casafolino.mail.folder'].create({
+                'name': name,
+                'account_id': account_id,
+                'parent_folder_id': parent_folder_id,
+                'icon': icon,
+                'color': color,
+                'is_system': False,
+            })
+            return {'success': True, 'folder_id': folder.id}
+        except Exception as e:
+            return {'success': False, 'message': str(e)[:200]}
+
+    @http.route('/cf/mail/v3/folder/rename', type='json', auth='user', methods=['POST'])
+    def folder_rename(self, **kw):
+        """Rename a custom folder."""
+        folder_id = int(kw.get('folder_id') or 0)
+        name = (kw.get('name') or '').strip()
+
+        if not folder_id or not name:
+            return {'success': False, 'message': 'ID e nome richiesti'}
+
+        folder = request.env['casafolino.mail.folder'].browse(folder_id)
+        if not folder.exists():
+            return {'success': False, 'message': 'Cartella non trovata'}
+        if folder.account_id.id not in self._get_user_account_ids():
+            return {'success': False, 'message': 'Non autorizzato'}
+        if folder.is_system:
+            return {'success': False, 'message': 'Cartella di sistema non rinominabile'}
+
+        folder.write({'name': name})
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/folder/delete', type='json', auth='user', methods=['POST'])
+    def folder_delete(self, **kw):
+        """Delete a custom folder, moving messages to inbox."""
+        folder_id = int(kw.get('folder_id') or 0)
+
+        folder = request.env['casafolino.mail.folder'].browse(folder_id)
+        if not folder.exists():
+            return {'success': False, 'message': 'Cartella non trovata'}
+        if folder.account_id.id not in self._get_user_account_ids():
+            return {'success': False, 'message': 'Non autorizzato'}
+        if folder.is_system:
+            return {'success': False, 'message': 'Cartella di sistema non eliminabile'}
+
+        folder.action_delete_folder()
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/message/move_to_folder', type='json', auth='user', methods=['POST'])
+    def message_move_to_folder(self, **kw):
+        """Move a message to a different folder."""
+        message_id = int(kw.get('message_id') or 0)
+        folder_id = int(kw.get('folder_id') or 0)
+
+        msg = request.env['casafolino.mail.message'].browse(message_id)
+        if not msg.exists():
+            return {'success': False, 'message': 'Messaggio non trovato'}
+
+        folder = request.env['casafolino.mail.folder'].browse(folder_id)
+        if not folder.exists():
+            return {'success': False, 'message': 'Cartella non trovata'}
+        if folder.account_id.id not in self._get_user_account_ids():
+            return {'success': False, 'message': 'Non autorizzato'}
+
+        msg.write({'folder_id': folder_id})
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/thread/move_to_folder', type='json', auth='user', methods=['POST'])
+    def thread_move_to_folder(self, **kw):
+        """Move all messages of a thread to a folder."""
+        thread_id = int(kw.get('thread_id') or 0)
+        folder_id = int(kw.get('folder_id') or 0)
+
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not thread.exists() or not self._check_thread_ownership(thread):
+            return {'success': False, 'message': 'Thread non trovato'}
+
+        folder = request.env['casafolino.mail.folder'].browse(folder_id)
+        if not folder.exists():
+            return {'success': False, 'message': 'Cartella non trovata'}
+
+        thread.message_ids.filtered(lambda m: not m.is_deleted).write({
+            'folder_id': folder_id,
+        })
+        return {'success': True}

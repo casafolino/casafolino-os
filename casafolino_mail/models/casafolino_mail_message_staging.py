@@ -168,6 +168,11 @@ class CasafolinoMailMessage(models.Model):
        store=True, index=True)
     hotness_snapshot = fields.Char('Hotness snapshot')
 
+    # ── V14 Folder fields ─────────────────────────────────────────
+    folder_id = fields.Many2one(
+        'casafolino.mail.folder', string='Cartella',
+        ondelete='set null', index=True)
+
     _SUBJECT_PREFIX_RE = re.compile(
         r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
         re.IGNORECASE,

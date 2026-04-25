@@ -48,6 +48,16 @@ class CasafolinoMailAccount(models.Model):
     signature_html = fields.Html('Firma Email',
         help='Firma HTML inserita automaticamente nelle email')
 
+    # ── CRUD overrides ─────────────────────────────────────────────
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        Folder = self.env['casafolino.mail.folder']
+        for account in records:
+            Folder._create_system_folders(account.id)
+        return records
+
     # ── Connection helpers ────────────────────────────────────────────
 
     def _get_imap_connection(self):

@@ -13,10 +13,11 @@ import { ReplyAssistant } from "./mail_v3_reply_assistant";
 import { ComposeWizard } from "./mail_v3_compose";
 import { SenderDecisionPopup } from "./mail_v3_sender_decision_popup";
 import { DismissedSenders } from "./mail_v3_dismissed_senders";
+import { FolderSidebar } from "./mail_v3_folder_sidebar";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
-    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard, SenderDecisionPopup, DismissedSenders };
+    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard, SenderDecisionPopup, DismissedSenders, FolderSidebar };
     static props = ["*"];
 
     setup() {
@@ -88,6 +89,9 @@ export class MailV3Client extends Component {
             dismissUndoCountdown: 10,
             // V12.6: Dismissed senders folder
             dismissedSendersVisible: false,
+            // V14: Folder sidebar
+            selectedFolderId: null,
+            folderSidebarVisible: true,
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
@@ -148,14 +152,18 @@ export class MailV3Client extends Component {
         this.state.hasMoreThreads = false;
         try {
             const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
-            const res = await rpc('/cf/mail/v3/threads/list', {
+            const params = {
                 account_ids: this.state.selectedAccountIds,
                 state: 'keep',
                 limit: 50,
                 offset: 0,
                 filters: {},
                 folder: folder,
-            });
+            };
+            if (this.state.selectedFolderId) {
+                params.folder_id = this.state.selectedFolderId;
+            }
+            const res = await rpc('/cf/mail/v3/threads/list', params);
             this.state.threads = res.threads || [];
             this.state.totalThreads = res.total || 0;
             this.state.hasMoreThreads = res.has_more || false;
@@ -172,14 +180,18 @@ export class MailV3Client extends Component {
         this.state.loading.threadsMore = true;
         try {
             const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
-            const res = await rpc('/cf/mail/v3/threads/list', {
+            const moreParams = {
                 account_ids: this.state.selectedAccountIds,
                 state: 'keep',
                 limit: 50,
                 offset: this.state.threadsOffset,
                 filters: {},
                 folder: folder,
-            });
+            };
+            if (this.state.selectedFolderId) {
+                moreParams.folder_id = this.state.selectedFolderId;
+            }
+            const res = await rpc('/cf/mail/v3/threads/list', moreParams);
             const newThreads = res.threads || [];
             this.state.threads = [...this.state.threads, ...newThreads];
             this.state.totalThreads = res.total || this.state.totalThreads;
@@ -262,6 +274,7 @@ export class MailV3Client extends Component {
 
     onFolderChange(folder) {
         this.state.activeFolder = folder;
+        this.state.selectedFolderId = null;
         this.state.dismissedSendersVisible = false;
         if (folder === 'scheduled') {
             this._loadScheduled();
@@ -270,6 +283,24 @@ export class MailV3Client extends Component {
         } else {
             this.loadThreads();
         }
+    }
+
+    // V14: Folder sidebar callbacks
+    onFolderSelect(folderId, accountId) {
+        this.state.selectedFolderId = folderId;
+        if (folderId) {
+            // When selecting a folder, switch to that account too
+            if (accountId) {
+                this.state.selectedAccountIds = [accountId];
+            }
+            this.state.activeFolder = 'inbox';
+            this.state.dismissedSendersVisible = false;
+        }
+        this.loadThreads();
+    }
+
+    onOpenRules() {
+        this.actionService.doAction('casafolino_mail.action_casafolino_mail_folder_rule');
     }
 
     async _loadScheduled() {

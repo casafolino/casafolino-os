@@ -39,3 +39,7 @@ access_casafolino_mail_sender_preference_user,casafolino.mail.sender_preference 
 access_casafolino_mail_sender_preference_admin,casafolino.mail.sender_preference admin,model_casafolino_mail_sender_preference,base.group_system,1,1,1,1
 access_casafolino_mail_raw_user,casafolino.mail.raw user,model_casafolino_mail_raw,base.group_user,1,0,0,0
 access_casafolino_mail_raw_admin,casafolino.mail.raw admin,model_casafolino_mail_raw,base.group_system,1,1,1,1
+access_casafolino_mail_folder_user,casafolino.mail.folder user,model_casafolino_mail_folder,base.group_user,1,1,1,0
+access_casafolino_mail_folder_admin,casafolino.mail.folder admin,model_casafolino_mail_folder,base.group_system,1,1,1,1
+access_casafolino_mail_folder_rule_user,casafolino.mail.folder.rule user,model_casafolino_mail_folder_rule,base.group_user,1,1,1,0
+access_casafolino_mail_folder_rule_admin,casafolino.mail.folder.rule admin,model_casafolino_mail_folder_rule,base.group_system,1,1,1,1

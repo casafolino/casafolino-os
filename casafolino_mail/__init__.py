@@ -131,6 +131,12 @@ def _post_init_hook(env):
             'user_id': env.ref('base.user_admin').id,
         })
 
+    # ── 4b. Create system folders for all accounts ──
+    Folder = env['casafolino.mail.folder'].sudo()
+    all_accounts = env['casafolino.mail.account'].sudo().search([])
+    for acct in all_accounts:
+        Folder._create_system_folders(acct.id)
+
     # ── 5. Config parameter: silent_days_threshold ──
     IrConfig = env['ir.config_parameter'].sudo()
     if not IrConfig.get_param('casafolino_mail.silent_days_threshold'):

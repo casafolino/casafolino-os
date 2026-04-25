@@ -27,6 +27,15 @@ $mv3-line-height: 1.45;
     background: #FAFAF8;
 }
 
+// V14: Folder sidebar
+.mv3-client__folder-sidebar {
+    width: 220px;
+    flex: 0 0 220px;
+    border-right: 1px solid $mv3-border;
+    background: #FAFAF8;
+    overflow-y: auto;
+}
+
 .mv3-client__thread-list {
     width: 420px;
     flex: 0 0 420px;
@@ -2369,6 +2378,279 @@ $mv3-line-height: 1.45;
             background: #f0f0f0;
             border: 1px solid #ddd;
             border-radius: 3px;
+        }
+    }
+}
+
+// ── V14: Folder Sidebar ─────────────────────────────────────────
+
+.mv3-folder-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-size: 13px;
+
+    &__header {
+        padding: 12px 14px 8px;
+        border-bottom: 1px solid $mv3-border;
+    }
+
+    &__title {
+        font-weight: 600;
+        font-size: 13px;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    &__content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px 0;
+    }
+
+    &__account-header {
+        padding: 10px 14px 4px;
+        font-weight: 600;
+        font-size: 12px;
+        color: $mv3-primary;
+    }
+
+    &__separator {
+        padding: 8px 14px 2px;
+        font-size: 10px;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-top: 1px solid $mv3-border;
+        margin-top: 4px;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        padding: 5px 14px;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.15s;
+
+        &:hover {
+            background: rgba($mv3-primary, 0.06);
+        }
+
+        &--active {
+            background: rgba($mv3-primary, 0.12);
+            font-weight: 600;
+        }
+
+        &--all {
+            margin-bottom: 4px;
+            border-bottom: 1px solid $mv3-border;
+            padding-bottom: 8px;
+        }
+    }
+
+    &__icon {
+        width: 22px;
+        text-align: center;
+        margin-right: 8px;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    &__name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__badge {
+        background: $mv3-primary;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 10px;
+        margin-left: 6px;
+        flex-shrink: 0;
+    }
+
+    &__add-btn {
+        padding: 6px 14px;
+        color: $mv3-primary;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 2px;
+
+        &:hover {
+            background: rgba($mv3-primary, 0.06);
+        }
+
+        i {
+            margin-right: 6px;
+        }
+    }
+
+    &__create-input-row {
+        display: flex;
+        align-items: center;
+        padding: 4px 14px;
+        gap: 6px;
+    }
+
+    &__create-input,
+    &__rename-input {
+        flex: 1;
+        border: 1px solid $mv3-border;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 12px;
+        outline: none;
+
+        &:focus {
+            border-color: $mv3-primary;
+        }
+    }
+
+    &__create-cancel {
+        cursor: pointer;
+        color: #999;
+        font-size: 14px;
+
+        &:hover {
+            color: #333;
+        }
+    }
+
+    &__context-menu {
+        position: absolute;
+        right: 8px;
+        top: 100%;
+        background: #fff;
+        border: 1px solid $mv3-border;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        z-index: 100;
+        min-width: 140px;
+    }
+
+    &__context-item {
+        padding: 7px 12px;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        &:hover {
+            background: #f5f5f5;
+        }
+
+        &--danger {
+            color: #e74c3c;
+        }
+
+        &:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+
+        &:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+    }
+
+    &__footer {
+        border-top: 1px solid $mv3-border;
+        padding: 8px 14px;
+    }
+
+    &__rules-btn {
+        cursor: pointer;
+        font-size: 12px;
+        color: #777;
+        padding: 4px 0;
+
+        &:hover {
+            color: $mv3-primary;
+        }
+    }
+}
+
+// Dark mode support for folder sidebar
+[data-theme="dark"] {
+    .mv3-client__folder-sidebar {
+        background: #1a1a2e;
+    }
+
+    .mv3-folder-sidebar {
+        &__header {
+            border-color: #333;
+        }
+
+        &__title {
+            color: #aaa;
+        }
+
+        &__account-header {
+            color: lighten($mv3-primary, 20%);
+        }
+
+        &__separator {
+            color: #666;
+            border-color: #333;
+        }
+
+        &__item {
+            &:hover {
+                background: rgba(#fff, 0.05);
+            }
+
+            &--active {
+                background: rgba($mv3-primary, 0.2);
+            }
+
+            &--all {
+                border-color: #333;
+            }
+        }
+
+        &__badge {
+            background: lighten($mv3-primary, 10%);
+        }
+
+        &__add-btn {
+            color: lighten($mv3-primary, 15%);
+
+            &:hover {
+                background: rgba(#fff, 0.05);
+            }
+        }
+
+        &__create-input,
+        &__rename-input {
+            background: #2a2a3e;
+            border-color: #444;
+            color: #eee;
+        }
+
+        &__context-menu {
+            background: #2a2a3e;
+            border-color: #444;
+        }
+
+        &__context-item {
+            &:hover {
+                background: #333;
+            }
+        }
+
+        &__footer {
+            border-color: #333;
+        }
+
+        &__rules-btn {
+            color: #888;
         }
     }
 }

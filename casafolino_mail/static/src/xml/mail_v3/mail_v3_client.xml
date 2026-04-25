@@ -13,6 +13,14 @@
           onOpenSettings.bind="openSettings"/>
       </div>
 
+      <!-- V14: Folder Sidebar -->
+      <div class="mv3-client__folder-sidebar" t-if="state.folderSidebarVisible">
+        <FolderSidebar
+          selectedAccountIds="state.selectedAccountIds"
+          onFolderSelect.bind="onFolderSelect"
+          onOpenRules.bind="onOpenRules"/>
+      </div>
+
       <!-- Thread List with search -->
       <div class="mv3-client__thread-list">
         <div class="mv3-search">

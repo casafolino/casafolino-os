@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.13.0.0',
-    'summary': 'Pipeline fetch RAW → classificazione → MESSAGE per CasaFolino',
+    'version': '18.0.14.0.0',
+    'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': ['base', 'mail', 'web', 'utm', 'crm', 'casafolino_crm_export'],
@@ -20,6 +20,7 @@
         'views/sender_decision_views.xml',
         'views/casafolino_mail_raw_views.xml',
         'views/create_lead_wizard_views.xml',
+        'views/casafolino_mail_folder_views.xml',
         'data/mail_v3_client_action.xml',
         'views/menus.xml',
         'data/snippet_seed.xml',
@@ -50,6 +51,7 @@
             'casafolino_mail/static/src/js/mail_v3/mail_v3_analytics.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_sender_decision_popup.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_dismissed_senders.js',
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_folder_sidebar.js',
             # V3 OWL components — XML templates
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_client.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_sidebar_left.xml',
@@ -62,6 +64,7 @@
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_analytics.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_sender_decision_popup.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_dismissed_senders.xml',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_folder_sidebar.xml',
         ],
     },
     'post_init_hook': '_post_init_hook',

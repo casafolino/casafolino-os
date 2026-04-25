@@ -455,12 +455,51 @@ class CasafolinoMailRaw(models.Model):
                 except Exception:
                     pass
 
+        # ── V14: Apply folder rules ──
+        self._assign_folder(new_msg, raw)
+
         raw.write({
             'triage_state': 'promoted',
             'triage_reason': reason,
             'triage_at': fields.Datetime.now(),
             'promoted_message_id': new_msg.id,
         })
+
+    # ── V14: Folder assignment ─────────────────────────────────────
+
+    def _assign_folder(self, message, raw):
+        """Apply folder rules to a promoted message. First match wins.
+        If no rule matches, assign to 'unsorted' folder."""
+        Folder = self.env['casafolino.mail.folder']
+        Rule = self.env['casafolino.mail.folder.rule']
+        account_id = raw.account_id.id
+
+        rules = Rule.search([
+            ('account_id', '=', account_id),
+            ('active', '=', True),
+        ], order='sequence asc, id asc')
+
+        msg_data = {
+            'sender_email': raw.sender_email,
+            'subject': raw.subject,
+            'has_attachments': raw.has_attachments,
+        }
+
+        for rule in rules:
+            if rule._matches_message(msg_data):
+                vals = {'folder_id': rule.folder_id.id}
+                if rule.mark_as_read:
+                    vals['is_read'] = True
+                message.write(vals)
+                return
+
+        # No rule matched → unsorted folder
+        unsorted = Folder.search([
+            ('account_id', '=', account_id),
+            ('system_code', '=', 'unsorted'),
+        ], limit=1)
+        if unsorted:
+            message.write({'folder_id': unsorted.id})
 
     # ── Cron: Cleanup RAW ───────────────────────────────────────────
 
