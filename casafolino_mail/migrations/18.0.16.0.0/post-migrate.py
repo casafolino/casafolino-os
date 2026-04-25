@@ -57,7 +57,7 @@ def migrate(cr, version):
     accounts = Account.search([])
     linked = 0
     for acc in accounts:
-        email = (acc.email or '').strip().lower()
+        email = (acc.email_address or '').strip().lower()
         target_login = ACCOUNT_USER_MAP.get(email)
         if not target_login:
             _logger.warning("V16 migration: no user mapping for account %s (id=%d)",
