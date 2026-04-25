@@ -45,25 +45,48 @@
           </div>
         </div>
 
-        <!-- Bulk actions toolbar -->
-        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-bulk-toolbar">
-          <span class="mv3-bulk-toolbar__count">
+        <!-- V15: Mass action toolbar -->
+        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-mass-toolbar">
+          <span class="mv3-mass-toolbar__count">
             <t t-out="state.selectedThreadIds.length"/> selezionati
           </span>
-          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('mark_read')" title="Letti">
-            <i class="fa fa-envelope-open-o"/>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massMarkRead" title="Segna come letti">
+            <i class="fa fa-envelope-open-o"/> Letti
           </button>
-          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('mark_unread')" title="Non letti">
-            <i class="fa fa-envelope"/>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massArchive" title="Archivia">
+            <i class="fa fa-archive"/> Archivia
           </button>
-          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('archive')" title="Archivia">
-            <i class="fa fa-archive"/>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massTrash" title="Cestina">
+            <i class="fa fa-trash"/> Cestina
           </button>
-          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('delete')" title="Elimina">
-            <i class="fa fa-trash"/>
+          <!-- Move to folder dropdown -->
+          <div class="mv3-mass-toolbar__dropdown">
+            <button class="mv3-mass-toolbar__btn" t-on-click="toggleMoveDropdown" title="Sposta in cartella">
+              <i class="fa fa-folder-o"/> Sposta in
+              <i class="fa fa-caret-down ms-1"/>
+            </button>
+            <div t-if="state.moveDropdownVisible" class="mv3-mass-toolbar__dropdown-menu">
+              <t t-if="state.moveFolders and state.moveFolders.length > 0">
+                <t t-foreach="state.moveFolders" t-as="mf" t-key="mf.id">
+                  <button class="mv3-mass-toolbar__dropdown-item"
+                          t-on-click="() => this.massMove(mf.id, mf.name)">
+                    <span t-out="mf.icon"/> <t t-out="mf.name"/>
+                    <span t-if="mf.account_name" class="text-muted ms-1 small">(<t t-out="mf.account_name"/>)</span>
+                  </button>
+                </t>
+              </t>
+              <div t-else="" class="mv3-mass-toolbar__dropdown-empty">Nessuna cartella</div>
+            </div>
+          </div>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massDismissSenders" title="Dismetti mittenti">
+            <i class="fa fa-ban"/> Dismetti
           </button>
-          <button class="mv3-bulk-toolbar__btn" t-on-click="openBulkSnooze" title="Snooze">💤</button>
-          <button class="mv3-bulk-toolbar__btn" t-on-click="clearBulkSelection" title="Deseleziona">
+          <!-- Permanent delete only in trash -->
+          <button t-if="state.isTrashView" class="mv3-mass-toolbar__btn mv3-mass-toolbar__btn--danger"
+                  t-on-click="massPermanentDelete" title="Elimina definitivamente">
+            <i class="fa fa-times-circle"/> Elimina definitivamente
+          </button>
+          <button class="mv3-mass-toolbar__btn mv3-mass-toolbar__btn--close" t-on-click="clearBulkSelection" title="Deseleziona">
             <i class="fa fa-times"/>
           </button>
         </div>
@@ -97,8 +120,10 @@
             selectedThreadId="state.selectedThreadId"
             selectedThreadIds="state.selectedThreadIds"
             bulkMode="state.bulkMode"
+            allSelected="state.allSelected"
             onSelect.bind="selectThread"
             onToggleSelect.bind="toggleThreadSelect"
+            onSelectAll.bind="toggleSelectAll"
             onLoadMore.bind="loadMoreThreads"/>
         </div>
       </div>
@@ -219,6 +244,29 @@
         <button class="mv3-dismiss-undo-toast__btn" t-on-click="cancelDismiss">
           Annulla (<t t-out="state.dismissUndoCountdown"/>s)
         </button>
+      </div>
+
+      <!-- V15: Mass Action Undo Toast -->
+      <div t-if="state.massUndoToast" class="mv3-mass-undo-toast">
+        <span t-out="state.massUndoMessage"/>
+        <button class="mv3-mass-undo-toast__btn" t-on-click="massUndoAction">
+          Annulla (<t t-out="state.massUndoCountdown"/>s)
+        </button>
+      </div>
+
+      <!-- V15: Permanent Delete Confirm -->
+      <div t-if="state.permanentDeleteConfirm" class="mv3-modal-overlay" t-on-click="cancelPermanentDelete">
+        <div class="mv3-confirm-dialog" t-on-click.stop="">
+          <div class="mv3-confirm-dialog__body">
+            <i class="fa fa-exclamation-triangle text-danger me-2"/>
+            Sei sicuro? Questa azione è <strong>irreversibile</strong>.<br/>
+            <t t-out="state.selectedThreadIds.length"/> conversazioni verranno eliminate definitivamente.
+          </div>
+          <div class="mv3-confirm-dialog__footer">
+            <button class="btn btn-sm btn-secondary" t-on-click="cancelPermanentDelete">Annulla</button>
+            <button class="btn btn-sm btn-danger" t-on-click="confirmPermanentDelete">Elimina definitivamente</button>
+          </div>
+        </div>
       </div>
 
       <!-- V12.6: Dismissed Senders Panel -->

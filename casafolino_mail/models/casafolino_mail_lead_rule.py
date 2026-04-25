@@ -244,16 +244,3 @@ class CasafolinoMailLeadRule(models.Model):
                     discard_ids.extend(partners.ids)
 
         return list(set(ignored_ids + discard_ids))
-
-    @api.model
-    def _cron_auto_link_leads(self):
-        """Cron 94: run all active lead rules."""
-        rules = self.search([('active', '=', True)])
-        total = 0
-        for rule in rules:
-            try:
-                total += rule._run_rule()
-            except Exception as e:
-                _logger.error("[lead rule] Error in rule '%s': %s", rule.name, e)
-        if total:
-            _logger.info("[lead rule] Cron total: %d leads created", total)

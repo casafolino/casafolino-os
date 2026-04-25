@@ -92,6 +92,16 @@ export class MailV3Client extends Component {
             // V14: Folder sidebar
             selectedFolderId: null,
             folderSidebarVisible: true,
+            // V15: Mass actions
+            allSelected: false,
+            moveDropdownVisible: false,
+            moveFolders: [],
+            massUndoToast: false,
+            massUndoToken: '',
+            massUndoMessage: '',
+            massUndoCountdown: 10,
+            isTrashView: false,
+            permanentDeleteConfirm: false,
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
@@ -99,6 +109,8 @@ export class MailV3Client extends Component {
         this._undoCountdownTimer = null;
         this._dismissUndoTimer = null;
         this._dismissUndoCountdownTimer = null;
+        this._massUndoTimer = null;
+        this._massUndoCountdownTimer = null;
 
         onWillStart(async () => {
             await this.loadAccounts();
@@ -276,6 +288,8 @@ export class MailV3Client extends Component {
         this.state.activeFolder = folder;
         this.state.selectedFolderId = null;
         this.state.dismissedSendersVisible = false;
+        this.state.isTrashView = (folder === 'trash');
+        this.clearBulkSelection();
         if (folder === 'scheduled') {
             this._loadScheduled();
         } else if (folder === 'dismissed') {
@@ -288,6 +302,7 @@ export class MailV3Client extends Component {
     // V14: Folder sidebar callbacks
     onFolderSelect(folderId, accountId) {
         this.state.selectedFolderId = folderId;
+        this.clearBulkSelection();
         if (folderId) {
             // When selecting a folder, switch to that account too
             if (accountId) {
@@ -295,8 +310,22 @@ export class MailV3Client extends Component {
             }
             this.state.activeFolder = 'inbox';
             this.state.dismissedSendersVisible = false;
+            // Detect if selected folder is trash (for permanent delete button)
+            this._detectTrashFolder(folderId);
+        } else {
+            this.state.isTrashView = false;
         }
         this.loadThreads();
+    }
+
+    async _detectTrashFolder(folderId) {
+        try {
+            const folders = await rpc('/cf/mail/v3/folders/list');
+            const folder = (folders.folders || []).find(f => f.id === folderId);
+            this.state.isTrashView = folder && folder.system_code === 'trash';
+        } catch (e) {
+            this.state.isTrashView = false;
+        }
     }
 
     onOpenRules() {
@@ -642,7 +671,7 @@ export class MailV3Client extends Component {
         }
     }
 
-    // ── Bulk Actions ────────────────────────────────────────────
+    // ── Bulk Selection ─────────────────────────────────────────
 
     toggleThreadSelect(threadId) {
         const ids = this.state.selectedThreadIds || [];
@@ -654,24 +683,196 @@ export class MailV3Client extends Component {
         }
         this.state.selectedThreadIds = [...ids];
         this.state.bulkMode = ids.length > 0;
+        this.state.allSelected = ids.length > 0 && ids.length === (this.state.threads || []).length;
+    }
+
+    toggleSelectAll() {
+        const threads = this.state.threads || [];
+        if (this.state.allSelected) {
+            this.state.selectedThreadIds = [];
+            this.state.allSelected = false;
+            this.state.bulkMode = false;
+        } else {
+            this.state.selectedThreadIds = threads.map(t => t.id);
+            this.state.allSelected = true;
+            this.state.bulkMode = true;
+        }
     }
 
     clearBulkSelection() {
         this.state.selectedThreadIds = [];
         this.state.bulkMode = false;
+        this.state.allSelected = false;
+        this.state.moveDropdownVisible = false;
     }
 
-    async bulkAction(action) {
+    // ── V15: Mass Actions ───────────────────────────────────────
+
+    async massMarkRead() {
         if (!this.state.selectedThreadIds.length) return;
         try {
-            await rpc('/cf/mail/v3/threads/bulk', {
-                action: action,
+            const res = await rpc('/cf/mail/v3/mass_action/mark_read', {
                 thread_ids: this.state.selectedThreadIds,
             });
-            this.clearBulkSelection();
+            if (res.success) {
+                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni segnate come lette');
+                this.clearBulkSelection();
+                await this.loadThreads();
+            }
+        } catch (e) {
+            console.error('[mail v3] mass mark_read error:', e);
+        }
+    }
+
+    async massArchive() {
+        if (!this.state.selectedThreadIds.length) return;
+        try {
+            const res = await rpc('/cf/mail/v3/mass_action/archive', {
+                thread_ids: this.state.selectedThreadIds,
+            });
+            if (res.success) {
+                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni archiviate');
+                this.clearBulkSelection();
+                await this.loadThreads();
+            }
+        } catch (e) {
+            console.error('[mail v3] mass archive error:', e);
+        }
+    }
+
+    async massTrash() {
+        if (!this.state.selectedThreadIds.length) return;
+        try {
+            const res = await rpc('/cf/mail/v3/mass_action/trash', {
+                thread_ids: this.state.selectedThreadIds,
+            });
+            if (res.success) {
+                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni cestinate');
+                this.clearBulkSelection();
+                await this.loadThreads();
+            }
+        } catch (e) {
+            console.error('[mail v3] mass trash error:', e);
+        }
+    }
+
+    async toggleMoveDropdown() {
+        if (this.state.moveDropdownVisible) {
+            this.state.moveDropdownVisible = false;
+            return;
+        }
+        try {
+            const res = await rpc('/cf/mail/v3/mass_action/folders_for_move', {
+                account_ids: this.state.selectedAccountIds || [],
+                exclude_folder_id: this.state.selectedFolderId || false,
+            });
+            this.state.moveFolders = res.folders || [];
+            this.state.moveDropdownVisible = true;
+        } catch (e) {
+            console.error('[mail v3] load move folders error:', e);
+        }
+    }
+
+    async massMove(folderId, folderName) {
+        if (!this.state.selectedThreadIds.length) return;
+        this.state.moveDropdownVisible = false;
+        try {
+            const res = await rpc('/cf/mail/v3/mass_action/move', {
+                thread_ids: this.state.selectedThreadIds,
+                folder_id: folderId,
+            });
+            if (res.success) {
+                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni spostate in ' + folderName);
+                this.clearBulkSelection();
+                await this.loadThreads();
+            }
+        } catch (e) {
+            console.error('[mail v3] mass move error:', e);
+        }
+    }
+
+    async massDismissSenders() {
+        if (!this.state.selectedThreadIds.length) return;
+        try {
+            const res = await rpc('/cf/mail/v3/mass_action/dismiss_senders', {
+                thread_ids: this.state.selectedThreadIds,
+            });
+            if (res.success) {
+                this._showMassUndoToast(res.undo_token, res.dismissed_count + ' mittenti dismessi');
+                this.clearBulkSelection();
+                await this.loadThreads();
+            }
+        } catch (e) {
+            console.error('[mail v3] mass dismiss error:', e);
+        }
+    }
+
+    massPermanentDelete() {
+        if (!this.state.selectedThreadIds.length) return;
+        this.state.permanentDeleteConfirm = true;
+    }
+
+    cancelPermanentDelete() {
+        this.state.permanentDeleteConfirm = false;
+    }
+
+    async confirmPermanentDelete() {
+        this.state.permanentDeleteConfirm = false;
+        try {
+            const res = await rpc('/cf/mail/v3/mass_action/permanent_delete', {
+                thread_ids: this.state.selectedThreadIds,
+            });
+            if (res.success) {
+                this.clearBulkSelection();
+                this.state.selectedThreadId = null;
+                this.state.messages = [];
+                await this.loadThreads();
+            }
+        } catch (e) {
+            console.error('[mail v3] mass permanent delete error:', e);
+        }
+    }
+
+    // ── V15: Mass Undo Toast ────────────────────────────────────
+
+    _showMassUndoToast(token, message) {
+        this.state.massUndoToast = true;
+        this.state.massUndoToken = token;
+        this.state.massUndoMessage = message;
+        this.state.massUndoCountdown = 10;
+
+        if (this._massUndoCountdownTimer) clearInterval(this._massUndoCountdownTimer);
+        if (this._massUndoTimer) clearTimeout(this._massUndoTimer);
+
+        this._massUndoCountdownTimer = setInterval(() => {
+            this.state.massUndoCountdown--;
+            if (this.state.massUndoCountdown <= 0) {
+                this._clearMassUndoToast();
+            }
+        }, 1000);
+
+        this._massUndoTimer = setTimeout(() => {
+            this._clearMassUndoToast();
+        }, 10500);
+    }
+
+    _clearMassUndoToast() {
+        this.state.massUndoToast = false;
+        this.state.massUndoToken = '';
+        if (this._massUndoTimer) { clearTimeout(this._massUndoTimer); this._massUndoTimer = null; }
+        if (this._massUndoCountdownTimer) { clearInterval(this._massUndoCountdownTimer); this._massUndoCountdownTimer = null; }
+    }
+
+    async massUndoAction() {
+        if (!this.state.massUndoToken) return;
+        try {
+            await rpc('/cf/mail/v3/mass_action/undo', {
+                token: this.state.massUndoToken,
+            });
+            this._clearMassUndoToast();
             await this.loadThreads();
         } catch (e) {
-            console.error('[mail v3] bulk action error:', e);
+            console.error('[mail v3] mass undo error:', e);
         }
     }
 

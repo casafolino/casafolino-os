@@ -255,16 +255,3 @@ class CasafolinoMailOutbox(models.Model):
         if sent or errors:
             _logger.info("[outbox] Cron: %d sent, %d errors", sent, errors)
 
-    @api.model
-    def _cron_cleanup_old_outbox(self):
-        """Remove sent items older than 30 days."""
-        from datetime import timedelta
-        cutoff = fields.Datetime.now() - timedelta(days=30)
-        old = self.search([
-            ('state', '=', 'sent'),
-            ('sent_at', '<', cutoff),
-        ])
-        count = len(old)
-        old.unlink()
-        if count:
-            _logger.info("[outbox] Cleaned up %d old sent items", count)

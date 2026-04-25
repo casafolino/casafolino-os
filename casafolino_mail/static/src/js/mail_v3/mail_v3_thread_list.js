@@ -44,6 +44,12 @@ export class ThreadList extends Component {
         }
     }
 
+    onSelectAll() {
+        if (this.props.onSelectAll) {
+            this.props.onSelectAll();
+        }
+    }
+
     isSelected(threadId) {
         const ids = this.props.selectedThreadIds || [];
         return ids.includes(threadId);

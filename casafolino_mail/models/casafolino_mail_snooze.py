@@ -1,7 +1,6 @@
 import logging
-from datetime import timedelta
 
-from odoo import models, fields, api
+from odoo import models, fields
 
 _logger = logging.getLogger(__name__)
 
@@ -25,63 +24,6 @@ class CasafolinoMailSnooze(models.Model):
     snoozed_at = fields.Datetime(string='Snoozed il', default=fields.Datetime.now)
     active = fields.Boolean(default=True, index=True)
     note = fields.Text(string='Nota privata')
-
-    @api.model
-    def _cron_check_snooze(self):
-        """Check snooze conditions every 15 minutes and wake threads."""
-        now = fields.Datetime.now()
-        woken = 0
-
-        # Type 1: until_date — NOW >= wake_at
-        date_snoozes = self.search([
-            ('active', '=', True),
-            ('snooze_type', '=', 'until_date'),
-            ('wake_at', '<=', now),
-        ])
-        for snooze in date_snoozes:
-            snooze._wake_thread()
-            woken += 1
-
-        # Type 2: until_reply — new inbound message in thread after snooze
-        reply_snoozes = self.search([
-            ('active', '=', True),
-            ('snooze_type', '=', 'until_reply'),
-        ])
-        for snooze in reply_snoozes:
-            new_inbound = self.env['casafolino.mail.message'].search([
-                ('thread_id', '=', snooze.thread_id.id),
-                ('direction', '=', 'inbound'),
-                ('email_date', '>', snooze.snoozed_at),
-                ('is_deleted', '=', False),
-            ], limit=1)
-            if new_inbound:
-                snooze._wake_thread()
-                woken += 1
-
-        # Type 3: if_no_reply_by — no inbound within deadline days
-        noreply_snoozes = self.search([
-            ('active', '=', True),
-            ('snooze_type', '=', 'if_no_reply_by'),
-        ])
-        for snooze in noreply_snoozes:
-            deadline = snooze.snoozed_at + timedelta(days=snooze.deadline_days)
-            if now >= deadline:
-                # Check if there was a reply
-                new_inbound = self.env['casafolino.mail.message'].search([
-                    ('thread_id', '=', snooze.thread_id.id),
-                    ('direction', '=', 'inbound'),
-                    ('email_date', '>', snooze.snoozed_at),
-                    ('is_deleted', '=', False),
-                ], limit=1)
-                if not new_inbound:
-                    snooze._wake_thread()
-                    woken += 1
-                else:
-                    # Got a reply, just deactivate silently
-                    snooze.write({'active': False})
-
-        if woken:
-            _logger.info('[mail v3] Snooze cron: woke %d threads', woken)
 
     def _wake_thread(self):
         """Wake a snoozed thread."""

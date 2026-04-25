@@ -95,6 +95,49 @@ class MailV3Controller(http.Controller):
         for pp in pending_prefs:
             pending_emails.add((pp.email or '').lower().strip())
 
+        # ── V15 FIX Bug B: Pre-filter dismissed threads in SQL domain ──
+        # Instead of post-filtering (which breaks pagination), exclude
+        # thread IDs where ALL inbound senders are dismissed upfront.
+        if dismissed_emails:
+            dismissed_list = list(dismissed_emails)
+            # Find threads where ALL inbound messages have dismissed senders
+            # (and none have pending senders)
+            request.env.cr.execute("""
+                SELECT DISTINCT m.thread_id
+                FROM casafolino_mail_message m
+                WHERE m.account_id IN %s
+                  AND m.is_deleted = false
+                  AND m.thread_id IS NOT NULL
+                  AND (m.direction = 'inbound' OR m.direction_computed = 'inbound')
+                  AND LOWER(TRIM(m.sender_email)) = ANY(%s)
+                  AND m.thread_id NOT IN (
+                      -- Exclude threads that have at least one non-dismissed inbound sender
+                      SELECT DISTINCT m2.thread_id
+                      FROM casafolino_mail_message m2
+                      WHERE m2.account_id IN %s
+                        AND m2.is_deleted = false
+                        AND m2.thread_id IS NOT NULL
+                        AND (m2.direction = 'inbound' OR m2.direction_computed = 'inbound')
+                        AND LOWER(TRIM(m2.sender_email)) NOT IN %s
+                  )
+                  AND m.thread_id NOT IN (
+                      -- Exclude threads that have pending senders
+                      SELECT DISTINCT m3.thread_id
+                      FROM casafolino_mail_message m3
+                      WHERE m3.account_id IN %s
+                        AND m3.is_deleted = false
+                        AND m3.thread_id IS NOT NULL
+                        AND LOWER(TRIM(m3.sender_email)) IN %s
+                  )
+            """, (
+                tuple(account_ids), dismissed_list,
+                tuple(account_ids), tuple(dismissed_list),
+                tuple(account_ids), tuple(pending_emails) if pending_emails else ('__none__',),
+            ))
+            dismissed_thread_ids = [r[0] for r in request.env.cr.fetchall()]
+            if dismissed_thread_ids:
+                domain.append(('id', 'not in', dismissed_thread_ids))
+
         # Folder filters
         if folder == 'starred':
             starred_msgs = request.env['casafolino.mail.message'].search([
@@ -198,23 +241,13 @@ class MailV3Controller(http.Controller):
                     lead_name = m.lead_id.name or ''
                     break
 
-            # V12.8: Check if ALL inbound senders in thread are dismissed
+            # V12.8: Check pending sender badge (dismissed filter moved to SQL pre-query in V15)
             has_pending_sender = False
-            all_inbound_dismissed = True
-            has_inbound = False
             for m in active_msgs:
                 se = (m.sender_email or '').lower().strip()
                 if se in pending_emails:
                     has_pending_sender = True
-                direction = m.direction or m.direction_computed or 'inbound'
-                if direction == 'inbound' and se:
-                    has_inbound = True
-                    if se not in dismissed_emails:
-                        all_inbound_dismissed = False
-
-            # Skip thread if ALL inbound senders are dismissed (regardless of message state)
-            if has_inbound and all_inbound_dismissed and not has_pending_sender:
-                continue
+                    break
 
             result.append({
                 'id': t.id,
@@ -2300,3 +2333,398 @@ class MailV3Controller(http.Controller):
             'folder_id': folder_id,
         })
         return {'success': True}
+
+    # ═══════════════════════════════════════════════════════════════
+    # V15: Mass Actions with Undo
+    # ═══════════════════════════════════════════════════════════════
+
+    def _validate_mass_threads(self, thread_ids):
+        """Validate thread_ids belong to current user. Returns filtered recordset."""
+        if not thread_ids:
+            return None
+        user_accounts = self._get_user_account_ids()
+        threads = request.env['casafolino.mail.thread'].browse(thread_ids).filtered(
+            lambda t: t.exists() and t.account_id.id in user_accounts
+        )
+        return threads if threads else None
+
+    @http.route('/cf/mail/v3/mass_action/move', type='json', auth='user', methods=['POST'])
+    def mass_action_move(self, **kw):
+        """Move threads to a folder with undo support."""
+        thread_ids = kw.get('thread_ids', [])
+        folder_id = int(kw.get('folder_id') or 0)
+
+        threads = self._validate_mass_threads(thread_ids)
+        if not threads:
+            return {'success': False, 'error': 'No valid threads'}
+
+        folder = request.env['casafolino.mail.folder'].browse(folder_id)
+        if not folder.exists():
+            return {'success': False, 'error': 'Folder not found'}
+
+        # Snapshot previous state for undo
+        previous_state = {}
+        for t in threads:
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            if msgs:
+                previous_state[str(t.id)] = {
+                    'folder_ids': {str(m.id): m.folder_id.id for m in msgs},
+                }
+
+        # Move all messages to target folder
+        for t in threads:
+            t.message_ids.filtered(lambda m: not m.is_deleted).write({
+                'folder_id': folder_id,
+            })
+
+        # Create undo log
+        MassLog = request.env['casafolino.mail.mass.action.log']
+        token = MassLog.create_log('move', thread_ids, previous_state)
+
+        return {
+            'success': True,
+            'processed': len(threads),
+            'undo_token': token,
+            'folder_name': folder.name,
+        }
+
+    @http.route('/cf/mail/v3/mass_action/archive', type='json', auth='user', methods=['POST'])
+    def mass_action_archive(self, **kw):
+        """Archive threads with undo support."""
+        thread_ids = kw.get('thread_ids', [])
+
+        threads = self._validate_mass_threads(thread_ids)
+        if not threads:
+            return {'success': False, 'error': 'No valid threads'}
+
+        # Snapshot previous state
+        previous_state = {}
+        archive_folder_cache = {}
+        for t in threads:
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            if msgs:
+                previous_state[str(t.id)] = {
+                    'folder_ids': {str(m.id): m.folder_id.id for m in msgs},
+                    'archived': {str(m.id): m.is_archived for m in msgs},
+                }
+
+        # Archive: set is_archived + move to archive folder
+        for t in threads:
+            account_id = t.account_id.id
+            if account_id not in archive_folder_cache:
+                af = request.env['casafolino.mail.folder'].search([
+                    ('account_id', '=', account_id),
+                    ('system_code', '=', 'archive'),
+                ], limit=1)
+                archive_folder_cache[account_id] = af.id if af else False
+
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            vals = {'is_archived': True}
+            if archive_folder_cache[account_id]:
+                vals['folder_id'] = archive_folder_cache[account_id]
+            msgs.write(vals)
+            t._recompute_aggregates()
+
+        MassLog = request.env['casafolino.mail.mass.action.log']
+        token = MassLog.create_log('archive', thread_ids, previous_state)
+
+        return {
+            'success': True,
+            'processed': len(threads),
+            'undo_token': token,
+        }
+
+    @http.route('/cf/mail/v3/mass_action/trash', type='json', auth='user', methods=['POST'])
+    def mass_action_trash(self, **kw):
+        """Move threads to trash with undo support."""
+        thread_ids = kw.get('thread_ids', [])
+
+        threads = self._validate_mass_threads(thread_ids)
+        if not threads:
+            return {'success': False, 'error': 'No valid threads'}
+
+        # Snapshot previous state
+        previous_state = {}
+        trash_folder_cache = {}
+        for t in threads:
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            if msgs:
+                previous_state[str(t.id)] = {
+                    'folder_ids': {str(m.id): m.folder_id.id for m in msgs},
+                    'deleted': {str(m.id): m.is_deleted for m in msgs},
+                    'deleted_at': {str(m.id): str(m.is_deleted_at) if m.is_deleted_at else False for m in msgs},
+                }
+
+        # Trash: set is_deleted + is_deleted_at + move to trash folder
+        now = fields.Datetime.now()
+        for t in threads:
+            account_id = t.account_id.id
+            if account_id not in trash_folder_cache:
+                tf = request.env['casafolino.mail.folder'].search([
+                    ('account_id', '=', account_id),
+                    ('system_code', '=', 'trash'),
+                ], limit=1)
+                trash_folder_cache[account_id] = tf.id if tf else False
+
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            vals = {
+                'is_deleted': True,
+                'is_deleted_at': now,
+            }
+            if trash_folder_cache[account_id]:
+                vals['folder_id'] = trash_folder_cache[account_id]
+            msgs.write(vals)
+            t._recompute_aggregates()
+
+        MassLog = request.env['casafolino.mail.mass.action.log']
+        token = MassLog.create_log('trash', thread_ids, previous_state)
+
+        return {
+            'success': True,
+            'processed': len(threads),
+            'undo_token': token,
+        }
+
+    @http.route('/cf/mail/v3/mass_action/mark_read', type='json', auth='user', methods=['POST'])
+    def mass_action_mark_read(self, **kw):
+        """Mark all messages in threads as read with undo support."""
+        thread_ids = kw.get('thread_ids', [])
+
+        threads = self._validate_mass_threads(thread_ids)
+        if not threads:
+            return {'success': False, 'error': 'No valid threads'}
+
+        # Snapshot previous read state
+        previous_state = {}
+        for t in threads:
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            if msgs:
+                previous_state[str(t.id)] = {
+                    'read': {str(m.id): m.is_read for m in msgs},
+                }
+
+        # Mark read
+        for t in threads:
+            msgs = t.message_ids.filtered(lambda m: not m.is_deleted and not m.is_read)
+            if msgs:
+                msgs.write({'is_read': True})
+
+        MassLog = request.env['casafolino.mail.mass.action.log']
+        token = MassLog.create_log('mark_read', thread_ids, previous_state)
+
+        return {
+            'success': True,
+            'processed': len(threads),
+            'undo_token': token,
+        }
+
+    @http.route('/cf/mail/v3/mass_action/dismiss_senders', type='json', auth='user', methods=['POST'])
+    def mass_action_dismiss_senders(self, **kw):
+        """Dismiss all inbound senders from selected threads."""
+        thread_ids = kw.get('thread_ids', [])
+
+        threads = self._validate_mass_threads(thread_ids)
+        if not threads:
+            return {'success': False, 'error': 'No valid threads'}
+
+        # Collect unique sender emails from inbound messages
+        sender_emails = set()
+        for t in threads:
+            for m in t.message_ids.filtered(lambda m: not m.is_deleted):
+                direction = m.direction or m.direction_computed or 'inbound'
+                if direction == 'inbound' and m.sender_email:
+                    sender_emails.add(m.sender_email.lower().strip())
+
+        if not sender_emails:
+            return {'success': False, 'error': 'No inbound senders found'}
+
+        # Snapshot previous preferences for undo
+        previous_state = {'dismissed_emails': []}
+        Preference = request.env['casafolino.mail.sender_preference']
+        user_accounts = self._get_user_account_ids()
+
+        for email_addr in sender_emails:
+            for account_id in user_accounts:
+                pref = Preference.search([
+                    ('account_id', '=', account_id),
+                    ('email', '=', email_addr),
+                ], limit=1)
+                if pref:
+                    if pref.status != 'dismissed':
+                        previous_state['dismissed_emails'].append({
+                            'email': email_addr,
+                            'account_id': account_id,
+                            'prev_status': pref.status,
+                            'pref_id': pref.id,
+                        })
+                        pref.write({
+                            'status': 'dismissed',
+                            'decided_at': fields.Datetime.now(),
+                        })
+                else:
+                    new_pref = Preference.create({
+                        'account_id': account_id,
+                        'email': email_addr,
+                        'status': 'dismissed',
+                        'decided_at': fields.Datetime.now(),
+                    })
+                    previous_state['dismissed_emails'].append({
+                        'email': email_addr,
+                        'account_id': account_id,
+                        'prev_status': None,
+                        'pref_id': new_pref.id,
+                    })
+
+        MassLog = request.env['casafolino.mail.mass.action.log']
+        token = MassLog.create_log('dismiss', thread_ids, previous_state)
+
+        return {
+            'success': True,
+            'processed': len(sender_emails),
+            'undo_token': token,
+            'dismissed_count': len(sender_emails),
+        }
+
+    @http.route('/cf/mail/v3/mass_action/permanent_delete', type='json', auth='user', methods=['POST'])
+    def mass_action_permanent_delete(self, **kw):
+        """Permanently delete threads (from trash only). No undo."""
+        thread_ids = kw.get('thread_ids', [])
+
+        threads = self._validate_mass_threads(thread_ids)
+        if not threads:
+            return {'success': False, 'error': 'No valid threads'}
+
+        deleted = 0
+        for t in threads:
+            # Only allow permanent delete for messages in trash
+            trash_msgs = t.message_ids.filtered(lambda m: m.is_deleted)
+            if trash_msgs:
+                trash_msgs.unlink()
+                deleted += len(trash_msgs)
+            # If thread has no messages left, delete thread too
+            if t.exists() and not t.message_ids:
+                t.unlink()
+
+        return {
+            'success': True,
+            'deleted': deleted,
+        }
+
+    @http.route('/cf/mail/v3/mass_action/undo', type='json', auth='user', methods=['POST'])
+    def mass_action_undo(self, **kw):
+        """Undo a mass action using the undo token."""
+        token = kw.get('token', '')
+        if not token:
+            return {'success': False, 'error': 'Token required'}
+
+        MassLog = request.env['casafolino.mail.mass.action.log']
+        log = MassLog.search([
+            ('token', '=', token),
+            ('user_id', '=', request.env.uid),
+            ('expires_at', '>', fields.Datetime.now()),
+        ], limit=1)
+
+        if not log:
+            return {'success': False, 'error': 'Token expired or not found'}
+
+        prev = log.get_previous_state()
+        action_type = log.action_type
+
+        if action_type == 'move':
+            # Restore folder_ids
+            for thread_id_str, state in prev.items():
+                folder_ids = state.get('folder_ids', {})
+                for msg_id_str, fid in folder_ids.items():
+                    msg = request.env['casafolino.mail.message'].browse(int(msg_id_str))
+                    if msg.exists():
+                        msg.write({'folder_id': fid or False})
+
+        elif action_type == 'archive':
+            for thread_id_str, state in prev.items():
+                folder_ids = state.get('folder_ids', {})
+                archived = state.get('archived', {})
+                for msg_id_str in folder_ids:
+                    msg = request.env['casafolino.mail.message'].browse(int(msg_id_str))
+                    if msg.exists():
+                        msg.write({
+                            'folder_id': folder_ids[msg_id_str] or False,
+                            'is_archived': archived.get(msg_id_str, False),
+                        })
+                thread = request.env['casafolino.mail.thread'].browse(int(thread_id_str))
+                if thread.exists():
+                    thread._recompute_aggregates()
+
+        elif action_type == 'trash':
+            for thread_id_str, state in prev.items():
+                folder_ids = state.get('folder_ids', {})
+                deleted = state.get('deleted', {})
+                deleted_at = state.get('deleted_at', {})
+                for msg_id_str in folder_ids:
+                    msg = request.env['casafolino.mail.message'].browse(int(msg_id_str))
+                    if msg.exists():
+                        dat = deleted_at.get(msg_id_str)
+                        msg.write({
+                            'folder_id': folder_ids[msg_id_str] or False,
+                            'is_deleted': deleted.get(msg_id_str, False),
+                            'is_deleted_at': dat if dat and dat != 'False' else False,
+                        })
+                thread = request.env['casafolino.mail.thread'].browse(int(thread_id_str))
+                if thread.exists():
+                    thread._recompute_aggregates()
+
+        elif action_type == 'mark_read':
+            for thread_id_str, state in prev.items():
+                read_state = state.get('read', {})
+                for msg_id_str, was_read in read_state.items():
+                    msg = request.env['casafolino.mail.message'].browse(int(msg_id_str))
+                    if msg.exists():
+                        msg.write({'is_read': was_read})
+
+        elif action_type == 'dismiss':
+            dismissed_emails = prev.get('dismissed_emails', [])
+            Preference = request.env['casafolino.mail.sender_preference']
+            for entry in dismissed_emails:
+                pref = Preference.browse(entry.get('pref_id'))
+                if pref.exists():
+                    if entry.get('prev_status') is None:
+                        pref.unlink()
+                    else:
+                        pref.write({
+                            'status': entry['prev_status'],
+                            'decided_at': fields.Datetime.now(),
+                        })
+
+        # Delete the log entry (one-time use)
+        log.unlink()
+
+        return {'success': True}
+
+    @http.route('/cf/mail/v3/mass_action/folders_for_move', type='json', auth='user')
+    def mass_action_folders_for_move(self, **kw):
+        """Get folders available for move, excluding current folder."""
+        account_ids = kw.get('account_ids', [])
+        exclude_folder_id = kw.get('exclude_folder_id')
+
+        if not account_ids:
+            account_ids = self._get_user_account_ids()
+
+        domain = [('account_id', 'in', account_ids)]
+        if exclude_folder_id:
+            domain.append(('id', '!=', int(exclude_folder_id)))
+
+        folders = request.env['casafolino.mail.folder'].search(
+            domain, order='is_system desc, sequence asc, name asc')
+
+        result = []
+        for f in folders:
+            result.append({
+                'id': f.id,
+                'name': f.name,
+                'icon': f.icon or '',
+                'is_system': f.is_system,
+                'system_code': f.system_code or '',
+                'account_id': f.account_id.id,
+                'account_name': f.account_id.name or '',
+            })
+
+        return {'folders': result}

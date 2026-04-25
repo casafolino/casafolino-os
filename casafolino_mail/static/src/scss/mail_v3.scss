@@ -1679,13 +1679,187 @@ $mv3-line-height: 1.45;
     }
 }
 
-// ── F5: Thread checkbox (bulk mode) ──────────────────────────
+// ── F5: Thread checkbox ──────────────────────────────────────
 .mv3-thread-item__checkbox {
     width: 16px;
     height: 16px;
     margin-right: 8px;
     cursor: pointer;
     accent-color: $mv3-primary;
+    flex-shrink: 0;
+}
+
+// ── V15: Select All checkbox in header ──────────────────────
+.mv3-thread-list__select-all {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    cursor: pointer;
+    accent-color: $mv3-primary;
+    flex-shrink: 0;
+}
+
+.mv3-thread-list__header {
+    display: flex;
+    align-items: center;
+}
+
+// ── V15: Mass Action Toolbar ────────────────────────────────
+.mv3-mass-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba($mv3-primary, 0.08);
+    border-bottom: 2px solid $mv3-primary;
+    flex-wrap: wrap;
+
+    &__count {
+        font-size: 12px;
+        font-weight: 700;
+        color: $mv3-primary;
+        margin-right: 4px;
+        white-space: nowrap;
+    }
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #333;
+        white-space: nowrap;
+        transition: all 0.15s;
+
+        &:hover {
+            background: rgba($mv3-primary, 0.1);
+            border-color: $mv3-primary;
+            color: $mv3-primary;
+        }
+
+        &--danger {
+            color: #dc3545;
+            border-color: #dc3545;
+            &:hover {
+                background: rgba(#dc3545, 0.1);
+                color: #dc3545;
+            }
+        }
+
+        &--close {
+            margin-left: auto;
+            border: none;
+            background: none;
+            color: #999;
+            padding: 4px 6px;
+            &:hover { color: #333; background: rgba(0,0,0,0.05); }
+        }
+    }
+
+    &__dropdown {
+        position: relative;
+        display: inline-flex;
+    }
+
+    &__dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 1000;
+        min-width: 220px;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-top: 4px;
+    }
+
+    &__dropdown-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #333;
+
+        &:hover {
+            background: rgba($mv3-primary, 0.08);
+            color: $mv3-primary;
+        }
+    }
+
+    &__dropdown-empty {
+        padding: 12px;
+        text-align: center;
+        color: #999;
+        font-size: 13px;
+    }
+}
+
+// ── V15: Mass Undo Toast ────────────────────────────────────
+.mv3-mass-undo-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: #333;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 10000;
+    font-size: 14px;
+
+    &__btn {
+        background: $mv3-primary;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+
+        &:hover {
+            background: darken($mv3-primary, 8%);
+        }
+    }
+}
+
+// ── V15: Confirm Dialog ─────────────────────────────────────
+.mv3-confirm-dialog {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+
+    &__body {
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
 }
 
 // ── F6: Commercial Context Panel ────────────────────────────

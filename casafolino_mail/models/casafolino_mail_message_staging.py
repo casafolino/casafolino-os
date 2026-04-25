@@ -173,6 +173,9 @@ class CasafolinoMailMessage(models.Model):
         'casafolino.mail.folder', string='Cartella',
         ondelete='set null', index=True)
 
+    # ── V15 Mass action fields ────────────────────────────────────
+    is_deleted_at = fields.Datetime('Cestinato il', index=True)
+
     _SUBJECT_PREFIX_RE = re.compile(
         r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
         re.IGNORECASE,
@@ -973,6 +976,56 @@ class CasafolinoMailMessage(models.Model):
         """Segna come non letto."""
         self.write({'is_read': False})
 
+    def action_archive(self):
+        """Archivia messaggi."""
+        self.write({'is_archived': True})
+        for rec in self:
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_unarchive(self):
+        """Ripristina da archivio."""
+        self.write({'is_archived': False})
+        for rec in self:
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_delete_soft(self):
+        """Soft delete: sposta nel cestino."""
+        trash_folders = {}
+        for rec in self:
+            account_id = rec.account_id.id
+            if account_id not in trash_folders:
+                trash = self.env['casafolino.mail.folder'].search([
+                    ('account_id', '=', account_id),
+                    ('system_code', '=', 'trash'),
+                ], limit=1)
+                trash_folders[account_id] = trash.id if trash else False
+            vals = {
+                'is_deleted': True,
+                'is_deleted_at': fields.Datetime.now(),
+            }
+            if trash_folders[account_id]:
+                vals['folder_id'] = trash_folders[account_id]
+            rec.write(vals)
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_restore(self):
+        """Ripristina dal cestino."""
+        self.write({
+            'is_deleted': False,
+            'is_deleted_at': False,
+        })
+        for rec in self:
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_toggle_star(self):
+        """Toggle starred status."""
+        for rec in self:
+            rec.write({'is_starred': not rec.is_starred})
+
     def action_bulk_delete(self):
         """Elimina selezionati (solo admin)."""
         if not self.env.user.has_group('base.group_system'):
@@ -1006,6 +1059,30 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
+    # ── V15: Cron Cleanup Trash ──────────────────────────────────────
+
+    @api.model
+    def _cron_cleanup_trash(self):
+        """Permanently delete messages trashed more than 30 days ago."""
+        from datetime import timedelta
+        cutoff = fields.Datetime.now() - timedelta(days=30)
+        old_trash = self.sudo().search([
+            ('is_deleted', '=', True),
+            ('is_deleted_at', '!=', False),
+            ('is_deleted_at', '<', cutoff),
+        ])
+        if not old_trash:
+            return
+        count = len(old_trash)
+        # Collect threads before unlinking
+        thread_ids = old_trash.mapped('thread_id')
+        old_trash.unlink()
+        # Clean up empty threads
+        for thread in thread_ids:
+            if thread.exists() and not thread.message_ids:
+                thread.unlink()
+        _logger.info("Cleanup trash: %d messages permanently deleted", count)
+
     # ── Cron AI classify pending ────────────────────────────────────
 
     @api.model
@@ -1037,18 +1114,6 @@ class CasafolinoMailMessage(models.Model):
                 time.sleep(2.5)
 
         _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
-
-    # ── Cron cleanup (Step 8) ────────────────────────────────────────
-
-    @api.model
-    def _cron_cleanup_discarded(self):
-        """Elimina email scartate più vecchie di 30 giorni."""
-        from datetime import timedelta
-        cutoff = fields.Datetime.now() - timedelta(days=30)
-        old = self.search([('state', '=', 'discard'), ('triage_date', '<', cutoff)])
-        count = len(old)
-        old.unlink()
-        _logger.info("Mail cleanup: %d email scartate eliminate.", count)
 
     @api.model
     def _cron_fetch_pending_bodies(self):

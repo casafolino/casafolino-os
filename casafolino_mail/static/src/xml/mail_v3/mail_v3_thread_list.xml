@@ -3,6 +3,10 @@
   <t t-name="casafolino_mail.ThreadList">
     <div class="mv3-thread-list">
       <div class="mv3-thread-list__header">
+        <input type="checkbox" class="mv3-thread-list__select-all"
+               t-att-checked="props.allSelected"
+               t-on-click.stop="onSelectAll"
+               title="Seleziona tutto"/>
         <span class="mv3-thread-list__title">
           Conversazioni
           <t t-if="props.totalThreads"> (<t t-out="props.totalThreads"/>)</t>
@@ -20,7 +24,7 @@
                t-att-class="{'mv3-thread-item--unread': !thread.is_read, 'mv3-thread-item--selected': props.selectedThreadId === thread.id}"
                t-on-click="() => this.selectThread(thread.id)">
             <div class="mv3-thread-item__header">
-              <input t-if="props.bulkMode" type="checkbox"
+              <input type="checkbox"
                      class="mv3-thread-item__checkbox"
                      t-att-checked="this.isSelected(thread.id)"
                      t-on-click.stop="() => this.toggleSelect(thread.id)"/>
