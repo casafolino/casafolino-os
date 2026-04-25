@@ -93,6 +93,7 @@ export class MailV3Client extends Component {
             selectedFolderId: null,
             folderSidebarVisible: true,
             // V15: Mass actions
+            searchAllSelected: false,
             allSelected: false,
             moveDropdownVisible: false,
             moveFolders: [],
@@ -987,6 +988,43 @@ export class MailV3Client extends Component {
     clearSearch() {
         this.state.searchQuery = '';
         this.state.searchResults = null;
+        this.state.searchAllSelected = false;
+    }
+
+    // ── V16: Search result selection (mass action) ─────────────
+
+    toggleSearchThreadSelect(threadId) {
+        const ids = this.state.selectedThreadIds || [];
+        const idx = ids.indexOf(threadId);
+        if (idx >= 0) {
+            ids.splice(idx, 1);
+        } else {
+            ids.push(threadId);
+        }
+        this.state.selectedThreadIds = [...ids];
+        this.state.bulkMode = ids.length > 0;
+        const searchResults = this.state.searchResults || [];
+        const searchThreadIds = searchResults.map(sr => sr.thread_id).filter(Boolean);
+        this.state.searchAllSelected = searchThreadIds.length > 0
+            && searchThreadIds.every(tid => ids.indexOf(tid) >= 0);
+    }
+
+    toggleSearchSelectAll() {
+        const searchResults = this.state.searchResults || [];
+        const searchThreadIds = [...new Set(searchResults.map(sr => sr.thread_id).filter(Boolean))];
+        if (this.state.searchAllSelected) {
+            // Deselect all search results
+            this.state.selectedThreadIds = (this.state.selectedThreadIds || [])
+                .filter(id => searchThreadIds.indexOf(id) < 0);
+            this.state.searchAllSelected = false;
+        } else {
+            // Select all search results
+            const current = new Set(this.state.selectedThreadIds || []);
+            searchThreadIds.forEach(id => current.add(id));
+            this.state.selectedThreadIds = [...current];
+            this.state.searchAllSelected = true;
+        }
+        this.state.bulkMode = this.state.selectedThreadIds.length > 0;
     }
 
     // ── Keyboard Shortcuts ──────────────────────────────────────

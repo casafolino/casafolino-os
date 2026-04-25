@@ -94,15 +94,27 @@
         <!-- Search results -->
         <div t-if="state.searchResults" class="mv3-search-results">
           <div class="mv3-search-results__header">
+            <label class="mv3-search-results__select-all">
+              <input type="checkbox"
+                     t-att-checked="state.searchAllSelected"
+                     t-on-change="toggleSearchSelectAll"/>
+            </label>
             <t t-out="state.searchResults.length"/> risultati
           </div>
           <t t-foreach="state.searchResults" t-as="sr" t-key="sr.id">
-            <div class="mv3-search-results__item"
+            <div t-att-class="'mv3-search-results__item' + (state.selectedThreadIds.indexOf(sr.thread_id) >= 0 ? ' mv3-search-results__item--selected' : '')"
                  t-on-click="() => this.onSearchResultClick(sr.thread_id)">
-              <div class="mv3-search-results__subject" t-out="sr.subject"/>
-              <div class="mv3-search-results__meta">
-                <span t-out="sr.sender_email"/>
-                <span t-out="sr.email_date"/>
+              <label class="mv3-search-results__checkbox" t-on-click.stop="">
+                <input type="checkbox"
+                       t-att-checked="state.selectedThreadIds.indexOf(sr.thread_id) >= 0"
+                       t-on-change="() => this.toggleSearchThreadSelect(sr.thread_id)"/>
+              </label>
+              <div class="mv3-search-results__content">
+                <div class="mv3-search-results__subject" t-out="sr.subject"/>
+                <div class="mv3-search-results__meta">
+                  <span t-out="sr.sender_email"/>
+                  <span t-out="sr.email_date"/>
+                </div>
               </div>
             </div>
           </t>

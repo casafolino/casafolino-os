@@ -111,7 +111,7 @@ class CasafolinoMailRaw(models.Model):
     @api.model
     def _cron_triage_raw(self):
         """Triage pending RAW records: deterministic rules then AI classifier."""
-        pending = self.search([
+        pending = self.sudo().search([
             ('triage_state', '=', 'pending'),
         ], limit=100, order='fetched_at asc')
 
@@ -509,14 +509,14 @@ class CasafolinoMailRaw(models.Model):
         cutoff = fields.Datetime.now() - timedelta(hours=48)
 
         # Warn about old pending records
-        old_pending = self.search_count([
+        old_pending = self.sudo().search_count([
             ('triage_state', '=', 'pending'),
             ('fetched_at', '<', fields.Datetime.now() - timedelta(hours=6)),
         ])
         if old_pending:
             _logger.warning("[cleanup] %d RAW records pending for >6 hours", old_pending)
 
-        to_delete = self.search([
+        to_delete = self.sudo().search([
             ('triage_state', 'in', ['promoted', 'discarded', 'error']),
             ('fetched_at', '<', cutoff),
         ])

@@ -284,13 +284,39 @@ $mv3-line-height: 1.45;
         font-size: 11px;
         color: #999;
         border-bottom: 1px solid $mv3-border;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__select-all {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
     }
 
     &__item {
         padding: 10px 16px;
         cursor: pointer;
         border-bottom: 1px solid $mv3-border;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
         &:hover { background: #F8F8F6; }
+        &--selected { background: rgba(90, 110, 58, 0.08); }
+    }
+
+    &__checkbox {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding-top: 2px;
+        flex-shrink: 0;
+    }
+
+    &__content {
+        flex: 1;
+        min-width: 0;
     }
 
     &__subject {
@@ -1426,6 +1452,7 @@ $mv3-line-height: 1.45;
     .mv3-nba-block { &--critical { background: #3d1515; } &--high { background: #3d2815; } }
     .mv3-search-results { background: #222; border-color: #444; }
     .mv3-search-results__item:hover { background: #333; }
+    .mv3-search-results__item--selected { background: rgba(90, 110, 58, 0.15); }
 }
 
 // ── F5: Dark Mode Toggle ─────────────────────────────────────

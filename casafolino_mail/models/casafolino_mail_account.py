@@ -611,7 +611,7 @@ class CasafolinoMailAccount(models.Model):
     @api.model
     def _cron_fetch_all_accounts(self):
         """Fetch incrementale per tutti gli account connessi."""
-        accounts = self.search([('state', '=', 'connected'), ('active', '=', True)])
+        accounts = self.sudo().search([('state', '=', 'connected'), ('active', '=', True)])
         for account in accounts:
             try:
                 account._fetch_emails()

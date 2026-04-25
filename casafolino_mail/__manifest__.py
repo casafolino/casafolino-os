@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.15.0.0',
-    'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions per CasaFolino',
+    'version': '18.0.16.0.0',
+    'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions + Multi-utente per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': ['base', 'mail', 'web', 'utm', 'crm', 'casafolino_crm_export'],
