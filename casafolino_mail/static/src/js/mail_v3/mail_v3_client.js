@@ -15,10 +15,11 @@ import { SenderDecisionPopup } from "./mail_v3_sender_decision_popup";
 import { DismissedSenders } from "./mail_v3_dismissed_senders";
 import { FolderSidebar } from "./mail_v3_folder_sidebar";
 import { MailV3Notifications } from "./mail_v3_notifications";
+import { SyncBadge } from "./mail_v3_sync_badge";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
-    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard, SenderDecisionPopup, DismissedSenders, FolderSidebar };
+    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard, SenderDecisionPopup, DismissedSenders, FolderSidebar, SyncBadge };
     static props = ["*"];
 
     setup() {

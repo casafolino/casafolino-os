@@ -18,6 +18,8 @@
 
       <!-- V14: Folder Sidebar -->
       <div class="mv3-client__folder-sidebar" t-if="state.folderSidebarVisible">
+        <!-- V17.1: Sync Status Badge -->
+        <SyncBadge/>
         <FolderSidebar
           selectedAccountIds="state.selectedAccountIds"
           onFolderSelect.bind="onFolderSelect"

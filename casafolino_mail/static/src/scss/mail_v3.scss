@@ -2855,3 +2855,64 @@ $mv3-line-height: 1.45;
         }
     }
 }
+
+// ── V17.1: Sync Badge ────────────────────────────────────
+.mv3-sync-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    margin: 6px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.2s;
+
+    &--ok {
+        background: rgba(46, 204, 113, 0.12);
+        color: #27AE60;
+    }
+    &--delayed {
+        background: rgba(243, 156, 18, 0.12);
+        color: #E67E22;
+    }
+    &--error {
+        background: rgba(231, 76, 60, 0.12);
+        color: #E74C3C;
+    }
+
+    &__label {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__btn {
+        border: none;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        opacity: 0.7;
+        font-size: 11px;
+
+        &:hover {
+            opacity: 1;
+            background: rgba(0,0,0,0.06);
+        }
+        &:disabled {
+            cursor: default;
+            opacity: 0.5;
+        }
+    }
+}
+
+// Dark mode sync badge
+[data-theme="dark"] .mv3-sync-badge {
+    &--ok { background: rgba(46, 204, 113, 0.15); }
+    &--delayed { background: rgba(243, 156, 18, 0.15); }
+    &--error { background: rgba(231, 76, 60, 0.15); }
+    &__btn:hover { background: rgba(255,255,255,0.1); }
+}

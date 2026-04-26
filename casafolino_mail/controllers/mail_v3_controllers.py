@@ -2767,3 +2767,71 @@ class MailV3Controller(http.Controller):
             'new_since_last_poll': new_since,
             'server_time': str(fields.Datetime.now()),
         }
+
+    # ── V17.1: Sync Status Badge ──────────────────────────────────
+
+    @http.route('/cf/mail/v3/sync_status', type='json', auth='user')
+    def sync_status(self, **kw):
+        """Return sync status for current user's accounts."""
+        Account = request.env['casafolino.mail.account']
+        accounts = Account.search([
+            ('responsible_user_id', '=', request.env.uid),
+            ('active', '=', True),
+        ])
+        now = fields.Datetime.now()
+        result = []
+        worst_status = 'ok'
+
+        for acct in accounts:
+            last_ok = acct.last_successful_fetch_datetime
+            if last_ok:
+                delta = (now - last_ok).total_seconds()
+                minutes_ago = int(delta / 60)
+            else:
+                minutes_ago = 9999
+
+            if acct.state == 'error' or minutes_ago > 30:
+                status = 'error'
+            elif minutes_ago > 10:
+                status = 'delayed'
+            else:
+                status = 'ok'
+
+            # Track worst status
+            if status == 'error':
+                worst_status = 'error'
+            elif status == 'delayed' and worst_status != 'error':
+                worst_status = 'delayed'
+
+            result.append({
+                'id': acct.id,
+                'email': acct.email_address or '',
+                'last_sync_at': str(last_ok) if last_ok else None,
+                'minutes_ago': minutes_ago,
+                'status': status,
+                'error_message': acct.error_message if acct.state == 'error' else None,
+            })
+
+        return {
+            'accounts': result,
+            'global_status': worst_status,
+        }
+
+    @http.route('/cf/mail/v3/sync_status/force', type='json', auth='user')
+    def sync_force(self, **kw):
+        """Force immediate IMAP fetch for current user's accounts."""
+        Account = request.env['casafolino.mail.account'].sudo()
+        accounts = Account.search([
+            ('responsible_user_id', '=', request.env.uid),
+            ('active', '=', True),
+        ])
+        if not accounts:
+            return {'success': False, 'error': 'Nessun account trovato'}
+
+        for acct in accounts:
+            try:
+                acct._fetch_emails()
+            except Exception as e:
+                _logger.warning("[sync force] Fetch error for %s: %s", acct.email_address, e)
+
+        return {'success': True, 'message': 'Sync completato'}

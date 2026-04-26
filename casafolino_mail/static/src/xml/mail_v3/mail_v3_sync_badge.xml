@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.SyncBadge">
+    <div t-if="state.loaded" t-att-class="'mv3-sync-badge ' + statusClass">
+      <i t-att-class="statusIcon"/>
+      <span class="mv3-sync-badge__label" t-out="state.label"/>
+      <button class="mv3-sync-badge__btn" t-on-click="forceSync"
+              t-att-disabled="state.syncing" title="Sincronizza ora">
+        <i t-att-class="state.syncing ? 'fa fa-spinner fa-spin' : 'fa fa-refresh'"/>
+      </button>
+    </div>
+  </t>
+</templates>
