@@ -125,6 +125,9 @@ export class ComposeWizard extends Component {
             snippetResults: [],
             snippetSelectedIndex: 0,
             snippetQuery: '',
+            // Schedule send
+            showScheduleModal: false,
+            scheduledDateTime: '',
         });
 
         this._autosaveTimer = null;
@@ -652,6 +655,59 @@ export class ComposeWizard extends Component {
                 if (this.props.onSent) this.props.onSent();
             } else {
                 this.state.error = res.error || 'Errore invio';
+            }
+        } catch (e) {
+            this.state.error = 'Errore: ' + (e.message || e);
+        }
+        this.state.sending = false;
+    }
+
+    // ── Schedule Send ────────────────────────────────────────
+
+    openScheduleModal() {
+        // Default: tomorrow 9:00 local
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        const localISO = tomorrow.toISOString().slice(0, 16);
+        this.state.showScheduleModal = true;
+        this.state.scheduledDateTime = localISO;
+    }
+
+    closeScheduleModal() {
+        this.state.showScheduleModal = false;
+    }
+
+    onScheduleDateChange(ev) {
+        this.state.scheduledDateTime = ev.target.value;
+    }
+
+    async confirmSchedule() {
+        if (!this.state.to.trim()) {
+            this.state.error = 'Inserisci almeno un destinatario';
+            this.state.showScheduleModal = false;
+            return;
+        }
+        if (!this.state.scheduledDateTime) {
+            this.state.error = 'Seleziona data e ora';
+            return;
+        }
+        this.state.sending = true;
+        this.state.error = '';
+        await this.autosave();
+
+        try {
+            // Convert local datetime to UTC ISO string for server
+            const localDate = new Date(this.state.scheduledDateTime);
+            const utcISO = localDate.toISOString().replace('T', ' ').slice(0, 19);
+            const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/schedule', {
+                scheduled_send_at: utcISO,
+            });
+            if (res.success) {
+                this.state.showScheduleModal = false;
+                if (this.props.onSent) this.props.onSent();
+            } else {
+                this.state.error = res.error || 'Errore programmazione';
             }
         } catch (e) {
             this.state.error = 'Errore: ' + (e.message || e);

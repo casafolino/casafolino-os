@@ -302,11 +302,44 @@
             </div>
             <div class="mv3-compose__footer-right">
               <button class="btn btn-sm btn-outline-secondary" t-on-click="discard">Annulla</button>
+              <button class="btn btn-sm btn-outline-primary" t-on-click="openScheduleModal"
+                      t-att-disabled="state.sending" title="Programma invio">
+                <i class="fa fa-clock-o"/> Programma
+              </button>
               <button class="btn btn-sm btn-primary" t-on-click="send" t-att-disabled="state.sending">
                 <i t-att-class="state.sending ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/>
                 Invia
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule Send Modal -->
+      <div t-if="state.showScheduleModal" class="mv3-modal-overlay" t-on-click="closeScheduleModal">
+        <div class="mv3-preview-modal" t-on-click.stop="" style="max-width:400px;">
+          <div class="mv3-preview-modal__header">
+            <h5><i class="fa fa-clock-o me-1"/> Programma invio</h5>
+            <button class="btn btn-sm btn-link" t-on-click="closeScheduleModal">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-preview-modal__body">
+            <label class="form-label fw-bold">Data e ora di invio</label>
+            <input type="datetime-local" class="form-control"
+                   t-att-value="state.scheduledDateTime"
+                   t-on-change="onScheduleDateChange"/>
+            <small class="text-muted mt-1 d-block">
+              L'email verrà inviata automaticamente all'orario selezionato.
+            </small>
+          </div>
+          <div class="mv3-preview-modal__footer">
+            <button class="btn btn-sm btn-secondary" t-on-click="closeScheduleModal">Annulla</button>
+            <button class="btn btn-sm btn-primary" t-on-click="confirmSchedule"
+                    t-att-disabled="state.sending">
+              <i t-att-class="state.sending ? 'fa fa-spinner fa-spin' : 'fa fa-clock-o'"/>
+              Conferma programmazione
+            </button>
           </div>
         </div>
       </div>

@@ -10,7 +10,10 @@
           onAccountChange.bind="onAccountChange"
           onFolderChange.bind="onFolderChange"
           onComposeNew.bind="openComposeNew"
-          onOpenSettings.bind="openSettings"/>
+          onOpenSettings.bind="openSettings"
+          onToggleNotifications.bind="toggleNotifications"
+          notificationsEnabled="state.notificationsEnabled"
+          notifUnreadCount="state.notifUnreadCount"/>
       </div>
 
       <!-- V14: Folder Sidebar -->

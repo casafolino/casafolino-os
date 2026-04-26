@@ -1229,6 +1229,7 @@ class MailV3Controller(http.Controller):
             'ai_reply_enabled': user.mv3_ai_reply_enabled,
             'ai_temperature': user.mv3_ai_temperature or 0.5,
             'ai_model': user.mv3_ai_model or 'llama-3.3-70b-versatile',
+            'notifications_enabled': user.mv3_notifications_enabled,
         }
 
     @http.route('/cf/mail/v3/user/preferences/save', type='json', auth='user')
@@ -1244,6 +1245,7 @@ class MailV3Controller(http.Controller):
             'ai_reply_enabled': 'mv3_ai_reply_enabled',
             'ai_temperature': 'mv3_ai_temperature',
             'ai_model': 'mv3_ai_model',
+            'notifications_enabled': 'mv3_notifications_enabled',
         }
         for key, field in field_map.items():
             if key in kw:
@@ -2728,3 +2730,40 @@ class MailV3Controller(http.Controller):
             })
 
         return {'folders': result}
+
+    # ── V17: Browser Notifications — Poll Unread ───────────────────
+
+    @http.route('/cf/mail/v3/poll/unread', type='json', auth='user')
+    def poll_unread(self, **kw):
+        """Lightweight endpoint for browser notification polling."""
+        account_ids = self._get_user_account_ids()
+        if not account_ids:
+            return {'unread_count': 0, 'new_since_last_poll': 0}
+
+        last_check = kw.get('last_check')  # ISO datetime string from client
+
+        Message = request.env['casafolino.mail.message']
+        # Total unread count (non-deleted, non-archived, inbound, unread)
+        unread_domain = [
+            ('account_id', 'in', account_ids),
+            ('direction', '=', 'inbound'),
+            ('is_read', '=', False),
+            ('is_deleted', '=', False),
+            ('is_archived', '=', False),
+        ]
+        unread_count = Message.search_count(unread_domain)
+
+        # New messages since last poll
+        new_since = 0
+        if last_check:
+            try:
+                new_domain = unread_domain + [('create_date', '>', last_check)]
+                new_since = Message.search_count(new_domain)
+            except Exception:
+                pass
+
+        return {
+            'unread_count': unread_count,
+            'new_since_last_poll': new_since,
+            'server_time': str(fields.Datetime.now()),
+        }

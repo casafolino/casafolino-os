@@ -36,6 +36,36 @@ class CasafolinoMailDraft(models.Model):
         """Aggiorna timestamp autosave."""
         self.write({'auto_saved_at': fields.Datetime.now()})
 
+    @api.model
+    def _cron_send_scheduled(self):
+        """Cron ogni 5 min: invia draft programmati con scheduled_send_at <= now."""
+        now = fields.Datetime.now()
+        drafts = self.sudo().search([
+            ('is_scheduled', '=', True),
+            ('scheduled_send_at', '<=', now),
+        ], order='scheduled_send_at asc', limit=20)
+
+        if not drafts:
+            return
+
+        _logger.info("[send later] %d draft programmati da inviare", len(drafts))
+        sent = 0
+        for draft in drafts:
+            try:
+                result = draft.action_send()
+                if result.get('success'):
+                    sent += 1
+                    _logger.info("[send later] Draft %s inviato (account %s, user %s)",
+                                 draft.id, draft.account_id.name, draft.user_id.name)
+                else:
+                    _logger.warning("[send later] Draft %s invio fallito: %s",
+                                    draft.id, result.get('error', ''))
+            except Exception as e:
+                _logger.error("[send later] Draft %s errore: %s", draft.id, e)
+            self.env.cr.commit()
+
+        _logger.info("[send later] Completato: %d/%d inviati", sent, len(drafts))
+
     def action_send(self):
         """Invia il draft tramite outbox queue (async SMTP)."""
         self.ensure_one()

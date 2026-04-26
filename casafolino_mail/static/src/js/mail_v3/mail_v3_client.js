@@ -14,6 +14,7 @@ import { ComposeWizard } from "./mail_v3_compose";
 import { SenderDecisionPopup } from "./mail_v3_sender_decision_popup";
 import { DismissedSenders } from "./mail_v3_dismissed_senders";
 import { FolderSidebar } from "./mail_v3_folder_sidebar";
+import { MailV3Notifications } from "./mail_v3_notifications";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
@@ -103,6 +104,15 @@ export class MailV3Client extends Component {
             massUndoCountdown: 10,
             isTrashView: false,
             permanentDeleteConfirm: false,
+            // V17: Browser notifications
+            notificationsEnabled: false,
+            notifUnreadCount: 0,
+        });
+
+        this._notifier = new MailV3Notifications({
+            onNewMail: ({ unread_count }) => {
+                this.state.notifUnreadCount = unread_count;
+            },
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
@@ -123,12 +133,17 @@ export class MailV3Client extends Component {
         onMounted(() => {
             document.addEventListener('keydown', this._keyHandler);
             window.addEventListener('resize', () => this._detectMobile());
+            // Start notification polling if enabled
+            if (this.state.notificationsEnabled) {
+                this._notifier.start();
+            }
         });
 
         onWillUnmount(() => {
             document.removeEventListener('keydown', this._keyHandler);
             if (this._undoTimer) clearTimeout(this._undoTimer);
             if (this._undoCountdownTimer) clearInterval(this._undoCountdownTimer);
+            this._notifier.stop();
         });
     }
 
@@ -899,6 +914,7 @@ export class MailV3Client extends Component {
             const prefs = await rpc('/cf/mail/v3/user/preferences');
             this.state.preferences = prefs;
             this.state.darkMode = prefs.dark_mode || false;
+            this.state.notificationsEnabled = prefs.notifications_enabled || false;
         } catch (e) {
             console.error('[mail v3] load preferences error:', e);
         }
@@ -940,6 +956,27 @@ export class MailV3Client extends Component {
             await rpc('/cf/mail/v3/user/preferences/save', payload);
         } catch (e) {
             console.error('[mail v3] save preference error:', e);
+        }
+    }
+
+    // ── V17: Notification toggle ─────────────────────────────
+
+    async toggleNotifications() {
+        if (!this.state.notificationsEnabled) {
+            // Enable: request permission first
+            const granted = await this._notifier.requestPermission();
+            if (!granted) {
+                console.warn('[mail v3] Notification permission denied');
+                return;
+            }
+            this.state.notificationsEnabled = true;
+            this._notifier.start();
+            await this._savePreference('notifications_enabled', true);
+        } else {
+            // Disable
+            this.state.notificationsEnabled = false;
+            this._notifier.stop();
+            await this._savePreference('notifications_enabled', false);
         }
     }
 

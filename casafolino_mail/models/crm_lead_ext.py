@@ -10,6 +10,13 @@ class CrmLeadMailHub(models.Model):
     source_email_id = fields.Many2one(
         'casafolino.mail.message', string='Email di origine',
         ondelete='set null', help='Email da cui è stato creato questo lead')
+    cf_mail_thread_id = fields.Many2one(
+        'casafolino.mail.thread', string='Thread Mail Hub',
+        ondelete='set null', index=True)
+    cf_auto_created = fields.Boolean('Creato automaticamente', default=False)
+    cf_mail_lead_rule_id = fields.Many2one(
+        'casafolino.mail.lead.rule', string='Regola auto-link',
+        ondelete='set null')
 
     def _compute_cf_email_count(self):
         """Override: conta email da casafolino.mail.message (Mail Hub)."""

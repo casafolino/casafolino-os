@@ -456,6 +456,99 @@ class CasafolinoMailMessage(models.Model):
         # Se arriviamo qui: 2 tentativi falliti (403 retry)
         self.write({'ai_error': 'Cloudflare 403 after retry'})
 
+    def _maybe_auto_create_lead(self):
+        """Auto-crea crm.lead se email classificata 'commerciale' e nessun lead esistente per mittente."""
+        self.ensure_one()
+
+        # Feature toggle
+        enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.auto_create_lead_from_ai', '1')
+        if enabled != '1':
+            return
+
+        if self.ai_category != 'commerciale':
+            return
+
+        # Solo inbound
+        if self.direction != 'inbound':
+            return
+
+        sender = (self.sender_email or '').strip().lower()
+        if not sender:
+            return
+
+        # Skip internal domains
+        domain_part = sender.split('@')[-1] if '@' in sender else ''
+        internal_domains = {'casafolino.com', 'casafolino.it'}
+        if domain_part in internal_domains:
+            return
+
+        Lead = self.env['crm.lead'].sudo()
+        Partner = self.env['res.partner'].sudo()
+
+        # Dedup: se esiste già un lead aperto per questo mittente, skip
+        partner = Partner.search([('email', '=ilike', sender)], limit=1)
+        if partner:
+            existing_lead = Lead.search([
+                ('partner_id', '=', partner.id),
+                ('stage_id.is_won', '=', False),
+                ('active', '=', True),
+            ], limit=1)
+            if existing_lead:
+                _logger.info("[auto lead AI] Lead già esistente per %s (lead %s), skip",
+                             sender, existing_lead.id)
+                return
+
+        # Dedup: se il thread ha già un lead, skip
+        if self.thread_id:
+            existing_thread_lead = Lead.search([
+                ('cf_mail_thread_id', '=', self.thread_id.id),
+            ], limit=1)
+            if existing_thread_lead:
+                return
+
+        # Owner = account responsible user
+        owner_id = self.account_id.responsible_user_id.id if self.account_id.responsible_user_id else self.env.ref('base.user_admin').id
+
+        # utm.source
+        Source = self.env['utm.source'].sudo()
+        source = Source.search([('name', '=', 'Mail AI Auto-classify')], limit=1)
+        if not source:
+            source = Source.create({'name': 'Mail AI Auto-classify'})
+
+        # Tag auto-created
+        Tag = self.env['crm.tag'].sudo()
+        tags = Tag.browse()
+        for tag_name in ['auto-created', 'from-mail-classifier']:
+            t = Tag.search([('name', '=', tag_name)], limit=1)
+            if not t:
+                t = Tag.create({'name': tag_name})
+            tags |= t
+
+        lead_name = (self.subject or 'Email commerciale')[:80]
+        lead_vals = {
+            'name': lead_name,
+            'email_from': sender,
+            'partner_name': self.sender_name or sender.split('@')[0],
+            'description': '<p>Lead auto-creato da classificazione AI (commerciale)</p>'
+                           '<p><b>Oggetto:</b> %s</p>'
+                           '<p><b>Anteprima:</b> %s</p>' % (
+                               self.subject or '', (self.snippet or '')[:300]),
+            'source_id': source.id,
+            'user_id': owner_id,
+            'cf_auto_created': True,
+            'tag_ids': [(6, 0, tags.ids)],
+        }
+        if partner:
+            lead_vals['partner_id'] = partner.id
+        if self.thread_id:
+            lead_vals['cf_mail_thread_id'] = self.thread_id.id
+
+        lead = Lead.create(lead_vals)
+        self.write({'lead_id': lead.id})
+        _logger.info("[auto lead AI] Lead %s creato da email %s (msg %s, account %s)",
+                     lead.id, sender, self.id, self.account_id.name)
+
     def _compute_tracking_counts(self):
         for rec in self:
             events = self.env['casafolino.mail.tracking'].search([('message_id', '=', rec.id)])
@@ -1106,6 +1199,12 @@ class CasafolinoMailMessage(models.Model):
                     # Re-apply policy solo se il messaggio è ancora in state='new'
                     if msg.state == 'new':
                         msg._apply_sender_policy()
+                    # Auto Lead AI: crea lead se classificato "commerciale"
+                    if msg.ai_category == 'commerciale':
+                        try:
+                            msg._maybe_auto_create_lead()
+                        except Exception as le:
+                            _logger.warning("Auto lead error msg %s: %s", msg.id, le)
             except Exception as e:
                 _logger.warning("AI classify cron error msg %s: %s", msg.id, e)
             self.env.cr.commit()

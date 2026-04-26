@@ -71,6 +71,17 @@
       <!-- Spacer -->
       <div class="mv3-sidebar-left__spacer"/>
 
+      <!-- V17: Notification bell toggle -->
+      <div t-att-class="'mv3-sidebar-left__icon' + (props.notificationsEnabled ? ' mv3-sidebar-left__icon--active' : '')"
+           t-on-click="onToggleNotifications"
+           t-att-title="props.notificationsEnabled ? 'Disattiva notifiche' : 'Attiva notifiche'">
+        <span t-if="props.notificationsEnabled">🔔</span>
+        <span t-else="">🔕</span>
+        <span class="mv3-sidebar-left__badge" t-if="props.notifUnreadCount > 0 and props.notificationsEnabled">
+          <t t-out="props.notifUnreadCount > 99 ? '99+' : props.notifUnreadCount"/>
+        </span>
+      </div>
+
       <!-- Settings -->
       <div class="mv3-sidebar-left__icon" t-on-click="onOpenSettings" title="Impostazioni">
         <span>⚙️</span>
