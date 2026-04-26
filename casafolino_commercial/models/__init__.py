@@ -7,3 +7,4 @@ from . import cf_treasury_analytics
 from . import sale_order_ext
 from . import cf_doc_footer
 from . import account_move_ext
+from . import casafolino_fiera

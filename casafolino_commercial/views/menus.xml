@@ -81,6 +81,20 @@
     <menuitem id="menu_cf_treasury_export" name="Esporta XLS"
               parent="menu_cf_treasury_root"
               action="action_cf_treasury_export" sequence="10"/>
+    <!-- ==== Eventi Actions ==== -->
+    <record id="action_cf_fiera" model="ir.actions.act_window">
+        <field name="name">Fiere</field>
+        <field name="res_model">casafolino.fiera</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ==== Fiere &amp; Eventi Menus ==== -->
+    <menuitem id="menu_cf_eventi_root" name="Fiere &amp; Eventi" sequence="36"
+              web_icon="casafolino_commercial,static/description/icon.png"/>
+    <menuitem id="menu_cf_eventi_list" name="Tutte le Fiere"
+              parent="menu_cf_eventi_root"
+              action="action_cf_fiera" sequence="1"/>
+
     <menuitem id="menu_cf_doc_footer_root" name="Documenti" sequence="45"
               web_icon="casafolino_commercial,static/description/icon.png"/>
     <menuitem id="menu_cf_doc_footer_blocks" name="Blocchi Documento"

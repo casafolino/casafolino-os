@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+    GDPR retention cron — DA CREARE VIA UI Odoo dopo deploy.
+
+    Pattern CasaFolino: cron complessi configurati via Settings →
+    Technical → Scheduled Actions per evitare problemi con XML
+    data files Odoo 18 Enterprise.
+
+    Configurazione richiesta:
+    - Name: CasaFolino: GDPR retention biglietti 24 mesi
+    - Model: casafolino.fiera
+    - Execute Every: 1 Months
+    - State: code
+    - Code: model._cron_cleanup_old_business_cards()
+    - Active: True
+
+    Codice Python già presente in models/casafolino_fiera.py.
+    -->
+</odoo>

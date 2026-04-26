@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ LIST VIEW ============ -->
+    <record id="view_casafolino_fiera_list" model="ir.ui.view">
+        <field name="name">casafolino.fiera.list</field>
+        <field name="model">casafolino.fiera</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="location"/>
+                <field name="status" widget="badge"
+                       decoration-info="status == 'planned'"
+                       decoration-success="status == 'active'"
+                       decoration-muted="status == 'closed'"/>
+                <field name="lead_count" string="Lead"/>
+                <field name="partner_count" string="Partner"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============ FORM VIEW ============ -->
+    <record id="view_casafolino_fiera_form" model="ir.ui.view">
+        <field name="name">casafolino.fiera.form</field>
+        <field name="model">casafolino.fiera</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_set_active" string="Attiva"
+                            type="object" class="btn-primary"
+                            invisible="status != 'planned'"/>
+                    <button name="action_set_closed" string="Chiudi"
+                            type="object" class="btn-primary"
+                            invisible="status != 'active'"/>
+                    <button name="action_set_planned" string="Riapri"
+                            type="object"
+                            invisible="status != 'closed'"/>
+                    <field name="status" widget="statusbar"
+                           statusbar_visible="planned,active,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_leads" type="object"
+                                class="oe_stat_button" icon="fa-handshake-o">
+                            <field name="lead_count" widget="statinfo" string="Lead"/>
+                        </button>
+                        <button name="action_view_partners" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="partner_count" widget="statinfo" string="Partner"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nome fiera..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="location"/>
+                        </group>
+                        <group>
+                            <field name="expected_visitors"/>
+                            <field name="attendees" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Note" name="page_notes">
+                            <field name="description" placeholder="Note sulla fiera..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============ SEARCH VIEW ============ -->
+    <record id="view_casafolino_fiera_search" model="ir.ui.view">
+        <field name="name">casafolino.fiera.search</field>
+        <field name="model">casafolino.fiera</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="location"/>
+                <filter name="filter_planned" string="Pianificate"
+                        domain="[('status','=','planned')]"/>
+                <filter name="filter_active" string="Attive"
+                        domain="[('status','=','active')]"/>
+                <filter name="filter_closed" string="Chiuse"
+                        domain="[('status','=','closed')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_status" string="Stato"
+                            context="{'group_by': 'status'}"/>
+                    <filter name="group_year" string="Anno"
+                            context="{'group_by': 'date_start:year'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>
