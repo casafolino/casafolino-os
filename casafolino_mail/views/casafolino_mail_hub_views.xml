@@ -15,9 +15,12 @@
                 <field name="sender_name"/>
                 <field name="sender_domain"/>
                 <field name="partner_id"/>
-                <filter name="state_new" string="Da valutare" domain="[('state', 'in', ['new', 'review'])]"/>
-                <filter name="state_keep" string="Tenute" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_new" string="Da valutare" domain="[('state', '=', 'new')]"/>
+                <filter name="state_keep" string="Keep archiviate" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_lead" string="Con Lead" domain="[('lead_id', '!=', False)]"/>
+                <filter name="state_auto_attached" string="Auto-collegate" domain="[('state', '=', 'auto_attached')]"/>
                 <filter name="state_discard" string="Scartate" domain="[('state', 'in', ['discard', 'auto_discard'])]"/>
+                <filter name="my_mailbox" string="La mia casella" domain="[('account_id.responsible_user_id', '=', uid)]"/>
                 <separator/>
                 <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
                 <filter name="read" string="Letti" domain="[('is_read', '=', True)]"/>
@@ -74,7 +77,7 @@
         <field name="arch" type="xml">
             <list string="Email Triage"
                   decoration-muted="state in ('discard', 'auto_discard')"
-                  decoration-success="state in ('keep', 'auto_keep')"
+                  decoration-success="state in ('keep', 'auto_keep', 'auto_attached')"
                   decoration-info="state in ('new', 'review')"
                   decoration-bf="not is_read"
                   multi_edit="1">
@@ -85,6 +88,7 @@
                 <field name="sender_email" string="Email"/>
                 <field name="sender_domain" string="Dominio"/>
                 <field name="subject" string="Oggetto"/>
+                <field name="lead_name" string="Lead" optional="show"/>
                 <field name="snippet" string="Preview" optional="show"/>
                 <field name="partner_id" string="Contatto"/>
                 <field name="match_type" string="Match" optional="hide"/>
@@ -176,6 +180,7 @@
                             invisible="state not in ('new', 'review', 'auto_discard')"/>
                     <button name="action_discard" string="Scarta"
                             type="object" class="btn btn-danger"
+                            confirm="Eliminare definitivamente questa email da Odoo? (Gmail resta intatto)"
                             invisible="state not in ('new', 'review', 'auto_keep')"/>
                     <button name="action_blacklist_domain" string="Scarta Dominio"
                             type="object" class="btn btn-warning"/>
@@ -191,6 +196,13 @@
                     <button name="action_open_snippet_picker" string="Snippet"
                             type="object" class="btn btn-secondary"
                             invisible="direction != 'inbound'"/>
+                </div>
+                <div class="alert alert-info p-2 mb-2" role="alert"
+                     invisible="not lead_id">
+                    <button name="action_open_lead" type="object"
+                            class="btn btn-link p-0">
+                        <span class="fa fa-link"/> LEAD: <field name="lead_name" readonly="1"/>
+                    </button>
                 </div>
                 <group>
                     <group string="Email">
@@ -251,6 +263,9 @@
                         invisible="casafolino_email_count == 0">
                     <field name="casafolino_email_count" string="Email" widget="statinfo"/>
                 </button>
+                <button name="action_sync_full_email_history" string="Importa Email"
+                        type="object" class="oe_stat_button" icon="fa-download"
+                        confirm="Importare tutto lo storico email da IMAP per questo contatto?"/>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email CRM" name="casafolino_emails">
@@ -272,6 +287,12 @@
                             <field name="is_read" column_invisible="1"/>
                         </list>
                     </field>
+                </page>
+                <page string="Mail Config" name="mail_config">
+                    <group string="Domini Email Extra" invisible="not is_company">
+                        <field name="email_domains_extra"
+                               placeholder="aldi-sued.de, aldi.com, aldi-nord.de"/>
+                    </group>
                 </page>
                 <page string="CRM Info" name="crm_info">
                     <group string="Ruolo Commerciale">
@@ -314,9 +335,24 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_import_email_history" string="Importa Email"
+                        type="object" class="oe_stat_button" icon="fa-download"
+                        invisible="not partner_id"
+                        confirm="Importare tutto lo storico email IMAP per il contatto di questo lead?"/>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email" name="lead_emails">
-                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+                    <field name="lead_message_ids" nolabel="1">
+                        <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
+                            <field name="email_date"/>
+                            <field name="direction" widget="badge"/>
+                            <field name="sender_email"/>
+                            <field name="subject"/>
+                            <field name="state" widget="badge"/>
+                            <field name="is_read" widget="boolean_toggle"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>
@@ -331,7 +367,16 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='emails']" position="replace">
                 <page string="Email" name="emails">
-                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+                    <field name="lead_message_ids" nolabel="1">
+                        <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
+                            <field name="email_date"/>
+                            <field name="direction" widget="badge"/>
+                            <field name="sender_email"/>
+                            <field name="subject"/>
+                            <field name="state" widget="badge"/>
+                            <field name="is_read" widget="boolean_toggle"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>
@@ -354,6 +399,16 @@
         <field name="domain">[('state', 'in', ['new', 'review'])]</field>
         <field name="search_view_id" ref="casafolino_mail_message_search"/>
         <field name="context">{'search_default_inbound': 1}</field>
+    </record>
+
+    <!-- La Mia Casella — personal mailbox filtered by responsible_user_id -->
+    <record id="action_casafolino_mail_my_mailbox" model="ir.actions.act_window">
+        <field name="name">La Mia Casella</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('account_id.responsible_user_id', '=', uid)]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_state_new': 1}</field>
     </record>
 
     <record id="action_casafolino_mail_message_keep" model="ir.actions.act_window">

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.FolderSidebar">
+    <div class="mv3-folder-sidebar">
+      <div class="mv3-folder-sidebar__header">
+        <span class="mv3-folder-sidebar__title">Cartelle</span>
+      </div>
+
+      <div class="mv3-folder-sidebar__content">
+        <!-- All threads (clear filter) -->
+        <div class="mv3-folder-sidebar__item mv3-folder-sidebar__item--all"
+             t-att-class="{'mv3-folder-sidebar__item--active': !state.selectedFolderId}"
+             t-on-click="clearFolderFilter">
+          <span class="mv3-folder-sidebar__icon">📬</span>
+          <span class="mv3-folder-sidebar__name">Tutte le email</span>
+        </div>
+
+        <t t-foreach="accountGroups" t-as="group" t-key="group.account_id">
+          <!-- Account header -->
+          <div class="mv3-folder-sidebar__account-header">
+            <span>📧 <t t-out="group.account_name"/></span>
+          </div>
+
+          <!-- System folders -->
+          <t t-foreach="group.system" t-as="folder" t-key="folder.id">
+            <div class="mv3-folder-sidebar__item"
+                 t-att-class="{'mv3-folder-sidebar__item--active': state.selectedFolderId === folder.id}"
+                 t-on-click="() => this.selectFolder(folder.id, folder.account_id)">
+              <span class="mv3-folder-sidebar__icon"><t t-out="folder.icon"/></span>
+              <t t-if="state.renameId === folder.id">
+                <input class="mv3-folder-sidebar__rename-input"
+                       t-att-value="state.renameName"
+                       t-on-input="onRenameInput"
+                       t-on-keydown="onRenameKeydown"
+                       t-ref="renameInput"/>
+              </t>
+              <t t-else="">
+                <span class="mv3-folder-sidebar__name"><t t-out="folder.name"/></span>
+                <span class="mv3-folder-sidebar__badge" t-if="folder.unread_count > 0">
+                  <t t-out="folder.unread_count"/>
+                </span>
+              </t>
+            </div>
+          </t>
+
+          <!-- Custom folders separator -->
+          <t t-if="group.custom.length > 0">
+            <div class="mv3-folder-sidebar__separator">
+              <span>Personali</span>
+            </div>
+          </t>
+
+          <!-- Custom folders -->
+          <t t-foreach="group.custom" t-as="folder" t-key="folder.id">
+            <div class="mv3-folder-sidebar__item"
+                 t-att-class="{'mv3-folder-sidebar__item--active': state.selectedFolderId === folder.id}"
+                 t-on-click="() => this.selectFolder(folder.id, folder.account_id)"
+                 t-on-contextmenu="(ev) => this.onFolderContextMenu(ev, folder.id)">
+              <span class="mv3-folder-sidebar__icon"><t t-out="folder.icon || '📁'"/></span>
+              <t t-if="state.renameId === folder.id">
+                <input class="mv3-folder-sidebar__rename-input"
+                       t-att-value="state.renameName"
+                       t-on-input="onRenameInput"
+                       t-on-keydown="onRenameKeydown"/>
+              </t>
+              <t t-else="">
+                <span class="mv3-folder-sidebar__name"><t t-out="folder.name"/></span>
+                <span class="mv3-folder-sidebar__badge" t-if="folder.unread_count > 0">
+                  <t t-out="folder.unread_count"/>
+                </span>
+              </t>
+
+              <!-- Context menu -->
+              <div class="mv3-folder-sidebar__context-menu"
+                   t-if="state.contextMenuId === folder.id">
+                <div class="mv3-folder-sidebar__context-item"
+                     t-on-click.stop="() => this.startRename(folder.id)">
+                  <i class="fa fa-pencil"/> Rinomina
+                </div>
+                <div class="mv3-folder-sidebar__context-item mv3-folder-sidebar__context-item--danger"
+                     t-on-click.stop="() => this.deleteFolder(folder.id)">
+                  <i class="fa fa-trash"/> Elimina
+                </div>
+                <div class="mv3-folder-sidebar__context-item"
+                     t-on-click.stop="closeContextMenu">
+                  <i class="fa fa-times"/> Chiudi
+                </div>
+              </div>
+            </div>
+          </t>
+
+          <!-- New folder button -->
+          <t t-if="state.createMode and state.newFolderAccountId === group.account_id">
+            <div class="mv3-folder-sidebar__create-input-row">
+              <input class="mv3-folder-sidebar__create-input"
+                     placeholder="Nome cartella..."
+                     t-att-value="state.newFolderName"
+                     t-on-input="onNewFolderInput"
+                     t-on-keydown="onNewFolderKeydown"/>
+              <span class="mv3-folder-sidebar__create-cancel"
+                    t-on-click="cancelCreate">✕</span>
+            </div>
+          </t>
+          <t t-else="">
+            <div class="mv3-folder-sidebar__add-btn"
+                 t-on-click="() => this.startCreate(group.account_id)">
+              <i class="fa fa-plus"/> Nuova cartella
+            </div>
+          </t>
+        </t>
+      </div>
+
+      <!-- Rules link -->
+      <div class="mv3-folder-sidebar__footer">
+        <div class="mv3-folder-sidebar__rules-btn" t-on-click="openRules">
+          <span>⚙️ Gestisci regole</span>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

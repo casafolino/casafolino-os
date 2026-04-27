@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+    <!-- Remove legacy triage menus replaced by V3 client action -->
+    <delete id="menu_casafolino_mail_triage" model="ir.ui.menu"/>
+    <delete id="menu_casafolino_mail_keep" model="ir.ui.menu"/>
+    <delete id="menu_casafolino_mail_discard" model="ir.ui.menu"/>
+</odoo>

@@ -53,4 +53,132 @@
         <field name="groups" eval="[(4, ref('base.group_system'))]"/>
     </record>
 
+    <!-- ══ casafolino.mail.thread ════════════════════════════════════ -->
+
+    <record id="rule_mail_thread_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo thread propri account</field>
+        <field name="model_id" ref="model_casafolino_mail_thread"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_thread_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutti i thread</field>
+        <field name="model_id" ref="model_casafolino_mail_thread"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.raw ═══════════════════════════════════════ -->
+
+    <record id="rule_mail_raw_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo RAW propri account</field>
+        <field name="model_id" ref="model_casafolino_mail_raw"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_raw_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutti i RAW</field>
+        <field name="model_id" ref="model_casafolino_mail_raw"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.folder ════════════════════════════════════ -->
+
+    <record id="rule_mail_folder_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo cartelle propri account</field>
+        <field name="model_id" ref="model_casafolino_mail_folder"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_folder_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutte le cartelle</field>
+        <field name="model_id" ref="model_casafolino_mail_folder"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.folder.rule ═══════════════════════════════ -->
+
+    <record id="rule_mail_folder_rule_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo regole cartelle propri account</field>
+        <field name="model_id" ref="model_casafolino_mail_folder_rule"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_folder_rule_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutte le regole cartelle</field>
+        <field name="model_id" ref="model_casafolino_mail_folder_rule"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.sender_preference ═════════════════════════ -->
+
+    <record id="rule_mail_sender_pref_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo preferenze mittente propri account</field>
+        <field name="model_id" ref="model_casafolino_mail_sender_preference"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_sender_pref_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutte le preferenze mittente</field>
+        <field name="model_id" ref="model_casafolino_mail_sender_preference"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.draft ═════════════════════════════════════ -->
+
+    <record id="rule_mail_draft_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo proprie bozze</field>
+        <field name="model_id" ref="model_casafolino_mail_draft"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_draft_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutte le bozze</field>
+        <field name="model_id" ref="model_casafolino_mail_draft"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.outbox ════════════════════════════════════ -->
+
+    <record id="rule_mail_outbox_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo propria outbox</field>
+        <field name="model_id" ref="model_casafolino_mail_outbox"/>
+        <field name="domain_force">[('account_id.responsible_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_outbox_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutta la outbox</field>
+        <field name="model_id" ref="model_casafolino_mail_outbox"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- ══ casafolino.mail.mass.action.log ═══════════════════════════ -->
+
+    <record id="rule_mail_mass_log_user" model="ir.rule">
+        <field name="name">CasaFolino Mail: solo propri log mass action</field>
+        <field name="model_id" ref="model_casafolino_mail_mass_action_log"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_mail_mass_log_admin" model="ir.rule">
+        <field name="name">CasaFolino Mail: admin vede tutti i log mass action</field>
+        <field name="model_id" ref="model_casafolino_mail_mass_action_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
 </odoo>

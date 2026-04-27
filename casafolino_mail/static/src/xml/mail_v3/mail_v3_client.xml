@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.MailV3Client">
+    <div t-att-class="'mv3-client' + (state.mobileView ? ' mv3-client--mobile-view-' + state.mobileView : '')"
+         t-att-data-theme="state.darkMode ? 'dark' : 'light'">
+      <!-- Sidebar Left compact -->
+      <div class="mv3-client__sidebar-left">
+        <SidebarLeft
+          accounts="state.accounts"
+          onAccountChange.bind="onAccountChange"
+          onFolderChange.bind="onFolderChange"
+          onComposeNew.bind="openComposeNew"
+          onOpenSettings.bind="openSettings"
+          onToggleNotifications.bind="toggleNotifications"
+          notificationsEnabled="state.notificationsEnabled"
+          notifUnreadCount="state.notifUnreadCount"/>
+      </div>
+
+      <!-- V14: Folder Sidebar -->
+      <div class="mv3-client__folder-sidebar" t-if="state.folderSidebarVisible">
+        <!-- V17.1: Sync Status Badge -->
+        <SyncBadge/>
+        <FolderSidebar
+          selectedAccountIds="state.selectedAccountIds"
+          onFolderSelect.bind="onFolderSelect"
+          onOpenRules.bind="onOpenRules"/>
+      </div>
+
+      <!-- Thread List with search -->
+      <div class="mv3-client__thread-list">
+        <div class="mv3-search">
+          <div class="mv3-search__wrapper">
+            <i class="fa fa-search mv3-search__icon"/>
+            <input class="mv3-search__input"
+                   type="text"
+                   placeholder="Cerca email..."
+                   t-att-value="state.searchQuery"
+                   t-on-input="onSearchInput"/>
+            <button t-if="state.searchQuery"
+                    class="mv3-search__clear"
+                    t-on-click="clearSearch">
+              <i class="fa fa-times"/>
+            </button>
+            <!-- Dark mode toggle -->
+            <button class="mv3-dark-toggle" t-on-click="toggleDarkMode"
+                    t-att-title="state.darkMode ? 'Light mode' : 'Dark mode'">
+              <t t-if="state.darkMode">☀️</t>
+              <t t-else="">🌙</t>
+            </button>
+          </div>
+        </div>
+
+        <!-- V15: Mass action toolbar -->
+        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-mass-toolbar">
+          <span class="mv3-mass-toolbar__count">
+            <t t-out="state.selectedThreadIds.length"/> selezionati
+          </span>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massMarkRead" title="Segna come letti">
+            <i class="fa fa-envelope-open-o"/> Letti
+          </button>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massArchive" title="Archivia">
+            <i class="fa fa-archive"/> Archivia
+          </button>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massTrash" title="Cestina">
+            <i class="fa fa-trash"/> Cestina
+          </button>
+          <!-- Move to folder dropdown -->
+          <div class="mv3-mass-toolbar__dropdown">
+            <button class="mv3-mass-toolbar__btn" t-on-click="toggleMoveDropdown" title="Sposta in cartella">
+              <i class="fa fa-folder-o"/> Sposta in
+              <i class="fa fa-caret-down ms-1"/>
+            </button>
+            <div t-if="state.moveDropdownVisible" class="mv3-mass-toolbar__dropdown-menu">
+              <t t-if="state.moveFolders and state.moveFolders.length > 0">
+                <t t-foreach="state.moveFolders" t-as="mf" t-key="mf.id">
+                  <button class="mv3-mass-toolbar__dropdown-item"
+                          t-on-click="() => this.massMove(mf.id, mf.name)">
+                    <span t-out="mf.icon"/> <t t-out="mf.name"/>
+                    <span t-if="mf.account_name" class="text-muted ms-1 small">(<t t-out="mf.account_name"/>)</span>
+                  </button>
+                </t>
+              </t>
+              <div t-else="" class="mv3-mass-toolbar__dropdown-empty">Nessuna cartella</div>
+            </div>
+          </div>
+          <button class="mv3-mass-toolbar__btn" t-on-click="massDismissSenders" title="Dismetti mittenti">
+            <i class="fa fa-ban"/> Dismetti
+          </button>
+          <!-- Permanent delete only in trash -->
+          <button t-if="state.isTrashView" class="mv3-mass-toolbar__btn mv3-mass-toolbar__btn--danger"
+                  t-on-click="massPermanentDelete" title="Elimina definitivamente">
+            <i class="fa fa-times-circle"/> Elimina definitivamente
+          </button>
+          <button class="mv3-mass-toolbar__btn mv3-mass-toolbar__btn--close" t-on-click="clearBulkSelection" title="Deseleziona">
+            <i class="fa fa-times"/>
+          </button>
+        </div>
+
+        <!-- Search results -->
+        <div t-if="state.searchResults" class="mv3-search-results">
+          <div class="mv3-search-results__header">
+            <label class="mv3-search-results__select-all">
+              <input type="checkbox"
+                     t-att-checked="state.searchAllSelected"
+                     t-on-change="toggleSearchSelectAll"/>
+            </label>
+            <t t-out="state.searchResults.length"/> risultati
+          </div>
+          <t t-foreach="state.searchResults" t-as="sr" t-key="sr.id">
+            <div t-att-class="'mv3-search-results__item' + (state.selectedThreadIds.indexOf(sr.thread_id) >= 0 ? ' mv3-search-results__item--selected' : '')"
+                 t-on-click="() => this.onSearchResultClick(sr.thread_id)">
+              <label class="mv3-search-results__checkbox" t-on-click.stop="">
+                <input type="checkbox"
+                       t-att-checked="state.selectedThreadIds.indexOf(sr.thread_id) >= 0"
+                       t-on-change="() => this.toggleSearchThreadSelect(sr.thread_id)"/>
+              </label>
+              <div class="mv3-search-results__content">
+                <div class="mv3-search-results__subject" t-out="sr.subject"/>
+                <div class="mv3-search-results__meta">
+                  <span t-out="sr.sender_email"/>
+                  <span t-out="sr.email_date"/>
+                </div>
+              </div>
+            </div>
+          </t>
+        </div>
+
+        <!-- Thread list -->
+        <div t-if="!state.searchResults">
+          <ThreadList
+            threads="state.threads"
+            accounts="state.accounts"
+            loading="state.loading.threads"
+            loadingMore="state.loading.threadsMore"
+            hasMore="state.hasMoreThreads"
+            totalThreads="state.totalThreads"
+            selectedThreadId="state.selectedThreadId"
+            selectedThreadIds="state.selectedThreadIds"
+            bulkMode="state.bulkMode"
+            allSelected="state.allSelected"
+            onSelect.bind="selectThread"
+            onToggleSelect.bind="toggleThreadSelect"
+            onSelectAll.bind="toggleSelectAll"
+            onLoadMore.bind="loadMoreThreads"/>
+        </div>
+      </div>
+
+      <!-- Main area: reading pane (top) + 360 panel (bottom) -->
+      <div class="mv3-client__main-area">
+        <!-- Reading Pane -->
+        <div class="mv3-client__reading-pane">
+          <!-- Mobile back button -->
+          <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
+            <i class="fa fa-arrow-left"/> Torna alla lista
+          </div>
+          <!-- V12.6: Sender Decision Popup (above reading pane) -->
+          <SenderDecisionPopup
+            t-if="state.senderDecisionVisible"
+            senderEmail="state.senderDecisionEmail"
+            senderName="state.senderDecisionName"
+            onDecision.bind="onSenderDecision"
+            onDismiss.bind="onSenderDismiss"
+            onCreateLead.bind="onSenderCreateLead"
+            onCreateProject.bind="onSenderCreateProject"/>
+          <div t-att-class="'mv3-reading-pane-wrapper' + (state.senderDecisionVisible ? ' mv3-reading-pane-wrapper--dimmed' : '')">
+            <ReadingPane
+              messages="state.messages"
+              loading="state.loading.messages"
+              onAction.bind="onMessageAction"
+              onReply.bind="openReply"
+              onReplyAll.bind="openReplyAll"
+              onForward.bind="openForward"
+              onAiReply.bind="openReplyAssistant"
+              onSnooze.bind="openSnoozePopup"
+              onCreateLead.bind="onSenderCreateLead"
+              onCreateProject.bind="onSenderCreateProject"
+              onDismissSender.bind="onQuickDismissSender"
+              onDeleteEmail.bind="onDeleteEmail"/>
+          </div>
+        </div>
+
+        <!-- V12.4: Insight 360 Tab Bar (replaces old accordion) -->
+        <div class="mv3-client__bottom-360"
+             t-if="state.selectedThreadId">
+          <MailV3Insight360TabBar
+            partnerId="state.selectedPartner"
+            threadId="state.selectedThreadId"
+            senderEmail="state.senderEmail"
+            accountId="state.selectedAccountIds and state.selectedAccountIds[0] or 0"
+            onPartnerCreated.bind="onPartnerCreated"/>
+        </div>
+      </div>
+
+      <!-- Compose Wizard Overlay (F10) -->
+      <div t-if="state.composeVisible" class="mv3-compose-overlay">
+        <div class="mv3-compose-overlay__backdrop" t-on-click="onComposeClose"/>
+        <div class="mv3-compose-overlay__panel">
+          <ComposeWizard
+            draftId="state.composeDraftId"
+            prefilled="state.composePrefilled"
+            mode="state.composeMode"
+            accountId="state.composeAccountId"
+            onSent.bind="onComposeSent"
+            onClose.bind="onComposeClose"/>
+        </div>
+      </div>
+
+      <!-- Reply Assistant Modal -->
+      <ReplyAssistant
+        t-if="state.replyAssistantVisible"
+        messageId="state.replyAssistantMessageId"
+        onSelectDraft.bind="onSelectDraft"
+        onClose.bind="closeReplyAssistant"/>
+
+      <!-- Snooze Popup -->
+      <div t-if="state.snoozePopupVisible" class="mv3-modal-overlay" t-on-click="closeSnoozePopup">
+        <div class="mv3-snooze-popup" t-on-click.stop="">
+          <div class="mv3-snooze-popup__header">
+            <h4>Snooze</h4>
+            <button class="btn btn-sm btn-link" t-on-click="closeSnoozePopup">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-snooze-popup__body">
+            <div class="mv3-snooze-popup__presets">
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('tonight')">🌙 Stasera 18:00</button>
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('tomorrow')">☀️ Domani 9:00</button>
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('monday')">📅 Lunedì 9:00</button>
+              <button class="mv3-snooze-popup__preset" t-on-click="() => this.snoozePreset('week')">📆 Tra 1 settimana</button>
+            </div>
+            <div class="mv3-snooze-popup__custom">
+              <label>Data e ora personalizzata:</label>
+              <input type="datetime-local" class="form-control form-control-sm"
+                     t-att-value="state.snoozeCustomDate"
+                     t-on-change="onSnoozeCustomDateChange"/>
+            </div>
+            <div class="mv3-snooze-popup__type">
+              <label>Tipo:</label>
+              <select class="form-control form-control-sm" t-on-change="onSnoozeTypeChange">
+                <option value="until_date">Fino a data</option>
+                <option value="until_reply">Fino a risposta</option>
+                <option value="if_no_reply_by">Se non risponde entro</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm mt-2" t-on-click="confirmSnooze">Conferma Snooze</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Undo Send Toast -->
+      <div t-if="state.undoToast" class="mv3-undo-toast">
+        <span>Email inviata</span>
+        <button class="mv3-undo-toast__btn" t-on-click="undoSend">
+          Annulla (<t t-out="state.undoCountdown"/>s)
+        </button>
+      </div>
+
+      <!-- V12.6: Dismiss Undo Toast -->
+      <div t-if="state.dismissUndoToast" class="mv3-dismiss-undo-toast">
+        <span>Mittente <strong t-out="state.dismissUndoEmail"/> dismesso.</span>
+        <button class="mv3-dismiss-undo-toast__btn" t-on-click="cancelDismiss">
+          Annulla (<t t-out="state.dismissUndoCountdown"/>s)
+        </button>
+      </div>
+
+      <!-- V15: Mass Action Undo Toast -->
+      <div t-if="state.massUndoToast" class="mv3-mass-undo-toast">
+        <span t-out="state.massUndoMessage"/>
+        <button class="mv3-mass-undo-toast__btn" t-on-click="massUndoAction">
+          Annulla (<t t-out="state.massUndoCountdown"/>s)
+        </button>
+      </div>
+
+      <!-- V15: Permanent Delete Confirm -->
+      <div t-if="state.permanentDeleteConfirm" class="mv3-modal-overlay" t-on-click="cancelPermanentDelete">
+        <div class="mv3-confirm-dialog" t-on-click.stop="">
+          <div class="mv3-confirm-dialog__body">
+            <i class="fa fa-exclamation-triangle text-danger me-2"/>
+            Sei sicuro? Questa azione è <strong>irreversibile</strong>.<br/>
+            <t t-out="state.selectedThreadIds.length"/> conversazioni verranno eliminate definitivamente.
+          </div>
+          <div class="mv3-confirm-dialog__footer">
+            <button class="btn btn-sm btn-secondary" t-on-click="cancelPermanentDelete">Annulla</button>
+            <button class="btn btn-sm btn-danger" t-on-click="confirmPermanentDelete">Elimina definitivamente</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- V12.6: Dismissed Senders Panel -->
+      <div t-if="state.dismissedSendersVisible" class="mv3-modal-overlay" t-on-click="closeDismissedSenders">
+        <div class="mv3-dismissed-panel" t-on-click.stop="">
+          <DismissedSenders onRestored.bind="onDismissedRestored"/>
+          <button class="btn btn-sm btn-link mv3-dismissed-panel__close" t-on-click="closeDismissedSenders">
+            <i class="fa fa-times"/>
+          </button>
+        </div>
+      </div>
+
+      <!-- Shortcuts Help Modal -->
+      <div t-if="state.shortcutsHelpVisible" class="mv3-modal-overlay" t-on-click="closeShortcutsHelp">
+        <div class="mv3-shortcuts-help" t-on-click.stop="">
+          <div class="mv3-shortcuts-help__header">
+            <h4>Scorciatoie tastiera</h4>
+            <button class="btn btn-sm btn-link" t-on-click="closeShortcutsHelp">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-shortcuts-help__body">
+            <div class="mv3-shortcuts-help__row"><kbd>j</kbd> Thread successivo</div>
+            <div class="mv3-shortcuts-help__row"><kbd>k</kbd> Thread precedente</div>
+            <div class="mv3-shortcuts-help__row"><kbd>r</kbd> Rispondi</div>
+            <div class="mv3-shortcuts-help__row"><kbd>R</kbd> Rispondi a tutti</div>
+            <div class="mv3-shortcuts-help__row"><kbd>f</kbd> Inoltra</div>
+            <div class="mv3-shortcuts-help__row"><kbd>a</kbd> Risposta guidata AI</div>
+            <div class="mv3-shortcuts-help__row"><kbd>e</kbd> Archivia</div>
+            <div class="mv3-shortcuts-help__row"><kbd>#</kbd> Elimina</div>
+            <div class="mv3-shortcuts-help__row"><kbd>s</kbd> Speciale</div>
+            <div class="mv3-shortcuts-help__row"><kbd>u</kbd> Segna non letto</div>
+            <div class="mv3-shortcuts-help__row"><kbd>c</kbd> Nuovo messaggio</div>
+            <div class="mv3-shortcuts-help__row"><kbd>x</kbd> Seleziona thread</div>
+            <div class="mv3-shortcuts-help__row"><kbd>z</kbd> Snooze</div>
+            <div class="mv3-shortcuts-help__row"><kbd>/</kbd> Cerca</div>
+            <div class="mv3-shortcuts-help__row"><kbd>?</kbd> Questa guida</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Drawer (4 tabs) -->
+      <div t-if="state.settingsVisible" class="mv3-modal-overlay" t-on-click="closeSettings">
+        <div class="mv3-settings-drawer" t-on-click.stop="">
+          <div class="mv3-settings-drawer__header">
+            <h4>Impostazioni</h4>
+            <button class="btn btn-sm btn-link" t-on-click="closeSettings">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-settings-drawer__tabs">
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'signatures' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'signatures'">Firme</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'display' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'display'">Visualizzazione</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'ai' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'ai'">AI</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'account' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'account'">Account</button>
+          </div>
+          <div class="mv3-settings-drawer__body">
+            <!-- Tab: Firme -->
+            <div t-if="state.settingsTab === 'signatures'">
+              <t t-foreach="state.signatures" t-as="sig" t-key="sig.id">
+                <div class="mv3-settings-drawer__item">
+                  <strong t-out="sig.name"/>
+                  <span t-if="sig.is_default" class="badge bg-success ms-2">Default</span>
+                  <div class="text-muted small" t-out="sig.account_name"/>
+                </div>
+              </t>
+              <p t-if="!state.signatures || state.signatures.length === 0" class="text-muted">Nessuna firma configurata</p>
+            </div>
+            <!-- Tab: Visualizzazione -->
+            <div t-if="state.settingsTab === 'display'">
+              <div class="mv3-settings-drawer__field">
+                <label>Reading pane:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="reading_pane_position">
+                  <option value="right" t-att-selected="state.preferences.reading_pane_position === 'right'">Destra</option>
+                  <option value="bottom" t-att-selected="state.preferences.reading_pane_position === 'bottom'">Sotto</option>
+                  <option value="off" t-att-selected="state.preferences.reading_pane_position === 'off'">Disattivato</option>
+                </select>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Densità lista:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="thread_list_density">
+                  <option value="compact" t-att-selected="state.preferences.thread_list_density === 'compact'">Compatto</option>
+                  <option value="comfortable" t-att-selected="state.preferences.thread_list_density === 'comfortable'">Comodo</option>
+                  <option value="spacious" t-att-selected="state.preferences.thread_list_density === 'spacious'">Spazioso</option>
+                </select>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Font size:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="font_size">
+                  <option value="small" t-att-selected="state.preferences.font_size === 'small'">Piccolo</option>
+                  <option value="medium" t-att-selected="state.preferences.font_size === 'medium'">Medio</option>
+                  <option value="large" t-att-selected="state.preferences.font_size === 'large'">Grande</option>
+                </select>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>
+                  <input type="checkbox" t-att-checked="state.preferences.keyboard_shortcuts"
+                         t-on-change="onSettingToggle" data-field="keyboard_shortcuts"/>
+                  Scorciatoie tastiera
+                </label>
+              </div>
+            </div>
+            <!-- Tab: AI -->
+            <div t-if="state.settingsTab === 'ai'">
+              <div class="mv3-settings-drawer__field">
+                <label>
+                  <input type="checkbox" t-att-checked="state.preferences.ai_reply_enabled"
+                         t-on-change="onSettingToggle" data-field="ai_reply_enabled"/>
+                  Reply Assistant attivo
+                </label>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Temperature: <t t-out="state.preferences.ai_temperature"/></label>
+                <input type="range" min="0.1" max="1.0" step="0.1"
+                       t-att-value="state.preferences.ai_temperature"
+                       t-on-input="onAiTempChange" class="form-range"/>
+              </div>
+              <div class="mv3-settings-drawer__field">
+                <label>Modello:</label>
+                <select class="form-control form-control-sm" t-on-change="onSettingChange" data-field="ai_model">
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                  <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                </select>
+              </div>
+              <button class="btn btn-outline-secondary btn-sm mt-2" t-on-click="testGroqConnection">
+                Test connessione Groq
+              </button>
+              <div t-if="state.groqTestResult" class="mt-2">
+                <span t-if="state.groqTestResult.success" class="text-success">Connesso</span>
+                <span t-else="" class="text-danger" t-out="state.groqTestResult.error"/>
+              </div>
+            </div>
+            <!-- Tab: Account -->
+            <div t-if="state.settingsTab === 'account'">
+              <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
+                <div class="mv3-settings-drawer__item">
+                  <strong t-out="acc.name"/>
+                  <div class="text-muted small" t-out="acc.email"/>
+                  <div class="text-muted small">Stato: <t t-out="acc.state"/></div>
+                </div>
+              </t>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

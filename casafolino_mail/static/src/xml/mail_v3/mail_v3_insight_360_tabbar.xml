@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.Insight360TabBar">
+    <div class="mv3-360-tabbar">
+
+      <!-- Unknown partner state -->
+      <div t-if="!props.partnerId" class="mv3-360-unknown">
+        <div t-if="!state.createContactForm" class="mv3-360-unknown__main">
+          <i class="fa fa-user-o fa-2x" style="color:#bbb;"/>
+          <p class="mt-2 mb-2">Mittente non nel CRM: <strong t-out="props.senderEmail"/></p>
+          <div class="mv3-360-unknown__actions">
+            <button class="btn btn-primary btn-sm" t-on-click="enrichFromDomain"
+                    t-att-disabled="state.enriching">
+              <i t-att-class="state.enriching ? 'fa fa-spinner fa-spin' : 'fa fa-search'"/>
+              Arricchisci da dominio
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" t-on-click="toggleCreateContact">
+              <i class="fa fa-plus"/> Crea contatto al volo
+            </button>
+          </div>
+        </div>
+        <div t-if="state.createContactForm" class="mv3-360-unknown__form">
+          <div class="mb-2">
+            <label class="small fw-bold">Email</label>
+            <input class="form-control form-control-sm" readonly="1" t-att-value="props.senderEmail"/>
+          </div>
+          <div class="mb-2">
+            <label class="small fw-bold">Nome</label>
+            <input class="form-control form-control-sm" t-att-value="state.newContactName"
+                   t-on-input="onNewContactName" placeholder="Nome completo"/>
+          </div>
+          <div class="mb-2">
+            <label class="small fw-bold">Azienda (opz.)</label>
+            <input class="form-control form-control-sm" t-att-value="state.newContactCompany"
+                   t-on-input="onNewContactCompany" placeholder="Nome azienda"/>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm" t-on-click="createContact">
+              <i class="fa fa-check"/> Salva
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" t-on-click="toggleCreateContact">
+              Annulla
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar (only when partner known) -->
+      <div t-if="props.partnerId">
+        <!-- Row 1: Core tabs -->
+        <div class="mv3-360-tabbar__row1">
+          <t t-foreach="tabsRow1" t-as="tab" t-key="tab.key">
+            <div t-att-class="'mv3-360-tab' + (state.activeTab === tab.key ? ' mv3-360-tab--active' : '')"
+                 t-on-click="() => this.selectTab(tab.key)">
+              <i t-att-class="'fa ' + tab.icon"/> <t t-out="tab.label"/>
+            </div>
+          </t>
+        </div>
+        <!-- Row 2: Extra tabs -->
+        <div class="mv3-360-tabbar__row2">
+          <t t-foreach="tabsRow2" t-as="tab" t-key="tab.key">
+            <div t-att-class="'mv3-360-tab' + (state.activeTab === tab.key ? ' mv3-360-tab--active' : '')"
+                 t-on-click="() => this.selectTab(tab.key)">
+              <i t-att-class="'fa ' + tab.icon"/> <t t-out="tab.label"/>
+            </div>
+          </t>
+        </div>
+
+        <!-- Tab content area -->
+        <div class="mv3-360-content">
+          <!-- Loading -->
+          <div t-if="state.tabLoading[state.activeTab]" class="mv3-360-content__loading">
+            <i class="fa fa-spinner fa-spin"/> Caricamento...
+          </div>
+
+          <!-- Tab: Contatto -->
+          <div t-if="state.activeTab === 'contact' and !state.tabLoading.contact">
+            <t t-set="d" t-value="state.tabData.contact || {}"/>
+            <div t-if="d.name" class="mv3-360-detail">
+              <div class="mv3-360-detail__row"><strong t-out="d.name"/></div>
+              <div t-if="d.function" class="mv3-360-detail__row text-muted" t-out="d.function"/>
+              <div t-if="d.email" class="mv3-360-detail__row"><i class="fa fa-envelope-o"/> <t t-out="d.email"/></div>
+              <div t-if="d.phone" class="mv3-360-detail__row"><i class="fa fa-phone"/> <t t-out="d.phone"/></div>
+              <div t-if="d.mobile" class="mv3-360-detail__row"><i class="fa fa-mobile"/> <t t-out="d.mobile"/></div>
+              <div t-if="d.lang" class="mv3-360-detail__row"><i class="fa fa-globe"/> <t t-out="d.lang"/></div>
+            </div>
+            <div t-if="!d.name and !state.tabLoading.contact" class="text-muted">Nessun dato contatto</div>
+          </div>
+
+          <!-- Tab: Azienda -->
+          <div t-if="state.activeTab === 'company' and !state.tabLoading.company">
+            <t t-set="d" t-value="state.tabData.company || {}"/>
+            <div t-if="d.name" class="mv3-360-detail">
+              <div class="mv3-360-detail__row"><strong t-out="d.name"/></div>
+              <div t-if="d.vat" class="mv3-360-detail__row">P.IVA: <t t-out="d.vat"/></div>
+              <div t-if="d.country_name" class="mv3-360-detail__row"><i class="fa fa-globe"/> <t t-out="d.country_name"/></div>
+              <div t-if="d.industry_name" class="mv3-360-detail__row"><i class="fa fa-industry"/> <t t-out="d.industry_name"/></div>
+              <div t-if="d.employee_count" class="mv3-360-detail__row"><i class="fa fa-users"/> <t t-out="d.employee_count"/> dipendenti</div>
+              <div t-if="d.website" class="mv3-360-detail__row">
+                <i class="fa fa-link"/> <a t-att-href="d.website" target="_blank" t-out="d.website"/>
+              </div>
+            </div>
+            <div t-if="!d.name and !state.tabLoading.company" class="text-muted">Nessun dato azienda</div>
+          </div>
+
+          <!-- Tab: Lead -->
+          <div t-if="state.activeTab === 'leads' and !state.tabLoading.leads">
+            <t t-set="items" t-value="(state.tabData.leads || {}).leads || []"/>
+            <table t-if="items.length > 0" class="table table-sm table-hover mb-0">
+              <thead><tr>
+                <th>Lead</th><th>Fase</th><th>Revenue</th><th>Prob.</th><th>Scadenza</th>
+              </tr></thead>
+              <tbody>
+                <t t-foreach="items" t-as="l" t-key="l.id">
+                  <tr>
+                    <td t-out="l.name"/>
+                    <td t-out="l.stage"/>
+                    <td t-out="this.formatCurrency(l.expected_revenue)"/>
+                    <td><t t-out="l.probability"/>%</td>
+                    <td t-out="this.formatDate(l.date_deadline)"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+            <div t-if="items.length === 0 and !state.tabLoading.leads" class="text-muted">Nessun lead</div>
+          </div>
+
+          <!-- Tab: Timeline -->
+          <div t-if="state.activeTab === 'timeline' and !state.tabLoading.timeline">
+            <t t-set="items" t-value="(state.tabData.timeline || {}).events || []"/>
+            <div t-if="items.length > 0" class="mv3-360-timeline">
+              <t t-foreach="items" t-as="ev" t-key="ev_index">
+                <div class="mv3-360-timeline__item">
+                  <i t-att-class="'fa ' + this.getTimelineIcon(ev.type)"/>
+                  <div class="mv3-360-timeline__body">
+                    <div class="mv3-360-timeline__title" t-out="ev.title"/>
+                    <div class="mv3-360-timeline__date text-muted small" t-out="this.formatDate(ev.date)"/>
+                  </div>
+                </div>
+              </t>
+            </div>
+            <div t-if="items.length === 0 and !state.tabLoading.timeline" class="text-muted">Nessun evento</div>
+          </div>
+
+          <!-- Tab: Fatturato -->
+          <div t-if="state.activeTab === 'revenue' and !state.tabLoading.revenue">
+            <t t-set="d" t-value="state.tabData.revenue || {}"/>
+            <div class="mv3-360-detail">
+              <div class="mv3-360-detail__row">
+                <span class="fw-bold">YTD</span>
+                <span class="float-end" t-out="this.formatCurrency(d.ytd_total)"/>
+              </div>
+              <div class="mv3-360-detail__row">
+                <span>Anno precedente</span>
+                <span class="float-end" t-out="this.formatCurrency(d.prev_year_total)"/>
+              </div>
+              <div class="mv3-360-detail__row">
+                <span>All-time</span>
+                <span class="float-end" t-out="this.formatCurrency(d.all_time_total)"/>
+              </div>
+              <div class="mv3-360-detail__row">
+                <span>Ultimo ordine</span>
+                <span class="float-end">
+                  <t t-out="d.last_order_ref || '-'"/>
+                  <small class="text-muted ms-1" t-out="this.formatDate(d.last_order_date)"/>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Ordini -->
+          <div t-if="state.activeTab === 'orders' and !state.tabLoading.orders">
+            <t t-set="items" t-value="(state.tabData.orders || {}).orders || []"/>
+            <table t-if="items.length > 0" class="table table-sm table-hover mb-0">
+              <thead><tr>
+                <th>Ordine</th><th>Data</th><th>Totale</th><th>Stato</th>
+              </tr></thead>
+              <tbody>
+                <t t-foreach="items" t-as="o" t-key="o.id">
+                  <tr>
+                    <td t-out="o.name"/>
+                    <td t-out="this.formatDate(o.date_order)"/>
+                    <td t-out="this.formatCurrency(o.amount_total)"/>
+                    <td t-out="o.state"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+            <div t-if="items.length === 0 and !state.tabLoading.orders" class="text-muted">Nessun ordine</div>
+          </div>
+
+          <!-- Tab: Note -->
+          <div t-if="state.activeTab === 'notes' and !state.tabLoading.notes">
+            <textarea class="form-control" rows="5"
+                      t-att-value="state.notesValue"
+                      t-on-input="onNotesInput"
+                      placeholder="Scrivi note su questo partner..."/>
+            <small t-if="state.notesSaving" class="text-muted"><i class="fa fa-spinner fa-spin"/> Salvataggio...</small>
+          </div>
+
+          <!-- Tab: Attività -->
+          <div t-if="state.activeTab === 'activities' and !state.tabLoading.activities">
+            <t t-set="items" t-value="(state.tabData.activities || {}).activities || []"/>
+            <table t-if="items.length > 0" class="table table-sm table-hover mb-0">
+              <thead><tr>
+                <th>Attività</th><th>Tipo</th><th>Scadenza</th><th>Assegnato a</th><th>Stato</th>
+              </tr></thead>
+              <tbody>
+                <t t-foreach="items" t-as="a" t-key="a.id">
+                  <tr>
+                    <td t-out="a.summary"/>
+                    <td t-out="a.activity_type_name"/>
+                    <td t-out="this.formatDate(a.date_deadline)"/>
+                    <td t-out="a.user_name"/>
+                    <td t-out="a.state"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+            <div t-if="items.length === 0 and !state.tabLoading.activities" class="text-muted">Nessuna attività aperta</div>
+          </div>
+
+          <!-- Tab: Prodotti -->
+          <div t-if="state.activeTab === 'products' and !state.tabLoading.products">
+            <t t-set="items" t-value="(state.tabData.products || {}).products || []"/>
+            <table t-if="items.length > 0" class="table table-sm table-hover mb-0">
+              <thead><tr>
+                <th>Prodotto</th><th>Qtà totale</th><th>Importo</th><th>Ultimo ordine</th>
+              </tr></thead>
+              <tbody>
+                <t t-foreach="items" t-as="p" t-key="p_index">
+                  <tr>
+                    <td t-out="p.product_name"/>
+                    <td t-out="p.qty_total"/>
+                    <td t-out="this.formatCurrency(p.total_amount)"/>
+                    <td t-out="this.formatDate(p.last_order_date)"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+            <div t-if="items.length === 0 and !state.tabLoading.products" class="text-muted">Nessun prodotto ordinato</div>
+          </div>
+
+          <!-- Tab: AI Insight -->
+          <div t-if="state.activeTab === 'ai_insight' and !state.tabLoading.ai_insight">
+            <t t-set="d" t-value="state.tabData.ai_insight || {}"/>
+            <div class="mv3-360-detail">
+              <div class="mv3-360-detail__row">
+                <span>Intent</span>
+                <span class="float-end" t-out="d.intent || 'N/D'"/>
+              </div>
+              <div class="mv3-360-detail__row">
+                <span>Sentiment</span>
+                <span class="float-end" t-out="d.sentiment || 'N/D'"/>
+              </div>
+              <div class="mv3-360-detail__row">
+                <span>Hotness</span>
+                <span class="float-end">
+                  <t t-out="d.hotness_score || 'N/D'"/>
+                  <small t-if="d.hotness_tier" class="ms-1 text-muted" t-out="'(' + d.hotness_tier + ')'"/>
+                </span>
+              </div>
+              <div class="mv3-360-detail__row">
+                <span>Ultima classificazione</span>
+                <span class="float-end" t-out="this.formatDate(d.last_ai_classification_date) || 'N/D'"/>
+              </div>
+              <div t-if="d.suggested_reply_hint" class="mv3-360-detail__row">
+                <span>Hint risposta</span>
+                <span class="float-end" t-out="d.suggested_reply_hint"/>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </t>
+</templates>
