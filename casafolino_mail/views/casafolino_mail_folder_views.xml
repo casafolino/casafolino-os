@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── Folder List View ────────────────────────────────────── -->
+    <record id="view_casafolino_mail_folder_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.folder.list</field>
+        <field name="model">casafolino.mail.folder</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="icon"/>
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="system_code"/>
+                <field name="is_system"/>
+                <field name="parent_folder_id"/>
+                <field name="folder_path"/>
+                <field name="message_count"/>
+                <field name="unread_count"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Folder Form View ────────────────────────────────────── -->
+    <record id="view_casafolino_mail_folder_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.folder.form</field>
+        <field name="model">casafolino.mail.folder</field>
+        <field name="arch" type="xml">
+            <form string="Cartella email">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="is_system"/>
+                            <field name="account_id"/>
+                            <field name="parent_folder_id"
+                                   invisible="is_system"/>
+                            <field name="icon"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="is_system" readonly="1"/>
+                            <field name="system_code" readonly="1"
+                                   invisible="not is_system"/>
+                            <field name="folder_path"/>
+                            <field name="message_count"/>
+                            <field name="unread_count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Folder Search View ──────────────────────────────────── -->
+    <record id="view_casafolino_mail_folder_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.folder.search</field>
+        <field name="model">casafolino.mail.folder</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="account_id"/>
+                <filter name="system" string="Sistema" domain="[('is_system', '=', True)]"/>
+                <filter name="custom" string="Personalizzate" domain="[('is_system', '=', False)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_account" string="Account" context="{'group_by': 'account_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Folder Action ───────────────────────────────────────── -->
+    <record id="action_casafolino_mail_folder" model="ir.actions.act_window">
+        <field name="name">Cartelle email</field>
+        <field name="res_model">casafolino.mail.folder</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_casafolino_mail_folder_search"/>
+        <field name="context">{'search_default_group_account': 1}</field>
+    </record>
+
+    <!-- ── Folder Rule List View ───────────────────────────────── -->
+    <record id="view_casafolino_mail_folder_rule_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.folder.rule.list</field>
+        <field name="model">casafolino.mail.folder.rule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="folder_id"/>
+                <field name="account_id"/>
+                <field name="sender_email"/>
+                <field name="sender_domain"/>
+                <field name="subject_contains"/>
+                <field name="has_attachments"/>
+                <field name="mark_as_read"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Folder Rule Form View ───────────────────────────────── -->
+    <record id="view_casafolino_mail_folder_rule_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.folder.rule.form</field>
+        <field name="model">casafolino.mail.folder.rule</field>
+        <field name="arch" type="xml">
+            <form string="Regola smistamento">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome regola..."/></h1>
+                    </div>
+                    <group string="Destinazione">
+                        <field name="folder_id"/>
+                        <field name="account_id" readonly="1"/>
+                    </group>
+                    <group string="Condizioni (AND tra loro)">
+                        <field name="sender_email" placeholder="nome@dominio.com"/>
+                        <field name="sender_domain" placeholder="dominio.com"/>
+                        <field name="subject_contains" placeholder="testo da cercare..."/>
+                        <field name="has_attachments"/>
+                    </group>
+                    <group string="Azioni">
+                        <field name="mark_as_read"/>
+                    </group>
+                    <group string="Configurazione">
+                        <field name="sequence"/>
+                        <field name="active"/>
+                    </group>
+                    <div class="o_row mb-3">
+                        <button name="action_test_rule" string="Test regola (ultime 50)"
+                                type="object" class="btn btn-secondary"/>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Folder Rule Search View ─────────────────────────────── -->
+    <record id="view_casafolino_mail_folder_rule_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.folder.rule.search</field>
+        <field name="model">casafolino.mail.folder.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="folder_id"/>
+                <field name="account_id"/>
+                <field name="sender_email"/>
+                <field name="sender_domain"/>
+                <filter name="active" string="Attive" domain="[('active', '=', True)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_account" string="Account" context="{'group_by': 'account_id'}"/>
+                    <filter name="group_folder" string="Cartella" context="{'group_by': 'folder_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Folder Rule Action ──────────────────────────────────── -->
+    <record id="action_casafolino_mail_folder_rule" model="ir.actions.act_window">
+        <field name="name">Regole smistamento</field>
+        <field name="res_model">casafolino.mail.folder.rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_casafolino_mail_folder_rule_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+</odoo>

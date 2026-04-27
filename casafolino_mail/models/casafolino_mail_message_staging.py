@@ -73,6 +73,7 @@ class CasafolinoMailMessage(models.Model):
         ('new', 'Nuova'),
         ('auto_keep', 'Tenuta (auto)'),
         ('keep', 'Tenuta'),
+        ('auto_attached', 'Auto-collegata Lead'),
         ('auto_discard', 'Scartata (auto)'),
         ('discard', 'Scartata'),
         ('review', 'Da valutare'),
@@ -142,11 +143,38 @@ class CasafolinoMailMessage(models.Model):
         'res.users', 'casafolino_mail_message_user_rel',
         'message_id', 'user_id', string='Assegnato a')
     lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
+    lead_name = fields.Char('Lead', compute='_compute_lead_info', store=False)
+    lead_stage_class = fields.Char('Lead Stage CSS', compute='_compute_lead_info', store=False)
     tracking_token = fields.Char('Tracking Token', index=True)
     tracking_ids = fields.One2many('casafolino.mail.tracking', 'message_id', string='Tracking')
     tracking_open_count = fields.Integer(compute='_compute_tracking_counts', string='Aperture')
     tracking_click_count = fields.Integer(compute='_compute_tracking_counts', string='Click')
     thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
+
+    # ── V3 restore fields ──────────────────────────────────────────
+    thread_id = fields.Many2one('casafolino.mail.thread', string='Thread V3',
+                                 ondelete='set null', index=True)
+    is_starred = fields.Boolean('Starred', default=False)
+    is_archived = fields.Boolean('Archiviata', default=False, index=True)
+    is_deleted = fields.Boolean('Deleted', default=False, index=True)
+    is_snoozed = fields.Boolean('Snoozed', default=False)
+    reply_to_message_id = fields.Many2one('casafolino.mail.message',
+                                           string='In risposta a',
+                                           ondelete='set null')
+    direction_computed = fields.Selection([
+        ('inbound', 'Ricevuta'),
+        ('outbound', 'Inviata'),
+    ], string='Direzione (indexed)', compute='_compute_direction_computed',
+       store=True, index=True)
+    hotness_snapshot = fields.Char('Hotness snapshot')
+
+    # ── V14 Folder fields ─────────────────────────────────────────
+    folder_id = fields.Many2one(
+        'casafolino.mail.folder', string='Cartella',
+        ondelete='set null', index=True)
+
+    # ── V15 Mass action fields ────────────────────────────────────
+    is_deleted_at = fields.Datetime('Cestinato il', index=True)
 
     _SUBJECT_PREFIX_RE = re.compile(
         r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
@@ -173,12 +201,48 @@ class CasafolinoMailMessage(models.Model):
         """)
 
     @api.depends('sender_email')
+    @api.depends('direction')
+    def _compute_direction_computed(self):
+        for rec in self:
+            rec.direction_computed = rec.direction
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        if self.env.context.get('skip_thread_upsert'):
+            return records
+        Thread = self.env['casafolino.mail.thread']
+        for rec in records:
+            if not rec.thread_id:
+                try:
+                    Thread._upsert_from_message(rec)
+                except Exception as e:
+                    _logger.warning(
+                        "Thread upsert failed for message %s: %s", rec.id, e
+                    )
+        return records
+
     def _compute_sender_domain(self):
         for rec in self:
             if rec.sender_email and '@' in rec.sender_email:
                 rec.sender_domain = rec.sender_email.split('@')[1].lower().strip()
             else:
                 rec.sender_domain = ''
+
+    def _compute_lead_info(self):
+        for rec in self:
+            if rec.lead_id:
+                name = rec.lead_id.name or ''
+                rec.lead_name = name[:30] + ('...' if len(name) > 30 else '')
+                if rec.lead_id.stage_id and rec.lead_id.stage_id.is_won:
+                    rec.lead_stage_class = 'success'
+                elif not rec.lead_id.active:
+                    rec.lead_stage_class = 'secondary'
+                else:
+                    rec.lead_stage_class = 'info'
+            else:
+                rec.lead_name = ''
+                rec.lead_stage_class = ''
 
     def _apply_sender_policy(self):
         """Applica la prima sender_policy che matcha a questo messaggio."""
@@ -392,6 +456,99 @@ class CasafolinoMailMessage(models.Model):
         # Se arriviamo qui: 2 tentativi falliti (403 retry)
         self.write({'ai_error': 'Cloudflare 403 after retry'})
 
+    def _maybe_auto_create_lead(self):
+        """Auto-crea crm.lead se email classificata 'commerciale' e nessun lead esistente per mittente."""
+        self.ensure_one()
+
+        # Feature toggle
+        enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.auto_create_lead_from_ai', '1')
+        if enabled != '1':
+            return
+
+        if self.ai_category != 'commerciale':
+            return
+
+        # Solo inbound
+        if self.direction != 'inbound':
+            return
+
+        sender = (self.sender_email or '').strip().lower()
+        if not sender:
+            return
+
+        # Skip internal domains
+        domain_part = sender.split('@')[-1] if '@' in sender else ''
+        internal_domains = {'casafolino.com', 'casafolino.it'}
+        if domain_part in internal_domains:
+            return
+
+        Lead = self.env['crm.lead'].sudo()
+        Partner = self.env['res.partner'].sudo()
+
+        # Dedup: se esiste già un lead aperto per questo mittente, skip
+        partner = Partner.search([('email', '=ilike', sender)], limit=1)
+        if partner:
+            existing_lead = Lead.search([
+                ('partner_id', '=', partner.id),
+                ('stage_id.is_won', '=', False),
+                ('active', '=', True),
+            ], limit=1)
+            if existing_lead:
+                _logger.info("[auto lead AI] Lead già esistente per %s (lead %s), skip",
+                             sender, existing_lead.id)
+                return
+
+        # Dedup: se il thread ha già un lead, skip
+        if self.thread_id:
+            existing_thread_lead = Lead.search([
+                ('cf_mail_thread_id', '=', self.thread_id.id),
+            ], limit=1)
+            if existing_thread_lead:
+                return
+
+        # Owner = account responsible user
+        owner_id = self.account_id.responsible_user_id.id if self.account_id.responsible_user_id else self.env.ref('base.user_admin').id
+
+        # utm.source
+        Source = self.env['utm.source'].sudo()
+        source = Source.search([('name', '=', 'Mail AI Auto-classify')], limit=1)
+        if not source:
+            source = Source.create({'name': 'Mail AI Auto-classify'})
+
+        # Tag auto-created
+        Tag = self.env['crm.tag'].sudo()
+        tags = Tag.browse()
+        for tag_name in ['auto-created', 'from-mail-classifier']:
+            t = Tag.search([('name', '=', tag_name)], limit=1)
+            if not t:
+                t = Tag.create({'name': tag_name})
+            tags |= t
+
+        lead_name = (self.subject or 'Email commerciale')[:80]
+        lead_vals = {
+            'name': lead_name,
+            'email_from': sender,
+            'partner_name': self.sender_name or sender.split('@')[0],
+            'description': '<p>Lead auto-creato da classificazione AI (commerciale)</p>'
+                           '<p><b>Oggetto:</b> %s</p>'
+                           '<p><b>Anteprima:</b> %s</p>' % (
+                               self.subject or '', (self.snippet or '')[:300]),
+            'source_id': source.id,
+            'user_id': owner_id,
+            'cf_auto_created': True,
+            'tag_ids': [(6, 0, tags.ids)],
+        }
+        if partner:
+            lead_vals['partner_id'] = partner.id
+        if self.thread_id:
+            lead_vals['cf_mail_thread_id'] = self.thread_id.id
+
+        lead = Lead.create(lead_vals)
+        self.write({'lead_id': lead.id})
+        _logger.info("[auto lead AI] Lead %s creato da email %s (msg %s, account %s)",
+                     lead.id, sender, self.id, self.account_id.name)
+
     def _compute_tracking_counts(self):
         for rec in self:
             events = self.env['casafolino.mail.tracking'].search([('message_id', '=', rec.id)])
@@ -421,51 +578,23 @@ class CasafolinoMailMessage(models.Model):
     # ── Quick Convert → CRM Lead ────────────────────────────────────
 
     def action_create_lead(self):
-        """Crea un crm.lead pre-compilato da questa email."""
+        """Apre wizard popup per creare crm.lead da questa email (v11)."""
         self.ensure_one()
 
-        # Assicura partner
-        partner = self.partner_id
-        if not partner and self.sender_email:
+        # Assicura partner se non ancora matchato
+        if not self.partner_id and self.sender_email:
             partner = self.env['res.partner'].search(
                 [('email', '=ilike', self.sender_email)], limit=1)
-            if not partner:
-                partner = self.env['res.partner'].create({
-                    'name': self.sender_name or self.sender_email,
-                    'email': self.sender_email,
-                })
+            if partner:
                 self.partner_id = partner
-
-        # Determina salesperson dalla policy o utente corrente
-        user_id = self.env.user.id
-        if self.policy_applied_id and self.policy_applied_id.default_owner_id:
-            user_id = self.policy_applied_id.default_owner_id.id
-
-        lead_vals = {
-            'name': self.subject or 'Email da %s' % self.sender_email,
-            'partner_id': partner.id if partner else False,
-            'email_from': self.sender_email,
-            'description': (self.body_html or self.snippet or '')[:3000],
-            'user_id': user_id,
-            'source_email_id': self.id,
-        }
-
-        # UTM source "Email" se esiste
-        try:
-            lead_vals['source_id'] = self.env.ref('utm.utm_source_email').id
-        except Exception:
-            pass
-
-        lead = self.env['crm.lead'].create(lead_vals)
-        self.write({'lead_id': lead.id, 'state': 'keep'})
 
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Lead creato',
-            'res_model': 'crm.lead',
-            'res_id': lead.id,
+            'name': 'Crea Lead da Email',
+            'res_model': 'casafolino.mail.create.lead.wizard',
             'view_mode': 'form',
-            'target': 'current',
+            'target': 'new',
+            'context': {'default_message_id': self.id},
         }
 
     # ── Triage actions (Step 3) ──────────────────────────────────────
@@ -524,13 +653,22 @@ class CasafolinoMailMessage(models.Model):
                         sib_vals['match_type'] = 'exact'
                     sib.write(sib_vals)
 
+    def action_open_lead(self):
+        """Apre il lead collegato in nuova tab."""
+        self.ensure_one()
+        if not self.lead_id:
+            return
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'crm.lead',
+            'res_id': self.lead_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
     def action_discard(self):
-        """Marca come discard."""
-        self.write({
-            'state': 'discard',
-            'triage_user_id': self.env.user.id,
-            'triage_date': fields.Datetime.now(),
-        })
+        """Hard delete record (v11). Gmail originale resta intatto."""
+        self.unlink()
 
     # ── Body download (Step 3) ───────────────────────────────────────
 
@@ -931,6 +1069,56 @@ class CasafolinoMailMessage(models.Model):
         """Segna come non letto."""
         self.write({'is_read': False})
 
+    def action_archive(self):
+        """Archivia messaggi."""
+        self.write({'is_archived': True})
+        for rec in self:
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_unarchive(self):
+        """Ripristina da archivio."""
+        self.write({'is_archived': False})
+        for rec in self:
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_delete_soft(self):
+        """Soft delete: sposta nel cestino."""
+        trash_folders = {}
+        for rec in self:
+            account_id = rec.account_id.id
+            if account_id not in trash_folders:
+                trash = self.env['casafolino.mail.folder'].search([
+                    ('account_id', '=', account_id),
+                    ('system_code', '=', 'trash'),
+                ], limit=1)
+                trash_folders[account_id] = trash.id if trash else False
+            vals = {
+                'is_deleted': True,
+                'is_deleted_at': fields.Datetime.now(),
+            }
+            if trash_folders[account_id]:
+                vals['folder_id'] = trash_folders[account_id]
+            rec.write(vals)
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_restore(self):
+        """Ripristina dal cestino."""
+        self.write({
+            'is_deleted': False,
+            'is_deleted_at': False,
+        })
+        for rec in self:
+            if rec.thread_id:
+                rec.thread_id._recompute_aggregates()
+
+    def action_toggle_star(self):
+        """Toggle starred status."""
+        for rec in self:
+            rec.write({'is_starred': not rec.is_starred})
+
     def action_bulk_delete(self):
         """Elimina selezionati (solo admin)."""
         if not self.env.user.has_group('base.group_system'):
@@ -964,6 +1152,30 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
+    # ── V15: Cron Cleanup Trash ──────────────────────────────────────
+
+    @api.model
+    def _cron_cleanup_trash(self):
+        """Permanently delete messages trashed more than 30 days ago."""
+        from datetime import timedelta
+        cutoff = fields.Datetime.now() - timedelta(days=30)
+        old_trash = self.sudo().search([
+            ('is_deleted', '=', True),
+            ('is_deleted_at', '!=', False),
+            ('is_deleted_at', '<', cutoff),
+        ])
+        if not old_trash:
+            return
+        count = len(old_trash)
+        # Collect threads before unlinking
+        thread_ids = old_trash.mapped('thread_id')
+        old_trash.unlink()
+        # Clean up empty threads
+        for thread in thread_ids:
+            if thread.exists() and not thread.message_ids:
+                thread.unlink()
+        _logger.info("Cleanup trash: %d messages permanently deleted", count)
+
     # ── Cron AI classify pending ────────────────────────────────────
 
     @api.model
@@ -987,6 +1199,12 @@ class CasafolinoMailMessage(models.Model):
                     # Re-apply policy solo se il messaggio è ancora in state='new'
                     if msg.state == 'new':
                         msg._apply_sender_policy()
+                    # Auto Lead AI: crea lead se classificato "commerciale"
+                    if msg.ai_category == 'commerciale':
+                        try:
+                            msg._maybe_auto_create_lead()
+                        except Exception as le:
+                            _logger.warning("Auto lead error msg %s: %s", msg.id, le)
             except Exception as e:
                 _logger.warning("AI classify cron error msg %s: %s", msg.id, e)
             self.env.cr.commit()
@@ -995,18 +1213,6 @@ class CasafolinoMailMessage(models.Model):
                 time.sleep(2.5)
 
         _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
-
-    # ── Cron cleanup (Step 8) ────────────────────────────────────────
-
-    @api.model
-    def _cron_cleanup_discarded(self):
-        """Elimina email scartate più vecchie di 30 giorni."""
-        from datetime import timedelta
-        cutoff = fields.Datetime.now() - timedelta(days=30)
-        old = self.search([('state', '=', 'discard'), ('triage_date', '<', cutoff)])
-        count = len(old)
-        old.unlink()
-        _logger.info("Mail cleanup: %d email scartate eliminate.", count)
 
     @api.model
     def _cron_fetch_pending_bodies(self):
@@ -1063,6 +1269,113 @@ class CasafolinoMailMessage(models.Model):
                 pass
 
         _logger.info("Cron fetch bodies completato: %d messaggi processati", len(pending))
+
+    # ── Auto-attach email to open leads (v11 cron) ─────────────────
+
+    @api.model
+    def _cron_auto_attach_leads(self):
+        """Cron: collega email new a lead aperti dello stesso partner.
+
+        Se partner ha 1+ lead open → attach al più recente (MAX create_date).
+        Stato → auto_attached. Batch max 100 per run.
+        """
+        emails = self.search([
+            ('state', '=', 'new'),
+            ('partner_id', '!=', False),
+        ], limit=100, order='email_date desc')
+
+        if not emails:
+            return
+
+        attached = 0
+        for msg in emails:
+            # Cerca lead aperti per questo partner
+            leads = self.env['crm.lead'].search([
+                ('partner_id', '=', msg.partner_id.id),
+                ('active', '=', True),
+                ('stage_id.is_won', '=', False),
+                ('probability', '<', 100),
+            ], order='create_date desc', limit=1)
+
+            if leads:
+                msg.write({
+                    'lead_id': leads[0].id,
+                    'state': 'auto_attached',
+                })
+                attached += 1
+
+        if attached:
+            _logger.info("Auto-attach leads: %d email collegate su %d processate",
+                         attached, len(emails))
+
+    # ── Digest mittenti fuori-CRM (v11 cron) ────────────────────────
+
+    @api.model
+    def _cron_digest_fuori_crm(self):
+        """Cron settimanale: invia digest top-20 domini fuori-CRM ad Antonio.
+
+        Analizza email filtrate dalla whitelist (non scaricate) contando
+        i domini più frequenti negli header IMAP degli ultimi 7 giorni.
+        Usa i log applicativi per conteggio — alternativa: query diretta.
+        """
+        from collections import Counter
+        from datetime import timedelta
+
+        cutoff = fields.Datetime.now() - timedelta(days=7)
+
+        # Conta domini mittente di email NON in CRM (state=new senza partner)
+        # In v11 le email fuori-CRM non vengono create, quindi contiamo
+        # i domini con email create nell'ultima settimana raggruppati
+        self.env.cr.execute("""
+            SELECT sender_domain, COUNT(*) as cnt
+            FROM casafolino_mail_message
+            WHERE email_date >= %s
+              AND partner_id IS NULL
+              AND direction = 'inbound'
+              AND sender_domain IS NOT NULL
+              AND sender_domain != ''
+            GROUP BY sender_domain
+            ORDER BY cnt DESC
+            LIMIT 20
+        """, [cutoff])
+        rows = self.env.cr.fetchall()
+
+        if not rows:
+            return
+
+        # Costruisci HTML digest
+        lines = []
+        for domain, count in rows:
+            lines.append('<tr><td style="padding:4px 8px;">%s</td>'
+                         '<td style="padding:4px 8px;text-align:right;">%d</td></tr>'
+                         % (domain, count))
+
+        body = """
+        <h3>Digest Settimanale — Mittenti Fuori CRM</h3>
+        <p>Top 20 domini non riconosciuti negli ultimi 7 giorni:</p>
+        <table border="1" cellpadding="4" style="border-collapse:collapse;">
+            <tr><th>Dominio</th><th>Email</th></tr>
+            %s
+        </table>
+        <p><em>Per aggiungere un dominio al CRM: crea un contatto azienda con email @dominio
+        oppure aggiungi il dominio nel campo "Domini email extra".</em></p>
+        """ % '\n'.join(lines)
+
+        # Invia ad Antonio
+        try:
+            antonio = self.env['res.users'].search([
+                ('login', '=', 'antonio@casafolino.com')
+            ], limit=1)
+            if antonio and antonio.partner_id:
+                mail = self.env['mail.mail'].sudo().create({
+                    'subject': 'Digest Mittenti Fuori-CRM — Settimana %s' % fields.Date.today().isocalendar()[1],
+                    'body_html': body,
+                    'email_to': 'antonio@casafolino.com',
+                    'auto_delete': True,
+                })
+                mail.send()
+        except Exception as e:
+            _logger.warning("Digest fuori-CRM send error: %s", e)
 
     # ── OWL Client API ───────────────────────────────────────────────
 

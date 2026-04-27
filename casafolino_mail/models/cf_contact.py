@@ -120,6 +120,14 @@ class ResPartnerMailExt(models.Model):
         ('nome_azienda', 'Da nome azienda'), ('nome_persona', 'Da nome persona'),
     ], string='Arricchito da')
 
+    # ── Domini extra per whitelist ingestion ──
+    email_domains_extra = fields.Char(
+        'Domini email extra',
+        help='Domini aggiuntivi separati da virgola (es. aldi-sued.de, aldi.com). '
+             'Usati dal filtro ingestion per riconoscere email di questa azienda.',
+        groups='sales_team.group_sale_manager',
+    )
+
     cf_department = fields.Char('Reparto')
     cf_linkedin = fields.Char('LinkedIn')
     cf_instagram = fields.Char('Instagram')

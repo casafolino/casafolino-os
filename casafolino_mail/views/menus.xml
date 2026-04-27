@@ -5,17 +5,17 @@
         sequence="15"
         web_icon="casafolino_mail,static/description/icon.png"/>
 
-    <menuitem id="menu_casafolino_mail_triage"
-        name="Inbox Triage"
+    <menuitem id="menu_casafolino_mail_my_mailbox"
+        name="La Mia Casella"
         parent="menu_casafolino_mail_root"
-        sequence="1"
-        action="action_casafolino_mail_message_triage"/>
+        sequence="0"
+        action="action_mail_v3_client"/>
 
-    <menuitem id="menu_casafolino_mail_keep"
-        name="Tenute CRM"
+    <menuitem id="menu_casafolino_mail_analytics"
+        name="Analytics"
         parent="menu_casafolino_mail_root"
-        sequence="2"
-        action="action_casafolino_mail_message_keep"/>
+        sequence="0"
+        action="action_mail_v3_analytics"/>
 
     <menuitem id="menu_casafolino_mail_lead_score"
         name="Lead Scoring TOP 20"
@@ -53,12 +53,11 @@
         sequence="9"
         action="action_sender_decision_history"/>
 
-    <menuitem id="menu_casafolino_mail_discard"
-        name="Archivio Scarto"
+    <menuitem id="menu_casafolino_mail_folder_rules"
+        name="Regole Smistamento"
         parent="menu_casafolino_mail_root"
         sequence="10"
-        action="action_casafolino_mail_message_discard"
-        groups="base.group_system"/>
+        action="action_casafolino_mail_folder_rule"/>
 
     <menuitem id="menu_casafolino_mail_config"
         name="Configurazione"
@@ -77,4 +76,16 @@
         parent="menu_casafolino_mail_config"
         sequence="2"
         action="action_casafolino_mail_policy"/>
+
+    <menuitem id="menu_casafolino_mail_folders_admin"
+        name="Cartelle"
+        parent="menu_casafolino_mail_config"
+        sequence="3"
+        action="action_casafolino_mail_folder"/>
+
+    <menuitem id="menu_casafolino_mail_folder_rules_admin"
+        name="Regole Smistamento"
+        parent="menu_casafolino_mail_config"
+        sequence="4"
+        action="action_casafolino_mail_folder_rule"/>
 </odoo>
