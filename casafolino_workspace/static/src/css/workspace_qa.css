@@ -1,0 +1,47 @@
+/* ═══════ Quality Section ═══════ */
+.cf-qa-section { padding: 0; }
+
+.cf-qa-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px; background: var(--cf-card-bg);
+    border-radius: 10px; cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    margin-bottom: 6px; border-left: 3px solid #9CA3AF;
+}
+.cf-qa-item:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(62,37,24,0.08); }
+.cf-qa-item-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0; opacity: 0.8;
+}
+.cf-qa-item-body { flex: 1; min-width: 0; }
+.cf-qa-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.cf-qa-item-title { font-size: 14px; font-weight: 700; color: var(--cf-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 8px; }
+.cf-qa-item-sub { font-size: 12px; color: var(--cf-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-qa-item-cat { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--cf-text-muted); margin-top: 4px; }
+
+/* CCP grid */
+.cf-qa-ccp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.cf-qa-ccp-card {
+    padding: 14px; background: var(--cf-card-bg); border-radius: 10px;
+    border-left: 3px solid #10B981;
+}
+.cf-qa-ccp-title { font-size: 14px; font-weight: 700; color: var(--cf-text); margin-bottom: 4px; }
+.cf-qa-ccp-desc { font-size: 12px; color: var(--cf-text-muted); margin-bottom: 8px; }
+.cf-qa-ccp-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; display: inline-block; }
+
+/* Doc grid */
+.cf-qa-doc-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: var(--cf-card-bg);
+    border-radius: 10px; margin-bottom: 6px;
+}
+.cf-qa-doc-info { flex: 1; min-width: 0; }
+.cf-qa-doc-title { font-size: 14px; font-weight: 700; color: var(--cf-text); }
+.cf-qa-doc-expiry { font-size: 12px; color: var(--cf-text-muted); }
+.cf-qa-doc-bar { width: 80px; height: 6px; border-radius: 99px; background: #E8E4DE; overflow: hidden; flex-shrink: 0; }
+.cf-qa-doc-bar-fill { height: 100%; border-radius: 99px; }
+
+/* Empty state */
+.cf-qa-empty { text-align: center; padding: 24px; color: var(--cf-text-muted); font-size: 13px; font-style: italic; }
+.cf-qa-empty i { font-size: 24px; display: block; margin-bottom: 8px; opacity: 0.3; }

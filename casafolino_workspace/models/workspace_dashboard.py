@@ -253,13 +253,18 @@ class WorkspaceDashboard(models.AbstractModel):
                        OR ce.name ILIKE '%%crowdfunding%%')
               ),
               quality AS (
-                SELECT COUNT(*) c FROM project_task pt
-                JOIN project_project pp ON pp.id = pt.project_id
-                LEFT JOIN project_project_project_tags_rel ttr ON ttr.project_project_id = pp.id
-                LEFT JOIN project_tags ptag ON ptag.id = ttr.project_tags_id
-                WHERE (pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved'))
-                  AND pt.date_deadline IS NOT NULL AND pt.date_deadline < %(today)s
-                  AND (ptag.name::text ILIKE '%%Qualit%%' OR pp.id IN (76, 77))
+                SELECT (
+                  SELECT COUNT(*) FROM project_task pt
+                  JOIN project_project pp ON pp.id = pt.project_id
+                  LEFT JOIN project_project_project_tags_rel ttr ON ttr.project_project_id = pp.id
+                  LEFT JOIN project_tags ptag ON ptag.id = ttr.project_tags_id
+                  WHERE (pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved'))
+                    AND pt.date_deadline IS NOT NULL AND pt.date_deadline < %(today)s
+                    AND (ptag.name::text ILIKE '%%Qualit%%' OR pp.id IN (76, 77))
+                ) + (
+                  SELECT COUNT(*) FROM stock_lot
+                  WHERE expiration_date IS NOT NULL AND expiration_date <= %(today)s + 30
+                ) AS c
               )
             SELECT
               pipeline.c, projects.c, mail_pending.c, agenda.c,

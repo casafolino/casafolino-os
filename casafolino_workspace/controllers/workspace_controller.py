@@ -215,3 +215,50 @@ class WorkspaceDashboardController(http.Controller):
         except Exception as e:
             _logger.error("Cal detail error: %s", e, exc_info=True)
             return {"error": str(e)}
+
+    # ─── Quality section routes ─────────────────────────
+
+    @http.route("/workspace/qa/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def qa_data(self, **kw):
+        try:
+            return request.env["workspace.quality"].get_qa_data()
+        except Exception as e:
+            _logger.error("QA data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/qa/list", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def qa_list(self, filter_key="tutto", **kw):
+        try:
+            return request.env["workspace.quality"].get_qa_list(filter_key)
+        except Exception as e:
+            _logger.error("QA list error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/qa/ccp", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def qa_ccp(self, **kw):
+        try:
+            return request.env["workspace.quality"].get_ccp_grid()
+        except Exception as e:
+            _logger.error("QA ccp error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/qa/docs", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def qa_docs(self, **kw):
+        try:
+            return request.env["workspace.quality"].get_docs_grid()
+        except Exception as e:
+            _logger.error("QA docs error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/qa/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def qa_detail(self, item_type="", item_id=0, **kw):
+        try:
+            return request.env["workspace.quality"].get_qa_detail(item_type, int(item_id))
+        except Exception as e:
+            _logger.error("QA detail error: %s", e, exc_info=True)
+            return {"error": str(e)}

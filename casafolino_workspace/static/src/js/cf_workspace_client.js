@@ -12,6 +12,7 @@ import { WorkspaceLead } from "./lead/workspace_lead";
 import { WorkspaceProj } from "./proj/workspace_proj";
 import { WorkspaceMail } from "./mail/workspace_mail";
 import { WorkspaceCal } from "./cal/workspace_cal";
+import { WorkspaceQa } from "./qa/workspace_qa";
 
 class CfWorkspaceMain extends Component {
     static template = "casafolino_workspace.CfWorkspaceMain";
@@ -27,6 +28,7 @@ class CfWorkspaceMain extends Component {
         WorkspaceProj,
         WorkspaceMail,
         WorkspaceCal,
+        WorkspaceQa,
     };
 
     setup() {
@@ -93,6 +95,10 @@ class CfWorkspaceMain extends Component {
         }
         if (item && item.id === "agenda") {
             this.state.page = "cal";
+            return;
+        }
+        if (item && item.id === "quality") {
+            this.state.page = "qa";
             return;
         }
         this.state.selectedItem = item;
