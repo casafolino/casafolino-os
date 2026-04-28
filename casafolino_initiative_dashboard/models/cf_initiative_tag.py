@@ -6,5 +6,5 @@ class CfInitiativeTag(models.Model):
 
     category = fields.Selection(
         selection_add=[('source', 'Source / Canale Acquisizione')],
-        ondelete={'source': 'set default'},
+        ondelete={'source': 'set null'},
     )
