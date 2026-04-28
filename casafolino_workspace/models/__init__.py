@@ -7,3 +7,6 @@ from . import workspace_project
 from . import workspace_mail
 from . import workspace_calendar
 from . import workspace_quality
+from . import workspace_cash
+from . import workspace_decisions
+from . import workspace_investor

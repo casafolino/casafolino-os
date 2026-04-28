@@ -13,6 +13,9 @@ import { WorkspaceProj } from "./proj/workspace_proj";
 import { WorkspaceMail } from "./mail/workspace_mail";
 import { WorkspaceCal } from "./cal/workspace_cal";
 import { WorkspaceQa } from "./qa/workspace_qa";
+import { WorkspaceCash } from "./cash/workspace_cash";
+import { WorkspaceDec } from "./dec/workspace_dec";
+import { WorkspaceInv } from "./inv/workspace_inv";
 
 class CfWorkspaceMain extends Component {
     static template = "casafolino_workspace.CfWorkspaceMain";
@@ -29,6 +32,9 @@ class CfWorkspaceMain extends Component {
         WorkspaceMail,
         WorkspaceCal,
         WorkspaceQa,
+        WorkspaceCash,
+        WorkspaceDec,
+        WorkspaceInv,
     };
 
     setup() {
@@ -99,6 +105,18 @@ class CfWorkspaceMain extends Component {
         }
         if (item && item.id === "quality") {
             this.state.page = "qa";
+            return;
+        }
+        if (item && item.id === "cassa") {
+            this.state.page = "cash";
+            return;
+        }
+        if (item && item.id === "decisions") {
+            this.state.page = "dec";
+            return;
+        }
+        if (item && item.id === "investor") {
+            this.state.page = "inv";
             return;
         }
         this.state.selectedItem = item;

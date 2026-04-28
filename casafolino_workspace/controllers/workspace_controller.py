@@ -262,3 +262,117 @@ class WorkspaceDashboardController(http.Controller):
         except Exception as e:
             _logger.error("QA detail error: %s", e, exc_info=True)
             return {"error": str(e)}
+
+    # ─── Cash & Bank section routes ────────────────────
+
+    @http.route("/workspace/cash/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cash_data(self, **kw):
+        try:
+            return request.env["workspace.cash"].get_cash_data()
+        except Exception as e:
+            _logger.error("Cash data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cash/accounts", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cash_accounts(self, **kw):
+        try:
+            return request.env["workspace.cash"].get_accounts()
+        except Exception as e:
+            _logger.error("Cash accounts error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cash/bsl", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cash_bsl(self, filter_key="tutte", **kw):
+        try:
+            return request.env["workspace.cash"].get_bsl(filter_key)
+        except Exception as e:
+            _logger.error("Cash BSL error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cash/invoices", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cash_invoices(self, filter_key="tutte", **kw):
+        try:
+            return request.env["workspace.cash"].get_invoices(filter_key)
+        except Exception as e:
+            _logger.error("Cash invoices error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cash/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cash_detail(self, item_type="", item_id=0, **kw):
+        try:
+            return request.env["workspace.cash"].get_cash_detail(item_type, int(item_id))
+        except Exception as e:
+            _logger.error("Cash detail error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    # ─── Decisions section routes ──────────────────────
+
+    @http.route("/workspace/dec/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def dec_data(self, **kw):
+        try:
+            return request.env["workspace.decisions"].get_dec_data()
+        except Exception as e:
+            _logger.error("Dec data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/dec/list", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def dec_list(self, filter_key="tutte", **kw):
+        try:
+            return request.env["workspace.decisions"].get_dec_list(filter_key)
+        except Exception as e:
+            _logger.error("Dec list error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/dec/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def dec_detail(self, item_type="", item_id=0, **kw):
+        try:
+            return request.env["workspace.decisions"].get_dec_detail(item_type, int(item_id))
+        except Exception as e:
+            _logger.error("Dec detail error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    # ─── Investor & CdA section routes ─────────────────
+
+    @http.route("/workspace/inv/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def inv_data(self, **kw):
+        try:
+            return request.env["workspace.investor"].get_inv_data()
+        except Exception as e:
+            _logger.error("Inv data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/inv/events", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def inv_events(self, filter_key="tutti", **kw):
+        try:
+            return request.env["workspace.investor"].get_inv_events(filter_key)
+        except Exception as e:
+            _logger.error("Inv events error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/inv/comms", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def inv_comms(self, **kw):
+        try:
+            return request.env["workspace.investor"].get_inv_comms()
+        except Exception as e:
+            _logger.error("Inv comms error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/inv/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def inv_detail(self, item_type="", item_id=0, **kw):
+        try:
+            return request.env["workspace.investor"].get_inv_detail(item_type, int(item_id))
+        except Exception as e:
+            _logger.error("Inv detail error: %s", e, exc_info=True)
+            return {"error": str(e)}

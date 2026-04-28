@@ -1,0 +1,25 @@
+/* ═══════ Cash & Bank Section ═══════ */
+.cf-cash-section { padding: 0; }
+
+/* Bank account cards */
+.cf-cash-accounts-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;
+    margin-bottom: 16px;
+}
+.cf-cash-account-card {
+    padding: 18px; background: var(--cf-card-bg); border-radius: 12px;
+    border-left: 3px solid #5A6E3A; transition: transform 0.12s, box-shadow 0.12s;
+}
+.cf-cash-account-card:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(62,37,24,0.08); }
+.cf-cash-account-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.cf-cash-account-name { font-size: 14px; font-weight: 700; color: var(--cf-text); }
+.cf-cash-account-balance {
+    font-size: 22px; font-weight: 800; color: var(--cf-text);
+    letter-spacing: -0.3px;
+}
+
+/* Amount display in list items */
+.cf-cash-amount { font-size: 13px; font-weight: 700; color: var(--cf-text); white-space: nowrap; }
+.cf-cash-amount-overdue { color: #DC2626; }

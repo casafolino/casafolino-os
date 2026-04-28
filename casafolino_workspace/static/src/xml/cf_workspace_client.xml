@@ -23,6 +23,12 @@
                           t-on-click="() => this.onNavigate('cal')">Agenda</span>
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'qa' ? 'active' : ''}"
                           t-on-click="() => this.onNavigate('qa')">Qualità</span>
+                    <span t-attf-class="cf-ws-nav-item #{state.page === 'cash' ? 'active' : ''}"
+                          t-on-click="() => this.onNavigate('cash')">Cassa</span>
+                    <span t-attf-class="cf-ws-nav-item #{state.page === 'dec' ? 'active' : ''}"
+                          t-on-click="() => this.onNavigate('dec')">Decisioni</span>
+                    <span t-attf-class="cf-ws-nav-item #{state.page === 'inv' ? 'active' : ''}"
+                          t-on-click="() => this.onNavigate('inv')">Investor</span>
                 </div>
             </div>
             <div class="cf-ws-header-center">
@@ -74,6 +80,27 @@
         <t t-elif="state.page === 'qa'">
             <div class="cf-ws-body">
                 <WorkspaceQa onGoHome.bind="onGoHome"/>
+            </div>
+        </t>
+
+        <!-- CASH SECTION -->
+        <t t-elif="state.page === 'cash'">
+            <div class="cf-ws-body">
+                <WorkspaceCash onGoHome.bind="onGoHome"/>
+            </div>
+        </t>
+
+        <!-- DEC SECTION -->
+        <t t-elif="state.page === 'dec'">
+            <div class="cf-ws-body">
+                <WorkspaceDec onGoHome.bind="onGoHome"/>
+            </div>
+        </t>
+
+        <!-- INV SECTION -->
+        <t t-elif="state.page === 'inv'">
+            <div class="cf-ws-body">
+                <WorkspaceInv onGoHome.bind="onGoHome"/>
             </div>
         </t>
 
