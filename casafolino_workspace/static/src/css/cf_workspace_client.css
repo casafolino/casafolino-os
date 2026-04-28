@@ -371,6 +371,51 @@ body:has(.cf-ws) .o_main_navbar {
     margin-top: 2px;
 }
 
+/* ═══════ QUICK ACTIONS ═══════ */
+.cf-quick-actions {
+    margin-bottom: 16px;
+}
+
+.cf-qa-buttons {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.cf-qa-buttons::-webkit-scrollbar {
+    display: none;
+}
+
+.cf-qa-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(107,74,30,0.12);
+    background: var(--cf-card-bg);
+    color: var(--cf-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+
+.cf-qa-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(62,37,24,0.08);
+    border-color: var(--cf-gold);
+}
+
+.cf-qa-btn i {
+    font-size: 14px;
+    color: var(--cf-brown);
+    opacity: 0.7;
+}
+
 /* ═══════ MACRO GRID ═══════ */
 .cf-macro-grid {
     display: grid;

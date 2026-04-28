@@ -136,6 +136,7 @@
         <t t-elif="state.data">
             <div class="cf-ws-body">
                 <WorkspaceHero data="state.data"/>
+                <WorkspaceQuickActions/>
                 <WorkspaceKpis kpis="state.data.kpis"/>
                 <WorkspaceMacro macro="state.data.macro" onSelect.bind="onSelectItem"/>
                 <div class="cf-ws-two-col">
@@ -154,6 +155,31 @@
                 </t>
             </div>
         </t>
+    </div>
+</t>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- QUICK ACTIONS                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<t t-name="casafolino_workspace.QuickActions">
+    <div class="cf-quick-actions">
+        <div class="cf-qa-buttons">
+            <button class="cf-qa-btn" t-on-click="openLead">
+                <i class="fa fa-bullseye"/><span>Lead</span>
+            </button>
+            <button class="cf-qa-btn" t-on-click="openOpportunity">
+                <i class="fa fa-handshake-o"/><span>Trattativa</span>
+            </button>
+            <button class="cf-qa-btn" t-on-click="openMeeting">
+                <i class="fa fa-calendar-plus-o"/><span>Appuntamento</span>
+            </button>
+            <button class="cf-qa-btn" t-on-click="openContact">
+                <i class="fa fa-user-plus"/><span>Contatto</span>
+            </button>
+            <button class="cf-qa-btn" t-on-click="openProject">
+                <i class="fa fa-folder-open-o"/><span>Progetto</span>
+            </button>
+        </div>
     </div>
 </t>
 

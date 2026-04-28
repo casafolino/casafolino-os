@@ -8,6 +8,7 @@ import { WorkspaceMacro } from "./components/workspace_macro";
 import { WorkspaceWork } from "./components/workspace_work";
 import { WorkspaceDetail } from "./components/workspace_detail";
 import { WorkspaceFeed } from "./components/workspace_feed";
+import { WorkspaceQuickActions } from "./components/workspace_quick_actions";
 import { WorkspaceLead } from "./lead/workspace_lead";
 import { WorkspaceProj } from "./proj/workspace_proj";
 import { WorkspaceMail } from "./mail/workspace_mail";
@@ -27,6 +28,7 @@ class CfWorkspaceMain extends Component {
         WorkspaceWork,
         WorkspaceDetail,
         WorkspaceFeed,
+        WorkspaceQuickActions,
         WorkspaceLead,
         WorkspaceProj,
         WorkspaceMail,

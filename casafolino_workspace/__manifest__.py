@@ -22,6 +22,7 @@
             "casafolino_workspace/static/src/js/components/workspace_work.js",
             "casafolino_workspace/static/src/js/components/workspace_detail.js",
             "casafolino_workspace/static/src/js/components/workspace_feed.js",
+            "casafolino_workspace/static/src/js/components/workspace_quick_actions.js",
             "casafolino_workspace/static/src/css/workspace_lead.css",
             "casafolino_workspace/static/src/css/workspace_proj.css",
             "casafolino_workspace/static/src/js/lead/workspace_lead.js",
