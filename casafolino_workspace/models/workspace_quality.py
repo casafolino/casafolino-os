@@ -104,12 +104,12 @@ class WorkspaceQuality(models.AbstractModel):
             ccp_count = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_ccp")
             if ccp_count > 0:
                 try:
-                    cr.execute("SELECT id, name, description FROM cf_haccp_ccp ORDER BY id LIMIT 10")
+                    cr.execute("SELECT id, name, ccp_type FROM cf_haccp_ccp ORDER BY sequence, id LIMIT 10")
                     for row in cr.fetchall():
                         items.append({
                             "id": row[0], "type": "ccp", "item_id": row[0],
                             "title": _jsonb_str(row[1]) or f"CCP #{row[0]}",
-                            "subtitle": (_jsonb_str(row[2]) or "")[:80],
+                            "subtitle": (row[2] or "")[:80],
                             "cat": "HACCP", "icon": "fa-thermometer-half", "icon_color": "#D97706",
                             "status": "active", "pill_status": "green", "pill_label": "attivo", "days": 0,
                         })
@@ -150,7 +150,7 @@ class WorkspaceQuality(models.AbstractModel):
             doc_count = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_document")
             if doc_count > 0:
                 try:
-                    cr.execute("SELECT id, name, date_to FROM cf_haccp_document ORDER BY date_to ASC NULLS LAST LIMIT 10")
+                    cr.execute("SELECT id, name, date_expiry FROM cf_haccp_document ORDER BY date_expiry ASC NULLS LAST LIMIT 10")
                     for row in cr.fetchall():
                         days = (row[2] - today).days if row[2] else 999
                         items.append({
@@ -177,12 +177,12 @@ class WorkspaceQuality(models.AbstractModel):
         count = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_ccp")
         if count > 0:
             try:
-                cr.execute("SELECT id, name, description FROM cf_haccp_ccp ORDER BY id")
+                cr.execute("SELECT id, name, ccp_type, state FROM cf_haccp_ccp ORDER BY sequence, id")
                 for row in cr.fetchall():
                     ccps.append({
                         "id": row[0],
                         "title": _jsonb_str(row[1]) or f"CCP #{row[0]}",
-                        "description": (_jsonb_str(row[2]) or "")[:120],
+                        "description": (row[2] or "")[:120],
                         "status": "green", "status_label": "Conforme",
                     })
             except Exception:
@@ -197,7 +197,7 @@ class WorkspaceQuality(models.AbstractModel):
         count = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_document")
         if count > 0:
             try:
-                cr.execute("SELECT id, name, date_to FROM cf_haccp_document ORDER BY date_to ASC NULLS LAST LIMIT 20")
+                cr.execute("SELECT id, name, date_expiry FROM cf_haccp_document ORDER BY date_expiry ASC NULLS LAST LIMIT 20")
                 for row in cr.fetchall():
                     days = (row[2] - today).days if row[2] else 999
                     docs.append({
@@ -269,7 +269,7 @@ class WorkspaceQuality(models.AbstractModel):
         ccp_pending = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_ccp_log WHERE create_date >= CURRENT_DATE - INTERVAL '7 days'")
 
         # IFS audit days (from seed project)
-        cr.execute("SELECT date FROM project_project WHERE name ILIKE '%%IFS%%' AND active=true LIMIT 1")
+        cr.execute("SELECT date FROM project_project WHERE name::text ILIKE '%%IFS%%' AND active=true LIMIT 1")
         ifs_row = cr.fetchone()
         ifs_days = (ifs_row[0] - today).days if ifs_row and ifs_row[0] else 999
 
@@ -288,9 +288,9 @@ class WorkspaceQuality(models.AbstractModel):
     def _macro_batch(self, cr, today):
         nc = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_nc WHERE state NOT IN ('closed','done')")
         ccp = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_ccp")
-        docs = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_document WHERE date_to IS NOT NULL AND date_to <= CURRENT_DATE + 30")
+        docs = _safe_count(cr, "SELECT COUNT(*) FROM cf_haccp_document WHERE date_expiry IS NOT NULL AND date_expiry <= CURRENT_DATE + 30")
 
-        cr.execute("SELECT date FROM project_project WHERE name ILIKE '%%IFS%%' AND active=true LIMIT 1")
+        cr.execute("SELECT date FROM project_project WHERE name::text ILIKE '%%IFS%%' AND active=true LIMIT 1")
         r = cr.fetchone()
         ifs = (r[0] - today).days if r and r[0] else 0
 
