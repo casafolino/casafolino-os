@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 import logging
+import re
 from datetime import date, timedelta
 
 from odoo import api, models, fields
 
 _logger = logging.getLogger(__name__)
+
+_HTML_TAG_RE = re.compile(r'<[^>]+>')
 
 # Static tips per role (placeholder for future AI)
 _TIPS = {
@@ -41,63 +44,26 @@ _MONTHS_IT = {
 
 # Macro area definitions per role
 _MACRO_AREAS = [
-    {
-        "id": "pipeline",
-        "label": "Pipeline lead",
-        "icon": "fa-bullseye",
-        "color": "#EEEDFE",
-        "roles": ["antonio", "josefina"],
-    },
-    {
-        "id": "projects",
-        "label": "Progetti attivi",
-        "icon": "fa-folder-open",
-        "color": "#E1F5EE",
-        "roles": ["antonio", "martina"],
-    },
-    {
-        "id": "mail",
-        "label": "Mail in sospeso",
-        "icon": "fa-envelope",
-        "color": "#FAECE7",
-        "roles": ["antonio", "josefina", "martina", "maria"],
-    },
-    {
-        "id": "agenda",
-        "label": "Agenda oggi",
-        "icon": "fa-calendar",
-        "color": "#FBEAF0",
-        "roles": ["antonio", "josefina", "martina", "maria"],
-    },
-    {
-        "id": "cassa",
-        "label": "Cassa & banca",
-        "icon": "fa-university",
-        "color": "#FAEEDA",
-        "roles": ["antonio", "martina"],
-    },
-    {
-        "id": "decisions",
-        "label": "Decisioni in attesa",
-        "icon": "fa-gavel",
-        "color": "#E6F1FB",
-        "roles": ["antonio"],
-    },
-    {
-        "id": "investor",
-        "label": "Investor & CdA",
-        "icon": "fa-briefcase",
-        "color": "#EAF3DE",
-        "roles": ["antonio"],
-    },
-    {
-        "id": "quality",
-        "label": "Alert qualità",
-        "icon": "fa-shield",
-        "color": "#F1EFE8",
-        "roles": ["antonio", "maria"],
-    },
+    {"id": "pipeline", "label": "Pipeline lead", "icon": "fa-bullseye",
+     "color": "#EEEDFE", "roles": ["antonio", "josefina"]},
+    {"id": "projects", "label": "Progetti attivi", "icon": "fa-folder-open",
+     "color": "#E1F5EE", "roles": ["antonio", "martina"]},
+    {"id": "mail", "label": "Mail in sospeso", "icon": "fa-envelope",
+     "color": "#FAECE7", "roles": ["antonio", "josefina", "martina", "maria"]},
+    {"id": "agenda", "label": "Agenda oggi", "icon": "fa-calendar",
+     "color": "#FBEAF0", "roles": ["antonio", "josefina", "martina", "maria"]},
+    {"id": "cassa", "label": "Cassa & banca", "icon": "fa-university",
+     "color": "#FAEEDA", "roles": ["antonio", "martina"]},
+    {"id": "decisions", "label": "Decisioni in attesa", "icon": "fa-gavel",
+     "color": "#E6F1FB", "roles": ["antonio"]},
+    {"id": "investor", "label": "Investor & CdA", "icon": "fa-briefcase",
+     "color": "#EAF3DE", "roles": ["antonio"]},
+    {"id": "quality", "label": "Alert qualità", "icon": "fa-shield",
+     "color": "#F1EFE8", "roles": ["antonio", "maria"]},
 ]
+
+# Bank journal IDs for CasaFolino
+_BANK_JOURNAL_IDS = (6, 13, 22)  # Qonto, Revolut CF, BCC
 
 
 def _jsonb_str(val):
@@ -141,11 +107,11 @@ class WorkspaceDashboard(models.AbstractModel):
         mn = _MONTHS_IT.get(today.month, "")
         week_num = today.isocalendar()[1]
 
-        # KPIs
-        kpis = self._compute_kpis(cr, uid, today, role)
+        # KPIs (single batched query)
+        kpis = self._compute_kpis(cr, uid, today)
 
         # Progress
-        progress = self._compute_progress(cr, uid, today)
+        progress = self._compute_progress(cr, uid, pid, today)
 
         # Sub line
         sub = (
@@ -153,14 +119,14 @@ class WorkspaceDashboard(models.AbstractModel):
             f"{kpis[3]['raw']} critici, {progress['total']} oggi"
         )
 
-        # Macro areas
-        macro = self._compute_macro(cr, uid, pid, today, role)
+        # Macro areas (single batched CTE)
+        macro = self._compute_macro_batch(cr, uid, pid, today, role)
 
         # Today section
-        today_data = self._compute_today(cr, uid, pid, today)
+        today_data = self._compute_today(cr, uid, today)
 
         # Feed
-        feed = self._compute_feed(cr, pid, today)
+        feed = self._compute_feed(cr)
 
         # Tip
         tip = _TIPS.get(role, _TIPS["antonio"])
@@ -177,56 +143,47 @@ class WorkspaceDashboard(models.AbstractModel):
             "feed": feed,
         }
 
+    # ─── KPIs: single batch query ───────────────────────────
     @api.model
-    def _compute_kpis(self, cr, uid, today, role):
+    def _compute_kpis(self, cr, uid, today):
         month_start = today.replace(day=1)
-
-        # 1. Pipeline B2B
         cr.execute("""
-            SELECT COALESCE(SUM(expected_revenue), 0)
-            FROM crm_lead
-            WHERE active = true
-              AND stage_id NOT IN (SELECT id FROM crm_stage WHERE is_won = true)
-              AND probability > 0
-        """)
-        pipeline = cr.fetchone()[0] or 0
+            SELECT
+                (SELECT COALESCE(SUM(expected_revenue), 0)
+                 FROM crm_lead
+                 WHERE active = true
+                   AND probability >= 30 AND probability < 100
+                   AND type = 'opportunity') AS pipeline,
 
-        # 2. Fatturato MTD
-        cr.execute("""
-            SELECT COALESCE(SUM(amount_untaxed_signed), 0)
-            FROM account_move
-            WHERE move_type = 'out_invoice'
-              AND state = 'posted'
-              AND invoice_date >= %s
-        """, [month_start])
-        fatturato = cr.fetchone()[0] or 0
+                (SELECT COALESCE(SUM(amount_untaxed_signed), 0)
+                 FROM account_move
+                 WHERE move_type IN ('out_invoice','out_refund')
+                   AND state = 'posted'
+                   AND invoice_date >= %s) AS fatturato,
 
-        # 3. Cassa disponibile
-        cr.execute("""
-            SELECT COALESCE(SUM(aml.balance), 0)
-            FROM account_move_line aml
-            JOIN account_move am ON am.id = aml.move_id
-            JOIN account_account aa ON aa.id = aml.account_id
-            WHERE am.state = 'posted'
-              AND aa.account_type = 'asset_cash'
-        """)
-        cassa = cr.fetchone()[0] or 0
+                (SELECT COALESCE(SUM(aml.balance), 0)
+                 FROM account_move_line aml
+                 WHERE aml.journal_id IN %s
+                   AND aml.parent_state = 'posted'
+                   AND aml.account_id IN (
+                       SELECT id FROM account_account
+                       WHERE account_type = 'asset_cash'
+                   )) AS cassa,
 
-        # 4. Alert critici (overdue activities for user)
-        cr.execute("""
-            SELECT COUNT(*)
-            FROM mail_activity
-            WHERE date_deadline < %s
-              AND user_id = %s
-        """, [today, uid])
-        alert = cr.fetchone()[0] or 0
+                (SELECT COUNT(*)
+                 FROM mail_activity
+                 WHERE user_id = %s
+                   AND date_deadline < %s) AS alert
+        """, [month_start, _BANK_JOURNAL_IDS, uid, today])
+        row = cr.fetchone()
+        pipeline, fatturato, cassa, alert = row
 
         return [
             {
                 "id": "pipeline",
                 "label": "Pipeline B2B",
                 "value": self._fmt_euro(pipeline),
-                "raw": pipeline,
+                "raw": float(pipeline or 0),
                 "icon": "fa-rocket",
                 "trend": "up",
             },
@@ -234,274 +191,237 @@ class WorkspaceDashboard(models.AbstractModel):
                 "id": "fatturato",
                 "label": "Fatturato MTD",
                 "value": self._fmt_euro(fatturato),
-                "raw": fatturato,
+                "raw": float(fatturato or 0),
                 "icon": "fa-line-chart",
-                "trend": "up" if fatturato > 0 else "neutral",
+                "trend": "up" if fatturato else "neutral",
             },
             {
                 "id": "cassa",
                 "label": "Cassa disponibile",
                 "value": self._fmt_euro(cassa),
-                "raw": cassa,
+                "raw": float(cassa or 0),
                 "icon": "fa-university",
-                "trend": "up" if cassa > 0 else "down",
+                "trend": "up" if cassa and cassa > 0 else "down",
             },
             {
                 "id": "alert",
                 "label": "Alert critici",
-                "value": str(alert),
-                "raw": alert,
+                "value": str(alert or 0),
+                "raw": int(alert or 0),
                 "icon": "fa-exclamation-triangle",
-                "trend": "down" if alert > 5 else "neutral",
+                "trend": "down" if alert and alert > 5 else "neutral",
             },
         ]
 
+    # ─── Progress ───────────────────────────────────────────
     @api.model
-    def _compute_progress(self, cr, uid, today):
-        # Total activities today
+    def _compute_progress(self, cr, uid, pid, today):
         cr.execute("""
-            SELECT COUNT(*) FROM mail_activity
-            WHERE user_id = %s AND date_deadline = %s
-        """, [uid, today])
-        total_today = cr.fetchone()[0] or 0
-
-        # Done today (activities completed = logged in mail_message today)
-        cr.execute("""
-            SELECT COUNT(*) FROM mail_message
-            WHERE author_id = (SELECT partner_id FROM res_users WHERE id = %s)
-              AND subtype_id IS NOT NULL
-              AND date::date = %s
-              AND message_type IN ('notification', 'comment')
-        """, [uid, today])
-        done = cr.fetchone()[0] or 0
-
+            SELECT
+                (SELECT COUNT(*) FROM mail_activity
+                 WHERE user_id = %s AND date_deadline = %s) AS total_today,
+                (SELECT COUNT(*) FROM mail_message
+                 WHERE author_id = %s
+                   AND subtype_id IS NOT NULL
+                   AND date::date = %s
+                   AND message_type IN ('notification', 'comment')) AS done
+        """, [uid, today, pid, today])
+        row = cr.fetchone()
+        total_today = row[0] or 0
+        done = row[1] or 0
         total = max(total_today, done)
         pct = int((done / total * 100)) if total > 0 else 0
-
         return {"done": done, "total": total, "pct": pct}
 
+    # ─── Macro: single CTE batch ───────────────────────────
     @api.model
-    def _compute_macro(self, cr, uid, pid, today, role):
+    def _compute_macro_batch(self, cr, uid, pid, today, role):
+        tomorrow = today + timedelta(days=1)
+        in_30d = today + timedelta(days=30)
+
+        cr.execute("""
+            WITH
+              pipeline AS (
+                SELECT COUNT(*) c FROM crm_lead
+                WHERE active = true AND probability >= 30 AND probability < 100
+              ),
+              projects AS (
+                SELECT COUNT(*) c FROM project_project WHERE active = true
+              ),
+              mail_pending AS (
+                SELECT COUNT(*) c FROM mail_activity
+                WHERE user_id = %(uid)s AND date_deadline <= %(today)s
+              ),
+              agenda AS (
+                SELECT COUNT(*) c FROM calendar_event ce
+                JOIN calendar_event_res_partner_rel r
+                  ON r.calendar_event_id = ce.id
+                WHERE r.res_partner_id = %(pid)s
+                  AND ce.start::date = %(today)s
+              ),
+              cassa AS (
+                SELECT COALESCE(SUM(aml.balance), 0)::bigint c
+                FROM account_move_line aml
+                WHERE aml.journal_id IN (6, 13, 22)
+                  AND aml.parent_state = 'posted'
+                  AND aml.account_id IN (
+                      SELECT id FROM account_account
+                      WHERE account_type = 'asset_cash'
+                  )
+              ),
+              decisions AS (
+                SELECT COUNT(*) c FROM mail_activity
+                WHERE user_id = %(uid)s
+                  AND (summary ILIKE '%%decisione%%'
+                       OR summary ILIKE '%%approv%%')
+              ),
+              investor AS (
+                SELECT COUNT(*) c FROM calendar_event ce
+                WHERE ce.start >= %(today)s AND ce.start < %(in_30d)s
+                  AND (ce.name::text ILIKE '%%cda%%'
+                       OR ce.name::text ILIKE '%%investor%%'
+                       OR ce.name::text ILIKE '%%board%%')
+              ),
+              quality AS (
+                SELECT COUNT(*) c FROM mail_activity
+                WHERE date_deadline < %(today)s
+                  AND (res_model LIKE '%%haccp%%' OR res_model LIKE '%%quality%%')
+              )
+            SELECT
+              pipeline.c, projects.c, mail_pending.c, agenda.c,
+              cassa.c, decisions.c, investor.c, quality.c
+            FROM pipeline, projects, mail_pending, agenda,
+                 cassa, decisions, investor, quality
+        """, {
+            "uid": uid,
+            "pid": pid,
+            "today": today,
+            "in_30d": in_30d,
+        })
+        row = cr.fetchone()
+        counts = {
+            "pipeline": row[0] or 0,
+            "projects": row[1] or 0,
+            "mail": row[2] or 0,
+            "agenda": row[3] or 0,
+            "cassa": int(row[4] or 0),
+            "decisions": row[5] or 0,
+            "investor": row[6] or 0,
+            "quality": row[7] or 0,
+        }
+
         results = []
         for area in _MACRO_AREAS:
-            if role not in area["roles"]:
-                count = 0
-            else:
-                count = self._macro_count(cr, uid, pid, today, area["id"])
+            visible = role in area["roles"]
             results.append({
                 "id": area["id"],
                 "label": area["label"],
                 "icon": area["icon"],
                 "color": area["color"],
-                "count": count,
-                "visible": role in area["roles"],
+                "count": counts.get(area["id"], 0) if visible else 0,
+                "visible": visible,
             })
         return results
 
+    # ─── Today: activities ──────────────────────────────────
     @api.model
-    def _macro_count(self, cr, uid, pid, today, area_id):
-        try:
-            if area_id == "pipeline":
-                cr.execute("""
-                    SELECT COUNT(*) FROM crm_lead
-                    WHERE active = true AND probability >= 30
-                      AND stage_id NOT IN (SELECT id FROM crm_stage WHERE is_won = true)
-                """)
-            elif area_id == "projects":
-                cr.execute("""
-                    SELECT COUNT(*) FROM project_project WHERE active = true
-                """)
-            elif area_id == "mail":
-                cr.execute("""
-                    SELECT COUNT(*) FROM mail_activity
-                    WHERE user_id = %s AND date_deadline <= %s
-                """, [uid, today])
-            elif area_id == "agenda":
-                cr.execute("""
-                    SELECT COUNT(*) FROM calendar_event
-                    WHERE start::date = %s
-                """, [today])
-            elif area_id == "cassa":
-                cr.execute("""
-                    SELECT COALESCE(SUM(aml.balance), 0)
-                    FROM account_move_line aml
-                    JOIN account_move am ON am.id = aml.move_id
-                    JOIN account_account aa ON aa.id = aml.account_id
-                    WHERE am.state = 'posted' AND aa.account_type = 'asset_cash'
-                """)
-                return int(cr.fetchone()[0] or 0)
-            elif area_id == "decisions":
-                cr.execute("""
-                    SELECT COUNT(*) FROM mail_activity
-                    WHERE user_id = %s
-                      AND (summary ILIKE '%%decisione%%' OR activity_type_id IN (
-                          SELECT id FROM mail_activity_type WHERE name ILIKE '%%approval%%'
-                      ))
-                """, [uid])
-            elif area_id == "investor":
-                cr.execute("""
-                    SELECT COUNT(*) FROM calendar_event ce
-                    WHERE ce.start >= %s AND ce.start < %s
-                      AND (ce.name ILIKE '%%cda%%' OR ce.name ILIKE '%%investor%%'
-                           OR ce.name ILIKE '%%board%%')
-                """, [today, today + timedelta(days=30)])
-            elif area_id == "quality":
-                cr.execute("""
-                    SELECT COUNT(*) FROM mail_activity
-                    WHERE date_deadline < %s
-                      AND (res_model ILIKE '%%haccp%%' OR res_model ILIKE '%%quality%%')
-                """, [today])
-            else:
-                return 0
-            return cr.fetchone()[0] or 0
-        except Exception:
-            _logger.warning("Macro count error for %s", area_id, exc_info=True)
-            return 0
-
-    @api.model
-    def _compute_today(self, cr, uid, pid, today):
+    def _compute_today(self, cr, uid, today):
         tomorrow = today + timedelta(days=1)
         week_end = today + timedelta(days=(6 - today.weekday()))
 
-        # Critical: overdue activities
+        # Fetch all relevant activities in ONE query
         cr.execute("""
             SELECT ma.id, ma.summary, ma.res_model, ma.res_id,
-                   ma.date_deadline::text, mat.name as type_name
+                   ma.date_deadline::text,
+                   mat.name AS type_name,
+                   CASE
+                     WHEN ma.date_deadline < %(today)s THEN 'critical'
+                     WHEN ma.date_deadline = %(today)s THEN 'today'
+                     WHEN ma.date_deadline <= %(day3)s THEN 'upcoming'
+                     ELSE 'week'
+                   END AS bucket
             FROM mail_activity ma
             LEFT JOIN mail_activity_type mat ON mat.id = ma.activity_type_id
-            WHERE ma.user_id = %s AND ma.date_deadline < %s
+            WHERE ma.user_id = %(uid)s
+              AND ma.date_deadline <= %(week_end)s
             ORDER BY ma.date_deadline
-            LIMIT 10
-        """, [uid, today])
-        critical = []
-        for row in cr.fetchall():
-            critical.append({
-                "id": row[0],
-                "title": row[1] or _jsonb_str(row[5]),
-                "model": row[2],
-                "res_id": row[3],
-                "deadline": row[4],
-                "type": "critical",
-                "icon": "fa-exclamation-circle",
-                "color": "#DC2626",
-            })
+            LIMIT 50
+        """, {
+            "uid": uid,
+            "today": today,
+            "day3": today + timedelta(days=3),
+            "week_end": week_end,
+        })
 
-        # Today activities
-        cr.execute("""
-            SELECT ma.id, ma.summary, ma.res_model, ma.res_id,
-                   ma.date_deadline::text, mat.name as type_name
-            FROM mail_activity ma
-            LEFT JOIN mail_activity_type mat ON mat.id = ma.activity_type_id
-            WHERE ma.user_id = %s AND ma.date_deadline = %s
-            ORDER BY ma.date_deadline
-            LIMIT 10
-        """, [uid, today])
-        oggi = []
-        for row in cr.fetchall():
-            oggi.append({
-                "id": row[0],
-                "title": row[1] or _jsonb_str(row[5]),
-                "model": row[2],
-                "res_id": row[3],
-                "deadline": row[4],
-                "type": "today",
-                "icon": "fa-clock-o",
-                "color": "#F59E0B",
-            })
-
-        # Upcoming (next 3 days)
-        cr.execute("""
-            SELECT ma.id, ma.summary, ma.res_model, ma.res_id,
-                   ma.date_deadline::text, mat.name as type_name
-            FROM mail_activity ma
-            LEFT JOIN mail_activity_type mat ON mat.id = ma.activity_type_id
-            WHERE ma.user_id = %s
-              AND ma.date_deadline > %s
-              AND ma.date_deadline <= %s
-            ORDER BY ma.date_deadline
-            LIMIT 10
-        """, [uid, tomorrow, today + timedelta(days=3)])
-        prossimi = []
-        for row in cr.fetchall():
-            prossimi.append({
-                "id": row[0],
-                "title": row[1] or _jsonb_str(row[5]),
-                "model": row[2],
-                "res_id": row[3],
-                "deadline": row[4],
-                "type": "upcoming",
-                "icon": "fa-arrow-right",
-                "color": "#3B82F6",
-            })
-
-        # Week activities
-        cr.execute("""
-            SELECT ma.id, ma.summary, ma.res_model, ma.res_id,
-                   ma.date_deadline::text, mat.name as type_name
-            FROM mail_activity ma
-            LEFT JOIN mail_activity_type mat ON mat.id = ma.activity_type_id
-            WHERE ma.user_id = %s
-              AND ma.date_deadline >= %s
-              AND ma.date_deadline <= %s
-            ORDER BY ma.date_deadline
-            LIMIT 20
-        """, [uid, today, week_end])
-        week = []
-        for row in cr.fetchall():
-            week.append({
-                "id": row[0],
-                "title": row[1] or _jsonb_str(row[5]),
-                "model": row[2],
-                "res_id": row[3],
-                "deadline": row[4],
-                "type": "week",
-                "icon": "fa-calendar-check-o",
-                "color": "#6366F1",
-            })
-
-        return {
-            "critical": critical,
-            "oggi": oggi,
-            "prossimi": prossimi,
-            "week": week,
+        buckets = {"critical": [], "today": [], "upcoming": [], "week": []}
+        icons = {
+            "critical": ("fa-exclamation-circle", "#DC2626"),
+            "today": ("fa-clock-o", "#F59E0B"),
+            "upcoming": ("fa-arrow-right", "#3B82F6"),
+            "week": ("fa-calendar-check-o", "#6366F1"),
         }
 
+        for row in cr.fetchall():
+            bucket = row[6]
+            icon, color = icons.get(bucket, ("fa-circle", "#6B7280"))
+            lst = buckets.get(bucket)
+            if lst is not None and len(lst) < 10:
+                lst.append({
+                    "id": row[0],
+                    "title": row[1] or _jsonb_str(row[5]),
+                    "model": row[2],
+                    "res_id": row[3],
+                    "deadline": row[4],
+                    "type": bucket,
+                    "icon": icon,
+                    "color": color,
+                })
+
+        return {
+            "critical": buckets["critical"],
+            "oggi": buckets["today"],
+            "prossimi": buckets["upcoming"],
+            "week": buckets["week"],
+        }
+
+    # ─── Feed: recent comments ──────────────────────────────
     @api.model
-    def _compute_feed(self, cr, pid, today):
+    def _compute_feed(self, cr):
         cr.execute("""
             SELECT mm.id, mm.body, mm.date,
-                   rp.name as author_name, rp.id as author_id
+                   rp.name AS author_name, rp.id AS author_id
             FROM mail_message mm
             LEFT JOIN res_partner rp ON rp.id = mm.author_id
             WHERE mm.message_type = 'comment'
               AND mm.body IS NOT NULL
               AND mm.body != ''
-              AND mm.date > NOW() - INTERVAL '30 days'
+              AND mm.subtype_id IS NOT NULL
+              AND mm.date > NOW() - INTERVAL '90 days'
             ORDER BY mm.date DESC
             LIMIT 5
         """)
         feed = []
         for row in cr.fetchall():
-            body_raw = row[1] or ""
-            # Strip HTML tags for preview
-            import re
-            body_clean = re.sub(r'<[^>]+>', '', body_raw).strip()
+            body_clean = _HTML_TAG_RE.sub('', row[1] or '').strip()
             if len(body_clean) > 120:
                 body_clean = body_clean[:117] + "..."
 
             author_name = row[3] or "Sistema"
-            initials = ""
-            parts = author_name.split()
+            if isinstance(author_name, dict):
+                author_name = author_name.get("it_IT") or author_name.get("en_US") or "Sistema"
+            parts = str(author_name).split()
             if len(parts) >= 2:
                 initials = (parts[0][0] + parts[-1][0]).upper()
             elif parts:
                 initials = parts[0][:2].upper()
+            else:
+                initials = "??"
 
             feed.append({
                 "id": row[0],
                 "body": body_clean,
                 "date": row[2].isoformat() if row[2] else "",
-                "author": author_name,
+                "author": str(author_name),
                 "author_id": row[4],
                 "initials": initials,
             })
