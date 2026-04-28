@@ -112,3 +112,59 @@ class WorkspaceDashboardController(http.Controller):
         except Exception as e:
             _logger.error("Proj detail error: %s", e, exc_info=True)
             return {"error": str(e)}
+
+    # ─── Mail section routes ────────────────────────────
+
+    @http.route("/workspace/mail/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def mail_data(self, **kw):
+        try:
+            return request.env["workspace.mail"].get_mail_data()
+        except Exception as e:
+            _logger.error("Mail data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/mail/inbox", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def mail_inbox(self, filter_key="tutte", **kw):
+        try:
+            return request.env["workspace.mail"].get_inbox(filter_key)
+        except Exception as e:
+            _logger.error("Mail inbox error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/mail/threads", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def mail_threads(self, **kw):
+        try:
+            return request.env["workspace.mail"].get_threads()
+        except Exception as e:
+            _logger.error("Mail threads error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/mail/triage", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def mail_triage(self, **kw):
+        try:
+            return request.env["workspace.mail"].get_triage()
+        except Exception as e:
+            _logger.error("Mail triage error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/mail/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def mail_detail(self, mail_id=0, **kw):
+        try:
+            return request.env["workspace.mail"].get_mail_detail(int(mail_id))
+        except Exception as e:
+            _logger.error("Mail detail error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/mail/action", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def mail_action(self, mail_id=0, action="", params=None, **kw):
+        try:
+            return request.env["workspace.mail"].execute_action(int(mail_id), action, params)
+        except Exception as e:
+            _logger.error("Mail action error: %s", e, exc_info=True)
+            return {"error": str(e)}

@@ -1,0 +1,115 @@
+/* ═══════ Mail Hub Section ═══════ */
+.cf-mail-section { padding: 0; }
+
+/* Mail card */
+.cf-mail-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--cf-card-bg);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    margin-bottom: 6px;
+}
+.cf-mail-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(62,37,24,0.08);
+}
+.cf-mail-card.unread {
+    background: #FDFAF5;
+    border-left: 3px solid var(--cf-gold);
+}
+
+/* Avatar */
+.cf-mail-avatar {
+    width: 32px; height: 32px;
+    border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+    color: #fff;
+}
+.cf-mail-avatar-blue { background: #3B82F6; }
+.cf-mail-avatar-purple { background: #8B5CF6; }
+.cf-mail-avatar-teal { background: #0D9488; }
+.cf-mail-avatar-amber { background: #D97706; }
+.cf-mail-avatar-pink { background: #EC4899; }
+
+.cf-mail-body { flex: 1; min-width: 0; }
+.cf-mail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.cf-mail-from { font-size: 13px; font-weight: 700; color: var(--cf-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 8px; }
+.cf-mail-when { font-size: 11px; color: var(--cf-text-muted); flex-shrink: 0; }
+
+.cf-mail-subject { font-size: 13px; color: var(--cf-text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-mail-preview { font-size: 12px; color: var(--cf-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 4px; }
+
+.cf-mail-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* Tag pill */
+.cf-mail-tag {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 6px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+}
+
+.cf-mail-thread-cnt { font-size: 10px; color: var(--cf-text-muted); font-weight: 600; }
+
+/* Triage actions */
+.cf-mail-actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.cf-mail-action-btn {
+    font-size: 10px; font-weight: 600;
+    padding: 3px 10px; border-radius: 999px;
+    border: 1px solid #E5E7EB;
+    background: var(--cf-card-bg); color: var(--cf-text);
+    cursor: pointer; transition: all 0.12s;
+}
+.cf-mail-action-btn:hover { background: var(--cf-bg); border-color: var(--cf-gold); }
+.cf-mail-action-btn i { margin-right: 3px; font-size: 9px; }
+
+/* Thread row */
+.cf-mail-thread-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: var(--cf-card-bg);
+    border-radius: 10px; margin-bottom: 6px;
+}
+.cf-mail-thread-info { flex: 1; min-width: 0; }
+.cf-mail-thread-top { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+.cf-mail-thread-cnt-badge { font-size: 11px; font-weight: 700; color: var(--cf-text-muted); background: var(--cf-bg); padding: 1px 7px; border-radius: 99px; }
+.cf-mail-thread-sub { font-size: 12px; color: var(--cf-text-muted); }
+.cf-mail-thread-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+
+/* Detail */
+.cf-mail-detail-body {
+    font-size: 13px; color: var(--cf-text); line-height: 1.5;
+    max-height: 200px; overflow-y: auto;
+    padding: 12px; background: var(--cf-bg); border-radius: 8px;
+    margin-bottom: 12px; white-space: pre-wrap;
+}
+.cf-mail-suggested {
+    padding: 12px; background: #FEFCE8; border-radius: 8px;
+    border-left: 3px solid var(--cf-gold);
+    font-size: 13px; color: var(--cf-text); font-style: italic;
+    margin-bottom: 12px;
+}
+.cf-mail-suggested-label { font-size: 11px; font-weight: 700; color: var(--cf-gold); font-style: normal; margin-bottom: 4px; display: block; }
+
+/* Thread history in detail */
+.cf-mail-history { margin-bottom: 12px; }
+.cf-mail-history-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid #F0ECE6;
+    font-size: 12px; color: var(--cf-text-muted);
+}
+.cf-mail-history-item:last-child { border-bottom: none; }
+.cf-mail-history-dir { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+.cf-mail-history-dir.inbound { background: #DBEAFE; color: #1E40AF; }
+.cf-mail-history-dir.outbound { background: #D1FAE5; color: #065F46; }
+
+/* Action message toast */
+.cf-mail-toast {
+    padding: 8px 14px; background: #D1FAE5; color: #065F46;
+    border-radius: 8px; font-size: 12px; font-weight: 600;
+    margin-bottom: 12px;
+}

@@ -10,6 +10,7 @@ import { WorkspaceDetail } from "./components/workspace_detail";
 import { WorkspaceFeed } from "./components/workspace_feed";
 import { WorkspaceLead } from "./lead/workspace_lead";
 import { WorkspaceProj } from "./proj/workspace_proj";
+import { WorkspaceMail } from "./mail/workspace_mail";
 
 class CfWorkspaceMain extends Component {
     static template = "casafolino_workspace.CfWorkspaceMain";
@@ -23,6 +24,7 @@ class CfWorkspaceMain extends Component {
         WorkspaceFeed,
         WorkspaceLead,
         WorkspaceProj,
+        WorkspaceMail,
     };
 
     setup() {
@@ -81,6 +83,10 @@ class CfWorkspaceMain extends Component {
         }
         if (item && item.id === "projects") {
             this.state.page = "proj";
+            return;
+        }
+        if (item && item.id === "mail") {
+            this.state.page = "mail";
             return;
         }
         this.state.selectedItem = item;

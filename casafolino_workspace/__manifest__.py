@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino Workspace",
-    "version": "18.0.0.4.0",
+    "version": "18.0.0.5.0",
     "post_init_hook": "_post_init_hook",
     "category": "Productivity",
     "summary": "Scrivania operativa CasaFolino",
     "author": "CasaFolino Srls",
-    "depends": ["base", "web", "mail", "calendar", "crm", "project", "account"],
+    "depends": ["base", "web", "mail", "calendar", "crm", "project", "account", "casafolino_mail"],
     "data": [
         "security/ir.model.access.csv",
         "data/workspace_projects_seed.xml",
@@ -28,6 +28,9 @@
             "casafolino_workspace/static/src/xml/workspace_lead.xml",
             "casafolino_workspace/static/src/js/proj/workspace_proj.js",
             "casafolino_workspace/static/src/xml/workspace_proj.xml",
+            "casafolino_workspace/static/src/css/workspace_mail.css",
+            "casafolino_workspace/static/src/js/mail/workspace_mail.js",
+            "casafolino_workspace/static/src/xml/workspace_mail.xml",
             "casafolino_workspace/static/src/js/cf_workspace_client.js",
         ],
     },
