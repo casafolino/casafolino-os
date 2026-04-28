@@ -31,6 +31,11 @@ _PROJ_MACRO = [
     {"id": "expo", "label": "Fiere & Export", "icon": "fa-globe", "color": "#EEEDFE"},
 ]
 
+# Odoo 18 task states that mean "done"
+_DONE_STATES = ("'1_done'", "'1_canceled'", "'03_approved'")
+_DONE_SQL = "pt.state IN ('1_done', '1_canceled', '03_approved')"
+_NOT_DONE_SQL = "(pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved'))"
+
 
 def _jsonb_str(val):
     if not val:
@@ -44,7 +49,6 @@ class WorkspaceProject(models.AbstractModel):
     _name = "workspace.project"
     _description = "Workspace Project Data Provider"
 
-    # ─── /workspace/proj/data ──────────────────────────
     @api.model
     def get_proj_data(self):
         user = self.env.user
@@ -76,7 +80,6 @@ class WorkspaceProject(models.AbstractModel):
             "feed": feed,
         }
 
-    # ─── /workspace/proj/list ──────────────────────────
     @api.model
     def get_proj_list(self, filter_key="tutti"):
         cr = self.env.cr
@@ -87,8 +90,9 @@ class WorkspaceProject(models.AbstractModel):
         params = {"today": today, "uid": uid, "d14": today + timedelta(days=14)}
 
         if filter_key == "critici":
-            where_extra = """AND (
-                EXISTS(SELECT 1 FROM project_task pt2 WHERE pt2.project_id=pp.id AND pt2.date_deadline < %(today)s)
+            where_extra = f"""AND (
+                EXISTS(SELECT 1 FROM project_task pt2 WHERE pt2.project_id=pp.id
+                       AND pt2.date_deadline < %(today)s AND ({_NOT_DONE_SQL.replace('pt.', 'pt2.')}))
                 OR (pp.date IS NOT NULL AND pp.date < %(today)s + 3)
             )"""
         elif filter_key == "scadenza":
@@ -96,10 +100,11 @@ class WorkspaceProject(models.AbstractModel):
         elif filter_key == "miei":
             where_extra = "AND pp.user_id = %(uid)s"
         elif filter_key == "bloccati":
-            where_extra = """AND EXISTS(
+            where_extra = f"""AND EXISTS(
                 SELECT 1 FROM project_task pt2
                 WHERE pt2.project_id=pp.id AND pt2.priority='1'
                   AND pt2.date_deadline < %(today)s - 5
+                  AND ({_NOT_DONE_SQL.replace('pt.', 'pt2.')})
             )"""
 
         cr.execute(f"""
@@ -107,19 +112,18 @@ class WorkspaceProject(models.AbstractModel):
                    rp_owner.name AS owner_name,
                    (SELECT COUNT(*) FROM project_task pt WHERE pt.project_id=pp.id) AS task_total,
                    (SELECT COUNT(*) FROM project_task pt
-                    JOIN project_task_type ptt ON ptt.id=pt.stage_id
-                    WHERE pt.project_id=pp.id AND ptt.fold=true) AS task_done,
+                    WHERE pt.project_id=pp.id AND {_DONE_SQL}) AS task_done,
                    (SELECT COUNT(*) FROM project_task pt
                     WHERE pt.project_id=pp.id AND pt.date_deadline < %(today)s
-                      AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                      AND {_NOT_DONE_SQL}
                    ) AS overdue_cnt,
                    (SELECT pt.name FROM project_task pt
                     WHERE pt.project_id=pp.id AND pt.date_deadline >= %(today)s
-                      AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                      AND {_NOT_DONE_SQL}
                     ORDER BY pt.date_deadline LIMIT 1) AS next_milestone,
                    (SELECT pt.date_deadline FROM project_task pt
                     WHERE pt.project_id=pp.id AND pt.date_deadline >= %(today)s
-                      AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                      AND {_NOT_DONE_SQL}
                     ORDER BY pt.date_deadline LIMIT 1) AS next_date,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
                     JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
@@ -142,7 +146,6 @@ class WorkspaceProject(models.AbstractModel):
             target_date = row[2]
             days_to_target = (target_date - today).days if target_date else 999
 
-            # Status
             if overdue > 0 or (target_date and days_to_target < 3 and progress < 80):
                 status = "red"
             elif overdue > 0 or (target_date and days_to_target < 14):
@@ -150,7 +153,6 @@ class WorkspaceProject(models.AbstractModel):
             else:
                 status = "green"
 
-            # Pill
             if target_date:
                 if days_to_target < 0:
                     pill_status, pill_label = "red", f"{days_to_target} gg"
@@ -163,7 +165,6 @@ class WorkspaceProject(models.AbstractModel):
             else:
                 pill_status, pill_label = "gray", "—"
 
-            # Category from tags
             tag_raw = row[11] or ""
             category, cat_icon, cat_color = self._parse_category(tag_raw)
 
@@ -173,7 +174,7 @@ class WorkspaceProject(models.AbstractModel):
 
             projects.append({
                 "id": row[0],
-                "name": row[1] or "—",
+                "name": _jsonb_str(row[1]) or "—",
                 "category": category,
                 "category_icon": cat_icon,
                 "category_color": cat_color,
@@ -192,29 +193,23 @@ class WorkspaceProject(models.AbstractModel):
 
         return {"projects": projects}
 
-    # ─── /workspace/proj/kanban ─────────────────────────
     @api.model
     def get_proj_kanban(self):
         cr = self.env.cr
         today = date.today()
 
-        cr.execute("""
+        cr.execute(f"""
             SELECT pp.id, pp.name, pp.date, pp.user_id,
                    (SELECT COUNT(*) FROM project_task pt WHERE pt.project_id=pp.id) AS task_total,
                    (SELECT COUNT(*) FROM project_task pt
-                    JOIN project_task_type ptt ON ptt.id=pt.stage_id
-                    WHERE pt.project_id=pp.id AND ptt.fold=true) AS task_done,
-                   (SELECT COUNT(*) FROM project_task pt
-                    WHERE pt.project_id=pp.id AND pt.date_deadline < %(today)s
-                      AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
-                   ) AS overdue_cnt,
+                    WHERE pt.project_id=pp.id AND {_DONE_SQL}) AS task_done,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
                     JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id LIMIT 3) AS tag_names
             FROM project_project pp
             WHERE pp.active = true
             ORDER BY pp.date ASC NULLS LAST
-        """, {"today": today})
+        """)
 
         cols = {
             "backlog": {"label": "Backlog", "projects": []},
@@ -227,11 +222,11 @@ class WorkspaceProject(models.AbstractModel):
             total = row[4] or 0
             done = row[5] or 0
             progress = int(done / total * 100) if total > 0 else 0
-            category, cat_icon, cat_color = self._parse_category(row[7] or "")
+            category, cat_icon, cat_color = self._parse_category(row[6] or "")
 
             item = {
                 "id": row[0],
-                "name": row[1] or "—",
+                "name": _jsonb_str(row[1]) or "—",
                 "progress": progress,
                 "category": category,
                 "category_icon": cat_icon,
@@ -251,18 +246,16 @@ class WorkspaceProject(models.AbstractModel):
 
         return {"columns": [cols["backlog"], cols["doing"], cols["review"], cols["done"]]}
 
-    # ─── /workspace/proj/timeline ───────────────────────
     @api.model
     def get_proj_timeline(self):
         cr = self.env.cr
         today = date.today()
 
-        cr.execute("""
+        cr.execute(f"""
             SELECT pp.id, pp.name, pp.date, pp.user_id,
                    (SELECT COUNT(*) FROM project_task pt WHERE pt.project_id=pp.id) AS task_total,
                    (SELECT COUNT(*) FROM project_task pt
-                    JOIN project_task_type ptt ON ptt.id=pt.stage_id
-                    WHERE pt.project_id=pp.id AND ptt.fold=true) AS task_done,
+                    WHERE pt.project_id=pp.id AND {_DONE_SQL}) AS task_done,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
                     JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id LIMIT 3) AS tag_names
@@ -283,7 +276,7 @@ class WorkspaceProject(models.AbstractModel):
 
             item = {
                 "id": row[0],
-                "name": row[1] or "—",
+                "name": _jsonb_str(row[1]) or "—",
                 "date": str(target) if target else "",
                 "days_to_target": days,
                 "progress": progress,
@@ -308,35 +301,34 @@ class WorkspaceProject(models.AbstractModel):
             {"key": "oltre", "label": "Oltre", "projects": groups["oltre"]},
         ]}
 
-    # ─── /workspace/proj/detail ─────────────────────────
     @api.model
     def get_proj_detail(self, proj_id):
         cr = self.env.cr
         today = date.today()
 
-        cr.execute("""
+        sql = """
             SELECT pp.id, pp.name, pp.date, pp.user_id, pp.description, pp.partner_id,
                    rp_owner.name AS owner_name,
                    (SELECT COUNT(*) FROM project_task pt WHERE pt.project_id=pp.id) AS task_total,
                    (SELECT COUNT(*) FROM project_task pt
-                    JOIN project_task_type ptt ON ptt.id=pt.stage_id
-                    WHERE pt.project_id=pp.id AND ptt.fold=true) AS task_done,
+                    WHERE pt.project_id=pp.id AND """ + _DONE_SQL + """) AS task_done,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
                     JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id) AS tag_names,
                    (SELECT pt.name FROM project_task pt
                     WHERE pt.project_id=pp.id AND pt.date_deadline >= %(today)s
-                      AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                      AND """ + _NOT_DONE_SQL + """
                     ORDER BY pt.date_deadline LIMIT 1) AS next_milestone,
                    (SELECT pt.date_deadline FROM project_task pt
                     WHERE pt.project_id=pp.id AND pt.date_deadline >= %(today)s
-                      AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                      AND """ + _NOT_DONE_SQL + """
                     ORDER BY pt.date_deadline LIMIT 1) AS next_date
             FROM project_project pp
             LEFT JOIN res_users ru ON ru.id = pp.user_id
             LEFT JOIN res_partner rp_owner ON rp_owner.id = ru.partner_id
             WHERE pp.id = %(pid)s
-        """, {"pid": proj_id, "today": today})
+        """
+        cr.execute(sql, {"pid": proj_id, "today": today})
         row = cr.fetchone()
         if not row:
             return {"error": "Project not found"}
@@ -348,7 +340,6 @@ class WorkspaceProject(models.AbstractModel):
         target = row[2]
         days_to = (target - today).days if target else 999
 
-        # Chain
         partner_id = row[5] or 0
         cr.execute("""
             SELECT
@@ -369,7 +360,7 @@ class WorkspaceProject(models.AbstractModel):
         return {
             "project": {
                 "id": row[0],
-                "name": row[1] or "—",
+                "name": _jsonb_str(row[1]) or "—",
                 "date": str(target) if target else None,
                 "days_to_target": days_to,
                 "progress": progress,
@@ -395,15 +386,14 @@ class WorkspaceProject(models.AbstractModel):
                 (SELECT COUNT(*) FROM project_task pt
                  JOIN project_project pp ON pp.id=pt.project_id
                  WHERE pp.active=true
-                   AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                   AND (pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved'))
                 ) AS task_open,
-                (SELECT ROUND(AVG(sub.pct))
+                (SELECT COALESCE(ROUND(AVG(sub.pct)), 0)
                  FROM (
                     SELECT CASE WHEN COUNT(*)=0 THEN 0
-                           ELSE COUNT(*) FILTER(WHERE ptt.fold=true)::float / COUNT(*) * 100
+                           ELSE COUNT(*) FILTER(WHERE pt.state IN ('1_done', '1_canceled', '03_approved'))::float / COUNT(*) * 100
                            END AS pct
                     FROM project_task pt
-                    JOIN project_task_type ptt ON ptt.id=pt.stage_id
                     JOIN project_project pp ON pp.id=pt.project_id
                     WHERE pp.active=true
                     GROUP BY pt.project_id
@@ -414,7 +404,7 @@ class WorkspaceProject(models.AbstractModel):
                  WHERE pp.active=true AND (
                     EXISTS(SELECT 1 FROM project_task pt
                            WHERE pt.project_id=pp.id AND pt.date_deadline < %(today)s
-                             AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true))
+                             AND (pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved')))
                     OR (pp.date IS NOT NULL AND pp.date < %(today)s + 3)
                  )
                 ) AS critical_cnt
@@ -445,7 +435,7 @@ class WorkspaceProject(models.AbstractModel):
                 WHERE pp.active=true AND (
                   EXISTS(SELECT 1 FROM project_task pt WHERE pt.project_id=pp.id
                          AND pt.date_deadline < %(today)s
-                         AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true))
+                         AND (pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved')))
                   OR (pp.date IS NOT NULL AND pp.date < %(today)s + 3)
                 )
               ),
@@ -454,16 +444,14 @@ class WorkspaceProject(models.AbstractModel):
                 WHERE pp.active=true AND EXISTS(
                   SELECT 1 FROM project_task pt WHERE pt.project_id=pp.id
                     AND pt.priority='1' AND pt.date_deadline < %(today)s - 5
-                    AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
+                    AND (pt.state IS NULL OR pt.state NOT IN ('1_done', '1_canceled', '03_approved'))
                 )
               ),
               review AS (
-                SELECT COUNT(DISTINCT pp.id) c FROM project_project pp
-                WHERE pp.active=true AND (
-                  SELECT COUNT(*) FILTER(WHERE ptt.fold=true)::float / NULLIF(COUNT(*),0) * 100
-                  FROM project_task pt2 JOIN project_task_type ptt ON ptt.id=pt2.stage_id
-                  WHERE pt2.project_id=pp.id
-                ) >= 70
+                SELECT COUNT(DISTINCT pt.project_id) c FROM project_task pt
+                JOIN project_project pp ON pp.id=pt.project_id
+                JOIN project_task_type ptt ON ptt.id=pt.stage_id
+                WHERE pp.active=true AND ptt.name::text ILIKE '%%review%%'
               ),
               acq AS (
                 SELECT COUNT(*) c FROM project_project pp
@@ -517,7 +505,7 @@ class WorkspaceProject(models.AbstractModel):
             FROM mail_message mm
             LEFT JOIN res_partner rp ON rp.id = mm.author_id
             WHERE mm.model IN ('project.project', 'project.task')
-              AND mm.message_type = 'comment'
+              AND mm.message_type IN ('comment', 'notification')
               AND mm.body IS NOT NULL AND mm.body != ''
               AND mm.date > NOW() - INTERVAL '90 days'
             ORDER BY mm.date DESC
@@ -528,6 +516,8 @@ class WorkspaceProject(models.AbstractModel):
             body = _HTML_TAG_RE.sub('', row[1] or '').strip()
             if len(body) > 120:
                 body = body[:117] + "..."
+            if not body:
+                continue
             author = _jsonb_str(row[3]) or "Sistema"
             parts = str(author).split()
             initials = (parts[0][0] + parts[-1][0]).upper() if len(parts) >= 2 else (parts[0][:2].upper() if parts else "??")
@@ -545,7 +535,6 @@ class WorkspaceProject(models.AbstractModel):
         """Extract first matching category from comma-separated tag names."""
         for part in str(tag_str).split(","):
             key = part.strip().strip('"{}').lower()
-            # Handle jsonb string like {"en_US": "Acquisizione", ...}
             for cat_key, cat_data in _CATEGORY_MAP.items():
                 if cat_key in key:
                     return cat_key.capitalize(), cat_data["icon"], cat_data["color"]

@@ -1,5 +1,11 @@
 /* ═══════ CasaFolino Workspace v0.2 ═══════ */
 
+/* Hide Odoo main navbar when workspace is active */
+.o_action_manager:has(.cf-ws) .o_main_navbar,
+body:has(.cf-ws) .o_main_navbar {
+    display: none !important;
+}
+
 :root {
     --cf-brown: #6B4A1E;
     --cf-brown-dark: #3E2518;
