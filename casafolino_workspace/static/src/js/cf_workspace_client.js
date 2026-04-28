@@ -8,6 +8,7 @@ import { WorkspaceMacro } from "./components/workspace_macro";
 import { WorkspaceWork } from "./components/workspace_work";
 import { WorkspaceDetail } from "./components/workspace_detail";
 import { WorkspaceFeed } from "./components/workspace_feed";
+import { WorkspaceLead } from "./lead/workspace_lead";
 
 class CfWorkspaceMain extends Component {
     static template = "casafolino_workspace.CfWorkspaceMain";
@@ -19,10 +20,12 @@ class CfWorkspaceMain extends Component {
         WorkspaceWork,
         WorkspaceDetail,
         WorkspaceFeed,
+        WorkspaceLead,
     };
 
     setup() {
         this.state = useState({
+            page: "home",
             loading: true,
             error: null,
             data: null,
@@ -49,7 +52,9 @@ class CfWorkspaceMain extends Component {
     async onRefresh() {
         this.state.loading = true;
         this.state.error = null;
-        await this._loadData();
+        if (this.state.page === "home") {
+            await this._loadData();
+        }
     }
 
     onSearchInput(ev) {
@@ -67,11 +72,25 @@ class CfWorkspaceMain extends Component {
     }
 
     onSelectItem(item) {
+        // If macro tile with link, navigate
+        if (item && item.id === "pipeline") {
+            this.state.page = "lead";
+            return;
+        }
         this.state.selectedItem = item;
     }
 
     onCloseDetail() {
         this.state.selectedItem = null;
+    }
+
+    onNavigate(page) {
+        this.state.page = page;
+        this.state.selectedItem = null;
+    }
+
+    onGoHome() {
+        this.state.page = "home";
     }
 }
 

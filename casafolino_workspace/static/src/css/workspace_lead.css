@@ -1,0 +1,482 @@
+/* ═══════ Lead Section ═══════ */
+
+.cf-lead-section {
+    padding: 0;
+}
+
+/* Breadcrumb */
+.cf-lead-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    color: var(--cf-text-muted);
+}
+
+.cf-lead-bc-link {
+    cursor: pointer;
+    color: var(--cf-gold);
+    font-weight: 600;
+}
+
+.cf-lead-bc-link:hover {
+    text-decoration: underline;
+}
+
+.cf-lead-bc-sep {
+    color: var(--cf-text-muted);
+    opacity: 0.5;
+}
+
+.cf-lead-bc-current {
+    font-weight: 600;
+    color: var(--cf-text);
+}
+
+/* Filter chips */
+.cf-lead-filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.cf-lead-chip {
+    background: var(--cf-bg);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cf-text-muted);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.cf-lead-chip:hover {
+    background: #EDE9E3;
+}
+
+.cf-lead-chip.active {
+    background: var(--cf-brown);
+    color: var(--cf-cream);
+}
+
+/* Lead list */
+.cf-lead-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cf-lead-list-loading {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.cf-lead-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--cf-card-bg);
+    border-radius: 10px;
+    border-left: 3px solid #9CA3AF;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.cf-lead-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(62,37,24,0.08);
+}
+
+/* Flag */
+.cf-lead-card-flag {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--cf-tile-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--cf-text);
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+
+.cf-lead-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-lead-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+
+.cf-lead-card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 10px;
+}
+
+.cf-lead-card-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--cf-brown);
+    flex-shrink: 0;
+}
+
+.cf-lead-card-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.cf-lead-stage-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cf-lead-card-prob,
+.cf-lead-card-days {
+    font-size: 11px;
+    color: var(--cf-text-muted);
+}
+
+.cf-lead-card-owner {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--cf-tile-purple);
+    color: var(--cf-text);
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Pill */
+.cf-lead-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.cf-lead-pill-red {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.cf-lead-pill-amber {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.cf-lead-pill-green {
+    background: #D1FAE5;
+    color: #059669;
+}
+
+.cf-lead-pill-gray {
+    background: #F3F4F6;
+    color: #6B7280;
+}
+
+/* Mini stage bar */
+.cf-lead-mini-bar {
+    display: flex;
+    gap: 2px;
+    height: 3px;
+}
+
+.cf-lead-mini-seg {
+    flex: 1;
+    border-radius: 2px;
+    background: #E5E7EB;
+}
+
+.cf-lead-mini-seg.done {
+    background: var(--cf-brown);
+}
+
+.cf-lead-mini-seg.current {
+    background: var(--cf-gold);
+}
+
+/* ═══════ Kanban ═══════ */
+.cf-lead-kanban {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    overflow-x: auto;
+}
+
+.cf-lead-kanban-col {
+    background: var(--cf-bg);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+}
+
+.cf-lead-kanban-header {
+    padding: 10px 12px;
+    border-bottom: 3px solid #9CA3AF;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cf-lead-kanban-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cf-text);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cf-lead-kanban-cnt {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cf-text-muted);
+    background: var(--cf-card-bg);
+    padding: 1px 7px;
+    border-radius: 99px;
+}
+
+.cf-lead-kanban-body {
+    padding: 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.cf-lead-kanban-card {
+    background: var(--cf-card-bg);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.cf-lead-kanban-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.cf-lead-kanban-card-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.cf-lead-kanban-flag {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--cf-text-muted);
+    background: var(--cf-tile-blue);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.cf-lead-kanban-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cf-lead-kanban-card-bot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--cf-text-muted);
+}
+
+.cf-lead-kanban-val {
+    font-weight: 700;
+    color: var(--cf-brown);
+}
+
+.cf-lead-kanban-empty {
+    text-align: center;
+    font-size: 12px;
+    color: var(--cf-text-muted);
+    font-style: italic;
+    padding: 12px;
+}
+
+.cf-lead-kanban-footer {
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--cf-text-muted);
+    border-top: 1px solid #E8E4DE;
+}
+
+/* ═══════ Markets ═══════ */
+.cf-lead-markets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cf-lead-market-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--cf-card-bg);
+    border-radius: 10px;
+    transition: background 0.12s;
+}
+
+.cf-lead-market-row:hover {
+    background: var(--cf-bg);
+}
+
+.cf-lead-market-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-lead-market-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--cf-text);
+}
+
+.cf-lead-market-cnt {
+    font-size: 11px;
+    color: var(--cf-text-muted);
+    font-weight: 600;
+}
+
+.cf-lead-market-names {
+    font-size: 12px;
+    color: var(--cf-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cf-lead-market-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--cf-brown);
+    flex-shrink: 0;
+}
+
+/* ═══════ Detail stage bar ═══════ */
+.cf-lead-detail-stagebar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.cf-lead-detail-seg {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: #E5E7EB;
+    position: relative;
+}
+
+.cf-lead-detail-seg.done {
+    background: var(--cf-brown);
+}
+
+.cf-lead-detail-seg.current {
+    background: var(--cf-gold);
+}
+
+.cf-lead-detail-seg-label {
+    display: none;
+}
+
+.cf-lead-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* Chain chips */
+.cf-lead-chain {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cf-lead-chain-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--cf-bg);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cf-text);
+}
+
+.cf-lead-chain-chip i {
+    color: var(--cf-text-muted);
+    font-size: 12px;
+}
+
+/* ═══════ Header nav ═══════ */
+.cf-ws-nav {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+}
+
+.cf-ws-nav-item {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(245,230,200,0.6);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.cf-ws-nav-item:hover {
+    color: var(--cf-cream);
+    background: rgba(255,255,255,0.08);
+}
+
+.cf-ws-nav-item.active {
+    color: var(--cf-cream);
+    background: rgba(255,255,255,0.15);
+}

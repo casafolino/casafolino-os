@@ -10,8 +10,12 @@
         <!-- HEADER -->
         <div class="cf-ws-header">
             <div class="cf-ws-header-left">
-                <div class="cf-ws-logo"><span class="cf-ws-logo-text">CF</span></div>
-                <h4 class="cf-ws-title">Scrivania</h4>
+                <div class="cf-ws-logo" t-on-click="onGoHome" style="cursor:pointer"><span class="cf-ws-logo-text">CF</span></div>
+                <h4 class="cf-ws-title" t-on-click="onGoHome" style="cursor:pointer">Scrivania</h4>
+                <div class="cf-ws-nav">
+                    <span t-attf-class="cf-ws-nav-item #{state.page === 'lead' ? 'active' : ''}"
+                          t-on-click="() => this.onNavigate('lead')">Lead</span>
+                </div>
             </div>
             <div class="cf-ws-header-center">
                 <div class="cf-ws-search">
@@ -58,7 +62,14 @@
             </div>
         </t>
 
-        <!-- DASHBOARD -->
+        <!-- LEAD SECTION -->
+        <t t-elif="state.page === 'lead'">
+            <div class="cf-ws-body">
+                <WorkspaceLead onGoHome.bind="onGoHome"/>
+            </div>
+        </t>
+
+        <!-- HOME DASHBOARD -->
         <t t-elif="state.data">
             <div class="cf-ws-body">
                 <WorkspaceHero data="state.data"/>

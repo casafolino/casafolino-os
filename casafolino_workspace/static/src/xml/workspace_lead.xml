@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- LEAD SECTION ROOT                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<t t-name="casafolino_workspace.WorkspaceLead">
+    <div class="cf-lead-section">
+
+        <!-- LOADING -->
+        <t t-if="state.loading">
+            <div class="cf-ws-loading">
+                <div class="spinner-border text-secondary"/>
+                <span>Caricamento pipeline...</span>
+            </div>
+        </t>
+
+        <!-- ERROR -->
+        <t t-elif="state.error">
+            <div class="cf-ws-error">
+                <i class="fa fa-exclamation-triangle"/>
+                <span t-esc="state.error"/>
+            </div>
+        </t>
+
+        <t t-elif="state.data">
+            <!-- BREADCRUMB -->
+            <div class="cf-lead-breadcrumb">
+                <span class="cf-lead-bc-link" t-on-click="onGoHome">Scrivania</span>
+                <span class="cf-lead-bc-sep">›</span>
+                <span class="cf-lead-bc-current">Pipeline lead</span>
+            </div>
+
+            <!-- HERO -->
+            <div class="cf-hero">
+                <div class="cf-hero-left">
+                    <div class="cf-hero-avatar" style="border-color:#8B5CF6">
+                        <i class="fa fa-bullseye" style="font-size:20px;color:#6B4A1E;"/>
+                    </div>
+                    <div class="cf-hero-text">
+                        <h2 class="cf-hero-greet" t-esc="state.data.hero.greet"/>
+                        <p class="cf-hero-sub" t-esc="state.data.hero.sub"/>
+                    </div>
+                </div>
+                <div class="cf-hero-right">
+                    <div class="cf-hero-tip">
+                        <i class="fa fa-lightbulb-o cf-hero-tip-icon"/>
+                        <span class="cf-hero-tip-text" t-esc="state.data.hero.tip.text"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="cf-kpis">
+                <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.id">
+                    <div class="cf-kpi-card">
+                        <div class="cf-kpi-icon-wrap">
+                            <i t-attf-class="fa #{kpi.icon}"/>
+                        </div>
+                        <div class="cf-kpi-info">
+                            <span class="cf-kpi-value" t-esc="kpi.value"/>
+                            <span class="cf-kpi-label" t-esc="kpi.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- MACRO AREAS -->
+            <div class="cf-macro-grid">
+                <t t-foreach="state.data.macro" t-as="m" t-key="m.id">
+                    <t t-if="m.visible">
+                        <div class="cf-macro-tile" t-att-style="'background:' + m.color">
+                            <div class="cf-macro-tile-top">
+                                <i t-attf-class="fa #{m.icon} cf-macro-tile-icon"/>
+                                <span class="cf-macro-tile-count" t-esc="m.count"/>
+                            </div>
+                            <span class="cf-macro-tile-label" t-esc="m.label"/>
+                        </div>
+                    </t>
+                </t>
+            </div>
+
+            <!-- WORK AREA -->
+            <div class="cf-ws-two-col">
+                <div class="cf-ws-two-col-main">
+                    <div class="cf-work">
+                        <!-- TABS -->
+                        <div class="cf-work-header">
+                            <h3 class="cf-work-title">Lead</h3>
+                            <div class="cf-work-tabs">
+                                <button t-attf-class="cf-work-tab #{state.view === 'tutti' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('tutti')">Tutti</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'pipeline' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('pipeline')">Pipeline</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'mercati' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('mercati')">Mercati</button>
+                            </div>
+                        </div>
+
+                        <!-- FILTER CHIPS (only for Tutti view) -->
+                        <t t-if="state.view === 'tutti' and state.data.filters">
+                            <div class="cf-lead-filters">
+                                <t t-foreach="state.data.filters" t-as="f" t-key="f">
+                                    <button t-attf-class="cf-lead-chip #{state.filter === this.getFilterKey(f) ? 'active' : ''}"
+                                            t-on-click="() => this.onFilterChange(this.getFilterKey(f))"
+                                            t-esc="f"/>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- TUTTI VIEW: Lead list -->
+                        <t t-if="state.view === 'tutti'">
+                            <t t-if="state.leadsLoading">
+                                <div class="cf-lead-list-loading">
+                                    <div class="spinner-border spinner-border-sm text-secondary"/>
+                                </div>
+                            </t>
+                            <t t-elif="state.leads.length === 0">
+                                <p class="cf-work-empty">Nessun lead trovato.</p>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-lead-list">
+                                    <t t-foreach="state.leads" t-as="lead" t-key="lead.id">
+                                        <div class="cf-lead-card" t-on-click="() => this.onSelectLead(lead)"
+                                             t-att-style="'border-left-color:' + lead.stage_color">
+                                            <div class="cf-lead-card-flag">
+                                                <span t-esc="lead.country_code"/>
+                                            </div>
+                                            <div class="cf-lead-card-body">
+                                                <div class="cf-lead-card-top">
+                                                    <span class="cf-lead-card-name" t-esc="lead.name"/>
+                                                    <span class="cf-lead-card-value" t-esc="this.fmtEuro(lead.value)"/>
+                                                </div>
+                                                <div class="cf-lead-card-bottom">
+                                                    <span t-attf-class="cf-lead-stage-badge" t-att-style="'background:' + lead.stage_color + '20; color:' + lead.stage_color"
+                                                          t-esc="lead.stage_label"/>
+                                                    <span class="cf-lead-card-prob"><t t-esc="lead.probability"/>%</span>
+                                                    <span class="cf-lead-card-days"><t t-esc="lead.days_in_pipeline"/> gg</span>
+                                                    <span class="cf-lead-card-owner" t-esc="lead.owner.initials"/>
+                                                    <span t-attf-class="cf-lead-pill cf-lead-pill-#{lead.pill_status}" t-esc="lead.pill_label"/>
+                                                </div>
+                                                <!-- Mini stage bar -->
+                                                <div class="cf-lead-mini-bar">
+                                                    <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
+                                                        <div t-attf-class="cf-lead-mini-seg #{s &lt; lead.stage_num ? 'done' : ''} #{s === lead.stage_num ? 'current' : ''} #{s &gt; lead.stage_num ? 'future' : ''}"/>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+
+                        <!-- PIPELINE VIEW: Kanban -->
+                        <t t-if="state.view === 'pipeline'">
+                            <t t-if="!state.pipeline">
+                                <div class="cf-lead-list-loading">
+                                    <div class="spinner-border spinner-border-sm text-secondary"/>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-lead-kanban">
+                                    <t t-foreach="state.pipeline" t-as="stage" t-key="stage.num">
+                                        <div class="cf-lead-kanban-col">
+                                            <div class="cf-lead-kanban-header" t-att-style="'border-bottom-color:' + stage.color">
+                                                <span class="cf-lead-kanban-title" t-esc="stage.label"/>
+                                                <span class="cf-lead-kanban-cnt" t-esc="stage.leads.length"/>
+                                            </div>
+                                            <div class="cf-lead-kanban-body">
+                                                <t t-foreach="stage.leads" t-as="lead" t-key="lead.id">
+                                                    <div class="cf-lead-kanban-card" t-on-click="() => this.onSelectLead(lead)">
+                                                        <div class="cf-lead-kanban-card-top">
+                                                            <span class="cf-lead-kanban-flag" t-esc="lead.country_code"/>
+                                                            <span class="cf-lead-kanban-name" t-esc="lead.name"/>
+                                                        </div>
+                                                        <div class="cf-lead-kanban-card-bot">
+                                                            <span class="cf-lead-kanban-val" t-esc="this.fmtEuro(lead.value)"/>
+                                                            <span class="cf-lead-kanban-prob"><t t-esc="lead.probability"/>%</span>
+                                                            <span class="cf-lead-card-owner" t-esc="lead.owner_initials"/>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                                <t t-if="stage.leads.length === 0">
+                                                    <div class="cf-lead-kanban-empty">Nessun lead</div>
+                                                </t>
+                                            </div>
+                                            <div class="cf-lead-kanban-footer">
+                                                Tot: <strong t-esc="this.fmtEuro(stage.total)"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+
+                        <!-- MERCATI VIEW -->
+                        <t t-if="state.view === 'mercati'">
+                            <t t-if="!state.markets">
+                                <div class="cf-lead-list-loading">
+                                    <div class="spinner-border spinner-border-sm text-secondary"/>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-lead-markets">
+                                    <t t-foreach="state.markets" t-as="m" t-key="m.flag">
+                                        <div class="cf-lead-market-row">
+                                            <div class="cf-lead-card-flag"><span t-esc="m.flag"/></div>
+                                            <div class="cf-lead-market-info">
+                                                <div class="cf-lead-market-top">
+                                                    <strong t-esc="m.country"/>
+                                                    <span class="cf-lead-market-cnt"><t t-esc="m.cnt"/> lead</span>
+                                                </div>
+                                                <div class="cf-lead-market-names" t-esc="m.names"/>
+                                            </div>
+                                            <div class="cf-lead-market-value" t-esc="this.fmtEuro(m.value)"/>
+                                        </div>
+                                    </t>
+                                    <t t-if="state.markets.length === 0">
+                                        <p class="cf-work-empty">Nessun mercato.</p>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+
+                    </div>
+
+                    <!-- DETAIL PANEL -->
+                    <t t-if="state.selectedLead and state.detailData and state.detailData.lead">
+                        <div class="cf-detail">
+                            <div class="cf-detail-header">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="cf-lead-card-flag"><span t-esc="state.detailData.lead.country_code"/></div>
+                                    <h4 class="cf-detail-title" t-esc="state.detailData.lead.name"/>
+                                </div>
+                                <button class="cf-detail-close" t-on-click="onCloseDetail"><i class="fa fa-times"/></button>
+                            </div>
+                            <div class="cf-detail-body">
+                                <!-- Stage bar -->
+                                <div class="cf-lead-detail-stagebar">
+                                    <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
+                                        <div t-attf-class="cf-lead-detail-seg #{s &lt; state.detailData.lead.stage_num ? 'done' : ''} #{s === state.detailData.lead.stage_num ? 'current' : ''} #{s &gt; state.detailData.lead.stage_num ? 'future' : ''}">
+                                            <span class="cf-lead-detail-seg-label" t-esc="s"/>
+                                        </div>
+                                    </t>
+                                </div>
+                                <div class="cf-lead-detail-grid">
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Valore:</span>
+                                        <span t-esc="this.fmtEuro(state.detailData.lead.value)"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Probabilità:</span>
+                                        <span><t t-esc="state.detailData.lead.probability"/>%</span>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Paese:</span>
+                                        <span t-esc="state.detailData.lead.country_name"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Owner:</span>
+                                        <span t-esc="state.detailData.lead.owner_name"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">In pipeline:</span>
+                                        <span><t t-esc="state.detailData.lead.days_in_pipeline"/> giorni</span>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Prossimo step:</span>
+                                        <span t-esc="state.detailData.lead.next_action"/>
+                                    </div>
+                                </div>
+                                <!-- Chain -->
+                                <div class="cf-lead-chain">
+                                    <t t-foreach="state.detailData.chain" t-as="c" t-key="c.label">
+                                        <div class="cf-lead-chain-chip">
+                                            <i t-attf-class="fa #{c.icon}"/>
+                                            <span t-esc="c.label"/>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- FEED SIDEBAR -->
+                <div class="cf-ws-two-col-side">
+                    <div class="cf-feed">
+                        <h3 class="cf-feed-title">Attività lead</h3>
+                        <t t-if="!state.data.feed or state.data.feed.length === 0">
+                            <p class="cf-feed-empty">Nessuna attività recente.</p>
+                        </t>
+                        <t t-foreach="state.data.feed" t-as="f" t-key="f.id">
+                            <div class="cf-feed-item">
+                                <div class="cf-feed-avatar"><span t-esc="f.initials"/></div>
+                                <div class="cf-feed-content">
+                                    <div class="cf-feed-author">
+                                        <strong t-esc="f.author"/>
+                                        <span class="cf-feed-time" t-esc="this.getRelativeTime(f.date)"/>
+                                    </div>
+                                    <p class="cf-feed-body" t-esc="f.body"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

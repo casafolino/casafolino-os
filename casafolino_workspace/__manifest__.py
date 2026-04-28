@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino Workspace",
-    "version": "18.0.0.2.0",
+    "version": "18.0.0.3.0",
     "category": "Productivity",
     "summary": "Scrivania operativa CasaFolino",
     "author": "CasaFolino Srls",
@@ -20,6 +20,9 @@
             "casafolino_workspace/static/src/js/components/workspace_work.js",
             "casafolino_workspace/static/src/js/components/workspace_detail.js",
             "casafolino_workspace/static/src/js/components/workspace_feed.js",
+            "casafolino_workspace/static/src/css/workspace_lead.css",
+            "casafolino_workspace/static/src/js/lead/workspace_lead.js",
+            "casafolino_workspace/static/src/xml/workspace_lead.xml",
             "casafolino_workspace/static/src/js/cf_workspace_client.js",
         ],
     },
