@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_workspace.WorkspaceCal">
+    <div class="cf-cal-section">
+        <t t-if="state.loading">
+            <div class="cf-ws-loading"><div class="spinner-border text-secondary"/><span>Caricamento agenda...</span></div>
+        </t>
+        <t t-elif="state.error">
+            <div class="cf-ws-error"><i class="fa fa-exclamation-triangle"/><span t-esc="state.error"/></div>
+        </t>
+        <t t-elif="state.data">
+            <div class="cf-lead-breadcrumb">
+                <span class="cf-lead-bc-link" t-on-click="onGoHome">Scrivania</span>
+                <span class="cf-lead-bc-sep">›</span>
+                <span class="cf-lead-bc-current">Agenda</span>
+            </div>
+
+            <!-- HERO -->
+            <div class="cf-hero">
+                <div class="cf-hero-left">
+                    <div class="cf-hero-avatar" style="border-color:#D97706">
+                        <i class="fa fa-calendar" style="font-size:20px;color:#6B4A1E;"/>
+                    </div>
+                    <div class="cf-hero-text">
+                        <h2 class="cf-hero-greet" t-esc="state.data.hero.greet"/>
+                        <p class="cf-hero-sub" t-esc="state.data.hero.sub"/>
+                    </div>
+                </div>
+                <div class="cf-hero-right">
+                    <div class="cf-hero-tip"><i class="fa fa-lightbulb-o cf-hero-tip-icon"/><span class="cf-hero-tip-text" t-esc="state.data.hero.tip.text"/></div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="cf-kpis">
+                <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.id">
+                    <div class="cf-kpi-card">
+                        <div class="cf-kpi-icon-wrap"><i t-attf-class="fa #{kpi.icon}"/></div>
+                        <div class="cf-kpi-info"><span class="cf-kpi-value" t-esc="kpi.value"/><span class="cf-kpi-label" t-esc="kpi.label"/></div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- MACRO -->
+            <div class="cf-macro-grid">
+                <t t-foreach="state.data.macro" t-as="m" t-key="m.id">
+                    <div class="cf-macro-tile" t-att-style="'background:' + m.color">
+                        <div class="cf-macro-tile-top"><i t-attf-class="fa #{m.icon} cf-macro-tile-icon"/><span class="cf-macro-tile-count" t-esc="m.count"/></div>
+                        <span class="cf-macro-tile-label" t-esc="m.label"/>
+                    </div>
+                </t>
+            </div>
+
+            <!-- WORK -->
+            <div class="cf-ws-two-col">
+                <div class="cf-ws-two-col-main">
+                    <div class="cf-work">
+                        <div class="cf-work-header">
+                            <h3 class="cf-work-title">Agenda</h3>
+                            <div class="cf-work-tabs">
+                                <button t-attf-class="cf-work-tab #{state.view === 'giorno' ? 'active' : ''}" t-on-click="() => this.onViewChange('giorno')">Giorno</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'settimana' ? 'active' : ''}" t-on-click="() => this.onViewChange('settimana')">Settimana</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'mese' ? 'active' : ''}" t-on-click="() => this.onViewChange('mese')">Mese</button>
+                            </div>
+                        </div>
+
+                        <!-- GIORNO VIEW -->
+                        <t t-if="state.view === 'giorno' and state.dayData">
+                            <div class="cf-cal-nav">
+                                <button class="cf-cal-nav-btn" t-on-click="() => this.onDayNav(-1)"><i class="fa fa-chevron-left"/></button>
+                                <span class="cf-cal-nav-label" t-esc="state.dayData.label"/>
+                                <button class="cf-cal-nav-btn" t-on-click="() => this.onDayNav(1)"><i class="fa fa-chevron-right"/></button>
+                            </div>
+                            <div class="cf-cal-summary">
+                                <div class="cf-cal-summary-item"><span class="cf-cal-summary-num" t-esc="state.dayData.summary.events"/><span>eventi</span></div>
+                                <div class="cf-cal-summary-item"><span class="cf-cal-summary-num" t-esc="state.dayData.summary.occupied_h"/><span>h occupate</span></div>
+                                <div class="cf-cal-summary-item"><span class="cf-cal-summary-num" t-esc="state.dayData.summary.free_h"/><span>h libere</span></div>
+                            </div>
+                            <t t-if="state.dayData.events.length === 0">
+                                <div class="cf-cal-empty"><i class="fa fa-calendar-o" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.3;"/><p>Nessun evento per questo giorno.</p></div>
+                            </t>
+                            <div class="cf-cal-day-grid">
+                                <t t-foreach="state.dayData.events" t-as="ev" t-key="ev.id">
+                                    <div class="cf-cal-event" t-att-style="'border-left-color:' + ev.color" t-on-click="() => this.onSelectEvent(ev)">
+                                        <i t-attf-class="fa #{ev.icon} cf-cal-event-icon"/>
+                                        <div class="cf-cal-event-info">
+                                            <div class="cf-cal-event-title" t-esc="ev.title"/>
+                                            <div class="cf-cal-event-meta">
+                                                <t t-esc="ev.start"/>-<t t-esc="ev.end"/>
+                                                <t t-if="ev.location"> · <t t-esc="ev.location"/></t>
+                                            </div>
+                                        </div>
+                                        <div class="cf-cal-event-attendees">
+                                            <t t-foreach="ev.attendees" t-as="a" t-key="a.initials">
+                                                <div class="cf-cal-event-att" t-att-title="a.name"><span t-esc="a.initials"/></div>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- SETTIMANA VIEW -->
+                        <t t-if="state.view === 'settimana' and state.weekData">
+                            <div class="cf-cal-nav">
+                                <button class="cf-cal-nav-btn" t-on-click="() => this.onWeekNav(-1)"><i class="fa fa-chevron-left"/></button>
+                                <span class="cf-cal-nav-label" t-esc="state.weekData.week"/>
+                                <button class="cf-cal-nav-btn" t-on-click="() => this.onWeekNav(1)"><i class="fa fa-chevron-right"/></button>
+                            </div>
+                            <div class="cf-cal-week">
+                                <t t-foreach="state.weekData.days" t-as="day" t-key="day.id">
+                                    <div t-attf-class="cf-cal-week-col #{day.is_today ? 'today' : ''}">
+                                        <div class="cf-cal-week-header">
+                                            <span t-esc="day.label"/>
+                                            <span class="day-num" t-esc="day.day_num"/>
+                                        </div>
+                                        <div class="cf-cal-week-body">
+                                            <t t-foreach="day.events" t-as="ev" t-key="ev.id">
+                                                <div class="cf-cal-week-event" t-att-style="'border-left-color:' + ev.color" t-on-click="() => this.onSelectEvent(ev)">
+                                                    <div class="cf-cal-week-event-time" t-esc="ev.time"/>
+                                                    <div class="cf-cal-week-event-title" t-esc="ev.title"/>
+                                                    <t t-if="ev.meta"><div class="cf-cal-week-event-meta" t-esc="ev.meta"/></t>
+                                                </div>
+                                            </t>
+                                            <t t-if="day.events.length === 0">
+                                                <div class="cf-cal-empty" style="padding:12px;">—</div>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- MESE VIEW -->
+                        <t t-if="state.view === 'mese' and state.monthData">
+                            <div class="cf-cal-nav">
+                                <button class="cf-cal-nav-btn" t-on-click="() => this.onMonthNav(-1)"><i class="fa fa-chevron-left"/></button>
+                                <span class="cf-cal-nav-label" t-esc="state.monthData.month"/>
+                                <button class="cf-cal-nav-btn" t-on-click="() => this.onMonthNav(1)"><i class="fa fa-chevron-right"/></button>
+                            </div>
+                            <div class="cf-cal-month">
+                                <div class="cf-cal-month-header">
+                                    <span>Lun</span><span>Mar</span><span>Mer</span><span>Gio</span><span>Ven</span><span>Sab</span><span>Dom</span>
+                                </div>
+                                <t t-foreach="state.monthData.weeks" t-as="week" t-key="week_index">
+                                    <div class="cf-cal-month-row">
+                                        <t t-foreach="week" t-as="cell" t-key="cell.date">
+                                            <div t-attf-class="cf-cal-month-cell #{cell.is_other_month ? 'other' : ''} #{cell.is_today ? 'today' : ''}">
+                                                <span class="cf-cal-month-day" t-esc="cell.day_num"/>
+                                                <t t-if="cell.event_count > 0">
+                                                    <span class="cf-cal-month-count" t-esc="cell.event_count"/>
+                                                </t>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- Loading states -->
+                        <t t-if="state.view === 'settimana' and !state.weekData">
+                            <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                        </t>
+                        <t t-if="state.view === 'mese' and !state.monthData">
+                            <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                        </t>
+                    </div>
+
+                    <!-- DETAIL -->
+                    <t t-if="state.selectedEvent and state.detailData and state.detailData.event">
+                        <div class="cf-detail">
+                            <div class="cf-detail-header">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <i t-attf-class="fa #{state.detailData.event.icon}" t-att-style="'color:' + state.detailData.event.color + ';font-size:18px;'"/>
+                                    <h4 class="cf-detail-title" t-esc="state.detailData.event.title"/>
+                                </div>
+                                <button class="cf-detail-close" t-on-click="onCloseDetail"><i class="fa fa-times"/></button>
+                            </div>
+                            <div class="cf-detail-body">
+                                <div class="cf-lead-detail-grid" style="margin-bottom:12px">
+                                    <div class="cf-detail-meta"><span class="cf-detail-meta-label">Orario:</span><span><t t-esc="state.detailData.event.start"/> - <t t-esc="state.detailData.event.end"/></span></div>
+                                    <div class="cf-detail-meta"><span class="cf-detail-meta-label">Tipo:</span><span t-esc="state.detailData.event.type"/></div>
+                                    <t t-if="state.detailData.event.location"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Luogo:</span><span t-esc="state.detailData.event.location"/></div></t>
+                                </div>
+
+                                <!-- Attendees -->
+                                <t t-if="state.detailData.attendees and state.detailData.attendees.length > 0">
+                                    <div class="cf-cal-attendees">
+                                        <h5 style="font-size:12px;font-weight:700;color:var(--cf-text-muted);margin:0 0 6px;">Partecipanti</h5>
+                                        <t t-foreach="state.detailData.attendees" t-as="att" t-key="att.id">
+                                            <div class="cf-cal-att-row">
+                                                <div class="cf-cal-event-att"><span t-esc="att.initials"/></div>
+                                                <span t-esc="att.name"/>
+                                                <span t-attf-class="cf-cal-att-status #{att.status}" t-esc="att.status"/>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+
+                                <!-- Prep -->
+                                <t t-if="state.detailData.prep_items and state.detailData.prep_items.length > 0">
+                                    <div class="cf-cal-prep">
+                                        <h5 class="cf-cal-prep-title">Prep AI</h5>
+                                        <t t-foreach="state.detailData.prep_items" t-as="item" t-key="item">
+                                            <div class="cf-cal-prep-item"><i class="fa fa-check-circle"/><span t-esc="item"/></div>
+                                        </t>
+                                    </div>
+                                </t>
+
+                                <!-- Chain -->
+                                <t t-if="state.detailData.chain and state.detailData.chain.length > 0">
+                                    <div class="cf-lead-chain">
+                                        <t t-foreach="state.detailData.chain" t-as="c" t-key="c.label">
+                                            <div class="cf-lead-chain-chip"><i t-attf-class="fa #{c.icon}"/><span t-esc="c.label"/></div>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- FEED -->
+                <div class="cf-ws-two-col-side">
+                    <div class="cf-feed">
+                        <h3 class="cf-feed-title">Attività agenda</h3>
+                        <t t-if="!state.data.feed or state.data.feed.length === 0">
+                            <p class="cf-feed-empty">Nessuna attività recente.</p>
+                        </t>
+                        <t t-foreach="state.data.feed" t-as="f" t-key="f.id">
+                            <div class="cf-feed-item">
+                                <div class="cf-feed-avatar"><span t-esc="f.initials"/></div>
+                                <div class="cf-feed-content">
+                                    <div class="cf-feed-author"><strong t-esc="f.author"/><span class="cf-feed-time" t-esc="this.getRelativeTime(f.date)"/></div>
+                                    <p class="cf-feed-body" t-esc="f.body"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

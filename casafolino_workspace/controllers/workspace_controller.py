@@ -168,3 +168,50 @@ class WorkspaceDashboardController(http.Controller):
         except Exception as e:
             _logger.error("Mail action error: %s", e, exc_info=True)
             return {"error": str(e)}
+
+    # ─── Calendar section routes ────────────────────────
+
+    @http.route("/workspace/cal/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cal_data(self, **kw):
+        try:
+            return request.env["workspace.calendar"].get_cal_data()
+        except Exception as e:
+            _logger.error("Cal data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cal/day", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cal_day(self, date=None, **kw):
+        try:
+            return request.env["workspace.calendar"].get_day_events(date)
+        except Exception as e:
+            _logger.error("Cal day error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cal/week", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cal_week(self, week_start=None, **kw):
+        try:
+            return request.env["workspace.calendar"].get_week_events(week_start)
+        except Exception as e:
+            _logger.error("Cal week error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cal/month", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cal_month(self, month_start=None, **kw):
+        try:
+            return request.env["workspace.calendar"].get_month_events(month_start)
+        except Exception as e:
+            _logger.error("Cal month error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/cal/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def cal_detail(self, event_id=0, **kw):
+        try:
+            return request.env["workspace.calendar"].get_event_detail(int(event_id))
+        except Exception as e:
+            _logger.error("Cal detail error: %s", e, exc_info=True)
+            return {"error": str(e)}

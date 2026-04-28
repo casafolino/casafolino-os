@@ -19,6 +19,8 @@
                           t-on-click="() => this.onNavigate('proj')">Progetti</span>
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'mail' ? 'active' : ''}"
                           t-on-click="() => this.onNavigate('mail')">Mail</span>
+                    <span t-attf-class="cf-ws-nav-item #{state.page === 'cal' ? 'active' : ''}"
+                          t-on-click="() => this.onNavigate('cal')">Agenda</span>
                 </div>
             </div>
             <div class="cf-ws-header-center">
@@ -63,6 +65,13 @@
                 <i class="fa fa-exclamation-triangle"/>
                 <span t-esc="state.error"/>
                 <button class="btn btn-sm btn-outline-secondary ms-3" t-on-click="onRefresh">Riprova</button>
+            </div>
+        </t>
+
+        <!-- CAL SECTION -->
+        <t t-elif="state.page === 'cal'">
+            <div class="cf-ws-body">
+                <WorkspaceCal onGoHome.bind="onGoHome"/>
             </div>
         </t>
 

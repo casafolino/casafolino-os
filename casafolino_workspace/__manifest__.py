@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino Workspace",
-    "version": "18.0.0.5.0",
+    "version": "18.0.0.6.0",
     "post_init_hook": "_post_init_hook",
     "category": "Productivity",
     "summary": "Scrivania operativa CasaFolino",
@@ -31,6 +31,9 @@
             "casafolino_workspace/static/src/css/workspace_mail.css",
             "casafolino_workspace/static/src/js/mail/workspace_mail.js",
             "casafolino_workspace/static/src/xml/workspace_mail.xml",
+            "casafolino_workspace/static/src/css/workspace_cal.css",
+            "casafolino_workspace/static/src/js/cal/workspace_cal.js",
+            "casafolino_workspace/static/src/xml/workspace_cal.xml",
             "casafolino_workspace/static/src/js/cf_workspace_client.js",
         ],
     },
