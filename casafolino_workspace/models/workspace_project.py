@@ -122,7 +122,7 @@ class WorkspaceProject(models.AbstractModel):
                       AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
                     ORDER BY pt.date_deadline LIMIT 1) AS next_date,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
-                    JOIN project_tags_project_project_rel rel ON rel.project_tags_id=ptag.id
+                    JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id LIMIT 3) AS tag_names
             FROM project_project pp
             LEFT JOIN res_users ru ON ru.id = pp.user_id
@@ -209,7 +209,7 @@ class WorkspaceProject(models.AbstractModel):
                       AND pt.stage_id NOT IN (SELECT id FROM project_task_type WHERE fold=true)
                    ) AS overdue_cnt,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
-                    JOIN project_tags_project_project_rel rel ON rel.project_tags_id=ptag.id
+                    JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id LIMIT 3) AS tag_names
             FROM project_project pp
             WHERE pp.active = true
@@ -264,7 +264,7 @@ class WorkspaceProject(models.AbstractModel):
                     JOIN project_task_type ptt ON ptt.id=pt.stage_id
                     WHERE pt.project_id=pp.id AND ptt.fold=true) AS task_done,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
-                    JOIN project_tags_project_project_rel rel ON rel.project_tags_id=ptag.id
+                    JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id LIMIT 3) AS tag_names
             FROM project_project pp
             WHERE pp.active = true AND pp.date IS NOT NULL
@@ -322,7 +322,7 @@ class WorkspaceProject(models.AbstractModel):
                     JOIN project_task_type ptt ON ptt.id=pt.stage_id
                     WHERE pt.project_id=pp.id AND ptt.fold=true) AS task_done,
                    (SELECT string_agg(ptag.name::text, ',') FROM project_tags ptag
-                    JOIN project_tags_project_project_rel rel ON rel.project_tags_id=ptag.id
+                    JOIN project_project_project_tags_rel rel ON rel.project_tags_id=ptag.id
                     WHERE rel.project_project_id=pp.id) AS tag_names,
                    (SELECT pt.name FROM project_task pt
                     WHERE pt.project_id=pp.id AND pt.date_deadline >= %(today)s
@@ -467,25 +467,25 @@ class WorkspaceProject(models.AbstractModel):
               ),
               acq AS (
                 SELECT COUNT(*) c FROM project_project pp
-                JOIN project_tags_project_project_rel rel ON rel.project_project_id=pp.id
+                JOIN project_project_project_tags_rel rel ON rel.project_project_id=pp.id
                 JOIN project_tags ptag ON ptag.id=rel.project_tags_id
                 WHERE pp.active=true AND ptag.name::text ILIKE '%%Acquisizione%%'
               ),
               infra AS (
                 SELECT COUNT(*) c FROM project_project pp
-                JOIN project_tags_project_project_rel rel ON rel.project_project_id=pp.id
+                JOIN project_project_project_tags_rel rel ON rel.project_project_id=pp.id
                 JOIN project_tags ptag ON ptag.id=rel.project_tags_id
                 WHERE pp.active=true AND (ptag.name::text ILIKE '%%Infrastruttura%%' OR ptag.name::text ILIKE '%%Finanza%%')
               ),
               product AS (
                 SELECT COUNT(*) c FROM project_project pp
-                JOIN project_tags_project_project_rel rel ON rel.project_project_id=pp.id
+                JOIN project_project_project_tags_rel rel ON rel.project_project_id=pp.id
                 JOIN project_tags ptag ON ptag.id=rel.project_tags_id
                 WHERE pp.active=true AND ptag.name::text ILIKE '%%Prodotto%%'
               ),
               expo AS (
                 SELECT COUNT(*) c FROM project_project pp
-                JOIN project_tags_project_project_rel rel ON rel.project_project_id=pp.id
+                JOIN project_project_project_tags_rel rel ON rel.project_project_id=pp.id
                 JOIN project_tags ptag ON ptag.id=rel.project_tags_id
                 WHERE pp.active=true AND (ptag.name::text ILIKE '%%Fiera%%' OR ptag.name::text ILIKE '%%Export%%')
               )
