@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dashboard_kpi_user,dashboard.kpi user,model_casafolino_dashboard_kpi,base.group_user,1,0,0,0
+access_dashboard_kpi_manager,dashboard.kpi manager,model_casafolino_dashboard_kpi,project.group_project_manager,1,1,1,1
+access_lavagna_template_user,lavagna.template user,model_casafolino_lavagna_template,base.group_user,1,0,0,0
+access_lavagna_template_manager,lavagna.template manager,model_casafolino_lavagna_template,project.group_project_manager,1,1,1,1
+access_initiative_dashboard_wizard_user,initiative.dashboard.wizard user,model_cf_initiative_dashboard_wizard,base.group_user,1,1,1,1

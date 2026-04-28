@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_dashboard_kpi_list" model="ir.ui.view">
+        <field name="name">casafolino.dashboard.kpi.list</field>
+        <field name="model">casafolino.dashboard.kpi</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="target_model"/>
+                <field name="domain"/>
+                <field name="icon"/>
+                <field name="color"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dashboard_kpi_form" model="ir.ui.view">
+        <field name="name">casafolino.dashboard.kpi.form</field>
+        <field name="model">casafolino.dashboard.kpi</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="target_model"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="domain"/>
+                            <field name="icon"/>
+                            <field name="color" widget="color"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dashboard_kpi" model="ir.actions.act_window">
+        <field name="name">KPI Lavagna</field>
+        <field name="res_model">casafolino.dashboard.kpi</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

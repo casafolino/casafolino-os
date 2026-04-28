@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaPlaceholder">
+        <div class="o_lavagna_placeholder">
+            <div t-if="state.loading" class="text-center p-5">
+                <i class="fa fa-spinner fa-spin fa-3x"/>
+                <p class="mt-3">Caricamento...</p>
+            </div>
+            <div t-else="" class="text-center">
+                <h1 class="mb-3">Lavagna in costruzione (F2-nuovo)</h1>
+                <h2 class="mb-4" t-esc="state.initiative.name"/>
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <table class="table table-borderless text-start">
+                            <tr>
+                                <td class="text-muted">Famiglia:</td>
+                                <td><strong t-esc="state.initiative.family_id and state.initiative.family_id[1]"/></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Categoria swimlane:</td>
+                                <td><strong t-esc="state.initiative.lavagna_swimlane_category or 'non configurata'"/></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">KPI configurati:</td>
+                                <td><strong t-esc="state.initiative.lavagna_kpi_ids.length"/></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Pannelli attivi:</td>
+                                <td><strong t-esc="state.initiative.lavagna_panels"/></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Task collegati:</td>
+                                <td><strong t-esc="state.initiative.lavagna_task_count"/></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <button class="btn btn-primary mt-4" t-on-click="backToForm">
+                    <i class="fa fa-arrow-left me-2"/>Torna alla form iniziativa
+                </button>
+            </div>
+        </div>
+    </t>
+</templates>

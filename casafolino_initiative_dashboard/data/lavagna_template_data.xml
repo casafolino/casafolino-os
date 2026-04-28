@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- TEMPLATE: Opportunita Commerciale (es. Vancouver) -->
+    <record id="template_oc_export" model="casafolino.lavagna.template">
+        <field name="name">Pipeline Export Internazionale</field>
+        <field name="sequence">10</field>
+        <field name="family_id" ref="casafolino_initiative.family_oc"/>
+        <field name="description">Pipeline scouting - campionatura - appuntamenti - incontri - lead CRM. Swimlane per fonte (ICE, CCIC, Diretti).</field>
+        <field name="swimlane_category">source</field>
+        <field name="suggested_swimlane_tag_ids" eval="[(6, 0, [
+            ref('tag_source_ice'),
+            ref('tag_source_ccic'),
+            ref('tag_source_diretti'),
+        ])]"/>
+        <field name="suggested_stage_names">Scouting,Campionatura,Appuntamenti,Incontri,Lead CRM,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_scouting'),
+            ref('kpi_task_campionatura'),
+            ref('kpi_task_appuntamenti'),
+            ref('kpi_task_incontri'),
+            ref('kpi_lead_collegati'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,activity</field>
+    </record>
+
+    <!-- TEMPLATE: Evento / Fiera -->
+    <record id="template_ev_fiera" model="casafolino.lavagna.template">
+        <field name="name">Pipeline Fiera B2B</field>
+        <field name="sequence">20</field>
+        <field name="family_id" ref="casafolino_initiative.family_ev"/>
+        <field name="description">Lead raccolto - qualificato - follow-up - campioni - ordine. Swimlane per fase fiera.</field>
+        <field name="swimlane_category">fair</field>
+        <field name="suggested_stage_names">Lead Raccolto,Qualificato,Follow-Up,Campioni Inviati,Ordine,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_scouting'),
+            ref('kpi_task_campionatura'),
+            ref('kpi_lead_collegati'),
+            ref('kpi_spedizioni_campioni'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,activity,calendar</field>
+    </record>
+
+    <!-- TEMPLATE: Campionatura / Etichetta -->
+    <record id="template_ce_campionatura" model="casafolino.lavagna.template">
+        <field name="name">Campionature e Etichette</field>
+        <field name="sequence">30</field>
+        <field name="family_id" ref="casafolino_initiative.family_ce"/>
+        <field name="description">Brief - mockup - approvazione - produzione - spedito.</field>
+        <field name="swimlane_category">strategic</field>
+        <field name="suggested_stage_names">Brief,Mockup,Approvazione,Produzione,Spedito,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_campionatura'),
+            ref('kpi_spedizioni_campioni'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,docs,shipments</field>
+    </record>
+
+</odoo>

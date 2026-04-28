@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Voce menu "Apri Nuova Iniziativa (Lavagna)" sotto menu Iniziative -->
+    <menuitem id="menu_cf_initiative_dashboard_wizard"
+              name="Apri Nuova Iniziativa (Lavagna)"
+              parent="casafolino_initiative.menu_initiative_root"
+              action="action_cf_initiative_dashboard_wizard"
+              sequence="5"/>
+
+    <!-- Config sub-menus under existing config menu -->
+    <menuitem id="menu_dashboard_kpi"
+              name="KPI Lavagna"
+              parent="casafolino_initiative.menu_initiative_config"
+              action="action_dashboard_kpi"
+              sequence="60"/>
+
+    <menuitem id="menu_lavagna_template"
+              name="Template Lavagna"
+              parent="casafolino_initiative.menu_initiative_config"
+              action="action_lavagna_template"
+              sequence="70"/>
+
+</odoo>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="kpi_task_scouting" model="casafolino.dashboard.kpi">
+        <field name="name">Task in Scouting</field>
+        <field name="sequence">10</field>
+        <field name="target_model">project.task</field>
+        <field name="domain">[('stage_id.name', '=', 'Scouting')]</field>
+        <field name="icon">fa-search</field>
+        <field name="color">#3498db</field>
+    </record>
+    <record id="kpi_task_campionatura" model="casafolino.dashboard.kpi">
+        <field name="name">In Campionatura</field>
+        <field name="sequence">20</field>
+        <field name="target_model">project.task</field>
+        <field name="domain">[('stage_id.name', '=', 'Campionatura')]</field>
+        <field name="icon">fa-cube</field>
+        <field name="color">#f39c12</field>
+    </record>
+    <record id="kpi_task_appuntamenti" model="casafolino.dashboard.kpi">
+        <field name="name">Appuntamenti</field>
+        <field name="sequence">30</field>
+        <field name="target_model">project.task</field>
+        <field name="domain">[('stage_id.name', '=', 'Appuntamenti')]</field>
+        <field name="icon">fa-calendar</field>
+        <field name="color">#9b59b6</field>
+    </record>
+    <record id="kpi_task_incontri" model="casafolino.dashboard.kpi">
+        <field name="name">Incontri</field>
+        <field name="sequence">40</field>
+        <field name="target_model">project.task</field>
+        <field name="domain">[('stage_id.name', '=', 'Incontri')]</field>
+        <field name="icon">fa-handshake-o</field>
+        <field name="color">#27ae60</field>
+    </record>
+    <record id="kpi_lead_collegati" model="casafolino.dashboard.kpi">
+        <field name="name">Lead CRM</field>
+        <field name="sequence">50</field>
+        <field name="target_model">crm.lead</field>
+        <field name="domain">[]</field>
+        <field name="icon">fa-rocket</field>
+        <field name="color">#e74c3c</field>
+    </record>
+    <record id="kpi_spedizioni_campioni" model="casafolino.dashboard.kpi">
+        <field name="name">Spedizioni Campioni</field>
+        <field name="sequence">60</field>
+        <field name="target_model">stock.picking</field>
+        <field name="domain">[('picking_type_id.code', '=', 'outgoing')]</field>
+        <field name="icon">fa-truck</field>
+        <field name="color">#16a085</field>
+    </record>
+    <record id="kpi_mail_nuove" model="casafolino.dashboard.kpi">
+        <field name="name">Mail Nuove</field>
+        <field name="sequence">70</field>
+        <field name="target_model">mail.message</field>
+        <field name="domain">[('message_type', '=', 'email')]</field>
+        <field name="icon">fa-envelope</field>
+        <field name="color">#993556</field>
+    </record>
+</odoo>

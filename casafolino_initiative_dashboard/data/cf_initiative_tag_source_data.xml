@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="tag_source_ice" model="cf.initiative.tag">
+        <field name="name">ICE</field>
+        <field name="code">SOURCE:ICE</field>
+        <field name="category">source</field>
+        <field name="color">3</field>
+    </record>
+    <record id="tag_source_ccic" model="cf.initiative.tag">
+        <field name="name">CCIC</field>
+        <field name="code">SOURCE:CCIC</field>
+        <field name="category">source</field>
+        <field name="color">4</field>
+    </record>
+    <record id="tag_source_diretti" model="cf.initiative.tag">
+        <field name="name">Contatti Diretti</field>
+        <field name="code">SOURCE:DIRETTI</field>
+        <field name="category">source</field>
+        <field name="color">5</field>
+    </record>
+    <record id="tag_source_referral" model="cf.initiative.tag">
+        <field name="name">Referral</field>
+        <field name="code">SOURCE:REFERRAL</field>
+        <field name="category">source</field>
+        <field name="color">6</field>
+    </record>
+    <record id="tag_source_sito" model="cf.initiative.tag">
+        <field name="name">Sito Web</field>
+        <field name="code">SOURCE:SITO</field>
+        <field name="category">source</field>
+        <field name="color">7</field>
+    </record>
+</odoo>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="cf_initiative_dashboard_wizard_form" model="ir.ui.view">
+        <field name="name">cf.initiative.dashboard.wizard.form</field>
+        <field name="model">cf.initiative.dashboard.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Apri Nuova Iniziativa (Lavagna)">
+                <field name="state" invisible="1"/>
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="family,config,details,panels,done"/>
+                </header>
+                <sheet>
+
+                    <!-- STEP 1: Famiglia -->
+                    <group invisible="state != 'family'">
+                        <separator string="Che tipo di iniziativa stai aprendo?"/>
+                        <field name="family_id" widget="radio"
+                               options="{'horizontal': false}"/>
+                        <field name="variant_id"
+                               invisible="not family_id"/>
+                        <field name="template_id"
+                               options="{'no_create': true}"
+                               invisible="not family_id"/>
+                    </group>
+
+                    <!-- STEP 2: Config Lavagna -->
+                    <group invisible="state != 'config'">
+                        <separator string="Configurazione Lavagna"/>
+                        <p class="text-muted">Modifica i suggerimenti del template se necessario.</p>
+                        <field name="swimlane_category"/>
+                        <field name="swimlane_tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                        <field name="stage_names_csv"
+                               placeholder="Es: Scouting,Campionatura,Appuntamenti"/>
+                        <field name="kpi_ids" widget="many2many_tags"/>
+                    </group>
+
+                    <!-- STEP 3: Dettagli -->
+                    <group invisible="state != 'details'">
+                        <separator string="Dettagli Iniziativa"/>
+                        <group>
+                            <field name="name" required="state == 'details'"/>
+                            <field name="partner_id"/>
+                            <field name="country_id"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                        <group>
+                            <field name="user_ids" widget="many2many_tags"/>
+                            <field name="market_tag_ids" widget="many2many_tags"
+                                   options="{'color_field': 'color'}"/>
+                        </group>
+                    </group>
+
+                    <!-- STEP 4: Pannelli -->
+                    <group invisible="state != 'panels'">
+                        <separator string="Moduli da attivare nella Lavagna"/>
+                        <p class="text-muted">Puoi modificarli anche dopo dalle impostazioni dell'iniziativa.</p>
+                        <group>
+                            <field name="panel_kanban"/>
+                            <field name="panel_todo"/>
+                            <field name="panel_mail"/>
+                            <field name="panel_activity"/>
+                        </group>
+                        <group>
+                            <field name="panel_docs"/>
+                            <field name="panel_notes"/>
+                            <field name="panel_calendar"/>
+                            <field name="panel_shipments"/>
+                        </group>
+                    </group>
+
+                    <!-- STEP 5: Done / Confirm -->
+                    <group invisible="state != 'done'">
+                        <separator string="Riepilogo"/>
+                        <div>
+                            <p>L'iniziativa "<strong><field name="name" readonly="1" nolabel="1"/></strong>"
+                               verra creata come <strong><field name="family_id" readonly="1" nolabel="1"/></strong>
+                               (<field name="variant_id" readonly="1" nolabel="1"/>).</p>
+                            <p>Verranno creati: 1 iniziativa, 1 progetto con stage:
+                               <em><field name="stage_names_csv" readonly="1" nolabel="1"/></em></p>
+                            <p>Cliccando Conferma sarai portato direttamente nella Lavagna.</p>
+                        </div>
+                    </group>
+
+                </sheet>
+                <footer>
+                    <button name="action_back" type="object" string="Indietro"
+                            class="btn-secondary"
+                            invisible="state == 'family'"/>
+                    <button name="action_next" type="object" string="Avanti"
+                            class="btn-primary"
+                            invisible="state == 'done'"/>
+                    <button name="action_confirm" type="object"
+                            string="Conferma e Apri Lavagna"
+                            class="btn-primary"
+                            invisible="state != 'done'"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cf_initiative_dashboard_wizard" model="ir.actions.act_window">
+        <field name="name">Apri Nuova Iniziativa (Lavagna)</field>
+        <field name="res_model">cf.initiative.dashboard.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
