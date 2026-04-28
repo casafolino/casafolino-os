@@ -1289,7 +1289,110 @@ class MailV3Controller(http.Controller):
         except Exception as e:
             return {'success': False, 'error': str(e)[:200]}
 
-    # ── Bulk Actions ─────────────────────────��──────────────────────
+    # ── Settings: Autoresponder ──────────────────────────────────
+
+    @http.route('/cf/mail/v3/autoresponder/get', type='json', auth='user')
+    def autoresponder_get(self, **kw):
+        """Get current user's autoresponder config."""
+        AR = request.env['casafolino.mail.autoresponder'].sudo()
+        ar = AR.search([('user_id', '=', request.env.uid)], limit=1)
+        if not ar:
+            return {'exists': False}
+
+        # Get alternate contact users for dropdown
+        users = request.env['res.users'].sudo().search([
+            ('share', '=', False),
+            ('id', '!=', request.env.uid),
+        ])
+        alternate_users = [{'id': u.id, 'name': u.name} for u in users]
+
+        return {
+            'exists': True,
+            'id': ar.id,
+            'active': ar.active,
+            'date_start': str(ar.date_start) if ar.date_start else '',
+            'date_end': str(ar.date_end) if ar.date_end else '',
+            'subject_prefix': ar.subject_prefix or '',
+            'body_html_it': ar.body_html_it or '',
+            'body_html_en': ar.body_html_en or '',
+            'body_html_es': ar.body_html_es or '',
+            'contact_alternate_id': ar.contact_alternate_id.id if ar.contact_alternate_id else False,
+            'contact_alternate_name': ar.contact_alternate_id.name if ar.contact_alternate_id else '',
+            'sent_count': ar.sent_count,
+            'alternate_users': alternate_users,
+        }
+
+    @http.route('/cf/mail/v3/autoresponder/save', type='json', auth='user')
+    def autoresponder_save(self, **kw):
+        """Create or update current user's autoresponder."""
+        AR = request.env['casafolino.mail.autoresponder'].sudo()
+        ar = AR.search([('user_id', '=', request.env.uid)], limit=1)
+
+        vals = {}
+        field_map = {
+            'date_start': 'date_start',
+            'date_end': 'date_end',
+            'subject_prefix': 'subject_prefix',
+            'body_html_it': 'body_html_it',
+            'body_html_en': 'body_html_en',
+            'body_html_es': 'body_html_es',
+            'contact_alternate_id': 'contact_alternate_id',
+        }
+        for key, field in field_map.items():
+            if key in kw:
+                val = kw[key]
+                if key in ('date_start', 'date_end'):
+                    vals[field] = val if val else False
+                elif key == 'contact_alternate_id':
+                    vals[field] = int(val) if val else False
+                else:
+                    vals[field] = val
+
+        if ar:
+            ar.write(vals)
+        else:
+            vals['user_id'] = request.env.uid
+            ar = AR.create(vals)
+
+        return {'success': True, 'id': ar.id}
+
+    @http.route('/cf/mail/v3/autoresponder/toggle', type='json', auth='user')
+    def autoresponder_toggle(self, **kw):
+        """Toggle autoresponder active state."""
+        AR = request.env['casafolino.mail.autoresponder'].sudo()
+        ar = AR.search([('user_id', '=', request.env.uid)], limit=1)
+        if not ar:
+            return {'success': False, 'error': 'Autoresponder non configurato'}
+
+        new_active = kw.get('active')
+        if new_active is None:
+            new_active = not ar.active
+        ar.active = bool(new_active)
+
+        return {'success': True, 'active': ar.active}
+
+    @http.route('/cf/mail/v3/autoresponder/preview', type='json', auth='user')
+    def autoresponder_preview(self, **kw):
+        """Preview autoresponder email with sample data."""
+        AR = request.env['casafolino.mail.autoresponder'].sudo()
+        ar = AR.search([('user_id', '=', request.env.uid)], limit=1)
+        if not ar:
+            return {'success': False, 'error': 'Autoresponder non configurato'}
+
+        lang = kw.get('lang', 'it')
+        sample_sender = kw.get('sender_name', 'Mario Rossi')
+
+        body = ar._render_body(sample_sender, lang=lang)
+        prefix = ar.subject_prefix or '[Fuori sede] '
+        subject = '%sRe: Richiesta informazioni prodotti' % prefix
+
+        return {
+            'success': True,
+            'subject': subject,
+            'body_html': body,
+        }
+
+    # ── Bulk Actions ──────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/threads/bulk', type='json', auth='user')
     def threads_bulk_action(self, **kw):

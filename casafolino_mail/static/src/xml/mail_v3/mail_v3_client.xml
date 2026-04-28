@@ -343,6 +343,10 @@
                     t-on-click="() => this.state.settingsTab = 'ai'">AI</button>
             <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'account' ? ' active' : '')"
                     t-on-click="() => this.state.settingsTab = 'account'">Account</button>
+            <button t-att-class="'mv3-settings-drawer__tab' + (state.settingsTab === 'autoresponder' ? ' active' : '')"
+                    t-on-click="() => this.state.settingsTab = 'autoresponder'">
+              <i class="fa fa-plane me-1"/>Fuori Sede
+            </button>
           </div>
           <div class="mv3-settings-drawer__body">
             <!-- Tab: Firme -->
@@ -430,6 +434,10 @@
                   <div class="text-muted small">Stato: <t t-out="acc.state"/></div>
                 </div>
               </t>
+            </div>
+            <!-- Tab: Autoresponder / Fuori Sede -->
+            <div t-if="state.settingsTab === 'autoresponder'">
+              <MailV3SettingsAutoresponder/>
             </div>
           </div>
         </div>

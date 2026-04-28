@@ -199,3 +199,31 @@ def _post_init_hook(env):
             'active': True,
             'user_id': env.ref('base.user_admin').id,
         })
+
+    # ── 8. Cron Autoresponder Activation Check (dedup + idempotent) ──
+    ar_model = env.ref('casafolino_mail.model_casafolino_mail_autoresponder')
+    all_ar_crons = Cron.search([('cron_name', 'ilike', 'CasaFolino%Autoresponder%')])
+    if all_ar_crons:
+        keep_ar = all_ar_crons[0]
+        dupes_ar = all_ar_crons - keep_ar
+        if dupes_ar:
+            _logger.info(
+                "[casafolino_mail] Removing %d duplicate Autoresponder crons: %s",
+                len(dupes_ar), dupes_ar.ids,
+            )
+            dupes_ar.unlink()
+    else:
+        sa_ar = env['ir.actions.server'].create({
+            'name': 'CasaFolino Autoresponder Activation Check - Action',
+            'model_id': ar_model.id,
+            'state': 'code',
+            'code': 'model._cron_autoresponder_activation_check()',
+        })
+        Cron.create({
+            'cron_name': 'CasaFolino Autoresponder Activation Check - Action',
+            'ir_actions_server_id': sa_ar.id,
+            'interval_number': 1,
+            'interval_type': 'hours',
+            'active': True,
+            'user_id': env.ref('base.user_admin').id,
+        })

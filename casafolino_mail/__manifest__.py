@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.17.1.0',
+    'version': '18.0.18.0.0',
     'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions + Multi-utente per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -68,6 +68,9 @@
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_dismissed_senders.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_folder_sidebar.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_sync_badge.xml',
+            # V18 Autoresponder
+            'casafolino_mail/static/src/js/mail_v3/mail_v3_settings_autoresponder.js',
+            'casafolino_mail/static/src/xml/mail_v3/mail_v3_settings_autoresponder.xml',
         ],
     },
     'post_init_hook': '_post_init_hook',

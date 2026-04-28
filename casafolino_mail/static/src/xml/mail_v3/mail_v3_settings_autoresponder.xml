@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="casafolino_mail.SettingsAutoresponder">
+    <div class="mv3-autoresponder">
+
+      <!-- Loading -->
+      <div t-if="state.loading" class="text-center py-4">
+        <i class="fa fa-spinner fa-spin"/> Caricamento...
+      </div>
+
+      <div t-if="!state.loading">
+
+        <!-- Toast notification -->
+        <div t-if="state.toastMessage"
+             t-attf-class="alert alert-{{state.toastType}} alert-dismissible fade show mb-3 py-2 px-3"
+             role="alert">
+          <small t-out="state.toastMessage"/>
+        </div>
+
+        <!-- Active toggle + counter -->
+        <div class="mv3-autoresponder__header mb-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox"
+                       t-att-checked="state.active"
+                       t-on-change="toggle"
+                       t-att-disabled="!state.exists"/>
+                <label class="form-check-label fw-bold">
+                  <t t-if="state.active">
+                    <span class="text-success"><i class="fa fa-plane me-1"/> Fuori Sede ATTIVO</span>
+                  </t>
+                  <t t-else="">
+                    Fuori Sede
+                  </t>
+                </label>
+              </div>
+            </div>
+            <span t-if="state.exists and state.sent_count > 0" class="badge bg-secondary">
+              <i class="fa fa-reply me-1"/><t t-out="state.sent_count"/> risposte inviate
+            </span>
+          </div>
+        </div>
+
+        <!-- Date range -->
+        <div class="row mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-bold">Data inizio</label>
+            <input type="date" class="form-control form-control-sm"
+                   t-att-value="state.date_start"
+                   t-on-change="onDateStartChange"/>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">Data fine (rientro)</label>
+            <input type="date" class="form-control form-control-sm"
+                   t-att-value="state.date_end"
+                   t-on-change="onDateEndChange"/>
+          </div>
+        </div>
+
+        <!-- Subject prefix -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Prefisso oggetto</label>
+          <input type="text" class="form-control form-control-sm"
+                 t-att-value="state.subject_prefix"
+                 t-on-change="onSubjectPrefixChange"
+                 placeholder="[Fuori sede] "/>
+        </div>
+
+        <!-- Alternate contact -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Contatto alternativo</label>
+          <select class="form-control form-control-sm" t-on-change="onAlternateChange">
+            <option value="">— Nessuno —</option>
+            <t t-foreach="state.alternate_users" t-as="u" t-key="u.id">
+              <option t-att-value="u.id"
+                      t-att-selected="state.contact_alternate_id === u.id"
+                      t-out="u.name"/>
+            </t>
+          </select>
+        </div>
+
+        <!-- Body tabs (IT / EN / ES) -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Messaggio autoresponder</label>
+          <div class="mv3-autoresponder__lang-tabs mb-2">
+            <button t-attf-class="btn btn-sm {{state.activeBodyTab === 'it' ? 'btn-primary' : 'btn-outline-secondary'}}"
+                    t-on-click="switchBodyTab" data-lang="it">
+              <i class="fa fa-flag me-1"/> Italiano
+            </button>
+            <button t-attf-class="btn btn-sm {{state.activeBodyTab === 'en' ? 'btn-primary' : 'btn-outline-secondary'}}"
+                    t-on-click="switchBodyTab" data-lang="en">
+              <i class="fa fa-globe me-1"/> English
+            </button>
+            <button t-attf-class="btn btn-sm {{state.activeBodyTab === 'es' ? 'btn-primary' : 'btn-outline-secondary'}}"
+                    t-on-click="switchBodyTab" data-lang="es">
+              <i class="fa fa-globe me-1"/> Español
+            </button>
+          </div>
+          <div class="mv3-autoresponder__variables mb-1">
+            <small class="text-muted">
+              Variabili: <code>{{sender_name}}</code> <code>{{return_date}}</code>
+              <code>{{my_name}}</code> <code>{{contact_alternate}}</code>
+            </small>
+          </div>
+          <textarea t-if="state.activeBodyTab === 'it'"
+                    class="form-control form-control-sm mv3-autoresponder__body"
+                    rows="8"
+                    t-on-change="onBodyItChange"
+                    t-att-value="state.body_html_it"
+                    placeholder="Scrivi il messaggio in italiano..."/>
+          <textarea t-if="state.activeBodyTab === 'en'"
+                    class="form-control form-control-sm mv3-autoresponder__body"
+                    rows="8"
+                    t-on-change="onBodyEnChange"
+                    t-att-value="state.body_html_en"
+                    placeholder="Write your English message..."/>
+          <textarea t-if="state.activeBodyTab === 'es'"
+                    class="form-control form-control-sm mv3-autoresponder__body"
+                    rows="8"
+                    t-on-change="onBodyEsChange"
+                    t-att-value="state.body_html_es"
+                    placeholder="Escribe tu mensaje en español..."/>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" t-on-click="save" t-att-disabled="state.saving">
+            <i t-if="state.saving" class="fa fa-spinner fa-spin me-1"/>
+            <i t-else="" class="fa fa-save me-1"/>
+            Salva
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" t-on-click="preview"
+                  t-att-disabled="!state.exists">
+            <i class="fa fa-eye me-1"/> Anteprima
+          </button>
+        </div>
+
+        <!-- Preview modal -->
+        <div t-if="state.previewVisible" class="mv3-autoresponder__preview mt-3">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <small class="fw-bold">Anteprima autoresponder</small>
+              <button class="btn btn-sm btn-link p-0" t-on-click="closePreview">
+                <i class="fa fa-times"/>
+              </button>
+            </div>
+            <div class="card-body p-2">
+              <div class="mb-1"><small class="text-muted">Oggetto:</small></div>
+              <div class="mb-2 fw-bold small" t-out="state.previewSubject"/>
+              <hr class="my-1"/>
+              <div class="mv3-autoresponder__preview-body small" t-out="state.previewBody"/>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </t>
+</templates>

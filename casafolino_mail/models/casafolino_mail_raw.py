@@ -458,12 +458,41 @@ class CasafolinoMailRaw(models.Model):
         # ── V14: Apply folder rules ──
         self._assign_folder(new_msg, raw)
 
+        # ── V18: Autoresponder check ──
+        if actual_direction == 'inbound':
+            self._check_autoresponder(new_msg, raw)
+
         raw.write({
             'triage_state': 'promoted',
             'triage_reason': reason,
             'triage_at': fields.Datetime.now(),
             'promoted_message_id': new_msg.id,
         })
+
+    # ── V18: Autoresponder ───────────────────────────────────────
+
+    def _check_autoresponder(self, message, raw):
+        """Check if any active autoresponder should reply to this inbound message."""
+        try:
+            account = raw.account_id
+            user = account.responsible_user_id
+            if not user:
+                return
+
+            AR = self.env['casafolino.mail.autoresponder'].sudo()
+            ar = AR.search([
+                ('user_id', '=', user.id),
+                ('active', '=', True),
+            ], limit=1)
+            if not ar:
+                return
+
+            headers_raw = raw.headers_raw or ''
+            if ar._should_autoreply(raw.sender_email, headers_raw):
+                ar._send_autoreply(message)
+        except Exception as e:
+            _logger.warning(
+                "[autoresponder] Check failed for RAW %d: %s", raw.id, e)
 
     # ── V14: Folder assignment ─────────────────────────────────────
 

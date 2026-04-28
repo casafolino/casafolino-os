@@ -2916,3 +2916,72 @@ $mv3-line-height: 1.45;
     &--error { background: rgba(231, 76, 60, 0.15); }
     &__btn:hover { background: rgba(255,255,255,0.1); }
 }
+
+// ── Autoresponder (Fuori Sede) ────────────────────────────
+.mv3-autoresponder {
+    padding: 4px 0;
+
+    &__header {
+        padding-bottom: 8px;
+        border-bottom: 1px solid $mv3-border;
+    }
+
+    &__lang-tabs {
+        display: flex;
+        gap: 4px;
+
+        .btn {
+            font-size: 11px;
+            padding: 2px 8px;
+        }
+    }
+
+    &__variables {
+        code {
+            background: rgba($mv3-primary, 0.08);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: $mv3-primary;
+        }
+    }
+
+    &__body {
+        font-family: monospace;
+        font-size: 12px;
+        min-height: 150px;
+        resize: vertical;
+    }
+
+    &__preview {
+        .card {
+            border-color: $mv3-border;
+        }
+        .card-header {
+            background: rgba($mv3-primary, 0.05);
+            font-size: 12px;
+        }
+    }
+
+    &__preview-body {
+        max-height: 200px;
+        overflow-y: auto;
+        line-height: 1.5;
+    }
+}
+
+// Dark mode autoresponder
+[data-theme="dark"] .mv3-autoresponder {
+    &__header { border-color: rgba(255,255,255,0.1); }
+    &__variables code {
+        background: rgba(255,255,255,0.08);
+        color: #8FBC5A;
+    }
+    &__preview .card {
+        border-color: rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.03);
+    }
+    &__preview .card-header {
+        background: rgba(255,255,255,0.05);
+    }
+}
