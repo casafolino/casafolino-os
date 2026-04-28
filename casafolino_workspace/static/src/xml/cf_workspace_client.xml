@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_workspace.CfWorkspaceMain">
+    <div class="cf-ws o_action">
+
+        <!-- ═══════ HEADER ═══════ -->
+        <div class="cf-ws-header">
+            <div class="cf-ws-header-left">
+                <!-- Logo CF -->
+                <div class="cf-ws-logo">
+                    <span class="cf-ws-logo-text">CF</span>
+                </div>
+                <h4 class="cf-ws-title">Scrivania</h4>
+            </div>
+
+            <div class="cf-ws-header-center">
+                <div class="cf-ws-search">
+                    <span class="cf-ws-search-icon">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input type="text"
+                           class="cf-ws-search-input"
+                           placeholder="Cerca in Scrivania..."
+                           t-att-value="state.searchQuery"
+                           t-on-input="onSearchInput"
+                           t-on-keydown="onSearchKeydown"/>
+                </div>
+            </div>
+
+            <div class="cf-ws-header-right">
+                <button class="cf-ws-header-btn" title="Nuovo">
+                    <i class="fa fa-plus"/>
+                </button>
+                <button class="cf-ws-header-btn" title="Notifiche">
+                    <i class="fa fa-bell-o"/>
+                </button>
+                <div class="cf-ws-user-pill">
+                    <i class="fa fa-user-circle-o"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════ BODY ═══════ -->
+        <div class="cf-ws-body">
+            <div class="cf-ws-placeholder">
+                <div class="cf-ws-placeholder-icon">
+                    <i class="fa fa-desktop"/>
+                </div>
+                <h2 class="cf-ws-placeholder-title">Scrivania v0.1</h2>
+                <p class="cf-ws-placeholder-sub">scheletro modulo</p>
+                <p class="cf-ws-placeholder-hint">
+                    I widget arriveranno nelle prossime fasi.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</t>
+</templates>

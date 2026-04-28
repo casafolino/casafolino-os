@@ -1,0 +1,194 @@
+/* ═══════ CasaFolino Workspace ═══════ */
+/* Brand tokens */
+:root {
+    --cf-brown: #5C3D2E;
+    --cf-brown-dark: #3E2518;
+    --cf-cream: #FFF8F0;
+    --cf-gold: #C8982C;
+    --cf-gold-light: #E8C96A;
+    --cf-bg: #F5F0EB;
+    --cf-text: #3E2518;
+    --cf-text-muted: #8B7355;
+}
+
+/* Layout */
+.cf-ws {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--cf-bg);
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ═══════ HEADER ═══════ */
+.cf-ws-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    background: var(--cf-brown);
+    color: var(--cf-cream);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    gap: 16px;
+    min-height: 56px;
+}
+
+.cf-ws-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.cf-ws-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--cf-cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cf-ws-logo-text {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--cf-brown);
+    letter-spacing: -0.5px;
+}
+
+.cf-ws-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--cf-cream);
+}
+
+/* ═══════ SEARCH ═══════ */
+.cf-ws-header-center {
+    flex: 1;
+    max-width: 420px;
+}
+
+.cf-ws-search {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    padding: 0 14px;
+    height: 36px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.cf-ws-search:focus-within {
+    background: rgba(255,255,255,0.2);
+    border-color: var(--cf-gold);
+}
+
+.cf-ws-search-icon {
+    color: var(--cf-gold-light);
+    font-size: 13px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.cf-ws-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--cf-cream);
+    font-size: 13px;
+    width: 100%;
+}
+
+.cf-ws-search-input::placeholder {
+    color: rgba(255,248,240,0.5);
+}
+
+/* ═══════ HEADER RIGHT ═══════ */
+.cf-ws-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cf-ws-header-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--cf-cream);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.cf-ws-header-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: var(--cf-gold);
+}
+
+.cf-ws-user-pill {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: var(--cf-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cf-brown-dark);
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 4px;
+}
+
+/* ═══════ BODY ═══════ */
+.cf-ws-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+}
+
+.cf-ws-placeholder {
+    text-align: center;
+    max-width: 400px;
+}
+
+.cf-ws-placeholder-icon {
+    font-size: 48px;
+    color: var(--cf-brown);
+    opacity: 0.25;
+    margin-bottom: 16px;
+}
+
+.cf-ws-placeholder-title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cf-text);
+}
+
+.cf-ws-placeholder-sub {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--cf-text-muted);
+    font-style: italic;
+}
+
+.cf-ws-placeholder-hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--cf-text-muted);
+    opacity: 0.7;
+}

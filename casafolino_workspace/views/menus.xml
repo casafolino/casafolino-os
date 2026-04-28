@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cf_workspace_main" model="ir.actions.client">
+        <field name="name">Scrivania</field>
+        <field name="tag">cf_workspace_main</field>
+    </record>
+
+    <menuitem id="menu_cf_workspace_root" name="Scrivania" sequence="1"
+        web_icon="casafolino_workspace,static/description/icon.png"
+        action="action_cf_workspace_main"/>
+</odoo>
