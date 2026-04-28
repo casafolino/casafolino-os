@@ -9,6 +9,7 @@ import { WorkspaceWork } from "./components/workspace_work";
 import { WorkspaceDetail } from "./components/workspace_detail";
 import { WorkspaceFeed } from "./components/workspace_feed";
 import { WorkspaceLead } from "./lead/workspace_lead";
+import { WorkspaceProj } from "./proj/workspace_proj";
 
 class CfWorkspaceMain extends Component {
     static template = "casafolino_workspace.CfWorkspaceMain";
@@ -21,6 +22,7 @@ class CfWorkspaceMain extends Component {
         WorkspaceDetail,
         WorkspaceFeed,
         WorkspaceLead,
+        WorkspaceProj,
     };
 
     setup() {
@@ -75,6 +77,10 @@ class CfWorkspaceMain extends Component {
         // If macro tile with link, navigate
         if (item && item.id === "pipeline") {
             this.state.page = "lead";
+            return;
+        }
+        if (item && item.id === "projects") {
+            this.state.page = "proj";
             return;
         }
         this.state.selectedItem = item;

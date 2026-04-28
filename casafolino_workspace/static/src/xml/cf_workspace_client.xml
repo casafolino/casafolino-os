@@ -15,6 +15,8 @@
                 <div class="cf-ws-nav">
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'lead' ? 'active' : ''}"
                           t-on-click="() => this.onNavigate('lead')">Lead</span>
+                    <span t-attf-class="cf-ws-nav-item #{state.page === 'proj' ? 'active' : ''}"
+                          t-on-click="() => this.onNavigate('proj')">Progetti</span>
                 </div>
             </div>
             <div class="cf-ws-header-center">
@@ -59,6 +61,13 @@
                 <i class="fa fa-exclamation-triangle"/>
                 <span t-esc="state.error"/>
                 <button class="btn btn-sm btn-outline-secondary ms-3" t-on-click="onRefresh">Riprova</button>
+            </div>
+        </t>
+
+        <!-- PROJ SECTION -->
+        <t t-elif="state.page === 'proj'">
+            <div class="cf-ws-body">
+                <WorkspaceProj onGoHome.bind="onGoHome"/>
             </div>
         </t>
 

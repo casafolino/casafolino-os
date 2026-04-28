@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_workspace.WorkspaceProj">
+    <div class="cf-proj-section">
+
+        <t t-if="state.loading">
+            <div class="cf-ws-loading">
+                <div class="spinner-border text-secondary"/>
+                <span>Caricamento progetti...</span>
+            </div>
+        </t>
+
+        <t t-elif="state.error">
+            <div class="cf-ws-error">
+                <i class="fa fa-exclamation-triangle"/>
+                <span t-esc="state.error"/>
+            </div>
+        </t>
+
+        <t t-elif="state.data">
+            <!-- BREADCRUMB -->
+            <div class="cf-lead-breadcrumb">
+                <span class="cf-lead-bc-link" t-on-click="onGoHome">Scrivania</span>
+                <span class="cf-lead-bc-sep">›</span>
+                <span class="cf-lead-bc-current">Progetti</span>
+            </div>
+
+            <!-- HERO -->
+            <div class="cf-hero">
+                <div class="cf-hero-left">
+                    <div class="cf-hero-avatar" style="border-color:#10B981">
+                        <i class="fa fa-folder-open" style="font-size:20px;color:#6B4A1E;"/>
+                    </div>
+                    <div class="cf-hero-text">
+                        <h2 class="cf-hero-greet" t-esc="state.data.hero.greet"/>
+                        <p class="cf-hero-sub" t-esc="state.data.hero.sub"/>
+                    </div>
+                </div>
+                <div class="cf-hero-right">
+                    <div class="cf-hero-tip">
+                        <i class="fa fa-lightbulb-o cf-hero-tip-icon"/>
+                        <span class="cf-hero-tip-text" t-esc="state.data.hero.tip.text"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="cf-kpis">
+                <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.id">
+                    <div class="cf-kpi-card">
+                        <div class="cf-kpi-icon-wrap">
+                            <i t-attf-class="fa #{kpi.icon}"/>
+                        </div>
+                        <div class="cf-kpi-info">
+                            <span class="cf-kpi-value" t-esc="kpi.value"/>
+                            <span class="cf-kpi-label" t-esc="kpi.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- MACRO AREAS -->
+            <div class="cf-macro-grid">
+                <t t-foreach="state.data.macro" t-as="m" t-key="m.id">
+                    <div class="cf-macro-tile" t-att-style="'background:' + m.color">
+                        <div class="cf-macro-tile-top">
+                            <i t-attf-class="fa #{m.icon} cf-macro-tile-icon"/>
+                            <span class="cf-macro-tile-count" t-esc="m.count"/>
+                        </div>
+                        <span class="cf-macro-tile-label" t-esc="m.label"/>
+                    </div>
+                </t>
+            </div>
+
+            <!-- WORK AREA -->
+            <div class="cf-ws-two-col">
+                <div class="cf-ws-two-col-main">
+                    <div class="cf-work">
+                        <div class="cf-work-header">
+                            <h3 class="cf-work-title">Progetti</h3>
+                            <div class="cf-work-tabs">
+                                <button t-attf-class="cf-work-tab #{state.view === 'tutti' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('tutti')">Tutti</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'lavagna' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('lavagna')">Lavagna</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'timeline' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('timeline')">Timeline</button>
+                            </div>
+                        </div>
+
+                        <!-- FILTER CHIPS -->
+                        <t t-if="state.view === 'tutti' and state.data.filters">
+                            <div class="cf-lead-filters">
+                                <t t-foreach="state.data.filters" t-as="f" t-key="f">
+                                    <button t-attf-class="cf-lead-chip #{state.filter === this.getFilterKey(f) ? 'active' : ''}"
+                                            t-on-click="() => this.onFilterChange(this.getFilterKey(f))"
+                                            t-esc="f"/>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- TUTTI VIEW -->
+                        <t t-if="state.view === 'tutti'">
+                            <t t-if="state.projLoading">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-elif="state.projects.length === 0">
+                                <p class="cf-work-empty">Nessun progetto trovato.</p>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-proj-list">
+                                    <t t-foreach="state.projects" t-as="proj" t-key="proj.id">
+                                        <div class="cf-proj-card" t-on-click="() => this.onSelectProj(proj)">
+                                            <div class="cf-proj-card-icon" t-att-style="'background:' + proj.category_color">
+                                                <i t-attf-class="fa #{proj.category_icon}"/>
+                                            </div>
+                                            <div class="cf-proj-card-body">
+                                                <div class="cf-proj-card-top">
+                                                    <span class="cf-proj-card-name" t-esc="proj.name"/>
+                                                    <span t-attf-class="cf-lead-pill cf-lead-pill-#{proj.pill_status}" t-esc="proj.pill_label"/>
+                                                </div>
+                                                <div class="cf-proj-card-meta">
+                                                    <span class="cf-proj-card-cat" t-esc="proj.category"/>
+                                                    <span class="cf-proj-card-tasks"><t t-esc="proj.task_done"/>/<t t-esc="proj.task_count"/> task</span>
+                                                    <span class="cf-lead-card-owner" t-esc="proj.owner.initials"/>
+                                                </div>
+                                                <div class="cf-proj-progress-wrap">
+                                                    <div class="cf-proj-progress-bar">
+                                                        <div class="cf-proj-progress-fill" t-att-style="'width:' + proj.progress + '%'"/>
+                                                    </div>
+                                                    <span class="cf-proj-progress-pct"><t t-esc="proj.progress"/>%</span>
+                                                </div>
+                                                <div class="cf-proj-card-next">
+                                                    <i class="fa fa-arrow-right"/> <span t-esc="proj.next_milestone"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+
+                        <!-- LAVAGNA VIEW -->
+                        <t t-if="state.view === 'lavagna'">
+                            <t t-if="!state.kanban">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-proj-kanban">
+                                    <t t-foreach="state.kanban" t-as="col" t-key="col.label">
+                                        <div class="cf-lead-kanban-col">
+                                            <div class="cf-lead-kanban-header">
+                                                <span class="cf-lead-kanban-title" t-esc="col.label"/>
+                                                <span class="cf-lead-kanban-cnt" t-esc="col.projects.length"/>
+                                            </div>
+                                            <div class="cf-lead-kanban-body">
+                                                <t t-foreach="col.projects" t-as="p" t-key="p.id">
+                                                    <div class="cf-lead-kanban-card" t-on-click="() => this.onSelectProj(p)">
+                                                        <div class="cf-lead-kanban-card-top">
+                                                            <span class="cf-proj-mini-icon" t-att-style="'background:' + p.category_color">
+                                                                <i t-attf-class="fa #{p.category_icon}" style="font-size:10px;"/>
+                                                            </span>
+                                                            <span class="cf-lead-kanban-name" t-esc="p.name"/>
+                                                        </div>
+                                                        <div class="cf-proj-progress-wrap" style="margin-top:6px;">
+                                                            <div class="cf-proj-progress-bar">
+                                                                <div class="cf-proj-progress-fill" t-att-style="'width:' + p.progress + '%'"/>
+                                                            </div>
+                                                            <span class="cf-proj-progress-pct"><t t-esc="p.progress"/>%</span>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                                <t t-if="col.projects.length === 0">
+                                                    <div class="cf-lead-kanban-empty">Nessun progetto</div>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+
+                        <!-- TIMELINE VIEW -->
+                        <t t-if="state.view === 'timeline'">
+                            <t t-if="!state.timeline">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-proj-timeline">
+                                    <t t-foreach="state.timeline" t-as="group" t-key="group.key">
+                                        <t t-if="group.projects.length > 0">
+                                            <div class="cf-proj-tl-group">
+                                                <h4 class="cf-proj-tl-label" t-esc="group.label"/>
+                                                <t t-foreach="group.projects" t-as="p" t-key="p.id">
+                                                    <div class="cf-proj-tl-item" t-on-click="() => this.onSelectProj(p)">
+                                                        <div class="cf-proj-card-icon cf-proj-card-icon-sm" t-att-style="'background:' + p.category_color">
+                                                            <i t-attf-class="fa #{p.category_icon}"/>
+                                                        </div>
+                                                        <div class="cf-proj-tl-info">
+                                                            <span class="cf-proj-card-name" t-esc="p.name"/>
+                                                            <span class="cf-proj-tl-date">
+                                                                <t t-esc="p.date"/> · <t t-esc="p.progress"/>%
+                                                            </span>
+                                                        </div>
+                                                        <span t-attf-class="cf-lead-pill cf-lead-pill-#{p.days_to_target &lt; 0 ? 'red' : (p.days_to_target &lt; 14 ? 'amber' : 'green')}">
+                                                            <t t-if="p.days_to_target &lt; 0"><t t-esc="p.days_to_target"/> gg</t>
+                                                            <t t-else="">+<t t-esc="p.days_to_target"/> gg</t>
+                                                        </span>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+                    </div>
+
+                    <!-- DETAIL PANEL -->
+                    <t t-if="state.selectedProj and state.detailData and state.detailData.project">
+                        <div class="cf-detail">
+                            <div class="cf-detail-header">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="cf-proj-card-icon cf-proj-card-icon-sm" t-att-style="'background:' + state.detailData.project.category_color">
+                                        <i t-attf-class="fa #{state.detailData.project.category_icon}"/>
+                                    </div>
+                                    <h4 class="cf-detail-title" t-esc="state.detailData.project.name"/>
+                                </div>
+                                <button class="cf-detail-close" t-on-click="onCloseDetail"><i class="fa fa-times"/></button>
+                            </div>
+                            <div class="cf-detail-body">
+                                <div class="cf-proj-progress-wrap" style="margin-bottom:14px;">
+                                    <div class="cf-proj-progress-bar" style="height:8px;">
+                                        <div class="cf-proj-progress-fill" t-att-style="'width:' + state.detailData.project.progress + '%'"/>
+                                    </div>
+                                    <span class="cf-proj-progress-pct"><t t-esc="state.detailData.project.progress"/>%</span>
+                                </div>
+                                <div class="cf-lead-detail-grid">
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Categoria:</span>
+                                        <span t-esc="state.detailData.project.category"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Scadenza:</span>
+                                        <span t-esc="state.detailData.project.date or '—'"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Owner:</span>
+                                        <span t-esc="state.detailData.project.owner_name"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Task:</span>
+                                        <span><t t-esc="state.detailData.project.task_done"/>/<t t-esc="state.detailData.project.task_count"/></span>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Prossimo step:</span>
+                                        <span t-esc="state.detailData.project.next_milestone"/>
+                                    </div>
+                                    <div class="cf-detail-meta">
+                                        <span class="cf-detail-meta-label">Giorni al target:</span>
+                                        <span><t t-esc="state.detailData.project.days_to_target"/></span>
+                                    </div>
+                                </div>
+                                <div class="cf-lead-chain">
+                                    <t t-foreach="state.detailData.chain" t-as="c" t-key="c.label">
+                                        <div class="cf-lead-chain-chip">
+                                            <i t-attf-class="fa #{c.icon}"/>
+                                            <span t-esc="c.label"/>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- FEED -->
+                <div class="cf-ws-two-col-side">
+                    <div class="cf-feed">
+                        <h3 class="cf-feed-title">Attività progetti</h3>
+                        <t t-if="!state.data.feed or state.data.feed.length === 0">
+                            <p class="cf-feed-empty">Nessuna attività recente.</p>
+                        </t>
+                        <t t-foreach="state.data.feed" t-as="f" t-key="f.id">
+                            <div class="cf-feed-item">
+                                <div class="cf-feed-avatar"><span t-esc="f.initials"/></div>
+                                <div class="cf-feed-content">
+                                    <div class="cf-feed-author">
+                                        <strong t-esc="f.author"/>
+                                        <span class="cf-feed-time" t-esc="this.getRelativeTime(f.date)"/>
+                                    </div>
+                                    <p class="cf-feed-body" t-esc="f.body"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

@@ -1,0 +1,198 @@
+/* ═══════ Project Section ═══════ */
+
+.cf-proj-section { padding: 0; }
+
+/* Project list */
+.cf-proj-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cf-proj-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--cf-card-bg);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.cf-proj-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(62,37,24,0.08);
+}
+
+.cf-proj-card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--cf-text);
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.cf-proj-card-icon-sm {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+}
+
+.cf-proj-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-proj-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.cf-proj-card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.cf-proj-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--cf-text-muted);
+    margin-bottom: 6px;
+}
+
+.cf-proj-card-cat {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cf-proj-card-tasks {
+    font-weight: 600;
+}
+
+/* Progress bar */
+.cf-proj-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.cf-proj-progress-bar {
+    flex: 1;
+    height: 5px;
+    background: #E8E4DE;
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.cf-proj-progress-fill {
+    height: 100%;
+    background: var(--cf-gold);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+}
+
+.cf-proj-progress-pct {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cf-text-muted);
+    flex-shrink: 0;
+    min-width: 30px;
+    text-align: right;
+}
+
+.cf-proj-card-next {
+    font-size: 12px;
+    color: var(--cf-text-muted);
+    margin-top: 2px;
+}
+
+.cf-proj-card-next i {
+    font-size: 10px;
+    margin-right: 4px;
+    color: var(--cf-gold);
+}
+
+/* Kanban */
+.cf-proj-kanban {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+/* Mini icon for kanban */
+.cf-proj-mini-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Timeline */
+.cf-proj-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cf-proj-tl-group {
+    margin-bottom: 4px;
+}
+
+.cf-proj-tl-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--cf-text-muted);
+    margin: 0 0 8px;
+    padding-left: 4px;
+    border-left: 3px solid var(--cf-gold);
+}
+
+.cf-proj-tl-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--cf-card-bg);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.cf-proj-tl-item:hover {
+    background: var(--cf-bg);
+}
+
+.cf-proj-tl-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-proj-tl-date {
+    font-size: 11px;
+    color: var(--cf-text-muted);
+    display: block;
+}

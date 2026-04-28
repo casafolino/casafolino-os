@@ -65,3 +65,50 @@ class WorkspaceDashboardController(http.Controller):
         except Exception as e:
             _logger.error("Lead detail error: %s", e, exc_info=True)
             return {"error": str(e)}
+
+    # ─── Project section routes ─────────────────────────
+
+    @http.route("/workspace/proj/data", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def proj_data(self, **kw):
+        try:
+            return request.env["workspace.project"].get_proj_data()
+        except Exception as e:
+            _logger.error("Proj data error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/proj/list", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def proj_list(self, filter_key="tutti", **kw):
+        try:
+            return request.env["workspace.project"].get_proj_list(filter_key)
+        except Exception as e:
+            _logger.error("Proj list error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/proj/kanban", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def proj_kanban(self, **kw):
+        try:
+            return request.env["workspace.project"].get_proj_kanban()
+        except Exception as e:
+            _logger.error("Proj kanban error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/proj/timeline", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def proj_timeline(self, **kw):
+        try:
+            return request.env["workspace.project"].get_proj_timeline()
+        except Exception as e:
+            _logger.error("Proj timeline error: %s", e, exc_info=True)
+            return {"error": str(e)}
+
+    @http.route("/workspace/proj/detail", type="json", auth="user",
+                methods=["POST"], csrf=False)
+    def proj_detail(self, proj_id=0, **kw):
+        try:
+            return request.env["workspace.project"].get_proj_detail(int(proj_id))
+        except Exception as e:
+            _logger.error("Proj detail error: %s", e, exc_info=True)
+            return {"error": str(e)}
