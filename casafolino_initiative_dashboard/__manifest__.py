@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.1.0.0',
-    'summary': 'Lavagna cockpit + wizard setup per iniziative CasaFolino',
+    'version': '18.0.1.2.0',
+    'summary': 'Lavagna cockpit + wizard setup con scenari multipli per iniziative CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [
@@ -25,7 +25,11 @@
         'web.assets_backend': [
             'casafolino_initiative_dashboard/static/src/js/dashboard_placeholder.js',
             'casafolino_initiative_dashboard/static/src/xml/dashboard_placeholder.xml',
-            'casafolino_initiative_dashboard/static/src/css/wizard.css',
+            'casafolino_initiative_dashboard/static/src/js/lavagna_family_cards.js',
+            'casafolino_initiative_dashboard/static/src/xml/lavagna_family_cards.xml',
+            'casafolino_initiative_dashboard/static/src/js/lavagna_scenario_cards.js',
+            'casafolino_initiative_dashboard/static/src/xml/lavagna_scenario_cards.xml',
+            'casafolino_initiative_dashboard/static/src/scss/wizard.scss',
         ],
     },
     'installable': True,

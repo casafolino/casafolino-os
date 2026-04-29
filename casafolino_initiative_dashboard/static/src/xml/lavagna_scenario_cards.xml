@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaScenarioCards">
+        <div class="o_lavagna_scenario_cards">
+            <div t-if="state.loading" class="o_lavagna_loading">Caricamento scenari...</div>
+            <div t-elif="!state.scenarios.length" class="o_lavagna_empty">
+                Nessuno scenario disponibile per questa tipologia.
+            </div>
+            <div t-else="" class="o_lavagna_scenario_grid">
+                <div t-foreach="state.scenarios" t-as="scenario" t-key="scenario.id"
+                     class="o_lavagna_scenario_card"
+                     t-att-class="{ 'o_selected': isSelected(scenario.id) }"
+                     t-on-click="() => this.selectScenario(scenario.id)">
+                    <h4 class="o_lavagna_scenario_name" t-esc="scenario.name"/>
+                    <p class="o_lavagna_scenario_desc" t-esc="scenario.description || ''"/>
+                    <div class="o_lavagna_scenario_pipeline">
+                        <span class="o_lavagna_pipeline_label">PIPELINE</span>
+                        <div class="o_lavagna_pipeline_stages">
+                            <t t-foreach="parseStages(scenario.suggested_stage_names)" t-as="stage" t-key="stage_index">
+                                <span class="o_lavagna_stage_chip" t-esc="stage"/>
+                                <span t-if="!stage_last" class="o_lavagna_stage_arrow">→</span>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

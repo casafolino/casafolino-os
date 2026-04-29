@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
 
-    <!-- TEMPLATE: Opportunita Commerciale (es. Vancouver) -->
-    <record id="template_oc_export" model="casafolino.lavagna.template">
+    <!-- ========== FAMIGLIA OC (Opportunita Commerciale) ========== -->
+
+    <record id="scenario_oc_pipeline_export" model="casafolino.lavagna.template">
         <field name="name">Pipeline Export Internazionale</field>
         <field name="sequence">10</field>
         <field name="family_id" ref="casafolino_initiative.family_oc"/>
-        <field name="description">Pipeline scouting - campionatura - appuntamenti - incontri - lead CRM. Swimlane per fonte (ICE, CCIC, Diretti).</field>
+        <field name="description">Scouting buyer esteri tramite ICE, CCIC o canali diretti. Ideale per nuovi mercati e ricerca distributori stranieri.</field>
         <field name="swimlane_category">source</field>
         <field name="suggested_swimlane_tag_ids" eval="[(6, 0, [
             ref('tag_source_ice'),
@@ -22,37 +23,138 @@
             ref('kpi_lead_collegati'),
             ref('kpi_mail_nuove'),
         ])]"/>
-        <field name="default_panels">kanban,todo,mail,activity</field>
+        <field name="default_panels">kanban,todo,mail,activity,shipments</field>
     </record>
 
-    <!-- TEMPLATE: Evento / Fiera -->
-    <record id="template_ev_fiera" model="casafolino.lavagna.template">
-        <field name="name">Pipeline Fiera B2B</field>
+    <record id="scenario_oc_gdo_singolo" model="casafolino.lavagna.template">
+        <field name="name">Trattativa GDO Singolo Cliente</field>
         <field name="sequence">20</field>
+        <field name="family_id" ref="casafolino_initiative.family_oc"/>
+        <field name="description">Negoziazione strutturata con catena GDO specifica (es. Aldi, Carrefour, Lidl). Pipeline lineare senza swimlane.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Brief Cliente,Listino,Test Prodotto,Codifica,Primo Ordine,Run Continuativo,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_campionatura'),
+            ref('kpi_task_appuntamenti'),
+            ref('kpi_lead_collegati'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,activity,docs</field>
+    </record>
+
+    <record id="scenario_oc_distributore_strategico" model="casafolino.lavagna.template">
+        <field name="name">Acquisizione Distributore Strategico</field>
+        <field name="sequence">30</field>
+        <field name="family_id" ref="casafolino_initiative.family_oc"/>
+        <field name="description">Conquista di un distributore importante multi-brand. Processo lungo con onboarding finale e contratto.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Primo Contatto,Listino,Campionatura,Negoziazione Contratto,Onboarding,Operativo,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_appuntamenti'),
+            ref('kpi_task_incontri'),
+            ref('kpi_lead_collegati'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,activity,calendar</field>
+    </record>
+
+    <!-- ========== FAMIGLIA EV (Evento) ========== -->
+
+    <record id="scenario_ev_fiera_internazionale" model="casafolino.lavagna.template">
+        <field name="name">Fiera B2B Internazionale</field>
+        <field name="sequence">10</field>
         <field name="family_id" ref="casafolino_initiative.family_ev"/>
-        <field name="description">Lead raccolto - qualificato - follow-up - campioni - ordine. Swimlane per fase fiera.</field>
+        <field name="description">SIAL, Anuga, Fancy Food, Fancy Food NY. Pipeline pre-fiera + raccolta lead + follow-up + conversione.</field>
         <field name="swimlane_category">fair</field>
-        <field name="suggested_stage_names">Lead Raccolto,Qualificato,Follow-Up,Campioni Inviati,Ordine,Archiviati</field>
+        <field name="suggested_swimlane_tag_ids" eval="[(6, 0, [
+            ref('casafolino_initiative.tag_fair_sial_canada'),
+            ref('casafolino_initiative.tag_fair_anuga'),
+            ref('casafolino_initiative.tag_fair_fancy_food'),
+        ])]"/>
+        <field name="suggested_stage_names">Pre-Fiera,Stand,Lead Raccolto,Follow-Up,Conversione,Archiviati</field>
         <field name="default_kpi_ids" eval="[(6, 0, [
             ref('kpi_task_scouting'),
             ref('kpi_task_campionatura'),
             ref('kpi_lead_collegati'),
             ref('kpi_spedizioni_campioni'),
+            ref('kpi_mail_nuove'),
         ])]"/>
-        <field name="default_panels">kanban,todo,mail,activity,calendar</field>
+        <field name="default_panels">kanban,todo,mail,calendar,shipments</field>
     </record>
 
-    <!-- TEMPLATE: Campionatura / Etichetta -->
-    <record id="template_ce_campionatura" model="casafolino.lavagna.template">
-        <field name="name">Campionature e Etichette</field>
+    <record id="scenario_ev_fiera_locale" model="casafolino.lavagna.template">
+        <field name="name">Fiera Italian Food (Tuttofood, Cibus, Marca)</field>
+        <field name="sequence">20</field>
+        <field name="family_id" ref="casafolino_initiative.family_ev"/>
+        <field name="description">Fiere food italiane. Buyer prevalentemente domestici. Follow-up piu rapido vs fiere internazionali.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Pre-Fiera,Stand,Lead Raccolto,Follow-Up,Conversione,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_scouting'),
+            ref('kpi_task_campionatura'),
+            ref('kpi_lead_collegati'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,activity</field>
+    </record>
+
+    <record id="scenario_ev_degustazione" model="casafolino.lavagna.template">
+        <field name="name">Degustazione Privata / Showcooking</field>
         <field name="sequence">30</field>
+        <field name="family_id" ref="casafolino_initiative.family_ev"/>
+        <field name="description">Eventi privati per buyer specifici, showcooking presso punti vendita o eventi B2B su invito.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Lista Ospiti,Setup Logistico,Evento,Follow-Up,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_appuntamenti'),
+            ref('kpi_lead_collegati'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,calendar,docs</field>
+    </record>
+
+    <!-- ========== FAMIGLIA CE (Campionatura/Etichetta) ========== -->
+
+    <record id="scenario_ce_sample_kit" model="casafolino.lavagna.template">
+        <field name="name">Sample Kit B2B Generico</field>
+        <field name="sequence">10</field>
         <field name="family_id" ref="casafolino_initiative.family_ce"/>
-        <field name="description">Brief - mockup - approvazione - produzione - spedito.</field>
-        <field name="swimlane_category">strategic</field>
-        <field name="suggested_stage_names">Brief,Mockup,Approvazione,Produzione,Spedito,Archiviati</field>
+        <field name="description">Spedizione campioni standard a prospect. Workflow rapido: brief - preparazione - spedizione - feedback.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Brief,Sample,Spedizione,Feedback,Archiviati</field>
         <field name="default_kpi_ids" eval="[(6, 0, [
             ref('kpi_task_campionatura'),
             ref('kpi_spedizioni_campioni'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,shipments</field>
+    </record>
+
+    <record id="scenario_ce_mockup_label" model="casafolino.lavagna.template">
+        <field name="name">Mockup Etichetta Private Label</field>
+        <field name="sequence">20</field>
+        <field name="family_id" ref="casafolino_initiative.family_ce"/>
+        <field name="description">Sviluppo etichetta custom per cliente private label. Brief grafico - mockup - approvazione - print test - produzione.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Brief Grafico,Mockup,Approvazione Cliente,Print Test,Produzione,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_campionatura'),
+            ref('kpi_mail_nuove'),
+        ])]"/>
+        <field name="default_panels">kanban,todo,mail,docs</field>
+    </record>
+
+    <record id="scenario_ce_co_development" model="casafolino.lavagna.template">
+        <field name="name">Co-Development Ricetta</field>
+        <field name="sequence">30</field>
+        <field name="family_id" ref="casafolino_initiative.family_ce"/>
+        <field name="description">Sviluppo ricetta personalizzata su richiesta cliente. Iter lungo con prototipi e test sensoriali.</field>
+        <field name="swimlane_category"></field>
+        <field name="suggested_stage_names">Brief Tecnico,Prototipo,Test Sensoriale,Approvazione,Industrializzazione,Archiviati</field>
+        <field name="default_kpi_ids" eval="[(6, 0, [
+            ref('kpi_task_campionatura'),
+            ref('kpi_spedizioni_campioni'),
+            ref('kpi_mail_nuove'),
         ])]"/>
         <field name="default_panels">kanban,todo,mail,docs,shipments</field>
     </record>

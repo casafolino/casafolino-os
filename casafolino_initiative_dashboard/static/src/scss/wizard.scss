@@ -1,0 +1,446 @@
+// =====================================================
+// LAVAGNA WIZARD — Palette CasaFolino + UX premium
+// =====================================================
+
+// Palette CasaFolino (allineata a casafolino_workspace)
+$lav-brown:        #6B4A1E;
+$lav-brown-dark:   #4A3215;
+$lav-gold:         #C8A43A;
+$lav-gold-light:   #E6C659;
+$lav-cream:        #F5E6C8;
+$lav-cream-soft:   #FAF5E8;
+$lav-sage:         #F1F4D5;
+$lav-olive:        #8BA040;
+$lav-text-dark:    #2C2418;
+$lav-text-medium:  #6B5D49;
+$lav-text-light:   #A89B85;
+$lav-border:       #E5DDD0;
+$lav-border-hover: $lav-gold;
+
+// Shadow
+$lav-shadow-sm: 0 1px 3px rgba(107, 74, 30, 0.08);
+$lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
+$lav-shadow-lg: 0 8px 24px rgba(107, 74, 30, 0.16);
+
+// Wizard container
+.o_lavagna_wizard {
+    color: $lav-text-dark;
+
+    // Header / statusbar
+    .o_lavagna_wizard_header {
+        background: linear-gradient(135deg, $lav-cream-soft 0%, $lav-cream 100%);
+        border-bottom: 1px solid $lav-border;
+        padding: 0;
+
+        .o_statusbar_status {
+            background: transparent;
+
+            > button {
+                color: $lav-text-medium;
+                font-weight: 500;
+                font-size: 13px;
+
+                &.btn-primary, &.o_arrow_button_current {
+                    background: $lav-brown !important;
+                    color: white !important;
+                    border-color: $lav-brown !important;
+                }
+            }
+        }
+    }
+
+    // Sheet (corpo)
+    .o_lavagna_wizard_sheet {
+        background: white;
+        padding: 32px 48px;
+        min-height: 480px;
+    }
+
+    // Step container
+    .o_lavagna_step {
+        animation: lavagnaFadeIn 0.3s ease;
+
+        .o_lavagna_step_title {
+            font-size: 28px;
+            font-weight: 600;
+            color: $lav-brown;
+            margin: 0 0 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .o_lavagna_step_subtitle {
+            font-size: 15px;
+            color: $lav-text-medium;
+            margin: 0 0 32px;
+            line-height: 1.5;
+        }
+    }
+
+    // ===== STEP 1 — Family cards =====
+    .o_lavagna_family_grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+
+        @media (max-width: 900px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .o_lavagna_family_card {
+        background: white;
+        border: 2px solid $lav-border;
+        border-radius: 12px;
+        padding: 28px 24px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        position: relative;
+
+        &:hover {
+            border-color: $lav-border-hover;
+            transform: translateY(-2px);
+            box-shadow: $lav-shadow-md;
+        }
+
+        &.o_selected {
+            border-color: $lav-brown;
+            background: $lav-cream-soft;
+            box-shadow: $lav-shadow-md;
+
+            &::after {
+                content: "\2713";
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                width: 28px;
+                height: 28px;
+                background: $lav-brown;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        }
+
+        .o_lavagna_family_icon {
+            color: $lav-gold;
+            margin-bottom: 16px;
+            font-size: 36px;
+        }
+
+        .o_lavagna_family_name {
+            font-size: 17px;
+            font-weight: 600;
+            color: $lav-text-dark;
+            margin: 0 0 8px;
+        }
+
+        .o_lavagna_family_desc {
+            font-size: 13px;
+            color: $lav-text-medium;
+            margin: 0;
+            line-height: 1.4;
+        }
+    }
+
+    // ===== STEP 2 — Scenario cards =====
+    .o_lavagna_scenario_grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+
+        @media (max-width: 900px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .o_lavagna_scenario_card {
+        background: white;
+        border: 2px solid $lav-border;
+        border-radius: 12px;
+        padding: 24px 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+
+        &:hover {
+            border-color: $lav-border-hover;
+            transform: translateY(-2px);
+            box-shadow: $lav-shadow-md;
+        }
+
+        &.o_selected {
+            border-color: $lav-brown;
+            background: $lav-cream-soft;
+            box-shadow: $lav-shadow-md;
+
+            &::after {
+                content: "\2713";
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                width: 28px;
+                height: 28px;
+                background: $lav-brown;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        }
+
+        .o_lavagna_scenario_name {
+            font-size: 16px;
+            font-weight: 600;
+            color: $lav-text-dark;
+            margin: 0 0 8px;
+            padding-right: 32px;
+        }
+
+        .o_lavagna_scenario_desc {
+            font-size: 13px;
+            color: $lav-text-medium;
+            margin: 0 0 16px;
+            line-height: 1.5;
+            min-height: 56px;
+        }
+
+        .o_lavagna_scenario_pipeline {
+            border-top: 1px solid $lav-border;
+            padding-top: 12px;
+
+            .o_lavagna_pipeline_label {
+                font-size: 11px;
+                color: $lav-text-light;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-weight: 600;
+                display: block;
+                margin-bottom: 8px;
+            }
+
+            .o_lavagna_pipeline_stages {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                align-items: center;
+            }
+
+            .o_lavagna_stage_chip {
+                background: $lav-cream;
+                color: $lav-brown;
+                padding: 3px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+
+            .o_lavagna_stage_arrow {
+                color: $lav-gold;
+                font-size: 12px;
+            }
+        }
+    }
+
+    .o_lavagna_scenario_preview {
+        background: $lav-cream-soft;
+        border-radius: 8px;
+        padding: 20px;
+        border-left: 4px solid $lav-gold;
+
+        h3 {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: $lav-brown;
+            margin: 0 0 8px;
+        }
+    }
+
+    // ===== STEP 3 — Dettagli =====
+    .o_lavagna_step .o_group {
+        background: $lav-cream-soft;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 16px;
+
+        > .o_group {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+        }
+    }
+
+    // ===== STEP 4 — Pannelli =====
+    .o_lavagna_panels_grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .o_lavagna_panel_toggle {
+        background: white;
+        border: 2px solid $lav-border;
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:has(input:checked) {
+            background: $lav-cream-soft;
+            border-color: $lav-brown;
+        }
+
+        &:hover {
+            border-color: $lav-gold;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: $lav-brown;
+            cursor: pointer;
+        }
+
+        label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+
+            i {
+                color: $lav-gold;
+                margin-right: 8px;
+                width: 18px;
+            }
+
+            .o_lavagna_panel_desc {
+                display: block;
+                font-size: 12px;
+                color: $lav-text-light;
+                font-weight: 400;
+                margin-top: 2px;
+                margin-left: 26px;
+            }
+        }
+    }
+
+    // ===== STEP 5 — Conferma =====
+    .o_lavagna_summary_card {
+        background: $lav-cream-soft;
+        border-radius: 12px;
+        padding: 28px;
+        margin: 24px 0;
+        border: 1px solid $lav-border;
+    }
+
+    .o_lavagna_summary_row {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid $lav-border;
+
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+
+    .o_lavagna_summary_label {
+        flex: 0 0 140px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: $lav-text-light;
+        font-weight: 600;
+    }
+
+    .o_lavagna_summary_value {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+        color: $lav-text-dark;
+    }
+
+    .o_lavagna_summary_footer {
+        font-size: 13px;
+        color: $lav-text-medium;
+        text-align: center;
+        margin: 24px 0 0;
+        line-height: 1.5;
+    }
+
+    // ===== Footer / Bottoni =====
+    .o_lavagna_wizard_footer {
+        background: $lav-cream-soft;
+        padding: 20px 48px;
+        border-top: 1px solid $lav-border;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+
+        .btn {
+            min-width: 120px;
+            padding: 10px 24px;
+            font-weight: 500;
+            font-size: 14px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .o_lavagna_btn_primary, .btn-primary {
+            background: $lav-brown !important;
+            border-color: $lav-brown !important;
+            color: white !important;
+
+            &:hover {
+                background: $lav-brown-dark !important;
+                border-color: $lav-brown-dark !important;
+                box-shadow: $lav-shadow-md;
+            }
+        }
+
+        .btn-secondary {
+            background: white !important;
+            border-color: $lav-border !important;
+            color: $lav-text-medium !important;
+
+            &:hover {
+                background: $lav-cream !important;
+                color: $lav-brown !important;
+            }
+        }
+    }
+}
+
+// Animation
+@keyframes lavagnaFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// Loading state
+.o_lavagna_loading, .o_lavagna_empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #A89B85;
+    font-size: 14px;
+}

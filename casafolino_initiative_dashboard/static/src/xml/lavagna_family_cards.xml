@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaFamilyCards">
+        <div class="o_lavagna_family_cards">
+            <div t-if="state.loading" class="o_lavagna_loading">Caricamento...</div>
+            <div t-else="" class="o_lavagna_family_grid">
+                <div t-foreach="state.families" t-as="family" t-key="family.id"
+                     class="o_lavagna_family_card"
+                     t-att-class="{ 'o_selected': isSelected(family.id) }"
+                     t-on-click="() => this.selectFamily(family.id)">
+                    <div class="o_lavagna_family_icon">
+                        <i t-att-class="'fa fa-2x ' + getFamilyIcon(family)"/>
+                    </div>
+                    <h4 class="o_lavagna_family_name" t-esc="family.name"/>
+                    <p class="o_lavagna_family_desc" t-esc="family.description || ''"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,103 +1,215 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <record id="cf_initiative_dashboard_wizard_form" model="ir.ui.view">
         <field name="name">cf.initiative.dashboard.wizard.form</field>
         <field name="model">cf.initiative.dashboard.wizard</field>
         <field name="arch" type="xml">
-            <form string="Apri Nuova Iniziativa (Lavagna)">
+            <form string="Apri Nuova Iniziativa (Lavagna)" class="o_lavagna_wizard">
                 <field name="state" invisible="1"/>
-                <header>
+
+                <header class="o_lavagna_wizard_header">
                     <field name="state" widget="statusbar"
-                           statusbar_visible="family,config,details,panels,done"/>
+                           statusbar_visible="family,scenario,details,panels,done"/>
                 </header>
-                <sheet>
 
-                    <!-- STEP 1: Famiglia -->
-                    <group invisible="state != 'family'">
-                        <separator string="Che tipo di iniziativa stai aprendo?"/>
-                        <field name="family_id" widget="radio"
-                               options="{'horizontal': false}"/>
-                        <field name="variant_id"
-                               invisible="not family_id"/>
-                        <field name="template_id"
-                               options="{'no_create': true}"
-                               invisible="not family_id"/>
-                    </group>
+                <sheet class="o_lavagna_wizard_sheet">
 
-                    <!-- STEP 2: Config Lavagna -->
-                    <group invisible="state != 'config'">
-                        <separator string="Configurazione Lavagna"/>
-                        <p class="text-muted">Modifica i suggerimenti del template se necessario.</p>
-                        <field name="swimlane_category"/>
-                        <field name="swimlane_tag_ids" widget="many2many_tags"
-                               options="{'color_field': 'color'}"/>
-                        <field name="stage_names_csv"
-                               placeholder="Es: Scouting,Campionatura,Appuntamenti"/>
-                        <field name="kpi_ids" widget="many2many_tags"/>
-                    </group>
+                    <!-- ============ STEP 1: FAMIGLIA ============ -->
+                    <div class="o_lavagna_step" invisible="state != 'family'">
+                        <h1 class="o_lavagna_step_title">Che tipo di iniziativa stai aprendo?</h1>
+                        <p class="o_lavagna_step_subtitle">
+                            Scegli la tipologia per configurare la Lavagna in modo ottimale per il tuo workflow.
+                        </p>
 
-                    <!-- STEP 3: Dettagli -->
-                    <group invisible="state != 'details'">
-                        <separator string="Dettagli Iniziativa"/>
-                        <group>
-                            <field name="name" required="state == 'details'"/>
-                            <field name="partner_id"/>
-                            <field name="country_id"/>
-                            <field name="date_start"/>
-                            <field name="date_end"/>
-                        </group>
-                        <group>
-                            <field name="user_ids" widget="many2many_tags"/>
-                            <field name="market_tag_ids" widget="many2many_tags"
-                                   options="{'color_field': 'color'}"/>
-                        </group>
-                    </group>
-
-                    <!-- STEP 4: Pannelli -->
-                    <group invisible="state != 'panels'">
-                        <separator string="Moduli da attivare nella Lavagna"/>
-                        <p class="text-muted">Puoi modificarli anche dopo dalle impostazioni dell'iniziativa.</p>
-                        <group>
-                            <field name="panel_kanban"/>
-                            <field name="panel_todo"/>
-                            <field name="panel_mail"/>
-                            <field name="panel_activity"/>
-                        </group>
-                        <group>
-                            <field name="panel_docs"/>
-                            <field name="panel_notes"/>
-                            <field name="panel_calendar"/>
-                            <field name="panel_shipments"/>
-                        </group>
-                    </group>
-
-                    <!-- STEP 5: Done / Confirm -->
-                    <group invisible="state != 'done'">
-                        <separator string="Riepilogo"/>
-                        <div>
-                            <p>L'iniziativa "<strong><field name="name" readonly="1" nolabel="1"/></strong>"
-                               verra creata come <strong><field name="family_id" readonly="1" nolabel="1"/></strong>
-                               (<field name="variant_id" readonly="1" nolabel="1"/>).</p>
-                            <p>Verranno creati: 1 iniziativa, 1 progetto con stage:
-                               <em><field name="stage_names_csv" readonly="1" nolabel="1"/></em></p>
-                            <p>Cliccando Conferma sarai portato direttamente nella Lavagna.</p>
+                        <div class="o_lavagna_card_grid">
+                            <field name="family_id"
+                                   widget="lavagna_family_cards"
+                                   nolabel="1"/>
                         </div>
-                    </group>
+                    </div>
+
+                    <!-- ============ STEP 2: SCENARIO ============ -->
+                    <div class="o_lavagna_step" invisible="state != 'scenario'">
+                        <h1 class="o_lavagna_step_title">Quale scenario vuoi usare?</h1>
+                        <p class="o_lavagna_step_subtitle">
+                            Ogni scenario ha stage, KPI e pannelli ottimizzati per quel tipo di lavoro.
+                        </p>
+
+                        <div class="o_lavagna_card_grid">
+                            <field name="scenario_id"
+                                   widget="lavagna_scenario_cards"
+                                   nolabel="1"/>
+                        </div>
+
+                        <!-- Preview live -->
+                        <div class="o_lavagna_scenario_preview" invisible="not scenario_id">
+                            <h3>Anteprima scenario</h3>
+                            <field name="scenario_description" readonly="1" nolabel="1"/>
+                            <div class="o_lavagna_pipeline_preview">
+                                <strong>Pipeline:</strong>
+                                <field name="scenario_stage_preview" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============ STEP 3: DETTAGLI ============ -->
+                    <div class="o_lavagna_step" invisible="state != 'details'">
+                        <h1 class="o_lavagna_step_title">Dettagli dell'iniziativa</h1>
+                        <p class="o_lavagna_step_subtitle">
+                            Inserisci le informazioni base. Potrai modificarle in qualsiasi momento.
+                        </p>
+
+                        <group>
+                            <group string="Iniziativa">
+                                <field name="name"
+                                       placeholder="Es: Assistenza Commerciale Vancouver"
+                                       required="state == 'details'"/>
+                                <field name="partner_id"
+                                       options="{'no_create': false, 'no_open': true}"/>
+                                <field name="country_id"/>
+                            </group>
+                            <group string="Tempi">
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Team">
+                                <field name="user_ids" widget="many2many_avatar_user" nolabel="1"/>
+                            </group>
+                            <group string="Tag Mercato">
+                                <field name="market_tag_ids"
+                                       widget="many2many_tags"
+                                       options="{'color_field': 'color'}"
+                                       nolabel="1"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <!-- ============ STEP 4: PANNELLI ============ -->
+                    <div class="o_lavagna_step" invisible="state != 'panels'">
+                        <h1 class="o_lavagna_step_title">Pannelli attivi nella Lavagna</h1>
+                        <p class="o_lavagna_step_subtitle">
+                            Lo scenario ha precompilato i pannelli essenziali. Puoi attivarne altri o disattivarli.
+                            Modificabile anche dopo dalle impostazioni.
+                        </p>
+
+                        <div class="o_lavagna_panels_grid">
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_kanban"/>
+                                <label for="panel_kanban">
+                                    <i class="fa fa-th-large"/> Lavagna Kanban
+                                    <span class="o_lavagna_panel_desc">Vista swimlane con post-it</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_todo"/>
+                                <label for="panel_todo">
+                                    <i class="fa fa-check-square-o"/> To-Do List
+                                    <span class="o_lavagna_panel_desc">Lista cose da fare condivisa</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_mail"/>
+                                <label for="panel_mail">
+                                    <i class="fa fa-envelope"/> Comunicazioni Mail
+                                    <span class="o_lavagna_panel_desc">Feed mail in arrivo del progetto</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_activity"/>
+                                <label for="panel_activity">
+                                    <i class="fa fa-clock-o"/> Timeline Attivita
+                                    <span class="o_lavagna_panel_desc">Stream eventi del team</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_docs"/>
+                                <label for="panel_docs">
+                                    <i class="fa fa-file-text-o"/> Documenti
+                                    <span class="o_lavagna_panel_desc">Allegati e file condivisi</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_notes"/>
+                                <label for="panel_notes">
+                                    <i class="fa fa-sticky-note-o"/> Note Interne
+                                    <span class="o_lavagna_panel_desc">Annotazioni del team</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_calendar"/>
+                                <label for="panel_calendar">
+                                    <i class="fa fa-calendar"/> Calendario
+                                    <span class="o_lavagna_panel_desc">Scadenze ed eventi</span>
+                                </label>
+                            </div>
+                            <div class="o_lavagna_panel_toggle">
+                                <field name="panel_shipments"/>
+                                <label for="panel_shipments">
+                                    <i class="fa fa-truck"/> Spedizioni Campioni
+                                    <span class="o_lavagna_panel_desc">DDT campioni in tracking</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============ STEP 5: CONFERMA ============ -->
+                    <div class="o_lavagna_step" invisible="state != 'done'">
+                        <h1 class="o_lavagna_step_title">Tutto pronto</h1>
+                        <p class="o_lavagna_step_subtitle">
+                            Stai per creare la Lavagna per:
+                        </p>
+
+                        <div class="o_lavagna_summary_card">
+                            <div class="o_lavagna_summary_row">
+                                <span class="o_lavagna_summary_label">Nome</span>
+                                <field name="name" readonly="1" nolabel="1" class="o_lavagna_summary_value"/>
+                            </div>
+                            <div class="o_lavagna_summary_row">
+                                <span class="o_lavagna_summary_label">Tipologia</span>
+                                <field name="family_id" readonly="1" nolabel="1" class="o_lavagna_summary_value"/>
+                            </div>
+                            <div class="o_lavagna_summary_row">
+                                <span class="o_lavagna_summary_label">Scenario</span>
+                                <field name="scenario_id" readonly="1" nolabel="1" class="o_lavagna_summary_value"/>
+                            </div>
+                            <div class="o_lavagna_summary_row">
+                                <span class="o_lavagna_summary_label">Pipeline</span>
+                                <field name="stage_names_csv" readonly="1" nolabel="1" class="o_lavagna_summary_value"/>
+                            </div>
+                            <div class="o_lavagna_summary_row">
+                                <span class="o_lavagna_summary_label">Team</span>
+                                <field name="user_ids" widget="many2many_avatar_user" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+
+                        <p class="o_lavagna_summary_footer">
+                            Cliccando <strong>Conferma e Apri Lavagna</strong> verranno creati: l'iniziativa, il progetto collegato, gli stage della pipeline, e sarai portato direttamente nella Lavagna.
+                        </p>
+                    </div>
 
                 </sheet>
-                <footer>
-                    <button name="action_back" type="object" string="Indietro"
+
+                <footer class="o_lavagna_wizard_footer">
+                    <button name="action_back"
+                            type="object"
+                            string="Indietro"
                             class="btn-secondary"
                             invisible="state == 'family'"/>
-                    <button name="action_next" type="object" string="Avanti"
-                            class="btn-primary"
+                    <button name="action_next"
+                            type="object"
+                            string="Avanti"
+                            class="btn-primary o_lavagna_btn_primary"
                             invisible="state == 'done'"/>
-                    <button name="action_confirm" type="object"
+                    <button name="action_confirm"
+                            type="object"
                             string="Conferma e Apri Lavagna"
-                            class="btn-primary"
+                            class="btn-primary o_lavagna_btn_primary"
                             invisible="state != 'done'"/>
-                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                    <button string="Annulla"
+                            class="btn-link"
+                            special="cancel"/>
                 </footer>
             </form>
         </field>
@@ -108,6 +220,6 @@
         <field name="res_model">cf.initiative.dashboard.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
+        <field name="context">{'dialog_size': 'extra-large'}</field>
     </record>
-
 </odoo>
