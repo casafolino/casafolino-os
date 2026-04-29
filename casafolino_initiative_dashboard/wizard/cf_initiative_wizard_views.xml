@@ -119,7 +119,7 @@
                             <div class="o_lavagna_panel_toggle">
                                 <field name="panel_activity"/>
                                 <label for="panel_activity">
-                                    <i class="fa fa-clock-o"/> Timeline Attivita
+                                    <i class="fa fa-clock-o"/> Timeline Attività
                                     <span class="o_lavagna_panel_desc">Stream eventi del team</span>
                                 </label>
                             </div>

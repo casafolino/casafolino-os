@@ -75,7 +75,7 @@ class CfInitiativeDashboardWizard(models.TransientModel):
     panel_kanban = fields.Boolean(string="Lavagna Kanban", default=True)
     panel_todo = fields.Boolean(string="To-Do List", default=True)
     panel_mail = fields.Boolean(string="Comunicazioni Mail", default=True)
-    panel_activity = fields.Boolean(string="Timeline Attivita", default=True)
+    panel_activity = fields.Boolean(string="Timeline Attività", default=True)
     panel_docs = fields.Boolean(string="Documenti", default=False)
     panel_notes = fields.Boolean(string="Note Interne", default=False)
     panel_calendar = fields.Boolean(string="Scadenze Calendario", default=False)
@@ -139,6 +139,7 @@ class CfInitiativeDashboardWizard(models.TransientModel):
     def _reopen(self):
         return {
             'type': 'ir.actions.act_window',
+            'name': 'Apri Nuova Iniziativa (Lavagna)',
             'res_model': 'cf.initiative.dashboard.wizard',
             'res_id': self.id,
             'view_mode': 'form',
@@ -155,19 +156,16 @@ class CfInitiativeDashboardWizard(models.TransientModel):
         """
         Variant = self.env['cf.initiative.variant']
         family_code = self.family_id.code or ''
-        # Try family-specific standard
         variant = Variant.search([
             ('code', '=', f'{family_code}_STANDARD'),
         ], limit=1)
         if variant:
             return variant
-        # Fallback: first for family
         variant = Variant.search([
             ('family_id', '=', self.family_id.id),
         ], limit=1, order='sequence, id')
         if variant:
             return variant
-        # Fallback: any variant
         return Variant.search([], limit=1)
 
     # ============= CONFIRM & CREATE =============
@@ -175,16 +173,34 @@ class CfInitiativeDashboardWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
         if not self.name:
-            raise UserError("Il nome dell'iniziativa e obbligatorio.")
+            raise UserError("Il nome dell'iniziativa è obbligatorio.")
+        if not self.scenario_id:
+            raise UserError("Devi selezionare uno scenario per la Lavagna.")
 
-        # Build panel CSV
+        # FIX F1.3: rileggi SEMPRE i default dallo scenario (fonte di verità)
+        # I campi M2M su transient model possono non persistere via onchange
+        scenario = self.scenario_id
+
+        # Swimlane category: priorità a override utente, fallback scenario
+        swimlane_category = self.swimlane_category or scenario.swimlane_category or ''
+
+        # Swimlane tags: priorità a override utente (se non vuoto), fallback scenario
+        swimlane_tags = self.swimlane_tag_ids or scenario.suggested_swimlane_tag_ids
+
+        # KPI: priorità a override utente (se non vuoto), fallback scenario
+        kpis = self.kpi_ids or scenario.default_kpi_ids
+
+        # Stage CSV: priorità a override utente, fallback scenario
+        stages_csv = self.stage_names_csv or scenario.suggested_stage_names
+
+        # Panels CSV: ricostruisci da checkbox utente (sono autoritativi)
         panels = []
         for p in ['kanban', 'todo', 'mail', 'activity', 'docs', 'notes', 'calendar', 'shipments']:
             if getattr(self, f'panel_{p}'):
                 panels.append(p)
-        panel_csv = ','.join(panels)
+        panel_csv = ','.join(panels) if panels else (scenario.default_panels or 'kanban,todo,mail,activity')
 
-        # Default variant in background (user never sees it)
+        # Variant default in background
         variant = self._get_default_variant()
         if not variant:
             raise UserError(
@@ -193,9 +209,9 @@ class CfInitiativeDashboardWizard(models.TransientModel):
             )
 
         # Merge tags
-        all_tags = self.swimlane_tag_ids | self.market_tag_ids
+        all_tags = swimlane_tags | self.market_tag_ids
 
-        # 1. Create cf.initiative
+        # 1. Create cf.initiative con tutti i lavagna_* popolati garantiti
         initiative_vals = {
             'name': self.name,
             'family_id': self.family_id.id,
@@ -203,17 +219,20 @@ class CfInitiativeDashboardWizard(models.TransientModel):
             'user_id': self.env.user.id,
             'tag_ids': [(6, 0, all_tags.ids)],
             'lavagna_enabled': True,
-            'lavagna_swimlane_category': self.swimlane_category or '',
-            'lavagna_swimlane_tag_ids': [(6, 0, self.swimlane_tag_ids.ids)],
-            'lavagna_kpi_ids': [(6, 0, self.kpi_ids.ids)],
+            'lavagna_swimlane_category': swimlane_category,
+            'lavagna_swimlane_tag_ids': [(6, 0, swimlane_tags.ids)],
+            'lavagna_kpi_ids': [(6, 0, kpis.ids)],
             'lavagna_panels': panel_csv,
         }
-        if self.partner_id:
-            initiative_vals['partner_id'] = self.partner_id.id
-        if self.date_start:
-            initiative_vals['date_start'] = self.date_start
-        if self.date_end:
-            initiative_vals['date_end'] = self.date_end
+        # Campi opzionali
+        for field_name, value in [
+            ('partner_id', self.partner_id.id if self.partner_id else False),
+            ('country_id', self.country_id.id if self.country_id else False),
+            ('date_start', self.date_start),
+            ('date_end', self.date_end),
+        ]:
+            if value and field_name in self.env['cf.initiative']._fields:
+                initiative_vals[field_name] = value
 
         initiative = self.env['cf.initiative'].create(initiative_vals)
 
@@ -232,15 +251,16 @@ class CfInitiativeDashboardWizard(models.TransientModel):
             project.message_subscribe(partner_ids=partner_ids)
 
         # 3. Create project stages
-        if self.stage_names_csv:
-            stage_names = [s.strip() for s in self.stage_names_csv.split(',') if s.strip()]
+        if stages_csv:
+            stage_names = [s.strip() for s in stages_csv.split(',') if s.strip()]
             stage_ids = []
             for i, sname in enumerate(stage_names):
                 stage = self.env['project.task.type'].create({
                     'name': sname,
                     'sequence': (i + 1) * 10,
                     'fold': sname.lower() in (
-                        'lead crm', 'archiviati', 'chiuso', 'archived', 'archive', 'archiviato',
+                        'lead crm', 'archiviati', 'chiuso', 'archived',
+                        'archive', 'archiviato', 'operativo',
                     ),
                 })
                 stage_ids.append(stage.id)

@@ -36,14 +36,28 @@ $lav-shadow-lg: 0 8px 24px rgba(107, 74, 30, 0.16);
             background: transparent;
 
             > button {
-                color: $lav-text-medium;
                 font-weight: 500;
                 font-size: 13px;
+                transition: all 0.2s ease;
 
+                // Stati passati (completed) — gold tenue
+                &.btn-secondary, &:not(.disabled):not(.o_arrow_button_current) {
+                    color: $lav-gold !important;
+                    font-weight: 600;
+                }
+
+                // Stato attuale — brown forte
                 &.btn-primary, &.o_arrow_button_current {
                     background: $lav-brown !important;
                     color: white !important;
                     border-color: $lav-brown !important;
+                    font-weight: 600;
+                }
+
+                // Stati futuri — grigio chiaro
+                &.disabled {
+                    color: $lav-text-light !important;
+                    opacity: 0.6;
                 }
             }
         }
