@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="casafolino_initiative_dashboard.LavagnaDrawerTask">
-        <!-- Backdrop -->
         <div class="o_lavagna_drawer_backdrop" t-on-click="close"/>
-        <div class="o_lavagna_drawer">
+        <div class="o_lavagna_drawer o_drawer_rich">
             <div t-if="state.loading" class="o_drawer_loading">
                 <i class="fa fa-spinner fa-spin"/> Caricamento...
             </div>
             <t t-elif="state.task">
-                <!-- Header -->
+                <!-- HEADER -->
                 <div class="o_drawer_header">
-                    <h3 class="o_drawer_title" t-esc="state.task.name"/>
+                    <div class="o_drawer_header_left">
+                        <h3 class="o_drawer_title" t-esc="state.task.name"/>
+                        <div class="o_drawer_chips">
+                            <span class="o_priority_chip"
+                                  t-att-style="'background:' + getPriorityLabel().color"
+                                  t-esc="getPriorityLabel().label"/>
+                            <span t-if="state.task.stage_id" class="o_stage_chip"
+                                  t-esc="state.task.stage_id[1]"/>
+                        </div>
+                    </div>
                     <div class="o_drawer_actions">
-                        <button class="o_drawer_btn" t-on-click="openFullForm"
-                                title="Apri form completa">
+                        <button class="o_drawer_btn" t-on-click="openFullForm" title="Apri form completa">
                             <i class="fa fa-external-link"/>
                         </button>
                         <button class="o_drawer_btn" t-on-click="close" title="Chiudi">
@@ -22,46 +29,161 @@
                     </div>
                 </div>
 
-                <!-- Tabs -->
+                <!-- TABS -->
                 <div class="o_drawer_tabs">
                     <button t-att-class="{ 'o_active': state.activeTab === 'details' }"
                             t-on-click="() => this.setTab('details')">Dettagli</button>
+                    <button t-att-class="{ 'o_active': state.activeTab === 'checklist' }"
+                            t-on-click="() => this.setTab('checklist')">
+                        Checklist
+                        <span t-if="state.todos.length" class="o_tab_badge"
+                              t-esc="todoStats.done + '/' + todoStats.total"/>
+                    </button>
                     <button t-att-class="{ 'o_active': state.activeTab === 'messages' }"
                             t-on-click="() => this.setTab('messages')">
-                        Comunicazioni
+                        Discussione
                         <span t-if="state.messages.length" class="o_tab_badge"
                               t-esc="state.messages.length"/>
                     </button>
+                    <button t-att-class="{ 'o_active': state.activeTab === 'files' }"
+                            t-on-click="() => this.setTab('files')">
+                        Allegati
+                        <span t-if="state.attachments.length" class="o_tab_badge"
+                              t-esc="state.attachments.length"/>
+                    </button>
                 </div>
 
-                <!-- Tab: Details -->
+                <!-- TAB: DETAILS -->
                 <div class="o_drawer_body" t-if="state.activeTab === 'details'">
+                    <!-- Partner -->
                     <div class="o_drawer_field">
-                        <label>Stage</label>
-                        <span t-esc="state.task.stage_id and state.task.stage_id[1]"/>
-                    </div>
-                    <div class="o_drawer_field" t-if="state.task.partner_id">
-                        <label>Partner</label>
-                        <span class="o_drawer_link"
+                        <label>Cliente / Partner</label>
+                        <span t-if="state.task.partner_id" class="o_drawer_link"
                               t-on-click="() => this.env.actions.openOdooRecord('res.partner', state.task.partner_id[0])"
                               t-esc="state.task.partner_id[1]"/>
+                        <span t-else="" class="o_field_empty">Non assegnato</span>
                     </div>
+
+                    <!-- Priority chips -->
+                    <div class="o_drawer_field">
+                        <label>Priorit&#224;</label>
+                        <div class="o_priority_chips">
+                            <button t-foreach="priorityOptions" t-as="opt" t-key="opt.value"
+                                    class="o_prio_chip"
+                                    t-att-class="{ 'o_active': state.task.priority === opt.value }"
+                                    t-att-style="state.task.priority === opt.value ? 'background:' + opt.color + ';color:white' : ''"
+                                    t-on-click="() => this.setPriority(opt.value)"
+                                    t-esc="opt.label"/>
+                        </div>
+                    </div>
+
+                    <!-- Assignees -->
+                    <div class="o_drawer_field" t-if="state.task.user_ids and state.task.user_ids.length">
+                        <label>Responsabili</label>
+                        <div class="o_drawer_users">
+                            <span t-foreach="state.task.user_ids" t-as="uid" t-key="uid_index"
+                                  class="o_user_chip" t-esc="uid[1] || uid"/>
+                        </div>
+                    </div>
+
+                    <!-- Stage -->
+                    <div class="o_drawer_field" t-if="state.task.stage_id">
+                        <label>Stage</label>
+                        <span t-esc="state.task.stage_id[1]"/>
+                    </div>
+
+                    <!-- Deadline -->
                     <div class="o_drawer_field" t-if="state.task.date_deadline">
                         <label>Scadenza</label>
                         <span t-esc="state.task.date_deadline"/>
                     </div>
-                    <div class="o_drawer_field" t-if="state.task.user_ids and state.task.user_ids.length">
-                        <label>Assegnati</label>
-                        <span t-foreach="state.task.user_ids" t-as="uid" t-key="uid"
-                              class="o_drawer_user_badge" t-esc="uid"/>
-                    </div>
-                    <div class="o_drawer_field" t-if="state.task.description">
-                        <label>Descrizione</label>
-                        <div class="o_drawer_description" t-out="state.task.description"/>
+
+                    <!-- Description / Notes -->
+                    <div class="o_drawer_field o_drawer_notes">
+                        <label>Note</label>
+                        <div class="o_drawer_description"
+                             t-if="state.task.description"
+                             t-out="state.task.description"/>
+                        <span t-else="" class="o_field_empty">Nessuna nota</span>
                     </div>
                 </div>
 
-                <!-- Tab: Messages -->
+                <!-- TAB: CHECKLIST -->
+                <div class="o_drawer_body" t-if="state.activeTab === 'checklist'">
+                    <!-- Progress bar -->
+                    <div t-if="state.todos.length" class="o_todo_progress_bar">
+                        <div class="o_todo_stats">
+                            <span t-esc="todoStats.done + '/' + todoStats.total"/> completati
+                        </div>
+                        <div class="o_todo_bar">
+                            <div class="o_todo_bar_fill"
+                                 t-att-style="'width:' + todoStats.pct + '%'"/>
+                        </div>
+                    </div>
+
+                    <!-- Todo list -->
+                    <div class="o_todo_list">
+                        <div t-foreach="state.todos" t-as="todo" t-key="todo.id"
+                             class="o_todo_row"
+                             t-att-class="{ 'o_done': todo.done }"
+                             draggable="true"
+                             t-on-dragstart="(ev) => this.onTodoDragStart(ev, todo)"
+                             t-on-dragover="onTodoDragOver"
+                             t-on-drop="(ev) => this.onTodoDrop(ev, todo)">
+                            <span class="o_todo_drag_handle">
+                                <i class="fa fa-grip-vertical"/>
+                            </span>
+                            <input type="checkbox"
+                                   t-att-checked="todo.done"
+                                   t-on-change="() => this.toggleTodo(todo)"/>
+
+                            <!-- Edit mode -->
+                            <t t-if="state.editingTodoId === todo.id">
+                                <input type="text" class="o_todo_edit_input"
+                                       t-att-value="state.editingTodoName"
+                                       t-on-input="onEditTodoInput"
+                                       t-on-keydown="(ev) => this.onEditTodoKeydown(ev, todo)"
+                                       t-on-blur="() => this.saveEditTodo(todo)"/>
+                            </t>
+                            <t t-else="">
+                                <span class="o_todo_text"
+                                      t-on-click="() => this.startEditTodo(todo)"
+                                      t-esc="todo.name"/>
+                            </t>
+
+                            <button class="o_todo_delete" t-on-click="() => this.deleteTodo(todo)"
+                                    title="Elimina">
+                                <i class="fa fa-trash-o"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add todo -->
+                    <div class="o_todo_add">
+                        <t t-if="state.addingTodo">
+                            <input type="text" class="o_todo_add_input"
+                                   placeholder="Descrivi la sotto-attivit&#224;..."
+                                   t-att-value="state.newTodoName"
+                                   t-on-input="onNewTodoInput"
+                                   t-on-keydown="onNewTodoKeydown"/>
+                        </t>
+                        <button t-else="" class="o_todo_add_btn"
+                                t-on-click="() => { this.state.addingTodo = true; }">
+                            <i class="fa fa-plus"/> Aggiungi sotto-attivit&#224;
+                        </button>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div t-if="!state.todos.length and !state.addingTodo" class="o_todo_empty">
+                        <p>Nessuna sotto-attivit&#224;.</p>
+                        <button class="o_todo_add_btn"
+                                t-on-click="() => { this.state.addingTodo = true; }">
+                            <i class="fa fa-plus"/> Aggiungi la prima
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB: MESSAGES -->
                 <div class="o_drawer_body" t-if="state.activeTab === 'messages'">
                     <div t-if="!state.messages.length" class="o_panel_empty">
                         Nessuna comunicazione
@@ -74,6 +196,23 @@
                         </div>
                         <div class="o_msg_subject" t-if="msg.subject" t-esc="msg.subject"/>
                         <div class="o_msg_body" t-esc="stripHtml(msg.body)"/>
+                    </div>
+                </div>
+
+                <!-- TAB: FILES -->
+                <div class="o_drawer_body" t-if="state.activeTab === 'files'">
+                    <div t-if="!state.attachments.length" class="o_panel_empty">
+                        Nessun allegato
+                    </div>
+                    <div t-foreach="state.attachments" t-as="att" t-key="att.id"
+                         class="o_attachment_row">
+                        <a t-att-href="'/web/content/' + att.id + '?download=true'"
+                           target="_blank" class="o_att_link">
+                            <i class="fa fa-file-o"/>
+                            <span class="o_att_name" t-esc="att.name"/>
+                        </a>
+                        <span class="o_att_size" t-esc="formatFileSize(att.file_size)"/>
+                        <span class="o_att_date" t-esc="formatDate(att.create_date)"/>
                     </div>
                 </div>
             </t>

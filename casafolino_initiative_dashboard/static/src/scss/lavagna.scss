@@ -1133,3 +1133,289 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
         white-space: nowrap;
     }
 }
+
+// ===== DRAWER RICH (F3) =====
+
+.o_drawer_rich {
+    width: 560px;
+
+    .o_drawer_header_left {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .o_drawer_chips {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+    }
+
+    .o_priority_chip {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .o_stage_chip {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 500;
+        background: $lav-cream;
+        color: $lav-brown;
+    }
+
+    .o_field_empty {
+        color: $lav-text-light;
+        font-style: italic;
+        font-size: 13px;
+    }
+
+    // Priority chips
+    .o_priority_chips {
+        display: flex;
+        gap: 6px;
+    }
+
+    .o_prio_chip {
+        padding: 4px 12px;
+        border-radius: 14px;
+        border: 1px solid $lav-border;
+        background: white;
+        font-size: 12px;
+        font-weight: 500;
+        color: $lav-text-medium;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover { border-color: $lav-gold; }
+
+        &.o_active {
+            border-color: transparent;
+            font-weight: 600;
+        }
+    }
+
+    // Users
+    .o_drawer_users {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .o_user_chip {
+        background: $lav-cream;
+        color: $lav-brown;
+        padding: 2px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    // Notes
+    .o_drawer_notes .o_drawer_description {
+        font-size: 13px;
+        line-height: 1.6;
+        color: $lav-text-dark;
+        max-height: 300px;
+        overflow-y: auto;
+
+        p { margin: 0 0 8px; }
+        ul, ol { padding-left: 20px; margin: 0 0 8px; }
+    }
+}
+
+// ===== CHECKLIST (cf.todo) =====
+
+.o_todo_progress_bar {
+    margin-bottom: 12px;
+}
+
+.o_todo_stats {
+    font-size: 12px;
+    color: $lav-text-medium;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.o_todo_bar {
+    height: 4px;
+    background: $lav-border;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.o_todo_bar_fill {
+    height: 100%;
+    background: linear-gradient(90deg, $lav-gold, $lav-brown);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.o_todo_list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.o_todo_row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.1s;
+
+    &:hover {
+        background: rgba(245, 230, 200, 0.3);
+        .o_todo_delete { opacity: 1; }
+        .o_todo_drag_handle { opacity: 0.5; }
+    }
+
+    &.o_done .o_todo_text {
+        text-decoration: line-through;
+        color: $lav-text-light;
+    }
+
+    input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: $lav-brown;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+}
+
+.o_todo_drag_handle {
+    cursor: grab;
+    color: $lav-text-light;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.o_todo_text {
+    flex: 1;
+    font-size: 13px;
+    color: $lav-text-dark;
+    cursor: text;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.o_todo_edit_input {
+    flex: 1;
+    border: 1px solid $lav-gold;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 13px;
+    outline: none;
+    min-width: 0;
+
+    &:focus { box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.3); }
+}
+
+.o_todo_delete {
+    background: none;
+    border: none;
+    color: $lav-text-light;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    padding: 2px 4px;
+    font-size: 12px;
+
+    &:hover { color: #C0392B; }
+}
+
+.o_todo_add {
+    margin-top: 8px;
+}
+
+.o_todo_add_input {
+    width: 100%;
+    border: 1px solid $lav-gold;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    outline: none;
+
+    &:focus { box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.3); }
+}
+
+.o_todo_add_btn {
+    background: none;
+    border: 1px dashed $lav-border;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: $lav-text-medium;
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: $lav-gold;
+        color: $lav-brown;
+        background: rgba(245, 230, 200, 0.2);
+    }
+
+    i { margin-right: 6px; color: $lav-gold; }
+}
+
+.o_todo_empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: $lav-text-light;
+    font-size: 13px;
+
+    p { margin: 0 0 12px; }
+}
+
+// ===== ATTACHMENTS =====
+
+.o_attachment_row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.4);
+
+    &:last-child { border-bottom: none; }
+}
+
+.o_att_link {
+    flex: 1;
+    color: $lav-brown;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+
+    &:hover { text-decoration: underline; }
+
+    i { color: $lav-gold; flex-shrink: 0; }
+}
+
+.o_att_name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.o_att_size, .o_att_date {
+    font-size: 11px;
+    color: $lav-text-light;
+    white-space: nowrap;
+}

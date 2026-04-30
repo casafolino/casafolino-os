@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.2.0.0',
-    'summary': 'Lavagna cockpit OWL — ogni iniziativa è una Lavagna, wizard unico, UX unificata',
+    'version': '18.0.3.0.0',
+    'summary': 'Lavagna cockpit OWL — cf.todo checklist + drawer ricco 4 tab',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [

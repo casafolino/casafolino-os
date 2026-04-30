@@ -176,6 +176,18 @@ class LavagnaController(http.Controller):
                 ('message_type', 'in', ['email', 'comment']),
             ])
 
+            # cf.todo checklist
+            cf_todos = []
+            if hasattr(t, 'cf_todo_ids'):
+                cf_todos = [{
+                    'id': td.id,
+                    'name': td.name,
+                    'done': td.done,
+                    'sequence': td.sequence,
+                    'assigned_user_id': td.assigned_user_id.id if td.assigned_user_id else None,
+                    'assigned_user_name': td.assigned_user_id.name if td.assigned_user_id else None,
+                } for td in t.cf_todo_ids.sorted('sequence')]
+
             tasks_data.append({
                 'id': t.id,
                 'name': t.name,
@@ -197,6 +209,9 @@ class LavagnaController(http.Controller):
                 'last_activity': t.write_date.isoformat() if t.write_date else None,
                 'priority': t.priority,
                 'kanban_state': t.kanban_state if hasattr(t, 'kanban_state') else 'normal',
+                'cf_todos': cf_todos,
+                'cf_todo_count': len(cf_todos),
+                'cf_todo_done': len([td for td in cf_todos if td['done']]),
             })
 
         return {
