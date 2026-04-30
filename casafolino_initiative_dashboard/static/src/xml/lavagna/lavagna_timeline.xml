@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaTimeline">
+        <div class="o_lavagna_timeline">
+            <div class="o_timeline_dates">
+                <span class="o_timeline_start" t-esc="formatDate(props.data.date_start)"/>
+                <div class="o_timeline_bar">
+                    <div class="o_timeline_progress"
+                         t-if="getProgress() !== null"
+                         t-att-style="'width:' + getProgress() + '%'"/>
+                    <div class="o_timeline_today_marker"
+                         t-if="getProgress() !== null"
+                         t-att-style="'left:' + getProgress() + '%'"
+                         title="Oggi"/>
+                </div>
+                <span class="o_timeline_end" t-esc="formatDate(props.data.date_end)"/>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,982 @@
+// =====================================================
+// LAVAGNA COCKPIT — CasaFolino palette
+// =====================================================
+
+$lav-brown:        #6B4A1E;
+$lav-brown-dark:   #4A3215;
+$lav-gold:         #C8A43A;
+$lav-gold-light:   #E6C659;
+$lav-cream:        #F5E6C8;
+$lav-cream-soft:   #FAF5E8;
+$lav-text-dark:    #2C2418;
+$lav-text-medium:  #6B5D49;
+$lav-text-light:   #A89B85;
+$lav-border:       #E5DDD0;
+$lav-shadow-sm: 0 1px 3px rgba(107, 74, 30, 0.08);
+$lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
+
+// ===== ROOT LAYOUT =====
+.o_lavagna_root {
+    display: grid;
+    grid-template-rows: 50px auto 1fr 60px;
+    height: calc(100vh - 46px); // minus Odoo navbar
+    background: white;
+    overflow: hidden;
+}
+
+.o_lavagna_loading_full, .o_lavagna_error_full {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: $lav-text-light;
+    grid-row: 1 / -1;
+}
+
+// ===== HEADER (50px) =====
+.o_lavagna_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: $lav-cream-soft;
+    border-bottom: 1px solid $lav-border;
+    height: 50px;
+}
+
+.o_lavagna_header_left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.o_lavagna_back_btn, .o_lavagna_refresh_btn {
+    background: none;
+    border: 1px solid $lav-border;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: $lav-text-medium;
+    transition: all 0.15s;
+
+    &:hover {
+        background: $lav-cream;
+        color: $lav-brown;
+        border-color: $lav-gold;
+    }
+}
+
+.o_lavagna_header_title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+
+    h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: $lav-text-dark;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.o_lavagna_family_badge {
+    background: $lav-cream;
+    color: $lav-brown;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    i { margin-right: 4px; }
+}
+
+.o_lavagna_header_right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.o_lavagna_members {
+    display: flex;
+    gap: -6px;
+}
+
+.o_lavagna_member_avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: $lav-cream;
+    border: 2px solid white;
+    margin-left: -6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+
+    &:first-child { margin-left: 0; }
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .o_lavagna_member_initials {
+        font-size: 10px;
+        font-weight: 700;
+        color: $lav-brown;
+    }
+}
+
+// ===== TODAY BAR =====
+.o_lavagna_today_bar {
+    background: linear-gradient(90deg, $lav-cream-soft, white);
+    border-bottom: 1px solid $lav-border;
+    padding: 0 20px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+
+    &.o_collapsed {
+        max-height: 36px;
+        .o_today_bar_items { display: none; }
+    }
+}
+
+.o_today_bar_header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.o_today_bar_label {
+    font-size: 12px;
+    font-weight: 700;
+    color: $lav-gold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    i { margin-right: 4px; }
+}
+
+.o_today_bar_toggle {
+    background: none;
+    border: none;
+    color: $lav-text-light;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+.o_today_bar_items {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    flex: 1;
+}
+
+.o_today_bar_item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid $lav-border;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 12px;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: $lav-gold;
+        background: $lav-cream-soft;
+    }
+
+    i { color: $lav-gold; }
+}
+
+.o_today_item_title {
+    font-weight: 500;
+    color: $lav-text-dark;
+}
+
+.o_today_item_sub {
+    color: $lav-text-light;
+    font-size: 11px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.o_today_bar_empty {
+    color: $lav-text-light;
+    font-size: 12px;
+    font-style: italic;
+}
+
+// ===== BODY (3-column layout) =====
+.o_lavagna_body {
+    display: grid;
+    grid-template-columns: 80px 1fr 340px;
+    overflow: hidden;
+}
+
+// ===== KPI RAIL (80px left) =====
+.o_lavagna_kpi_rail {
+    background: $lav-cream-soft;
+    border-right: 1px solid $lav-border;
+    padding: 12px 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.o_lavagna_kpi_item {
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+
+    &:hover {
+        background: $lav-cream;
+    }
+
+    &.o_active {
+        background: white;
+        border-left-color: $lav-brown;
+        box-shadow: $lav-shadow-sm;
+    }
+
+    .o_kpi_value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .o_kpi_icon {
+        font-size: 11px;
+        color: $lav-text-light;
+        margin: 2px 0;
+    }
+
+    .o_kpi_name {
+        font-size: 9px;
+        color: $lav-text-light;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+}
+
+// ===== KANBAN CENTER =====
+.o_lavagna_center {
+    overflow: hidden;
+}
+
+.o_lavagna_kanban {
+    height: 100%;
+    overflow: hidden;
+}
+
+.o_lavagna_kanban_empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: $lav-text-light;
+    gap: 12px;
+}
+
+.o_lavagna_kanban_scroll {
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.o_lavagna_kanban_columns {
+    display: flex;
+    height: 100%;
+    gap: 0;
+}
+
+.o_lavagna_kanban_col {
+    min-width: 220px;
+    max-width: 300px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid $lav-border;
+
+    &.o_folded {
+        min-width: 120px;
+        max-width: 140px;
+        .o_lavagna_col_body { opacity: 0.5; }
+    }
+}
+
+.o_lavagna_col_header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: $lav-cream-soft;
+    border-bottom: 1px solid $lav-border;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.o_col_name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $lav-text-dark;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.o_col_count {
+    background: $lav-cream;
+    color: $lav-brown;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.o_col_add_btn {
+    background: none;
+    border: 1px solid $lav-border;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: $lav-text-light;
+    font-size: 11px;
+
+    &:hover {
+        background: $lav-gold;
+        color: white;
+        border-color: $lav-gold;
+    }
+}
+
+.o_lavagna_col_body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    transition: background 0.15s;
+
+    &.o_drag_over {
+        background: rgba(200, 164, 58, 0.08);
+    }
+}
+
+// Quick add
+.o_lavagna_quick_add {
+    display: flex;
+    gap: 4px;
+    padding: 4px 8px;
+
+    .o_quick_add_input {
+        flex: 1;
+        border: 1px solid $lav-gold;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        outline: none;
+
+        &:focus { box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.3); }
+    }
+
+    .o_quick_add_cancel {
+        background: none;
+        border: none;
+        color: $lav-text-light;
+        cursor: pointer;
+    }
+}
+
+// Swimlane
+.o_lavagna_swimlane_section {
+    margin-bottom: 8px;
+}
+
+.o_swimlane_label {
+    font-size: 10px;
+    font-weight: 700;
+    color: $lav-gold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 0 2px;
+}
+
+// ===== TASK CARD (post-it) =====
+.o_lavagna_task_card {
+    background: white;
+    border: 1px solid $lav-border;
+    border-left: 3px solid $lav-gold;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+        border-color: $lav-brown;
+        box-shadow: $lav-shadow-md;
+        transform: translateY(-1px);
+    }
+
+    &.o_inactive {
+        opacity: 0.65;
+        filter: grayscale(30%);
+    }
+
+    &.o_dormant {
+        opacity: 0.4;
+        filter: grayscale(55%);
+    }
+
+    &.o_has_unread {
+        border-left-color: #C0392B;
+        animation: pulseUnread 2s ease-in-out infinite;
+    }
+
+    &.o_dragging {
+        opacity: 0.4;
+        transform: rotate(2deg);
+    }
+}
+
+.o_task_card_top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.o_task_card_name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $lav-text-dark;
+    line-height: 1.3;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.o_task_card_initials {
+    font-size: 10px;
+    font-weight: 700;
+    color: $lav-brown;
+    background: $lav-cream;
+    padding: 2px 5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.o_task_card_meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.o_task_meta_item {
+    font-size: 11px;
+    color: $lav-text-light;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+
+    &:hover { color: $lav-brown; }
+
+    i { font-size: 10px; }
+}
+
+.o_task_tag_chip {
+    font-size: 10px;
+    background: $lav-cream;
+    color: $lav-brown;
+    padding: 1px 7px;
+    border-radius: 8px;
+}
+
+.o_task_card_bottom {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.o_unread_badge {
+    background: #C0392B;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 0 5px;
+    border-radius: 8px;
+    margin-left: 2px;
+}
+
+.o_task_deadline {
+    font-size: 10px;
+}
+
+.o_task_priority i {
+    color: $lav-gold;
+}
+
+@keyframes pulseUnread {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.3); }
+    50% { box-shadow: 0 0 0 3px rgba(192, 57, 43, 0); }
+}
+
+// ===== RIGHT PANELS =====
+.o_lavagna_right {
+    border-left: 1px solid $lav-border;
+    overflow-y: auto;
+    background: $lav-cream-soft;
+}
+
+.o_lavagna_panel {
+    border-bottom: 1px solid $lav-border;
+    max-height: 33vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.o_panel_header {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: $lav-brown;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: white;
+    border-bottom: 1px solid $lav-border;
+    flex-shrink: 0;
+
+    i { margin-right: 6px; color: $lav-gold; }
+}
+
+.o_panel_body {
+    padding: 8px 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.o_panel_empty {
+    color: $lav-text-light;
+    font-size: 12px;
+    text-align: center;
+    padding: 20px 8px;
+    font-style: italic;
+}
+
+// Mail panel
+.o_mail_item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.5);
+    cursor: pointer;
+    transition: background 0.1s;
+
+    &:hover { background: rgba(245, 230, 200, 0.3); }
+    &:last-child { border-bottom: none; }
+}
+
+.o_mail_item_header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.o_mail_author {
+    font-size: 12px;
+    font-weight: 600;
+    color: $lav-text-dark;
+}
+
+.o_mail_date {
+    font-size: 10px;
+    color: $lav-text-light;
+}
+
+.o_mail_subject {
+    font-size: 12px;
+    color: $lav-text-medium;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Todo panel
+.o_todo_item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.3);
+    cursor: pointer;
+    font-size: 12px;
+
+    &:hover { background: rgba(245, 230, 200, 0.3); }
+    &.o_overdue .o_todo_deadline { color: #C0392B; font-weight: 600; }
+}
+
+.o_todo_name {
+    flex: 1;
+    color: $lav-text-dark;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.o_todo_stage {
+    font-size: 10px;
+    color: $lav-text-light;
+    background: $lav-cream;
+    padding: 1px 6px;
+    border-radius: 6px;
+}
+
+.o_todo_deadline {
+    font-size: 10px;
+    color: $lav-text-light;
+}
+
+// Activity panel
+.o_activity_item {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.3);
+    cursor: pointer;
+    font-size: 12px;
+
+    &:hover { background: rgba(245, 230, 200, 0.3); }
+}
+
+.o_activity_author {
+    font-weight: 600;
+    color: $lav-text-dark;
+    font-size: 11px;
+}
+
+.o_activity_date {
+    font-size: 10px;
+    color: $lav-text-light;
+    margin-left: 6px;
+}
+
+.o_activity_body {
+    font-size: 11px;
+    color: $lav-text-medium;
+    margin-top: 2px;
+    line-height: 1.3;
+}
+
+// Calendar panel
+.o_calendar_item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.3);
+    cursor: pointer;
+
+    &:hover { background: rgba(245, 230, 200, 0.3); }
+}
+
+.o_cal_name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $lav-text-dark;
+}
+
+.o_cal_meta {
+    font-size: 11px;
+    color: $lav-text-light;
+    margin-top: 2px;
+    i { margin-right: 3px; }
+}
+
+.o_cal_location {
+    margin-left: 8px;
+}
+
+// ===== DRAWER =====
+.o_lavagna_drawer_backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 1040;
+}
+
+.o_lavagna_drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 480px;
+    height: 100vh;
+    background: white;
+    box-shadow: -4px 0 16px rgba(107, 74, 30, 0.16);
+    z-index: 1050;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: drawerSlideIn 0.2s ease;
+}
+
+@keyframes drawerSlideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+.o_drawer_loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: $lav-text-light;
+    gap: 8px;
+}
+
+.o_drawer_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid $lav-border;
+    background: $lav-cream-soft;
+    flex-shrink: 0;
+}
+
+.o_drawer_title {
+    font-size: 16px;
+    font-weight: 600;
+    color: $lav-brown;
+    margin: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.o_drawer_actions {
+    display: flex;
+    gap: 6px;
+}
+
+.o_drawer_btn {
+    background: none;
+    border: 1px solid $lav-border;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: $lav-text-medium;
+
+    &:hover {
+        background: $lav-cream;
+        color: $lav-brown;
+    }
+}
+
+.o_drawer_tabs {
+    display: flex;
+    border-bottom: 1px solid $lav-border;
+    flex-shrink: 0;
+
+    button {
+        flex: 1;
+        padding: 10px 16px;
+        border: none;
+        background: white;
+        font-size: 13px;
+        font-weight: 500;
+        color: $lav-text-medium;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+
+        &.o_active {
+            color: $lav-brown;
+            border-bottom-color: $lav-brown;
+            font-weight: 600;
+        }
+
+        &:hover:not(.o_active) {
+            background: $lav-cream-soft;
+        }
+    }
+}
+
+.o_tab_badge {
+    background: $lav-gold;
+    color: white;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 4px;
+}
+
+.o_drawer_body {
+    padding: 16px 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.o_drawer_field {
+    margin-bottom: 12px;
+
+    label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: $lav-text-light;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    span, div {
+        font-size: 14px;
+        color: $lav-text-dark;
+    }
+}
+
+.o_drawer_link {
+    color: $lav-brown !important;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover { color: $lav-gold !important; }
+}
+
+.o_drawer_description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: $lav-text-medium;
+}
+
+.o_drawer_message {
+    padding: 10px 0;
+    border-bottom: 1px solid $lav-border;
+
+    &:last-child { border-bottom: none; }
+}
+
+.o_msg_header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+
+    strong { font-size: 13px; color: $lav-text-dark; }
+}
+
+.o_msg_date {
+    font-size: 11px;
+    color: $lav-text-light;
+}
+
+.o_msg_subject {
+    font-size: 12px;
+    color: $lav-brown;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.o_msg_body {
+    font-size: 12px;
+    color: $lav-text-medium;
+    line-height: 1.4;
+}
+
+// ===== TIMELINE FOOTER (60px) =====
+.o_lavagna_timeline {
+    height: 60px;
+    background: $lav-cream-soft;
+    border-top: 1px solid $lav-border;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+}
+
+.o_timeline_dates {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 16px;
+}
+
+.o_timeline_start, .o_timeline_end {
+    font-size: 11px;
+    color: $lav-text-light;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.o_timeline_bar {
+    flex: 1;
+    height: 6px;
+    background: $lav-border;
+    border-radius: 3px;
+    position: relative;
+    overflow: visible;
+}
+
+.o_timeline_progress {
+    height: 100%;
+    background: linear-gradient(90deg, $lav-gold, $lav-brown);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.o_timeline_today_marker {
+    position: absolute;
+    top: -5px;
+    width: 4px;
+    height: 16px;
+    background: $lav-brown;
+    border-radius: 2px;
+    transform: translateX(-50%);
+
+    &::after {
+        content: 'Oggi';
+        position: absolute;
+        top: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: $lav-brown;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+}

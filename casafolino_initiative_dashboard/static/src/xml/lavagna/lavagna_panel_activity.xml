@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaPanelActivity">
+        <div class="o_lavagna_panel o_panel_activity">
+            <div class="o_panel_header">
+                <i class="fa fa-clock-o"/> Attivit&#224;
+            </div>
+            <div class="o_panel_body">
+                <div t-if="!props.items || !props.items.length" class="o_panel_empty">
+                    Nessuna attivit&#224; recente
+                </div>
+                <div t-foreach="props.items || []" t-as="item" t-key="item.id"
+                     class="o_activity_item" t-on-click="() => this.onActivityClick(item)">
+                    <span class="o_activity_author" t-esc="item.author_name"/>
+                    <span class="o_activity_date" t-esc="formatDate(item.date)"/>
+                    <p class="o_activity_body" t-esc="stripHtml(item.body_short)"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

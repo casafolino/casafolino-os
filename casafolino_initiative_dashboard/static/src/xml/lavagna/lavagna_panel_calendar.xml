@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaPanelCalendar">
+        <div class="o_lavagna_panel o_panel_calendar">
+            <div class="o_panel_header">
+                <i class="fa fa-calendar"/> Calendario
+            </div>
+            <div class="o_panel_body">
+                <div t-if="!props.events || !props.events.length" class="o_panel_empty">
+                    Nessun evento nelle prossime 2 settimane
+                </div>
+                <div t-foreach="props.events || []" t-as="evt" t-key="evt.id"
+                     class="o_calendar_item" t-on-click="() => this.onEventClick(evt)">
+                    <div class="o_cal_name" t-esc="evt.name"/>
+                    <div class="o_cal_meta">
+                        <i class="fa fa-clock-o"/>
+                        <span t-esc="formatDate(evt.start)"/>
+                        <span t-if="evt.location" class="o_cal_location">
+                            <i class="fa fa-map-marker"/>
+                            <t t-esc="evt.location"/>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

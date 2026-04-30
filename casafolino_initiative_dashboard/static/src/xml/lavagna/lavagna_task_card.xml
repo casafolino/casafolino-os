@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaTaskCard">
+        <div class="o_lavagna_task_card"
+             t-att-class="getActivityClass() + (hasUnread() ? ' o_has_unread' : '')"
+             t-on-click="onClick"
+             t-att-draggable="props.draggable || 'false'">
+            <div class="o_task_card_top">
+                <span class="o_task_card_name" t-esc="props.task.name"/>
+                <span class="o_task_card_initials" t-if="getUserInitials()"
+                      t-esc="getUserInitials()"/>
+            </div>
+            <div class="o_task_card_meta">
+                <span t-if="props.task.partner_city" class="o_task_meta_item"
+                      t-on-click="onPartnerClick" title="Apri partner">
+                    <i class="fa fa-map-marker"/>
+                    <t t-esc="props.task.partner_city"/>
+                </span>
+                <span t-foreach="(props.task.cf_tag_names || []).slice(0, 2)" t-as="tag" t-key="tag_index"
+                      class="o_task_tag_chip" t-esc="tag"/>
+            </div>
+            <div class="o_task_card_bottom">
+                <span t-if="props.task.mail_count" class="o_task_meta_item"
+                      t-on-click="onMailClick" title="Comunicazioni">
+                    <i class="fa fa-envelope-o"/>
+                    <t t-esc="props.task.mail_count"/>
+                    <span t-if="props.task.unread_count" class="o_unread_badge"
+                          t-esc="props.task.unread_count"/>
+                </span>
+                <span t-if="props.task.date_deadline" class="o_task_meta_item o_task_deadline">
+                    <i class="fa fa-clock-o"/>
+                    <t t-esc="props.task.date_deadline"/>
+                </span>
+                <span t-if="props.task.priority === '1'" class="o_task_meta_item o_task_priority">
+                    <i class="fa fa-star"/>
+                </span>
+            </div>
+        </div>
+    </t>
+</templates>

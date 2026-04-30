@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaHeader">
+        <div class="o_lavagna_header">
+            <div class="o_lavagna_header_left">
+                <button class="o_lavagna_back_btn" t-on-click="props.onBack"
+                        title="Torna alla form iniziativa">
+                    <i class="fa fa-arrow-left"/>
+                </button>
+                <div class="o_lavagna_header_title">
+                    <span class="o_lavagna_family_badge" t-if="props.initiative.family_name">
+                        <i t-att-class="'fa ' + (props.initiative.family_icon || 'fa-folder-o')"/>
+                        <t t-esc="props.initiative.family_name"/>
+                    </span>
+                    <h1 t-esc="props.initiative.name"/>
+                </div>
+            </div>
+            <div class="o_lavagna_header_right">
+                <div class="o_lavagna_members">
+                    <div t-foreach="props.initiative.members || []" t-as="member" t-key="member.id"
+                         class="o_lavagna_member_avatar"
+                         t-att-title="member.name">
+                        <img t-att-src="member.avatar_url"
+                             t-on-error="(e) => e.target.style.display='none'"
+                             loading="lazy"/>
+                        <span class="o_lavagna_member_initials" t-esc="member.initials"/>
+                    </div>
+                </div>
+                <button class="o_lavagna_refresh_btn" t-on-click="props.onRefresh"
+                        title="Aggiorna dati">
+                    <i class="fa fa-refresh"/>
+                </button>
+            </div>
+        </div>
+    </t>
+</templates>

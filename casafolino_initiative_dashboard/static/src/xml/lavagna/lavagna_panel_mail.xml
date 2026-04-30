@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaPanelMail">
+        <div class="o_lavagna_panel o_panel_mail">
+            <div class="o_panel_header">
+                <i class="fa fa-envelope"/> Comunicazioni
+            </div>
+            <div class="o_panel_body">
+                <div t-if="!props.messages || !props.messages.length" class="o_panel_empty">
+                    Nessuna comunicazione
+                </div>
+                <div t-foreach="props.messages || []" t-as="msg" t-key="msg.id"
+                     class="o_mail_item" t-on-click="() => this.onMailClick(msg)">
+                    <div class="o_mail_item_header">
+                        <span class="o_mail_author" t-esc="msg.author_name"/>
+                        <span class="o_mail_date" t-esc="formatDate(msg.date)"/>
+                    </div>
+                    <div class="o_mail_subject" t-esc="msg.subject"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

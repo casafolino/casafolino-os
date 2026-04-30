@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaDrawerTask">
+        <!-- Backdrop -->
+        <div class="o_lavagna_drawer_backdrop" t-on-click="close"/>
+        <div class="o_lavagna_drawer">
+            <div t-if="state.loading" class="o_drawer_loading">
+                <i class="fa fa-spinner fa-spin"/> Caricamento...
+            </div>
+            <t t-elif="state.task">
+                <!-- Header -->
+                <div class="o_drawer_header">
+                    <h3 class="o_drawer_title" t-esc="state.task.name"/>
+                    <div class="o_drawer_actions">
+                        <button class="o_drawer_btn" t-on-click="openFullForm"
+                                title="Apri form completa">
+                            <i class="fa fa-external-link"/>
+                        </button>
+                        <button class="o_drawer_btn" t-on-click="close" title="Chiudi">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="o_drawer_tabs">
+                    <button t-att-class="{ 'o_active': state.activeTab === 'details' }"
+                            t-on-click="() => this.setTab('details')">Dettagli</button>
+                    <button t-att-class="{ 'o_active': state.activeTab === 'messages' }"
+                            t-on-click="() => this.setTab('messages')">
+                        Comunicazioni
+                        <span t-if="state.messages.length" class="o_tab_badge"
+                              t-esc="state.messages.length"/>
+                    </button>
+                </div>
+
+                <!-- Tab: Details -->
+                <div class="o_drawer_body" t-if="state.activeTab === 'details'">
+                    <div class="o_drawer_field">
+                        <label>Stage</label>
+                        <span t-esc="state.task.stage_id and state.task.stage_id[1]"/>
+                    </div>
+                    <div class="o_drawer_field" t-if="state.task.partner_id">
+                        <label>Partner</label>
+                        <span class="o_drawer_link"
+                              t-on-click="() => this.env.actions.openOdooRecord('res.partner', state.task.partner_id[0])"
+                              t-esc="state.task.partner_id[1]"/>
+                    </div>
+                    <div class="o_drawer_field" t-if="state.task.date_deadline">
+                        <label>Scadenza</label>
+                        <span t-esc="state.task.date_deadline"/>
+                    </div>
+                    <div class="o_drawer_field" t-if="state.task.user_ids and state.task.user_ids.length">
+                        <label>Assegnati</label>
+                        <span t-foreach="state.task.user_ids" t-as="uid" t-key="uid"
+                              class="o_drawer_user_badge" t-esc="uid"/>
+                    </div>
+                    <div class="o_drawer_field" t-if="state.task.description">
+                        <label>Descrizione</label>
+                        <div class="o_drawer_description" t-out="state.task.description"/>
+                    </div>
+                </div>
+
+                <!-- Tab: Messages -->
+                <div class="o_drawer_body" t-if="state.activeTab === 'messages'">
+                    <div t-if="!state.messages.length" class="o_panel_empty">
+                        Nessuna comunicazione
+                    </div>
+                    <div t-foreach="state.messages" t-as="msg" t-key="msg.id"
+                         class="o_drawer_message">
+                        <div class="o_msg_header">
+                            <strong t-esc="msg.author_id and msg.author_id[1] or 'Sistema'"/>
+                            <span class="o_msg_date" t-esc="formatDate(msg.date)"/>
+                        </div>
+                        <div class="o_msg_subject" t-if="msg.subject" t-esc="msg.subject"/>
+                        <div class="o_msg_body" t-esc="stripHtml(msg.body)"/>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaPanelTodo">
+        <div class="o_lavagna_panel o_panel_todo">
+            <div class="o_panel_header">
+                <i class="fa fa-check-square-o"/> To-Do
+            </div>
+            <div class="o_panel_body">
+                <div t-if="!props.todos || !props.todos.length" class="o_panel_empty">
+                    Nessun task assegnato
+                </div>
+                <div t-foreach="props.todos || []" t-as="todo" t-key="todo.id"
+                     class="o_todo_item"
+                     t-att-class="{ 'o_overdue': isOverdue(todo) }"
+                     t-on-click="() => this.onTodoClick(todo)">
+                    <span class="o_todo_name" t-esc="todo.name"/>
+                    <span class="o_todo_stage" t-if="todo.stage_name" t-esc="todo.stage_name"/>
+                    <span class="o_todo_deadline" t-if="todo.date_deadline"
+                          t-esc="todo.date_deadline"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

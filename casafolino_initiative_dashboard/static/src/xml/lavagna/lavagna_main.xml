@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaMain">
+        <div class="o_lavagna_root">
+            <div t-if="state.loading" class="o_lavagna_loading_full">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+                <span>Caricamento Lavagna...</span>
+            </div>
+
+            <div t-elif="state.error" class="o_lavagna_error_full">
+                <i class="fa fa-exclamation-triangle fa-2x"/>
+                <p t-esc="state.error"/>
+                <button class="btn btn-secondary btn-sm" t-on-click="() => this.loadData()">Riprova</button>
+            </div>
+
+            <t t-elif="state.data">
+                <LavagnaHeader
+                    initiative="state.data.initiative"
+                    onBack="() => this.backToInitiative()"
+                    onRefresh="() => this.loadData()"/>
+
+                <LavagnaTodayBar
+                    items="state.data.today_bar"
+                    collapsed="state.todayBarCollapsed"
+                    onToggle="() => this.toggleTodayBar()"/>
+
+                <div class="o_lavagna_body">
+                    <LavagnaKpiRail kpis="state.data.kpi"/>
+
+                    <div class="o_lavagna_center">
+                        <LavagnaKanban data="state.data.kanban"/>
+                    </div>
+
+                    <div class="o_lavagna_right">
+                        <LavagnaPanelMail
+                            t-if="isPanelActive('mail')"
+                            messages="state.data.panels.mail"/>
+                        <LavagnaPanelTodo
+                            t-if="isPanelActive('todo')"
+                            todos="state.data.panels.todo"/>
+                        <LavagnaPanelActivity
+                            t-if="isPanelActive('activity')"
+                            items="state.data.panels.activity"/>
+                        <LavagnaPanelCalendar
+                            t-if="isPanelActive('calendar')"
+                            events="state.data.panels.calendar"/>
+                    </div>
+                </div>
+
+                <LavagnaTimeline data="state.data.timeline"/>
+
+                <LavagnaDrawerTask
+                    t-if="state.drawerOpen"
+                    taskId="state.drawerTaskId"
+                    initiativeId="initiativeId"/>
+            </t>
+        </div>
+    </t>
+</templates>
