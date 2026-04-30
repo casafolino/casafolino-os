@@ -1,5 +1,6 @@
 /** @odoo-module **/
 import { Component, useState, useEnv } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 import { LavagnaTaskCard } from "./lavagna_task_card";
 
 export class LavagnaKanban extends Component {
@@ -9,6 +10,7 @@ export class LavagnaKanban extends Component {
 
     setup() {
         this.env = useEnv();
+        this.actionService = useService("action");
         this.state = useState({
             quickAddStageId: null,
             quickAddTagId: null,
@@ -124,6 +126,43 @@ export class LavagnaKanban extends Component {
         const taskId = parseInt(ev.dataTransfer.getData('text/plain'));
         if (taskId && stageId) {
             this.env.actions.moveTask(taskId, stageId);
+        }
+    }
+
+    // Recovery
+    recoverWithTemplate() {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            name: "Configura Lavagna",
+            res_model: "cf.initiative.dashboard.wizard",
+            view_mode: "form",
+            target: "new",
+            context: {
+                recovery_initiative_id: this.env.initiativeId,
+            },
+        });
+    }
+
+    recoverManually() {
+        if (this.props.data && this.props.data.project_id) {
+            this.actionService.doAction({
+                type: "ir.actions.act_window",
+                res_model: "project.project",
+                res_id: this.props.data.project_id,
+                views: [[false, "form"]],
+                target: "current",
+            });
+        } else {
+            this.actionService.doAction({
+                type: "ir.actions.act_window",
+                res_model: "project.project",
+                views: [[false, "form"]],
+                target: "current",
+                context: {
+                    default_initiative_id: this.env.initiativeId,
+                    default_name: 'Progetto Lavagna',
+                },
+            });
         }
     }
 }

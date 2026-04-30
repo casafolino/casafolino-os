@@ -113,9 +113,23 @@ class LavagnaController(http.Controller):
                 'visible_stages': [], 'folded_stages': [],
                 'swimlanes': [], 'tasks': [],
                 'swimlane_category': '',
+                'recovery_state': 'no_project',
+                'recovery_message': 'Questa iniziativa non ha ancora un progetto collegato.',
             }
 
         project = projects[0]
+
+        # No stages = recovery state
+        if not project.type_ids:
+            return {
+                'visible_stages': [], 'folded_stages': [],
+                'swimlanes': [], 'tasks': [],
+                'swimlane_category': '',
+                'recovery_state': 'no_stages',
+                'recovery_message': 'Il progetto collegato non ha stage configurati.',
+                'project_id': project.id,
+            }
+
         all_stages = project.type_ids.sorted('sequence')
 
         visible_stages = [{

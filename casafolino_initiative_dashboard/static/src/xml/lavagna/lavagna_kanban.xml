@@ -3,7 +3,31 @@
     <t t-name="casafolino_initiative_dashboard.LavagnaKanban">
         <div class="o_lavagna_kanban" t-att-class="hasSwimlanes ? 'o_kanban_2d' : 'o_kanban_linear'">
 
-            <t t-if="!props.data || !visibleStages.length">
+            <!-- RECOVERY STATE -->
+            <t t-if="props.data and props.data.recovery_state">
+                <div class="o_lavagna_recovery">
+                    <div class="o_recovery_icon">
+                        <i class="fa fa-exclamation-circle"/>
+                    </div>
+                    <h2 class="o_recovery_title">Lavagna non configurata</h2>
+                    <p class="o_recovery_message" t-esc="props.data.recovery_message"/>
+                    <div class="o_recovery_actions">
+                        <button class="btn btn-primary o_lavagna_btn_primary"
+                                t-on-click="() => this.recoverWithTemplate()">
+                            <i class="fa fa-magic"/> Configura con template
+                        </button>
+                        <button class="btn btn-secondary"
+                                t-on-click="() => this.recoverManually()">
+                            <i class="fa fa-pencil"/> Configura manualmente
+                        </button>
+                    </div>
+                    <p class="o_recovery_hint">
+                        <small>Il template applica scenario, stage, swimlane e KPI in un click.</small>
+                    </p>
+                </div>
+            </t>
+
+            <t t-elif="!props.data || !visibleStages.length">
                 <div class="o_lavagna_kanban_empty">
                     <i class="fa fa-columns fa-3x"/>
                     <p>Nessuno stage configurato.</p>

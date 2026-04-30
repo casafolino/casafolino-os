@@ -23,6 +23,8 @@
     ],
     'assets': {
         'web.assets_backend': [
+            # Lavagne Attive open-on-click patch
+            'casafolino_initiative_dashboard/static/src/js/lavagne_attive_open.js',
             # Wizard widgets (F1.2)
             'casafolino_initiative_dashboard/static/src/js/lavagna_family_cards.js',
             'casafolino_initiative_dashboard/static/src/xml/lavagna_family_cards.xml',

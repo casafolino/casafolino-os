@@ -1,5 +1,9 @@
+import logging
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class CfInitiativeDashboardWizard(models.TransientModel):
@@ -13,6 +17,12 @@ class CfInitiativeDashboardWizard(models.TransientModel):
         ('panels', 'Moduli Attivi'),
         ('done', 'Conferma'),
     ], default='family', required=True)
+
+    # Recovery mode: configure existing initiative
+    recovery_initiative_id = fields.Many2one(
+        'cf.initiative',
+        string="Iniziativa da Configurare (recovery)",
+    )
 
     # STEP 1: Famiglia (card visuali)
     family_id = fields.Many2one(
@@ -81,6 +91,21 @@ class CfInitiativeDashboardWizard(models.TransientModel):
     panel_calendar = fields.Boolean(string="Scadenze Calendario", default=False)
     panel_shipments = fields.Boolean(string="Spedizioni Campioni", default=False)
 
+    # ============= DEFAULT GET (recovery mode) =============
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        ctx = self.env.context
+        if ctx.get('recovery_initiative_id'):
+            init = self.env['cf.initiative'].browse(ctx['recovery_initiative_id'])
+            if init.exists():
+                res['recovery_initiative_id'] = init.id
+                res['name'] = init.name
+                res['family_id'] = init.family_id.id if init.family_id else False
+                res['state'] = 'scenario'
+        return res
+
     # ============= ONCHANGE =============
 
     @api.onchange('family_id')
@@ -125,6 +150,10 @@ class CfInitiativeDashboardWizard(models.TransientModel):
             raise UserError("Seleziona uno scenario per continuare.")
         if self.state == 'details' and not self.name:
             raise UserError("Inserisci il nome dell'iniziativa.")
+        # Recovery mode: skip details step (name already set)
+        if self.recovery_initiative_id and self.state == 'scenario':
+            self.state = 'panels'
+            return self._reopen()
         if idx < len(flow) - 1:
             self.state = flow[idx + 1]
         return self._reopen()
@@ -132,6 +161,10 @@ class CfInitiativeDashboardWizard(models.TransientModel):
     def action_back(self):
         flow = ['family', 'scenario', 'details', 'panels', 'done']
         idx = flow.index(self.state)
+        # Recovery mode: from panels go back to scenario (skip details)
+        if self.recovery_initiative_id and self.state == 'panels':
+            self.state = 'scenario'
+            return self._reopen()
         if idx > 0:
             self.state = flow[idx - 1]
         return self._reopen()
@@ -148,12 +181,6 @@ class CfInitiativeDashboardWizard(models.TransientModel):
         }
 
     def _get_default_variant(self):
-        """
-        Default variant for cf.initiative (user never sees this):
-        1. Variant with code matching family standard (OC_STANDARD, CE_STANDARD, etc.)
-        2. Fallback: first variant for the family
-        3. Fallback: first variant overall
-        """
         Variant = self.env['cf.initiative.variant']
         family_code = self.family_id.code or ''
         variant = Variant.search([
@@ -168,39 +195,37 @@ class CfInitiativeDashboardWizard(models.TransientModel):
             return variant
         return Variant.search([], limit=1)
 
-    # ============= CONFIRM & CREATE =============
-
-    def action_confirm(self):
-        self.ensure_one()
-        if not self.name:
-            raise UserError("Il nome dell'iniziativa è obbligatorio.")
-        if not self.scenario_id:
-            raise UserError("Devi selezionare uno scenario per la Lavagna.")
-
-        # FIX F1.3: rileggi SEMPRE i default dallo scenario (fonte di verità)
-        # I campi M2M su transient model possono non persistere via onchange
+    def _read_scenario_defaults(self):
+        """Read defaults from scenario (source of truth for M2M fields)."""
         scenario = self.scenario_id
-
-        # Swimlane category: priorità a override utente, fallback scenario
         swimlane_category = self.swimlane_category or scenario.swimlane_category or ''
-
-        # Swimlane tags: priorità a override utente (se non vuoto), fallback scenario
         swimlane_tags = self.swimlane_tag_ids or scenario.suggested_swimlane_tag_ids
-
-        # KPI: priorità a override utente (se non vuoto), fallback scenario
         kpis = self.kpi_ids or scenario.default_kpi_ids
-
-        # Stage CSV: priorità a override utente, fallback scenario
         stages_csv = self.stage_names_csv or scenario.suggested_stage_names
 
-        # Panels CSV: ricostruisci da checkbox utente (sono autoritativi)
         panels = []
         for p in ['kanban', 'todo', 'mail', 'activity', 'docs', 'notes', 'calendar', 'shipments']:
             if getattr(self, f'panel_{p}'):
                 panels.append(p)
         panel_csv = ','.join(panels) if panels else (scenario.default_panels or 'kanban,todo,mail,activity')
 
-        # Variant default in background
+        return swimlane_category, swimlane_tags, kpis, stages_csv, panel_csv
+
+    # ============= CONFIRM & CREATE =============
+
+    def action_confirm(self):
+        self.ensure_one()
+        if not self.scenario_id:
+            raise UserError("Devi selezionare uno scenario per la Lavagna.")
+
+        if self.recovery_initiative_id:
+            return self._action_confirm_recovery()
+
+        if not self.name:
+            raise UserError("Il nome dell'iniziativa è obbligatorio.")
+
+        swimlane_category, swimlane_tags, kpis, stages_csv, panel_csv = self._read_scenario_defaults()
+
         variant = self._get_default_variant()
         if not variant:
             raise UserError(
@@ -208,63 +233,109 @@ class CfInitiativeDashboardWizard(models.TransientModel):
                 "cf.initiative.variant prima di creare iniziative."
             )
 
-        # Merge tags
         all_tags = swimlane_tags | self.market_tag_ids
 
-        # 1. Create cf.initiative con tutti i lavagna_* popolati garantiti
-        initiative_vals = {
-            'name': self.name,
-            'family_id': self.family_id.id,
-            'variant_id': variant.id,
-            'user_id': self.env.user.id,
-            'tag_ids': [(6, 0, all_tags.ids)],
+        initiative = None
+        project = None
+
+        try:
+            # 1. Create cf.initiative
+            initiative_vals = {
+                'name': self.name,
+                'family_id': self.family_id.id,
+                'variant_id': variant.id,
+                'user_id': self.env.user.id,
+                'tag_ids': [(6, 0, all_tags.ids)],
+                'lavagna_enabled': True,
+                'lavagna_swimlane_category': swimlane_category,
+                'lavagna_swimlane_tag_ids': [(6, 0, swimlane_tags.ids)],
+                'lavagna_kpi_ids': [(6, 0, kpis.ids)],
+                'lavagna_panels': panel_csv,
+            }
+            for field_name, value in [
+                ('partner_id', self.partner_id.id if self.partner_id else False),
+                ('country_id', self.country_id.id if self.country_id else False),
+                ('date_start', self.date_start),
+                ('date_end', self.date_end),
+            ]:
+                if value and field_name in self.env['cf.initiative']._fields:
+                    initiative_vals[field_name] = value
+
+            initiative = self.env['cf.initiative'].create(initiative_vals)
+            _logger.info("[Wizard] Created initiative id=%s name=%s", initiative.id, initiative.name)
+
+            # 2. Create project
+            project = self.env['project.project'].create({
+                'name': self.name,
+                'initiative_id': initiative.id,
+                'privacy_visibility': 'followers',
+                'user_id': self.env.user.id,
+            })
+            _logger.info("[Wizard] Created project id=%s for initiative %s", project.id, initiative.id)
+
+            # Add followers
+            if self.user_ids:
+                partner_ids = self.user_ids.mapped('partner_id').ids
+                project.message_subscribe(partner_ids=partner_ids)
+
+            # 3. Create stages
+            self._create_stages(project, stages_csv)
+
+            return initiative.action_open_lavagna()
+
+        except Exception as e:
+            _logger.error("[Wizard] FATAL during creation: %s", e, exc_info=True)
+            raise UserError(f"Errore durante la creazione dell'iniziativa: {e}")
+
+    def _action_confirm_recovery(self):
+        """Configure existing initiative with scenario/stages/project."""
+        init = self.recovery_initiative_id
+        swimlane_category, swimlane_tags, kpis, stages_csv, panel_csv = self._read_scenario_defaults()
+
+        # Update lavagna fields on existing initiative
+        init.write({
             'lavagna_enabled': True,
             'lavagna_swimlane_category': swimlane_category,
             'lavagna_swimlane_tag_ids': [(6, 0, swimlane_tags.ids)],
             'lavagna_kpi_ids': [(6, 0, kpis.ids)],
             'lavagna_panels': panel_csv,
-        }
-        # Campi opzionali
-        for field_name, value in [
-            ('partner_id', self.partner_id.id if self.partner_id else False),
-            ('country_id', self.country_id.id if self.country_id else False),
-            ('date_start', self.date_start),
-            ('date_end', self.date_end),
-        ]:
-            if value and field_name in self.env['cf.initiative']._fields:
-                initiative_vals[field_name] = value
+            'tag_ids': [(4, t.id) for t in (swimlane_tags | self.market_tag_ids)],
+        })
+        _logger.info("[Wizard Recovery] Updated initiative id=%s", init.id)
 
-        initiative = self.env['cf.initiative'].create(initiative_vals)
+        # Create project if missing
+        project = self.env['project.project'].search(
+            [('initiative_id', '=', init.id)], limit=1)
+        if not project:
+            project = self.env['project.project'].create({
+                'name': init.name,
+                'initiative_id': init.id,
+                'privacy_visibility': 'followers',
+                'user_id': self.env.user.id,
+            })
+            _logger.info("[Wizard Recovery] Created project id=%s", project.id)
 
-        # 2. Create project.project linked to initiative
-        project_vals = {
-            'name': self.name,
-            'initiative_id': initiative.id,
-            'privacy_visibility': 'followers',
-            'user_id': self.env.user.id,
-        }
-        project = self.env['project.project'].create(project_vals)
+        # Create stages if missing
+        if not project.type_ids:
+            self._create_stages(project, stages_csv)
 
-        # Add team members as followers
-        if self.user_ids:
-            partner_ids = self.user_ids.mapped('partner_id').ids
-            project.message_subscribe(partner_ids=partner_ids)
+        return init.action_open_lavagna()
 
-        # 3. Create project stages
-        if stages_csv:
-            stage_names = [s.strip() for s in stages_csv.split(',') if s.strip()]
-            stage_ids = []
-            for i, sname in enumerate(stage_names):
-                stage = self.env['project.task.type'].create({
-                    'name': sname,
-                    'sequence': (i + 1) * 10,
-                    'fold': sname.lower() in (
-                        'lead crm', 'archiviati', 'chiuso', 'archived',
-                        'archive', 'archiviato', 'operativo',
-                    ),
-                })
-                stage_ids.append(stage.id)
-            project.write({'type_ids': [(6, 0, stage_ids)]})
-
-        # 4. Open Lavagna
-        return initiative.action_open_lavagna()
+    def _create_stages(self, project, stages_csv):
+        """Create project stages from CSV string."""
+        if not stages_csv:
+            return
+        stage_names = [s.strip() for s in stages_csv.split(',') if s.strip()]
+        stage_ids = []
+        for i, sname in enumerate(stage_names):
+            stage = self.env['project.task.type'].create({
+                'name': sname,
+                'sequence': (i + 1) * 10,
+                'fold': sname.lower() in (
+                    'lead crm', 'archiviati', 'chiuso', 'archived',
+                    'archive', 'archiviato', 'operativo',
+                ),
+            })
+            stage_ids.append(stage.id)
+        project.write({'type_ids': [(6, 0, stage_ids)]})
+        _logger.info("[Wizard] Created %d stages for project %s", len(stage_ids), project.id)

@@ -347,6 +347,69 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     gap: 12px;
 }
 
+// Recovery placeholder
+.o_lavagna_recovery {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 60px 40px;
+    text-align: center;
+    background: $lav-cream-soft;
+
+    .o_recovery_icon {
+        font-size: 48px;
+        color: $lav-gold;
+        margin-bottom: 20px;
+        opacity: 0.6;
+    }
+
+    .o_recovery_title {
+        font-size: 24px;
+        font-weight: 600;
+        color: $lav-brown;
+        margin: 0 0 12px;
+    }
+
+    .o_recovery_message {
+        font-size: 14px;
+        color: $lav-text-medium;
+        max-width: 480px;
+        line-height: 1.5;
+        margin: 0 0 32px;
+    }
+
+    .o_recovery_actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+
+        .btn {
+            min-width: 200px;
+            padding: 12px 24px;
+            font-weight: 500;
+            border-radius: 8px;
+            i { margin-right: 8px; }
+        }
+
+        .o_lavagna_btn_primary {
+            background: $lav-brown !important;
+            border-color: $lav-brown !important;
+            color: white !important;
+            &:hover {
+                background: $lav-brown-dark !important;
+                border-color: $lav-brown-dark !important;
+            }
+        }
+    }
+
+    .o_recovery_hint {
+        color: $lav-text-light;
+        font-size: 12px;
+    }
+}
+
 .o_kanban_scroll {
     height: 100%;
     overflow: auto;
