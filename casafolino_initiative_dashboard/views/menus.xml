@@ -14,19 +14,12 @@
         </field>
     </record>
 
-    <!-- Menu: Tutte le Iniziative (sequence 5 = prima voce = default click) -->
-    <menuitem id="menu_cf_initiative_list_all"
-              name="Tutte le Iniziative"
-              parent="casafolino_initiative.menu_initiative_root"
-              action="casafolino_initiative.action_cf_initiative"
-              sequence="5"/>
-
-    <!-- Menu: Lavagne Attive (sequence 10) -->
+    <!-- Menu: Lavagne Attive (sequence 15, after core "Iniziative" at 10) -->
     <menuitem id="menu_cf_lavagne_attive"
               name="Lavagne Attive"
               parent="casafolino_initiative.menu_initiative_root"
               action="action_cf_initiative_lavagne_attive"
-              sequence="10"/>
+              sequence="15"/>
 
     <!-- Menu: Apri Nuova Iniziativa (sequence 20) -->
     <menuitem id="menu_cf_initiative_dashboard_wizard"
