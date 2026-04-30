@@ -1,88 +1,125 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="casafolino_initiative_dashboard.LavagnaKanban">
-        <div class="o_lavagna_kanban">
-            <t t-if="!props.data || !props.data.stages || !props.data.stages.length">
+        <div class="o_lavagna_kanban" t-att-class="hasSwimlanes ? 'o_kanban_2d' : 'o_kanban_linear'">
+
+            <t t-if="!props.data || !visibleStages.length">
                 <div class="o_lavagna_kanban_empty">
                     <i class="fa fa-columns fa-3x"/>
-                    <p>Nessuno stage configurato. Crea task per iniziare.</p>
+                    <p>Nessuno stage configurato.</p>
                 </div>
             </t>
             <t t-else="">
-                <div class="o_lavagna_kanban_scroll">
-                    <!-- Column headers -->
-                    <div class="o_lavagna_kanban_columns">
-                        <div t-foreach="props.data.stages" t-as="stage" t-key="stage.id"
-                             class="o_lavagna_kanban_col"
-                             t-att-class="{ 'o_folded': stage.fold }">
-                            <div class="o_lavagna_col_header">
-                                <span class="o_col_name" t-esc="stage.name"/>
-                                <span class="o_col_count"
-                                      t-esc="getTasksForCell(stage.id, null).length"/>
-                                <button class="o_col_add_btn"
-                                        t-on-click="() => this.startQuickAdd(stage.id, null)"
-                                        title="Aggiungi task">
-                                    <i class="fa fa-plus"/>
-                                </button>
+                <div class="o_kanban_scroll">
+
+                    <!-- ===== HEADER ROW: stage names ===== -->
+                    <div class="o_kanban_header_row">
+                        <div t-if="hasSwimlanes" class="o_kanban_corner"/>
+                        <div t-foreach="allDisplayStages" t-as="stage" t-key="stage.id"
+                             class="o_kanban_stage_header"
+                             t-att-class="{ 'o_stage_folded': stage.fold }">
+                            <span class="o_stage_name" t-esc="stage.name"/>
+                            <span class="o_stage_count" t-esc="getTaskCountForStage(stage.id)"/>
+                            <button class="o_stage_add_btn"
+                                    t-on-click="(ev) => this.openQuickAdd(ev, stage.id, null)">
+                                <i class="fa fa-plus"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ===== 2D SWIMLANE BODY ===== -->
+                    <t t-if="hasSwimlanes">
+                        <div t-foreach="props.data.swimlanes" t-as="swim" t-key="swim.id"
+                             class="o_kanban_swim_row">
+                            <!-- Swimlane label (first col) -->
+                            <div class="o_kanban_swim_label"
+                                 t-att-style="'border-left-color:' + getSwimlaneColor(swim.color)">
+                                <span class="o_swim_name" t-esc="swim.name"/>
+                                <span class="o_swim_count" t-esc="getTaskCountForSwimlane(swim.id)"/>
                             </div>
 
-                            <!-- Quick add input -->
-                            <div t-if="localState.quickAddStageId === stage.id and !localState.quickAddTagId"
-                                 class="o_lavagna_quick_add">
-                                <input type="text"
-                                       class="o_quick_add_input"
-                                       placeholder="Nome task..."
-                                       t-att-value="localState.quickAddName"
-                                       t-on-input="onQuickAddInput"
-                                       t-on-keydown="onQuickAddKeydown"
-                                       t-ref="quickAddInput"/>
-                                <button class="o_quick_add_cancel"
-                                        t-on-click="() => this.cancelQuickAdd()">
-                                    <i class="fa fa-times"/>
-                                </button>
-                            </div>
-
-                            <!-- Drop zone (no swimlanes or swimlanes with unsorted) -->
-                            <div class="o_lavagna_col_body"
+                            <!-- Cells: one per stage -->
+                            <div t-foreach="allDisplayStages" t-as="stage" t-key="stage.id"
+                                 class="o_kanban_cell"
+                                 t-att-class="{ 'o_stage_folded': stage.fold }"
                                  t-on-dragover="onDragOver"
                                  t-on-dragenter="onDragEnter"
                                  t-on-dragleave="onDragLeave"
                                  t-on-drop="(ev) => this.onDrop(ev, stage.id)">
 
-                                <!-- If swimlanes active: show swimlane rows -->
-                                <t t-if="hasSwimlines()">
-                                    <div t-foreach="props.data.swimlanes" t-as="swim" t-key="swim.id"
-                                         class="o_lavagna_swimlane_section">
-                                        <div class="o_swimlane_label" t-if="stage_first"
-                                             t-esc="swim.name"/>
-                                        <t t-foreach="getTasksForCell(stage.id, swim.id)" t-as="task" t-key="task.id">
-                                            <LavagnaTaskCard task="task"
-                                                             draggable="'true'"
-                                                             t-on-dragstart="(ev) => this.onDragStart(ev, task.id)"
-                                                             t-on-dragend="onDragEnd"/>
-                                        </t>
-                                    </div>
-                                    <!-- Unsorted tasks -->
-                                    <t t-foreach="getUnsortedTasks(stage.id)" t-as="task" t-key="task.id">
-                                        <LavagnaTaskCard task="task"
-                                                         draggable="'true'"
-                                                         t-on-dragstart="(ev) => this.onDragStart(ev, task.id)"
-                                                         t-on-dragend="onDragEnd"/>
-                                    </t>
-                                </t>
+                                <!-- Quick add in this cell -->
+                                <div t-if="state.quickAddStageId === stage.id and state.quickAddTagId === swim.id"
+                                     class="o_kanban_quick_add">
+                                    <input type="text" class="o_quick_input"
+                                           placeholder="Nome task..."
+                                           t-att-value="state.quickAddName"
+                                           t-on-input="onQuickAddInput"
+                                           t-on-keydown="onQuickAddKeydown"/>
+                                    <button class="o_quick_cancel" t-on-click="() => this.cancelQuickAdd()">
+                                        <i class="fa fa-times"/>
+                                    </button>
+                                </div>
 
-                                <!-- No swimlanes: flat list -->
-                                <t t-else="">
-                                    <t t-foreach="getTasksForCell(stage.id, null)" t-as="task" t-key="task.id">
-                                        <LavagnaTaskCard task="task"
-                                                         draggable="'true'"
-                                                         t-on-dragstart="(ev) => this.onDragStart(ev, task.id)"
-                                                         t-on-dragend="onDragEnd"/>
-                                    </t>
-                                </t>
+                                <t t-set="cellTasks" t-value="getTasksForCell(swim.id, stage.id)"/>
+                                <LavagnaTaskCard t-foreach="cellTasks" t-as="task" t-key="task.id"
+                                                 task="task"/>
+
+                                <div t-if="!cellTasks.length and state.quickAddStageId !== stage.id"
+                                     class="o_kanban_cell_empty">
+                                    <span class="o_empty_hint">Trascina qui o crea</span>
+                                </div>
                             </div>
                         </div>
+                    </t>
+
+                    <!-- ===== LINEAR BODY (no swimlanes) ===== -->
+                    <t t-else="">
+                        <div class="o_kanban_linear_row">
+                            <div t-foreach="allDisplayStages" t-as="stage" t-key="stage.id"
+                                 class="o_kanban_cell o_kanban_linear_cell"
+                                 t-att-class="{ 'o_stage_folded': stage.fold }"
+                                 t-on-dragover="onDragOver"
+                                 t-on-dragenter="onDragEnter"
+                                 t-on-dragleave="onDragLeave"
+                                 t-on-drop="(ev) => this.onDrop(ev, stage.id)">
+
+                                <!-- Quick add -->
+                                <div t-if="state.quickAddStageId === stage.id and !state.quickAddTagId"
+                                     class="o_kanban_quick_add">
+                                    <input type="text" class="o_quick_input"
+                                           placeholder="Nome task..."
+                                           t-att-value="state.quickAddName"
+                                           t-on-input="onQuickAddInput"
+                                           t-on-keydown="onQuickAddKeydown"/>
+                                    <button class="o_quick_cancel" t-on-click="() => this.cancelQuickAdd()">
+                                        <i class="fa fa-times"/>
+                                    </button>
+                                </div>
+
+                                <t t-set="cellTasks" t-value="getTasksForCell(null, stage.id)"/>
+                                <LavagnaTaskCard t-foreach="cellTasks" t-as="task" t-key="task.id"
+                                                 task="task"/>
+
+                                <div t-if="!cellTasks.length and state.quickAddStageId !== stage.id"
+                                     class="o_kanban_cell_empty">
+                                    <span class="o_empty_hint">Nessun task</span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- ===== FOLDED STAGES TOGGLE ===== -->
+                    <div t-if="foldedStages.length and !state.showFolded" class="o_kanban_folded_toggle"
+                         t-on-click="() => this.toggleShowFolded()">
+                        <i class="fa fa-caret-right"/>
+                        <t t-esc="foldedStages.length"/> stage archiviati
                     </div>
+                    <div t-if="foldedStages.length and state.showFolded" class="o_kanban_folded_toggle"
+                         t-on-click="() => this.toggleShowFolded()">
+                        <i class="fa fa-caret-down"/>
+                        Nascondi archiviati
+                    </div>
+
                 </div>
             </t>
         </div>

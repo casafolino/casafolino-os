@@ -3,31 +3,50 @@
     <t t-name="casafolino_initiative_dashboard.LavagnaHeader">
         <div class="o_lavagna_header">
             <div class="o_lavagna_header_left">
-                <button class="o_lavagna_back_btn" t-on-click="props.onBack"
-                        title="Torna alla form iniziativa">
+                <button class="o_lavagna_back_btn" t-on-click="() => this.backToInitiativesList()"
+                        title="Torna alle Iniziative">
                     <i class="fa fa-arrow-left"/>
                 </button>
-                <div class="o_lavagna_header_title">
-                    <span class="o_lavagna_family_badge" t-if="props.initiative.family_name">
+
+                <div class="o_lavagna_breadcrumb">
+                    <span class="o_bc_link" t-on-click="() => this.backToInitiativesList()">Iniziative</span>
+                    <span class="o_bc_sep">/</span>
+                    <span class="o_bc_link" t-on-click="() => this.backToInitiative()"
+                          t-esc="props.initiative.name"/>
+                    <span class="o_bc_sep">/</span>
+                    <span class="o_bc_current">Lavagna</span>
+                </div>
+
+                <div class="o_lavagna_header_meta">
+                    <span class="o_family_chip" t-if="props.initiative.family_name">
                         <i t-att-class="'fa ' + (props.initiative.family_icon || 'fa-folder-o')"/>
                         <t t-esc="props.initiative.family_name"/>
                     </span>
-                    <h1 t-esc="props.initiative.name"/>
+                    <span t-if="props.initiative.country_name" class="o_meta_chip">
+                        <i class="fa fa-globe"/>
+                        <t t-esc="props.initiative.country_name"/>
+                    </span>
+                    <span t-if="props.initiative.date_start" class="o_meta_chip">
+                        <i class="fa fa-calendar-o"/>
+                        <t t-esc="formatDate(props.initiative.date_start)"/>
+                    </span>
                 </div>
             </div>
+
             <div class="o_lavagna_header_right">
-                <div class="o_lavagna_members">
-                    <div t-foreach="props.initiative.members || []" t-as="member" t-key="member.id"
-                         class="o_lavagna_member_avatar"
-                         t-att-title="member.name">
+                <div class="o_lavagna_members" t-if="(props.initiative.members || []).length">
+                    <div t-foreach="(props.initiative.members || []).slice(0, 5)" t-as="member" t-key="member.id"
+                         class="o_member_avatar" t-att-title="member.name">
                         <img t-att-src="member.avatar_url"
                              t-on-error="(e) => e.target.style.display='none'"
                              loading="lazy"/>
-                        <span class="o_lavagna_member_initials" t-esc="member.initials"/>
+                        <span class="o_member_fallback" t-esc="member.initials"/>
+                    </div>
+                    <div t-if="(props.initiative.members || []).length > 5" class="o_member_more">
+                        +<t t-esc="props.initiative.members.length - 5"/>
                     </div>
                 </div>
-                <button class="o_lavagna_refresh_btn" t-on-click="props.onRefresh"
-                        title="Aggiorna dati">
+                <button class="o_header_btn" t-on-click="props.onRefresh" title="Aggiorna">
                     <i class="fa fa-refresh"/>
                 </button>
             </div>

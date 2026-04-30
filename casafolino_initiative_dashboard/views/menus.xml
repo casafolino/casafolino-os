@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Voce menu "Apri Nuova Iniziativa (Lavagna)" sotto menu Iniziative -->
+    <!-- Action: Lavagne Attive (initiatives with lavagna_enabled) -->
+    <record id="action_cf_initiative_lavagne" model="ir.actions.act_window">
+        <field name="name">Lavagne Attive</field>
+        <field name="res_model">cf.initiative</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('lavagna_enabled', '=', True)]</field>
+    </record>
+
+    <!-- Menu: Apri Nuova Iniziativa (Lavagna) — sequence 20 (after list=10) -->
     <menuitem id="menu_cf_initiative_dashboard_wizard"
               name="Apri Nuova Iniziativa (Lavagna)"
               parent="casafolino_initiative.menu_initiative_root"
               action="action_cf_initiative_dashboard_wizard"
-              sequence="5"/>
+              sequence="20"/>
+
+    <!-- Menu: Lavagne Attive — sequence 15 -->
+    <menuitem id="menu_cf_initiative_lavagne"
+              name="Lavagne Attive"
+              parent="casafolino_initiative.menu_initiative_root"
+              action="action_cf_initiative_lavagne"
+              sequence="15"/>
 
     <!-- Config sub-menus under existing config menu -->
     <menuitem id="menu_dashboard_kpi"

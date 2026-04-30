@@ -26,6 +26,12 @@ class LavagnaController(http.Controller):
         }
 
     def _get_initiative_header(self, init):
+        country_name = ''
+        if 'country_id' in init._fields and init.country_id:
+            country_name = init.country_id.name
+        date_start = ''
+        if 'date_start' in init._fields and init.date_start:
+            date_start = init.date_start.isoformat()
         return {
             'id': init.id,
             'name': init.name,
@@ -33,6 +39,8 @@ class LavagnaController(http.Controller):
             'family_code': init.family_id.code if init.family_id else '',
             'family_icon': init.family_id.icon if init.family_id else '',
             'state': init.state if 'state' in init._fields else 'draft',
+            'country_name': country_name,
+            'date_start': date_start,
             'members': self._get_members(init),
             'lavagna_panels': (init.lavagna_panels or '').split(','),
         }
@@ -101,15 +109,24 @@ class LavagnaController(http.Controller):
         projects = request.env['project.project'].search(
             [('initiative_id', '=', init.id)])
         if not projects:
-            return {'stages': [], 'swimlanes': [], 'tasks': []}
+            return {
+                'visible_stages': [], 'folded_stages': [],
+                'swimlanes': [], 'tasks': [],
+                'swimlane_category': '',
+            }
 
         project = projects[0]
-        stages = [{
-            'id': st.id,
-            'name': st.name,
-            'sequence': st.sequence,
-            'fold': st.fold,
-        } for st in project.type_ids.sorted('sequence')]
+        all_stages = project.type_ids.sorted('sequence')
+
+        visible_stages = [{
+            'id': st.id, 'name': st.name,
+            'sequence': st.sequence, 'fold': False,
+        } for st in all_stages if not st.fold]
+
+        folded_stages = [{
+            'id': st.id, 'name': st.name,
+            'sequence': st.sequence, 'fold': True,
+        } for st in all_stages if st.fold]
 
         swimlanes = []
         if init.lavagna_swimlane_tag_ids:
@@ -169,7 +186,8 @@ class LavagnaController(http.Controller):
             })
 
         return {
-            'stages': stages,
+            'visible_stages': visible_stages,
+            'folded_stages': folded_stages,
             'swimlanes': swimlanes,
             'swimlane_category': init.lavagna_swimlane_category or '',
             'tasks': tasks_data,
@@ -248,7 +266,7 @@ class LavagnaController(http.Controller):
             'message_type': m.message_type,
         } for m in mail_msgs]
 
-        # Todos (proxy: user's tasks)
+        # Todos
         todo_tasks = request.env['project.task'].search([
             ('project_id', 'in', project_ids),
             ('user_ids', 'in', request.env.user.id),
@@ -261,7 +279,7 @@ class LavagnaController(http.Controller):
             'stage_name': t.stage_id.name if t.stage_id else '',
         } for t in todo_tasks]
 
-        # Activity stream
+        # Activity
         activity_msgs = request.env['mail.message'].search([
             ('model', 'in', ['project.task', 'project.project']),
             ('res_id', 'in', task_ids + project_ids),

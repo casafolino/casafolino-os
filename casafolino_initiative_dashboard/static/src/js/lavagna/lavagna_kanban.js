@@ -9,64 +9,88 @@ export class LavagnaKanban extends Component {
 
     setup() {
         this.env = useEnv();
-        this.localState = useState({
+        this.state = useState({
             quickAddStageId: null,
             quickAddTagId: null,
             quickAddName: '',
-            dragTaskId: null,
+            showFolded: false,
         });
     }
 
-    getTasksForCell(stageId, swimlaneTagId) {
-        const data = this.props.data;
-        if (!data || !data.tasks) return [];
-        let tasks = data.tasks.filter(t => t.stage_id === stageId);
-        if (swimlaneTagId) {
-            tasks = tasks.filter(t =>
-                t.cf_tag_ids && t.cf_tag_ids.includes(swimlaneTagId));
-        }
-        // KPI filter
-        const kpiFilter = this.env.lavagnaState.kpiFilter;
-        if (kpiFilter && kpiFilter.target_model === 'project.task') {
-            // Filter by stage name matching KPI domain hint
-            // For now: no additional filter (KPI highlights, doesn't hide)
-        }
-        return tasks;
-    }
-
-    getUnsortedTasks(stageId) {
-        // Tasks without any swimlane tag (when swimlanes are active)
-        const data = this.props.data;
-        if (!data || !data.tasks || !data.swimlanes.length) return [];
-        const allTagIds = data.swimlanes.map(s => s.id);
-        return data.tasks.filter(t =>
-            t.stage_id === stageId &&
-            (!t.cf_tag_ids || !t.cf_tag_ids.some(id => allTagIds.includes(id)))
-        );
-    }
-
-    hasSwimlines() {
+    get hasSwimlanes() {
         return this.props.data && this.props.data.swimlanes && this.props.data.swimlanes.length > 0;
     }
 
+    get visibleStages() {
+        if (!this.props.data) return [];
+        return (this.props.data.visible_stages || this.props.data.stages || []);
+    }
+
+    get foldedStages() {
+        if (!this.props.data) return [];
+        return (this.props.data.folded_stages || []);
+    }
+
+    get allDisplayStages() {
+        if (this.state.showFolded) {
+            return [...this.visibleStages, ...this.foldedStages];
+        }
+        return this.visibleStages;
+    }
+
+    getTasksForCell(swimlaneId, stageId) {
+        const data = this.props.data;
+        if (!data || !data.tasks) return [];
+        return data.tasks.filter(t => {
+            const matchStage = t.stage_id === stageId;
+            if (!matchStage) return false;
+            if (swimlaneId === null) return true;
+            return (t.cf_tag_ids || []).includes(swimlaneId);
+        });
+    }
+
+    getTaskCountForStage(stageId) {
+        if (!this.props.data || !this.props.data.tasks) return 0;
+        return this.props.data.tasks.filter(t => t.stage_id === stageId).length;
+    }
+
+    getTaskCountForSwimlane(swimlaneId) {
+        if (!this.props.data || !this.props.data.tasks) return 0;
+        return this.props.data.tasks.filter(t =>
+            (t.cf_tag_ids || []).includes(swimlaneId)).length;
+    }
+
+    getSwimlaneColor(colorIdx) {
+        const colors = [
+            '#6B4A1E', '#C8A43A', '#3498db', '#27ae60', '#e74c3c',
+            '#9b59b6', '#f39c12', '#16a085', '#2c3e50', '#e67e22',
+        ];
+        return colors[(colorIdx || 0) % colors.length];
+    }
+
+    toggleShowFolded() {
+        this.state.showFolded = !this.state.showFolded;
+    }
+
     // Quick add
-    startQuickAdd(stageId, tagId) {
-        this.localState.quickAddStageId = stageId;
-        this.localState.quickAddTagId = tagId || null;
-        this.localState.quickAddName = '';
+    openQuickAdd(ev, stageId, tagId) {
+        ev.stopPropagation();
+        this.state.quickAddStageId = stageId;
+        this.state.quickAddTagId = tagId || null;
+        this.state.quickAddName = '';
     }
 
     cancelQuickAdd() {
-        this.localState.quickAddStageId = null;
-        this.localState.quickAddName = '';
+        this.state.quickAddStageId = null;
+        this.state.quickAddName = '';
     }
 
     onQuickAddKeydown(ev) {
-        if (ev.key === 'Enter' && this.localState.quickAddName.trim()) {
+        if (ev.key === 'Enter' && this.state.quickAddName.trim()) {
             this.env.actions.quickAddTask(
-                this.localState.quickAddName.trim(),
-                this.localState.quickAddStageId,
-                this.localState.quickAddTagId
+                this.state.quickAddName.trim(),
+                this.state.quickAddStageId,
+                this.state.quickAddTagId
             );
             this.cancelQuickAdd();
         } else if (ev.key === 'Escape') {
@@ -75,22 +99,10 @@ export class LavagnaKanban extends Component {
     }
 
     onQuickAddInput(ev) {
-        this.localState.quickAddName = ev.target.value;
+        this.state.quickAddName = ev.target.value;
     }
 
-    // Drag & drop (HTML5 native)
-    onDragStart(ev, taskId) {
-        this.localState.dragTaskId = taskId;
-        ev.dataTransfer.effectAllowed = 'move';
-        ev.dataTransfer.setData('text/plain', String(taskId));
-        ev.target.classList.add('o_dragging');
-    }
-
-    onDragEnd(ev) {
-        ev.target.classList.remove('o_dragging');
-        this.localState.dragTaskId = null;
-    }
-
+    // Drag & drop
     onDragOver(ev) {
         ev.preventDefault();
         ev.dataTransfer.dropEffect = 'move';
@@ -98,7 +110,8 @@ export class LavagnaKanban extends Component {
 
     onDragEnter(ev) {
         ev.preventDefault();
-        ev.currentTarget.classList.add('o_drag_over');
+        const cell = ev.currentTarget;
+        cell.classList.add('o_drag_over');
     }
 
     onDragLeave(ev) {

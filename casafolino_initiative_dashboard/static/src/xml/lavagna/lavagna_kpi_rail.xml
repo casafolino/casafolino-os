@@ -3,17 +3,17 @@
     <t t-name="casafolino_initiative_dashboard.LavagnaKpiRail">
         <div class="o_lavagna_kpi_rail">
             <div t-foreach="props.kpis || []" t-as="kpi" t-key="kpi.id"
-                 class="o_lavagna_kpi_item"
+                 class="o_kpi_tile"
                  t-att-class="{ 'o_active': isActive(kpi) }"
                  t-on-click="() => this.onKpiClick(kpi)"
                  t-att-title="kpi.name">
-                <div class="o_kpi_value" t-att-style="'color:' + (kpi.color || '#6B4A1E')">
+                <div class="o_kpi_value" t-att-style="isActive(kpi) ? '' : 'color:' + (kpi.color || '#6B4A1E')">
                     <t t-esc="kpi.value"/>
                 </div>
                 <div class="o_kpi_icon">
                     <i t-att-class="'fa ' + (kpi.icon || 'fa-bar-chart')"/>
                 </div>
-                <div class="o_kpi_name" t-esc="kpi.name"/>
+                <div class="o_kpi_name" t-esc="getDisplayName(kpi)"/>
             </div>
         </div>
     </t>

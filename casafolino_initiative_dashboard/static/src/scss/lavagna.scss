@@ -19,7 +19,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
 .o_lavagna_root {
     display: grid;
     grid-template-rows: 50px auto 1fr 60px;
-    height: calc(100vh - 46px); // minus Odoo navbar
+    height: calc(100vh - 46px);
     background: white;
     overflow: hidden;
 }
@@ -44,6 +44,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     background: $lav-cream-soft;
     border-bottom: 1px solid $lav-border;
     height: 50px;
+    gap: 12px;
 }
 
 .o_lavagna_header_left {
@@ -51,9 +52,10 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     align-items: center;
     gap: 12px;
     min-width: 0;
+    flex: 1;
 }
 
-.o_lavagna_back_btn, .o_lavagna_refresh_btn {
+.o_lavagna_back_btn, .o_header_btn {
     background: none;
     border: 1px solid $lav-border;
     border-radius: 6px;
@@ -64,6 +66,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     justify-content: center;
     cursor: pointer;
     color: $lav-text-medium;
+    flex-shrink: 0;
     transition: all 0.15s;
 
     &:hover {
@@ -73,47 +76,70 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     }
 }
 
-.o_lavagna_header_title {
+.o_lavagna_breadcrumb {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    font-size: 13px;
     min-width: 0;
 
-    h1 {
-        font-size: 18px;
-        font-weight: 600;
-        color: $lav-text-dark;
-        margin: 0;
+    .o_bc_link {
+        color: $lav-text-medium;
+        cursor: pointer;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 200px;
+
+        &:hover { color: $lav-brown; text-decoration: underline; }
+    }
+
+    .o_bc_sep { color: $lav-text-light; }
+
+    .o_bc_current {
+        color: $lav-brown;
+        font-weight: 600;
+        white-space: nowrap;
     }
 }
 
-.o_lavagna_family_badge {
+.o_lavagna_header_meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.o_family_chip {
     background: $lav-cream;
     color: $lav-brown;
     padding: 3px 10px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
-
     i { margin-right: 4px; }
+}
+
+.o_meta_chip {
+    color: $lav-text-light;
+    font-size: 11px;
+    white-space: nowrap;
+    i { margin-right: 3px; }
 }
 
 .o_lavagna_header_right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
 .o_lavagna_members {
     display: flex;
-    gap: -6px;
 }
 
-.o_lavagna_member_avatar {
+.o_member_avatar {
     width: 30px;
     height: 30px;
     border-radius: 50%;
@@ -124,7 +150,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: default;
+    position: relative;
 
     &:first-child { margin-left: 0; }
 
@@ -132,88 +158,97 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
         width: 100%;
         height: 100%;
         object-fit: cover;
+        position: absolute;
     }
 
-    .o_lavagna_member_initials {
+    .o_member_fallback {
         font-size: 10px;
         font-weight: 700;
         color: $lav-brown;
     }
 }
 
-// ===== TODAY BAR =====
-.o_lavagna_today_bar {
-    background: linear-gradient(90deg, $lav-cream-soft, white);
-    border-bottom: 1px solid $lav-border;
-    padding: 0 20px;
-    min-height: 36px;
+.o_member_more {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: $lav-border;
+    border: 2px solid white;
+    margin-left: -6px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    overflow: hidden;
-    transition: max-height 0.2s ease;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: $lav-text-medium;
+}
+
+// ===== TODAY BAR =====
+.o_lavagna_today_bar {
+    background: linear-gradient(90deg, $lav-cream 0%, $lav-cream-soft 100%);
+    border-bottom: 1px solid $lav-border;
+    padding: 6px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 36px;
 
     &.o_collapsed {
-        max-height: 36px;
-        .o_today_bar_items { display: none; }
+        .o_today_items { display: none; }
     }
 }
 
-.o_today_bar_header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.o_today_bar_label {
-    font-size: 12px;
+.o_today_badge {
+    background: $lav-brown;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
     font-weight: 700;
-    color: $lav-gold;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    i { margin-right: 4px; }
-}
-
-.o_today_bar_toggle {
-    background: none;
-    border: none;
-    color: $lav-text-light;
+    letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     cursor: pointer;
-    padding: 2px 6px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+
+    &:hover { background: $lav-brown-dark; }
+    i:first-child { color: $lav-gold-light; }
 }
 
-.o_today_bar_items {
+.o_today_items {
     display: flex;
-    gap: 16px;
-    overflow-x: auto;
+    gap: 12px;
     flex: 1;
+    overflow-x: auto;
 }
 
-.o_today_bar_item {
+.o_today_item {
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: $lav-text-dark;
+    background: white;
+    border: 1px solid $lav-border;
+    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    background: white;
-    border: 1px solid $lav-border;
-    border-radius: 6px;
-    cursor: pointer;
-    white-space: nowrap;
-    font-size: 12px;
     transition: all 0.15s;
 
     &:hover {
-        border-color: $lav-gold;
+        border-color: $lav-brown;
         background: $lav-cream-soft;
     }
 
-    i { color: $lav-gold; }
+    i { color: $lav-brown; font-size: 12px; }
 }
 
 .o_today_item_title {
     font-weight: 500;
-    color: $lav-text-dark;
 }
 
 .o_today_item_sub {
@@ -224,64 +259,69 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     text-overflow: ellipsis;
 }
 
-.o_today_bar_empty {
-    color: $lav-text-light;
-    font-size: 12px;
+.o_today_empty {
+    color: $lav-text-medium;
+    font-size: 13px;
     font-style: italic;
 }
 
-// ===== BODY (3-column layout) =====
+// ===== BODY (3-column: KPI | Kanban | Panels) =====
 .o_lavagna_body {
     display: grid;
-    grid-template-columns: 80px 1fr 340px;
+    grid-template-columns: 110px 1fr 380px;
     overflow: hidden;
 }
 
-// ===== KPI RAIL (80px left) =====
+// ===== KPI RAIL (110px) =====
 .o_lavagna_kpi_rail {
     background: $lav-cream-soft;
     border-right: 1px solid $lav-border;
-    padding: 12px 0;
+    padding: 8px 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
-.o_lavagna_kpi_item {
-    padding: 10px 8px;
-    text-align: center;
+.o_kpi_tile {
+    padding: 10px 6px;
     cursor: pointer;
-    border-left: 3px solid transparent;
+    text-align: center;
+    border-radius: 6px;
+    margin: 0 4px;
     transition: all 0.15s;
 
     &:hover {
-        background: $lav-cream;
-    }
-
-    &.o_active {
         background: white;
-        border-left-color: $lav-brown;
         box-shadow: $lav-shadow-sm;
     }
 
+    &.o_active {
+        background: $lav-brown;
+
+        .o_kpi_value, .o_kpi_name, .o_kpi_icon { color: white !important; }
+    }
+
     .o_kpi_value {
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 700;
-        line-height: 1.1;
+        line-height: 1;
+        margin-bottom: 2px;
     }
 
     .o_kpi_icon {
         font-size: 11px;
         color: $lav-text-light;
-        margin: 2px 0;
+        margin-bottom: 3px;
     }
 
     .o_kpi_name {
         font-size: 9px;
         color: $lav-text-light;
         line-height: 1.2;
-        word-break: break-word;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.02em;
     }
 }
 
@@ -293,6 +333,8 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
 .o_lavagna_kanban {
     height: 100%;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .o_lavagna_kanban_empty {
@@ -305,130 +347,234 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     gap: 12px;
 }
 
-.o_lavagna_kanban_scroll {
+.o_kanban_scroll {
     height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-.o_lavagna_kanban_columns {
-    display: flex;
-    height: 100%;
-    gap: 0;
-}
-
-.o_lavagna_kanban_col {
-    min-width: 220px;
-    max-width: 300px;
-    flex: 1;
+    overflow: auto;
     display: flex;
     flex-direction: column;
+}
+
+// --- HEADER ROW ---
+.o_kanban_header_row {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 2px solid $lav-border;
+    background: $lav-cream-soft;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.o_kanban_corner {
+    width: 160px;
+    min-width: 160px;
+    flex-shrink: 0;
+    border-right: 1px solid $lav-border;
+}
+
+.o_kanban_stage_header {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     border-right: 1px solid $lav-border;
 
-    &.o_folded {
-        min-width: 120px;
-        max-width: 140px;
-        .o_lavagna_col_body { opacity: 0.5; }
+    &:last-child { border-right: none; }
+
+    &.o_stage_folded {
+        min-width: 100px;
+        max-width: 120px;
+        opacity: 0.6;
+    }
+
+    .o_stage_name {
+        font-size: 13px;
+        font-weight: 600;
+        color: $lav-text-dark;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_stage_count {
+        background: $lav-cream;
+        color: $lav-brown;
+        padding: 1px 7px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .o_stage_add_btn {
+        background: none;
+        border: 1px solid $lav-border;
+        border-radius: 4px;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: $lav-text-light;
+        font-size: 11px;
+
+        &:hover {
+            background: $lav-gold;
+            color: white;
+            border-color: $lav-gold;
+        }
     }
 }
 
-.o_lavagna_col_header {
+// --- SWIMLANE ROW (2D) ---
+.o_kanban_swim_row {
     display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    background: $lav-cream-soft;
     border-bottom: 1px solid $lav-border;
-    gap: 6px;
+    min-height: 80px;
+}
+
+.o_kanban_swim_label {
+    width: 160px;
+    min-width: 160px;
     flex-shrink: 0;
+    padding: 10px 12px;
+    border-right: 1px solid $lav-border;
+    border-left: 4px solid $lav-gold;
+    background: $lav-cream-soft;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    cursor: default;
+
+    .o_swim_name {
+        font-size: 12px;
+        font-weight: 700;
+        color: $lav-brown;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .o_swim_count {
+        font-size: 11px;
+        color: $lav-text-light;
+
+        &::before { content: '('; }
+        &::after { content: ')'; }
+    }
 }
 
-.o_col_name {
-    font-size: 13px;
-    font-weight: 600;
-    color: $lav-text-dark;
+// --- KANBAN CELL ---
+.o_kanban_cell {
     flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 180px;
+    padding: 6px 8px;
+    border-right: 1px solid rgba(229, 221, 208, 0.5);
+    min-height: 60px;
+    transition: background 0.15s;
+
+    &:last-child { border-right: none; }
+
+    &.o_stage_folded {
+        min-width: 100px;
+        max-width: 120px;
+        opacity: 0.5;
+    }
+
+    &.o_drag_over {
+        background: rgba(200, 164, 58, 0.12);
+
+        .o_kanban_cell_empty {
+            border-color: $lav-gold;
+            background: rgba(200, 164, 58, 0.15);
+
+            .o_empty_hint {
+                color: $lav-brown;
+                font-weight: 600;
+                opacity: 1;
+            }
+        }
+    }
 }
 
-.o_col_count {
-    background: $lav-cream;
-    color: $lav-brown;
-    padding: 1px 7px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
+// --- LINEAR ROW (no swimlanes) ---
+.o_kanban_linear_row {
+    display: flex;
+    flex: 1;
 }
 
-.o_col_add_btn {
-    background: none;
-    border: 1px solid $lav-border;
-    border-radius: 4px;
-    width: 24px;
-    height: 24px;
+.o_kanban_linear_cell {
+    min-height: 200px;
+    overflow-y: auto;
+}
+
+// --- EMPTY CELL PLACEHOLDER ---
+.o_kanban_cell_empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    color: $lav-text-light;
-    font-size: 11px;
+    min-height: 40px;
+    border: 2px dashed transparent;
+    border-radius: 6px;
+    transition: all 0.15s;
 
-    &:hover {
-        background: $lav-gold;
-        color: white;
-        border-color: $lav-gold;
+    .o_empty_hint {
+        color: $lav-text-light;
+        font-size: 11px;
+        font-style: italic;
+        opacity: 0.5;
     }
 }
 
-.o_lavagna_col_body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    transition: background 0.15s;
+.o_kanban_cell:hover .o_kanban_cell_empty {
+    border-color: $lav-border;
+    background: rgba(245, 230, 200, 0.2);
 
-    &.o_drag_over {
-        background: rgba(200, 164, 58, 0.08);
-    }
+    .o_empty_hint { opacity: 0.8; }
 }
 
-// Quick add
-.o_lavagna_quick_add {
+// --- QUICK ADD ---
+.o_kanban_quick_add {
     display: flex;
     gap: 4px;
-    padding: 4px 8px;
+    margin-bottom: 6px;
 
-    .o_quick_add_input {
+    .o_quick_input {
         flex: 1;
         border: 1px solid $lav-gold;
         border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 13px;
+        padding: 5px 8px;
+        font-size: 12px;
         outline: none;
+        min-width: 0;
 
         &:focus { box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.3); }
     }
 
-    .o_quick_add_cancel {
+    .o_quick_cancel {
         background: none;
         border: none;
         color: $lav-text-light;
         cursor: pointer;
+        padding: 0 4px;
     }
 }
 
-// Swimlane
-.o_lavagna_swimlane_section {
-    margin-bottom: 8px;
-}
+// --- FOLDED STAGES TOGGLE ---
+.o_kanban_folded_toggle {
+    padding: 10px 20px;
+    font-size: 12px;
+    color: $lav-text-medium;
+    cursor: pointer;
+    border-top: 1px solid $lav-border;
+    background: $lav-cream-soft;
 
-.o_swimlane_label {
-    font-size: 10px;
-    font-weight: 700;
-    color: $lav-gold;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 4px 0 2px;
+    &:hover { color: $lav-brown; background: $lav-cream; }
+
+    i { margin-right: 6px; }
 }
 
 // ===== TASK CARD (post-it) =====
@@ -467,6 +613,11 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
         opacity: 0.4;
         transform: rotate(2deg);
     }
+
+    &[draggable="true"] {
+        cursor: grab;
+        &:active { cursor: grabbing; }
+    }
 }
 
 .o_task_card_top {
@@ -478,7 +629,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
 }
 
 .o_task_card_name {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: $lav-text-dark;
     line-height: 1.3;
@@ -491,7 +642,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
 }
 
 .o_task_card_initials {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: $lav-brown;
     background: $lav-cream;
@@ -508,29 +659,28 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
 }
 
 .o_task_meta_item {
-    font-size: 11px;
+    font-size: 10px;
     color: $lav-text-light;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
     cursor: pointer;
 
     &:hover { color: $lav-brown; }
-
     i { font-size: 10px; }
 }
 
 .o_task_tag_chip {
-    font-size: 10px;
+    font-size: 9px;
     background: $lav-cream;
     color: $lav-brown;
-    padding: 1px 7px;
+    padding: 1px 6px;
     border-radius: 8px;
 }
 
 .o_task_card_bottom {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
 }
 
@@ -539,18 +689,13 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     color: white;
     font-size: 9px;
     font-weight: 700;
-    padding: 0 5px;
+    padding: 0 4px;
     border-radius: 8px;
     margin-left: 2px;
 }
 
-.o_task_deadline {
-    font-size: 10px;
-}
-
-.o_task_priority i {
-    color: $lav-gold;
-}
+.o_task_deadline { font-size: 10px; }
+.o_task_priority i { color: $lav-gold; }
 
 @keyframes pulseUnread {
     0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.3); }
@@ -616,17 +761,8 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     margin-bottom: 2px;
 }
 
-.o_mail_author {
-    font-size: 12px;
-    font-weight: 600;
-    color: $lav-text-dark;
-}
-
-.o_mail_date {
-    font-size: 10px;
-    color: $lav-text-light;
-}
-
+.o_mail_author { font-size: 12px; font-weight: 600; color: $lav-text-dark; }
+.o_mail_date { font-size: 10px; color: $lav-text-light; }
 .o_mail_subject {
     font-size: 12px;
     color: $lav-text-medium;
@@ -666,10 +802,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     border-radius: 6px;
 }
 
-.o_todo_deadline {
-    font-size: 10px;
-    color: $lav-text-light;
-}
+.o_todo_deadline { font-size: 10px; color: $lav-text-light; }
 
 // Activity panel
 .o_activity_item {
@@ -681,18 +814,8 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     &:hover { background: rgba(245, 230, 200, 0.3); }
 }
 
-.o_activity_author {
-    font-weight: 600;
-    color: $lav-text-dark;
-    font-size: 11px;
-}
-
-.o_activity_date {
-    font-size: 10px;
-    color: $lav-text-light;
-    margin-left: 6px;
-}
-
+.o_activity_author { font-weight: 600; color: $lav-text-dark; font-size: 11px; }
+.o_activity_date { font-size: 10px; color: $lav-text-light; margin-left: 6px; }
 .o_activity_body {
     font-size: 11px;
     color: $lav-text-medium;
@@ -705,16 +828,10 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     padding: 8px 0;
     border-bottom: 1px solid rgba(229, 221, 208, 0.3);
     cursor: pointer;
-
     &:hover { background: rgba(245, 230, 200, 0.3); }
 }
 
-.o_cal_name {
-    font-size: 13px;
-    font-weight: 600;
-    color: $lav-text-dark;
-}
-
+.o_cal_name { font-size: 13px; font-weight: 600; color: $lav-text-dark; }
 .o_cal_meta {
     font-size: 11px;
     color: $lav-text-light;
@@ -722,25 +839,20 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     i { margin-right: 3px; }
 }
 
-.o_cal_location {
-    margin-left: 8px;
-}
+.o_cal_location { margin-left: 8px; }
 
 // ===== DRAWER =====
 .o_lavagna_drawer_backdrop {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.25);
     z-index: 1040;
 }
 
 .o_lavagna_drawer {
     position: fixed;
-    top: 0;
-    right: 0;
+    top: 0; right: 0;
     width: 480px;
     height: 100vh;
     background: white;
@@ -787,27 +899,20 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     white-space: nowrap;
 }
 
-.o_drawer_actions {
-    display: flex;
-    gap: 6px;
-}
+.o_drawer_actions { display: flex; gap: 6px; }
 
 .o_drawer_btn {
     background: none;
     border: 1px solid $lav-border;
     border-radius: 6px;
-    width: 32px;
-    height: 32px;
+    width: 32px; height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: $lav-text-medium;
 
-    &:hover {
-        background: $lav-cream;
-        color: $lav-brown;
-    }
+    &:hover { background: $lav-cream; color: $lav-brown; }
 }
 
 .o_drawer_tabs {
@@ -831,10 +936,7 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
             border-bottom-color: $lav-brown;
             font-weight: 600;
         }
-
-        &:hover:not(.o_active) {
-            background: $lav-cream-soft;
-        }
+        &:hover:not(.o_active) { background: $lav-cream-soft; }
     }
 }
 
@@ -865,18 +967,12 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
         letter-spacing: 0.04em;
         margin-bottom: 4px;
     }
-
-    span, div {
-        font-size: 14px;
-        color: $lav-text-dark;
-    }
 }
 
 .o_drawer_link {
     color: $lav-brown !important;
     cursor: pointer;
     text-decoration: underline;
-
     &:hover { color: $lav-gold !important; }
 }
 
@@ -889,7 +985,6 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
 .o_drawer_message {
     padding: 10px 0;
     border-bottom: 1px solid $lav-border;
-
     &:last-child { border-bottom: none; }
 }
 
@@ -897,15 +992,10 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     display: flex;
     justify-content: space-between;
     margin-bottom: 4px;
-
     strong { font-size: 13px; color: $lav-text-dark; }
 }
 
-.o_msg_date {
-    font-size: 11px;
-    color: $lav-text-light;
-}
-
+.o_msg_date { font-size: 11px; color: $lav-text-light; }
 .o_msg_subject {
     font-size: 12px;
     color: $lav-brown;

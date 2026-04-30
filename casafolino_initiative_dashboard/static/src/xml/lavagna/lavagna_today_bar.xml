@@ -2,20 +2,18 @@
 <templates xml:space="preserve">
     <t t-name="casafolino_initiative_dashboard.LavagnaTodayBar">
         <div class="o_lavagna_today_bar" t-att-class="{ 'o_collapsed': props.collapsed }">
-            <div class="o_today_bar_header">
-                <span class="o_today_bar_label">
-                    <i class="fa fa-bolt"/> Oggi
-                </span>
-                <button class="o_today_bar_toggle" t-on-click="props.onToggle">
-                    <i t-att-class="'fa ' + (props.collapsed ? 'fa-chevron-down' : 'fa-chevron-up')"/>
-                </button>
+            <div class="o_today_badge" t-on-click="props.onToggle">
+                <i class="fa fa-bolt"/>
+                OGGI
+                <i t-att-class="'fa ' + (props.collapsed ? 'fa-chevron-down' : 'fa-chevron-up')"
+                   style="margin-left:4px;font-size:10px"/>
             </div>
-            <div class="o_today_bar_items" t-if="!props.collapsed">
-                <div t-if="!props.items || !props.items.length" class="o_today_bar_empty">
+            <div class="o_today_items" t-if="!props.collapsed">
+                <div t-if="!props.items || !props.items.length" class="o_today_empty">
                     Nessuna azione urgente
                 </div>
                 <div t-foreach="props.items || []" t-as="item" t-key="item_index"
-                     class="o_today_bar_item" t-on-click="() => this.onItemClick(item)">
+                     class="o_today_item" t-on-click="() => this.onItemClick(item)">
                     <i t-att-class="'fa ' + (item.icon || 'fa-circle')"/>
                     <span class="o_today_item_title" t-esc="item.title"/>
                     <span class="o_today_item_sub" t-if="item.subtitle" t-esc="item.subtitle"/>
