@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.1.4.0',
-    'summary': 'Lavagna cockpit OWL + wizard scenari multipli per iniziative CasaFolino',
+    'version': '18.0.2.0.0',
+    'summary': 'Lavagna cockpit OWL — ogni iniziativa è una Lavagna, wizard unico, UX unificata',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [
