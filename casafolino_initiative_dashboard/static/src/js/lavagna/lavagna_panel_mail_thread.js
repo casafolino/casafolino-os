@@ -4,6 +4,7 @@
  */
 import { Component, useEnv } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 export class LavagnaPanelMailThread extends Component {
     static template = "casafolino_initiative_dashboard.LavagnaPanelMailThread";
@@ -47,9 +48,6 @@ export class LavagnaPanelMailThread extends Component {
             } catch {}
         }
 
-        const { ComposeWizardDialog } = await import(
-            "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
-        );
         this.dialogService.add(ComposeWizardDialog, {
             partnerEmail: partnerEmail,
             defaultSubject: '',

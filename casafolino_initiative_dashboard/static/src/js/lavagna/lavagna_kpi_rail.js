@@ -2,6 +2,7 @@
 import { Component, useEnv } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { rpc } from "@web/core/network/rpc";
+import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 const SHORT_NAMES = {
     'Task in Scouting': 'Scouting',
@@ -179,9 +180,6 @@ export class LavagnaKpiRail extends Component {
             } catch {}
         }
 
-        const { ComposeWizardDialog } = await import(
-            "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
-        );
         this.dialogService.add(ComposeWizardDialog, {
             partnerEmail: partnerEmail,
             defaultSubject: 'Re: ' + initName,

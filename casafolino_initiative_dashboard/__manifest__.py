@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.4.3.0',
+    'version': '18.0.4.3.1',
     'summary': 'Lavagna cockpit OWL — pannello Mail destra + composer F8 popup',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
