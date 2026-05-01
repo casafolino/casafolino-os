@@ -46,6 +46,8 @@
                         <LavagnaPanelCalendar
                             t-if="isPanelActive('calendar')"
                             events="state.data.panels.calendar"/>
+                        <LavagnaPanelMailThread
+                            mails="state.data.partner_mails || []"/>
                     </div>
                 </div>
 

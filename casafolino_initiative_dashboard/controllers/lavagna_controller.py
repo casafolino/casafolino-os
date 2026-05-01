@@ -26,6 +26,7 @@ class LavagnaController(http.Controller):
             'counters': self._get_counters(initiative),
             'internal_messages': self._get_internal_messages(initiative),
             'standalone_todos': self._get_standalone_todos(initiative),
+            'partner_mails': self._get_partner_mails(initiative),
         }
 
     def _get_initiative_header(self, init):
@@ -360,6 +361,36 @@ class LavagnaController(http.Controller):
             'date_end': date_end,
             'today': datetime.now().date().isoformat(),
         }
+
+    def _get_partner_mails(self, init):
+        """Mail thread with partner via casafolino_mail.message."""
+        if not init.partner_id:
+            return []
+        if 'casafolino.mail.message' not in request.env:
+            return []
+        try:
+            msgs = request.env['casafolino.mail.message'].search([
+                ('partner_id', '=', init.partner_id.id),
+            ], limit=50, order='email_date desc')
+            result = []
+            for m in msgs:
+                body_plain = ''
+                if hasattr(m, 'body_plain') and m.body_plain:
+                    body_plain = m.body_plain[:100]
+                elif hasattr(m, 'body_preview') and m.body_preview:
+                    body_plain = m.body_preview[:100]
+                result.append({
+                    'id': m.id,
+                    'subject': m.subject or '(senza oggetto)',
+                    'body_snippet': body_plain,
+                    'direction': m.direction if hasattr(m, 'direction') else 'in',
+                    'author_name': m.sender_name if hasattr(m, 'sender_name') else '',
+                    'date': m.email_date.isoformat() if hasattr(m, 'email_date') and m.email_date else None,
+                })
+            return result
+        except Exception as e:
+            _logger.warning("Partner mails error: %s", e)
+            return []
 
     def _get_counters(self, init):
         """Counter data for left KPI rail action buttons."""

@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.4.2.3',
-    'summary': 'Lavagna cockpit OWL — composer mail F8 integrato, scrivania virtuale completa',
+    'version': '18.0.4.3.0',
+    'summary': 'Lavagna cockpit OWL — pannello Mail destra + composer F8 popup',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [
@@ -47,6 +47,7 @@
             'casafolino_initiative_dashboard/static/src/js/lavagna/lavagna_panel_todo.js',
             'casafolino_initiative_dashboard/static/src/js/lavagna/lavagna_panel_activity.js',
             'casafolino_initiative_dashboard/static/src/js/lavagna/lavagna_panel_calendar.js',
+            'casafolino_initiative_dashboard/static/src/js/lavagna/lavagna_panel_mail_thread.js',
             'casafolino_initiative_dashboard/static/src/js/lavagna/lavagna_drawer_task.js',
             'casafolino_initiative_dashboard/static/src/js/lavagna/lavagna_timeline.js',
             'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_main.xml',
@@ -59,6 +60,7 @@
             'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_panel_todo.xml',
             'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_panel_activity.xml',
             'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_panel_calendar.xml',
+            'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_panel_mail_thread.xml',
             'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_drawer_task.xml',
             'casafolino_initiative_dashboard/static/src/xml/lavagna/lavagna_timeline.xml',
         ],

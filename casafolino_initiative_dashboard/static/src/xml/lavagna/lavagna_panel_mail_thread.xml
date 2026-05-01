@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_initiative_dashboard.LavagnaPanelMailThread">
+        <div class="o_lavagna_panel o_panel_mail_thread">
+            <div class="o_panel_header">
+                <i class="fa fa-envelope-o"/> Mail
+                <button class="o_panel_add_btn" t-on-click="() => this.onCompose()"
+                        title="Scrivi nuova mail">
+                    <i class="fa fa-plus"/>
+                </button>
+            </div>
+            <div class="o_panel_body">
+                <!-- No partner -->
+                <div t-if="!hasPartner" class="o_panel_empty">
+                    Nessun cliente assegnato all'iniziativa
+                </div>
+                <!-- Has partner, no mails -->
+                <div t-elif="!mails.length" class="o_panel_empty">
+                    Nessuna mail con <t t-esc="partnerName"/>
+                </div>
+                <!-- Mail list -->
+                <div t-foreach="mails" t-as="mail" t-key="mail.id"
+                     class="o_mail_thread_item"
+                     t-on-click="() => this.onMailClick(mail)">
+                    <div class="o_mail_thread_indicator"
+                         t-att-class="mail.direction === 'in' ? 'o_mail_in' : 'o_mail_out'">
+                        <i t-att-class="mail.direction === 'in' ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"/>
+                    </div>
+                    <div class="o_mail_thread_content">
+                        <div class="o_mail_thread_header">
+                            <span class="o_mail_thread_subject" t-esc="mail.subject || '(senza oggetto)'"/>
+                            <span class="o_mail_thread_date" t-esc="formatDate(mail.date)"/>
+                        </div>
+                        <div class="o_mail_thread_snippet" t-esc="mail.body_snippet"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

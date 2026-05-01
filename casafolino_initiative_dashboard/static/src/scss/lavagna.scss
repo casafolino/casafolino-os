@@ -1765,3 +1765,50 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     &:hover { background: $lav-brown-dark; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
+
+// ===== F2.6.4: MAIL THREAD PANEL =====
+
+.o_panel_mail_thread .o_panel_body { max-height: 35vh; }
+
+.o_mail_thread_item {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.4);
+    cursor: pointer;
+    transition: background 0.1s;
+
+    &:hover { background: rgba(245, 230, 200, 0.3); }
+    &:last-child { border-bottom: none; }
+}
+
+.o_mail_thread_indicator {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    margin-top: 2px;
+
+    &.o_mail_in { background: #e8f5e9; color: #27ae60; }
+    &.o_mail_out { background: #e3f2fd; color: #2980b9; }
+}
+
+.o_mail_thread_content { flex: 1; min-width: 0; }
+
+.o_mail_thread_header { display: flex; justify-content: space-between; gap: 8px; }
+
+.o_mail_thread_subject {
+    font-size: 12px; font-weight: 600; color: $lav-text-dark;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+}
+
+.o_mail_thread_date { font-size: 10px; color: $lav-text-light; white-space: nowrap; }
+
+.o_mail_thread_snippet {
+    font-size: 11px; color: $lav-text-medium; margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

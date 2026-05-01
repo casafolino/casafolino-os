@@ -12,6 +12,7 @@ import { LavagnaPanelMail } from "./lavagna_panel_mail";
 import { LavagnaPanelTodo } from "./lavagna_panel_todo";
 import { LavagnaPanelActivity } from "./lavagna_panel_activity";
 import { LavagnaPanelCalendar } from "./lavagna_panel_calendar";
+import { LavagnaPanelMailThread } from "./lavagna_panel_mail_thread";
 import { LavagnaDrawerTask } from "./lavagna_drawer_task";
 import { LavagnaTimeline } from "./lavagna_timeline";
 
@@ -20,7 +21,7 @@ export class LavagnaMain extends Component {
     static components = {
         LavagnaHeader, LavagnaTodayBar, LavagnaKpiRail, LavagnaKanban,
         LavagnaPanelMail, LavagnaPanelTodo, LavagnaPanelActivity,
-        LavagnaPanelCalendar, LavagnaDrawerTask, LavagnaTimeline,
+        LavagnaPanelCalendar, LavagnaPanelMailThread, LavagnaDrawerTask, LavagnaTimeline,
     };
     static props = ["*"];
 

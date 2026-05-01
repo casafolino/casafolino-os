@@ -28,6 +28,8 @@ export class LavagnaKpiRail extends Component {
     setup() {
         this.env = useEnv();
         this.actionService = useService("action");
+        this.dialogService = useService("dialog");
+        this.notificationService = useService("notification");
     }
 
     get counters() {
@@ -168,7 +170,6 @@ export class LavagnaKpiRail extends Component {
     }
 
     async _openMail(initName) {
-        // Create pre-filled draft in casafolino_mail, then open mail app
         const partnerId = this.initiative.partner_id || false;
         let partnerEmail = '';
         if (partnerId) {
@@ -178,17 +179,16 @@ export class LavagnaKpiRail extends Component {
             } catch {}
         }
 
-        try {
-            await rpc('/cf/mail/v3/compose/prepare', {
-                mode: 'new',
-                prefilled_body: '',
-            });
-            // Draft created — now update it with partner email + subject
-            // (compose/prepare doesn't accept to/subject for new mode,
-            //  so we navigate to mail app where user can compose)
-        } catch {}
-
-        // Open CasaFolino Mail app (casafolino_mail.action_mail_v3_client)
-        this.actionService.doAction('casafolino_mail.action_mail_v3_client');
+        const { ComposeWizardDialog } = await import(
+            "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
+        );
+        this.dialogService.add(ComposeWizardDialog, {
+            partnerEmail: partnerEmail,
+            defaultSubject: 'Re: ' + initName,
+            onSent: () => {
+                this.notificationService.add('Mail inviata', { type: 'success' });
+                this.env.actions.refreshData();
+            },
+        });
     }
 }
