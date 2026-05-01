@@ -1605,22 +1605,25 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     &:hover { background: $lav-gold; color: white; border-color: $lav-gold; }
 }
 
-// ===== F2.6: KPI RAIL ACTION COUNTERS =====
+// ===== F2.6.1: KPI ACTIONABLE (click opens modal) =====
 
-.o_kpi_divider {
-    height: 1px;
-    background: $lav-border;
-    margin: 6px 8px;
-}
-
-.o_kpi_action {
+.o_kpi_actionable {
     cursor: pointer;
+    position: relative;
 
-    &:hover {
-        background: white;
-        box-shadow: 0 1px 3px rgba(107, 74, 30, 0.08);
-        transform: translateX(2px);
+    &::after {
+        content: '\f08e';
+        font-family: FontAwesome;
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        font-size: 8px;
+        color: $lav-text-light;
+        opacity: 0;
+        transition: opacity 0.15s;
     }
+
+    &:hover::after { opacity: 0.6; }
 }
 
 // ===== F3.1: NOTES EDITOR (contenteditable) =====

@@ -12,6 +12,14 @@ const SHORT_NAMES = {
     'Mail Nuove': 'Mail',
 };
 
+// KPI names that map to counter actions (click opens modal instead of filtering)
+const ACTION_KPI_MAP = {
+    'In Campionatura': 'camp',
+    'Appuntamenti': 'appunt',
+    'Lead CRM': 'lead',
+    'Mail Nuove': 'mail',
+};
+
 export class LavagnaKpiRail extends Component {
     static template = "casafolino_initiative_dashboard.LavagnaKpiRail";
     static props = ["*"];
@@ -19,23 +27,8 @@ export class LavagnaKpiRail extends Component {
     setup() {
         this.env = useEnv();
         this.actionService = useService("action");
-        this.orm = useService("orm");
     }
 
-    onKpiClick(kpi) {
-        this.env.actions.filterByKpi(kpi);
-    }
-
-    isActive(kpi) {
-        const filter = this.env.lavagnaState.kpiFilter;
-        return filter && filter.id === kpi.id;
-    }
-
-    getDisplayName(kpi) {
-        return SHORT_NAMES[kpi.name] || kpi.name;
-    }
-
-    // Counter actions
     get counters() {
         return this.props.counters || {};
     }
@@ -44,33 +37,87 @@ export class LavagnaKpiRail extends Component {
         return this.env.lavagnaState.data ? this.env.lavagnaState.data.initiative : {};
     }
 
-    onCampClick() {
+    getDisplayName(kpi) {
+        return SHORT_NAMES[kpi.name] || kpi.name;
+    }
+
+    isActive(kpi) {
+        const filter = this.env.lavagnaState.kpiFilter;
+        return filter && filter.id === kpi.id;
+    }
+
+    isActionable(kpi) {
+        return kpi.name in ACTION_KPI_MAP;
+    }
+
+    getCounterValue(kpi) {
+        // For actionable KPIs, show counter from backend counters if available
+        const action = ACTION_KPI_MAP[kpi.name];
+        if (action) {
+            const c = this.counters;
+            if (action === 'camp') return (c.samples || {}).total || kpi.value;
+            if (action === 'appunt') return (c.appointments || {}).total || kpi.value;
+            if (action === 'lead') return (c.leads || {}).total || kpi.value;
+            if (action === 'mail') return (c.mail || {}).total || kpi.value;
+        }
+        return kpi.value;
+    }
+
+    onKpiClick(kpi) {
+        const action = ACTION_KPI_MAP[kpi.name];
+        if (action) {
+            this._doCounterAction(action);
+        } else {
+            this.env.actions.filterByKpi(kpi);
+        }
+    }
+
+    _doCounterAction(action) {
+        const partnerId = this.initiative.partner_id || false;
+        const initId = this.env.initiativeId;
+        const initName = this.initiative.name || '';
+
+        switch (action) {
+            case 'camp':
+                this._openCamp(initId, partnerId);
+                break;
+            case 'appunt':
+                this._openAppunt(initId, partnerId, initName);
+                break;
+            case 'lead':
+                this._openLead(initId);
+                break;
+            case 'mail':
+                this._openMail(initName);
+                break;
+        }
+    }
+
+    _openCamp(initId, partnerId) {
         const c = this.counters.samples || {};
         if (c.total > 0) {
-            // Open list of sample requests for this initiative
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 name: 'Campionature',
                 res_model: 'cf.sample.request',
                 view_mode: 'list,form',
-                domain: [['initiative_id', '=', this.env.initiativeId]],
+                domain: [['initiative_id', '=', initId]],
                 target: 'current',
             });
         } else {
+            const ctx = { default_initiative_id: initId };
+            if (partnerId) ctx.default_partner_id = partnerId;
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'cf.sample.request',
                 view_mode: 'form',
                 target: 'new',
-                context: {
-                    default_initiative_id: this.env.initiativeId,
-                    default_partner_id: this.initiative.partner_id || false,
-                },
+                context: ctx,
             });
         }
     }
 
-    onAppuntClick() {
+    _openAppunt(initId, partnerId, initName) {
         const c = this.counters.appointments || {};
         if (c.total > 0) {
             this.actionService.doAction({
@@ -78,24 +125,26 @@ export class LavagnaKpiRail extends Component {
                 name: 'Appuntamenti',
                 res_model: 'calendar.event',
                 view_mode: 'list,form',
-                domain: [['cf_initiative_ids', 'in', [this.env.initiativeId]]],
+                domain: [['cf_initiative_ids', 'in', [initId]]],
                 target: 'current',
             });
         } else {
+            const ctx = {
+                default_cf_initiative_ids: [[6, 0, [initId]]],
+                default_name: 'Iniziativa: ' + initName,
+            };
+            if (partnerId) ctx.default_partner_ids = [partnerId];
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'calendar.event',
                 view_mode: 'form',
                 target: 'new',
-                context: {
-                    default_cf_initiative_ids: [[6, 0, [this.env.initiativeId]]],
-                    default_name: 'Iniziativa: ' + (this.initiative.name || ''),
-                },
+                context: ctx,
             });
         }
     }
 
-    async onLeadClick() {
+    _openLead(initId) {
         const c = this.counters.leads || {};
         if (c.total > 0) {
             this.actionService.doAction({
@@ -103,33 +152,28 @@ export class LavagnaKpiRail extends Component {
                 name: 'Lead',
                 res_model: 'crm.lead',
                 view_mode: 'list,form',
-                domain: [['cf_initiative_id', '=', this.env.initiativeId]],
+                domain: [['cf_initiative_id', '=', initId]],
                 target: 'current',
             });
         } else {
-            // Quick create lead via ORM
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'crm.lead',
                 view_mode: 'form',
                 target: 'new',
-                context: {
-                    default_cf_initiative_id: this.env.initiativeId,
-                    default_partner_name: this.initiative.partner_name || '',
-                },
+                context: { default_cf_initiative_id: initId },
             });
         }
     }
 
-    onMailClick() {
-        // Open mail compose as placeholder
+    _openMail(initName) {
         this.actionService.doAction({
             type: 'ir.actions.act_window',
             res_model: 'mail.compose.message',
             view_mode: 'form',
             target: 'new',
             context: {
-                default_subject: 'Re: ' + (this.initiative.name || ''),
+                default_subject: 'Re: ' + initName,
             },
         });
     }
