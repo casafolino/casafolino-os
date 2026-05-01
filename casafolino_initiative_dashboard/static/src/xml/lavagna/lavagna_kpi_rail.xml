@@ -2,6 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="casafolino_initiative_dashboard.LavagnaKpiRail">
         <div class="o_lavagna_kpi_rail">
+            <!-- KPI filter tiles -->
             <div t-foreach="props.kpis || []" t-as="kpi" t-key="kpi.id"
                  class="o_kpi_tile"
                  t-att-class="{ 'o_active': isActive(kpi) }"
@@ -14,6 +15,46 @@
                     <i t-att-class="'fa ' + (kpi.icon || 'fa-bar-chart')"/>
                 </div>
                 <div class="o_kpi_name" t-esc="getDisplayName(kpi)"/>
+            </div>
+
+            <!-- Divider -->
+            <div class="o_kpi_divider"/>
+
+            <!-- Action counters -->
+            <div class="o_kpi_tile o_kpi_action" t-on-click="() => this.onCampClick()"
+                 title="Campionature">
+                <div class="o_kpi_value" style="color:#f39c12">
+                    <t t-esc="(counters.samples || {}).total || 0"/>
+                </div>
+                <div class="o_kpi_icon"><i class="fa fa-cube"/></div>
+                <div class="o_kpi_name">Camp.</div>
+            </div>
+
+            <div class="o_kpi_tile o_kpi_action" t-on-click="() => this.onAppuntClick()"
+                 title="Appuntamenti">
+                <div class="o_kpi_value" style="color:#9b59b6">
+                    <t t-esc="(counters.appointments || {}).total || 0"/>
+                </div>
+                <div class="o_kpi_icon"><i class="fa fa-calendar"/></div>
+                <div class="o_kpi_name">Appunt.</div>
+            </div>
+
+            <div class="o_kpi_tile o_kpi_action" t-on-click="() => this.onLeadClick()"
+                 title="Lead CRM">
+                <div class="o_kpi_value" style="color:#e74c3c">
+                    <t t-esc="(counters.leads || {}).total || 0"/>
+                </div>
+                <div class="o_kpi_icon"><i class="fa fa-rocket"/></div>
+                <div class="o_kpi_name">Lead</div>
+            </div>
+
+            <div class="o_kpi_tile o_kpi_action" t-on-click="() => this.onMailClick()"
+                 title="Mail">
+                <div class="o_kpi_value" style="color:#993556">
+                    <t t-esc="(counters.mail || {}).total || 0"/>
+                </div>
+                <div class="o_kpi_icon"><i class="fa fa-envelope"/></div>
+                <div class="o_kpi_name">Mail</div>
             </div>
         </div>
     </t>

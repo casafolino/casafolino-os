@@ -4,6 +4,9 @@
         <div class="o_lavagna_panel o_panel_activity">
             <div class="o_panel_header">
                 <i class="fa fa-clock-o"/> Attivit&#224;
+                <button class="o_panel_add_btn" t-on-click="() => this.addActivity()" title="Nuova attivit&#224;">
+                    <i class="fa fa-plus"/>
+                </button>
             </div>
             <div class="o_panel_body">
                 <div t-if="!props.items || !props.items.length" class="o_panel_empty">

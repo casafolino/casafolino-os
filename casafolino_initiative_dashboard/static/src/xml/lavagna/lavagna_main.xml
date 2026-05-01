@@ -25,7 +25,9 @@
                     onToggle="() => this.toggleTodayBar()"/>
 
                 <div class="o_lavagna_body">
-                    <LavagnaKpiRail kpis="state.data.kpi"/>
+                    <LavagnaKpiRail
+                        kpis="state.data.kpi"
+                        counters="state.data.counters || {}"/>
 
                     <div class="o_lavagna_center">
                         <LavagnaKanban data="state.data.kanban"/>
@@ -34,10 +36,10 @@
                     <div class="o_lavagna_right">
                         <LavagnaPanelMail
                             t-if="isPanelActive('mail')"
-                            messages="state.data.panels.mail"/>
+                            messages="state.data.internal_messages || []"/>
                         <LavagnaPanelTodo
                             t-if="isPanelActive('todo')"
-                            todos="state.data.panels.todo"/>
+                            todos="state.data.standalone_todos || []"/>
                         <LavagnaPanelActivity
                             t-if="isPanelActive('activity')"
                             items="state.data.panels.activity"/>

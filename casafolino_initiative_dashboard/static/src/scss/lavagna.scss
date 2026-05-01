@@ -1419,3 +1419,206 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
     color: $lav-text-light;
     white-space: nowrap;
 }
+
+// ===== F2.6: PANEL COMUNICAZIONI =====
+
+.o_panel_comm {
+    display: flex;
+    flex-direction: column;
+
+    .o_panel_body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 40vh;
+    }
+}
+
+.o_comm_item {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.4);
+
+    &:last-child { border-bottom: none; }
+    &.o_pending { opacity: 0.6; }
+    &.o_error { border-left: 3px solid #C0392B; }
+}
+
+.o_comm_avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: $lav-cream;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+    .o_comm_initials { font-size: 11px; font-weight: 700; color: $lav-brown; }
+}
+
+.o_comm_content { flex: 1; min-width: 0; }
+
+.o_comm_header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.o_comm_author { font-size: 12px; font-weight: 600; color: $lav-text-dark; }
+.o_comm_date { font-size: 10px; color: $lav-text-light; }
+.o_comm_body { font-size: 12px; color: $lav-text-medium; line-height: 1.4; }
+.o_comm_status { font-size: 10px; color: $lav-text-light; font-style: italic; }
+.o_error_status { color: #C0392B; }
+
+.o_comm_input_area {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-top: 1px solid $lav-border;
+    background: white;
+    flex-shrink: 0;
+}
+
+.o_comm_input {
+    flex: 1;
+    border: 1px solid $lav-border;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    min-width: 0;
+
+    &:focus { border-color: $lav-gold; box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.2); }
+}
+
+.o_comm_send_btn {
+    background: $lav-brown;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+
+    &:hover { background: $lav-brown-dark; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+// ===== F2.6: PANEL TODO STANDALONE =====
+
+.o_panel_badge {
+    float: right;
+    background: $lav-cream;
+    color: $lav-brown;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.o_todo_progress_bar_sm {
+    margin-bottom: 8px;
+    .o_todo_bar { height: 3px; background: $lav-border; border-radius: 2px; }
+    .o_todo_bar_fill { height: 100%; background: $lav-gold; border-radius: 2px; transition: width 0.3s; }
+}
+
+.o_todo_row_panel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 12px;
+
+    &:hover { .o_todo_del_btn { opacity: 1; } }
+    &.o_done .o_todo_text { text-decoration: line-through; color: $lav-text-light; }
+
+    input[type="checkbox"] { width: 15px; height: 15px; accent-color: $lav-brown; cursor: pointer; flex-shrink: 0; }
+
+    .o_todo_text { flex: 1; cursor: text; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: $lav-text-dark; }
+    .o_todo_edit_input { flex: 1; border: 1px solid $lav-gold; border-radius: 4px; padding: 2px 6px; font-size: 12px; outline: none; min-width: 0; }
+    .o_todo_del_btn { background: none; border: none; color: $lav-text-light; opacity: 0; cursor: pointer; font-size: 11px; padding: 2px; &:hover { color: #C0392B; } }
+}
+
+.o_todo_add_link {
+    background: none;
+    border: none;
+    color: $lav-brown;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 12px;
+    display: block;
+    margin-top: 4px;
+}
+
+.o_todo_add_panel { margin-top: 6px; }
+
+.o_todo_add_input {
+    width: 100%;
+    border: 1px solid $lav-gold;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    outline: none;
+    &:focus { box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.2); }
+}
+
+.o_todo_add_btn_sm {
+    background: none;
+    border: 1px dashed $lav-border;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: $lav-text-medium;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    &:hover { border-color: $lav-gold; color: $lav-brown; }
+    i { margin-right: 4px; color: $lav-gold; }
+}
+
+// ===== F2.6: PANEL HEADER ADD BUTTON =====
+
+.o_panel_add_btn {
+    float: right;
+    background: none;
+    border: 1px solid $lav-border;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: $lav-text-light;
+    font-size: 11px;
+
+    &:hover { background: $lav-gold; color: white; border-color: $lav-gold; }
+}
+
+// ===== F2.6: KPI RAIL ACTION COUNTERS =====
+
+.o_kpi_divider {
+    height: 1px;
+    background: $lav-border;
+    margin: 6px 8px;
+}
+
+.o_kpi_action {
+    cursor: pointer;
+
+    &:hover {
+        background: white;
+        box-shadow: 0 1px 3px rgba(107, 74, 30, 0.08);
+        transform: translateX(2px);
+    }
+}

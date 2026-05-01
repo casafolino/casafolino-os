@@ -1,5 +1,6 @@
 /** @odoo-module **/
 import { Component, useEnv } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 
 export class LavagnaPanelActivity extends Component {
     static template = "casafolino_initiative_dashboard.LavagnaPanelActivity";
@@ -7,12 +8,27 @@ export class LavagnaPanelActivity extends Component {
 
     setup() {
         this.env = useEnv();
+        this.actionService = useService("action");
     }
 
     onActivityClick(item) {
         if (item.model === 'project.task' && item.res_id) {
             this.env.actions.openTaskDrawer(item.res_id);
         }
+    }
+
+    addActivity() {
+        this.actionService.doAction({
+            type: 'ir.actions.act_window',
+            res_model: 'mail.activity',
+            view_mode: 'form',
+            target: 'new',
+            context: {
+                default_res_model: 'cf.initiative',
+                default_res_model_id: this.env.initiativeId,
+                default_res_id: this.env.initiativeId,
+            },
+        });
     }
 
     formatDate(isoStr) {

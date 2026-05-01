@@ -1,22 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="casafolino_initiative_dashboard.LavagnaPanelMail">
-        <div class="o_lavagna_panel o_panel_mail">
+        <div class="o_lavagna_panel o_panel_comm">
             <div class="o_panel_header">
-                <i class="fa fa-envelope"/> Comunicazioni
+                <i class="fa fa-comments"/> Comunicazioni
             </div>
-            <div class="o_panel_body">
-                <div t-if="!props.messages || !props.messages.length" class="o_panel_empty">
-                    Nessuna comunicazione
+            <div class="o_panel_body" t-ref="msgList">
+                <div t-if="!messages.length" class="o_panel_empty">
+                    Nessuna comunicazione interna. Scrivi la prima qui sotto.
                 </div>
-                <div t-foreach="props.messages || []" t-as="msg" t-key="msg.id"
-                     class="o_mail_item" t-on-click="() => this.onMailClick(msg)">
-                    <div class="o_mail_item_header">
-                        <span class="o_mail_author" t-esc="msg.author_name"/>
-                        <span class="o_mail_date" t-esc="formatDate(msg.date)"/>
+                <div t-foreach="messages" t-as="msg" t-key="msg.id"
+                     class="o_comm_item" t-att-class="{ 'o_pending': msg._pending, 'o_error': msg._error }">
+                    <div class="o_comm_avatar">
+                        <img t-if="msg.author_avatar" t-att-src="msg.author_avatar"
+                             loading="lazy" t-on-error="(e) => e.target.style.display='none'"/>
+                        <span class="o_comm_initials" t-esc="(msg.author_name || 'S')[0]"/>
                     </div>
-                    <div class="o_mail_subject" t-esc="msg.subject"/>
+                    <div class="o_comm_content">
+                        <div class="o_comm_header">
+                            <span class="o_comm_author" t-esc="msg.author_name"/>
+                            <span class="o_comm_date" t-esc="formatDate(msg.date)"/>
+                        </div>
+                        <div class="o_comm_body" t-esc="stripHtml(msg.body)"/>
+                        <span t-if="msg._pending" class="o_comm_status">in invio...</span>
+                        <span t-if="msg._error" class="o_comm_status o_error_status">errore</span>
+                    </div>
                 </div>
+            </div>
+            <div class="o_comm_input_area">
+                <textarea class="o_comm_input"
+                          placeholder="Scrivi un messaggio... (Cmd+Enter per inviare)"
+                          t-att-value="state.newMessage"
+                          t-on-input="onInputChange"
+                          t-on-keydown="onInputKeydown"
+                          rows="2"/>
+                <button class="o_comm_send_btn" t-on-click="() => this.sendMessage()"
+                        t-att-disabled="state.sending || !state.newMessage.trim()">
+                    <i class="fa fa-paper-plane"/>
+                </button>
             </div>
         </div>
     </t>

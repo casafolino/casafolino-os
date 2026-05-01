@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.4.0.0',
-    'summary': 'Lavagna cockpit OWL — scrivania virtuale azionabile con CRUD task, todo, campioni, lead',
+    'version': '18.0.4.1.0',
+    'summary': 'Lavagna cockpit OWL — scrivania virtuale completa: pannelli + contatori cablati',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [

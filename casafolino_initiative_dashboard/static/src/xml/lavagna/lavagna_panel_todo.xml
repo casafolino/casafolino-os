@@ -4,19 +4,64 @@
         <div class="o_lavagna_panel o_panel_todo">
             <div class="o_panel_header">
                 <i class="fa fa-check-square-o"/> To-Do
+                <span t-if="todos.length" class="o_panel_badge"
+                      t-esc="todoStats.done + '/' + todoStats.total"/>
             </div>
             <div class="o_panel_body">
-                <div t-if="!props.todos || !props.todos.length" class="o_panel_empty">
-                    Nessun task assegnato
+                <!-- Progress bar -->
+                <div t-if="todos.length" class="o_todo_progress_bar_sm">
+                    <div class="o_todo_bar">
+                        <div class="o_todo_bar_fill" t-att-style="'width:' + todoStats.pct + '%'"/>
+                    </div>
                 </div>
-                <div t-foreach="props.todos || []" t-as="todo" t-key="todo.id"
-                     class="o_todo_item"
-                     t-att-class="{ 'o_overdue': isOverdue(todo) }"
-                     t-on-click="() => this.onTodoClick(todo)">
-                    <span class="o_todo_name" t-esc="todo.name"/>
-                    <span class="o_todo_stage" t-if="todo.stage_name" t-esc="todo.stage_name"/>
-                    <span class="o_todo_deadline" t-if="todo.date_deadline"
-                          t-esc="todo.date_deadline"/>
+
+                <!-- Todo list -->
+                <div t-foreach="todos" t-as="todo" t-key="todo.id"
+                     class="o_todo_row_panel"
+                     t-att-class="{ 'o_done': todo.done }"
+                     draggable="true"
+                     t-on-dragstart="(ev) => this.onDragStart(ev, todo)"
+                     t-on-dragover="onDragOver"
+                     t-on-drop="(ev) => this.onDrop(ev, todo)">
+                    <input type="checkbox" t-att-checked="todo.done"
+                           t-on-change="() => this.toggleTodo(todo)"/>
+                    <t t-if="state.editingId === todo.id">
+                        <input type="text" class="o_todo_edit_input"
+                               t-att-value="state.editingName"
+                               t-on-input="onEditInput"
+                               t-on-keydown="(ev) => this.onEditKeydown(ev, todo)"
+                               t-on-blur="() => this.saveEdit(todo)"/>
+                    </t>
+                    <t t-else="">
+                        <span class="o_todo_text" t-on-click="() => this.startEdit(todo)"
+                              t-esc="todo.name"/>
+                    </t>
+                    <button class="o_todo_del_btn" t-on-click="() => this.deleteTodo(todo)">
+                        <i class="fa fa-trash-o"/>
+                    </button>
+                </div>
+
+                <!-- Empty state -->
+                <div t-if="!todos.length and !state.addingTodo" class="o_panel_empty">
+                    Nessuna to-do per questa iniziativa.
+                    <button class="o_todo_add_link" t-on-click="() => { this.state.addingTodo = true; }">
+                        Aggiungi la prima
+                    </button>
+                </div>
+
+                <!-- Add inline -->
+                <div class="o_todo_add_panel">
+                    <t t-if="state.addingTodo">
+                        <input type="text" class="o_todo_add_input"
+                               placeholder="Cosa devi fare..."
+                               t-att-value="state.newTodoName"
+                               t-on-input="onNewInput"
+                               t-on-keydown="onNewKeydown"/>
+                    </t>
+                    <button t-else="" class="o_todo_add_btn_sm"
+                            t-on-click="() => { this.state.addingTodo = true; }">
+                        <i class="fa fa-plus"/> Aggiungi
+                    </button>
                 </div>
             </div>
         </div>
