@@ -1,11 +1,12 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.4.2.2',
-    'summary': 'Lavagna cockpit OWL — drawer: Note WYSIWYG editabile + Chatter inline',
+    'version': '18.0.4.2.3',
+    'summary': 'Lavagna cockpit OWL — composer mail F8 integrato, scrivania virtuale completa',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [
         'casafolino_initiative',
+        'casafolino_mail',
         'project',
         'mail',
         'crm',

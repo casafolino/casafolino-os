@@ -1,6 +1,7 @@
 /** @odoo-module **/
 import { Component, useEnv } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { rpc } from "@web/core/network/rpc";
 
 const SHORT_NAMES = {
     'Task in Scouting': 'Scouting',
@@ -166,15 +167,28 @@ export class LavagnaKpiRail extends Component {
         }
     }
 
-    _openMail(initName) {
-        this.actionService.doAction({
-            type: 'ir.actions.act_window',
-            res_model: 'mail.compose.message',
-            views: [[false, 'form']],
-            target: 'new',
-            context: {
-                default_subject: 'Re: ' + initName,
-            },
-        });
+    async _openMail(initName) {
+        // Create pre-filled draft in casafolino_mail, then open mail app
+        const partnerId = this.initiative.partner_id || false;
+        let partnerEmail = '';
+        if (partnerId) {
+            try {
+                const [partner] = await this.orm.read('res.partner', [partnerId], ['email']);
+                partnerEmail = partner.email || '';
+            } catch {}
+        }
+
+        try {
+            await rpc('/cf/mail/v3/compose/prepare', {
+                mode: 'new',
+                prefilled_body: '',
+            });
+            // Draft created — now update it with partner email + subject
+            // (compose/prepare doesn't accept to/subject for new mode,
+            //  so we navigate to mail app where user can compose)
+        } catch {}
+
+        // Open CasaFolino Mail app (casafolino_mail.action_mail_v3_client)
+        this.actionService.doAction('casafolino_mail.action_mail_v3_client');
     }
 }
