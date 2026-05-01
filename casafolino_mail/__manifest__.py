@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.17.1.0',
+    'version': '18.0.17.1.1',
     'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions + Multi-utente per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -45,6 +45,7 @@
             'casafolino_mail/static/src/js/mail_v3/mail_v3_thread_list.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_reading_pane.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_compose.js',
+            'casafolino_mail/static/src/js/mail_v3/compose_wizard_dialog.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_sidebar_360.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_insight_360_tabbar.js',
             'casafolino_mail/static/src/js/mail_v3/mail_v3_reply_assistant.js',
@@ -60,6 +61,7 @@
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_thread_list.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_reading_pane.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_compose.xml',
+            'casafolino_mail/static/src/xml/mail_v3/compose_wizard_dialog.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_sidebar_360.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_insight_360_tabbar.xml',
             'casafolino_mail/static/src/xml/mail_v3/mail_v3_reply_assistant.xml',

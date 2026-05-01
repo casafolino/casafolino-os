@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_mail.ComposeWizardDialog">
+        <Dialog title="'Nuovo messaggio'" size="'xl'">
+            <div t-if="state.loading" class="text-center p-4">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+            </div>
+            <div t-elif="state.error" class="text-center p-4 text-danger">
+                <i class="fa fa-exclamation-triangle"/>
+                <span t-esc="state.error"/>
+            </div>
+            <ComposeWizard t-else=""
+                           draftId="state.draftId"
+                           prefilled="state.prefilled"
+                           accountId="state.accountId"
+                           mode="'new'"
+                           onSent="() => this.onComposeSent()"
+                           onClose="() => this.onComposeClose()"/>
+        </Dialog>
+    </t>
+</templates>
