@@ -23,6 +23,9 @@ class LavagnaController(http.Controller):
             'today_bar': self._get_today_bar(initiative),
             'panels': self._get_panels_data(initiative),
             'timeline': self._get_timeline_data(initiative),
+            'counters': self._get_counters(initiative),
+            'internal_messages': self._get_internal_messages(initiative),
+            'standalone_todos': self._get_standalone_todos(initiative),
         }
 
     def _get_initiative_header(self, init):
@@ -356,6 +359,127 @@ class LavagnaController(http.Controller):
             'date_start': date_start,
             'date_end': date_end,
             'today': datetime.now().date().isoformat(),
+        }
+
+    def _get_counters(self, init):
+        """Counter data for left KPI rail action buttons."""
+        counters = {}
+
+        # Sample requests
+        if 'cf.sample.request' in request.env:
+            samples = request.env['cf.sample.request'].search([
+                ('initiative_id', '=', init.id),
+            ])
+            active_states = ('sent', 'delivered', 'modifications_requested')
+            counters['samples'] = {
+                'total': len(samples),
+                'active': len(samples.filtered(lambda s: s.state in active_states)),
+                'items': [{
+                    'id': s.id, 'name': s.name, 'state': s.state,
+                    'partner_name': s.partner_id.name if s.partner_id else '',
+                    'iteration': s.iteration,
+                } for s in samples[:10]],
+            }
+
+        # Calendar events (future only)
+        counters['appointments'] = {'total': 0, 'items': []}
+        if 'calendar.event' in request.env:
+            try:
+                events = request.env['calendar.event'].search([
+                    ('cf_initiative_ids', 'in', [init.id]),
+                    ('start', '>=', datetime.now()),
+                ], order='start asc', limit=10)
+                counters['appointments'] = {
+                    'total': len(events),
+                    'items': [{
+                        'id': e.id, 'name': e.name,
+                        'start': e.start.isoformat() if e.start else None,
+                    } for e in events],
+                }
+            except Exception:
+                pass
+
+        # Leads
+        counters['leads'] = {'total': 0, 'items': []}
+        if 'cf_initiative_id' in request.env['crm.lead']._fields:
+            leads = request.env['crm.lead'].search([
+                ('cf_initiative_id', '=', init.id),
+                ('active', '=', True),
+            ], limit=10)
+            counters['leads'] = {
+                'total': len(leads),
+                'items': [{
+                    'id': l.id,
+                    'name': l.name,
+                    'partner_name': l.partner_name or '',
+                    'contact_name': l.contact_name or '',
+                } for l in leads],
+            }
+
+        # Mail count (partner-based)
+        counters['mail'] = {'total': 0}
+        if init.partner_id:
+            try:
+                mail_count = request.env['mail.message'].search_count([
+                    ('partner_ids', 'in', [init.partner_id.id]),
+                    ('message_type', 'in', ['email']),
+                ])
+                counters['mail'] = {'total': mail_count}
+            except Exception:
+                pass
+
+        return counters
+
+    def _get_internal_messages(self, init):
+        """Internal discussion messages on the initiative."""
+        messages = request.env['mail.message'].search([
+            ('model', '=', 'cf.initiative'),
+            ('res_id', '=', init.id),
+            ('message_type', '=', 'comment'),
+        ], order='date asc', limit=50)
+        return [{
+            'id': m.id,
+            'body': m.body or '',
+            'author_id': m.author_id.id if m.author_id else None,
+            'author_name': m.author_id.name if m.author_id else 'Sistema',
+            'author_avatar': f'/web/image/res.partner/{m.author_id.id}/avatar_128' if m.author_id else '',
+            'date': m.date.isoformat() if m.date else None,
+        } for m in messages]
+
+    def _get_standalone_todos(self, init):
+        """Standalone cf.todo items (not linked to a task)."""
+        todos = request.env['cf.todo'].search([
+            ('initiative_id', '=', init.id),
+            ('task_id', '=', False),
+        ], order='sequence asc, create_date asc')
+        return [{
+            'id': t.id,
+            'name': t.name,
+            'done': t.done,
+            'done_date': t.done_date.isoformat() if t.done_date else None,
+            'sequence': t.sequence,
+            'assigned_user_id': t.assigned_user_id.id if t.assigned_user_id else None,
+            'assigned_user_name': t.assigned_user_id.name if t.assigned_user_id else None,
+        } for t in todos]
+
+    @http.route('/casafolino/initiative/internal_message/create',
+                type='json', auth='user', methods=['POST'])
+    def create_internal_message(self, initiative_id, body, **kw):
+        init = request.env['cf.initiative'].browse(initiative_id)
+        if not init.exists():
+            return {'error': 'Initiative not found'}
+        msg = init.message_post(
+            body=body,
+            subtype_xmlid='mail.mt_comment',
+            message_type='comment',
+        )
+        return {
+            'id': msg.id,
+            'body': msg.body,
+            'author_id': msg.author_id.id if msg.author_id else None,
+            'author_name': msg.author_id.name if msg.author_id else 'Sistema',
+            'author_avatar': f'/web/image/res.partner/{msg.author_id.id}/avatar_128' if msg.author_id else '',
+            'date': msg.date.isoformat() if msg.date else None,
         }
 
     @http.route('/casafolino/lavagna/<int:initiative_id>/move_task',

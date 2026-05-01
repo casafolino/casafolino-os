@@ -5,3 +5,4 @@ access_lavagna_template_user,lavagna.template user,model_casafolino_lavagna_temp
 access_lavagna_template_manager,lavagna.template manager,model_casafolino_lavagna_template,project.group_project_manager,1,1,1,1
 access_initiative_dashboard_wizard_user,initiative.dashboard.wizard user,model_cf_initiative_dashboard_wizard,base.group_user,1,1,1,1
 access_cf_todo_user,cf.todo user,model_cf_todo,base.group_user,1,1,1,1
+access_cf_sample_request_user,cf.sample.request user,model_cf_sample_request,base.group_user,1,1,1,1

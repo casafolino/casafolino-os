@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.3.0.0',
-    'summary': 'Lavagna cockpit OWL — cf.todo checklist + drawer ricco 4 tab',
+    'version': '18.0.4.0.0',
+    'summary': 'Lavagna cockpit OWL — scrivania virtuale azionabile con CRUD task, todo, campioni, lead',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [
@@ -9,13 +9,16 @@
         'project',
         'mail',
         'crm',
+        'calendar',
     ],
     'data': [
         'security/ir.model.access.csv',
         'data/cf_initiative_tag_source_data.xml',
         'data/dashboard_kpi_data.xml',
         'data/lavagna_template_data.xml',
+        'data/cf_sample_request_sequence.xml',
         'views/cf_initiative_views.xml',
+        'views/cf_sample_request_views.xml',
         'views/dashboard_kpi_views.xml',
         'views/lavagna_template_views.xml',
         'wizard/cf_initiative_wizard_views.xml',

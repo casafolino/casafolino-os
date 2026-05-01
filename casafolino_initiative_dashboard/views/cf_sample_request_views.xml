@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cf_sample_request_form" model="ir.ui.view">
+        <field name="name">cf.sample.request.form</field>
+        <field name="model">cf.sample.request</field>
+        <field name="arch" type="xml">
+            <form string="Richiesta Campione">
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,sent,delivered,feedback_received,completed"/>
+                    <button name="action_resend_with_modifications"
+                            string="Re-invia con Modifiche"
+                            type="object" class="btn-primary"
+                            invisible="state not in ('feedback_received', 'modifications_requested')"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Dettagli">
+                            <field name="initiative_id"/>
+                            <field name="partner_id"/>
+                            <field name="product_ids" widget="many2many_tags"/>
+                            <field name="iteration"/>
+                            <field name="parent_request_id" invisible="not parent_request_id"/>
+                        </group>
+                        <group string="Spedizione">
+                            <field name="send_date"/>
+                            <field name="shipping_address_id"/>
+                            <field name="tracking_number"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Note">
+                            <group>
+                                <field name="notes_internal" placeholder="Note operative interne..."/>
+                                <field name="notes_buyer_feedback" placeholder="Feedback del buyer..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_sample_request_list" model="ir.ui.view">
+        <field name="name">cf.sample.request.list</field>
+        <field name="model">cf.sample.request</field>
+        <field name="arch" type="xml">
+            <list string="Richieste Campione">
+                <field name="name"/>
+                <field name="initiative_id"/>
+                <field name="partner_id"/>
+                <field name="iteration"/>
+                <field name="send_date"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_cf_sample_request" model="ir.actions.act_window">
+        <field name="name">Richieste Campione</field>
+        <field name="res_model">cf.sample.request</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

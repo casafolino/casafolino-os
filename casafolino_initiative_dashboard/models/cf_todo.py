@@ -8,12 +8,12 @@ class CfTodo(models.Model):
 
     name = fields.Char(required=True)
     task_id = fields.Many2one(
-        'project.task', required=True, ondelete='cascade', index=True,
+        'project.task', ondelete='cascade', index=True,
         string='Task',
     )
     initiative_id = fields.Many2one(
-        'cf.initiative', related='task_id.initiative_id',
-        store=True, index=True, string='Iniziativa',
+        'cf.initiative', index=True, string='Iniziativa',
+        compute='_compute_initiative_id', store=True, readonly=False,
     )
     done = fields.Boolean(default=False)
     done_date = fields.Datetime(
@@ -27,7 +27,17 @@ class CfTodo(models.Model):
     _sql_constraints = [
         ('name_not_empty', "CHECK(length(trim(name)) > 0)",
          'Il testo del todo non può essere vuoto.'),
+        ('must_have_parent', "CHECK(task_id IS NOT NULL OR initiative_id IS NOT NULL)",
+         'Il todo deve avere un task o un\'iniziativa di riferimento.'),
     ]
+
+    @api.depends('task_id', 'task_id.initiative_id')
+    def _compute_initiative_id(self):
+        for rec in self:
+            if rec.task_id and rec.task_id.initiative_id:
+                rec.initiative_id = rec.task_id.initiative_id
+            elif not rec.initiative_id:
+                rec.initiative_id = False
 
     @api.depends('done')
     def _compute_done_date(self):
