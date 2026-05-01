@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.4.2.1',
+    'version': '18.0.4.2.2',
     'summary': 'Lavagna cockpit OWL — drawer: Note WYSIWYG editabile + Chatter inline',
     'category': 'CasaFolino',
     'author': 'CasaFolino',

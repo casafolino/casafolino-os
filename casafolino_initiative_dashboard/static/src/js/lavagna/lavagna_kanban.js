@@ -142,7 +142,7 @@ export class LavagnaKanban extends Component {
             type: "ir.actions.act_window",
             name: "Configura Lavagna",
             res_model: "cf.initiative.dashboard.wizard",
-            view_mode: "form",
+            views: [[false, "form"]],
             target: "new",
             context: {
                 recovery_initiative_id: this.env.initiativeId,

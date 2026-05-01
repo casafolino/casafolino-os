@@ -21,7 +21,7 @@ export class LavagnaPanelActivity extends Component {
         this.actionService.doAction({
             type: 'ir.actions.act_window',
             res_model: 'mail.activity',
-            view_mode: 'form',
+            views: [[false, 'form']],
             target: 'new',
             context: {
                 default_res_model: 'cf.initiative',

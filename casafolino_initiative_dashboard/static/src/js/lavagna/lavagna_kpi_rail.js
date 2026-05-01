@@ -100,7 +100,7 @@ export class LavagnaKpiRail extends Component {
                 type: 'ir.actions.act_window',
                 name: 'Campionature',
                 res_model: 'cf.sample.request',
-                view_mode: 'list,form',
+                views: [[false, 'list'], [false, 'form']],
                 domain: [['initiative_id', '=', initId]],
                 target: 'current',
             });
@@ -110,7 +110,7 @@ export class LavagnaKpiRail extends Component {
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'cf.sample.request',
-                view_mode: 'form',
+                views: [[false, 'form']],
                 target: 'new',
                 context: ctx,
             });
@@ -124,7 +124,7 @@ export class LavagnaKpiRail extends Component {
                 type: 'ir.actions.act_window',
                 name: 'Appuntamenti',
                 res_model: 'calendar.event',
-                view_mode: 'list,form',
+                views: [[false, 'list'], [false, 'form']],
                 domain: [['cf_initiative_ids', 'in', [initId]]],
                 target: 'current',
             });
@@ -137,7 +137,7 @@ export class LavagnaKpiRail extends Component {
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'calendar.event',
-                view_mode: 'form',
+                views: [[false, 'form']],
                 target: 'new',
                 context: ctx,
             });
@@ -151,7 +151,7 @@ export class LavagnaKpiRail extends Component {
                 type: 'ir.actions.act_window',
                 name: 'Lead',
                 res_model: 'crm.lead',
-                view_mode: 'list,form',
+                views: [[false, 'list'], [false, 'form']],
                 domain: [['cf_initiative_id', '=', initId]],
                 target: 'current',
             });
@@ -159,7 +159,7 @@ export class LavagnaKpiRail extends Component {
             this.actionService.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'crm.lead',
-                view_mode: 'form',
+                views: [[false, 'form']],
                 target: 'new',
                 context: { default_cf_initiative_id: initId },
             });
@@ -170,7 +170,7 @@ export class LavagnaKpiRail extends Component {
         this.actionService.doAction({
             type: 'ir.actions.act_window',
             res_model: 'mail.compose.message',
-            view_mode: 'form',
+            views: [[false, 'form']],
             target: 'new',
             context: {
                 default_subject: 'Re: ' + initName,
