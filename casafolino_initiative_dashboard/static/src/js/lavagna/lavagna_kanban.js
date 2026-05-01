@@ -78,12 +78,18 @@ export class LavagnaKanban extends Component {
     openQuickAdd(ev, stageId, tagId) {
         ev.stopPropagation();
         this.state.quickAddStageId = stageId;
-        this.state.quickAddTagId = tagId || null;
+        // In 2D mode, default to first swimlane if no tag specified
+        if (!tagId && this.hasSwimlanes && this.props.data.swimlanes.length) {
+            this.state.quickAddTagId = this.props.data.swimlanes[0].id;
+        } else {
+            this.state.quickAddTagId = tagId || null;
+        }
         this.state.quickAddName = '';
     }
 
     cancelQuickAdd() {
         this.state.quickAddStageId = null;
+        this.state.quickAddTagId = null;
         this.state.quickAddName = '';
     }
 
@@ -94,7 +100,8 @@ export class LavagnaKanban extends Component {
                 this.state.quickAddStageId,
                 this.state.quickAddTagId
             );
-            this.cancelQuickAdd();
+            // Keep input open for rapid sequential creation
+            this.state.quickAddName = '';
         } else if (ev.key === 'Escape') {
             this.cancelQuickAdd();
         }
