@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, useState, onWillStart, onWillUpdateProps, useEnv } from "@odoo/owl";
+import { Component, useState, onWillStart, onWillUpdateProps, useEnv, useRef, onPatched } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { rpc } from "@web/core/network/rpc";
 
@@ -17,6 +17,8 @@ export class LavagnaDrawerTask extends Component {
         this.env = useEnv();
         this.orm = useService("orm");
         this.notification = useService("notification");
+        this.notesRef = useRef("notesEditor");
+        this.chatterRef = useRef("chatterList");
         this.state = useState({
             task: null,
             loading: true,
@@ -24,19 +26,30 @@ export class LavagnaDrawerTask extends Component {
             messages: [],
             todos: [],
             attachments: [],
+            // Notes editing
+            notesEditing: false,
+            notesDirty: false,
+            // Chatter composer
+            newMessage: '',
+            sendingMessage: false,
             // Todo inline add
             newTodoName: '',
             addingTodo: false,
-            // Edit inline
             editingTodoId: null,
             editingTodoName: '',
         });
         this.priorityOptions = PRIORITY_LABELS;
+        this._saveTimer = null;
 
         onWillStart(() => this.loadTask());
         onWillUpdateProps((nextProps) => {
             if (nextProps.taskId !== this.props.taskId) {
                 this.loadTask(nextProps.taskId);
+            }
+        });
+        onPatched(() => {
+            if (this.state.activeTab === 'messages' && this.chatterRef.el) {
+                this.chatterRef.el.scrollTop = this.chatterRef.el.scrollHeight;
             }
         });
     }
@@ -53,17 +66,15 @@ export class LavagnaDrawerTask extends Component {
             ]);
             this.state.task = task;
 
-            // Messages
             const messages = await this.orm.searchRead('mail.message', [
                 ['model', '=', 'project.task'],
                 ['res_id', '=', id],
-                ['message_type', 'in', ['email', 'comment']],
+                ['message_type', 'in', ['email', 'comment', 'notification']],
             ], ['subject', 'body', 'author_id', 'date', 'message_type'], {
-                order: 'date desc', limit: 20,
+                order: 'date asc', limit: 50,
             });
             this.state.messages = messages;
 
-            // Todos
             const todos = await this.orm.searchRead('cf.todo', [
                 ['task_id', '=', id],
             ], ['name', 'done', 'done_date', 'sequence', 'assigned_user_id'], {
@@ -71,7 +82,6 @@ export class LavagnaDrawerTask extends Component {
             });
             this.state.todos = todos;
 
-            // Attachments
             const attachments = await this.orm.searchRead('ir.attachment', [
                 ['res_model', '=', 'project.task'],
                 ['res_id', '=', id],
@@ -87,19 +97,11 @@ export class LavagnaDrawerTask extends Component {
         }
     }
 
-    close() {
-        this.env.actions.closeTaskDrawer();
-    }
+    close() { this.env.actions.closeTaskDrawer(); }
+    openFullForm() { this.env.actions.openOdooRecord('project.task', this.props.taskId); }
+    setTab(tab) { this.state.activeTab = tab; }
 
-    openFullForm() {
-        this.env.actions.openOdooRecord('project.task', this.props.taskId);
-    }
-
-    setTab(tab) {
-        this.state.activeTab = tab;
-    }
-
-    // Priority
+    // ===== Priority =====
     async setPriority(value) {
         await this.orm.write('project.task', [this.props.taskId], { priority: value });
         this.state.task.priority = value;
@@ -110,33 +112,109 @@ export class LavagnaDrawerTask extends Component {
         return PRIORITY_LABELS.find(o => o.value === p) || PRIORITY_LABELS[0];
     }
 
-    // Todo CRUD
+    // ===== Notes WYSIWYG (contenteditable + autosave) =====
+    onNotesInput() {
+        this.state.notesDirty = true;
+        if (this._saveTimer) clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => this.saveNotes(), 1500);
+    }
+
+    onNotesFocus() {
+        this.state.notesEditing = true;
+    }
+
+    onNotesBlur() {
+        this.state.notesEditing = false;
+        if (this.state.notesDirty) {
+            this.saveNotes();
+        }
+    }
+
+    async saveNotes() {
+        if (this._saveTimer) clearTimeout(this._saveTimer);
+        this.state.notesDirty = false;
+        const el = this.notesRef.el;
+        if (!el) return;
+        const html = el.innerHTML;
+        try {
+            await this.orm.write('project.task', [this.props.taskId], {
+                description: html || false,
+            });
+        } catch (e) {
+            this.notification.add('Errore salvataggio note', { type: 'danger' });
+        }
+    }
+
+    // Notes toolbar actions
+    execCommand(cmd, value) {
+        document.execCommand(cmd, false, value || null);
+        this.onNotesInput();
+    }
+
+    insertLink() {
+        const url = prompt('URL:');
+        if (url) document.execCommand('createLink', false, url);
+        this.onNotesInput();
+    }
+
+    // ===== Chatter composer =====
+    onMsgInput(ev) { this.state.newMessage = ev.target.value; }
+
+    onMsgKeydown(ev) {
+        if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey) && this.state.newMessage.trim()) {
+            this.sendMessage();
+        }
+    }
+
+    async sendMessage() {
+        const body = this.state.newMessage.trim();
+        if (!body || this.state.sendingMessage) return;
+        this.state.sendingMessage = true;
+
+        try {
+            await this.orm.call('project.task', 'message_post', [[this.props.taskId]], {
+                body: body,
+                message_type: 'comment',
+                subtype_xmlid: 'mail.mt_comment',
+            });
+            this.state.newMessage = '';
+            // Reload messages
+            const messages = await this.orm.searchRead('mail.message', [
+                ['model', '=', 'project.task'],
+                ['res_id', '=', this.props.taskId],
+                ['message_type', 'in', ['email', 'comment', 'notification']],
+            ], ['subject', 'body', 'author_id', 'date', 'message_type'], {
+                order: 'date asc', limit: 50,
+            });
+            this.state.messages = messages;
+        } catch (e) {
+            this.notification.add('Errore invio messaggio', { type: 'danger' });
+        } finally {
+            this.state.sendingMessage = false;
+        }
+    }
+
+    // ===== Todo CRUD =====
     async addTodo() {
         const name = this.state.newTodoName.trim();
         if (!name) return;
         try {
             const result = await rpc('/casafolino/todo/create', {
-                task_id: this.props.taskId,
-                name: name,
+                task_id: this.props.taskId, name,
             });
             if (result && !result.error) {
                 this.state.todos.push(result);
                 this.state.newTodoName = '';
                 this.state.addingTodo = false;
             }
-        } catch (e) {
-            this.notification.add('Errore creazione todo', { type: 'danger' });
-        }
+        } catch { this.notification.add('Errore creazione todo', { type: 'danger' }); }
     }
 
     async toggleTodo(todo) {
         const newDone = !todo.done;
-        todo.done = newDone; // optimistic
-        try {
-            await rpc('/casafolino/todo/update', { id: todo.id, done: newDone });
-        } catch {
-            todo.done = !newDone; // rollback
-        }
+        todo.done = newDone;
+        try { await rpc('/casafolino/todo/update', { id: todo.id, done: newDone }); }
+        catch { todo.done = !newDone; }
     }
 
     startEditTodo(todo) {
@@ -149,12 +227,10 @@ export class LavagnaDrawerTask extends Component {
         if (!name) return;
         todo.name = name;
         this.state.editingTodoId = null;
-        await rpc('/casafolino/todo/update', { id: todo.id, name: name });
+        await rpc('/casafolino/todo/update', { id: todo.id, name });
     }
 
-    cancelEditTodo() {
-        this.state.editingTodoId = null;
-    }
+    cancelEditTodo() { this.state.editingTodoId = null; }
 
     async deleteTodo(todo) {
         const idx = this.state.todos.indexOf(todo);
@@ -162,61 +238,43 @@ export class LavagnaDrawerTask extends Component {
         await rpc('/casafolino/todo/delete', { id: todo.id });
     }
 
-    onNewTodoInput(ev) {
-        this.state.newTodoName = ev.target.value;
-    }
-
+    onNewTodoInput(ev) { this.state.newTodoName = ev.target.value; }
     onNewTodoKeydown(ev) {
         if (ev.key === 'Enter') this.addTodo();
-        else if (ev.key === 'Escape') {
-            this.state.addingTodo = false;
-            this.state.newTodoName = '';
-        }
+        else if (ev.key === 'Escape') { this.state.addingTodo = false; this.state.newTodoName = ''; }
     }
-
-    onEditTodoInput(ev) {
-        this.state.editingTodoName = ev.target.value;
-    }
-
+    onEditTodoInput(ev) { this.state.editingTodoName = ev.target.value; }
     onEditTodoKeydown(ev, todo) {
         if (ev.key === 'Enter') this.saveEditTodo(todo);
         else if (ev.key === 'Escape') this.cancelEditTodo();
     }
 
-    // Todo drag reorder
+    // Todo drag
     onTodoDragStart(ev, todo) {
         ev.dataTransfer.effectAllowed = 'move';
         ev.dataTransfer.setData('text/plain', String(todo.id));
-        this._dragTodoId = todo.id;
     }
-
-    onTodoDragOver(ev) {
-        ev.preventDefault();
-    }
-
+    onTodoDragOver(ev) { ev.preventDefault(); }
     async onTodoDrop(ev, targetTodo) {
         ev.preventDefault();
         const dragId = parseInt(ev.dataTransfer.getData('text/plain'));
         if (!dragId || dragId === targetTodo.id) return;
         const todos = this.state.todos;
-        const dragIdx = todos.findIndex(t => t.id === dragId);
-        const targetIdx = todos.findIndex(t => t.id === targetTodo.id);
-        if (dragIdx < 0 || targetIdx < 0) return;
-        const [moved] = todos.splice(dragIdx, 1);
-        todos.splice(targetIdx, 0, moved);
-        // Persist new order
-        const orderedIds = todos.map(t => t.id);
+        const di = todos.findIndex(t => t.id === dragId);
+        const ti = todos.findIndex(t => t.id === targetTodo.id);
+        if (di < 0 || ti < 0) return;
+        const [moved] = todos.splice(di, 1);
+        todos.splice(ti, 0, moved);
         await rpc('/casafolino/todo/reorder', {
             task_id: this.props.taskId,
-            ordered_ids: orderedIds,
+            ordered_ids: todos.map(t => t.id),
         });
     }
 
     get todoStats() {
         const total = this.state.todos.length;
         const done = this.state.todos.filter(t => t.done).length;
-        const pct = total ? Math.round((done / total) * 100) : 0;
-        return { total, done, pct };
+        return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
     }
 
     // Helpers
@@ -229,9 +287,13 @@ export class LavagnaDrawerTask extends Component {
 
     formatDate(isoStr) {
         if (!isoStr) return '';
-        return new Date(isoStr).toLocaleDateString('it-IT', {
-            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-        });
+        const d = new Date(isoStr);
+        const now = new Date();
+        const diff = (now - d) / (1000 * 60 * 60);
+        if (diff < 1) return 'ora';
+        if (diff < 24) return Math.floor(diff) + 'h fa';
+        if (diff < 48) return 'ieri';
+        return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
     }
 
     formatFileSize(bytes) {

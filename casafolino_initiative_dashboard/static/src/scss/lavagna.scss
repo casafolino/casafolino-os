@@ -1622,3 +1622,143 @@ $lav-shadow-md: 0 4px 12px rgba(107, 74, 30, 0.12);
         transform: translateX(2px);
     }
 }
+
+// ===== F3.1: NOTES EDITOR (contenteditable) =====
+
+.o_notes_saving {
+    font-size: 10px;
+    color: $lav-text-light;
+    font-style: italic;
+    margin-left: 6px;
+}
+
+.o_notes_toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 0;
+    margin-bottom: 6px;
+    border-bottom: 1px solid $lav-border;
+
+    button {
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: $lav-text-medium;
+        font-size: 12px;
+
+        &:hover { background: $lav-cream; border-color: $lav-border; color: $lav-brown; }
+    }
+
+    .o_toolbar_sep {
+        width: 1px;
+        background: $lav-border;
+        margin: 2px 4px;
+    }
+}
+
+.o_notes_editor {
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid $lav-border;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: $lav-text-dark;
+    outline: none;
+    transition: border-color 0.15s;
+
+    &:focus { border-color: $lav-gold; box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.15); }
+    &:empty::before {
+        content: 'Scrivi note...';
+        color: $lav-text-light;
+        font-style: italic;
+    }
+
+    p { margin: 0 0 6px; }
+    ul, ol { padding-left: 20px; margin: 0 0 6px; }
+    a { color: $lav-brown; text-decoration: underline; }
+}
+
+// ===== F3.1: CHATTER COMPOSER =====
+
+.o_drawer_chatter {
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+}
+
+.o_chatter_messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+}
+
+.o_chatter_msg {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(229, 221, 208, 0.4);
+
+    &:last-child { border-bottom: none; }
+
+    &.o_msg_notification {
+        opacity: 0.6;
+        font-size: 11px;
+        .o_msg_body { color: $lav-text-light; }
+    }
+
+    .o_msg_body {
+        font-size: 12px;
+        color: $lav-text-medium;
+        line-height: 1.4;
+        margin-top: 2px;
+
+        p { margin: 0 0 4px; }
+        a { color: $lav-brown; }
+    }
+}
+
+.o_chatter_composer {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-top: 1px solid $lav-border;
+    background: white;
+    flex-shrink: 0;
+}
+
+.o_chatter_input {
+    flex: 1;
+    border: 1px solid $lav-border;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    min-width: 0;
+
+    &:focus { border-color: $lav-gold; box-shadow: 0 0 0 2px rgba(200, 164, 58, 0.2); }
+}
+
+.o_chatter_send_btn {
+    background: $lav-brown;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover { background: $lav-brown-dark; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+}

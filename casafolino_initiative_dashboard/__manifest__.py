@@ -1,7 +1,7 @@
 {
     'name': 'CasaFolino Initiative Dashboard',
-    'version': '18.0.4.1.0',
-    'summary': 'Lavagna cockpit OWL — scrivania virtuale completa: pannelli + contatori cablati',
+    'version': '18.0.4.2.0',
+    'summary': 'Lavagna cockpit OWL — drawer: Note WYSIWYG editabile + Chatter inline',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
     'depends': [

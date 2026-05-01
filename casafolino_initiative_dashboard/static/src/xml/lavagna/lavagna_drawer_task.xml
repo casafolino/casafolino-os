@@ -55,7 +55,6 @@
 
                 <!-- TAB: DETAILS -->
                 <div class="o_drawer_body" t-if="state.activeTab === 'details'">
-                    <!-- Partner -->
                     <div class="o_drawer_field">
                         <label>Cliente / Partner</label>
                         <span t-if="state.task.partner_id" class="o_drawer_link"
@@ -64,7 +63,6 @@
                         <span t-else="" class="o_field_empty">Non assegnato</span>
                     </div>
 
-                    <!-- Priority chips -->
                     <div class="o_drawer_field">
                         <label>Priorit&#224;</label>
                         <div class="o_priority_chips">
@@ -77,7 +75,6 @@
                         </div>
                     </div>
 
-                    <!-- Assignees -->
                     <div class="o_drawer_field" t-if="state.task.user_ids and state.task.user_ids.length">
                         <label>Responsabili</label>
                         <div class="o_drawer_users">
@@ -86,58 +83,69 @@
                         </div>
                     </div>
 
-                    <!-- Stage -->
                     <div class="o_drawer_field" t-if="state.task.stage_id">
                         <label>Stage</label>
                         <span t-esc="state.task.stage_id[1]"/>
                     </div>
 
-                    <!-- Deadline -->
                     <div class="o_drawer_field" t-if="state.task.date_deadline">
                         <label>Scadenza</label>
                         <span t-esc="state.task.date_deadline"/>
                     </div>
 
-                    <!-- Description / Notes -->
+                    <!-- NOTES: editable contenteditable with toolbar -->
                     <div class="o_drawer_field o_drawer_notes">
-                        <label>Note</label>
-                        <div class="o_drawer_description"
-                             t-if="state.task.description"
-                             t-out="state.task.description"/>
-                        <span t-else="" class="o_field_empty">Nessuna nota</span>
+                        <label>
+                            Note
+                            <span t-if="state.notesDirty" class="o_notes_saving">salvando...</span>
+                        </label>
+                        <div class="o_notes_toolbar">
+                            <button t-on-click="() => this.execCommand('bold')" title="Grassetto">
+                                <i class="fa fa-bold"/></button>
+                            <button t-on-click="() => this.execCommand('italic')" title="Corsivo">
+                                <i class="fa fa-italic"/></button>
+                            <button t-on-click="() => this.execCommand('underline')" title="Sottolineato">
+                                <i class="fa fa-underline"/></button>
+                            <span class="o_toolbar_sep"/>
+                            <button t-on-click="() => this.execCommand('insertUnorderedList')" title="Lista puntata">
+                                <i class="fa fa-list-ul"/></button>
+                            <button t-on-click="() => this.execCommand('insertOrderedList')" title="Lista numerata">
+                                <i class="fa fa-list-ol"/></button>
+                            <span class="o_toolbar_sep"/>
+                            <button t-on-click="() => this.insertLink()" title="Link">
+                                <i class="fa fa-link"/></button>
+                        </div>
+                        <div class="o_notes_editor"
+                             t-ref="notesEditor"
+                             contenteditable="true"
+                             t-on-input="() => this.onNotesInput()"
+                             t-on-focus="() => this.onNotesFocus()"
+                             t-on-blur="() => this.onNotesBlur()"
+                             t-out="state.task.description || ''"/>
                     </div>
                 </div>
 
                 <!-- TAB: CHECKLIST -->
                 <div class="o_drawer_body" t-if="state.activeTab === 'checklist'">
-                    <!-- Progress bar -->
                     <div t-if="state.todos.length" class="o_todo_progress_bar">
                         <div class="o_todo_stats">
                             <span t-esc="todoStats.done + '/' + todoStats.total"/> completati
                         </div>
                         <div class="o_todo_bar">
-                            <div class="o_todo_bar_fill"
-                                 t-att-style="'width:' + todoStats.pct + '%'"/>
+                            <div class="o_todo_bar_fill" t-att-style="'width:' + todoStats.pct + '%'"/>
                         </div>
                     </div>
 
-                    <!-- Todo list -->
                     <div class="o_todo_list">
                         <div t-foreach="state.todos" t-as="todo" t-key="todo.id"
-                             class="o_todo_row"
-                             t-att-class="{ 'o_done': todo.done }"
+                             class="o_todo_row" t-att-class="{ 'o_done': todo.done }"
                              draggable="true"
                              t-on-dragstart="(ev) => this.onTodoDragStart(ev, todo)"
                              t-on-dragover="onTodoDragOver"
                              t-on-drop="(ev) => this.onTodoDrop(ev, todo)">
-                            <span class="o_todo_drag_handle">
-                                <i class="fa fa-grip-vertical"/>
-                            </span>
-                            <input type="checkbox"
-                                   t-att-checked="todo.done"
+                            <span class="o_todo_drag_handle"><i class="fa fa-grip-vertical"/></span>
+                            <input type="checkbox" t-att-checked="todo.done"
                                    t-on-change="() => this.toggleTodo(todo)"/>
-
-                            <!-- Edit mode -->
                             <t t-if="state.editingTodoId === todo.id">
                                 <input type="text" class="o_todo_edit_input"
                                        t-att-value="state.editingTodoName"
@@ -146,26 +154,20 @@
                                        t-on-blur="() => this.saveEditTodo(todo)"/>
                             </t>
                             <t t-else="">
-                                <span class="o_todo_text"
-                                      t-on-click="() => this.startEditTodo(todo)"
+                                <span class="o_todo_text" t-on-click="() => this.startEditTodo(todo)"
                                       t-esc="todo.name"/>
                             </t>
-
-                            <button class="o_todo_delete" t-on-click="() => this.deleteTodo(todo)"
-                                    title="Elimina">
-                                <i class="fa fa-trash-o"/>
-                            </button>
+                            <button class="o_todo_delete" t-on-click="() => this.deleteTodo(todo)">
+                                <i class="fa fa-trash-o"/></button>
                         </div>
                     </div>
 
-                    <!-- Add todo -->
                     <div class="o_todo_add">
                         <t t-if="state.addingTodo">
                             <input type="text" class="o_todo_add_input"
                                    placeholder="Descrivi la sotto-attivit&#224;..."
                                    t-att-value="state.newTodoName"
-                                   t-on-input="onNewTodoInput"
-                                   t-on-keydown="onNewTodoKeydown"/>
+                                   t-on-input="onNewTodoInput" t-on-keydown="onNewTodoKeydown"/>
                         </t>
                         <button t-else="" class="o_todo_add_btn"
                                 t-on-click="() => { this.state.addingTodo = true; }">
@@ -173,7 +175,6 @@
                         </button>
                     </div>
 
-                    <!-- Empty state -->
                     <div t-if="!state.todos.length and !state.addingTodo" class="o_todo_empty">
                         <p>Nessuna sotto-attivit&#224;.</p>
                         <button class="o_todo_add_btn"
@@ -183,19 +184,35 @@
                     </div>
                 </div>
 
-                <!-- TAB: MESSAGES -->
-                <div class="o_drawer_body" t-if="state.activeTab === 'messages'">
-                    <div t-if="!state.messages.length" class="o_panel_empty">
-                        Nessuna comunicazione
-                    </div>
-                    <div t-foreach="state.messages" t-as="msg" t-key="msg.id"
-                         class="o_drawer_message">
-                        <div class="o_msg_header">
-                            <strong t-esc="msg.author_id and msg.author_id[1] or 'Sistema'"/>
-                            <span class="o_msg_date" t-esc="formatDate(msg.date)"/>
+                <!-- TAB: MESSAGES (editable chatter) -->
+                <div class="o_drawer_body o_drawer_chatter" t-if="state.activeTab === 'messages'">
+                    <div class="o_chatter_messages" t-ref="chatterList">
+                        <div t-if="!state.messages.length" class="o_panel_empty">
+                            Nessun messaggio. Scrivi il primo qui sotto.
                         </div>
-                        <div class="o_msg_subject" t-if="msg.subject" t-esc="msg.subject"/>
-                        <div class="o_msg_body" t-esc="stripHtml(msg.body)"/>
+                        <div t-foreach="state.messages" t-as="msg" t-key="msg.id"
+                             class="o_chatter_msg"
+                             t-att-class="{ 'o_msg_notification': msg.message_type === 'notification' }">
+                            <div class="o_msg_header">
+                                <strong t-esc="msg.author_id and msg.author_id[1] or 'Sistema'"/>
+                                <span class="o_msg_date" t-esc="formatDate(msg.date)"/>
+                            </div>
+                            <div class="o_msg_subject" t-if="msg.subject" t-esc="msg.subject"/>
+                            <div class="o_msg_body" t-out="msg.body"/>
+                        </div>
+                    </div>
+                    <div class="o_chatter_composer">
+                        <textarea class="o_chatter_input"
+                                  placeholder="Scrivi un messaggio... (Cmd+Enter per inviare)"
+                                  t-att-value="state.newMessage"
+                                  t-on-input="onMsgInput"
+                                  t-on-keydown="onMsgKeydown"
+                                  rows="2"/>
+                        <button class="o_chatter_send_btn"
+                                t-on-click="() => this.sendMessage()"
+                                t-att-disabled="state.sendingMessage || !state.newMessage.trim()">
+                            <i class="fa fa-paper-plane"/>
+                        </button>
                     </div>
                 </div>
 
