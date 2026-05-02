@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="utm_source_sial_canada_2026" model="utm.source">
+        <field name="name">Fiera SIAL Canada 2026</field>
+    </record>
+</odoo>

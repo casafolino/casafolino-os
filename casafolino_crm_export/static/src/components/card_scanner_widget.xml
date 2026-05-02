@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_crm_export.CardScannerWidget">
+        <div class="cf-card-scanner o_action">
+            <input type="file" accept="image/*" capture="environment"
+                   t-ref="fileInput" class="d-none" t-on-change="onFileChange"/>
+
+            <!-- STEP: capture -->
+            <div t-if="state.step === 'capture'" class="cf-scanner-capture">
+                <div class="cf-scanner-hero">
+                    <div class="cf-scanner-logo">
+                        <i class="fa fa-camera fa-3x"/>
+                    </div>
+                    <h2>SIAL Canada Montréal 2026</h2>
+                    <p class="text-muted">Scansiona un biglietto da visita per creare un lead e inviare il follow-up</p>
+                    <button class="btn btn-primary btn-lg cf-scanner-btn" t-on-click="onCaptureClick">
+                        <i class="fa fa-camera me-2"/>Nuovo lead da biglietto
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP: loading -->
+            <div t-if="state.step === 'loading'" class="cf-scanner-loading">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="fw-bold">Analisi biglietto in corso...</p>
+                <p class="text-muted">L'AI sta estraendo i dati dal biglietto</p>
+            </div>
+
+            <!-- STEP: preview (form) -->
+            <div t-if="state.step === 'preview'" class="cf-scanner-preview">
+                <div t-if="state.error" class="alert alert-warning mb-3">
+                    <i class="fa fa-exclamation-triangle me-1"/>
+                    <t t-esc="state.error"/>
+                    <span> — compila manualmente i campi sotto.</span>
+                </div>
+
+                <div class="cf-scanner-preview-layout">
+                    <!-- Image preview -->
+                    <div t-if="state.imagePreview" class="cf-scanner-image-wrap">
+                        <img t-att-src="state.imagePreview" alt="Business card" class="cf-scanner-image"/>
+                    </div>
+
+                    <!-- Form -->
+                    <div class="cf-scanner-form">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Nome</label>
+                                <input type="text" class="form-control" data-field="first_name"
+                                       t-att-value="state.formData.first_name" t-on-input="onFieldInput"/>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Cognome</label>
+                                <input type="text" class="form-control" data-field="last_name"
+                                       t-att-value="state.formData.last_name" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Azienda</label>
+                                <input type="text" class="form-control" data-field="company"
+                                       t-att-value="state.formData.company" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Ruolo</label>
+                                <input type="text" class="form-control" data-field="job_title"
+                                       t-att-value="state.formData.job_title" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" data-field="email"
+                                       t-att-value="state.formData.email" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Telefono</label>
+                                <input type="tel" class="form-control" data-field="phone"
+                                       t-att-value="state.formData.phone" t-on-input="onFieldInput"/>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Mobile</label>
+                                <input type="tel" class="form-control" data-field="mobile"
+                                       t-att-value="state.formData.mobile" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Paese</label>
+                                <input type="text" class="form-control" data-field="country"
+                                       t-att-value="state.formData.country" t-on-input="onFieldInput"/>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Città</label>
+                                <input type="text" class="form-control" data-field="city"
+                                       t-att-value="state.formData.city" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Indirizzo</label>
+                                <input type="text" class="form-control" data-field="address"
+                                       t-att-value="state.formData.address" t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Sito web</label>
+                                <input type="url" class="form-control" data-field="website"
+                                       t-att-value="state.formData.website" t-on-input="onFieldInput"/>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Lingua email</label>
+                                <select class="form-select" t-on-change="onLanguageChange">
+                                    <option value="en_US" t-att-selected="state.language === 'en_US'">English</option>
+                                    <option value="fr_FR" t-att-selected="state.language === 'fr_FR'">Français</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="cf-scanner-actions">
+                    <button class="btn btn-primary btn-lg cf-scanner-confirm-btn" t-on-click="onConfirmSend">
+                        <i class="fa fa-paper-plane me-2"/>Conferma e invia
+                    </button>
+                    <button class="btn btn-outline-secondary btn-lg" t-on-click="onSaveOnly">
+                        <i class="fa fa-save me-2"/>Salva senza inviare
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP: submitting -->
+            <div t-if="state.step === 'submitting'" class="cf-scanner-loading">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="fw-bold">Creazione lead in corso...</p>
+            </div>
+
+            <!-- STEP: done -->
+            <div t-if="state.step === 'done'" class="cf-scanner-done">
+                <div class="cf-scanner-success">
+                    <i class="fa fa-check-circle fa-4x text-success mb-3"/>
+                    <h3>Lead creato con successo!</h3>
+                    <p class="text-muted"><t t-esc="state.leadName"/></p>
+                    <p t-if="state.emailSent" class="text-success">
+                        <i class="fa fa-envelope me-1"/>Email di follow-up inviata
+                    </p>
+                    <p t-if="!state.emailSent and state.step === 'done'" class="text-warning">
+                        <i class="fa fa-exclamation-triangle me-1"/>Email non inviata (controlla il lead)
+                    </p>
+                    <div class="mt-4">
+                        <button class="btn btn-primary btn-lg me-2" t-on-click="onOpenLead">
+                            <i class="fa fa-external-link me-2"/>Apri Lead
+                        </button>
+                        <button class="btn btn-outline-primary btn-lg" t-on-click="onScanAnother">
+                            <i class="fa fa-camera me-2"/>Scansiona un altro
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

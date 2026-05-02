@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Card Scanner client action -->
+    <record id="action_card_scanner" model="ir.actions.client">
+        <field name="name">Card Scanner SIAL</field>
+        <field name="tag">casafolino_card_scanner</field>
+    </record>
+
     <!-- Actions config -->
     <record id="action_cf_sequence" model="ir.actions.act_window">
         <field name="name">Sequenze Follow-up</field>
@@ -14,9 +20,22 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <!-- Settings action -->
+    <record id="action_crm_export_config" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'casafolino_crm_export'}</field>
+    </record>
+
     <!-- Root menu -->
     <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
         web_icon="casafolino_crm_export,static/description/icon.png"/>
+
+    <!-- Card Scanner — first item, prominent -->
+    <menuitem id="menu_card_scanner" name="📷 Nuovo lead da biglietto"
+        parent="menu_cf_export_root" action="action_card_scanner" sequence="0"/>
 
     <!-- Pipeline -->
     <menuitem id="menu_cf_all" name="Tutte le Pipeline"
@@ -47,5 +66,7 @@
         parent="menu_cf_config" action="action_cf_sequence" sequence="1"/>
     <menuitem id="menu_cf_certs" name="Certificazioni"
         parent="menu_cf_config" action="action_cf_cert" sequence="2"/>
+    <menuitem id="menu_cf_settings" name="Fair Follow-up Settings"
+        parent="menu_cf_config" action="action_crm_export_config" sequence="3"/>
 
 </odoo>

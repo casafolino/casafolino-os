@@ -1,0 +1,203 @@
+.cf-card-scanner {
+    min-height: 100vh;
+    background: #f8f9fa;
+    padding: 16px;
+}
+
+// ─── Capture step ─────────────────────────────
+.cf-scanner-capture {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+.cf-scanner-hero {
+    text-align: center;
+    max-width: 400px;
+
+    h2 {
+        margin-top: 16px;
+        font-weight: 700;
+        color: #333;
+    }
+    p {
+        margin-bottom: 24px;
+    }
+}
+
+.cf-scanner-logo {
+    color: #5A6E3A;
+    margin-bottom: 8px;
+}
+
+.cf-scanner-btn {
+    min-width: 280px;
+    min-height: 56px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 12px;
+    background: #5A6E3A;
+    border-color: #5A6E3A;
+    touch-action: manipulation;
+
+    &:hover, &:focus {
+        background: #3d4d28;
+        border-color: #3d4d28;
+    }
+}
+
+// ─── Loading step ─────────────────────────────
+.cf-scanner-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+}
+
+// ─── Preview (form) step ──────────────────────
+.cf-scanner-preview {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.cf-scanner-preview-layout {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
+}
+
+.cf-scanner-image-wrap {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.cf-scanner-image {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: contain;
+    border: 1px solid #e9ecef;
+}
+
+.cf-scanner-form {
+    .form-label {
+        font-weight: 600;
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 2px;
+    }
+    .form-control, .form-select {
+        border-radius: 8px;
+        font-size: 15px;
+        min-height: 44px;
+    }
+}
+
+// ─── Action buttons ───────────────────────────
+.cf-scanner-actions {
+    position: sticky;
+    bottom: 0;
+    background: #f8f9fa;
+    padding: 16px 0;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    .btn-lg {
+        min-height: 52px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 12px;
+        min-width: 200px;
+        touch-action: manipulation;
+    }
+}
+
+.cf-scanner-confirm-btn {
+    background: #5A6E3A !important;
+    border-color: #5A6E3A !important;
+
+    &:hover, &:focus {
+        background: #3d4d28 !important;
+        border-color: #3d4d28 !important;
+    }
+}
+
+// ─── Done step ────────────────────────────────
+.cf-scanner-done {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+}
+
+.cf-scanner-success {
+    text-align: center;
+    max-width: 500px;
+
+    h3 {
+        font-weight: 700;
+    }
+
+    .btn-lg {
+        min-height: 48px;
+        border-radius: 12px;
+        touch-action: manipulation;
+    }
+
+    .btn-primary {
+        background: #5A6E3A;
+        border-color: #5A6E3A;
+
+        &:hover {
+            background: #3d4d28;
+            border-color: #3d4d28;
+        }
+    }
+
+    .btn-outline-primary {
+        color: #5A6E3A;
+        border-color: #5A6E3A;
+
+        &:hover {
+            background: #5A6E3A;
+            color: #fff;
+        }
+    }
+}
+
+// ─── Mobile responsive ────────────────────────
+@media (max-width: 600px) {
+    .cf-card-scanner {
+        padding: 8px;
+    }
+    .cf-scanner-preview {
+        max-width: 100%;
+    }
+    .cf-scanner-preview-layout {
+        padding: 12px;
+    }
+    .cf-scanner-form .row > div {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    .cf-scanner-actions {
+        flex-direction: column;
+        padding: 12px;
+        .btn-lg {
+            width: 100%;
+            min-width: auto;
+        }
+    }
+}

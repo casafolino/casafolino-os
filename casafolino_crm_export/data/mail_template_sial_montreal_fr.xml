@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="email_template_sial_montreal_fr" model="mail.template">
+        <field name="name">SIAL Montreal 2026 - Follow-up FR</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Suite à notre rencontre au SIAL Canada — CasaFolino</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html" type="html">
+<p>Cher {{ object.partner_id.name }},</p>
+
+<p>Ce fut un plaisir de vous rencontrer au SIAL Canada à Montréal et d'échanger sur d'éventuelles opportunités à explorer ensemble.</p>
+
+<p>Permettez-moi de vous présenter brièvement CasaFolino — une entreprise familiale italienne orientée vers le retail et le foodservice structurés, spécialisée dans le développement et la production de produits alimentaires qui combinent qualité perçue, fiabilité industrielle et positionnement de marché durable.</p>
+
+<p>Notre approche est simple : proposer des produits qui performent en linéaire comme en cuisine — en assurant rotation, continuité et marge — sans recourir à un positionnement premium forcé ou non durable.</p>
+
+<p>Nous travaillons aussi bien en marque propre qu'en marque distributeur (Private Label), avec une approche orientée KPI :<br/>
+• recettes équilibrées pensées pour la stabilité, la durée de conservation et la régularité<br/>
+• formats et emballages optimisés pour la rotation et l'efficacité logistique<br/>
+• prix construit pour la compétitivité et la durabilité à long terme<br/>
+• processus de production fiables et scalables</p>
+
+<p>Nos principales catégories de produits incluent :<br/>
+• tartinables sucrés et salés<br/>
+• miels aromatisés et spécialités à base de miel<br/>
+• risottos prêts à cuisiner<br/>
+• condiments et références gourmet accessibles</p>
+
+<p>Nous proposons des formats flexibles, de 28 g jusqu'à 25 kg, adaptés à :<br/>
+• Retail marque propre<br/>
+• Marque distributeur (Private Label)<br/>
+• Foodservice et horeca<br/>
+• Projets industriels et co-fabrication</p>
+
+<p>Tous nos produits sont fabriqués en Italie selon des standards certifiés :<br/>
+✔️ BRC et IFS<br/>
+✔️ Halal et Casher<br/>
+✔️ Options biologiques sur des références sélectionnées</p>
+
+<p>Nous serions ravis d'explorer une collaboration potentielle et de mieux comprendre vos priorités.</p>
+
+<p><strong>Ma Export Manager, Josefina Lazzaro (en copie), reprendra contact avec vous prochainement pour assurer le suivi commercial.</strong></p>
+
+<p>Les prochaines étapes pourraient être :<br/>
+• examiner une catégorie spécifique d'intérêt<br/>
+• évaluer des opportunités en marque propre ou en marque distributeur<br/>
+• développer une proposition sur mesure (recette · format · positionnement prix)<br/>
+• ou planifier un court appel opérationnel pour évaluer faisabilité et calendrier</p>
+
+<p>Je reste à votre entière disposition et attends vos retours.</p>
+
+<p>Cordialement,</p>
+
+<p><strong>Antonio Folino</strong><br/>
+CEO et Fondateur — CasaFolino S.r.l. Società Benefit<br/>
+casafolino.com | Lamezia Terme (CZ), Italie</p>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+</odoo>
