@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Smart button + badge on partner form -->
+    <record id="view_partner_form_mail_stats" model="ir.ui.view">
+        <field name="name">res.partner.form.mail.stats</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_email_traces" type="object"
+                        class="oe_stat_button" icon="fa-bar-chart"
+                        invisible="mail_stats_total_sent == 0">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="mail_stats_opened_count"/>/<field name="mail_stats_total_sent"/>
+                        </span>
+                        <span class="o_stat_text">Aperte</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="mail_stats_engagement_status" widget="badge" readonly="1"
+                       decoration-success="mail_stats_engagement_status == 'hot'"
+                       decoration-warning="mail_stats_engagement_status == 'warm'"
+                       decoration-danger="mail_stats_engagement_status == 'bounced'"
+                       decoration-info="mail_stats_engagement_status == 'replied'"
+                       invisible="not mail_stats_engagement_status or mail_stats_engagement_status == 'cold'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add engagement column to partner list -->
+    <record id="view_partner_list_mail_stats" model="ir.ui.view">
+        <field name="name">res.partner.list.mail.stats</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='email']" position="after">
+                <field name="mail_stats_engagement_status" string="Engagement" widget="badge" optional="show"
+                       decoration-success="mail_stats_engagement_status == 'hot'"
+                       decoration-warning="mail_stats_engagement_status == 'warm'"
+                       decoration-danger="mail_stats_engagement_status == 'bounced'"
+                       decoration-info="mail_stats_engagement_status == 'replied'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search view filters -->
+    <record id="view_partner_search_mail_stats" model="ir.ui.view">
+        <field name="name">res.partner.search.mail.stats</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="mail_opened" string="Email Aperte" domain="[('mail_stats_engagement_status', 'in', ('warm', 'hot', 'replied'))]"/>
+                <filter name="mail_hot" string="Hot Leads" domain="[('mail_stats_engagement_status', '=', 'hot')]"/>
+                <filter name="mail_replied" string="Replied" domain="[('mail_stats_engagement_status', '=', 'replied')]"/>
+                <filter name="mail_bounced" string="Bounced" domain="[('mail_stats_engagement_status', '=', 'bounced')]"/>
+                <separator/>
+                <filter name="group_engagement" string="Engagement Status" context="{'group_by': 'mail_stats_engagement_status'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

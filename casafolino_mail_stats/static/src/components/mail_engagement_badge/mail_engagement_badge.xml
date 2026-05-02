@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_mail_stats.MailEngagementBadge">
+        <span class="badge rounded-pill"
+              t-att-style="'background-color:' + statusConfig.color + ';color:#fff;font-size:0.75em;'"
+              t-esc="displayValue"/>
+    </t>
+</templates>

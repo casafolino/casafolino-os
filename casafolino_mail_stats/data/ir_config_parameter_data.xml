@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="config_show_in_lavagna" model="ir.config_parameter">
+        <field name="key">casafolino.mail_stats.show_in_lavagna</field>
+        <field name="value">True</field>
+    </record>
+
+    <record id="config_auto_activity" model="ir.config_parameter">
+        <field name="key">casafolino.mail_stats.auto_activity</field>
+        <field name="value">True</field>
+    </record>
+
+</odoo>

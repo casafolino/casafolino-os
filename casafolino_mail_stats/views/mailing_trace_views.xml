@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Enhanced mailing.trace list view -->
+    <record id="mailing_trace_view_list_enhanced" model="ir.ui.view">
+        <field name="name">mailing.trace.list.enhanced</field>
+        <field name="model">mailing.trace</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <list string="Email Tracking" create="false" edit="false"
+                  decoration-success="trace_status in ('open', 'reply')"
+                  decoration-danger="trace_status == 'bounce'"
+                  decoration-muted="trace_status in ('cancel', 'error')">
+                <field name="mass_mailing_id" string="Mailing"/>
+                <field name="model" string="Modello"/>
+                <field name="res_id" string="Record ID"/>
+                <field name="email" string="Email"/>
+                <field name="trace_status" string="Stato" widget="badge"
+                       decoration-success="trace_status in ('open', 'reply')"
+                       decoration-warning="trace_status == 'sent'"
+                       decoration-danger="trace_status == 'bounce'"
+                       decoration-info="trace_status == 'outgoing'"/>
+                <field name="sent_datetime" string="Inviata"/>
+                <field name="open_datetime" string="Aperta"/>
+                <field name="links_click_datetime" string="Click"/>
+                <field name="failure_type" string="Errore" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Pivot view for Email Performance report -->
+    <record id="mailing_trace_view_pivot" model="ir.ui.view">
+        <field name="name">mailing.trace.pivot.performance</field>
+        <field name="model">mailing.trace</field>
+        <field name="arch" type="xml">
+            <pivot string="Email Performance">
+                <field name="mass_mailing_id" type="row"/>
+                <field name="trace_status" type="col"/>
+                <field name="id" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Search view -->
+    <record id="mailing_trace_view_search_enhanced" model="ir.ui.view">
+        <field name="name">mailing.trace.search.enhanced</field>
+        <field name="model">mailing.trace</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <search string="Email Tracking">
+                <field name="email"/>
+                <field name="mass_mailing_id"/>
+                <filter name="last_90_days" string="Ultimi 90 giorni"
+                        domain="[('create_date', '>=', (context_today() - datetime.timedelta(days=90)).strftime('%%Y-%%m-%%d'))]"/>
+                <filter name="last_30_days" string="Ultimi 30 giorni"
+                        domain="[('create_date', '>=', (context_today() - datetime.timedelta(days=30)).strftime('%%Y-%%m-%%d'))]"/>
+                <separator/>
+                <filter name="opened" string="Aperte" domain="[('trace_status', 'in', ('open', 'reply'))]"/>
+                <filter name="clicked" string="Cliccate" domain="[('links_click_datetime', '!=', False)]"/>
+                <filter name="bounced" string="Bounced" domain="[('trace_status', '=', 'bounce')]"/>
+                <filter name="replied" string="Replied" domain="[('trace_status', '=', 'reply')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_mailing" string="Mailing" context="{'group_by': 'mass_mailing_id'}"/>
+                    <filter name="group_status" string="Stato" context="{'group_by': 'trace_status'}"/>
+                    <filter name="group_date" string="Data" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>
