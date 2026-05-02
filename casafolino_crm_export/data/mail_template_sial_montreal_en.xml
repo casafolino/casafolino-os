@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="email_template_sial_montreal_en" model="mail.template">
+        <field name="name">SIAL Montreal 2026 - Follow-up EN</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Following up on our meeting at SIAL Canada — CasaFolino</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html" type="html">
+<p>Dear {{ object.partner_id.name }},</p>
+
+<p>It was a pleasure meeting you at SIAL Canada in Montréal and discussing potential opportunities together.</p>
+
+<p>Allow me to briefly introduce CasaFolino — an Italian family-owned company focused on structured retail and foodservice, specialised in the development and production of food products that combine perceived quality, industrial reliability, and sustainable market positioning.</p>
+
+<p>Our approach is simple: to deliver products that perform on shelf and in kitchen — ensuring rotation, continuity, and margin — without relying on forced or unsustainable premium positioning.</p>
+
+<p>We work across both branded and Private Label projects, with a KPI-driven mindset:<br/>
+• balanced recipes designed for stability, shelf life, and consistency<br/>
+• formats and packaging optimised for rotation and logistics efficiency<br/>
+• pricing built for competitiveness and long-term sustainability<br/>
+• reliable, scalable production processes</p>
+
+<p>Our core product categories include:<br/>
+• sweet &amp; savoury spreads<br/>
+• flavoured honeys and honey-based specialties<br/>
+• ready-to-cook risottos<br/>
+• condiments and accessible gourmet references</p>
+
+<p>We offer flexible formats from 28 g up to 25 kg, supporting:<br/>
+• Branded retail<br/>
+• Private Label<br/>
+• Foodservice &amp; horeca<br/>
+• Industrial &amp; co-manufacturing projects</p>
+
+<p>All products are manufactured in Italy under certified standards:<br/>
+✔️ BRC &amp; IFS<br/>
+✔️ Halal &amp; Kosher<br/>
+✔️ Organic options on selected references</p>
+
+<p>We would be glad to explore a potential collaboration and better understand your priorities.</p>
+
+<p><strong>My Export Manager, Josefina Lazzaro (in CC), will be in touch with you shortly to take care of the commercial follow-up.</strong></p>
+
+<p>Next steps could be:<br/>
+• reviewing a specific category of interest<br/>
+• evaluating branded or Private Label opportunities<br/>
+• developing a tailored proposal (recipe · format · price positioning)<br/>
+• or scheduling a short operational call to assess feasibility and timing</p>
+
+<p>I remain at your full disposal and look forward to your feedback.</p>
+
+<p>Warm regards,</p>
+
+<p><strong>Antonio Folino</strong><br/>
+CEO &amp; Founder — CasaFolino S.r.l. Società Benefit<br/>
+casafolino.com | Lamezia Terme (CZ), Italy</p>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+</odoo>
