@@ -1,4 +1,6 @@
 from . import crm_lead
+from . import cf_crm_stage
+from . import cf_mail_activity
 from . import card_scanner
 from . import cf_export_sample
 from . import cf_export_fair

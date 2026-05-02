@@ -33,31 +33,25 @@
     <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
         web_icon="casafolino_crm_export,static/description/icon.png"/>
 
-    <!-- Card Scanner — first item, prominent -->
-    <menuitem id="menu_card_scanner" name="📷 Nuovo lead da biglietto"
+    <!-- Card Scanner — first item -->
+    <menuitem id="menu_card_scanner" name="Nuovo lead da biglietto"
         parent="menu_cf_export_root" action="action_card_scanner" sequence="0"/>
 
-    <!-- Pipeline -->
+    <!-- Pipeline principale -->
     <menuitem id="menu_cf_all" name="Tutte le Pipeline"
-        parent="menu_cf_export_root" action="action_cf_crm_all" sequence="1"/>
-    <menuitem id="menu_cf_america" name="America"
-        parent="menu_cf_export_root" action="action_cf_crm_america" sequence="2"/>
-    <menuitem id="menu_cf_europa" name="Europa"
-        parent="menu_cf_export_root" action="action_cf_crm_europa" sequence="3"/>
-    <menuitem id="menu_cf_italia" name="Italia"
-        parent="menu_cf_export_root" action="action_cf_crm_italia" sequence="4"/>
-    <menuitem id="menu_cf_medio_oriente" name="Medio Oriente"
-        parent="menu_cf_export_root" action="action_cf_crm_medio_oriente" sequence="5"/>
-    <menuitem id="menu_cf_australia" name="Australia"
-        parent="menu_cf_export_root" action="action_cf_crm_australia" sequence="6"/>
-    <menuitem id="menu_cf_altri" name="Altri Mercati"
-        parent="menu_cf_export_root" action="action_cf_crm_altri" sequence="7"/>
+        parent="menu_cf_export_root" action="action_cf_crm_all" sequence="10"/>
+
+    <!-- Operatori -->
+    <menuitem id="menu_cf_antonio" name="Antonio"
+        parent="menu_cf_export_root" action="action_crm_lead_antonio" sequence="15"/>
+    <menuitem id="menu_cf_josefina" name="Josefina"
+        parent="menu_cf_export_root" action="action_crm_lead_josefina" sequence="20"/>
 
     <!-- Operativo -->
     <menuitem id="menu_cf_samples" name="Campionature"
-        parent="menu_cf_export_root" action="action_cf_sample" sequence="10"/>
+        parent="menu_cf_export_root" action="action_cf_sample" sequence="30"/>
     <menuitem id="menu_cf_fairs" name="Fiere"
-        parent="menu_cf_export_root" action="action_cf_fair" sequence="11"/>
+        parent="menu_cf_export_root" action="action_cf_fair" sequence="31"/>
 
     <!-- Configurazione -->
     <menuitem id="menu_cf_config" name="Configurazione"

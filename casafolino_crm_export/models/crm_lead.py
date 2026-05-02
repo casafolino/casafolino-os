@@ -1,30 +1,20 @@
+import logging
 from datetime import date, timedelta
 
 from odoo import api, fields, models
 
+_logger = logging.getLogger(__name__)
+
+USER_COLOR_MAP = {
+    'antonio@casafolino.com': '#3F8A4F',
+    'josefina.lazzaro@casafolino.com': '#8B5CF6',
+    'martina.sinopoli@casafolino.com': '#6B4A1E',
+}
+DEFAULT_USER_COLOR = '#D1D5DB'
+
 
 class CrmLead(models.Model):
     _inherit = 'crm.lead'
-
-    # --- Mercato / Canale ---
-    cf_market = fields.Selection([
-        ('america', 'America'),
-        ('europa', 'Europa'),
-        ('italia', 'Italia'),
-        ('medio_oriente', 'Medio Oriente'),
-        ('australia', 'Australia'),
-        ('altri', 'Altri'),
-    ], string='Mercato', tracking=True)
-
-    cf_channel = fields.Selection([
-        ('gdo', 'GDO'),
-        ('importatore', 'Importatore'),
-        ('distributore', 'Distributore'),
-        ('horeca', 'Ho.Re.Ca.'),
-        ('ecommerce', 'E-commerce'),
-        ('private_label', 'Private Label'),
-        ('foodservice', 'Foodservice'),
-    ], string='Canale', tracking=True)
 
     # --- Scoring ---
     cf_lead_score = fields.Integer(
@@ -109,6 +99,102 @@ class CrmLead(models.Model):
     cf_next_activity_date = fields.Date(
         string='Data Prossima Attività', compute='_compute_cf_next_activity',
     )
+
+    # --- Colore operatore (bordo kanban) ---
+    cf_user_color = fields.Char(
+        string='Colore Operatore',
+        compute='_compute_cf_user_color',
+        store=False,
+    )
+
+    # ------------------------------------------------------------------
+    # Write override — probability from stage + standby exit
+    # ------------------------------------------------------------------
+
+    def write(self, vals):
+        # Detect stage change for standby exit logic
+        old_stage_ids = {}
+        if 'stage_id' in vals:
+            standby_stage = self.env['crm.stage'].search([('name', '=', 'Standby')], limit=1)
+            if standby_stage:
+                for lead in self:
+                    old_stage_ids[lead.id] = lead.stage_id.id
+
+        res = super().write(vals)
+
+        if 'stage_id' in vals:
+            new_stage = self.env['crm.stage'].browse(vals['stage_id'])
+            if new_stage.exists():
+                standby_stage = self.env['crm.stage'].search([('name', '=', 'Standby')], limit=1)
+                for lead in self:
+                    # Auto-set probability from stage (skip Standby = keep current)
+                    if new_stage.name == 'Standby':
+                        pass  # mantiene probabilità attuale
+                    elif new_stage.cf_probability_default is not False:
+                        lead.probability = new_stage.cf_probability_default
+
+                    # Exit from Standby → reset last contact date
+                    if standby_stage and old_stage_ids.get(lead.id) == standby_stage.id and new_stage.id != standby_stage.id:
+                        lead.cf_date_last_contact = fields.Date.context_today(self)
+
+        return res
+
+    # ------------------------------------------------------------------
+    # message_post override — update cf_date_last_contact on email
+    # ------------------------------------------------------------------
+
+    def message_post(self, **kwargs):
+        res = super().message_post(**kwargs)
+        message_type = kwargs.get('message_type', '')
+        if message_type in ('email', 'email_outgoing'):
+            self.sudo().write({'cf_date_last_contact': fields.Date.context_today(self)})
+        return res
+
+    # ------------------------------------------------------------------
+    # Cron: Auto-Standby lead inattivi
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _cron_move_to_standby(self):
+        standby_stage = self.env['crm.stage'].search([('name', '=', 'Standby')], limit=1)
+        if not standby_stage:
+            _logger.warning('CasaFolino: stage Standby non trovato, cron skip.')
+            return
+
+        won_stage = self.env['crm.stage'].search([('name', '=', 'Vinta')], limit=1)
+        lost_stage = self.env['crm.stage'].search([('name', '=', 'Persa')], limit=1)
+        excluded_ids = [s.id for s in (won_stage, lost_stage, standby_stage) if s]
+
+        cutoff = fields.Date.context_today(self) - timedelta(days=30)
+
+        leads = self.search([
+            ('type', '=', 'opportunity'),
+            ('active', '=', True),
+            ('stage_id', 'not in', excluded_ids),
+            '|',
+            '&', ('cf_date_last_contact', '!=', False), ('cf_date_last_contact', '<', cutoff),
+            '&', ('cf_date_last_contact', '=', False), ('create_date', '<', cutoff),
+        ])
+
+        if leads:
+            _logger.info('CasaFolino: spostamento %d lead in Standby.', len(leads))
+            for lead in leads:
+                lead.stage_id = standby_stage.id
+                lead.message_post(
+                    body='Lead spostato automaticamente in Standby: nessun contatto da oltre 30 giorni.',
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note',
+                )
+
+    # ------------------------------------------------------------------
+    # Compute — user color
+    # ------------------------------------------------------------------
+
+    @api.depends('user_id')
+    def _compute_cf_user_color(self):
+        for lead in self:
+            login = lead.user_id.login if lead.user_id else None
+            lead.cf_user_color = USER_COLOR_MAP.get(login, DEFAULT_USER_COLOR)
 
     # ------------------------------------------------------------------
     # Compute
@@ -205,7 +291,6 @@ class CrmLead(models.Model):
         for lead in self:
             score = 0
 
-            # Ultimo contatto recente
             if lead.cf_date_last_contact:
                 days_since = (today - lead.cf_date_last_contact).days
                 if days_since <= 7:
@@ -213,28 +298,23 @@ class CrmLead(models.Model):
                 elif days_since > 14:
                     score -= 20
 
-            # Campionature
             sample_states = lead.cf_sample_ids.mapped('state')
             if any(s in ('sent', 'received', 'feedback_ok') for s in sample_states):
                 score += 15
             if 'feedback_ok' in sample_states:
                 score += 20
 
-            # Ordini collegati
             if hasattr(lead, "order_ids") and lead.order_ids:
                 score += 25
 
-            # Stage avanzato
             if lead.stage_id and lead.stage_id.sequence and lead.stage_id.sequence >= 4:
                 score += 10
 
-            # Priorità
             if lead.priority == '1':
                 score += 5
             elif lead.priority in ('2', '3'):
                 score += 10
 
-            # Penalità
             if not lead.cf_date_next_followup:
                 score -= 10
             if not lead.activity_ids:
@@ -359,10 +439,6 @@ class CrmLead(models.Model):
             'followup_today': len(leads.filtered(
                 lambda l: l.cf_date_next_followup == today
             )),
-            'by_market': {
-                market: len(leads.filtered(lambda l, m=market: l.cf_market == m))
-                for market in ('america', 'europa', 'italia', 'medio_oriente', 'australia', 'altri')
-            },
         }
 
 

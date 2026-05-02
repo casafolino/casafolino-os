@@ -68,7 +68,6 @@
                 <field name="date_sent"/>
                 <field name="tracking_number"/>
                 <field name="feedback_score"/>
-                <field name="cf_market"/>
             </list>
         </field>
     </record>
@@ -136,14 +135,9 @@
                 <filter string="Spedite" name="sent" domain="[('state','=','sent')]"/>
                 <filter string="Feedback Positivo" name="feedback_ok" domain="[('state','=','feedback_ok')]"/>
                 <filter string="Feedback Negativo" name="feedback_ko" domain="[('state','=','feedback_ko')]"/>
-                <separator/>
-                <filter string="America" name="market_america" domain="[('cf_market','=','america')]"/>
-                <filter string="Europa" name="market_europa" domain="[('cf_market','=','europa')]"/>
-                <filter string="Italia" name="market_italia" domain="[('cf_market','=','italia')]"/>
                 <group expand="0" string="Raggruppa per">
                     <filter string="Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
                     <filter string="Stato" name="group_state" context="{'group_by': 'state'}"/>
-                    <filter string="Mercato" name="group_market" context="{'group_by': 'cf_market'}"/>
                 </group>
             </search>
         </field>
