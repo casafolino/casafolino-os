@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_mail_templates_root"
+              name="Template Email"
+              parent="casafolino_mail.menu_casafolino_mail_root"
+              sequence="50"/>
+
+    <menuitem id="menu_mail_templates_list"
+              name="Tutti i Template"
+              parent="menu_mail_templates_root"
+              action="action_mail_templates_cf"
+              sequence="10"/>
+
+    <menuitem id="menu_mail_templates_tags"
+              name="Tag"
+              parent="menu_mail_templates_root"
+              action="action_mail_template_tags"
+              sequence="20"/>
+
+    <menuitem id="menu_mail_templates_snippets"
+              name="Libreria Snippet"
+              parent="menu_mail_templates_root"
+              action="action_mail_snippets"
+              sequence="30"/>
+
+    <menuitem id="menu_mail_templates_new_fair"
+              name="Nuova Fiera"
+              parent="menu_mail_templates_root"
+              action="action_new_fair_wizard"
+              sequence="40"/>
+
+</odoo>

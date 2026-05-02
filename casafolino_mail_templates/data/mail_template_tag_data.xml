@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="tag_sial_montreal_2026" model="casafolino.mail.template.tag">
+        <field name="name">SIAL Montreal 2026</field>
+        <field name="is_fair_tag">True</field>
+        <field name="color">4</field>
+        <field name="sequence">1</field>
+        <field name="description">Template per follow-up fiera SIAL Canada 2026</field>
+    </record>
+
+    <record id="tag_follow_up" model="casafolino.mail.template.tag">
+        <field name="name">Follow-up</field>
+        <field name="color">2</field>
+        <field name="sequence">10</field>
+        <field name="description">Follow-up post-fiera o post-meeting</field>
+    </record>
+
+    <record id="tag_cold_outreach" model="casafolino.mail.template.tag">
+        <field name="name">Cold Outreach</field>
+        <field name="color">1</field>
+        <field name="sequence">20</field>
+        <field name="description">Primi contatti</field>
+    </record>
+
+    <record id="tag_newsletter" model="casafolino.mail.template.tag">
+        <field name="name">Newsletter</field>
+        <field name="color">3</field>
+        <field name="sequence">30</field>
+        <field name="description">Comunicazioni periodiche</field>
+    </record>
+
+    <record id="tag_internal" model="casafolino.mail.template.tag">
+        <field name="name">Internal</field>
+        <field name="color">0</field>
+        <field name="sequence">40</field>
+        <field name="description">Comunicazioni interne</field>
+    </record>
+
+</odoo>
