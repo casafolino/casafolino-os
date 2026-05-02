@@ -282,14 +282,14 @@ def _ensure_standby_cron(cr):
     """, (name_json, model_id))
     server_id = cr.fetchone()[0]
 
-    # Step 2: create ir.cron
+    # Step 2: create ir.cron (Odoo 18: no numbercall column)
     cr.execute("""
         INSERT INTO ir_cron (
             cron_name, ir_actions_server_id, active, interval_number, interval_type,
-            numbercall, priority, create_uid, write_uid, create_date, write_date
+            priority, nextcall, create_uid, write_uid, create_date, write_date
         ) VALUES (
             'CasaFolino: Auto-Standby Lead inattivi',
-            %s, true, 1, 'days', -1, 5, 1, 1, NOW(), NOW()
+            %s, true, 1, 'days', 5, NOW() + interval '1 day', 1, 1, NOW(), NOW()
         )
     """, (server_id,))
     _logger.info('Migration: created Standby cron (server_id=%d)', server_id)

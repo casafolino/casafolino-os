@@ -16,6 +16,5 @@ def _post_init_hook(env):
             'code': 'model._cron_move_to_standby()',
             'interval_number': 1,
             'interval_type': 'days',
-            'numbercall': -1,
             'active': True,
         })
