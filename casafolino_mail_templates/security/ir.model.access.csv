@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mail_template_tag_user,casafolino.mail.template.tag.user,model_casafolino_mail_template_tag,base.group_user,1,1,1,0
+access_mail_template_tag_admin,casafolino.mail.template.tag.admin,model_casafolino_mail_template_tag,base.group_system,1,1,1,1
+access_mail_snippet_user,casafolino.mail.snippet.user,model_casafolino_mail_snippet,base.group_user,1,0,0,0
+access_mail_snippet_admin,casafolino.mail.snippet.admin,model_casafolino_mail_snippet,base.group_system,1,1,1,1
+access_fair_wizard,mail.template.fair.wizard.user,model_mail_template_fair_wizard,base.group_user,1,1,1,1

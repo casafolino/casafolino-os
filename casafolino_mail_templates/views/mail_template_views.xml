@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Search view -->
+    <record id="view_mail_template_cf_search" model="ir.ui.view">
+        <field name="name">mail.template.cf.search</field>
+        <field name="model">mail.template</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <search string="Template Email CasaFolino">
+                <field name="name"/>
+                <field name="subject"/>
+                <field name="cf_tag_ids"/>
+                <field name="cf_owner_id"/>
+                <field name="model_id"/>
+                <separator/>
+                <filter name="fair_templates" string="Fiere" domain="[('cf_is_fair_template', '=', True)]"/>
+                <filter name="my_templates" string="I miei" domain="[('cf_owner_id', '=', uid)]"/>
+                <filter name="partner_model" string="Partner" domain="[('model', '=', 'res.partner')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_by_tag" string="Tag" context="{'group_by': 'cf_tag_ids'}"/>
+                    <filter name="group_by_model" string="Modello" context="{'group_by': 'model_id'}"/>
+                    <filter name="group_by_owner" string="Proprietario" context="{'group_by': 'cf_owner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- List view -->
+    <record id="view_mail_template_cf_list" model="ir.ui.view">
+        <field name="name">mail.template.cf.list</field>
+        <field name="model">mail.template</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <list multi_edit="1" decoration-success="cf_is_fair_template">
+                <field name="name"/>
+                <field name="model_id" string="Modello"/>
+                <field name="subject"/>
+                <field name="cf_tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                <field name="cf_owner_id" optional="show"/>
+                <field name="cf_use_count" string="Invii"/>
+                <field name="cf_is_fair_template" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view inheritance -->
+    <record id="view_mail_template_cf_form" model="ir.ui.view">
+        <field name="name">mail.template.cf.form</field>
+        <field name="model">mail.template</field>
+        <field name="inherit_id" ref="mail.email_template_form"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="cf_tag_ids" widget="many2many_tags"
+                       options="{'color_field': 'color', 'no_create_edit': False}"/>
+                <field name="cf_owner_id"/>
+            </xpath>
+            <xpath expr="//field[@name='body_html']" position="before">
+                <div class="alert alert-info mb-2" role="status">
+                    <strong>Sintassi placeholder:</strong>
+                    Body: <code>&lt;t t-out="object.name"/&gt;</code> —
+                    Subject/CC: <code>{{ object.field }}</code>
+                </div>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group string="CasaFolino">
+                    <group>
+                        <field name="cf_is_fair_template" readonly="1"/>
+                        <field name="cf_use_count" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_mail_templates_cf" model="ir.actions.act_window">
+        <field name="name">Template Email</field>
+        <field name="res_model">mail.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_mail_template_cf_search"/>
+        <field name="context">{'default_cf_owner_id': uid}</field>
+    </record>
+
+    <record id="action_mail_templates_cf_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_mail_template_cf_list"/>
+        <field name="act_window_id" ref="action_mail_templates_cf"/>
+    </record>
+
+</odoo>

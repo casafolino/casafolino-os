@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="snippet_opening_en" model="casafolino.mail.snippet">
+        <field name="name">Saluto apertura EN</field>
+        <field name="category">opening</field>
+        <field name="language">en</field>
+        <field name="sequence">1</field>
+        <field name="body_html"><![CDATA[<p>Dear <strong><t t-out="object.name or object.email or 'Sir/Madam'"/></strong>,</p><p>I hope you are doing well.</p>]]></field>
+    </record>
+
+    <record id="snippet_opening_fr" model="casafolino.mail.snippet">
+        <field name="name">Saluto apertura FR</field>
+        <field name="category">opening</field>
+        <field name="language">fr</field>
+        <field name="sequence">2</field>
+        <field name="body_html"><![CDATA[<p>Cher(e) <strong><t t-out="object.name or object.email or 'Monsieur/Madame'"/></strong>,</p><p>J'espère que vous allez bien.</p>]]></field>
+    </record>
+
+    <record id="snippet_intro_en" model="casafolino.mail.snippet">
+        <field name="name">Intro CasaFolino EN</field>
+        <field name="category">intro</field>
+        <field name="language">en</field>
+        <field name="sequence">3</field>
+        <field name="body_html"><![CDATA[<p><strong>CasaFolino</strong> is an artisan gourmet food producer from Pianopoli, Calabria (Italy). We craft premium sauces, preserves, and specialties using traditional recipes and locally-sourced ingredients.</p>]]></field>
+    </record>
+
+    <record id="snippet_intro_fr" model="casafolino.mail.snippet">
+        <field name="name">Intro CasaFolino FR</field>
+        <field name="category">intro</field>
+        <field name="language">fr</field>
+        <field name="sequence">4</field>
+        <field name="body_html"><![CDATA[<p><strong>CasaFolino</strong> est un producteur artisanal de produits gastronomiques de Pianopoli, Calabre (Italie). Nous élaborons des sauces, conserves et spécialités premium à partir de recettes traditionnelles et d'ingrédients locaux.</p>]]></field>
+    </record>
+
+    <record id="snippet_certs_en" model="casafolino.mail.snippet">
+        <field name="name">Certificazioni EN</field>
+        <field name="category">certifications</field>
+        <field name="language">en</field>
+        <field name="sequence">5</field>
+        <field name="body_html"><![CDATA[<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f7f5f1;border-left:3px solid #5A6E3A;margin:0 0 18px 0;"><tr><td style="padding:14px 18px;font-size:14px;color:#2c2c2c;"><strong>Our Certifications:</strong> BRC Grade A, IFS Higher Level, HACCP, Organic (EU &amp; USDA), Kosher, Halal</td></tr></table>]]></field>
+    </record>
+
+    <record id="snippet_certs_fr" model="casafolino.mail.snippet">
+        <field name="name">Certificazioni FR</field>
+        <field name="category">certifications</field>
+        <field name="language">fr</field>
+        <field name="sequence">6</field>
+        <field name="body_html"><![CDATA[<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f7f5f1;border-left:3px solid #5A6E3A;margin:0 0 18px 0;"><tr><td style="padding:14px 18px;font-size:14px;color:#2c2c2c;"><strong>Nos Certifications :</strong> BRC Grade A, IFS Higher Level, HACCP, Biologique (UE &amp; USDA), Kasher, Halal</td></tr></table>]]></field>
+    </record>
+
+    <record id="snippet_attachments_en" model="casafolino.mail.snippet">
+        <field name="name">Box allegati EN</field>
+        <field name="category">attachments</field>
+        <field name="language">en</field>
+        <field name="sequence">7</field>
+        <field name="body_html"><![CDATA[<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f7f5f1;border-left:3px solid #6B4A1E;margin:0 0 22px 0;"><tr><td style="padding:14px 18px;font-size:14px;color:#2c2c2c;">📎 Please find our <strong>Catalogue</strong> and <strong>Company Profile</strong> attached to this email.</td></tr></table>]]></field>
+    </record>
+
+    <record id="snippet_attachments_fr" model="casafolino.mail.snippet">
+        <field name="name">Box allegati FR</field>
+        <field name="category">attachments</field>
+        <field name="language">fr</field>
+        <field name="sequence">8</field>
+        <field name="body_html"><![CDATA[<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f7f5f1;border-left:3px solid #6B4A1E;margin:0 0 22px 0;"><tr><td style="padding:14px 18px;font-size:14px;color:#2c2c2c;">📎 Veuillez trouver notre <strong>Catalogue</strong> et <strong>Profil d'entreprise</strong> ci-joints.</td></tr></table>]]></field>
+    </record>
+
+    <record id="snippet_cta_en" model="casafolino.mail.snippet">
+        <field name="name">CTA Meeting EN</field>
+        <field name="category">cta</field>
+        <field name="language">en</field>
+        <field name="sequence">9</field>
+        <field name="body_html"><![CDATA[<p style="text-align:center;margin:24px 0;"><a href="mailto:antonio@casafolino.com" style="display:inline-block;background:#5A6E3A;color:#ffffff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;">Schedule a Call</a></p>]]></field>
+    </record>
+
+    <record id="snippet_signature" model="casafolino.mail.snippet">
+        <field name="name">Firma Antonio</field>
+        <field name="category">signature</field>
+        <field name="language">any</field>
+        <field name="sequence">10</field>
+        <field name="body_html"><![CDATA[<p style="margin-top:24px;font-size:13px;color:#555;">
+<strong>Antonio Folino</strong><br/>
+CEO &amp; Founder<br/>
+CasaFolino Srls Società Benefit<br/>
+📧 antonio@casafolino.com<br/>
+📞 +39 0968 123456<br/>
+🌐 casafolino.com
+</p>]]></field>
+    </record>
+
+</odoo>

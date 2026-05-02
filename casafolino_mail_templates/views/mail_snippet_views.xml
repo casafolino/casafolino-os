@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mail_snippet_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.list</field>
+        <field name="model">casafolino.mail.snippet</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category" widget="badge"/>
+                <field name="language" widget="badge"/>
+                <field name="description"/>
+                <field name="is_active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mail_snippet_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.form</field>
+        <field name="model">casafolino.mail.snippet</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="category"/>
+                            <field name="language"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="is_active"/>
+                            <field name="description"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="HTML">
+                            <field name="body_html"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_mail_snippet_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.search</field>
+        <field name="model">casafolino.mail.snippet</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="language"/>
+                <filter name="active_only" string="Attivi" domain="[('is_active', '=', True)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_category" string="Categoria" context="{'group_by': 'category'}"/>
+                    <filter name="group_language" string="Lingua" context="{'group_by': 'language'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_mail_snippets" model="ir.actions.act_window">
+        <field name="name">Libreria Snippet</field>
+        <field name="res_model">casafolino.mail.snippet</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_mail_snippet_search"/>
+        <field name="context">{'search_default_active_only': 1}</field>
+    </record>
+
+</odoo>
