@@ -266,19 +266,20 @@ def _ensure_standby_cron(cr):
         return
     model_id = model_row[0]
 
-    # Step 1: create ir.actions.server
+    # Step 1: create ir.actions.server (name is JSONB in Odoo 18)
+    name_json = json.dumps({"en_US": "CasaFolino: Auto-Standby Lead inattivi"})
     cr.execute("""
         INSERT INTO ir_act_server (
             name, model_id, state, code, type,
             binding_type, usage,
             create_uid, write_uid, create_date, write_date
         ) VALUES (
-            'CasaFolino: Auto-Standby Lead inattivi',
+            %s::jsonb,
             %s, 'code', 'model._cron_move_to_standby()', 'ir.actions.server',
             'action', 'ir_cron',
             1, 1, NOW(), NOW()
         ) RETURNING id
-    """, (model_id,))
+    """, (name_json, model_id))
     server_id = cr.fetchone()[0]
 
     # Step 2: create ir.cron
