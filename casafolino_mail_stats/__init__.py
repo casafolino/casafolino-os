@@ -15,7 +15,6 @@ def _post_init_hook(env):
             'code': 'model._rebuild_cache_full()',
             'interval_number': 15,
             'interval_type': 'minutes',
-            'numbercall': -1,
             'active': True,
         })
 
@@ -27,7 +26,6 @@ def _post_init_hook(env):
             'code': 'model._check_hot_leads_activity()',
             'interval_number': 1,
             'interval_type': 'hours',
-            'numbercall': -1,
             'active': True,
         })
 
