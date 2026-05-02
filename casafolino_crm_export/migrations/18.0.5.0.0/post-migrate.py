@@ -266,26 +266,29 @@ def _ensure_standby_cron(cr):
         return
     model_id = model_row[0]
 
+    # Step 1: create ir.actions.server
+    cr.execute("""
+        INSERT INTO ir_act_server (
+            name, model_id, state, code, type,
+            binding_type, usage,
+            create_uid, write_uid, create_date, write_date
+        ) VALUES (
+            'CasaFolino: Auto-Standby Lead inattivi',
+            %s, 'code', 'model._cron_move_to_standby()', 'ir.actions.server',
+            'action', 'ir_cron',
+            1, 1, NOW(), NOW()
+        ) RETURNING id
+    """, (model_id,))
+    server_id = cr.fetchone()[0]
+
+    # Step 2: create ir.cron
     cr.execute("""
         INSERT INTO ir_cron (
             cron_name, ir_actions_server_id, active, interval_number, interval_type,
             numbercall, priority, create_uid, write_uid, create_date, write_date
-        )
-        SELECT
+        ) VALUES (
             'CasaFolino: Auto-Standby Lead inattivi',
-            s.id, true, 1, 'days', -1, 5, 1, 1, NOW(), NOW()
-        FROM ir_act_server s
-        WHERE s.id = (
-            INSERT INTO ir_act_server (
-                name, model_id, state, code, type,
-                binding_type, usage,
-                create_uid, write_uid, create_date, write_date
-            ) VALUES (
-                'CasaFolino: Auto-Standby Lead inattivi',
-                %s, 'code', 'model._cron_move_to_standby()', 'ir.actions.server',
-                'action', 'ir_cron',
-                1, 1, NOW(), NOW()
-            ) RETURNING id
+            %s, true, 1, 'days', -1, 5, 1, 1, NOW(), NOW()
         )
-    """, (model_id,))
-    _logger.info('Migration: created Standby cron')
+    """, (server_id,))
+    _logger.info('Migration: created Standby cron (server_id=%d)', server_id)
