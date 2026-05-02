@@ -4,19 +4,22 @@ Migration v18.0.5.0.0 — CRM Export pipeline restructure
 1. Map old stages → new 9-stage pipeline
 2. Migrate cf_market / cf_channel Selection → crm.tag M2M
 3. Drop cf_market / cf_channel columns from crm_lead and cf_export_sample
+
+NOTE: In Odoo 18 translated fields (crm_stage.name, crm_tag.name) are JSONB.
+All queries use name->>'en_US' or name->>'it_IT' for comparison.
 """
 import logging
 
 _logger = logging.getLogger(__name__)
 
-# Old stage name → new stage name
+# Old stage it_IT name → new stage en_US name (as created by XML data)
 STAGE_MAP = {
     'Contatto': 'Primo Contatto',
     'Qualificazione': 'Interesse',
-    'Preventivo': 'Preventivo',
-    'Negoziazione': 'Negoziazione',
-    'Vinta': 'Vinta',
-    'Persa': 'Persa',
+    # 'Preventivo' → 'Preventivo' — same name, skip
+    # 'Negoziazione' → 'Negoziazione' — same name, skip
+    # 'Vinta' → 'Vinta' — same name, skip
+    # 'Persa' → 'Persa' — same name, skip
 }
 
 # cf_market selection key → tag name
@@ -49,42 +52,50 @@ def migrate(cr, version):
 
     # ──────────────────────────────────────────────
     # 1. Stage migration
-    # ──────────────────────────────────────────────
+    # ─────────────────────────���────────────────────
     _migrate_stages(cr)
 
-    # ──────────────────────────────────────────────
+    # ───���──────────────────────────────────────────
     # 2. Tag migration (cf_market → crm.tag)
-    # ──────────────────────────────────────────────
-    _check_columns_exist(cr)
+    # ───────────────��──────────────────��───────────
     _migrate_market_tags(cr)
     _migrate_channel_tags(cr)
 
-    # ──────────────────────────────────────────────
+    # ────────────────────────────────────────────���─
     # 3. Drop old columns
-    # ──────────────────────────────────────────────
+    # ────────��────────────────────────────────────��
     _drop_old_columns(cr)
 
     _logger.info('CasaFolino: v18.0.5.0.0 migration completed')
 
 
+def _find_stage_by_name(cr, name):
+    """Find stage by name checking both en_US and it_IT JSONB keys."""
+    cr.execute("""
+        SELECT id FROM crm_stage
+        WHERE name->>'en_US' = %s OR name->>'it_IT' = %s
+        LIMIT 1
+    """, (name, name))
+    row = cr.fetchone()
+    return row[0] if row else None
+
+
 def _migrate_stages(cr):
     """Map leads from old stages to new stages, delete orphan old stages."""
     for old_name, new_name in STAGE_MAP.items():
-        if old_name == new_name:
+        new_id = _find_stage_by_name(cr, new_name)
+        if not new_id:
+            _logger.warning('CasaFolino migration: new stage "%s" not found, skip', new_name)
             continue
 
-        # Find new stage
-        cr.execute("SELECT id FROM crm_stage WHERE name = %s LIMIT 1", (new_name,))
-        new_row = cr.fetchone()
-        if not new_row:
-            _logger.warning('CasaFolino migration: new stage %s not found, skip mapping from %s', new_name, old_name)
-            continue
-        new_id = new_row[0]
-
-        # Find old stage (only if different from new)
-        cr.execute("SELECT id FROM crm_stage WHERE name = %s AND id != %s", (old_name, new_id))
+        # Find old stage by it_IT name, excluding the new stage id
+        cr.execute("""
+            SELECT id FROM crm_stage
+            WHERE (name->>'it_IT' = %s OR name->>'en_US' = %s) AND id != %s
+        """, (old_name, old_name, new_id))
         old_row = cr.fetchone()
         if not old_row:
+            _logger.info('CasaFolino migration: old stage "%s" not found or already migrated', old_name)
             continue
         old_id = old_row[0]
 
@@ -102,28 +113,23 @@ def _migrate_stages(cr):
             _logger.info('CasaFolino migration: deleted old stage "%s" (id=%d)', old_name, old_id)
 
 
-def _check_columns_exist(cr):
-    """Verify cf_market and cf_channel columns exist before migrating."""
+def _find_or_create_tag(cr, name, color):
+    """Get tag id by name (JSONB), create if not exists. Idempotent."""
     cr.execute("""
-        SELECT column_name FROM information_schema.columns
-        WHERE table_name = 'crm_lead' AND column_name IN ('cf_market', 'cf_channel')
-    """)
-    existing = {row[0] for row in cr.fetchall()}
-    if 'cf_market' not in existing:
-        _logger.info('CasaFolino migration: cf_market column already dropped, skip market tag migration')
-    if 'cf_channel' not in existing:
-        _logger.info('CasaFolino migration: cf_channel column already dropped, skip channel tag migration')
-    return existing
-
-
-def _get_or_create_tag(cr, name, color):
-    """Get tag id by name, create if not exists. Idempotent."""
-    cr.execute("SELECT id FROM crm_tag WHERE name = %s LIMIT 1", (name,))
+        SELECT id FROM crm_tag
+        WHERE name->>'en_US' = %s OR name->>'it_IT' = %s
+        LIMIT 1
+    """, (name, name))
     row = cr.fetchone()
     if row:
         return row[0]
-    cr.execute("INSERT INTO crm_tag (name, color, create_uid, write_uid, create_date, write_date) "
-               "VALUES (%s, %s, 1, 1, NOW(), NOW()) RETURNING id", (name, color))
+    # Create with JSONB name
+    import json
+    name_json = json.dumps({"en_US": name})
+    cr.execute("""
+        INSERT INTO crm_tag (name, color, create_uid, write_uid, create_date, write_date)
+        VALUES (%s::jsonb, %s, 1, 1, NOW(), NOW()) RETURNING id
+    """, (name_json, color))
     tag_id = cr.fetchone()[0]
     _logger.info('CasaFolino migration: created tag "%s" (id=%d)', name, tag_id)
     return tag_id
@@ -144,10 +150,11 @@ def _migrate_market_tags(cr):
         WHERE table_name = 'crm_lead' AND column_name = 'cf_market'
     """)
     if not cr.fetchone():
+        _logger.info('CasaFolino migration: cf_market column not found, skip market tags')
         return
 
     for key, tag_name in MARKET_TAG_MAP.items():
-        tag_id = _get_or_create_tag(cr, tag_name, 1)  # color 1 = blue
+        tag_id = _find_or_create_tag(cr, tag_name, 1)  # color 1 = blue
         cr.execute("SELECT id FROM crm_lead WHERE cf_market = %s", (key,))
         lead_ids = [row[0] for row in cr.fetchall()]
         for lead_id in lead_ids:
@@ -163,10 +170,11 @@ def _migrate_channel_tags(cr):
         WHERE table_name = 'crm_lead' AND column_name = 'cf_channel'
     """)
     if not cr.fetchone():
+        _logger.info('CasaFolino migration: cf_channel column not found, skip channel tags')
         return
 
     for key, tag_name in CHANNEL_TAG_MAP.items():
-        tag_id = _get_or_create_tag(cr, tag_name, 2)  # color 2 = orange
+        tag_id = _find_or_create_tag(cr, tag_name, 2)  # color 2 = orange
         cr.execute("SELECT id FROM crm_lead WHERE cf_channel = %s", (key,))
         lead_ids = [row[0] for row in cr.fetchall()]
         for lead_id in lead_ids:
