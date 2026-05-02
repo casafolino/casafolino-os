@@ -1,0 +1,36 @@
+{
+    'name': 'CasaFolino Mail Stats',
+    'version': '18.0.0.1.0',
+    'summary': 'Tracking aperture/click/bounce/reply visibile in Mail Hub, Lavagna, Partner, Lead',
+    'category': 'CasaFolino',
+    'author': 'CasaFolino',
+    'depends': [
+        'mail',
+        'mass_mailing',
+        'mass_mailing_crm',
+        'crm',
+        'casafolino_mail',
+        'casafolino_initiative_dashboard',
+        'casafolino_crm_export',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+        'data/ir_cron_data.xml',
+        'data/ir_config_parameter_data.xml',
+        'views/res_partner_views.xml',
+        'views/crm_lead_views.xml',
+        'views/mailing_trace_views.xml',
+        'views/casafolino_mail_hub_views.xml',
+        'views/menu_views.xml',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'casafolino_mail_stats/static/src/components/mail_engagement_badge/mail_engagement_badge.js',
+            'casafolino_mail_stats/static/src/components/mail_engagement_badge/mail_engagement_badge.xml',
+            'casafolino_mail_stats/static/src/components/mail_engagement_badge/mail_engagement_badge.scss',
+        ],
+    },
+    'installable': True,
+    'auto_install': False,
+    'license': 'LGPL-3',
+}

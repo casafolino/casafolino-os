@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add tracking status column to Mail Hub list view -->
+    <record id="view_mail_hub_list_tracking" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.list.tracking</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="inherit_id" ref="casafolino_mail.casafolino_mail_message_list"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="mail_tracking_status" string="Tracking" widget="badge" optional="show"
+                       decoration-success="mail_tracking_status in ('open', 'reply')"
+                       decoration-warning="mail_tracking_status == 'sent'"
+                       decoration-danger="mail_tracking_status == 'bounce'"
+                       decoration-muted="mail_tracking_status == 'none'"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
