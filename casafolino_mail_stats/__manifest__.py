@@ -30,6 +30,7 @@
             'casafolino_mail_stats/static/src/components/mail_engagement_badge/mail_engagement_badge.scss',
         ],
     },
+    'post_init_hook': '_post_init_hook',
     'installable': True,
     'auto_install': False,
     'license': 'LGPL-3',
