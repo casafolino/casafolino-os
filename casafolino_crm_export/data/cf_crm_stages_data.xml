@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+
+    <record id="stage_primo_contatto" model="crm.stage">
+        <field name="name">Primo Contatto</field>
+        <field name="sequence">10</field>
+        <field name="is_won">False</field>
+        <field name="fold">False</field>
+        <field name="cf_probability_default">5</field>
+    </record>
+
+    <record id="stage_interesse" model="crm.stage">
+        <field name="name">Interesse</field>
+        <field name="sequence">20</field>
+        <field name="is_won">False</field>
+        <field name="fold">False</field>
+        <field name="cf_probability_default">15</field>
+    </record>
+
+    <record id="stage_trattativa" model="crm.stage">
+        <field name="name">Trattativa</field>
+        <field name="sequence">30</field>
+        <field name="is_won">False</field>
+        <field name="fold">False</field>
+        <field name="cf_probability_default">30</field>
+    </record>
+
+    <record id="stage_preventivo" model="crm.stage">
+        <field name="name">Preventivo</field>
+        <field name="sequence">40</field>
+        <field name="is_won">False</field>
+        <field name="fold">False</field>
+        <field name="cf_probability_default">40</field>
+    </record>
+
+    <record id="stage_campionatura" model="crm.stage">
+        <field name="name">Campionatura</field>
+        <field name="sequence">50</field>
+        <field name="is_won">False</field>
+        <field name="fold">False</field>
+        <field name="cf_probability_default">50</field>
+    </record>
+
+    <record id="stage_negoziazione" model="crm.stage">
+        <field name="name">Negoziazione</field>
+        <field name="sequence">60</field>
+        <field name="is_won">False</field>
+        <field name="fold">False</field>
+        <field name="cf_probability_default">70</field>
+    </record>
+
+    <record id="stage_vinta" model="crm.stage">
+        <field name="name">Vinta</field>
+        <field name="sequence">70</field>
+        <field name="is_won">True</field>
+        <field name="fold">True</field>
+        <field name="cf_probability_default">100</field>
+    </record>
+
+    <record id="stage_persa" model="crm.stage">
+        <field name="name">Persa</field>
+        <field name="sequence">80</field>
+        <field name="is_won">False</field>
+        <field name="fold">True</field>
+        <field name="cf_probability_default">0</field>
+    </record>
+
+    <record id="stage_standby" model="crm.stage">
+        <field name="name">Standby</field>
+        <field name="sequence">90</field>
+        <field name="is_won">False</field>
+        <field name="fold">True</field>
+        <field name="cf_probability_default">0</field>
+    </record>
+
+</odoo>

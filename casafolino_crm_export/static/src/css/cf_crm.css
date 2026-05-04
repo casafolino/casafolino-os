@@ -283,7 +283,6 @@
     border-radius: 8px;
     padding: 12px 14px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border-left: 3px solid transparent;
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -291,10 +290,6 @@
     box-shadow: 0 3px 8px rgba(0,0,0,0.12);
     transform: translateY(-1px);
 }
-.card-rotting-ok { border-left-color: #00bda5; }
-.card-rotting-warning { border-left-color: #f5c26b; }
-.card-rotting-danger { border-left-color: #f2545b; }
-.card-rotting-dead { border-left-color: #8e3a3a; background: #fef5f5; }
 
 .cf-card-header {
     display: flex;
@@ -388,36 +383,16 @@
     color: #0091ae;
 }
 
-/* Channel badges */
-.cf-channel-badge {
+/* Tags in kanban cards */
+.cf-card-tags {
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+.cf-card-tags .o_field_many2many_tags .badge {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: 4px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    margin: 1px 2px 1px 0;
 }
-.channel-gdo { background: #fce4ec; color: #c62828; }
-.channel-importatore { background: #e8eaf6; color: #283593; }
-.channel-distributore { background: #e8f5e9; color: #2e7d32; }
-.channel-horeca { background: #fff3e0; color: #e65100; }
-.channel-ecommerce { background: #e0f7fa; color: #00695c; }
-.channel-private_label { background: #f3e5f5; color: #6a1b9a; }
-.channel-foodservice { background: #efebe9; color: #4e342e; }
-
-/* Market badges */
-.cf-market-badge {
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-weight: 600;
-}
-.market-america { background: #e3f2fd; color: #1565c0; }
-.market-europa { background: #e8f5e9; color: #2e7d32; }
-.market-italia { background: #fff3e0; color: #e65100; }
-.market-medio_oriente { background: #fce4ec; color: #ad1457; }
-.market-australia { background: #f3e5f5; color: #6a1b9a; }
-.market-altri { background: #eceff1; color: #546e7a; }
 
 /* ════════════════════════════════════════════
    CAMPIONATURE KANBAN

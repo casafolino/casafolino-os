@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+
+    <!-- ══════ Mercato (color 1 = blu) ══════ -->
+    <record id="tag_market_america" model="crm.tag">
+        <field name="name">America</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_market_europa" model="crm.tag">
+        <field name="name">Europa</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_market_italia" model="crm.tag">
+        <field name="name">Italia</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_market_medio_oriente" model="crm.tag">
+        <field name="name">Medio Oriente</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_market_australia" model="crm.tag">
+        <field name="name">Australia</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_market_altri" model="crm.tag">
+        <field name="name">Altri</field>
+        <field name="color">1</field>
+    </record>
+
+    <!-- ══════ Canale (color 2 = arancio) ══════ -->
+    <record id="tag_channel_gdo" model="crm.tag">
+        <field name="name">GDO</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_channel_importatore" model="crm.tag">
+        <field name="name">Importatore</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_channel_distributore" model="crm.tag">
+        <field name="name">Distributore</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_channel_horeca" model="crm.tag">
+        <field name="name">Ho.Re.Ca.</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_channel_ecommerce" model="crm.tag">
+        <field name="name">E-commerce</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_channel_private_label" model="crm.tag">
+        <field name="name">Private Label</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_channel_foodservice" model="crm.tag">
+        <field name="name">Foodservice</field>
+        <field name="color">2</field>
+    </record>
+
+</odoo>

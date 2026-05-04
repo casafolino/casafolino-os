@@ -56,8 +56,6 @@ class CfExportSample(models.Model):
         ('4', '⭐⭐⭐⭐'),
         ('5', '⭐⭐⭐⭐⭐'),
     ], string='Valutazione')
-    cf_market = fields.Selection(related='lead_id.cf_market', store=True, string='Mercato')
-
     @api.model
     def _read_group_stage_ids(self, stages, domain, order=None):
         return self.env['cf.export.sample.stage'].search([])
