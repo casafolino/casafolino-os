@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend fiera form: add report buttons + fields -->
+    <record id="view_casafolino_fiera_form_report" model="ir.ui.view">
+        <field name="name">casafolino.fiera.form.report</field>
+        <field name="model">casafolino.fiera</field>
+        <field name="inherit_id" ref="casafolino_commercial.view_casafolino_fiera_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Add report buttons in header before status bar -->
+            <xpath expr="//header/button[@name='action_set_active']" position="before">
+                <button name="action_close_fair"
+                        string="🏁 Fine Fiera"
+                        type="object"
+                        class="btn-primary"
+                        invisible="status == 'closed'"
+                        confirm="Questo invierà il report ai destinatari e chiuderà la fiera. Procedere?"/>
+                <button name="action_send_report_only"
+                        string="📧 Invia Report"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+
+            <!-- Add report fields in the notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Report" name="page_report">
+                    <group>
+                        <group>
+                            <field name="report_recipients"/>
+                        </group>
+                        <group>
+                            <field name="last_report_sent" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
