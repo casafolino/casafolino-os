@@ -32,10 +32,10 @@ def migrate(cr, version):
     cr.execute("""
         UPDATE crm_lead
         SET casafolino_days_since_last_activity = GREATEST(0,
-            EXTRACT(DAY FROM (CURRENT_DATE - GREATEST(
-                COALESCE(write_date, create_date)::date,
-                COALESCE(date_last_stage_update, create_date)::date
-            )))::integer
+            CURRENT_DATE - GREATEST(
+                COALESCE(write_date::date, create_date::date),
+                COALESCE(date_last_stage_update::date, create_date::date)
+            )
         )
         WHERE casafolino_days_since_last_activity = 0 OR casafolino_days_since_last_activity IS NULL
     """)
