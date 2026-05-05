@@ -40,3 +40,14 @@ def migrate(cr, version):
         WHERE casafolino_days_since_last_activity = 0 OR casafolino_days_since_last_activity IS NULL
     """)
     _logger.info('Backfilled casafolino_days_since_last_activity for existing leads')
+
+    # Set cf_category on fair tags (noupdate=1 records can't be updated via XML)
+    cr.execute("""
+        UPDATE crm_tag SET cf_category = 'fair'
+        WHERE cf_category IS NULL AND (name::text LIKE '%%SIAL%%' OR name::text LIKE '%%fiera%%' OR name::text LIKE '%%Fiera%%')
+    """)
+    cr.execute("""
+        UPDATE crm_tag SET cf_category = 'geo'
+        WHERE cf_category IS NULL AND name::text IN ('"America"', '"Europa"', '"Italia"', '"Medio Oriente"', '"Australia"', '"Altri"')
+    """)
+    _logger.info('Set cf_category on noupdate tags via SQL')
