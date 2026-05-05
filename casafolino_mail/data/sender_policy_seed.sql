@@ -1695,8 +1695,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟢 CRM_LIKELY — specialtyfood.com', 'domain', 'specialtyfood.com', 'auto_keep', 70, true, true,
-    'Specialty Food — SFF/NYC', NOW(), NOW(), 1, 1
+SELECT '🔴 NEWSLETTER — specialtyfood.com (SFF auto-mail)', 'domain', 'specialtyfood.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: 6/7 auto, newsletter-heavy despite fair org', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'specialtyfood.com' AND active = true
 );
@@ -2151,8 +2151,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — google.com', 'domain', 'google.com', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 MARKETING_COLD — google.com (Sheets + Cloud marketing mix)', 'domain', 'google.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: mix Sheets sharing + Cloud marketing, discard all', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'google.com' AND active = true
 );
@@ -2167,8 +2167,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — gruppofood.com', 'domain', 'gruppofood.com', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 MARKETING_COLD — gruppofood.com (Food Summit inviti)', 'domain', 'gruppofood.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: marketing inviti eventi', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'gruppofood.com' AND active = true
 );
@@ -2255,8 +2255,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — keychain.com', 'domain', 'keychain.com', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 NEWSLETTER — keychain.com (Daily Fast 5)', 'domain', 'keychain.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: newsletter Daily Fast 5 + supplier inquiry noise', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'keychain.com' AND active = true
 );
@@ -2359,8 +2359,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — orders.temu.com', 'domain', 'orders.temu.com', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 TRANSACTIONAL — orders.temu.com (notifiche ordini)', 'domain', 'orders.temu.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: notifiche spedizione automatiche', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'orders.temu.com' AND active = true
 );
@@ -2423,8 +2423,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — plma.nl', 'domain', 'plma.nl', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 NEWSLETTER — plma.nl (PLMA newsletter/scanner)', 'domain', 'plma.nl', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: fair org but mostly newsletter content', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'plma.nl' AND active = true
 );
@@ -2487,8 +2487,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — slowfood.it', 'domain', 'slowfood.it', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 NEWSLETTER — slowfood.it (17/24 newsletter)', 'domain', 'slowfood.it', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: 17/24 newsletter-flagged, discard', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'slowfood.it' AND active = true
 );
@@ -2567,8 +2567,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — ups.com', 'domain', 'ups.com', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 TRANSACTIONAL — ups.com (tracking spedizioni)', 'domain', 'ups.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: tracking automatici', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'ups.com' AND active = true
 );
@@ -2615,8 +2615,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO casafolino_mail_sender_policy
     (name, pattern_type, pattern_value, action, priority, active, auto_create_partner, notes, create_date, write_date, create_uid, write_uid)
-SELECT '🟡 REVIEW — wetransfer.com', 'domain', 'wetransfer.com', 'review', 50, true, false,
-    'Generic email provider or ambiguous domain', NOW(), NOW(), 1, 1
+SELECT '🔴 TRANSACTIONAL — wetransfer.com (file transfer notifiche)', 'domain', 'wetransfer.com', 'auto_discard', 30, true, false,
+    'User decision 2026-05-05: notifiche trasferimento file automatiche', NOW(), NOW(), 1, 1
 WHERE NOT EXISTS (
     SELECT 1 FROM casafolino_mail_sender_policy WHERE pattern_value = 'wetransfer.com' AND active = true
 );
