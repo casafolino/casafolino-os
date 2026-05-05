@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo noupdate="0">
 
     <!-- Set cf_category on existing fair tags -->
     <record id="crm_tag_sial_montreal_2026" model="crm.tag">
