@@ -1,4 +1,5 @@
 from . import crm_lead
+from . import crm_tag
 from . import cf_crm_stage
 from . import cf_mail_activity
 from . import card_scanner

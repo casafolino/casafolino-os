@@ -39,7 +39,7 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <kanban default_group_by="stage_id" quick_create="false"
-                    class="o_kanban_small_column o_opportunity_kanban">
+                    class="o_kanban_small_column o_opportunity_kanban cf_kanban_enriched">
                 <field name="stage_id"/>
                 <field name="partner_id"/>
                 <field name="expected_revenue"/>
@@ -52,43 +52,87 @@
                 <field name="activity_state"/>
                 <field name="color"/>
                 <field name="tag_ids"/>
+                <field name="casafolino_has_unread_mail"/>
+                <field name="casafolino_unread_mail_count"/>
+                <field name="casafolino_has_overdue_followup"/>
+                <field name="casafolino_no_activity_warning"/>
+                <field name="casafolino_days_since_last_activity"/>
+                <field name="casafolino_origin_fair_tag_id"/>
+                <field name="casafolino_relative_last_activity"/>
+                <field name="casafolino_stage_position"/>
+                <field name="phone"/>
+                <field name="email_from"/>
                 <progressbar field="activity_state"
                     colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="cf-crm-card" t-attf-style="border-left: 5px solid #{record.cf_user_color.raw_value};">
+                        <div t-attf-class="cf-crm-card cf-enriched" t-attf-style="border-left: 3px solid #{record.cf_user_color.raw_value};">
+                            <!-- Header: partner + revenue -->
                             <div class="cf-card-header">
                                 <div class="cf-card-title">
-                                    <field name="name"/>
+                                    <field name="partner_id"/>
                                 </div>
-                                <div t-attf-class="cf-score-badge #{record.cf_lead_score.raw_value >= 60 ? 'score-high' : record.cf_lead_score.raw_value >= 30 ? 'score-medium' : 'score-low'}">
-                                    <t t-out="record.cf_lead_score.raw_value"/>
+                                <div class="cf-card-revenue">
+                                    <t t-if="record.expected_revenue.raw_value">
+                                        <t t-set="rev_k" t-value="Math.round(record.expected_revenue.raw_value / 1000)"/>
+                                        <span class="cf-revenue-badge">€<t t-out="rev_k"/>k</span>
+                                    </t>
                                 </div>
                             </div>
-                            <div class="cf-card-partner">
-                                <field name="partner_id"/>
+
+                            <!-- Stage progress bar 9 segments -->
+                            <div class="cf-stage-progress">
+                                <t t-set="pos" t-value="record.casafolino_stage_position.raw_value || 0"/>
+                                <t t-foreach="[1,2,3,4,5,6,7,8,9]" t-as="seg" t-key="seg">
+                                    <div t-attf-class="cf-seg #{seg &lt;= pos ? 'cf-seg-active' : 'cf-seg-inactive'}"
+                                         t-attf-style="#{seg &lt;= pos ? 'background:' + record.cf_user_color.raw_value : ''}"/>
+                                </t>
                             </div>
-                            <div class="cf-card-meta">
-                                <span class="cf-card-value">
-                                    <field name="expected_revenue" widget="monetary"/>
-                                </span>
-                                <span t-attf-class="cf-rotting-dot dot-#{record.cf_rotting_state.raw_value or 'ok'}"/>
+
+                            <!-- Dynamic badges (max 3) -->
+                            <div class="cf-badges">
+                                <t t-if="record.casafolino_has_overdue_followup.raw_value">
+                                    <span class="cf-badge cf-badge-danger">follow-up dovuto</span>
+                                </t>
+                                <t t-if="record.casafolino_unread_mail_count.raw_value > 0">
+                                    <span class="cf-badge cf-badge-info"><t t-out="record.casafolino_unread_mail_count.raw_value"/> mail nuove</span>
+                                </t>
+                                <t t-if="record.casafolino_no_activity_warning.raw_value">
+                                    <span class="cf-badge cf-badge-warning">no attività <t t-out="record.casafolino_days_since_last_activity.raw_value"/>gg</span>
+                                </t>
+                                <t t-if="record.casafolino_origin_fair_tag_id.raw_value">
+                                    <span class="cf-badge cf-badge-fair"><field name="casafolino_origin_fair_tag_id"/></span>
+                                </t>
                             </div>
-                            <div class="cf-card-tags" t-if="record.tag_ids.raw_value.length">
-                                <field name="tag_ids" widget="many2many_tags"
-                                    options="{'color_field': 'color'}"/>
+
+                            <!-- Footer: avatar + relative time -->
+                            <div class="cf-card-footer">
+                                <div class="cf-footer-user">
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                </div>
+                                <div class="cf-footer-time">
+                                    <t t-out="record.casafolino_relative_last_activity.value"/>
+                                </div>
                             </div>
-                            <div class="cf-card-followup" t-if="record.cf_date_next_followup.raw_value">
-                                Follow-up: <field name="cf_date_next_followup"/>
-                            </div>
-                            <div class="cf-card-actions">
-                                <button class="btn-cf-action" name="action_mark_contacted" type="object"
-                                        title="Segna Contattato">Contatto</button>
-                                <button class="btn-cf-action" name="action_schedule_followup" type="object"
-                                        title="Follow-up +7gg">+7gg</button>
-                            </div>
-                            <div class="d-flex justify-content-end mt-1">
-                                <field name="user_id" widget="many2one_avatar_user"/>
+
+                            <!-- Quick actions (hover only) -->
+                            <div class="cf-kanban-quick-actions">
+                                <a t-attf-href="tel:#{record.phone.raw_value || ''}"
+                                   class="cf-qa-btn" title="Chiama"
+                                   t-if="record.phone.raw_value">
+                                    <i class="fa fa-phone"/>
+                                </a>
+                                <button name="action_send_email" type="object"
+                                        class="cf-qa-btn" title="Email">
+                                    <i class="fa fa-envelope"/>
+                                </button>
+                                <a type="open" class="cf-qa-btn" title="Apri">
+                                    <i class="fa fa-external-link"/>
+                                </a>
+                                <button name="action_kanban_archive" type="object"
+                                        class="cf-qa-btn cf-qa-archive" title="Archivia">
+                                    <i class="fa fa-archive"/>
+                                </button>
                             </div>
                         </div>
                     </t>
@@ -428,9 +472,16 @@
                 <filter string="Standby" name="cf_stage_standby" domain="[('stage_id.name','=','Standby')]"/>
                 <filter string="Inattivi 30gg+" name="cf_inactive_30" domain="[('cf_date_last_contact','&lt;', (context_today() - datetime.timedelta(days=30)).strftime('%%Y-%%m-%%d'))]"/>
                 <separator/>
+                <filter string="Mail nuova" name="cf_unread_mail" domain="[('casafolino_has_unread_mail', '=', True)]"/>
+                <filter string="Follow-up dovuto" name="cf_overdue_followup" domain="[('activity_ids.date_deadline', '&lt;', context_today().strftime('%%Y-%%m-%%d'))]"/>
+                <filter string="No attività &gt; 30gg" name="cf_no_activity" domain="[('casafolino_days_since_last_activity', '&gt;', 30), ('stage_id.name', 'not in', ['Vinta', 'Persa'])]"/>
+                <filter string="Da fiera" name="cf_fair_origin" domain="[('tag_ids.cf_category', '=', 'fair')]"/>
+                <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter string="Tag" name="group_tag" context="{'group_by': 'tag_ids'}"/>
                     <filter string="Operatore" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
+                    <filter string="Fiera origine" name="group_fair" context="{'group_by': 'casafolino_origin_fair_tag_id'}"/>
                 </group>
             </xpath>
         </field>

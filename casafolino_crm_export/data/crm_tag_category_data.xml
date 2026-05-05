@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Set cf_category on existing fair tags -->
+    <record id="crm_tag_sial_montreal_2026" model="crm.tag">
+        <field name="cf_category">fair</field>
+    </record>
+
+    <!-- Set cf_category on market tags (geo) -->
+    <record id="tag_market_america" model="crm.tag">
+        <field name="cf_category">geo</field>
+    </record>
+    <record id="tag_market_europa" model="crm.tag">
+        <field name="cf_category">geo</field>
+    </record>
+    <record id="tag_market_italia" model="crm.tag">
+        <field name="cf_category">geo</field>
+    </record>
+    <record id="tag_market_medio_oriente" model="crm.tag">
+        <field name="cf_category">geo</field>
+    </record>
+    <record id="tag_market_australia" model="crm.tag">
+        <field name="cf_category">geo</field>
+    </record>
+    <record id="tag_market_altri" model="crm.tag">
+        <field name="cf_category">geo</field>
+    </record>
+
+    <!-- Set cf_category on channel tags -->
+    <record id="tag_channel_gdo" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+    <record id="tag_channel_importatore" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+    <record id="tag_channel_distributore" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+    <record id="tag_channel_horeca" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+    <record id="tag_channel_ecommerce" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+    <record id="tag_channel_private_label" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+    <record id="tag_channel_foodservice" model="crm.tag">
+        <field name="cf_category">channel</field>
+    </record>
+
+    <!-- Lost reason for kanban archive -->
+    <record id="lost_reason_kanban_archive" model="crm.lost.reason">
+        <field name="name">Archiviato dal kanban</field>
+    </record>
+
+</odoo>

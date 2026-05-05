@@ -1,5 +1,5 @@
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from odoo import api, fields, models
 
@@ -107,6 +107,49 @@ class CrmLead(models.Model):
         store=False,
     )
 
+    # --- Kanban enrichment signals ---
+    casafolino_has_unread_mail = fields.Boolean(
+        string='Mail Nuove',
+        compute='_compute_casafolino_unread_mail',
+        search='_search_casafolino_has_unread_mail',
+    )
+    casafolino_unread_mail_count = fields.Integer(
+        string='N. Mail Non Lette',
+        compute='_compute_casafolino_unread_mail',
+    )
+    casafolino_has_overdue_followup = fields.Boolean(
+        string='Follow-up Scaduto',
+        compute='_compute_casafolino_overdue_followup',
+    )
+    casafolino_days_since_last_activity = fields.Integer(
+        string='Giorni Ultima Attività',
+        compute='_compute_casafolino_days_since_last_activity',
+        store=True,
+    )
+    casafolino_no_activity_warning = fields.Boolean(
+        string='Allarme Inattività',
+        compute='_compute_casafolino_no_activity_warning',
+    )
+    casafolino_origin_fair_tag_id = fields.Many2one(
+        'crm.tag', string='Fiera Origine (tag)',
+        compute='_compute_casafolino_origin_fair_tag',
+    )
+    casafolino_relative_last_activity = fields.Char(
+        string='Ultimo Aggiornamento Relativo',
+        compute='_compute_casafolino_relative_last_activity',
+    )
+    casafolino_signals_priority = fields.Selection([
+        ('overdue_followup', 'Follow-up Scaduto'),
+        ('unread_mail', 'Mail Non Lette'),
+        ('no_activity', 'Nessuna Attività'),
+        ('fair_origin', 'Origine Fiera'),
+        ('normal', 'Normale'),
+    ], string='Priorità Segnali', compute='_compute_casafolino_signals_priority')
+    casafolino_stage_position = fields.Integer(
+        string='Posizione Stage',
+        compute='_compute_casafolino_stage_position',
+    )
+
     # ------------------------------------------------------------------
     # Write override — probability from stage + standby exit
     # ------------------------------------------------------------------
@@ -195,6 +238,163 @@ class CrmLead(models.Model):
         for lead in self:
             login = lead.user_id.login if lead.user_id else None
             lead.cf_user_color = USER_COLOR_MAP.get(login, DEFAULT_USER_COLOR)
+
+    # ------------------------------------------------------------------
+    # Kanban enrichment computes
+    # ------------------------------------------------------------------
+
+    @api.depends('partner_id', 'user_id')
+    def _compute_casafolino_unread_mail(self):
+        if not self.ids:
+            for r in self:
+                r.casafolino_has_unread_mail = False
+                r.casafolino_unread_mail_count = 0
+            return
+        self.env.cr.execute("""
+            SELECT lead.id, COUNT(msg.id)
+            FROM crm_lead lead
+            LEFT JOIN casafolino_mail_message msg ON
+                msg.partner_id = lead.partner_id AND
+                msg.is_read = FALSE AND
+                msg.state NOT IN ('auto_discard', 'discard')
+            LEFT JOIN casafolino_mail_account acc ON
+                acc.id = msg.account_id AND
+                acc.responsible_user_id = lead.user_id
+            WHERE lead.id IN %s AND msg.id IS NOT NULL
+            GROUP BY lead.id
+        """, (tuple(self.ids),))
+        result = dict(self.env.cr.fetchall())
+        for lead in self:
+            count = result.get(lead.id, 0)
+            lead.casafolino_unread_mail_count = count
+            lead.casafolino_has_unread_mail = count > 0
+
+    def _search_casafolino_has_unread_mail(self, operator, value):
+        if (operator == '=' and value) or (operator == '!=' and not value):
+            self.env.cr.execute("""
+                SELECT DISTINCT lead.id
+                FROM crm_lead lead
+                JOIN casafolino_mail_message msg ON
+                    msg.partner_id = lead.partner_id AND
+                    msg.is_read = FALSE AND
+                    msg.state NOT IN ('auto_discard', 'discard')
+                JOIN casafolino_mail_account acc ON
+                    acc.id = msg.account_id AND
+                    acc.responsible_user_id = lead.user_id
+            """)
+            return [('id', 'in', [r[0] for r in self.env.cr.fetchall()])]
+        return [('id', 'not in', [])]
+
+    @api.depends('activity_ids.date_deadline')
+    def _compute_casafolino_overdue_followup(self):
+        if not self.ids:
+            for r in self:
+                r.casafolino_has_overdue_followup = False
+            return
+        today = fields.Date.today()
+        self.env.cr.execute("""
+            SELECT res_id
+            FROM mail_activity
+            WHERE res_model = 'crm.lead'
+              AND res_id IN %s
+              AND date_deadline < %s
+            GROUP BY res_id
+        """, (tuple(self.ids), today))
+        overdue_ids = set(row[0] for row in self.env.cr.fetchall())
+        for lead in self:
+            lead.casafolino_has_overdue_followup = lead.id in overdue_ids
+
+    @api.depends('write_date', 'date_last_stage_update')
+    def _compute_casafolino_days_since_last_activity(self):
+        today = fields.Date.today()
+        for lead in self:
+            dates = []
+            if lead.write_date:
+                dates.append(lead.write_date.date())
+            if lead.date_last_stage_update:
+                dates.append(lead.date_last_stage_update.date())
+            if dates:
+                lead.casafolino_days_since_last_activity = (today - max(dates)).days
+            else:
+                lead.casafolino_days_since_last_activity = 0
+
+    @api.depends('casafolino_days_since_last_activity', 'stage_id')
+    def _compute_casafolino_no_activity_warning(self):
+        won_lost_names = ('Vinta', 'Persa')
+        for lead in self:
+            if lead.stage_id and lead.stage_id.name in won_lost_names:
+                lead.casafolino_no_activity_warning = False
+            else:
+                lead.casafolino_no_activity_warning = lead.casafolino_days_since_last_activity > 30
+
+    @api.depends('tag_ids', 'tag_ids.cf_category')
+    def _compute_casafolino_origin_fair_tag(self):
+        for lead in self:
+            fair_tag = lead.tag_ids.filtered(lambda t: t.cf_category == 'fair')[:1]
+            lead.casafolino_origin_fair_tag_id = fair_tag.id if fair_tag else False
+
+    @api.depends('write_date', 'date_last_stage_update')
+    def _compute_casafolino_relative_last_activity(self):
+        now = datetime.utcnow()
+        for lead in self:
+            dates = []
+            if lead.write_date:
+                dates.append(lead.write_date)
+            if lead.date_last_stage_update:
+                dates.append(lead.date_last_stage_update)
+            if not dates:
+                lead.casafolino_relative_last_activity = ''
+                continue
+            last = max(dates)
+            delta = now - last
+            minutes = int(delta.total_seconds() / 60)
+            if minutes < 5:
+                lead.casafolino_relative_last_activity = 'appena ora'
+            elif minutes < 60:
+                lead.casafolino_relative_last_activity = f'{minutes}m fa'
+            elif minutes < 1440:
+                lead.casafolino_relative_last_activity = f'{minutes // 60}h fa'
+            elif minutes < 10080:
+                lead.casafolino_relative_last_activity = f'{minutes // 1440}gg fa'
+            else:
+                lead.casafolino_relative_last_activity = f'{minutes // 10080} sett fa'
+
+    @api.depends('casafolino_has_overdue_followup', 'casafolino_has_unread_mail',
+                 'casafolino_no_activity_warning', 'casafolino_origin_fair_tag_id')
+    def _compute_casafolino_signals_priority(self):
+        for lead in self:
+            if lead.casafolino_has_overdue_followup:
+                lead.casafolino_signals_priority = 'overdue_followup'
+            elif lead.casafolino_has_unread_mail:
+                lead.casafolino_signals_priority = 'unread_mail'
+            elif lead.casafolino_no_activity_warning:
+                lead.casafolino_signals_priority = 'no_activity'
+            elif lead.casafolino_origin_fair_tag_id:
+                lead.casafolino_signals_priority = 'fair_origin'
+            else:
+                lead.casafolino_signals_priority = 'normal'
+
+    @api.depends('stage_id', 'stage_id.sequence')
+    def _compute_casafolino_stage_position(self):
+        for lead in self:
+            if lead.stage_id and lead.stage_id.sequence:
+                lead.casafolino_stage_position = lead.stage_id.sequence // 10
+            else:
+                lead.casafolino_stage_position = 0
+
+    # ------------------------------------------------------------------
+    # Kanban quick actions
+    # ------------------------------------------------------------------
+
+    def action_kanban_archive(self):
+        """Archive lead from kanban — move to Persa stage."""
+        lost_stage = self.env['crm.stage'].search([('name', '=', 'Persa')], limit=1)
+        if lost_stage:
+            self.write({
+                'stage_id': lost_stage.id,
+                'lost_reason_id': self.env['crm.lost.reason'].search(
+                    [('name', '=', 'Archiviato dal kanban')], limit=1).id or False,
+            })
 
     # ------------------------------------------------------------------
     # Compute
