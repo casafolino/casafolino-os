@@ -60,24 +60,30 @@
                 <field name="casafolino_origin_fair_tag_id"/>
                 <field name="casafolino_relative_last_activity"/>
                 <field name="casafolino_stage_position"/>
+                <field name="casafolino_owner_avatar_class"/>
+                <field name="casafolino_owner_avatar_initials"/>
+                <field name="casafolino_card_title"/>
+                <field name="casafolino_product_category_label"/>
+                <field name="casafolino_stage_label"/>
                 <field name="phone"/>
                 <field name="email_from"/>
                 <progressbar field="activity_state"
                     colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="cf-crm-card cf-enriched" t-attf-style="border-left: 3px solid #{record.cf_user_color.raw_value};">
-                            <!-- Header: partner + revenue -->
+                        <div t-attf-class="cf-crm-card cf-enriched #{record.casafolino_owner_avatar_class.raw_value}">
+                            <!-- Header: title + category + revenue -->
                             <div class="cf-card-header">
-                                <div class="cf-card-title">
-                                    <field name="partner_id"/>
-                                </div>
-                                <div class="cf-card-revenue">
-                                    <t t-if="record.expected_revenue.raw_value">
-                                        <t t-set="rev_k" t-value="Math.round(record.expected_revenue.raw_value / 1000)"/>
-                                        <span class="cf-revenue-badge">€<t t-out="rev_k"/>k</span>
-                                    </t>
-                                </div>
+                                <span class="cf-card-title">
+                                    <t t-out="record.casafolino_card_title.raw_value"/>
+                                </span>
+                                <span class="cf-card-category" t-if="record.casafolino_product_category_label.raw_value">
+                                    <t t-out="record.casafolino_product_category_label.raw_value"/>
+                                </span>
+                                <span class="cf-card-value" t-if="record.expected_revenue.raw_value">
+                                    <t t-set="rev_k" t-value="Math.round(record.expected_revenue.raw_value / 1000)"/>
+                                    <t t-out="rev_k"/>k
+                                </span>
                             </div>
 
                             <!-- Stage progress bar 9 segments -->
@@ -87,6 +93,11 @@
                                     <div t-attf-class="cf-seg #{seg &lt;= pos ? 'cf-seg-active' : 'cf-seg-inactive'}"
                                          t-attf-style="#{seg &lt;= pos ? 'background:' + record.cf_user_color.raw_value : ''}"/>
                                 </t>
+                            </div>
+
+                            <!-- Stage label -->
+                            <div class="cf-stage-label">
+                                <t t-out="record.casafolino_stage_label.raw_value"/>
                             </div>
 
                             <!-- Dynamic badges (max 3) -->
@@ -105,10 +116,11 @@
                                 </t>
                             </div>
 
-                            <!-- Footer: avatar + relative time -->
+                            <!-- Footer: custom avatar + relative time -->
                             <div class="cf-card-footer">
-                                <div class="cf-footer-user">
-                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                <div t-attf-class="cf-owner-avatar size-md #{record.casafolino_owner_avatar_class.raw_value}"
+                                     t-att-title="record.user_id.value">
+                                    <t t-out="record.casafolino_owner_avatar_initials.raw_value"/>
                                 </div>
                                 <div class="cf-footer-time">
                                     <t t-out="record.casafolino_relative_last_activity.value"/>

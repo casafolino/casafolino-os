@@ -1,15 +1,16 @@
 /* ════════════════════════════════════════════
    CASAFOLINO CRM — ENRICHED KANBAN
-   Brief #1: Pipeline kanban arricchita
+   Brief #1 + Brief #1.1
    ════════════════════════════════════════════ */
 
-/* ─── Card base (enriched) ─── */
+/* ─── Card base — box-shadow inset for full-height accent ─── */
 .cf-crm-card.cf-enriched {
-    background: var(--o-view-background-color, #fff);
+    background: var(--o-view-background-color, #f9fafb);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 12px 12px 12px 15px;
     border: 0.5px solid var(--o-color-border, #cbd6e2);
-    transition: border-color 0.2s ease;
+    box-shadow: inset 3px 0 0 #888780;
+    transition: border-color 0.15s ease;
     cursor: pointer;
     position: relative;
 }
@@ -17,11 +18,17 @@
     border-color: var(--o-color-primary, #0091ae);
 }
 
+/* Owner accent via box-shadow inset */
+.cf-crm-card.cf-enriched.cf-owner-antonio { box-shadow: inset 3px 0 0 #3F8A4F; }
+.cf-crm-card.cf-enriched.cf-owner-josefina { box-shadow: inset 3px 0 0 #8B5CF6; }
+.cf-crm-card.cf-enriched.cf-owner-martina { box-shadow: inset 3px 0 0 #6B4A1E; }
+.cf-crm-card.cf-enriched.cf-owner-other { box-shadow: inset 3px 0 0 #888780; }
+
 /* ─── Header ─── */
 .cf-enriched .cf-card-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
+    gap: 4px;
     margin-bottom: 6px;
 }
 .cf-enriched .cf-card-title {
@@ -30,23 +37,29 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 70%;
-    color: #2d3e50;
+    color: var(--o-main-text-color, #2d3e50);
 }
-.cf-revenue-badge {
+.cf-card-category {
+    font-size: 12px;
+    color: #7c98b6;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cf-card-value {
     font-size: 12px;
     font-weight: 500;
-    color: #2d3e50;
-    background: #f0f4f8;
-    padding: 2px 6px;
-    border-radius: 4px;
+    color: var(--o-main-text-color, #2d3e50);
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 /* ─── Stage progress bar ─── */
 .cf-stage-progress {
     display: flex;
     gap: 2px;
-    margin: 6px 0;
+    margin: 6px 0 2px 0;
 }
 .cf-seg {
     flex: 1;
@@ -61,13 +74,20 @@
     /* Color set inline via t-attf-style */
 }
 
+/* ─── Stage label ─── */
+.cf-stage-label {
+    font-size: 11px;
+    color: #7c98b6;
+    margin-bottom: 6px;
+}
+
 /* ─── Badges ─── */
 .cf-badges {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin: 6px 0;
-    min-height: 20px;
+    margin: 4px 0;
+    min-height: 18px;
 }
 .cf-badge {
     font-size: 10px;
@@ -101,24 +121,30 @@
     align-items: center;
     margin-top: 8px;
 }
-.cf-footer-user {
-    display: flex;
-    align-items: center;
-}
-.cf-footer-user .o_m2o_avatar {
-    width: 28px !important;
-    height: 28px !important;
-}
-.cf-footer-user img {
-    width: 28px !important;
-    height: 28px !important;
-    border-radius: 50%;
-}
 .cf-footer-time {
     font-size: 11px;
     color: #7c98b6;
     font-style: italic;
 }
+
+/* ─── Owner avatar ─── */
+.cf-owner-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 500;
+    flex-shrink: 0;
+    user-select: none;
+}
+.cf-owner-avatar.size-sm { width: 20px; height: 20px; font-size: 9px; }
+.cf-owner-avatar.size-md { width: 28px; height: 28px; font-size: 11px; }
+
+.cf-owner-avatar.cf-owner-antonio { background: #3F8A4F; }
+.cf-owner-avatar.cf-owner-josefina { background: #8B5CF6; }
+.cf-owner-avatar.cf-owner-martina { background: #6B4A1E; }
+.cf-owner-avatar.cf-owner-other { background: #888780; }
 
 /* ─── Quick actions (hover) ─── */
 .cf-kanban-quick-actions {
@@ -153,7 +179,6 @@
     text-decoration: none !important;
 }
 .cf-qa-btn:hover {
-    background: var(--o-action-color, #f5f8fa);
     border-color: var(--o-color-primary, #0091ae);
     color: var(--o-color-primary, #0091ae);
 }
@@ -162,12 +187,6 @@
     color: #f2545b;
 }
 
-/* ─── Owner color classes (fallback) ─── */
-.o_kanban_owner_antonio { border-left: 3px solid #3F8A4F !important; }
-.o_kanban_owner_josefina { border-left: 3px solid #8B5CF6 !important; }
-.o_kanban_owner_martina { border-left: 3px solid #6B4A1E !important; }
-.o_kanban_owner_other { border-left: 3px solid #888780 !important; }
-
 /* ─── Dark mode support ─── */
 .o_dark .cf-crm-card.cf-enriched {
     background: #1e1e1e;
@@ -175,9 +194,14 @@
 .o_dark .cf-enriched .cf-card-title {
     color: #e0e0e0;
 }
-.o_dark .cf-revenue-badge {
-    background: #2a2a2a;
+.o_dark .cf-card-value {
     color: #e0e0e0;
+}
+.o_dark .cf-card-category {
+    color: #888;
+}
+.o_dark .cf-stage-label {
+    color: #888;
 }
 .o_dark .cf-seg-inactive {
     background: #444;
@@ -208,4 +232,7 @@
 }
 .o_dark .cf-footer-time {
     color: #a0a0a0;
+}
+.o_dark .cf-owner-avatar {
+    opacity: 0.9;
 }

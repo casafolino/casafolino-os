@@ -150,6 +150,28 @@ class CrmLead(models.Model):
         compute='_compute_casafolino_stage_position',
     )
 
+    # --- Kanban cosmetic computed (Brief #1.1) ---
+    casafolino_owner_avatar_class = fields.Char(
+        string='Owner avatar CSS class',
+        compute='_compute_casafolino_owner_avatar',
+    )
+    casafolino_owner_avatar_initials = fields.Char(
+        string='Owner avatar initials',
+        compute='_compute_casafolino_owner_avatar',
+    )
+    casafolino_card_title = fields.Char(
+        string='Card title with fallback',
+        compute='_compute_casafolino_card_title',
+    )
+    casafolino_product_category_label = fields.Char(
+        string='Product category short label',
+        compute='_compute_casafolino_product_category_label',
+    )
+    casafolino_stage_label = fields.Char(
+        string='Stage label with position',
+        compute='_compute_casafolino_stage_label',
+    )
+
     # ------------------------------------------------------------------
     # Write override — probability from stage + standby exit
     # ------------------------------------------------------------------
@@ -381,6 +403,67 @@ class CrmLead(models.Model):
                 lead.casafolino_stage_position = lead.stage_id.sequence // 10
             else:
                 lead.casafolino_stage_position = 0
+
+    # ------------------------------------------------------------------
+    # Kanban cosmetic computes (Brief #1.1)
+    # ------------------------------------------------------------------
+
+    OWNER_LOGIN_TO_CLASS = {
+        'antonio@casafolino.com': 'cf-owner-antonio',
+        'josefina.lazzaro@casafolino.com': 'cf-owner-josefina',
+        'martina.sinopoli@casafolino.com': 'cf-owner-martina',
+    }
+
+    @api.depends('user_id', 'user_id.login', 'user_id.partner_id.name')
+    def _compute_casafolino_owner_avatar(self):
+        for lead in self:
+            if not lead.user_id:
+                lead.casafolino_owner_avatar_class = 'cf-owner-other'
+                lead.casafolino_owner_avatar_initials = '—'
+                continue
+            login = (lead.user_id.login or '').lower().strip()
+            lead.casafolino_owner_avatar_class = self.OWNER_LOGIN_TO_CLASS.get(login, 'cf-owner-other')
+            full_name = (lead.user_id.partner_id.name or login or '').strip()
+            parts = full_name.split()
+            if len(parts) >= 2:
+                initials = (parts[0][0] + parts[-1][0]).upper()
+            elif len(full_name) >= 2:
+                initials = full_name[:2].upper()
+            else:
+                initials = full_name[:1].upper() or '—'
+            lead.casafolino_owner_avatar_initials = initials
+
+    @api.depends('partner_id', 'partner_id.name', 'name', 'contact_name', 'partner_name')
+    def _compute_casafolino_card_title(self):
+        for lead in self:
+            title = (
+                (lead.partner_id and lead.partner_id.name)
+                or lead.contact_name
+                or lead.partner_name
+                or lead.name
+                or 'Senza titolo'
+            )
+            lead.casafolino_card_title = title.strip() if isinstance(title, str) else 'Senza titolo'
+
+    @api.depends('tag_ids', 'tag_ids.cf_category', 'tag_ids.name')
+    def _compute_casafolino_product_category_label(self):
+        for lead in self:
+            product_tags = lead.tag_ids.filtered(lambda t: t.cf_category == 'product')
+            if product_tags:
+                names = [t.name for t in product_tags[:2]]
+                lead.casafolino_product_category_label = ' + '.join(names)
+            else:
+                lead.casafolino_product_category_label = False
+
+    @api.depends('stage_id', 'stage_id.name', 'stage_id.sequence')
+    def _compute_casafolino_stage_label(self):
+        for lead in self:
+            if not lead.stage_id:
+                lead.casafolino_stage_label = '—'
+                continue
+            position = (lead.stage_id.sequence or 0) // 10
+            position = max(1, min(9, position))
+            lead.casafolino_stage_label = f"{lead.stage_id.name} \u00b7 {position}/9"
 
     # ------------------------------------------------------------------
     # Kanban quick actions
