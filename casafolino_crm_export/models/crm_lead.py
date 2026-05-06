@@ -175,6 +175,11 @@ class CrmLead(models.Model):
         string='Has open issue/complaint',
         compute='_compute_casafolino_has_open_issue',
     )
+    cf_project_id = fields.Many2one(
+        comodel_name='project.project',
+        string='Dossier / Progetto',
+        index=True,
+    )
 
     # ------------------------------------------------------------------
     # Write override — probability from stage + standby exit

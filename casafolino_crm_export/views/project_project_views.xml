@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form view extension -->
+    <record id="project_project_form_casafolino" model="ir.ui.view">
+        <field name="name">project.project.form.casafolino</field>
+        <field name="model">project.project</field>
+        <field name="priority">99</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Dossier commerciale" name="cf_dossier">
+                    <group>
+                        <group string="Stato">
+                            <field name="cf_status_dossier"/>
+                            <field name="cf_dossier_priority" widget="priority"/>
+                        </group>
+                        <group string="Relazioni">
+                            <field name="cf_managed_by_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Valore">
+                            <field name="cf_dossier_value_estimate" widget="monetary"/>
+                        </group>
+                        <group string="Statistiche">
+                            <field name="cf_lead_count" readonly="1"/>
+                            <field name="cf_open_issues_count" readonly="1"/>
+                            <field name="cf_last_activity_date" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search view extension -->
+    <record id="project_project_search_casafolino" model="ir.ui.view">
+        <field name="name">project.project.search.casafolino</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_project_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="Dossier attivi" name="dossier_active"
+                        domain="[('cf_status_dossier', '=', 'active')]"/>
+                <filter string="Dossier esplorativi" name="dossier_exploration"
+                        domain="[('cf_status_dossier', '=', 'exploration')]"/>
+                <filter string="Priorità alta" name="dossier_high_priority"
+                        domain="[('cf_dossier_priority', '=', 'high')]"/>
+                <separator/>
+                <filter string="Raggruppa per Status" name="group_by_status"
+                        context="{'group_by': 'cf_status_dossier'}"/>
+                <filter string="Raggruppa per Agente" name="group_by_managed_by"
+                        context="{'group_by': 'cf_managed_by_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form view extension -->
+    <record id="res_partner_form_casafolino" model="ir.ui.view">
+        <field name="name">res.partner.form.casafolino</field>
+        <field name="model">res.partner</field>
+        <field name="priority">99</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Relazioni CasaFolino" name="cf_relations">
+                    <group>
+                        <group string="Ruolo">
+                            <field name="cf_partner_role"/>
+                            <field name="cf_origin_introducer_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="Gestione"
+                               invisible="cf_partner_role == 'agent'">
+                            <field name="cf_managed_by_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="Statistiche agente"
+                               invisible="cf_partner_role != 'agent'">
+                            <field name="cf_managed_partners_count" readonly="1"/>
+                            <field name="cf_managed_projects_count" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search view extension -->
+    <record id="res_partner_search_casafolino" model="ir.ui.view">
+        <field name="name">res.partner.search.casafolino</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="Agenti" name="role_agent"
+                        domain="[('cf_partner_role', '=', 'agent')]"/>
+                <filter string="Clienti" name="role_customer"
+                        domain="[('cf_partner_role', '=', 'customer')]"/>
+                <filter string="Prospect" name="role_prospect"
+                        domain="[('cf_partner_role', '=', 'prospect')]"/>
+                <filter string="Interni" name="role_internal"
+                        domain="[('cf_partner_role', '=', 'internal')]"/>
+                <separator/>
+                <filter string="Raggruppa per Ruolo" name="group_by_cf_role"
+                        context="{'group_by': 'cf_partner_role'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
