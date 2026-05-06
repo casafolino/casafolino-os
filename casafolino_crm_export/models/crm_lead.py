@@ -171,6 +171,10 @@ class CrmLead(models.Model):
         string='Stage label with position',
         compute='_compute_casafolino_stage_label',
     )
+    casafolino_has_open_issue = fields.Boolean(
+        string='Has open issue/complaint',
+        compute='_compute_casafolino_has_open_issue',
+    )
 
     # ------------------------------------------------------------------
     # Write override — probability from stage + standby exit
@@ -464,6 +468,16 @@ class CrmLead(models.Model):
             position = (lead.stage_id.sequence or 0) // 10
             position = max(1, min(9, position))
             lead.casafolino_stage_label = f"{lead.stage_id.name} \u00b7 {position}/9"
+
+    @api.depends('tag_ids', 'tag_ids.cf_category', 'stage_id')
+    def _compute_casafolino_has_open_issue(self):
+        for lead in self:
+            if lead.stage_id and lead.stage_id.is_won:
+                lead.casafolino_has_open_issue = False
+                continue
+            lead.casafolino_has_open_issue = any(
+                t.cf_category == 'issue' for t in lead.tag_ids
+            )
 
     # ------------------------------------------------------------------
     # Kanban quick actions

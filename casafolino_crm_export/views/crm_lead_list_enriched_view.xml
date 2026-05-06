@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         LIST VIEW — enriched style (Brief #2)
+         ============================================================ -->
+
+    <record id="cf_crm_lead_view_list_enriched" model="ir.ui.view">
+        <field name="name">crm.lead.list.casafolino.enriched</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">99</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="replace">
+                <list string="Pipeline CRM"
+                      multi_edit="1"
+                      js_class="casafolino_crm_lead_list"
+                      default_order="write_date desc">
+                    <field name="casafolino_card_title"
+                           string="Cliente"
+                           widget="cf_card_title"/>
+                    <field name="casafolino_product_category_label"
+                           string="Cosa"
+                           optional="show"/>
+                    <field name="stage_id"
+                           string="Stage"
+                           widget="cf_stage_progress_inline"/>
+                    <field name="expected_revenue"
+                           string="Valore"
+                           sum="Totale"/>
+                    <field name="user_id"
+                           string="Owner"
+                           widget="cf_owner_avatar_inline"
+                           optional="show"/>
+                    <field name="casafolino_signals_priority"
+                           string="Segnali"
+                           widget="cf_signals_badges"/>
+                    <field name="casafolino_relative_last_activity"
+                           string="Ultima att."
+                           optional="show"/>
+
+                    <!-- Hidden fields consumed by widgets -->
+                    <field name="casafolino_owner_avatar_class" column_invisible="1"/>
+                    <field name="casafolino_owner_avatar_initials" column_invisible="1"/>
+                    <field name="casafolino_stage_label" column_invisible="1"/>
+                    <field name="casafolino_stage_position" column_invisible="1"/>
+                    <field name="casafolino_has_unread_mail" column_invisible="1"/>
+                    <field name="casafolino_unread_mail_count" column_invisible="1"/>
+                    <field name="casafolino_has_overdue_followup" column_invisible="1"/>
+                    <field name="casafolino_no_activity_warning" column_invisible="1"/>
+                    <field name="casafolino_days_since_last_activity" column_invisible="1"/>
+                    <field name="casafolino_origin_fair_tag_id" column_invisible="1"/>
+                    <field name="casafolino_has_open_issue" column_invisible="1"/>
+                </list>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         SEARCH VIEW — additional filters (Brief #2)
+         ============================================================ -->
+
+    <record id="cf_crm_lead_search_brief2" model="ir.ui.view">
+        <field name="name">crm.lead.search.cf.brief2</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="cf_crm_lead_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='cf_fair_origin']" position="after">
+                <separator/>
+                <filter string="I miei lead caldi"
+                        name="my_hot_leads"
+                        domain="[('user_id', '=', uid), ('priority', '=', '3'), ('stage_id.is_won', '=', False)]"/>
+                <filter string="Reclami aperti"
+                        name="open_issues"
+                        domain="[('tag_ids.cf_category', '=', 'issue'), ('stage_id.is_won', '=', False)]"/>
+                <filter string="Via canale"
+                        name="via_channel"
+                        domain="[('tag_ids.cf_category', '=', 'channel')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         BULK ACTIONS — server actions for list multi-select
+         ============================================================ -->
+
+    <record id="action_bulk_change_owner" model="ir.actions.server">
+        <field name="name">Cambia owner (selezionati)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Cambia owner',
+    'res_model': 'crm.lead.bulk.change.owner.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {'default_lead_ids': records.ids},
+}
+        </field>
+    </record>
+
+    <record id="action_bulk_change_stage" model="ir.actions.server">
+        <field name="name">Cambia stage (selezionati)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Cambia stage',
+    'res_model': 'crm.lead.bulk.change.stage.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+    'context': {'default_lead_ids': records.ids},
+}
+        </field>
+    </record>
+
+    <!-- Wizard views -->
+    <record id="view_bulk_change_owner_wizard" model="ir.ui.view">
+        <field name="name">crm.lead.bulk.change.owner.wizard.form</field>
+        <field name="model">crm.lead.bulk.change.owner.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cambia owner">
+                <group>
+                    <field name="user_id"/>
+                    <field name="lead_ids" invisible="1"/>
+                </group>
+                <footer>
+                    <button string="Conferma" name="action_confirm" type="object" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bulk_change_stage_wizard" model="ir.ui.view">
+        <field name="name">crm.lead.bulk.change.stage.wizard.form</field>
+        <field name="model">crm.lead.bulk.change.stage.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cambia stage">
+                <group>
+                    <field name="stage_id"/>
+                    <field name="lead_ids" invisible="1"/>
+                </group>
+                <footer>
+                    <button string="Conferma" name="action_confirm" type="object" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

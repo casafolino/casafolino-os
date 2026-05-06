@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="casafolino_crm_export.CfOwnerAvatarInline">
+        <div t-attf-class="cf-owner-avatar size-md {{ avatarClass }}"
+             t-att-title="tooltip">
+            <t t-esc="initials"/>
+        </div>
+    </t>
+
+    <t t-name="casafolino_crm_export.CfStageProgressInline">
+        <div class="cf-stage-progress-inline" t-att-title="stageLabel">
+            <t t-foreach="segments" t-as="seg" t-key="seg.index">
+                <div t-attf-class="cf-stage-progress-inline-segment {{ seg.filled ? 'filled' : '' }}"
+                     t-attf-style="{{ seg.filled ? 'background:' + ownerColorVar : '' }}"/>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="casafolino_crm_export.CfSignalsBadges">
+        <div class="cf-signals-container">
+            <span t-if="hasOpenIssue" class="cf-badge cf-badge-danger">reclamo aperto</span>
+            <span t-if="hasOverdueFollowup and !hasOpenIssue" class="cf-badge cf-badge-danger">follow-up dovuto</span>
+            <span t-if="unreadCount > 0" class="cf-badge cf-badge-info"><t t-esc="unreadCount"/> mail</span>
+            <span t-if="noActivityWarning" class="cf-badge cf-badge-warning">inattivo <t t-esc="daysSinceLastActivity"/>gg</span>
+            <span t-if="fairTagName" class="cf-badge cf-badge-fair"><t t-esc="fairTagName"/></span>
+        </div>
+    </t>
+
+    <t t-name="casafolino_crm_export.CfCardTitle">
+        <span class="cf-list-cell-title"><t t-esc="title"/></span>
+    </t>
+
+</templates>

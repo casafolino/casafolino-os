@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="casafolino_crm_export.CrmLeadListView" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="cf-dashboard-strip">
+                <div class="cf-metric-card">
+                    <div class="cf-metric-label">Lead aperti</div>
+                    <div class="cf-metric-value"><t t-out="metricsState.open_leads"/></div>
+                </div>
+                <div class="cf-metric-card">
+                    <div class="cf-metric-label">Valore pipeline</div>
+                    <div class="cf-metric-value"><t t-out="formatPipelineValue(metricsState.pipeline_value)"/></div>
+                </div>
+                <div class="cf-metric-card">
+                    <div class="cf-metric-label">Conversion 90gg</div>
+                    <div class="cf-metric-value"><t t-out="metricsState.conversion_90d"/>%</div>
+                </div>
+                <div class="cf-metric-card cf-metric-danger">
+                    <div class="cf-metric-label">Reclami aperti</div>
+                    <div class="cf-metric-value"><t t-out="metricsState.open_issues"/></div>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>
