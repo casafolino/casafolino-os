@@ -417,48 +417,62 @@ export class CrmLeadWizardNewDialog extends Component {
 
     // --- Handlers referenced by template (Brief #4.2 warm) ---
 
+    /** Acknowledge AI suggestion and continue creating lead. */
     onApplyAiSuggestion() {
         this.state.aiSuggestionText = "";
         this.state.aiSuggestionAction = "";
     }
 
+    /** Dismiss AI suggestion banner. */
     onDismissAi() {
         this.state.aiSuggestionText = "";
         this.state.aiSuggestionAction = "";
     }
 
+    /** Reopen autocomplete dropdown on focus if query is long enough. */
     onPartnerSearchFocus() {
         if (this.state.partnerSearchQuery && this.state.partnerSearchQuery.length >= 2) {
             this.state.partnerSearchOpen = true;
         }
     }
 
-    onSeeExistingProjects() {
-        // TODO: navigate to partner's projects list
-        this.state.aiSuggestionText = "";
-        this.state.aiSuggestionAction = "";
+    /** Navigate to existing projects of the selected partner. */
+    async onSeeExistingProjects() {
+        if (this.state.partnerId) {
+            this.props.close();
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                name: "Progetti esistenti",
+                res_model: "project.project",
+                views: [[false, "list"], [false, "form"]],
+                domain: [["partner_id", "=", this.state.partnerId]],
+                target: "current",
+            });
+        } else {
+            this.state.aiSuggestionText = "";
+            this.state.aiSuggestionAction = "";
+        }
     }
 
-    onNewPartnerChange(ev) {
-        // Generic handler for new partner inputs (name/email/country)
-        // State is bound via t-model, this just triggers any needed side effects
-    }
+    /** No-op: new partner fields bound via t-model, change triggers side effects. */
+    onNewPartnerChange() {}
 
+    /** Handle fair tag selection from dropdown. */
     onOriginFairChange(ev) {
         const val = parseInt(ev.target.value) || null;
         this.state.originFairTagId = val;
     }
 
+    /** Proxy to agent input handler with state update. */
     onAgentSearchInput(ev) {
         this.state.agentSearchQuery = ev.target.value;
-        // Delegates to existing agent input handler if available
         if (typeof this.onAgentInputChange === "function") {
             this.onAgentInputChange(ev);
         }
     }
 
-    onNextActivityChange(ev) {
-        // Generic handler for activity inputs — state bound via t-model
+    /** Generic handler for activity inputs — syncs state to wizard record. */
+    onNextActivityChange() {
         this._syncActivityToWizard();
     }
 }
