@@ -200,20 +200,13 @@ export class CrmLeadWizardNewDialog extends Component {
     }
 }
 
-// Register as client action
-class CrmLeadWizardNewAction extends Component {
-    static template = "casafolino_crm_export.CrmLeadWizardNewAction";
-    static components = { CrmLeadWizardNewDialog };
-    static props = ["*"];
-
-    setup() {
-        this.dialogService = useService("dialog");
-        onWillStart(() => {
-            this.dialogService.add(CrmLeadWizardNewDialog, {
-                close: () => {},
-            });
+// Register as client action (function pattern, not Component)
+async function openWizardNewLead(env, action) {
+    return new Promise((resolve) => {
+        env.services.dialog.add(CrmLeadWizardNewDialog, {
+            close: () => resolve(),
         });
-    }
+    });
 }
 
-registry.category("actions").add("casafolino_crm_export.open_wizard_new_lead", CrmLeadWizardNewAction);
+registry.category("actions").add("casafolino_crm_export.open_wizard_new_lead", openWizardNewLead);

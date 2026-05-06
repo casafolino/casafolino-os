@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates xml:space="preserve">
 
-    <t t-name="casafolino_crm_export.CrmLeadWizardNewAction">
-        <!-- Placeholder: dialog is opened programmatically -->
-        <div class="d-none"/>
-    </t>
-
     <t t-name="casafolino_crm_export.CrmLeadWizardNewDialog">
         <Dialog title="'Nuovo lead'" size="'lg'">
             <div class="cf-wizard-new-dialog">
