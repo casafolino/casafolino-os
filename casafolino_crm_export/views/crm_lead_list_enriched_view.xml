@@ -9,56 +9,51 @@
         <field name="name">crm.lead.list.casafolino.enriched</field>
         <field name="model">crm.lead</field>
         <field name="priority">99</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
         <field name="arch" type="xml">
-            <list string="Pipeline CRM"
-                  multi_edit="1"
-                  js_class="casafolino_crm_lead_list"
-                  default_order="write_date desc">
-                <field name="casafolino_card_title"
-                       string="Cliente"
-                       widget="cf_card_title"/>
-                <field name="casafolino_product_category_label"
-                       string="Cosa"
-                       optional="show"/>
-                <field name="stage_id"
-                       string="Stage"
-                       widget="cf_stage_progress_inline"/>
-                <field name="expected_revenue"
-                       string="Valore"
-                       sum="Totale"/>
-                <field name="user_id"
-                       string="Owner"
-                       widget="cf_owner_avatar_inline"
-                       optional="show"/>
-                <field name="casafolino_signals_priority"
-                       string="Segnali"
-                       widget="cf_signals_badges"/>
-                <field name="casafolino_relative_last_activity"
-                       string="Ultima att."
-                       optional="show"/>
+            <xpath expr="//list" position="replace">
+                <list string="Pipeline CRM"
+                      multi_edit="1"
+                      js_class="casafolino_crm_lead_list"
+                      default_order="write_date desc">
+                    <field name="casafolino_card_title"
+                           string="Cliente"
+                           widget="cf_card_title"/>
+                    <field name="casafolino_product_category_label"
+                           string="Cosa"
+                           optional="show"/>
+                    <field name="stage_id"
+                           string="Stage"
+                           widget="cf_stage_progress_inline"/>
+                    <field name="expected_revenue"
+                           string="Valore"
+                           sum="Totale"/>
+                    <field name="user_id"
+                           string="Owner"
+                           widget="cf_owner_avatar_inline"
+                           optional="show"/>
+                    <field name="casafolino_signals_priority"
+                           string="Segnali"
+                           widget="cf_signals_badges"/>
+                    <field name="casafolino_relative_last_activity"
+                           string="Ultima att."
+                           optional="show"/>
 
-                <!-- Hidden fields consumed by widgets -->
-                <field name="casafolino_owner_avatar_class" column_invisible="1"/>
-                <field name="casafolino_owner_avatar_initials" column_invisible="1"/>
-                <field name="casafolino_stage_label" column_invisible="1"/>
-                <field name="casafolino_stage_position" column_invisible="1"/>
-                <field name="casafolino_has_unread_mail" column_invisible="1"/>
-                <field name="casafolino_unread_mail_count" column_invisible="1"/>
-                <field name="casafolino_has_overdue_followup" column_invisible="1"/>
-                <field name="casafolino_no_activity_warning" column_invisible="1"/>
-                <field name="casafolino_days_since_last_activity" column_invisible="1"/>
-                <field name="casafolino_origin_fair_tag_id" column_invisible="1"/>
-                <field name="casafolino_has_open_issue" column_invisible="1"/>
-            </list>
+                    <!-- Hidden fields consumed by widgets -->
+                    <field name="casafolino_owner_avatar_class" column_invisible="1"/>
+                    <field name="casafolino_owner_avatar_initials" column_invisible="1"/>
+                    <field name="casafolino_stage_label" column_invisible="1"/>
+                    <field name="casafolino_stage_position" column_invisible="1"/>
+                    <field name="casafolino_has_unread_mail" column_invisible="1"/>
+                    <field name="casafolino_unread_mail_count" column_invisible="1"/>
+                    <field name="casafolino_has_overdue_followup" column_invisible="1"/>
+                    <field name="casafolino_no_activity_warning" column_invisible="1"/>
+                    <field name="casafolino_days_since_last_activity" column_invisible="1"/>
+                    <field name="casafolino_origin_fair_tag_id" column_invisible="1"/>
+                    <field name="casafolino_has_open_issue" column_invisible="1"/>
+                </list>
+            </xpath>
         </field>
-    </record>
-
-    <!-- Bind enriched list to existing actions -->
-    <record id="action_cf_crm_all_list_enriched" model="ir.actions.act_window.view">
-        <field name="sequence">2</field>
-        <field name="view_mode">list</field>
-        <field name="view_id" ref="cf_crm_lead_view_list_enriched"/>
-        <field name="act_window_id" ref="action_cf_crm_all"/>
     </record>
 
     <!-- ============================================================
