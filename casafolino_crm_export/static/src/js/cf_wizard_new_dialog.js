@@ -4,16 +4,38 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
 
+const OWNER_LOGIN_TO_CLASS = {
+    "antonio@casafolino.com": "cf-owner-antonio",
+    "josefina.lazzaro@casafolino.com": "cf-owner-josefina",
+    "martina.sinopoli@casafolino.com": "cf-owner-martina",
+};
+
+function getInitials(name) {
+    if (!name) return "?";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+}
+
+function getShortName(name) {
+    if (!name) return "";
+    return name.trim().split(/\s+/)[0];
+}
+
 export class CrmLeadWizardNewDialog extends Component {
     static template = "casafolino_crm_export.CrmLeadWizardNewDialog";
     static components = { Dialog };
-    static props = { close: Function };
+    static props = ["*"];
 
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.action = useService("action");
         this.dialogService = useService("dialog");
+
+        this._searchTimeout = null;
 
         this.state = useState({
             wizardId: null,
@@ -26,6 +48,7 @@ export class CrmLeadWizardNewDialog extends Component {
             originType: "",
             originFairTagId: null,
             originAgentId: null,
+            originAgentName: "",
             productTagIds: [],
             expectedRevenue: 0,
             priority: "1",
@@ -39,12 +62,26 @@ export class CrmLeadWizardNewDialog extends Component {
             existingProjectsCount: 0,
             loading: false,
             aiLoading: false,
-            partners: [],
-            fairTags: [],
-            agents: [],
-            productTags: [],
-            users: [],
-            countries: [],
+            // Autocomplete
+            partnerSearchQuery: "",
+            partnerSearchOpen: false,
+            partnerSearchResults: [],
+            // Reference data
+            originOptions: [
+                { value: "fair", label: "Fiera" },
+                { value: "inbound_mail", label: "Email" },
+                { value: "agent_referral", label: "Agente" },
+                { value: "web", label: "Web" },
+                { value: "reorder", label: "Riordino" },
+                { value: "cold_outreach", label: "Cold outreach" },
+            ],
+            fairTagsList: [],
+            productTagsList: [],
+            countriesList: [],
+            usersList: [],
+            // Preview
+            preview: null,
+            previewOwnerColor: "#ccc",
         });
 
         onWillStart(async () => {
@@ -54,63 +91,154 @@ export class CrmLeadWizardNewDialog extends Component {
 
     async _loadInitialData() {
         try {
-            // Create wizard record
             const [wizardId] = await this.orm.create("crm.lead.wizard.new", [{}]);
             this.state.wizardId = wizardId;
 
-            // Load reference data in parallel
-            const [partners, fairTags, productTags, agents, users, countries] = await Promise.all([
-                this.orm.searchRead("res.partner", [["is_company", "=", true]], ["name"], { limit: 200, order: "name" }),
+            const [fairTags, productTags, countries, users] = await Promise.all([
                 this.orm.searchRead("crm.tag", [["cf_category", "=", "fair"]], ["name"], { limit: 50 }),
                 this.orm.searchRead("crm.tag", [["cf_category", "=", "product"]], ["name"], { limit: 50 }),
-                this.orm.searchRead("res.partner", [["cf_partner_role", "=", "agent"]], ["name"], { limit: 50 }),
-                this.orm.searchRead("res.users", [["share", "=", false]], ["name"], { limit: 50, order: "name" }),
                 this.orm.searchRead("res.country", [], ["name"], { limit: 300, order: "name" }),
+                this.orm.searchRead("res.users", [["share", "=", false]], ["name", "login"], { limit: 50, order: "name" }),
             ]);
 
-            this.state.partners = partners;
-            this.state.fairTags = fairTags;
-            this.state.productTags = productTags;
-            this.state.agents = agents;
-            this.state.users = users;
-            this.state.countries = countries;
+            this.state.fairTagsList = fairTags;
+            this.state.productTagsList = productTags;
+            this.state.countriesList = countries;
+
+            this.state.usersList = users.map((u) => ({
+                id: u.id,
+                name: u.name,
+                short_name: getShortName(u.name),
+                login: u.login,
+                avatar_class: OWNER_LOGIN_TO_CLASS[u.login] || "",
+                initials: getInitials(u.name),
+            }));
 
             // Set default user
-            const currentUser = users.find((u) => u.id === odoo.session_info.uid);
+            const currentUser = this.state.usersList.find((u) => u.id === odoo.session_info.uid);
             if (currentUser) {
                 this.state.userId = currentUser.id;
                 this.state.userName = currentUser.name;
+                this._updatePreviewOwnerColor(currentUser);
             }
         } catch (e) {
             console.error("Failed to load wizard data", e);
         }
     }
 
-    onPartnerSelected(ev) {
-        const val = parseInt(ev.target.value);
-        if (val) {
-            this.state.partnerId = val;
-            const p = this.state.partners.find((x) => x.id === val);
-            this.state.partnerName = p ? p.name : "";
-            this.state.isNewPartner = false;
-            this.fetchAiSuggestion();
-        } else {
+    _updatePreviewOwnerColor(user) {
+        const colorMap = {
+            "cf-owner-antonio": "#3F8A4F",
+            "cf-owner-josefina": "#8B5CF6",
+            "cf-owner-martina": "#6B4A1E",
+        };
+        this.state.previewOwnerColor = colorMap[user?.avatar_class] || "#ccc";
+    }
+
+    // --- Partner autocomplete ---
+
+    onPartnerSearchInput(ev) {
+        const query = ev.target.value;
+        this.state.partnerSearchQuery = query;
+
+        if (this._searchTimeout) {
+            clearTimeout(this._searchTimeout);
+        }
+
+        if (!query || query.length < 2) {
+            this.state.partnerSearchOpen = false;
+            this.state.partnerSearchResults = [];
+            return;
+        }
+
+        this._searchTimeout = setTimeout(async () => {
+            try {
+                const results = await this.orm.searchRead(
+                    "res.partner",
+                    [["is_company", "=", true], ["name", "ilike", query]],
+                    ["name", "city", "country_id"],
+                    { limit: 10, order: "name" }
+                );
+                this.state.partnerSearchResults = results.map((r) => ({
+                    id: r.id,
+                    name: r.name,
+                    location: [r.city, r.country_id ? r.country_id[1] : ""].filter(Boolean).join(", "),
+                }));
+                this.state.partnerSearchOpen = true;
+            } catch (e) {
+                console.error("Partner search failed", e);
+            }
+        }, 250);
+    }
+
+    async onPartnerSelect(partnerId, partnerName) {
+        this.state.partnerId = partnerId;
+        this.state.partnerName = partnerName;
+        this.state.partnerSearchQuery = partnerName;
+        this.state.partnerSearchOpen = false;
+        this.state.partnerSearchResults = [];
+        this.state.isNewPartner = false;
+
+        // Write to wizard and fetch projects count
+        try {
+            await this.orm.write("crm.lead.wizard.new", [this.state.wizardId], {
+                partner_id: partnerId,
+            });
+            const [rec] = await this.orm.read("crm.lead.wizard.new", [this.state.wizardId], [
+                "existing_projects_count",
+            ]);
+            this.state.existingProjectsCount = rec.existing_projects_count || 0;
+
+            if (this.state.existingProjectsCount > 0) {
+                this.fetchAiSuggestion();
+            }
+        } catch (e) {
+            console.error("Failed to update partner on wizard", e);
+        }
+
+        await this.refreshPreview();
+    }
+
+    setNewPartnerMode(isNew) {
+        this.state.isNewPartner = isNew;
+        if (isNew) {
             this.state.partnerId = null;
             this.state.partnerName = "";
+            this.state.partnerSearchQuery = "";
+            this.state.partnerSearchOpen = false;
+            this.state.existingProjectsCount = 0;
         }
     }
 
-    onToggleNewPartner() {
-        this.state.isNewPartner = !this.state.isNewPartner;
-        if (this.state.isNewPartner) {
-            this.state.partnerId = null;
-            this.state.partnerName = "";
-        }
+    // --- New partner inputs ---
+
+    onNewPartnerNameInput(ev) {
+        this.state.newPartnerName = ev.target.value;
     }
 
-    onOriginChange(type) {
+    onNewPartnerEmailInput(ev) {
+        this.state.newPartnerEmail = ev.target.value;
+    }
+
+    onNewPartnerCountryChange(ev) {
+        this.state.newPartnerCountryId = parseInt(ev.target.value) || null;
+    }
+
+    // --- Origin ---
+
+    onOriginTypeChange(type) {
         this.state.originType = type;
     }
+
+    onFairTagChange(ev) {
+        this.state.originFairTagId = parseInt(ev.target.value) || null;
+    }
+
+    onAgentInputChange(ev) {
+        this.state.originAgentName = ev.target.value;
+    }
+
+    // --- Product tags ---
 
     onProductTagToggle(tagId) {
         const idx = this.state.productTagIds.indexOf(tagId);
@@ -121,18 +249,107 @@ export class CrmLeadWizardNewDialog extends Component {
         }
     }
 
+    // --- Priority ---
+
     onPriorityChange(val) {
         this.state.priority = val;
     }
 
-    onUserChange(ev) {
-        const val = parseInt(ev.target.value);
-        if (val) {
-            this.state.userId = val;
-            const u = this.state.users.find((x) => x.id === val);
-            this.state.userName = u ? u.name : "";
+    // --- Revenue ---
+
+    async onExpectedRevenueChange(ev) {
+        this.state.expectedRevenue = parseFloat(ev.target.value) || 0;
+        if (this.state.wizardId) {
+            try {
+                await this.orm.write("crm.lead.wizard.new", [this.state.wizardId], {
+                    expected_revenue: this.state.expectedRevenue,
+                });
+            } catch (e) {
+                // silent
+            }
+            await this.refreshPreview();
         }
     }
+
+    // --- Owner ---
+
+    onUserChange(userId, userName) {
+        this.state.userId = userId;
+        this.state.userName = userName;
+        const user = this.state.usersList.find((u) => u.id === userId);
+        this._updatePreviewOwnerColor(user);
+        this.refreshPreview();
+    }
+
+    onAgentUserChange(ev) {
+        const val = parseInt(ev.target.value);
+        if (val) {
+            const u = this.state.usersList.find((x) => x.id === val);
+            this.onUserChange(val, u ? u.name : "");
+        }
+    }
+
+    // --- Activity ---
+
+    onActivityTypeChange(ev) {
+        this.state.nextActivityType = ev.target.value;
+        this._syncActivityToWizard();
+    }
+
+    onActivitySummaryInput(ev) {
+        this.state.nextActivitySummary = ev.target.value;
+    }
+
+    onActivityDateChange(ev) {
+        this.state.nextActivityDate = ev.target.value;
+        this._syncActivityToWizard();
+    }
+
+    async _syncActivityToWizard() {
+        if (!this.state.wizardId) return;
+        try {
+            await this.orm.write("crm.lead.wizard.new", [this.state.wizardId], {
+                next_activity_type: this.state.nextActivityType || false,
+                next_activity_summary: this.state.nextActivitySummary || false,
+                next_activity_date: this.state.nextActivityDate || false,
+            });
+        } catch (e) {
+            // silent
+        }
+    }
+
+    // --- Preview ---
+
+    async refreshPreview() {
+        if (!this.state.wizardId) return;
+        try {
+            // Sync current state to wizard before preview
+            const vals = {
+                partner_id: this.state.partnerId || false,
+                is_new_partner: this.state.isNewPartner,
+                new_partner_name: this.state.newPartnerName || false,
+                origin_type: this.state.originType || false,
+                product_tag_ids: [[6, 0, this.state.productTagIds]],
+                expected_revenue: this.state.expectedRevenue || 0,
+                priority: this.state.priority,
+                user_id: this.state.userId || false,
+                next_activity_type: this.state.nextActivityType || false,
+                next_activity_date: this.state.nextActivityDate || false,
+            };
+            await this.orm.write("crm.lead.wizard.new", [this.state.wizardId], vals);
+
+            const preview = await this.orm.call(
+                "crm.lead.wizard.new",
+                "get_preview_data",
+                [[this.state.wizardId]]
+            );
+            this.state.preview = preview;
+        } catch (e) {
+            console.error("Preview refresh failed", e);
+        }
+    }
+
+    // --- AI ---
 
     async fetchAiSuggestion() {
         if (!this.state.wizardId || !this.state.partnerId) return;
@@ -155,10 +372,11 @@ export class CrmLeadWizardNewDialog extends Component {
         this.state.aiLoading = false;
     }
 
+    // --- Create / Cancel ---
+
     async onCreateLead() {
         this.state.loading = true;
         try {
-            // Write all fields to wizard record
             const vals = {
                 partner_id: this.state.partnerId || false,
                 is_new_partner: this.state.isNewPartner,
@@ -178,14 +396,12 @@ export class CrmLeadWizardNewDialog extends Component {
             };
             await this.orm.write("crm.lead.wizard.new", [this.state.wizardId], vals);
 
-            // Call create action
             const result = await this.orm.call(
                 "crm.lead.wizard.new", "action_create_lead", [[this.state.wizardId]]
             );
 
             this.props.close();
 
-            // Navigate to the new lead
             if (result && result.res_id) {
                 this.action.doAction(result);
             }

@@ -165,6 +165,17 @@ class CrmLeadWizardNew(models.TransientModel):
         elif self.new_partner_name:
             partner_name = self.new_partner_name
 
+        # Format value for preview display
+        rev = self.expected_revenue
+        if rev >= 1_000_000:
+            value_formatted = f"{rev / 1_000_000:.1f}M"
+        elif rev >= 1_000:
+            value_formatted = f"{rev / 1_000:.0f}k"
+        elif rev > 0:
+            value_formatted = f"{rev:.0f}"
+        else:
+            value_formatted = ""
+
         return {
             'partner_name': partner_name,
             'origin_type': dict(self._fields['origin_type'].selection).get(
@@ -172,6 +183,7 @@ class CrmLeadWizardNew(models.TransientModel):
             ) if self.origin_type else '',
             'product_tags': [t.name for t in self.product_tag_ids],
             'expected_revenue': self.expected_revenue,
+            'value_formatted': value_formatted,
             'priority': self.priority,
             'user_name': self.user_id.name if self.user_id else '',
             'next_activity_type': self.next_activity_type or '',

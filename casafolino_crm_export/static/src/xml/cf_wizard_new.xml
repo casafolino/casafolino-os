@@ -2,198 +2,229 @@
 <templates xml:space="preserve">
 
     <t t-name="casafolino_crm_export.CrmLeadWizardNewDialog">
-        <Dialog title="'Nuovo lead'" size="'lg'">
-            <div class="cf-wizard-new-dialog">
-                <div class="cf-wizard-body">
+        <Dialog title="'Nuovo lead'" size="'lg'" contentClass="'cf-wizard-new-dialog'">
+            <div class="cf-wizard-body">
 
-                    <!-- AI Suggestion Banner -->
-                    <div t-if="state.aiSuggestionText" class="cf-ai-suggestion">
-                        <span class="cf-ai-badge">AI</span>
-                        <span t-out="state.aiSuggestionText"/>
-                    </div>
-                    <div t-if="state.aiLoading" class="cf-ai-suggestion">
-                        <span class="cf-ai-badge">AI</span>
-                        <span>Analisi in corso...</span>
+                <!-- AI Suggestion Banner -->
+                <div t-if="state.aiSuggestionText" class="cf-ai-suggestion">
+                    <span class="cf-ai-badge">AI</span>
+                    <span class="cf-ai-text" t-out="state.aiSuggestionText"/>
+                </div>
+                <div t-if="state.aiLoading" class="cf-ai-suggestion">
+                    <span class="cf-ai-badge">AI</span>
+                    <span class="cf-ai-text">Analisi in corso...</span>
+                </div>
+
+                <!-- Sezione Cliente -->
+                <div class="cf-section">
+                    <div class="cf-section-header">
+                        <span class="cf-section-label">Cliente</span>
+                        <div class="cf-toggle-group">
+                            <button t-attf-class="cf-toggle-btn {{ !state.isNewPartner ? 'active' : '' }}"
+                                    t-on-click="() => this.setNewPartnerMode(false)">Esistente</button>
+                            <button t-attf-class="cf-toggle-btn {{ state.isNewPartner ? 'active' : '' }}"
+                                    t-on-click="() => this.setNewPartnerMode(true)">+ Nuovo</button>
+                        </div>
                     </div>
 
-                    <!-- Sezione Cliente -->
-                    <div class="cf-section">
-                        <div class="cf-section-label">Cliente</div>
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <button t-att-class="'btn btn-sm ' + (state.isNewPartner ? 'btn-outline-secondary' : 'btn-outline-primary')"
-                                    t-on-click="() => this.onToggleNewPartner()">
-                                <t t-if="state.isNewPartner">Seleziona esistente</t>
-                                <t t-else="">Nuovo cliente</t>
-                            </button>
+                    <t t-if="!state.isNewPartner">
+                        <div class="cf-autocomplete-wrapper">
+                            <input type="text" class="cf-input cf-autocomplete-input"
+                                   placeholder="Cerca cliente..."
+                                   t-att-value="state.partnerSearchQuery"
+                                   t-on-input="onPartnerSearchInput"
+                                   t-on-focus="onPartnerSearchInput"/>
+                            <div t-if="state.partnerSearchOpen and state.partnerSearchResults.length"
+                                 class="cf-autocomplete-dropdown">
+                                <div t-foreach="state.partnerSearchResults" t-as="p" t-key="p.id"
+                                     class="cf-autocomplete-item"
+                                     t-on-click="() => this.onPartnerSelect(p.id, p.name)">
+                                    <span class="cf-autocomplete-name" t-out="p.name"/>
+                                    <span t-if="p.location" class="cf-autocomplete-location" t-out="p.location"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div t-if="state.partnerId" class="cf-partner-selected">
+                            <span class="cf-partner-selected-name" t-out="state.partnerName"/>
                             <t t-if="state.existingProjectsCount > 0">
-                                <span class="badge bg-info ms-2">
-                                    <t t-out="state.existingProjectsCount"/> progetti esistenti
+                                <span class="cf-badge-info">
+                                    esistente &#xb7; <t t-out="state.existingProjectsCount"/> progetti
                                 </span>
                             </t>
                         </div>
+                    </t>
 
-                        <t t-if="!state.isNewPartner">
-                            <select class="form-select form-select-sm" t-on-change="onPartnerSelected">
-                                <option value="">-- Seleziona cliente --</option>
-                                <t t-foreach="state.partners" t-as="p" t-key="p.id">
-                                    <option t-att-value="p.id" t-att-selected="state.partnerId === p.id">
-                                        <t t-out="p.name"/>
+                    <t t-if="state.isNewPartner">
+                        <div class="cf-new-partner-grid">
+                            <input type="text" class="cf-input cf-new-partner-name"
+                                   placeholder="Nome azienda"
+                                   t-att-value="state.newPartnerName"
+                                   t-on-input="onNewPartnerNameInput"/>
+                            <input type="email" class="cf-input cf-new-partner-email"
+                                   placeholder="Email"
+                                   t-att-value="state.newPartnerEmail"
+                                   t-on-input="onNewPartnerEmailInput"/>
+                            <select class="cf-input cf-new-partner-country"
+                                    t-on-change="onNewPartnerCountryChange">
+                                <option value="">Paese</option>
+                                <t t-foreach="state.countriesList" t-as="c" t-key="c.id">
+                                    <option t-att-value="c.id"><t t-out="c.name"/></option>
+                                </t>
+                            </select>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- Sezione Origine -->
+                <div class="cf-section">
+                    <div class="cf-section-label">Origine</div>
+                    <div class="cf-pills-row">
+                        <t t-foreach="state.originOptions" t-as="opt" t-key="opt.value">
+                            <button t-attf-class="cf-pill {{ state.originType === opt.value ? 'active' : '' }}"
+                                    t-on-click="() => this.onOriginTypeChange(opt.value)">
+                                <t t-out="opt.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <t t-if="state.originType === 'fair'">
+                        <select class="cf-input cf-sub-select"
+                                t-on-change="onFairTagChange">
+                            <option value="">Seleziona fiera...</option>
+                            <t t-foreach="state.fairTagsList" t-as="ft" t-key="ft.id">
+                                <option t-att-value="ft.id"><t t-out="ft.name"/></option>
+                            </t>
+                        </select>
+                    </t>
+                    <t t-if="state.originType === 'agent_referral'">
+                        <input type="text" class="cf-input cf-sub-select"
+                               placeholder="Nome agente..."
+                               t-att-value="state.originAgentName"
+                               t-on-change="onAgentInputChange"/>
+                    </t>
+                </div>
+
+                <!-- Sezione Cosa cerca -->
+                <div class="cf-section">
+                    <div class="cf-section-label">Cosa cerca</div>
+                    <div class="cf-pills-row cf-product-pills">
+                        <t t-foreach="state.productTagsList" t-as="tag" t-key="tag.id">
+                            <button t-attf-class="cf-pill cf-product-chip {{ state.productTagIds.includes(tag.id) ? 'active' : '' }}"
+                                    t-on-click="() => this.onProductTagToggle(tag.id)">
+                                <t t-if="state.productTagIds.includes(tag.id)">&#x2713; </t>
+                                <t t-out="tag.name"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="cf-value-priority-row">
+                        <div class="cf-value-input-wrapper">
+                            <span class="cf-value-prefix">&#8364;</span>
+                            <input type="number" class="cf-input cf-value-input"
+                                   placeholder="Revenue atteso"
+                                   t-att-value="state.expectedRevenue || ''"
+                                   t-on-change="onExpectedRevenueChange"/>
+                        </div>
+                        <div class="cf-priority-pills">
+                            <button t-attf-class="cf-pill cf-priority-pill {{ state.priority === '0' ? 'active-low' : '' }}"
+                                    t-on-click="() => this.onPriorityChange('0')">Bassa</button>
+                            <button t-attf-class="cf-pill cf-priority-pill {{ state.priority === '1' ? 'active-medium' : '' }}"
+                                    t-on-click="() => this.onPriorityChange('1')">Media</button>
+                            <button t-attf-class="cf-pill cf-priority-pill {{ state.priority === '2' ? 'active-high' : '' }}"
+                                    t-on-click="() => this.onPriorityChange('2')">Alta</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sezione Owner -->
+                <div class="cf-section">
+                    <div class="cf-section-label">Owner</div>
+                    <div class="cf-owner-row">
+                        <div class="cf-owner-avatars">
+                            <t t-foreach="state.usersList" t-as="u" t-key="u.id">
+                                <t t-if="u.avatar_class">
+                                    <button t-attf-class="cf-owner-avatar size-md {{ u.avatar_class }} {{ state.userId === u.id ? 'selected' : '' }}"
+                                            t-on-click="() => this.onUserChange(u.id, u.name)"
+                                            t-att-title="u.name">
+                                        <t t-out="u.initials"/>
+                                    </button>
+                                </t>
+                            </t>
+                        </div>
+                        <select class="cf-input cf-agent-select"
+                                t-on-change="onAgentUserChange">
+                            <option value="">Agente...</option>
+                            <t t-foreach="state.usersList" t-as="u" t-key="u.id">
+                                <t t-if="!u.avatar_class">
+                                    <option t-att-value="u.id"
+                                            t-att-selected="state.userId === u.id">
+                                        <t t-out="u.name"/>
                                     </option>
                                 </t>
-                            </select>
-                        </t>
-                        <t t-if="state.isNewPartner">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <input type="text" class="form-control form-control-sm"
-                                           placeholder="Nome azienda"
-                                           t-att-value="state.newPartnerName"
-                                           t-on-input="(ev) => this.state.newPartnerName = ev.target.value"/>
-                                </div>
-                                <div class="col-3">
-                                    <input type="email" class="form-control form-control-sm"
-                                           placeholder="Email"
-                                           t-att-value="state.newPartnerEmail"
-                                           t-on-input="(ev) => this.state.newPartnerEmail = ev.target.value"/>
-                                </div>
-                                <div class="col-3">
-                                    <select class="form-select form-select-sm"
-                                            t-on-change="(ev) => this.state.newPartnerCountryId = parseInt(ev.target.value) || null">
-                                        <option value="">Paese</option>
-                                        <t t-foreach="state.countries" t-as="c" t-key="c.id">
-                                            <option t-att-value="c.id"><t t-out="c.name"/></option>
-                                        </t>
-                                    </select>
-                                </div>
-                            </div>
-                        </t>
-                    </div>
-
-                    <!-- Sezione Origine -->
-                    <div class="cf-section">
-                        <div class="cf-section-label">Origine</div>
-                        <div class="cf-origin-pills">
-                            <t t-foreach="[['fair','Fiera'],['inbound_mail','Email'],['agent_referral','Agente'],['web','Web'],['reorder','Riordino'],['cold_outreach','Cold outreach']]"
-                               t-as="opt" t-key="opt[0]">
-                                <button t-att-class="'cf-filter-chip ' + (state.originType === opt[0] ? 'active' : '')"
-                                        t-on-click="() => this.onOriginChange(opt[0])">
-                                    <t t-out="opt[1]"/>
-                                </button>
-                            </t>
-                        </div>
-                        <t t-if="state.originType === 'fair'">
-                            <select class="form-select form-select-sm mt-2"
-                                    t-on-change="(ev) => this.state.originFairTagId = parseInt(ev.target.value) || null">
-                                <option value="">-- Seleziona fiera --</option>
-                                <t t-foreach="state.fairTags" t-as="t" t-key="t.id">
-                                    <option t-att-value="t.id"><t t-out="t.name"/></option>
-                                </t>
-                            </select>
-                        </t>
-                        <t t-if="state.originType === 'agent_referral'">
-                            <select class="form-select form-select-sm mt-2"
-                                    t-on-change="(ev) => this.state.originAgentId = parseInt(ev.target.value) || null">
-                                <option value="">-- Seleziona agente --</option>
-                                <t t-foreach="state.agents" t-as="a" t-key="a.id">
-                                    <option t-att-value="a.id"><t t-out="a.name"/></option>
-                                </t>
-                            </select>
-                        </t>
-                    </div>
-
-                    <!-- Sezione Cosa cerca -->
-                    <div class="cf-section">
-                        <div class="cf-section-label">Cosa cerca</div>
-                        <div class="cf-origin-pills mb-2">
-                            <t t-foreach="state.productTags" t-as="tag" t-key="tag.id">
-                                <button t-att-class="'cf-filter-chip ' + (state.productTagIds.includes(tag.id) ? 'active' : '')"
-                                        t-on-click="() => this.onProductTagToggle(tag.id)">
-                                    <t t-out="tag.name"/>
-                                </button>
-                            </t>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">&#8364;</span>
-                                    <input type="number" class="form-control"
-                                           placeholder="Revenue atteso"
-                                           t-att-value="state.expectedRevenue"
-                                           t-on-input="(ev) => this.state.expectedRevenue = parseFloat(ev.target.value) || 0"/>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="cf-priority-pills">
-                                    <button t-att-class="'cf-priority-pill ' + (state.priority === '0' ? 'active' : '')"
-                                            t-on-click="() => this.onPriorityChange('0')">Bassa</button>
-                                    <button t-att-class="'cf-priority-pill ' + (state.priority === '1' ? 'active' : '')"
-                                            t-on-click="() => this.onPriorityChange('1')">Media</button>
-                                    <button t-att-class="'cf-priority-pill ' + (state.priority === '2' ? 'active' : '')"
-                                            t-on-click="() => this.onPriorityChange('2')">Alta</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sezione Owner -->
-                    <div class="cf-section">
-                        <div class="cf-section-label">Owner</div>
-                        <select class="form-select form-select-sm" t-on-change="onUserChange">
-                            <t t-foreach="state.users" t-as="u" t-key="u.id">
-                                <option t-att-value="u.id" t-att-selected="state.userId === u.id">
-                                    <t t-out="u.name"/>
-                                </option>
                             </t>
                         </select>
                     </div>
-
-                    <!-- Sezione Prossima azione -->
-                    <div class="cf-section">
-                        <div class="cf-section-label">Prossima azione</div>
-                        <div class="row g-2">
-                            <div class="col-4">
-                                <select class="form-select form-select-sm"
-                                        t-on-change="(ev) => this.state.nextActivityType = ev.target.value">
-                                    <option value="">-- Tipo --</option>
-                                    <option value="email">Email</option>
-                                    <option value="call">Chiamata</option>
-                                    <option value="meeting">Meeting</option>
-                                    <option value="todo">Todo</option>
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <input type="text" class="form-control form-control-sm"
-                                       placeholder="Sommario"
-                                       t-att-value="state.nextActivitySummary"
-                                       t-on-input="(ev) => this.state.nextActivitySummary = ev.target.value"/>
-                            </div>
-                            <div class="col-4">
-                                <input type="date" class="form-control form-control-sm"
-                                       t-att-value="state.nextActivityDate"
-                                       t-on-input="(ev) => this.state.nextActivityDate = ev.target.value"/>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Preview Card -->
-                    <div class="cf-preview-section" t-if="state.partnerId || state.newPartnerName">
-                        <div class="cf-section-label">Anteprima</div>
-                        <div class="d-flex flex-column gap-1">
-                            <span><strong>Cliente:</strong> <t t-out="state.partnerName || state.newPartnerName"/></span>
-                            <span t-if="state.originType"><strong>Origine:</strong> <t t-out="state.originType"/></span>
-                            <span t-if="state.expectedRevenue"><strong>Revenue:</strong> &#8364;<t t-out="state.expectedRevenue"/></span>
-                            <span t-if="state.userName"><strong>Owner:</strong> <t t-out="state.userName"/></span>
-                        </div>
-                    </div>
-
                 </div>
+
+                <!-- Sezione Prossima azione -->
+                <div class="cf-section">
+                    <div class="cf-section-label">Prossima azione</div>
+                    <div class="cf-activity-grid">
+                        <select class="cf-input cf-activity-type"
+                                t-on-change="onActivityTypeChange">
+                            <option value="">Tipo</option>
+                            <option value="email">Email</option>
+                            <option value="call">Chiamata</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="todo">Todo</option>
+                        </select>
+                        <input type="text" class="cf-input cf-activity-summary"
+                               placeholder="Sommario"
+                               t-att-value="state.nextActivitySummary"
+                               t-on-input="onActivitySummaryInput"/>
+                        <input type="date" class="cf-input cf-activity-date"
+                               t-att-value="state.nextActivityDate"
+                               t-on-change="onActivityDateChange"/>
+                    </div>
+                </div>
+
+                <!-- Preview Card -->
+                <div t-if="state.preview" class="cf-preview-card"
+                     t-attf-style="box-shadow: inset 3px 0 0 {{ state.previewOwnerColor || '#ccc' }}">
+                    <div class="cf-preview-header">
+                        <span class="cf-preview-partner" t-out="state.preview.partner_name"/>
+                        <span t-if="state.preview.origin_type" class="cf-badge-info" t-out="state.preview.origin_type"/>
+                    </div>
+                    <div class="cf-preview-body">
+                        <t t-if="state.preview.product_tags and state.preview.product_tags.length">
+                            <div class="cf-preview-tags">
+                                <t t-foreach="state.preview.product_tags" t-as="pt" t-key="pt_index">
+                                    <span class="cf-badge-success" t-out="pt"/>
+                                </t>
+                            </div>
+                        </t>
+                        <div class="cf-preview-meta">
+                            <span t-if="state.preview.value_formatted" class="cf-preview-value">
+                                &#8364;<t t-out="state.preview.value_formatted"/>
+                            </span>
+                            <span t-if="state.preview.user_name" class="cf-preview-owner" t-out="state.preview.user_name"/>
+                            <span t-if="state.preview.next_activity_date" class="cf-preview-activity">
+                                <t t-out="state.preview.next_activity_type"/> <t t-out="state.preview.next_activity_date"/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <t t-set-slot="footer">
-                <button class="btn btn-secondary" t-on-click="onCancel">Annulla</button>
-                <button class="btn btn-primary" t-on-click="onCreateLead" t-att-disabled="state.loading">
-                    <t t-if="state.loading">Creazione...</t>
-                    <t t-else="">Crea lead</t>
-                </button>
+                <div class="cf-footer-row">
+                    <span class="cf-kbd-hint">Tab per navigare</span>
+                    <div class="cf-footer-buttons">
+                        <button class="cf-btn-secondary" t-on-click="onCancel">Annulla</button>
+                        <button class="cf-btn-primary" t-on-click="onCreateLead" t-att-disabled="state.loading">
+                            <t t-if="state.loading">Creazione...</t>
+                            <t t-else="">Crea lead</t>
+                        </button>
+                    </div>
+                </div>
             </t>
         </Dialog>
     </t>
