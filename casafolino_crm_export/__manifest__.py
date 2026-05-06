@@ -39,6 +39,7 @@
             'casafolino_crm_export/static/src/list_widgets/cf_stage_progress_inline.js',
             'casafolino_crm_export/static/src/list_widgets/cf_signals_badges.js',
             'casafolino_crm_export/static/src/list_widgets/cf_crm_lead_list_view.js',
+            'casafolino_crm_export/static/src/list_widgets/cf_crm_lead_kanban_view.js',
             'casafolino_crm_export/static/src/list_widgets/cf_widgets.xml',
             'casafolino_crm_export/static/src/list_widgets/cf_crm_lead_list_view.xml',
             'casafolino_crm_export/static/src/components/card_scanner_widget.js',

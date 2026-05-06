@@ -39,7 +39,8 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <kanban default_group_by="stage_id" quick_create="false"
-                    class="o_kanban_small_column o_opportunity_kanban cf_kanban_enriched">
+                    class="o_kanban_small_column o_opportunity_kanban cf_kanban_enriched"
+                    js_class="casafolino_crm_lead_kanban">
                 <field name="stage_id"/>
                 <field name="partner_id"/>
                 <field name="expected_revenue"/>

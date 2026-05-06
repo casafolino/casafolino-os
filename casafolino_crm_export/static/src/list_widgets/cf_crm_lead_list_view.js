@@ -4,7 +4,6 @@ import { listView } from "@web/views/list/list_view";
 import { ListController } from "@web/views/list/list_controller";
 import { useService } from "@web/core/utils/hooks";
 import { onWillStart, onMounted, useState } from "@odoo/owl";
-import { CrmLeadWizardNewDialog } from "../js/cf_wizard_new_dialog";
 
 export class CasafolinoCrmLeadListController extends ListController {
     static template = "casafolino_crm_export.CrmLeadListView";
@@ -12,7 +11,7 @@ export class CasafolinoCrmLeadListController extends ListController {
     setup() {
         super.setup();
         this.orm = useService("orm");
-        this.dialogService = useService("dialog");
+        this.actionService = useService("action");
         this.metricsState = useState({
             open_leads: 0,
             pipeline_value: 0,
@@ -39,8 +38,9 @@ export class CasafolinoCrmLeadListController extends ListController {
     }
 
     async createRecord() {
-        this.dialogService.add(CrmLeadWizardNewDialog, {
-            close: () => {},
+        await this.actionService.doAction({
+            type: "ir.actions.client",
+            tag: "casafolino_crm_export.open_wizard_new_lead",
         });
     }
 
