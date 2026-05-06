@@ -1,0 +1,238 @@
+/* ════════════════════════════════════════════
+   CASAFOLINO CRM — ENRICHED KANBAN
+   Brief #1 + Brief #1.1
+   ════════════════════════════════════════════ */
+
+/* ─── Card base — box-shadow inset for full-height accent ─── */
+.cf-crm-card.cf-enriched {
+    background: var(--o-view-background-color, #f9fafb);
+    border-radius: 8px;
+    padding: 12px 12px 12px 15px;
+    border: 0.5px solid var(--o-color-border, #cbd6e2);
+    box-shadow: inset 3px 0 0 #888780;
+    transition: border-color 0.15s ease;
+    cursor: pointer;
+    position: relative;
+}
+.cf-crm-card.cf-enriched:hover {
+    border-color: var(--o-color-primary, #0091ae);
+}
+
+/* Owner accent via box-shadow inset */
+.cf-crm-card.cf-enriched.cf-owner-antonio { box-shadow: inset 3px 0 0 #3F8A4F; }
+.cf-crm-card.cf-enriched.cf-owner-josefina { box-shadow: inset 3px 0 0 #8B5CF6; }
+.cf-crm-card.cf-enriched.cf-owner-martina { box-shadow: inset 3px 0 0 #6B4A1E; }
+.cf-crm-card.cf-enriched.cf-owner-other { box-shadow: inset 3px 0 0 #888780; }
+
+/* ─── Header ─── */
+.cf-enriched .cf-card-header {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.cf-enriched .cf-card-title {
+    font-weight: 500;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--o-main-text-color, #2d3e50);
+}
+.cf-card-category {
+    font-size: 12px;
+    color: #7c98b6;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cf-card-value {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--o-main-text-color, #2d3e50);
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ─── Stage progress bar ─── */
+.cf-stage-progress {
+    display: flex;
+    gap: 2px;
+    margin: 6px 0 2px 0;
+}
+.cf-seg {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    transition: background 0.2s;
+}
+.cf-seg-inactive {
+    background: #D3D1C7;
+}
+.cf-seg-active {
+    /* Color set inline via t-attf-style */
+}
+
+/* ─── Stage label ─── */
+.cf-stage-label {
+    font-size: 11px;
+    color: #7c98b6;
+    margin-bottom: 6px;
+}
+
+/* ─── Badges ─── */
+.cf-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 4px 0;
+    min-height: 18px;
+}
+.cf-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+.cf-badge-danger {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+.cf-badge-info {
+    background: #DBEAFE;
+    color: #2563EB;
+}
+.cf-badge-warning {
+    background: #FEF3C7;
+    color: #D97706;
+}
+.cf-badge-fair {
+    background: rgba(90, 110, 58, 0.12);
+    color: #5A6E3A;
+}
+
+/* ─── Footer ─── */
+.cf-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+.cf-footer-time {
+    font-size: 11px;
+    color: #7c98b6;
+    font-style: italic;
+}
+
+/* ─── Owner avatar ─── */
+.cf-owner-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 500;
+    flex-shrink: 0;
+    user-select: none;
+}
+.cf-owner-avatar.size-sm { width: 20px; height: 20px; font-size: 9px; }
+.cf-owner-avatar.size-md { width: 28px; height: 28px; font-size: 11px; }
+
+.cf-owner-avatar.cf-owner-antonio { background: #3F8A4F; }
+.cf-owner-avatar.cf-owner-josefina { background: #8B5CF6; }
+.cf-owner-avatar.cf-owner-martina { background: #6B4A1E; }
+.cf-owner-avatar.cf-owner-other { background: #888780; }
+
+/* ─── Quick actions (hover) ─── */
+.cf-kanban-quick-actions {
+    display: none;
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--o-view-background-color, #f5f8fa);
+    border-radius: 0 0 8px 8px;
+}
+.cf-crm-card.cf-enriched:hover .cf-kanban-quick-actions {
+    display: flex;
+}
+.cf-qa-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 0.5px solid var(--o-color-border, #cbd6e2);
+    background: var(--o-view-background-color, #f5f8fa);
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #33475b;
+    font-size: 13px;
+    padding: 0;
+    text-decoration: none !important;
+}
+.cf-qa-btn:hover {
+    border-color: var(--o-color-primary, #0091ae);
+    color: var(--o-color-primary, #0091ae);
+}
+.cf-qa-archive:hover {
+    border-color: #f2545b;
+    color: #f2545b;
+}
+
+/* ─── Dark mode support ─── */
+.o_dark .cf-crm-card.cf-enriched {
+    background: #1e1e1e;
+}
+.o_dark .cf-enriched .cf-card-title {
+    color: #e0e0e0;
+}
+.o_dark .cf-card-value {
+    color: #e0e0e0;
+}
+.o_dark .cf-card-category {
+    color: #888;
+}
+.o_dark .cf-stage-label {
+    color: #888;
+}
+.o_dark .cf-seg-inactive {
+    background: #444;
+}
+.o_dark .cf-badge-danger {
+    background: #3b1515;
+    color: #f87171;
+}
+.o_dark .cf-badge-info {
+    background: #1e2a3b;
+    color: #60a5fa;
+}
+.o_dark .cf-badge-warning {
+    background: #352a10;
+    color: #fbbf24;
+}
+.o_dark .cf-badge-fair {
+    background: rgba(90, 110, 58, 0.2);
+    color: #a3c462;
+}
+.o_dark .cf-kanban-quick-actions {
+    background: rgba(30, 30, 30, 0.95);
+}
+.o_dark .cf-qa-btn {
+    background: #2a2a2a;
+    border-color: #555;
+    color: #ccc;
+}
+.o_dark .cf-footer-time {
+    color: #a0a0a0;
+}
+.o_dark .cf-owner-avatar {
+    opacity: 0.9;
+}
