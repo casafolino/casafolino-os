@@ -2,23 +2,23 @@
 <templates xml:space="preserve">
 
     <t t-name="casafolino_crm_export.CrmLeadListView" t-inherit="web.ListView" t-inherit-mode="primary">
-        <xpath expr="//div[hasclass('o_list_view')]" position="before">
-            <div class="cf-dashboard-strip" t-if="!metricsState.loading">
+        <xpath expr="//Layout" position="before">
+            <div class="cf-dashboard-strip">
                 <div class="cf-metric-card">
                     <div class="cf-metric-label">Lead aperti</div>
-                    <div class="cf-metric-value"><t t-esc="metricsState.open_leads"/></div>
+                    <div class="cf-metric-value"><t t-out="metricsState.open_leads"/></div>
                 </div>
                 <div class="cf-metric-card">
                     <div class="cf-metric-label">Valore pipeline</div>
-                    <div class="cf-metric-value"><t t-esc="formatPipelineValue(metricsState.pipeline_value)"/></div>
+                    <div class="cf-metric-value"><t t-out="formatPipelineValue(metricsState.pipeline_value)"/></div>
                 </div>
                 <div class="cf-metric-card">
                     <div class="cf-metric-label">Conversion 90gg</div>
-                    <div class="cf-metric-value"><t t-esc="metricsState.conversion_90d"/>%</div>
+                    <div class="cf-metric-value"><t t-out="metricsState.conversion_90d"/>%</div>
                 </div>
                 <div class="cf-metric-card cf-metric-danger">
                     <div class="cf-metric-label">Reclami aperti</div>
-                    <div class="cf-metric-value"><t t-esc="metricsState.open_issues"/></div>
+                    <div class="cf-metric-value"><t t-out="metricsState.open_issues"/></div>
                 </div>
             </div>
         </xpath>
