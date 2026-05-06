@@ -16,7 +16,7 @@
 }
 
 .cf-wizard-warm-dialog .modal-content {
-    border-radius: var(--cf-warm-radius-modal);
+    border-radius: var(--cf-warm-radius-modal, 14px);
     overflow: hidden;
 }
 
@@ -53,7 +53,7 @@
 
 .cf-warm-ai-banner {
     background: #E6F1FB;
-    border-radius: var(--cf-warm-radius-input);
+    border-radius: var(--cf-warm-radius-input, 10px);
     padding: 12px 14px;
     display: flex;
     align-items: flex-start;
@@ -99,7 +99,7 @@
     font-weight: 500;
     cursor: pointer;
     padding: 4px 8px;
-    border-radius: var(--cf-warm-radius-button);
+    border-radius: var(--cf-warm-radius-button, 8px);
     transition: background 0.15s;
 }
 
@@ -117,9 +117,9 @@
 }
 
 .cf-warm-band-cream {
-    background: var(--cf-warm-bg-section);
-    border-top: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
-    border-bottom: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    background: var(--cf-warm-bg-section, #FBFAF6);
+    border-top: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border, #e0ddd4));
+    border-bottom: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border, #e0ddd4));
 }
 
 /* --- Section labels --- */
@@ -171,7 +171,7 @@
 .cf-warm-input {
     height: 36px;
     border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
-    border-radius: var(--cf-warm-radius-input);
+    border-radius: var(--cf-warm-radius-input, 10px);
     font-size: 13px;
     font-weight: 400;
     padding: 0 10px;
@@ -184,7 +184,7 @@
 
 /* Inputs in light bands get cream bg, inputs in cream bands get white bg */
 .cf-warm-band-light .cf-warm-input {
-    background: var(--cf-warm-bg-input);
+    background: var(--cf-warm-bg-input, #FBFAF6);
 }
 
 .cf-warm-band-cream .cf-warm-input {
@@ -213,7 +213,7 @@
     z-index: 100;
     background: var(--color-background-primary, var(--o-webclient-background-color));
     border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
-    border-radius: var(--cf-warm-radius-input);
+    border-radius: var(--cf-warm-radius-input, 10px);
     margin-top: 2px;
     max-height: 240px;
     overflow-y: auto;
@@ -234,11 +234,11 @@
 }
 
 .cf-warm-autocomplete-item:first-child {
-    border-radius: var(--cf-warm-radius-input) var(--cf-warm-radius-input) 0 0;
+    border-radius: var(--cf-warm-radius-input, 10px) var(--cf-warm-radius-input, 10px) 0 0;
 }
 
 .cf-warm-autocomplete-item:last-child {
-    border-radius: 0 0 var(--cf-warm-radius-input) var(--cf-warm-radius-input);
+    border-radius: 0 0 var(--cf-warm-radius-input, 10px) var(--cf-warm-radius-input, 10px);
 }
 
 .cf-warm-autocomplete-name {
@@ -294,7 +294,7 @@
 .cf-warm-pill {
     font-size: 11px;
     padding: 5px 12px;
-    border-radius: var(--cf-warm-radius-pill);
+    border-radius: var(--cf-warm-radius-pill, 16px);
     border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
     background: var(--color-background-primary, var(--o-webclient-background-color));
     color: var(--color-text-primary, var(--o-webclient-color-text));
@@ -416,7 +416,7 @@
 }
 
 .cf-warm-owner-option.active {
-    background: var(--cf-warm-bg-section);
+    background: var(--cf-warm-bg-section, #FBFAF6);
     border-color: var(--color-border-secondary, var(--o-webclient-color-border));
 }
 
@@ -468,7 +468,7 @@
 
 /* --- Preview card --- */
 .cf-warm-preview-card {
-    border-radius: var(--cf-warm-radius-input);
+    border-radius: var(--cf-warm-radius-input, 10px);
     padding: 12px 14px;
     background: var(--color-background-primary, var(--o-webclient-background-color));
     border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
@@ -578,7 +578,7 @@
     background: #3F8A4F;
     color: var(--color-background-primary, #fefefe);
     border: none;
-    border-radius: var(--cf-warm-radius-button);
+    border-radius: var(--cf-warm-radius-button, 8px);
     padding: 8px 20px;
     font-size: 13px;
     font-weight: 500;
@@ -599,7 +599,7 @@
     background: transparent;
     color: var(--color-text-primary, var(--o-webclient-color-text));
     border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
-    border-radius: var(--cf-warm-radius-button);
+    border-radius: var(--cf-warm-radius-button, 8px);
     padding: 8px 16px;
     font-size: 13px;
     cursor: pointer;
@@ -607,7 +607,7 @@
 }
 
 .cf-warm-btn-secondary:hover {
-    background: var(--cf-warm-bg-section);
+    background: var(--cf-warm-bg-section, #FBFAF6);
 }
 
 /* --- Dark mode overrides --- */
