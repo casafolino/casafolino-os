@@ -9,4 +9,5 @@ class CrmTag(models.Model):
         ('fair', 'Fiera'),
         ('product', 'Prodotto'),
         ('channel', 'Canale'),
+        ('issue', 'Caso/Reclamo'),
     ], string='Categoria CF')
