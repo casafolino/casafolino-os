@@ -2,154 +2,181 @@
 <templates xml:space="preserve">
 
     <t t-name="casafolino_crm_export.CrmLeadWizardNewDialog">
-        <Dialog title="'Nuovo lead'" size="'lg'" contentClass="'cf-wizard-new-dialog'">
-            <div class="cf-wizard-body">
+        <Dialog title.translate="'Nuovo lead'" size="'md'" contentClass="'cf-wizard-warm-dialog'" footer="false">
 
-                <!-- AI Suggestion Banner -->
-                <div t-if="state.aiSuggestionText" class="cf-ai-suggestion">
-                    <span class="cf-ai-badge">AI</span>
-                    <span class="cf-ai-text" t-out="state.aiSuggestionText"/>
-                </div>
-                <div t-if="state.aiLoading" class="cf-ai-suggestion">
-                    <span class="cf-ai-badge">AI</span>
-                    <span class="cf-ai-text">Analisi in corso...</span>
-                </div>
+            <!-- Band 1: Header (white) -->
+            <div class="cf-warm-header">
+                <div class="cf-warm-header-title">Nuovo lead</div>
+                <div class="cf-warm-header-subtitle">Compila i campi per creare un nuovo lead nel CRM</div>
+            </div>
 
-                <!-- Sezione Cliente -->
-                <div class="cf-section">
-                    <div class="cf-section-header">
-                        <span class="cf-section-label">Cliente</span>
-                        <div class="cf-toggle-group">
-                            <button t-attf-class="cf-toggle-btn {{ !state.isNewPartner ? 'active' : '' }}"
-                                    t-on-click="() => this.setNewPartnerMode(false)">Esistente</button>
-                            <button t-attf-class="cf-toggle-btn {{ state.isNewPartner ? 'active' : '' }}"
-                                    t-on-click="() => this.setNewPartnerMode(true)">+ Nuovo</button>
-                        </div>
+            <!-- Band 2: AI Suggestion (white, inline) -->
+            <div t-if="state.aiSuggestionText" class="cf-warm-ai-wrapper">
+                <div class="cf-warm-ai-banner">
+                    <div class="cf-warm-ai-banner-left">
+                        <span class="cf-warm-ai-badge">AI</span>
+                        <span class="cf-warm-ai-text" t-out="state.aiSuggestionText"/>
                     </div>
+                    <div class="cf-warm-ai-banner-actions">
+                        <button t-if="state.aiSuggestionAction" class="cf-warm-btn-ghost-info"
+                                t-on-click="() => this.onApplyAiSuggestion()">Applica</button>
+                        <button class="cf-warm-btn-ghost-info" t-on-click="onDismissAi">Chiudi</button>
+                    </div>
+                </div>
+            </div>
+            <div t-if="state.aiLoading" class="cf-warm-ai-wrapper">
+                <div class="cf-warm-ai-banner">
+                    <span class="cf-warm-ai-badge">AI</span>
+                    <span class="cf-warm-ai-text">Analisi in corso...</span>
+                </div>
+            </div>
 
-                    <t t-if="!state.isNewPartner">
-                        <div class="cf-autocomplete-wrapper">
-                            <input type="text" class="cf-input cf-autocomplete-input"
-                                   placeholder="Cerca cliente..."
-                                   t-att-value="state.partnerSearchQuery"
-                                   t-on-input="onPartnerSearchInput"
-                                   t-on-focus="onPartnerSearchInput"/>
-                            <div t-if="state.partnerSearchOpen and state.partnerSearchResults.length"
-                                 class="cf-autocomplete-dropdown">
-                                <div t-foreach="state.partnerSearchResults" t-as="p" t-key="p.id"
-                                     class="cf-autocomplete-item"
-                                     t-on-click="() => this.onPartnerSelect(p.id, p.name)">
-                                    <span class="cf-autocomplete-name" t-out="p.name"/>
-                                    <span t-if="p.location" class="cf-autocomplete-location" t-out="p.location"/>
-                                </div>
+            <!-- Band 3: Cliente (light) -->
+            <div class="cf-warm-band cf-warm-band-light">
+                <div class="cf-warm-section-header">
+                    <span class="cf-warm-section-label">Cliente</span>
+                    <div class="cf-warm-mode-toggle">
+                        <button t-attf-class="cf-warm-mode-pill {{ !state.isNewPartner ? 'active' : '' }}"
+                                t-on-click="() => this.setNewPartnerMode(false)">Esistente</button>
+                        <button t-attf-class="cf-warm-mode-pill {{ state.isNewPartner ? 'active' : '' }}"
+                                t-on-click="() => this.setNewPartnerMode(true)">+ Nuovo</button>
+                    </div>
+                </div>
+
+                <t t-if="!state.isNewPartner">
+                    <div class="cf-warm-autocomplete-wrapper">
+                        <input type="text" class="cf-warm-input"
+                               placeholder="Cerca cliente..."
+                               t-att-value="state.partnerSearchQuery"
+                               t-on-input="onPartnerSearchInput"
+                               t-on-focus="onPartnerSearchFocus"/>
+                        <div t-if="state.partnerSearchOpen and state.partnerSearchResults.length"
+                             class="cf-warm-autocomplete-dropdown">
+                            <div t-foreach="state.partnerSearchResults" t-as="p" t-key="p.id"
+                                 class="cf-warm-autocomplete-item"
+                                 t-on-click="() => this.onPartnerSelect(p.id, p.name)">
+                                <span class="cf-warm-autocomplete-name" t-out="p.name"/>
+                                <span t-if="p.location" class="cf-warm-autocomplete-location" t-out="p.location"/>
                             </div>
                         </div>
-                        <div t-if="state.partnerId" class="cf-partner-selected">
-                            <span class="cf-partner-selected-name" t-out="state.partnerName"/>
-                            <t t-if="state.existingProjectsCount > 0">
-                                <span class="cf-badge-info">
-                                    esistente &#xb7; <t t-out="state.existingProjectsCount"/> progetti
-                                </span>
-                            </t>
-                        </div>
-                    </t>
-
-                    <t t-if="state.isNewPartner">
-                        <div class="cf-new-partner-grid">
-                            <input type="text" class="cf-input cf-new-partner-name"
-                                   placeholder="Nome azienda"
-                                   t-att-value="state.newPartnerName"
-                                   t-on-input="onNewPartnerNameInput"/>
-                            <input type="email" class="cf-input cf-new-partner-email"
-                                   placeholder="Email"
-                                   t-att-value="state.newPartnerEmail"
-                                   t-on-input="onNewPartnerEmailInput"/>
-                            <select class="cf-input cf-new-partner-country"
-                                    t-on-change="onNewPartnerCountryChange">
-                                <option value="">Paese</option>
-                                <t t-foreach="state.countriesList" t-as="c" t-key="c.id">
-                                    <option t-att-value="c.id"><t t-out="c.name"/></option>
-                                </t>
-                            </select>
-                        </div>
-                    </t>
-                </div>
-
-                <!-- Sezione Origine -->
-                <div class="cf-section">
-                    <div class="cf-section-label">Origine</div>
-                    <div class="cf-pills-row">
-                        <t t-foreach="state.originOptions" t-as="opt" t-key="opt.value">
-                            <button t-attf-class="cf-pill {{ state.originType === opt.value ? 'active' : '' }}"
-                                    t-on-click="() => this.onOriginTypeChange(opt.value)">
-                                <t t-out="opt.label"/>
-                            </button>
+                    </div>
+                    <div t-if="state.partnerId" class="cf-warm-partner-selected">
+                        <span class="cf-warm-partner-name" t-out="state.partnerName"/>
+                        <t t-if="state.existingProjectsCount > 0">
+                            <span class="cf-warm-badge-info cf-warm-partner-badge"
+                                  t-on-click="onSeeExistingProjects">
+                                esistente &#xb7; <t t-out="state.existingProjectsCount"/> progetti
+                            </span>
+                        </t>
+                        <t t-if="state.partnerInfo">
+                            <span t-if="state.partnerInfo.country" class="cf-warm-badge-info" t-out="state.partnerInfo.country"/>
                         </t>
                     </div>
-                    <t t-if="state.originType === 'fair'">
-                        <select class="cf-input cf-sub-select"
-                                t-on-change="onFairTagChange">
-                            <option value="">Seleziona fiera...</option>
-                            <t t-foreach="state.fairTagsList" t-as="ft" t-key="ft.id">
-                                <option t-att-value="ft.id"><t t-out="ft.name"/></option>
+                </t>
+
+                <t t-if="state.isNewPartner">
+                    <div class="cf-warm-new-partner-grid">
+                        <input type="text" class="cf-warm-input"
+                               placeholder="Nome azienda"
+                               t-att-value="state.newPartnerName"
+                               t-on-input="onNewPartnerChange"/>
+                        <input type="email" class="cf-warm-input"
+                               placeholder="Email"
+                               t-att-value="state.newPartnerEmail"
+                               t-on-input="onNewPartnerChange"/>
+                        <select class="cf-warm-input"
+                                t-on-change="onNewPartnerChange">
+                            <option value="">Paese</option>
+                            <t t-foreach="state.countriesList" t-as="c" t-key="c.id">
+                                <option t-att-value="c.id"
+                                        t-att-selected="state.newPartnerCountryId === c.id">
+                                    <t t-out="c.name"/>
+                                </option>
                             </t>
                         </select>
-                    </t>
-                    <t t-if="state.originType === 'agent_referral'">
-                        <input type="text" class="cf-input cf-sub-select"
-                               placeholder="Nome agente..."
-                               t-att-value="state.originAgentName"
-                               t-on-change="onAgentInputChange"/>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Band 4: Origine (cream) -->
+            <div class="cf-warm-band cf-warm-band-cream">
+                <div class="cf-warm-section-label">Origine</div>
+                <div class="cf-warm-pills-row">
+                    <t t-foreach="state.originOptions" t-as="opt" t-key="opt.value">
+                        <button t-attf-class="cf-warm-pill {{ state.originType === opt.value ? 'active' : '' }}"
+                                t-on-click="() => this.onOriginTypeChange(opt.value)">
+                            <t t-out="opt.label"/>
+                        </button>
                     </t>
                 </div>
-
-                <!-- Sezione Cosa cerca -->
-                <div class="cf-section">
-                    <div class="cf-section-label">Cosa cerca</div>
-                    <div class="cf-pills-row cf-product-pills">
-                        <t t-foreach="state.productTagsList" t-as="tag" t-key="tag.id">
-                            <button t-attf-class="cf-pill cf-product-chip {{ state.productTagIds.includes(tag.id) ? 'active' : '' }}"
-                                    t-on-click="() => this.onProductTagToggle(tag.id)">
-                                <t t-if="state.productTagIds.includes(tag.id)">&#x2713; </t>
-                                <t t-out="tag.name"/>
-                            </button>
+                <t t-if="state.originType === 'fair'">
+                    <select class="cf-warm-input cf-warm-sub-input"
+                            t-on-change="onOriginFairChange">
+                        <option value="">Seleziona fiera...</option>
+                        <t t-foreach="state.fairTagsList" t-as="ft" t-key="ft.id">
+                            <option t-att-value="ft.id"
+                                    t-att-selected="state.originFairTagId === ft.id">
+                                <t t-out="ft.name"/>
+                            </option>
                         </t>
+                    </select>
+                </t>
+                <t t-if="state.originType === 'agent_referral'">
+                    <input type="text" class="cf-warm-input cf-warm-sub-input"
+                           placeholder="Nome agente..."
+                           t-att-value="state.agentSearchQuery"
+                           t-on-input="onAgentSearchInput"/>
+                </t>
+            </div>
+
+            <!-- Band 5: Cosa cerca + Owner + Agente (light) -->
+            <div class="cf-warm-band cf-warm-band-light">
+                <div class="cf-warm-section-label">Cosa cerca</div>
+                <div class="cf-warm-pills-row cf-warm-product-pills">
+                    <t t-foreach="state.productTagsList" t-as="tag" t-key="tag.id">
+                        <button t-attf-class="cf-warm-pill cf-warm-product-chip {{ state.productTagIds.includes(tag.id) ? 'active' : '' }}"
+                                t-on-click="() => this.onProductTagToggle(tag.id)">
+                            <t t-if="state.productTagIds.includes(tag.id)">&#x2713; </t>
+                            <t t-out="tag.name"/>
+                        </button>
+                    </t>
+                </div>
+                <div class="cf-warm-value-priority-row">
+                    <div class="cf-warm-value-input-wrapper">
+                        <span class="cf-warm-value-prefix">&#8364;</span>
+                        <input type="number" class="cf-warm-input cf-warm-value-input"
+                               placeholder="Revenue atteso"
+                               t-att-value="state.expectedRevenue || ''"
+                               t-on-change="onExpectedRevenueChange"/>
                     </div>
-                    <div class="cf-value-priority-row">
-                        <div class="cf-value-input-wrapper">
-                            <span class="cf-value-prefix">&#8364;</span>
-                            <input type="number" class="cf-input cf-value-input"
-                                   placeholder="Revenue atteso"
-                                   t-att-value="state.expectedRevenue || ''"
-                                   t-on-change="onExpectedRevenueChange"/>
-                        </div>
-                        <div class="cf-priority-pills">
-                            <button t-attf-class="cf-pill cf-priority-pill {{ state.priority === '0' ? 'active-low' : '' }}"
-                                    t-on-click="() => this.onPriorityChange('0')">Bassa</button>
-                            <button t-attf-class="cf-pill cf-priority-pill {{ state.priority === '1' ? 'active-medium' : '' }}"
-                                    t-on-click="() => this.onPriorityChange('1')">Media</button>
-                            <button t-attf-class="cf-pill cf-priority-pill {{ state.priority === '2' ? 'active-high' : '' }}"
-                                    t-on-click="() => this.onPriorityChange('2')">Alta</button>
-                        </div>
+                    <div class="cf-warm-priority-pills">
+                        <button t-attf-class="cf-warm-pill cf-warm-priority-pill {{ state.priority === '0' ? 'active-low' : '' }}"
+                                t-on-click="() => this.onPriorityChange('0')">Bassa</button>
+                        <button t-attf-class="cf-warm-pill cf-warm-priority-pill {{ state.priority === '1' ? 'active-medium' : '' }}"
+                                t-on-click="() => this.onPriorityChange('1')">Media</button>
+                        <button t-attf-class="cf-warm-pill cf-warm-priority-pill {{ state.priority === '2' ? 'active-high' : '' }}"
+                                t-on-click="() => this.onPriorityChange('2')">Alta</button>
                     </div>
                 </div>
 
-                <!-- Sezione Owner -->
-                <div class="cf-section">
-                    <div class="cf-section-label">Owner</div>
-                    <div class="cf-owner-row">
-                        <div class="cf-owner-avatars">
+                <div class="cf-warm-owner-section">
+                    <div class="cf-warm-section-label">Owner</div>
+                    <div class="cf-warm-owner-row">
+                        <div class="cf-warm-owner-avatars">
                             <t t-foreach="state.usersList" t-as="u" t-key="u.id">
                                 <t t-if="u.avatar_class">
-                                    <button t-attf-class="cf-owner-avatar size-md {{ u.avatar_class }} {{ state.userId === u.id ? 'selected' : '' }}"
+                                    <button t-attf-class="cf-warm-owner-option {{ state.userId === u.id ? 'active' : '' }}"
                                             t-on-click="() => this.onUserChange(u.id, u.name)"
                                             t-att-title="u.name">
-                                        <t t-out="u.initials"/>
+                                        <span t-attf-class="cf-warm-avatar size-md {{ u.avatar_class }}">
+                                            <t t-out="u.initials"/>
+                                        </span>
+                                        <span class="cf-warm-owner-name" t-out="u.short_name or u.name"/>
                                     </button>
                                 </t>
                             </t>
                         </div>
-                        <select class="cf-input cf-agent-select"
+                        <select class="cf-warm-input cf-warm-agent-select"
                                 t-on-change="onAgentUserChange">
                             <option value="">Agente...</option>
                             <t t-foreach="state.usersList" t-as="u" t-key="u.id">
@@ -163,69 +190,70 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Sezione Prossima azione -->
-                <div class="cf-section">
-                    <div class="cf-section-label">Prossima azione</div>
-                    <div class="cf-activity-grid">
-                        <select class="cf-input cf-activity-type"
-                                t-on-change="onActivityTypeChange">
-                            <option value="">Tipo</option>
-                            <option value="email">Email</option>
-                            <option value="call">Chiamata</option>
-                            <option value="meeting">Meeting</option>
-                            <option value="todo">Todo</option>
-                        </select>
-                        <input type="text" class="cf-input cf-activity-summary"
-                               placeholder="Sommario"
-                               t-att-value="state.nextActivitySummary"
-                               t-on-input="onActivitySummaryInput"/>
-                        <input type="date" class="cf-input cf-activity-date"
-                               t-att-value="state.nextActivityDate"
-                               t-on-change="onActivityDateChange"/>
-                    </div>
-                </div>
-
-                <!-- Preview Card -->
-                <div t-if="state.preview" class="cf-preview-card"
-                     t-attf-style="box-shadow: inset 3px 0 0 {{ state.previewOwnerColor || '#ccc' }}">
-                    <div class="cf-preview-header">
-                        <span class="cf-preview-partner" t-out="state.preview.partner_name"/>
-                        <span t-if="state.preview.origin_type" class="cf-badge-info" t-out="state.preview.origin_type"/>
-                    </div>
-                    <div class="cf-preview-body">
-                        <t t-if="state.preview.product_tags and state.preview.product_tags.length">
-                            <div class="cf-preview-tags">
-                                <t t-foreach="state.preview.product_tags" t-as="pt" t-key="pt_index">
-                                    <span class="cf-badge-success" t-out="pt"/>
-                                </t>
-                            </div>
-                        </t>
-                        <div class="cf-preview-meta">
-                            <span t-if="state.preview.value_formatted" class="cf-preview-value">
-                                &#8364;<t t-out="state.preview.value_formatted"/>
-                            </span>
-                            <span t-if="state.preview.user_name" class="cf-preview-owner" t-out="state.preview.user_name"/>
-                            <span t-if="state.preview.next_activity_date" class="cf-preview-activity">
-                                <t t-out="state.preview.next_activity_type"/> <t t-out="state.preview.next_activity_date"/>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
             </div>
-            <t t-set-slot="footer">
-                <div class="cf-footer-row">
-                    <span class="cf-kbd-hint">Tab per navigare</span>
-                    <div class="cf-footer-buttons">
-                        <button class="cf-btn-secondary" t-on-click="onCancel">Annulla</button>
-                        <button class="cf-btn-primary" t-on-click="onCreateLead" t-att-disabled="state.loading">
-                            <t t-if="state.loading">Creazione...</t>
-                            <t t-else="">Crea lead</t>
-                        </button>
+
+            <!-- Band 6: Prossima azione (cream) -->
+            <div class="cf-warm-band cf-warm-band-cream">
+                <div class="cf-warm-section-label">Prossima azione</div>
+                <div class="cf-warm-activity-grid">
+                    <select class="cf-warm-input"
+                            t-on-change="onNextActivityChange">
+                        <option value="">Tipo</option>
+                        <option value="email" t-att-selected="state.nextActivityType === 'email'">Email</option>
+                        <option value="call" t-att-selected="state.nextActivityType === 'call'">Chiamata</option>
+                        <option value="meeting" t-att-selected="state.nextActivityType === 'meeting'">Meeting</option>
+                        <option value="todo" t-att-selected="state.nextActivityType === 'todo'">Todo</option>
+                    </select>
+                    <input type="text" class="cf-warm-input"
+                           placeholder="Sommario"
+                           t-att-value="state.nextActivitySummary"
+                           t-on-input="onNextActivityChange"/>
+                    <input type="date" class="cf-warm-input"
+                           t-att-value="state.nextActivityDate"
+                           t-on-change="onNextActivityChange"/>
+                </div>
+            </div>
+
+            <!-- Band 7: Preview card (light) -->
+            <div t-if="state.preview" class="cf-warm-band cf-warm-band-light">
+                <div class="cf-warm-preview-card"
+                     t-attf-class="cf-warm-preview-card {{ state.preview.avatar_class or '' }}">
+                    <div class="cf-warm-preview-header">
+                        <div class="cf-warm-preview-title-row">
+                            <span t-if="state.preview.avatar_class"
+                                  t-attf-class="cf-warm-avatar size-sm {{ state.preview.avatar_class }}">
+                                <t t-out="state.preview.initials"/>
+                            </span>
+                            <span class="cf-warm-preview-title" t-out="state.preview.title"/>
+                        </div>
+                        <span t-if="state.preview.value_formatted" class="cf-warm-preview-value">
+                            &#8364;<t t-out="state.preview.value_formatted"/>
+                        </span>
+                    </div>
+                    <div t-if="state.preview.badges and state.preview.badges.length" class="cf-warm-preview-badges">
+                        <t t-foreach="state.preview.badges" t-as="b" t-key="b_index">
+                            <span t-attf-class="cf-warm-badge-{{ b.type or 'info' }}" t-out="b.label"/>
+                        </t>
+                    </div>
+                    <div t-if="state.preview.next_action" class="cf-warm-preview-action">
+                        <t t-out="state.preview.next_action"/>
                     </div>
                 </div>
-            </t>
+            </div>
+
+            <!-- Band 8: Footer (cream) -->
+            <div class="cf-warm-band cf-warm-band-cream cf-warm-band-footer">
+                <span class="cf-warm-footer-hint">Tab per navigare</span>
+                <div class="cf-warm-footer-buttons">
+                    <button class="cf-warm-btn-secondary" t-on-click="onCancel">Annulla</button>
+                    <button class="cf-warm-btn-primary" t-on-click="onCreateLead"
+                            t-att-disabled="state.saving">
+                        <t t-if="state.saving">Creazione...</t>
+                        <t t-else="">Crea lead</t>
+                    </button>
+                </div>
+            </div>
+
         </Dialog>
     </t>
 

@@ -1,190 +1,226 @@
-/* === CasaFolino Wizard New Lead — UI Polish === */
+/* === CasaFolino Wizard New Lead — Warm-Morbido Theme v4.2 === */
 
-/* --- Dialog container --- */
-.cf-wizard-new-dialog .modal-dialog {
-    max-width: 680px;
+/* --- CSS Variables --- */
+.cf-wizard-warm-dialog {
+    --cf-warm-bg-section: #FBFAF6;
+    --cf-warm-bg-input: #FBFAF6;
+    --cf-warm-radius-modal: 14px;
+    --cf-warm-radius-input: 10px;
+    --cf-warm-radius-pill: 16px;
+    --cf-warm-radius-button: 8px;
 }
 
-.cf-wizard-new-dialog .modal-content {
-    border-radius: 12px;
+/* --- Modal overrides --- */
+.cf-wizard-warm-dialog .modal-dialog {
+    max-width: 640px !important;
 }
 
-/* --- Body layout --- */
-.cf-wizard-body {
+.cf-wizard-warm-dialog .modal-content {
+    border-radius: var(--cf-warm-radius-modal);
+    overflow: hidden;
+}
+
+.cf-wizard-warm-dialog .modal-body {
+    padding: 0;
+}
+
+.cf-wizard-warm-dialog .modal-header,
+.cf-wizard-warm-dialog .modal-footer {
+    display: none;
+}
+
+/* --- Header band (white) --- */
+.cf-warm-header {
+    padding: 20px 22px 12px;
+}
+
+.cf-warm-header-title {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+}
+
+.cf-warm-header-subtitle {
+    font-size: 12px;
+    color: var(--color-text-tertiary, var(--o-webclient-color-text-muted, #888780));
+    margin-top: 2px;
+}
+
+/* --- AI banner wrapper (white) --- */
+.cf-warm-ai-wrapper {
+    padding: 0 22px 8px;
+}
+
+.cf-warm-ai-banner {
+    background: #E6F1FB;
+    border-radius: var(--cf-warm-radius-input);
+    padding: 12px 14px;
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-/* --- Sections --- */
-.cf-section {
+.cf-warm-ai-banner-left {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
 }
 
-.cf-section-header {
+.cf-warm-ai-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: #185FA5;
+    color: var(--color-background-primary, #fefefe);
+    flex-shrink: 0;
+    line-height: 1.4;
+}
+
+.cf-warm-ai-text {
+    font-size: 13px;
+    color: #0C447C;
+    line-height: 1.4;
+}
+
+.cf-warm-ai-banner-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cf-warm-btn-ghost-info {
+    background: transparent;
+    border: none;
+    color: #185FA5;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--cf-warm-radius-button);
+    transition: background 0.15s;
+}
+
+.cf-warm-btn-ghost-info:hover {
+    background: rgba(24, 95, 165, 0.08);
+}
+
+/* --- Band system --- */
+.cf-warm-band {
+    padding: 16px 22px;
+}
+
+.cf-warm-band-light {
+    background: var(--color-background-primary, var(--o-webclient-background-color));
+}
+
+.cf-warm-band-cream {
+    background: var(--cf-warm-bg-section);
+    border-top: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    border-bottom: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+}
+
+/* --- Section labels --- */
+.cf-warm-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-bottom: 8px;
 }
 
-.cf-section-label {
+.cf-warm-section-label {
     font-size: 13px;
     font-weight: 500;
-    color: var(--o-webclient-color-text);
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+    margin-bottom: 8px;
+}
+
+.cf-warm-section-header .cf-warm-section-label {
+    margin-bottom: 0;
+}
+
+/* --- Mode toggle (Esistente / + Nuovo) --- */
+.cf-warm-mode-toggle {
+    display: flex;
+    background: #F1EFE8;
+    border-radius: 9px;
+    padding: 3px;
+    gap: 0;
+}
+
+.cf-warm-mode-pill {
+    font-size: 12px;
+    padding: 4px 12px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary, var(--o-webclient-color-text));
+    cursor: pointer;
+    border-radius: 7px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.cf-warm-mode-pill.active {
+    background: var(--color-background-primary, var(--o-webclient-background-color));
+    font-weight: 500;
 }
 
 /* --- Base input --- */
-.cf-input {
+.cf-warm-input {
     height: 36px;
-    border: 0.5px solid var(--o-webclient-color-border);
-    border-radius: 6px;
+    border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    border-radius: var(--cf-warm-radius-input);
     font-size: 13px;
+    font-weight: 400;
     padding: 0 10px;
-    background: var(--o-webclient-background-color);
-    color: var(--o-webclient-color-text);
+    color: var(--color-text-primary, var(--o-webclient-color-text));
     outline: none;
     transition: border-color 0.15s;
     width: 100%;
     box-sizing: border-box;
 }
 
-.cf-input:focus {
+/* Inputs in light bands get cream bg, inputs in cream bands get white bg */
+.cf-warm-band-light .cf-warm-input {
+    background: var(--cf-warm-bg-input);
+}
+
+.cf-warm-band-cream .cf-warm-input {
+    background: var(--color-background-primary, var(--o-webclient-background-color));
+}
+
+.cf-warm-input:focus {
     border-color: #185FA5;
+    box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
 }
 
-.cf-input::placeholder {
-    color: var(--o-webclient-color-text-muted, #999);
-}
-
-/* --- Pills --- */
-.cf-pills-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.cf-pill {
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 0.5px solid var(--o-webclient-color-border);
-    background: transparent;
-    color: var(--o-webclient-color-text);
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-    white-space: nowrap;
-    line-height: 1.3;
-}
-
-.cf-pill:hover {
-    background: var(--o-webclient-background-color);
-}
-
-.cf-pill.active {
-    background: #E6F1FB;
-    color: #0C447C;
-    border-color: #B8D4EE;
-}
-
-/* --- Priority pills --- */
-.cf-priority-pills {
-    display: flex;
-    gap: 4px;
-}
-
-.cf-priority-pill.active-low {
-    background: #E6F1FB;
-    color: #0C447C;
-    border-color: #B8D4EE;
-}
-
-.cf-priority-pill.active-medium {
-    background: #EAF3DE;
-    color: #27500A;
-    border-color: #C5DCAC;
-}
-
-.cf-priority-pill.active-high {
-    background: #FAEEDA;
-    color: #633806;
-    border-color: #E8D5AD;
-}
-
-/* --- AI Suggestion Banner --- */
-.cf-ai-suggestion {
-    background: #E6F1FB;
-    border-radius: 8px;
-    padding: 12px 14px;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-}
-
-.cf-ai-badge {
-    font-size: 10px;
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: #185FA5;
-    color: #fff;
-    flex-shrink: 0;
-    line-height: 1.4;
-}
-
-.cf-ai-text {
-    font-size: 13px;
-    color: #0C447C;
-    line-height: 1.4;
-}
-
-/* --- Toggle group (Esistente / + Nuovo) --- */
-.cf-toggle-group {
-    display: flex;
-    gap: 0;
-    border: 0.5px solid var(--o-webclient-color-border);
-    border-radius: 6px;
-    overflow: hidden;
-}
-
-.cf-toggle-btn {
-    font-size: 12px;
-    padding: 4px 12px;
-    border: none;
-    background: transparent;
-    color: var(--o-webclient-color-text);
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.cf-toggle-btn.active {
-    background: #E6F1FB;
-    color: #0C447C;
+.cf-warm-input::placeholder {
+    color: var(--color-text-tertiary, var(--o-webclient-color-text-muted, #888780));
 }
 
 /* --- Autocomplete --- */
-.cf-autocomplete-wrapper {
+.cf-warm-autocomplete-wrapper {
     position: relative;
 }
 
-.cf-autocomplete-dropdown {
+.cf-warm-autocomplete-dropdown {
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    z-index: 10;
-    background: var(--o-webclient-background-color);
-    border: 0.5px solid var(--o-webclient-color-border);
-    border-radius: 6px;
+    z-index: 100;
+    background: var(--color-background-primary, var(--o-webclient-background-color));
+    border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    border-radius: var(--cf-warm-radius-input);
     margin-top: 2px;
-    max-height: 200px;
+    max-height: 240px;
     overflow-y: auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.cf-autocomplete-item {
-    padding: 8px 10px;
+.cf-warm-autocomplete-item {
+    padding: 8px 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -193,245 +229,356 @@
     transition: background 0.1s;
 }
 
-.cf-autocomplete-item:hover {
+.cf-warm-autocomplete-item:hover {
     background: #E6F1FB;
 }
 
-.cf-autocomplete-name {
-    color: var(--o-webclient-color-text);
+.cf-warm-autocomplete-item:first-child {
+    border-radius: var(--cf-warm-radius-input) var(--cf-warm-radius-input) 0 0;
 }
 
-.cf-autocomplete-location {
+.cf-warm-autocomplete-item:last-child {
+    border-radius: 0 0 var(--cf-warm-radius-input) var(--cf-warm-radius-input);
+}
+
+.cf-warm-autocomplete-name {
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+}
+
+.cf-warm-autocomplete-location {
     font-size: 11px;
-    color: var(--o-webclient-color-text-muted, #999);
+    color: var(--color-text-tertiary, var(--o-webclient-color-text-muted, #888780));
 }
 
-/* --- Partner selected badge row --- */
-.cf-partner-selected {
+/* --- Partner selected row --- */
+.cf-warm-partner-selected {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-.cf-partner-selected-name {
+.cf-warm-partner-name {
     font-size: 13px;
     font-weight: 500;
-    color: var(--o-webclient-color-text);
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+}
+
+.cf-warm-partner-badge {
+    cursor: pointer;
+}
+
+.cf-warm-partner-badge:hover {
+    text-decoration: underline;
 }
 
 /* --- New partner grid --- */
-.cf-new-partner-grid {
+.cf-warm-new-partner-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
 }
 
-/* --- Sub select (fair dropdown, agent input) --- */
-.cf-sub-select {
-    margin-top: 6px;
+/* --- Sub input (fair dropdown, agent) --- */
+.cf-warm-sub-input {
+    margin-top: 8px;
 }
 
-/* --- Product chips with checkmark --- */
-.cf-product-chip.active {
+/* --- Pills --- */
+.cf-warm-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cf-warm-pill {
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: var(--cf-warm-radius-pill);
+    border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    background: var(--color-background-primary, var(--o-webclient-background-color));
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.cf-warm-pill:hover {
+    border-color: var(--color-text-tertiary, #888780);
+}
+
+.cf-warm-pill.active {
+    background: #E6F1FB;
+    color: #0C447C;
+    border-color: #B5D4F4;
+}
+
+/* --- Product chips --- */
+.cf-warm-product-chip.active {
     background: #EAF3DE;
     color: #27500A;
-    border-color: #C5DCAC;
+    border-color: #C0DD97;
 }
 
 /* --- Value + priority row --- */
-.cf-value-priority-row {
+.cf-warm-value-priority-row {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-top: 10px;
 }
 
-.cf-value-input-wrapper {
+.cf-warm-value-input-wrapper {
     position: relative;
     flex: 1;
 }
 
-.cf-value-prefix {
+.cf-warm-value-prefix {
     position: absolute;
     left: 10px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 13px;
-    color: var(--o-webclient-color-text-muted, #999);
+    color: var(--color-text-tertiary, var(--o-webclient-color-text-muted, #888780));
     pointer-events: none;
 }
 
-.cf-value-input {
+.cf-warm-value-input {
     padding-left: 24px;
 }
 
 /* hide number spinners */
-.cf-value-input::-webkit-outer-spin-button,
-.cf-value-input::-webkit-inner-spin-button {
+.cf-warm-value-input::-webkit-outer-spin-button,
+.cf-warm-value-input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-.cf-value-input[type="number"] {
+.cf-warm-value-input[type="number"] {
     -moz-appearance: textfield;
 }
 
-/* --- Owner row --- */
-.cf-owner-row {
+/* --- Priority pills --- */
+.cf-warm-priority-pills {
+    display: flex;
+    gap: 4px;
+}
+
+.cf-warm-priority-pill.active-low {
+    background: #E6F1FB;
+    color: #0C447C;
+    border-color: #B5D4F4;
+}
+
+.cf-warm-priority-pill.active-medium {
+    background: #EAF3DE;
+    color: #27500A;
+    border-color: #C0DD97;
+}
+
+.cf-warm-priority-pill.active-high {
+    background: #FAEEDA;
+    color: #633806;
+    border-color: #FAC775;
+}
+
+/* --- Owner section --- */
+.cf-warm-owner-section {
+    margin-top: 14px;
+}
+
+.cf-warm-owner-row {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.cf-owner-avatars {
+.cf-warm-owner-avatars {
     display: flex;
     gap: 6px;
 }
 
-.cf-owner-avatar {
+.cf-warm-owner-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 4px;
+    border: 0.5px solid transparent;
+    border-radius: 20px;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.cf-warm-owner-option:not(.active) .cf-warm-avatar {
+    opacity: 0.7;
+}
+
+.cf-warm-owner-option.active {
+    background: var(--cf-warm-bg-section);
+    border-color: var(--color-border-secondary, var(--o-webclient-color-border));
+}
+
+.cf-warm-owner-name {
+    font-size: 12px;
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+}
+
+/* --- Avatar base --- */
+.cf-warm-avatar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    color: #fff;
+    color: var(--color-background-primary, #fefefe);
     font-weight: 500;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.15s, opacity 0.15s;
+    transition: opacity 0.15s;
 }
 
-.cf-owner-avatar.size-sm {
+.cf-warm-avatar.size-md {
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
+}
+
+.cf-warm-avatar.size-sm {
     width: 20px;
     height: 20px;
     font-size: 9px;
 }
 
-.cf-owner-avatar.size-md {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
-}
+/* Avatar colors */
+.cf-warm-avatar.cf-owner-antonio { background: #3F8A4F; }
+.cf-warm-avatar.cf-owner-josefina { background: #8B5CF6; }
+.cf-warm-avatar.cf-owner-martina { background: #6B4A1E; }
+.cf-warm-avatar.cf-owner-other { background: #888780; }
 
-.cf-owner-avatar.selected {
-    border-color: var(--o-webclient-color-text);
-    opacity: 1;
-}
-
-.cf-owner-avatar:not(.selected) {
-    opacity: 0.5;
-}
-
-.cf-owner-avatar.cf-owner-antonio {
-    background: #3F8A4F;
-}
-
-.cf-owner-avatar.cf-owner-josefina {
-    background: #8B5CF6;
-}
-
-.cf-owner-avatar.cf-owner-martina {
-    background: #6B4A1E;
-}
-
-.cf-agent-select {
+/* --- Agent select --- */
+.cf-warm-agent-select {
     flex: 1;
 }
 
 /* --- Activity grid --- */
-.cf-activity-grid {
+.cf-warm-activity-grid {
     display: grid;
-    grid-template-columns: 90px 1fr 130px;
+    grid-template-columns: 100px 1fr 120px;
     gap: 8px;
 }
 
 /* --- Preview card --- */
-.cf-preview-card {
-    border-radius: 8px;
+.cf-warm-preview-card {
+    border-radius: var(--cf-warm-radius-input);
     padding: 12px 14px;
-    background: var(--o-webclient-background-color);
-    border: 0.5px solid var(--o-webclient-color-border);
+    background: var(--color-background-primary, var(--o-webclient-background-color));
+    border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    box-shadow: inset 3px 0 0 #888780;
 }
 
-.cf-preview-header {
+.cf-warm-preview-card.cf-owner-antonio { box-shadow: inset 3px 0 0 #3F8A4F; }
+.cf-warm-preview-card.cf-owner-josefina { box-shadow: inset 3px 0 0 #8B5CF6; }
+.cf-warm-preview-card.cf-owner-martina { box-shadow: inset 3px 0 0 #6B4A1E; }
+.cf-warm-preview-card.cf-owner-other { box-shadow: inset 3px 0 0 #888780; }
+
+.cf-warm-preview-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
     margin-bottom: 6px;
 }
 
-.cf-preview-partner {
+.cf-warm-preview-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-warm-preview-title {
     font-size: 14px;
     font-weight: 500;
-    color: var(--o-webclient-color-text);
+    color: var(--color-text-primary, var(--o-webclient-color-text));
 }
 
-.cf-preview-body {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.cf-warm-preview-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary, var(--o-webclient-color-text));
 }
 
-.cf-preview-tags {
+.cf-warm-preview-badges {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    margin-bottom: 6px;
 }
 
-.cf-preview-meta {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.cf-warm-preview-action {
     font-size: 12px;
-    color: var(--o-webclient-color-text-muted, #999);
-}
-
-.cf-preview-value {
-    font-weight: 500;
-    color: var(--o-webclient-color-text);
+    color: var(--color-text-tertiary, var(--o-webclient-color-text-muted, #888780));
 }
 
 /* --- Badges --- */
-.cf-badge-success {
+.cf-warm-badge-success {
     display: inline-block;
     background: #EAF3DE;
     color: #27500A;
     font-size: 11px;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
-.cf-badge-info {
+.cf-warm-badge-info {
     display: inline-block;
     background: #E6F1FB;
     color: #0C447C;
     font-size: 11px;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
-/* --- Footer --- */
-.cf-footer-row {
+.cf-warm-badge-warning {
+    display: inline-block;
+    background: #FAEEDA;
+    color: #633806;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+.cf-warm-badge-danger {
+    display: inline-block;
+    background: #FCEBEB;
+    color: #791F1F;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+/* --- Footer band --- */
+.cf-warm-band-footer {
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
+    padding: 14px 22px;
 }
 
-.cf-kbd-hint {
+.cf-warm-footer-hint {
     font-size: 11px;
-    color: var(--o-webclient-color-text-muted, #999);
+    color: var(--color-text-tertiary, var(--o-webclient-color-text-muted, #888780));
 }
 
-.cf-footer-buttons {
+.cf-warm-footer-buttons {
     display: flex;
     gap: 8px;
 }
 
-.cf-btn-primary {
+/* --- Buttons --- */
+.cf-warm-btn-primary {
     background: #3F8A4F;
-    color: #fff;
+    color: var(--color-background-primary, #fefefe);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--cf-warm-radius-button);
     padding: 8px 20px;
     font-size: 13px;
     font-weight: 500;
@@ -439,97 +586,111 @@
     transition: background 0.15s;
 }
 
-.cf-btn-primary:hover {
+.cf-warm-btn-primary:hover {
     background: #357842;
 }
 
-.cf-btn-primary:disabled {
+.cf-warm-btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-.cf-btn-secondary {
+.cf-warm-btn-secondary {
     background: transparent;
-    color: var(--o-webclient-color-text);
-    border: 0.5px solid var(--o-webclient-color-border);
-    border-radius: 6px;
+    color: var(--color-text-primary, var(--o-webclient-color-text));
+    border: 0.5px solid var(--color-border-secondary, var(--o-webclient-color-border));
+    border-radius: var(--cf-warm-radius-button);
     padding: 8px 16px;
     font-size: 13px;
     cursor: pointer;
     transition: background 0.15s;
 }
 
-.cf-btn-secondary:hover {
-    background: var(--o-webclient-background-color);
+.cf-warm-btn-secondary:hover {
+    background: var(--cf-warm-bg-section);
 }
 
 /* --- Dark mode overrides --- */
-.o_dark .cf-ai-suggestion {
+.o_dark .cf-wizard-warm-dialog {
+    --cf-warm-bg-section: rgba(251, 250, 246, 0.04);
+    --cf-warm-bg-input: rgba(251, 250, 246, 0.06);
+}
+
+.o_dark .cf-warm-mode-toggle {
+    background: rgba(241, 239, 232, 0.1);
+}
+
+.o_dark .cf-warm-ai-banner {
     background: rgba(24, 95, 165, 0.15);
 }
 
-.o_dark .cf-ai-text {
+.o_dark .cf-warm-ai-text {
     color: #8FBFEA;
 }
 
-.o_dark .cf-pill.active {
+.o_dark .cf-warm-pill.active {
     background: rgba(24, 95, 165, 0.2);
     color: #8FBFEA;
     border-color: rgba(24, 95, 165, 0.4);
 }
 
-.o_dark .cf-priority-pill.active-low {
-    background: rgba(24, 95, 165, 0.2);
-    color: #8FBFEA;
-    border-color: rgba(24, 95, 165, 0.4);
-}
-
-.o_dark .cf-priority-pill.active-medium {
+.o_dark .cf-warm-product-chip.active {
     background: rgba(39, 80, 10, 0.2);
     color: #A8D080;
     border-color: rgba(39, 80, 10, 0.4);
 }
 
-.o_dark .cf-priority-pill.active-high {
+.o_dark .cf-warm-priority-pill.active-low {
+    background: rgba(24, 95, 165, 0.2);
+    color: #8FBFEA;
+    border-color: rgba(24, 95, 165, 0.4);
+}
+
+.o_dark .cf-warm-priority-pill.active-medium {
+    background: rgba(39, 80, 10, 0.2);
+    color: #A8D080;
+    border-color: rgba(39, 80, 10, 0.4);
+}
+
+.o_dark .cf-warm-priority-pill.active-high {
     background: rgba(99, 56, 6, 0.2);
     color: #E0B870;
     border-color: rgba(99, 56, 6, 0.4);
 }
 
-.o_dark .cf-product-chip.active {
-    background: rgba(39, 80, 10, 0.2);
-    color: #A8D080;
-    border-color: rgba(39, 80, 10, 0.4);
-}
-
-.o_dark .cf-toggle-btn.active {
+.o_dark .cf-warm-mode-pill.active {
     background: rgba(24, 95, 165, 0.2);
     color: #8FBFEA;
 }
 
-.o_dark .cf-autocomplete-dropdown {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.o_dark .cf-autocomplete-item:hover {
+.o_dark .cf-warm-autocomplete-item:hover {
     background: rgba(24, 95, 165, 0.15);
 }
 
-.o_dark .cf-badge-success {
+.o_dark .cf-warm-badge-success {
     background: rgba(39, 80, 10, 0.2);
     color: #A8D080;
 }
 
-.o_dark .cf-badge-info {
+.o_dark .cf-warm-badge-info {
     background: rgba(24, 95, 165, 0.2);
     color: #8FBFEA;
 }
 
-.o_dark .cf-btn-primary {
-    background: #3F8A4F;
-    color: #fff;
+.o_dark .cf-warm-badge-warning {
+    background: rgba(99, 56, 6, 0.2);
+    color: #E0B870;
 }
 
-.o_dark .cf-preview-card {
-    background: rgba(255, 255, 255, 0.03);
+.o_dark .cf-warm-badge-danger {
+    background: rgba(121, 31, 31, 0.2);
+    color: #F0A0A0;
+}
+
+.o_dark .cf-warm-btn-primary {
+    background: #3F8A4F;
+}
+
+.o_dark .cf-warm-preview-card {
+    background: rgba(251, 250, 246, 0.03);
 }
