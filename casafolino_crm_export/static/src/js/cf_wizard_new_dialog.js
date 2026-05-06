@@ -414,6 +414,53 @@ export class CrmLeadWizardNewDialog extends Component {
     onCancel() {
         this.props.close();
     }
+
+    // --- Handlers referenced by template (Brief #4.2 warm) ---
+
+    onApplyAiSuggestion() {
+        this.state.aiSuggestionText = "";
+        this.state.aiSuggestionAction = "";
+    }
+
+    onDismissAi() {
+        this.state.aiSuggestionText = "";
+        this.state.aiSuggestionAction = "";
+    }
+
+    onPartnerSearchFocus() {
+        if (this.state.partnerSearchQuery && this.state.partnerSearchQuery.length >= 2) {
+            this.state.partnerSearchOpen = true;
+        }
+    }
+
+    onSeeExistingProjects() {
+        // TODO: navigate to partner's projects list
+        this.state.aiSuggestionText = "";
+        this.state.aiSuggestionAction = "";
+    }
+
+    onNewPartnerChange(ev) {
+        // Generic handler for new partner inputs (name/email/country)
+        // State is bound via t-model, this just triggers any needed side effects
+    }
+
+    onOriginFairChange(ev) {
+        const val = parseInt(ev.target.value) || null;
+        this.state.originFairTagId = val;
+    }
+
+    onAgentSearchInput(ev) {
+        this.state.agentSearchQuery = ev.target.value;
+        // Delegates to existing agent input handler if available
+        if (typeof this.onAgentInputChange === "function") {
+            this.onAgentInputChange(ev);
+        }
+    }
+
+    onNextActivityChange(ev) {
+        // Generic handler for activity inputs — state bound via t-model
+        this._syncActivityToWizard();
+    }
 }
 
 // Register as client action (function pattern, not Component)
