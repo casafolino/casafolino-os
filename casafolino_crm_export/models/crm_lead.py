@@ -253,14 +253,14 @@ class CrmLead(models.Model):
         self.env.cr.execute("""
             SELECT lead.id, COUNT(msg.id)
             FROM crm_lead lead
-            LEFT JOIN casafolino_mail_message msg ON
+            JOIN casafolino_mail_message msg ON
                 msg.partner_id = lead.partner_id AND
                 msg.is_read = FALSE AND
                 msg.state NOT IN ('auto_discard', 'discard')
-            LEFT JOIN casafolino_mail_account acc ON
+            JOIN casafolino_mail_account acc ON
                 acc.id = msg.account_id AND
                 acc.responsible_user_id = lead.user_id
-            WHERE lead.id IN %s AND msg.id IS NOT NULL
+            WHERE lead.id IN %s
             GROUP BY lead.id
         """, (tuple(self.ids),))
         result = dict(self.env.cr.fetchall())
