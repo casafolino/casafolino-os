@@ -4,6 +4,7 @@ import { listView } from "@web/views/list/list_view";
 import { ListController } from "@web/views/list/list_controller";
 import { useService } from "@web/core/utils/hooks";
 import { onWillStart, onMounted, useState } from "@odoo/owl";
+import { CrmLeadWizardNewDialog } from "../js/cf_wizard_new_dialog";
 
 export class CasafolinoCrmLeadListController extends ListController {
     static template = "casafolino_crm_export.CrmLeadListView";
@@ -11,6 +12,7 @@ export class CasafolinoCrmLeadListController extends ListController {
     setup() {
         super.setup();
         this.orm = useService("orm");
+        this.dialogService = useService("dialog");
         this.metricsState = useState({
             open_leads: 0,
             pipeline_value: 0,
@@ -34,6 +36,12 @@ export class CasafolinoCrmLeadListController extends ListController {
             console.error("Failed to load CRM dashboard metrics", e);
             this.metricsState.loading = false;
         }
+    }
+
+    async createRecord() {
+        this.dialogService.add(CrmLeadWizardNewDialog, {
+            close: () => {},
+        });
     }
 
     formatPipelineValue(value) {

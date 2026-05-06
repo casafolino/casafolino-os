@@ -9,3 +9,4 @@ access_cf_sequence_log,cf.export.sequence.log,model_cf_export_sequence_log,base.
 access_cf_sequence_log_line,cf.export.sequence.log.line,model_cf_export_sequence_log_line,base.group_user,1,1,1,0
 access_cf_bulk_owner_wizard,crm.lead.bulk.change.owner.wizard,model_crm_lead_bulk_change_owner_wizard,base.group_user,1,1,1,1
 access_cf_bulk_stage_wizard,crm.lead.bulk.change.stage.wizard,model_crm_lead_bulk_change_stage_wizard,base.group_user,1,1,1,1
+access_crm_lead_wizard_new,crm.lead.wizard.new,model_crm_lead_wizard_new,base.group_user,1,1,1,1

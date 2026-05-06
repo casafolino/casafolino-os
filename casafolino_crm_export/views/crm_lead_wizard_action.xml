@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_open_wizard_nuovo_lead" model="ir.actions.client">
+        <field name="name">Nuovo lead (wizard)</field>
+        <field name="tag">casafolino_crm_export.open_wizard_new_lead</field>
+    </record>
+</odoo>
