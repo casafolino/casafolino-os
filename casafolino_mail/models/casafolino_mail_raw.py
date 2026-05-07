@@ -229,16 +229,28 @@ class CasafolinoMailRaw(models.Model):
             ('account_id', '=', raw.account_id.id),
         ], limit=1)
         if pref and pref.status == 'kept':
-            # Try to find partner
-            partner = Partner.search([('email', '=ilike', sender)], limit=1)
-            return ('sender_kept', partner.id if partner else False, 'exact' if partner else 'none')
+            # Brief #6.1: only promote kept sender if partner is tracked
+            partner = Partner.search([
+                ('email', '=ilike', sender),
+                ('mail_tracked', '=', True),
+            ], limit=1)
+            if partner:
+                return ('sender_kept_tracked', partner.id, 'exact')
 
-        # Exact email match in CRM
-        partner = Partner.search([('email', '=ilike', sender)], limit=1)
+        # Brief #6.1: Exact email match — only if mail_tracked=True
+        partner = Partner.search([
+            ('email', '=ilike', sender),
+            ('mail_tracked', '=', True),
+        ], limit=1)
         if partner:
-            return ('crm_exact', partner.id, 'exact')
+            return ('crm_exact_tracked', partner.id, 'exact')
 
-        # Domain match from company partner
+        # Partner exists but NOT tracked → discard
+        partner_untracked = Partner.search([('email', '=ilike', sender)], limit=1)
+        if partner_untracked and not partner_untracked.mail_tracked:
+            return False, False, 'none'  # skip — will fall through to AI
+
+        # Brief #6.1: Domain match — only if company partner mail_tracked=True
         if '@' in sender:
             domain = sender.split('@')[-1]
             from .sender_filter import PUBLIC_DOMAINS_BLACKLIST
@@ -246,9 +258,10 @@ class CasafolinoMailRaw(models.Model):
                 company = Partner.search([
                     ('is_company', '=', True),
                     ('email', '=ilike', '%@' + domain),
+                    ('mail_tracked', '=', True),
                 ], limit=1)
                 if company:
-                    return ('crm_domain', company.id, 'domain')
+                    return ('crm_domain_tracked', company.id, 'domain')
 
         # Thread match (reply to existing MESSAGE)
         if raw.message_id:
