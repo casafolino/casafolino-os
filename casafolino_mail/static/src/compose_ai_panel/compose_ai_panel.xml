@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_mail.CFComposeAIPanel">
+    <div t-attf-class="cf-ai-panel #{state.collapsed ? 'cf-ai-panel-collapsed' : ''}">
+
+        <div class="cf-ai-panel-header">
+            <span class="cf-ai-panel-title" t-if="!state.collapsed">AI Assist</span>
+            <button t-on-click="onCollapseToggle" class="cf-ai-collapse-btn"
+                    t-att-title="state.collapsed ? 'Espandi' : 'Comprimi'">
+                <i t-attf-class="fa #{state.collapsed ? 'fa-chevron-left' : 'fa-chevron-right'}"/>
+            </button>
+        </div>
+
+        <div t-if="!state.collapsed" class="cf-ai-panel-body">
+
+            <div class="cf-ai-tabs">
+                <button t-on-click="() => this.onTabChange('tone')"
+                        t-att-class="state.currentTab === 'tone' ? 'active' : ''">Tono</button>
+                <button t-on-click="() => this.onTabChange('language')"
+                        t-att-class="state.currentTab === 'language' ? 'active' : ''">Lingua</button>
+                <button t-on-click="() => this.onTabChange('signature')"
+                        t-att-class="state.currentTab === 'signature' ? 'active' : ''">Firma</button>
+                <button t-on-click="() => this.onTabChange('replies')"
+                        t-att-class="state.currentTab === 'replies' ? 'active' : ''"
+                        t-att-disabled="!state.quickReplies.length">Risposte</button>
+            </div>
+
+            <!-- Tone -->
+            <div t-if="state.currentTab === 'tone'" class="cf-ai-section">
+                <div t-if="state.isLoading" class="cf-ai-loading">Analisi...</div>
+                <div t-elif="state.tone" class="cf-ai-tone-result">
+                    <div t-attf-class="cf-ai-tone-badge cf-tone-#{state.tone.suggested_tone}">
+                        <t t-out="state.tone.suggested_tone"/>
+                    </div>
+                    <p class="cf-ai-reasoning" t-out="state.tone.reasoning"/>
+                    <button t-if="state.tone.rewrite_hint"
+                            t-on-click="onAcceptToneRewrite"
+                            class="btn btn-sm btn-secondary mt-1">Suggerimento</button>
+                </div>
+            </div>
+
+            <!-- Language -->
+            <div t-if="state.currentTab === 'language'" class="cf-ai-section">
+                <div t-if="state.language">
+                    <p>Rilevata: <strong t-out="state.language.detected_lang"/></p>
+                    <p>Partner: <strong t-out="state.language.partner_lang"/></p>
+                    <div t-if="state.language.mismatch" class="cf-ai-lang-alert">
+                        <p>Mismatch lingua!</p>
+                        <button t-on-click="onTranslateClick" class="btn btn-sm btn-warning">
+                            Traduci in <t t-out="state.language.partner_lang"/>
+                        </button>
+                    </div>
+                </div>
+                <p t-else="" class="cf-ai-hint">Scrivi almeno 20 caratteri per la detection.</p>
+            </div>
+
+            <!-- Signature -->
+            <div t-if="state.currentTab === 'signature'" class="cf-ai-section">
+                <div t-if="state.signature">
+                    <p class="cf-ai-reasoning" t-out="state.signature.reason"/>
+                    <div class="cf-ai-sig-preview" t-out="state.signature.signature_html"/>
+                    <button t-on-click="onApplySignature" class="btn btn-sm btn-primary mt-1">
+                        Applica firma
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Replies -->
+            <div t-if="state.currentTab === 'replies'" class="cf-ai-section">
+                <t t-if="state.quickReplies.length">
+                    <t t-foreach="state.quickReplies" t-as="reply" t-key="reply_index">
+                        <div class="cf-ai-reply-card">
+                            <div class="cf-ai-reply-label" t-out="reply.short_label"/>
+                            <div class="cf-ai-reply-text" t-out="reply.text"/>
+                            <button t-on-click="() => this.onApplyQuickReply(reply)"
+                                    class="btn btn-sm btn-outline-primary">Usa</button>
+                        </div>
+                    </t>
+                </t>
+                <p t-else="" class="cf-ai-hint">Solo in modalita reply.</p>
+            </div>
+
+        </div>
+    </div>
+</t>
+
+</templates>

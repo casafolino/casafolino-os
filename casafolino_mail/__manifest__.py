@@ -37,6 +37,10 @@
         'web.assets_backend': [
             # Brief #6.2 Posizionatore
             'casafolino_mail/static/src/posizionatore/posizionatore.scss',
+            # Brief #6.4 Compose AI Panel
+            'casafolino_mail/static/src/compose_ai_panel/compose_ai_panel.js',
+            'casafolino_mail/static/src/compose_ai_panel/compose_ai_panel.xml',
+            'casafolino_mail/static/src/compose_ai_panel/compose_ai_panel.scss',
             # V11 existing
             'casafolino_mail/static/src/js/snippet_clipboard.js',
             'casafolino_mail/static/src/xml/snippet_clipboard.xml',
