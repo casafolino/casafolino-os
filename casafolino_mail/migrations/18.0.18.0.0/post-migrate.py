@@ -83,78 +83,53 @@ def migrate(cr, version):
     """)
     _logger.info("Brief #6.0: cleaned ir_model_data orphans")
 
-    # ── 5. Cleanup ir_model orphans ──
-    cr.execute("""
-        DELETE FROM ir_model
-        WHERE model IN (
-            'casafolino.mail.sender_policy',
-            'casafolino.mail.triage.wizard'
-        )
-    """)
-    _logger.info("Brief #6.0: cleaned ir_model orphans")
-
-    # ── 6. Cleanup ir_model_fields orphans ──
-    cr.execute("""
-        DELETE FROM ir_model_fields
-        WHERE model IN (
-            'casafolino.mail.sender_policy',
-            'casafolino.mail.triage.wizard'
-        )
-    """)
-    _logger.info("Brief #6.0: cleaned ir_model_fields orphans")
-
-    # ── 7. Cleanup ir_ui_view orphans ──
-    cr.execute("""
-        DELETE FROM ir_ui_view
-        WHERE model IN (
-            'casafolino.mail.sender_policy',
-            'casafolino.mail.triage.wizard'
-        )
-    """)
-    _logger.info("Brief #6.0: cleaned ir_ui_view orphans")
-
-    # ── 8. Cleanup ir_cron + ir_actions_server referencing removed models ──
+    # ── 5. Delete crons + server actions FIRST (FK dependencies) ──
+    _removed_models = (
+        'casafolino.mail.sender_policy',
+        'casafolino.mail.triage.wizard',
+    )
     cr.execute("""
         DELETE FROM ir_cron
         WHERE ir_actions_server_id IN (
             SELECT id FROM ir_actions_server
             WHERE model_id IN (
-                SELECT id FROM ir_model
-                WHERE model IN (
-                    'casafolino.mail.sender_policy',
-                    'casafolino.mail.triage.wizard'
-                )
+                SELECT id FROM ir_model WHERE model IN %s
             )
         )
-    """)
+    """, (_removed_models,))
     cr.execute("""
         DELETE FROM ir_actions_server
         WHERE model_id IN (
-            SELECT id FROM ir_model
-            WHERE model IN (
-                'casafolino.mail.sender_policy',
-                'casafolino.mail.triage.wizard'
-            )
+            SELECT id FROM ir_model WHERE model IN %s
         )
-    """)
+    """, (_removed_models,))
     _logger.info("Brief #6.0: cleaned ir_cron + ir_actions_server orphans")
 
-    # ── 9. Cleanup ir_act_window orphans ──
-    cr.execute("""
-        DELETE FROM ir_act_window
-        WHERE res_model IN (
-            'casafolino.mail.sender_policy',
-            'casafolino.mail.triage.wizard'
-        )
-    """)
-    _logger.info("Brief #6.0: cleaned ir_act_window orphans")
-
-    # ── 10. Cleanup ir_model_access orphans ──
+    # ── 6. Cleanup ir_model_access ──
     cr.execute("""
         DELETE FROM ir_model_access
-        WHERE name LIKE '%sender_policy%'
-           OR name LIKE '%triage_wizard%'
+        WHERE name LIKE '%%sender_policy%%' OR name LIKE '%%triage_wizard%%'
     """)
-    _logger.info("Brief #6.0: cleaned ir_model_access orphans")
+
+    # ── 7. Cleanup ir_act_window ──
+    cr.execute("""
+        DELETE FROM ir_act_window WHERE res_model IN %s
+    """, (_removed_models,))
+
+    # ── 8. Cleanup ir_ui_view ──
+    cr.execute("""
+        DELETE FROM ir_ui_view WHERE model IN %s
+    """, (_removed_models,))
+
+    # ── 9. Cleanup ir_model_fields (before ir_model due to FK) ──
+    cr.execute("""
+        DELETE FROM ir_model_fields WHERE model IN %s
+    """, (_removed_models,))
+
+    # ── 10. Cleanup ir_model LAST ──
+    cr.execute("""
+        DELETE FROM ir_model WHERE model IN %s
+    """, (_removed_models,))
+    _logger.info("Brief #6.0: cleaned all ORM orphans")
 
     _logger.info("Brief #6.0 Phase 4: DB cleanup complete")
