@@ -28,3 +28,8 @@ class ResUsersMailV3(models.Model):
     mv3_ai_model = fields.Char('AI Model', default='llama-3.3-70b-versatile')
     mv3_undo_send_seconds = fields.Integer('Undo Send Timer (sec)', default=10)
     mv3_notifications_enabled = fields.Boolean('Notifiche browser Mail Hub', default=False)
+
+    # Brief #6.5 — Inbox supervisor
+    cf_can_see_all_inboxes = fields.Boolean(
+        'Può vedere tutte le inbox', default=False,
+        help='Se True, vede pillola "vedo come" nelle inbox views.')

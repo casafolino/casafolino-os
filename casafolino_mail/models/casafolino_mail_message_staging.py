@@ -580,6 +580,57 @@ class CasafolinoMailMessage(models.Model):
             summary['total'] += count
         return summary
 
+    # ── Brief #6.5 — Inbox selector endpoints ─────────────────────
+
+    @api.model
+    def cf_get_supervisable_users(self):
+        """List users the caller can impersonate. Empty if no permission."""
+        if not self.env.user.cf_can_see_all_inboxes:
+            return []
+        Account = self.env['casafolino.mail.account'].sudo()
+        accounts = Account.search([('active', '=', True)])
+        user_ids = list(set(accounts.mapped('responsible_user_id.id')))
+        users = self.env['res.users'].sudo().browse(user_ids).filtered('active')
+        color_map = {2: 'green', 6: 'purple', 8: 'gray'}
+        result = []
+        for u in users:
+            result.append({
+                'id': u.id,
+                'name': u.name,
+                'login': u.login,
+                'color_class': color_map.get(u.id, 'gray'),
+                'is_self': u.id == self.env.user.id,
+                'accounts_count': len(accounts.filtered(
+                    lambda a: a.responsible_user_id.id == u.id)),
+            })
+        result.sort(key=lambda x: (not x['is_self'], x['name']))
+        return result
+
+    @api.model
+    def cf_get_inbox_messages_as_user(self, viewing_as_user_id, domain=None, limit=80, offset=0):
+        """Return messages visible to target user. Permission gate strict."""
+        if not self.env.user.cf_can_see_all_inboxes:
+            from odoo.exceptions import AccessError
+            raise AccessError("cf_can_see_all_inboxes required.")
+        target = self.env['res.users'].sudo().browse(viewing_as_user_id)
+        if not target.exists() or not target.active:
+            return []
+        base_domain = list(domain or [])
+        base_domain.append(('account_id.responsible_user_id', '=', viewing_as_user_id))
+        messages = self.sudo().search(base_domain, limit=limit, offset=offset, order='email_date desc')
+        result = []
+        for msg in messages:
+            result.append({
+                'id': msg.id,
+                'subject': msg.subject or '',
+                'sender_email': msg.sender_email or '',
+                'email_date': fields.Datetime.to_string(msg.email_date) if msg.email_date else '',
+                'partner_id': [msg.partner_id.id, msg.partner_id.name] if msg.partner_id else None,
+                'cf_project_id': [msg.cf_project_id.id, msg.cf_project_id.name] if msg.cf_project_id else None,
+                'cf_ai_confidence_band': msg.cf_ai_confidence_band,
+            })
+        return result
+
     # ── AI Classifier — Groq ────────────────────────────────────────
 
     _GROQ_VALID_CATEGORIES = {'commerciale', 'admin', 'fornitore', 'newsletter', 'interno', 'personale', 'spam'}
