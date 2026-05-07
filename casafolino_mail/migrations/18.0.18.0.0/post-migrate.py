@@ -90,20 +90,20 @@ def migrate(cr, version):
     )
     cr.execute("""
         DELETE FROM ir_cron
-        WHERE ir_actions_server_id IN (
-            SELECT id FROM ir_actions_server
+        WHERE ir_act_server_id IN (
+            SELECT id FROM ir_act_server
             WHERE model_id IN (
                 SELECT id FROM ir_model WHERE model IN %s
             )
         )
     """, (_removed_models,))
     cr.execute("""
-        DELETE FROM ir_actions_server
+        DELETE FROM ir_act_server
         WHERE model_id IN (
             SELECT id FROM ir_model WHERE model IN %s
         )
     """, (_removed_models,))
-    _logger.info("Brief #6.0: cleaned ir_cron + ir_actions_server orphans")
+    _logger.info("Brief #6.0: cleaned ir_cron + ir_act_server orphans")
 
     # ── 6. Cleanup ir_model_access ──
     cr.execute("""
