@@ -71,6 +71,11 @@
                                options="{'no_create': True}"/>
                     </group>
 
+                    <div class="o_row mb-2" invisible="cf_ai_processed">
+                        <button name="action_run_ai_suggestion" type="object"
+                                string="Analizza con AI" class="btn btn-outline-primary btn-sm"/>
+                    </div>
+
                     <group string="Posiziona">
                         <field name="cf_project_id"
                                domain="[('cf_status_dossier', '!=', False)]"
