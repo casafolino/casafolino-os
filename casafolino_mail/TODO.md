@@ -1,15 +1,10 @@
 # casafolino_mail — TODO Backlog
 
-## Brief #6.2 — UI Posizionatore mail (prossimo)
-- Mockup #4 (chat 6 maggio 2026)
-- 3 dinamiche AI confidence (alto/medio/basso)
-- Widget separato dall'inbox, riceve solo mail di partner conosciuti
-- Stima: 3gg umani, 2h Code
-
-## Brief #6.3 — AI suggestion contestuale
+## Brief #6.3 — AI suggestion contestuale (prossimo)
 - Groq endpoint per suggerire dossier/lead/progetto sulla mail in arrivo
 - Confidence score visibile nel posizionatore
 - Stima: 2gg umani, 1.5h Code
+- Nota: base AI suggestion già implementata in #6.2 (_do_ai_suggestion)
 
 ## Brief #6.4 — F8 composer + AI assist
 - Panel laterale con suggerimenti tono/lingua/firma
