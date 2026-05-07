@@ -1,12 +1,6 @@
 # casafolino_mail — TODO Backlog
 
-## Brief #6.1 — Riorientamento ingestion (prossimo)
-- Fetch IMAP modificato: scarica solo mail con sender domain in `res.partner`
-- Match partner immediato post-fetch
-- Header-only fetch + body lazy load on demand
-- Stima: 2gg umani, 1.5h Code
-
-## Brief #6.2 — UI Posizionatore mail
+## Brief #6.2 — UI Posizionatore mail (prossimo)
 - Mockup #4 (chat 6 maggio 2026)
 - 3 dinamiche AI confidence (alto/medio/basso)
 - Widget separato dall'inbox, riceve solo mail di partner conosciuti
