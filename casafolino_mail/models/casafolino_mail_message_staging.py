@@ -395,6 +395,39 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.exception("Brief #6.2: AI suggestion failed msg %s: %s", msg.id, e)
 
+    def _build_context_section_for_partner(self, partner_id, max_examples=5):
+        """Brief #6.3 — Build context section from feedback history for Groq prompt."""
+        Feedback = self.env['cf.mail.position.feedback']
+        mismatches = Feedback.search([
+            ('partner_id', '=', partner_id),
+            ('was_correct', '=', False),
+            ('ai_suggested_project_id', '!=', False),
+        ], limit=max_examples, order='create_date desc')
+        remaining = max(1, max_examples - len(mismatches))
+        matches = Feedback.search([
+            ('partner_id', '=', partner_id),
+            ('was_correct', '=', True),
+        ], limit=remaining, order='create_date desc')
+        if not mismatches and not matches:
+            return ''
+        lines = ['\nCONTEXT — Past positioning history for this partner:']
+        for fb in mismatches:
+            line = ("- Mail '%s': AI suggested '%s' (conf %.2f) but user positioned on '%s'" % (
+                (fb.message_id.subject or '')[:60],
+                fb.ai_suggested_project_id.name,
+                fb.ai_confidence_at_position,
+                fb.actual_project_id.name))
+            if fb.user_reason:
+                line += ' — reason: "%s"' % fb.user_reason
+            lines.append(line)
+        for fb in matches:
+            lines.append("- Mail '%s': AI correctly suggested '%s' (conf %.2f)" % (
+                (fb.message_id.subject or '')[:60],
+                fb.actual_project_id.name,
+                fb.ai_confidence_at_position))
+        lines.append('Use this history to refine your reasoning.')
+        return '\n'.join(lines)
+
     def _do_ai_suggestion(self):
         """Call Groq with structured prompt → JSON with candidate dossiers."""
         self.ensure_one()
@@ -421,11 +454,15 @@ class CasafolinoMailMessage(models.Model):
             ['id=%d "%s" (%s)' % (p.id, p.name, p.cf_status_dossier or 'n/a')
              for p in candidates])
 
+        # Brief #6.3 — Context injection from feedback history
+        context_section = self._build_context_section_for_partner(self.partner_id.id)
+
         prompt = (
             'Analyze this CRM email and suggest the best matching dossier.\n'
             'Email FROM: %s\nSUBJECT: %s\nBODY snippet: %s\n'
             'Partner: %s\n\n'
-            'Candidate dossiers: %s\n\n'
+            'Candidate dossiers: %s\n'
+            '%s\n'
             'Return JSON ONLY (no markdown):\n'
             '{"suggestions": [{"project_id": <id>, "confidence": 0.0-1.0, '
             '"reason": "<short>"}], "main_reasoning": "<1-2 sentences>"}\n'
@@ -437,6 +474,7 @@ class CasafolinoMailMessage(models.Model):
             body_snippet,
             self.partner_id.name or '',
             cand_list,
+            context_section,
         )
 
         api_key = self.env['ir.config_parameter'].sudo().get_param(
