@@ -35,11 +35,7 @@
         sequence="6"
         action="action_casafolino_mail_orphan_partner"/>
 
-    <menuitem id="menu_casafolino_mail_triage_orphan"
-        name="Triage Orfani"
-        parent="menu_casafolino_mail_root"
-        sequence="7"
-        action="action_start_orphan_triage"/>
+    <!-- [DEPRECATED Brief #6.0] Triage Orfani menu removed -->
 
     <menuitem id="menu_casafolino_mail_snippet"
         name="Snippet Library"
@@ -71,11 +67,7 @@
         sequence="1"
         action="action_casafolino_mail_account"/>
 
-    <menuitem id="menu_casafolino_mail_policy"
-        name="Regole Mittenti"
-        parent="menu_casafolino_mail_config"
-        sequence="2"
-        action="action_casafolino_mail_policy"/>
+    <!-- [DEPRECATED Brief #6.0] Regole Mittenti menu removed -->
 
     <menuitem id="menu_casafolino_mail_folders_admin"
         name="Cartelle"

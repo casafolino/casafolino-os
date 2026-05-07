@@ -36,7 +36,7 @@
             # V11 existing
             'casafolino_mail/static/src/js/snippet_clipboard.js',
             'casafolino_mail/static/src/xml/snippet_clipboard.xml',
-            'casafolino_mail/static/src/js/triage_shortcuts.js',
+            # [DEPRECATED Brief #6.0] triage_shortcuts.js removed
             # V3 SCSS
             'casafolino_mail/static/src/scss/mail_v3.scss',
             # V3 OWL components — JS
