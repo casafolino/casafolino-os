@@ -35,6 +35,10 @@
     ],
     'assets': {
         'web.assets_backend': [
+            # Brief #6.5 Inbox Selector
+            'casafolino_mail/static/src/inbox_selector/inbox_selector.js',
+            'casafolino_mail/static/src/inbox_selector/inbox_selector.xml',
+            'casafolino_mail/static/src/inbox_selector/inbox_selector.scss',
             # Brief #6.2 Posizionatore
             'casafolino_mail/static/src/posizionatore/posizionatore.scss',
             # Brief #6.4 Compose AI Panel
