@@ -188,20 +188,29 @@ class ResPartnerMailExt(models.Model):
         return res
 
     def _schedule_backfill_history(self):
-        """Brief #6.1 — Schedule one-shot backfill for newly tracked partner."""
+        """Brief #6.1 — Schedule async backfill via one-shot cron.
+        Does NOT block UI — cron runs within 1 minute."""
         self.ensure_one()
         if not self.email:
             return
         _logger.info("Brief #6.1: scheduling backfill for partner id=%s email=%s", self.id, self.email)
-        self.with_delay_backfill()
-
-    def with_delay_backfill(self):
-        """Run backfill inline (for now). Can be replaced with queue_job later."""
-        self.ensure_one()
-        try:
-            self.action_sync_full_email_history()
-        except Exception as e:
-            _logger.error("Brief #6.1: backfill error partner %s: %s", self.id, e)
+        model_id = self.env['ir.model']._get_id('res.partner')
+        server_action = self.env['ir.actions.server'].sudo().create({
+            'name': 'Backfill mail partner %s' % self.id,
+            'model_id': model_id,
+            'state': 'code',
+            'code': "env['res.partner'].browse(%d).action_sync_full_email_history()" % self.id,
+        })
+        self.env['ir.cron'].sudo().create({
+            'name': 'Backfill mail partner %s (%s)' % (self.id, self.name or ''),
+            'ir_actions_server_id': server_action.id,
+            'interval_number': 1,
+            'interval_type': 'minutes',
+            'numbercall': 1,
+            'active': True,
+            'nextcall': fields.Datetime.now(),
+            'user_id': self.env.ref('base.user_admin').id,
+        })
 
     def action_enable_mail_tracking(self):
         """Bulk action for list view: enable tracking for selected partners."""
