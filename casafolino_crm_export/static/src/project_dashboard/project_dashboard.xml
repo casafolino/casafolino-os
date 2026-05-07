@@ -59,7 +59,7 @@
                           t-out="partnerLocation"/>
                 </div>
                 <div class="cf-dash-header-lead" t-if="state.data.lead">
-                    <span class="cf-dash-lead-name" t-on-click="onOpenLead" class="cf-dash-link">
+                    <span class="cf-dash-lead-name cf-dash-link" t-on-click="onOpenLead">
                         <t t-out="state.data.lead.name"/>
                     </span>
                     <span class="cf-dash-stage-name" t-out="state.data.lead.stage_name"/>
