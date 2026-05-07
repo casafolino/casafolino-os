@@ -1,6 +1,6 @@
-# casafolino_mail — Contract (post Brief #6.2)
+# casafolino_mail — Contract (post Brief #6.3)
 
-**Last updated:** 2026-05-07 — Brief #6.2 UI Posizionatore mail
+**Last updated:** 2026-05-07 — Brief #6.3 AI feedback loop
 **Module version:** 18.0.18.0.0
 
 ## Scope corrente del modulo
@@ -11,6 +11,7 @@
 - **Body lazy load** (Brief #6.1): body downloaded async by cron 85, not during triage
 - **Backfill storico** (Brief #6.1): async one-shot cron on mail_tracked activation
 - **Posizionatore mail** (Brief #6.2): AI-assisted positioning to project dossiers
+- **AI feedback loop** (Brief #6.3): feedback history, context injection, dynamic threshold
 - AI classifier Groq (model: llama-3.3-70b-versatile, param: casafolino.groq_api_key)
 - F8 Outlook-style composer (compose_wizard_dialog.js, mail_v3_compose.js)
 - Lead scoring TOP 20 dashboard (lead_score.py)
@@ -66,6 +67,41 @@
 5. If partner NOT tracked → falls through to AI classifier (may still discard)
 6. Promote: creates `casafolino.mail.message` with `fetch_state='pending'`, `body_downloaded=False`
 7. Cron 85 "Body Fetch Pending" (10 min) → downloads body+attachments async
+
+### Brief #6.3 — AI feedback loop (deployed 2026-05-07)
+
+#### New model: cf.mail.position.feedback
+| Campo | Tipo | Note |
+|---|---|---|
+| message_id | M2o casafolino.mail.message | Required, cascade |
+| partner_id | M2o res.partner | Required, indexed |
+| ai_suggested_project_id | M2o project.project | Top-1 AI suggestion |
+| ai_confidence_at_position | Float | Confidence at positioning time |
+| actual_project_id | M2o project.project | Required (user choice) |
+| was_correct | Boolean (computed, indexed) | True if AI == actual |
+| user_id | M2o res.users | Who positioned |
+| user_reason | Char | Optional mismatch reason |
+
+#### Hook: action_position_to_project → _record_position_feedback
+Every positioning auto-creates a feedback record. Idempotent (skip if exists).
+
+#### Context injection in Groq prompt
+`_build_context_section_for_partner`: up to 5 recent feedback examples (prioritizes mismatches).
+Zero regression if no feedback (empty section → same behavior as #6.2).
+
+#### Accuracy score per partner
+- `res.partner.cf_ai_accuracy_score` (Float, default 0.5)
+- `_cron_refresh_ai_accuracy`: daily, recalculates correct/total (min 5 samples)
+
+#### Dynamic threshold
+`_compute_cf_ai_confidence_band` uses `partner.cf_ai_accuracy_score`:
+- accuracy >= 0.9 → high_threshold 0.7 (aggressive auto-accept)
+- accuracy <= 0.5 → high_threshold 0.9 (needs more confidence)
+- 0.5..0.9 → linear interpolation
+
+#### Crons to create via UI
+1. AI suggestion (5 min, from #6.2): `model._cron_run_ai_suggestion()`
+2. Accuracy refresh (daily, #6.3): `env['res.partner']._cron_refresh_ai_accuracy()`
 
 ### Feature rimosse in Brief #6.0
 - Sender policy engine (demolished)
