@@ -39,6 +39,8 @@
             'casafolino_mail/static/src/inbox_selector/inbox_selector.js',
             'casafolino_mail/static/src/inbox_selector/inbox_selector.xml',
             'casafolino_mail/static/src/inbox_selector/inbox_selector.scss',
+            'casafolino_mail/static/src/inbox_selector/posizionatore_list_controller.js',
+            'casafolino_mail/static/src/inbox_selector/posizionatore_list_controller.xml',
             # Brief #6.2 Posizionatore
             'casafolino_mail/static/src/posizionatore/posizionatore.scss',
             # Brief #6.4 Compose AI Panel

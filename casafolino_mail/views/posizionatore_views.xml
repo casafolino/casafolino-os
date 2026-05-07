@@ -8,6 +8,7 @@
         <field name="model">casafolino.mail.message</field>
         <field name="arch" type="xml">
             <list string="Posizionatore mail"
+                  js_class="cf_posizionatore_list"
                   decoration-success="cf_ai_confidence_band == 'high'"
                   decoration-warning="cf_ai_confidence_band == 'medium'"
                   decoration-muted="cf_ai_confidence_band == 'low' or cf_ai_confidence_band == 'none'"
