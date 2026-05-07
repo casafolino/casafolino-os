@@ -34,6 +34,7 @@ export class CrmLeadWizardNewDialog extends Component {
         this.notification = useService("notification");
         this.action = useService("action");
         this.dialogService = useService("dialog");
+        this.user = useService("user");
 
         this._searchTimeout = null;
 
@@ -115,7 +116,7 @@ export class CrmLeadWizardNewDialog extends Component {
             }));
 
             // Set default user
-            const currentUser = this.state.usersList.find((u) => u.id === odoo.session_info.uid);
+            const currentUser = this.state.usersList.find((u) => u.id === this.user.userId);
             if (currentUser) {
                 this.state.userId = currentUser.id;
                 this.state.userName = currentUser.name;

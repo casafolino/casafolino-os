@@ -1,6 +1,6 @@
 # CrmLeadWizardNewDialog — Contract
 
-**Last updated:** 2026-05-06 — Brief #4.4.1
+**Last updated:** 2026-05-07 — Brief #4.4.2
 **JS:** `casafolino_crm_export/static/src/js/cf_wizard_new_dialog.js`
 **Template:** `casafolino_crm_export/static/src/xml/cf_wizard_new.xml`
 **CSS:** `casafolino_crm_export/static/src/css/wizard_new.css`
@@ -66,13 +66,14 @@ OWL Dialog for rapid CRM lead creation. Opened via:
 | orm | this.orm | CRUD on crm.lead.wizard.new, searchRead for autocomplete |
 | notification | this.notification | Toast messages on error |
 | action | this.action | doAction for navigation (see existing projects, open created lead) |
+| user | this.user | Current user ID via `this.user.userId` — ⚠️ OWL18 uses `userId` NOT `.uid`, NOT `session.uid`. Old API `odoo.session_info.uid` returns undefined in OWL18. Bug fixed in Brief #4.4.2 |
 | dialog | this.dialogService | (available but not used directly — dialog opened by caller) |
 
 ## Public methods
 
 | Method | Args | Returns | Description | Status |
 |---|---|---|---|---|
-| _loadInitialData | — | Promise | Creates wizard record, preloads reference data | OK |
+| _loadInitialData | — | Promise | Creates wizard record, preloads reference data, sets default owner via `this.user.userId` | OK |
 | onPartnerSearchInput | ev | void | Debounced partner autocomplete (250ms) | OK |
 | onPartnerSelect | partnerId, partnerName | Promise | Sets partner, fetches projects, triggers AI | OK |
 | setNewPartnerMode | isNew:bool | void | Toggles existing/new partner mode | OK |
