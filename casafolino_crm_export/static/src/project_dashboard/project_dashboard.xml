@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_crm_export.CFProjectDashboard">
+    <!-- Loading state -->
+    <div t-if="state.isLoading" class="cf-dash-loading">
+        <div class="cf-dash-spinner"/>
+        <span>Caricamento dashboard...</span>
+    </div>
+
+    <!-- Error state -->
+    <div t-elif="state.error" class="cf-dash-error">
+        <div class="cf-dash-error-icon">
+            <i class="fa fa-exclamation-triangle"/>
+        </div>
+        <div class="cf-dash-error-msg">
+            <strong>Errore nel caricamento</strong>
+            <p t-out="state.error"/>
+        </div>
+        <button class="btn btn-primary btn-sm" t-on-click="onRefresh">Riprova</button>
+    </div>
+
+    <!-- Main dashboard -->
+    <div t-else="" class="cf-dash">
+        <!-- Top bar -->
+        <div class="cf-dash-topbar">
+            <button class="cf-dash-back" t-on-click="onGoBack" title="Torna alla pipeline">
+                <i class="fa fa-arrow-left"/>
+            </button>
+            <div class="cf-dash-topbar-title">
+                <span class="cf-dash-project-name" t-out="state.data.project.name"/>
+                <span t-attf-class="cf-dash-status-pill cf-status-#{statusColor}"
+                      t-out="statusLabel"/>
+            </div>
+            <div class="cf-dash-topbar-actions">
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="onRefresh" title="Aggiorna">
+                    <i class="fa fa-refresh"/>
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="cf-dash-header">
+            <!-- Owner avatar -->
+            <div t-if="state.data.owner"
+                 t-attf-class="cf-dash-owner-avatar cf-owner-#{state.data.owner.color_class}">
+                <t t-out="state.data.owner.initials"/>
+            </div>
+
+            <!-- Project info -->
+            <div class="cf-dash-header-info">
+                <div class="cf-dash-header-top">
+                    <span class="cf-dash-partner-name" t-if="state.data.partner">
+                        <span t-out="partnerFlag"/>
+                        <span t-out="state.data.partner.name" t-on-click="onOpenPartner"
+                              class="cf-dash-link"/>
+                    </span>
+                    <span class="cf-dash-location" t-if="partnerLocation"
+                          t-out="partnerLocation"/>
+                </div>
+                <div class="cf-dash-header-lead" t-if="state.data.lead">
+                    <span class="cf-dash-lead-name" t-on-click="onOpenLead" class="cf-dash-link">
+                        <t t-out="state.data.lead.name"/>
+                    </span>
+                    <span class="cf-dash-stage-name" t-out="state.data.lead.stage_name"/>
+                </div>
+            </div>
+
+            <!-- Stage progress 9-segment -->
+            <div class="cf-dash-stage-progress" t-if="state.data.lead">
+                <t t-foreach="stageSegments" t-as="seg" t-key="seg.index">
+                    <div t-attf-class="cf-dash-seg #{seg.active ? 'cf-dash-seg-active' : ''} #{seg.current ? 'cf-dash-seg-current' : ''}"/>
+                </t>
+            </div>
+        </div>
+
+        <!-- KPI Rail -->
+        <div class="cf-dash-kpi-rail">
+            <div class="cf-dash-kpi-card">
+                <div class="cf-dash-kpi-value" t-out="kpiRevenue"/>
+                <div class="cf-dash-kpi-label">Ricavi</div>
+            </div>
+            <div class="cf-dash-kpi-card">
+                <div class="cf-dash-kpi-value" t-out="state.data.kpi.sample_count"/>
+                <div class="cf-dash-kpi-label">Campioni</div>
+            </div>
+            <div class="cf-dash-kpi-card">
+                <div class="cf-dash-kpi-value" t-out="state.data.kpi.email_count"/>
+                <div class="cf-dash-kpi-label">Email</div>
+            </div>
+            <div class="cf-dash-kpi-card">
+                <div class="cf-dash-kpi-value"
+                     t-out="state.data.kpi.next_activity ? state.data.kpi.next_activity.date : '—'"/>
+                <div class="cf-dash-kpi-label">Prossima</div>
+            </div>
+        </div>
+
+        <!-- Tab nav -->
+        <div class="cf-dash-tabs">
+            <t t-foreach="tabs" t-as="tab" t-key="tab.id">
+                <button t-attf-class="cf-dash-tab #{state.activeTab === tab.id ? 'active' : ''} #{!tab.enabled ? 'disabled' : ''}"
+                        t-on-click="() => this.onTabChange(tab.id)">
+                    <t t-out="tab.label"/>
+                    <span t-if="!tab.enabled" class="cf-dash-tab-badge" t-out="tab.brief"/>
+                </button>
+            </t>
+        </div>
+
+        <!-- Content area -->
+        <div class="cf-dash-content">
+
+            <!-- Timeline tab -->
+            <div t-if="state.activeTab === 'timeline'" class="cf-dash-content-row">
+                <div class="cf-dash-timeline-col">
+                    <!-- Timeline filters -->
+                    <div class="cf-dash-timeline-filters">
+                        <t t-foreach="timelineFilters" t-as="f" t-key="f.id">
+                            <button t-attf-class="cf-dash-filter-pill #{state.timelineFilter === f.id ? 'active' : ''}"
+                                    t-on-click="() => this.onTimelineFilter(f.id)">
+                                <t t-out="f.label"/>
+                            </button>
+                        </t>
+                    </div>
+
+                    <!-- Timeline list -->
+                    <div class="cf-dash-timeline" t-if="filteredTimeline.length">
+                        <t t-foreach="filteredTimeline" t-as="ev" t-key="ev_index">
+                            <div class="cf-dash-tl-item">
+                                <div t-attf-class="cf-dash-tl-icon cf-tl-#{ev.color}">
+                                    <i t-attf-class="fa #{ev.type === 'mail' ? 'fa-envelope' : ev.type === 'activity' ? 'fa-calendar' : ev.type === 'message' ? 'fa-comment' : ev.type === 'note' ? 'fa-sticky-note' : 'fa-bell'}"/>
+                                </div>
+                                <div class="cf-dash-tl-body">
+                                    <div class="cf-dash-tl-header">
+                                        <span class="cf-dash-tl-title" t-out="ev.title"/>
+                                        <span class="cf-dash-tl-date" t-out="ev.date_label"/>
+                                    </div>
+                                    <div class="cf-dash-tl-meta" t-if="ev.author">
+                                        <span t-out="ev.author"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                    <div t-else="" class="cf-dash-empty">
+                        <i class="fa fa-inbox"/>
+                        <span>Nessun evento in timeline</span>
+                    </div>
+                </div>
+
+                <!-- Customer panel (sidebar) -->
+                <div class="cf-dash-customer-col">
+                    <t t-call="casafolino_crm_export.CFProjectDashboard.CustomerPanel"/>
+                </div>
+            </div>
+
+            <!-- Cliente tab -->
+            <div t-if="state.activeTab === 'cliente'" class="cf-dash-cliente-tab">
+                <t t-call="casafolino_crm_export.CFProjectDashboard.CustomerPanel"/>
+            </div>
+        </div>
+
+        <!-- Quick actions bar -->
+        <div class="cf-dash-quick-actions">
+            <button class="cf-dash-qa-btn" t-on-click="onQuickActionMail" title="Invia email">
+                <i class="fa fa-envelope"/> Email
+            </button>
+            <button class="cf-dash-qa-btn" t-on-click="onQuickActionSample" title="Nuova campionatura">
+                <i class="fa fa-flask"/> Campione
+            </button>
+            <button class="cf-dash-qa-btn" t-on-click="onQuickActionOffer" title="Nuova offerta">
+                <i class="fa fa-file-text-o"/> Offerta
+            </button>
+            <button class="cf-dash-qa-btn" t-on-click="onQuickActionActivity" title="Pianifica attività">
+                <i class="fa fa-calendar-plus-o"/> Attività
+            </button>
+        </div>
+    </div>
+</t>
+
+<!-- Sub-template: Customer Panel -->
+<t t-name="casafolino_crm_export.CFProjectDashboard.CustomerPanel">
+    <div class="cf-dash-customer-panel">
+        <!-- Partner card -->
+        <div class="cf-dash-card" t-if="state.data.partner">
+            <div class="cf-dash-card-title">Cliente</div>
+            <div class="cf-dash-partner-info">
+                <div class="cf-dash-partner-main">
+                    <strong t-out="state.data.partner.name"/>
+                </div>
+                <div class="cf-dash-partner-detail" t-if="state.data.partner.email">
+                    <i class="fa fa-envelope-o"/>
+                    <span t-out="state.data.partner.email"/>
+                </div>
+                <div class="cf-dash-partner-detail" t-if="state.data.partner.phone">
+                    <i class="fa fa-phone"/>
+                    <span t-out="state.data.partner.phone"/>
+                </div>
+                <div class="cf-dash-partner-detail" t-if="state.data.partner.website">
+                    <i class="fa fa-globe"/>
+                    <span t-out="state.data.partner.website"/>
+                </div>
+                <div class="cf-dash-partner-detail" t-if="partnerLocation">
+                    <i class="fa fa-map-marker"/>
+                    <span><t t-out="partnerFlag"/> <t t-out="partnerLocation"/></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacts card -->
+        <div class="cf-dash-card" t-if="state.data.contacts.length">
+            <div class="cf-dash-card-title">
+                Contatti
+                <span class="cf-dash-card-count" t-out="state.data.contacts.length"/>
+            </div>
+            <div class="cf-dash-contacts-list">
+                <t t-foreach="state.data.contacts" t-as="contact" t-key="contact.id">
+                    <div class="cf-dash-contact-row" t-on-click="() => this.onContactClick(contact.id)">
+                        <div class="cf-dash-contact-avatar">
+                            <t t-set="cInitial" t-value="(contact.name || '?')[0].toUpperCase()"/>
+                            <t t-out="cInitial"/>
+                        </div>
+                        <div class="cf-dash-contact-info">
+                            <div class="cf-dash-contact-name">
+                                <t t-out="contact.name"/>
+                                <span t-if="contact.is_primary" class="cf-dash-primary-badge">P</span>
+                            </div>
+                            <div class="cf-dash-contact-meta" t-if="contact.function"
+                                 t-out="contact.function"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+
+        <!-- Lead summary card -->
+        <div class="cf-dash-card" t-if="state.data.lead">
+            <div class="cf-dash-card-title">Lead principale</div>
+            <div class="cf-dash-lead-summary">
+                <div class="cf-dash-lead-row">
+                    <span class="cf-dash-lead-label">Stage</span>
+                    <span t-out="state.data.lead.stage_name"/>
+                </div>
+                <div class="cf-dash-lead-row">
+                    <span class="cf-dash-lead-label">Revenue</span>
+                    <span><t t-out="kpiRevenue"/>&#8364;</span>
+                </div>
+                <div class="cf-dash-lead-row">
+                    <span class="cf-dash-lead-label">Probabilità</span>
+                    <span><t t-out="state.data.lead.probability"/>%</span>
+                </div>
+                <div class="cf-dash-lead-row">
+                    <span class="cf-dash-lead-label">Score</span>
+                    <span t-out="state.data.lead.score"/>
+                </div>
+                <div class="cf-dash-lead-row">
+                    <span class="cf-dash-lead-label">Giorni in fase</span>
+                    <span t-out="state.data.lead.days_in_stage"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+</templates>
