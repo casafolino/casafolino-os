@@ -1,6 +1,6 @@
-# casafolino_mail — Contract (post Brief #6.4)
+# casafolino_mail — Contract (post Brief #6.5)
 
-**Last updated:** 2026-05-07 — Brief #6.4 F8 AI assist
+**Last updated:** 2026-05-07 — Brief #6.5 inbox selector
 **Module version:** 18.0.18.0.0
 
 ## Scope corrente del modulo
@@ -13,6 +13,7 @@
 - **Posizionatore mail** (Brief #6.2): AI-assisted positioning to project dossiers
 - **AI feedback loop** (Brief #6.3): feedback history, context injection, dynamic threshold
 - **F8 AI assist panel** (Brief #6.4): tone/language/signature/quick-replies in composer
+- **Inbox selector** (Brief #6.5): "vedo come" pill for supervisor, ephemeral state
 - AI classifier Groq (model: llama-3.3-70b-versatile, param: casafolino.groq_api_key)
 - F8 Outlook-style composer (compose_wizard_dialog.js, mail_v3_compose.js)
 - Lead scoring TOP 20 dashboard (lead_score.py)
@@ -68,6 +69,32 @@
 5. If partner NOT tracked → falls through to AI classifier (may still discard)
 6. Promote: creates `casafolino.mail.message` with `fetch_state='pending'`, `body_downloaded=False`
 7. Cron 85 "Body Fetch Pending" (10 min) → downloads body+attachments async
+
+### Brief #6.5 — Inbox selector (deployed 2026-05-07)
+
+#### Permission
+`res.users.cf_can_see_all_inboxes` (Boolean, default False). Antonio uid=2 activated via SQL.
+
+#### Server endpoints
+| Endpoint | Permission | Returns |
+|---|---|---|
+| cf_get_supervisable_users | cf_can_see_all_inboxes | list users with accounts (color-coded) |
+| cf_get_inbox_messages_as_user | cf_can_see_all_inboxes | messages for target user via sudo |
+
+#### Component CFInboxSelector
+Path: `static/src/inbox_selector/`
+Pill with avatar + dropdown. Visible only for supervisors (>1 user returned).
+Global state: `cfInboxSelectorState` (subscribe/notify pattern, ephemeral).
+
+#### Integration: posizionatore list
+- `js_class="cf_posizionatore_list"` on list view
+- `CFPosizionatoreListController` extends ListController
+- On viewing_as change: context `cf_viewing_as_user_id` injected + reload
+- State ephemeral: refresh resets to self
+
+#### Per-role experience
+- Antonio: pill visible, dropdown with self + Josefina + Martina
+- Josefina/Martina: pill hidden, experience unchanged
 
 ### Brief #6.4 — F8 AI assist panel (deployed 2026-05-07)
 
