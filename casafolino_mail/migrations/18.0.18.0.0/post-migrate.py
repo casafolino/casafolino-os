@@ -113,7 +113,33 @@ def migrate(cr, version):
     """)
     _logger.info("Brief #6.0: cleaned ir_ui_view orphans")
 
-    # ── 8. Cleanup ir_act_window orphans ──
+    # ── 8. Cleanup ir_cron + ir_actions_server referencing removed models ──
+    cr.execute("""
+        DELETE FROM ir_cron
+        WHERE ir_actions_server_id IN (
+            SELECT id FROM ir_actions_server
+            WHERE model_id IN (
+                SELECT id FROM ir_model
+                WHERE model IN (
+                    'casafolino.mail.sender_policy',
+                    'casafolino.mail.triage.wizard'
+                )
+            )
+        )
+    """)
+    cr.execute("""
+        DELETE FROM ir_actions_server
+        WHERE model_id IN (
+            SELECT id FROM ir_model
+            WHERE model IN (
+                'casafolino.mail.sender_policy',
+                'casafolino.mail.triage.wizard'
+            )
+        )
+    """)
+    _logger.info("Brief #6.0: cleaned ir_cron + ir_actions_server orphans")
+
+    # ── 9. Cleanup ir_act_window orphans ──
     cr.execute("""
         DELETE FROM ir_act_window
         WHERE res_model IN (
@@ -123,7 +149,7 @@ def migrate(cr, version):
     """)
     _logger.info("Brief #6.0: cleaned ir_act_window orphans")
 
-    # ── 9. Cleanup ir_model_access orphans ──
+    # ── 10. Cleanup ir_model_access orphans ──
     cr.execute("""
         DELETE FROM ir_model_access
         WHERE name LIKE '%sender_policy%'
