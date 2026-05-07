@@ -26,6 +26,15 @@ class ResPartnerMailExt(models.Model):
         help='Timestamp di attivazione mail_tracked. Usato per backfill.')
     mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
     mail_last_sync = fields.Datetime('Ultimo sync email')
+
+    # ── Brief #6.3 — AI accuracy ──
+    cf_ai_accuracy_score = fields.Float(
+        'AI accuracy', digits=(3, 2), default=0.5,
+        help='0.0=AI always wrong, 1.0=always correct. Default 0.5 (neutral).')
+    cf_ai_feedback_count = fields.Integer(
+        'Feedback totali', compute='_compute_cf_ai_feedback_count')
+    cf_ai_feedback_ids = fields.One2many(
+        'cf.mail.position.feedback', 'partner_id', string='Storico feedback AI')
     mail_message_count = fields.Integer('Email',
         compute='_compute_mail_message_count')
     partner_message_ids = fields.One2many(
@@ -173,6 +182,31 @@ class ResPartnerMailExt(models.Model):
             partner.mail_message_count = self.env['casafolino.mail.message'].search_count([
                 ('partner_id', '=', partner.id),
             ])
+
+    def _compute_cf_ai_feedback_count(self):
+        for p in self:
+            p.cf_ai_feedback_count = len(p.cf_ai_feedback_ids)
+
+    def _refresh_ai_accuracy_score(self):
+        """Brief #6.3 — Recalculate cf_ai_accuracy_score from feedback history."""
+        for partner in self:
+            valid = partner.cf_ai_feedback_ids.filtered(
+                lambda fb: fb.ai_suggested_project_id)
+            if len(valid) < 5:
+                partner.cf_ai_accuracy_score = 0.5
+                continue
+            correct = len(valid.filtered('was_correct'))
+            partner.cf_ai_accuracy_score = correct / len(valid)
+
+    @api.model
+    def _cron_refresh_ai_accuracy(self):
+        """Brief #6.3 — Daily cron to refresh accuracy for tracked partners."""
+        partners = self.search([
+            ('mail_tracked', '=', True),
+            ('cf_ai_feedback_ids', '!=', False),
+        ])
+        partners._refresh_ai_accuracy_score()
+        _logger.info("Brief #6.3: accuracy refreshed for %d partners", len(partners))
 
     def write(self, vals):
         """Brief #6.1 — On mail_tracked activation: set timestamp + schedule backfill."""
