@@ -3,6 +3,7 @@ import { registry } from "@web/core/registry";
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 
 const OWNER_LOGIN_TO_CLASS = {
     "antonio@casafolino.com": "cf-owner-antonio",
@@ -34,8 +35,6 @@ export class CrmLeadWizardNewDialog extends Component {
         this.notification = useService("notification");
         this.action = useService("action");
         this.dialogService = useService("dialog");
-        this.user = useService("user");
-
         this._searchTimeout = null;
 
         this.state = useState({
@@ -116,7 +115,7 @@ export class CrmLeadWizardNewDialog extends Component {
             }));
 
             // Set default user
-            const currentUser = this.state.usersList.find((u) => u.id === this.user.userId);
+            const currentUser = this.state.usersList.find((u) => u.id === user.userId);
             if (currentUser) {
                 this.state.userId = currentUser.id;
                 this.state.userName = currentUser.name;

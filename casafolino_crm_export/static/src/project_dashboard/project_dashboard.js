@@ -2,6 +2,7 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 import { _t } from "@web/core/l10n/translation";
 
 const STATUS_LABELS = {
@@ -53,7 +54,6 @@ export class CFProjectDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        this.user = useService("user");
         this.notification = useService("notification");
 
         this.state = useState({

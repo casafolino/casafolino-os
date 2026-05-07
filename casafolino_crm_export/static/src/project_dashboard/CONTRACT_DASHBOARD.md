@@ -55,8 +55,9 @@ Opened via:
 |---|---|---|
 | orm | this.orm | call `cf_get_dashboard_data` on project.project |
 | action | this.action | doAction for navigation (lead form, partner form, sample, offer, activity) |
-| user | this.user | Available for user context — ⚠️ OWL18 uses `this.user.userId` NOT `.uid` |
 | notification | this.notification | Toast messages for disabled tabs and errors |
+
+**⚠️ OWL18 user access:** `user` is NOT a service in Odoo 18. Use `import { user } from "@web/core/user"` then `user.userId`. Do NOT use `useService("user")` — it crashes with "Service user is not available".
 
 ## Public methods
 
