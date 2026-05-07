@@ -19,7 +19,11 @@ class ResPartnerMailExt(models.Model):
 
     # ── Mail Hub tracking fields ──
     mail_tracked = fields.Boolean('Mail Tracked', default=False,
-        help='Se attivo, le nuove email vanno direttamente nel chatter')
+        help='Se attivo, le mail in entrata/uscita vengono importate in Odoo. '
+             'Se disattivo, le mail restano solo in Gmail/IMAP.',
+        tracking=True)
+    mail_tracked_since = fields.Datetime('Tracking attivo dal', readonly=True,
+        help='Timestamp di attivazione mail_tracked. Usato per backfill.')
     mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
     mail_last_sync = fields.Datetime('Ultimo sync email')
     mail_message_count = fields.Integer('Email',
@@ -169,6 +173,53 @@ class ResPartnerMailExt(models.Model):
             partner.mail_message_count = self.env['casafolino.mail.message'].search_count([
                 ('partner_id', '=', partner.id),
             ])
+
+    def write(self, vals):
+        """Brief #6.1 — On mail_tracked activation: set timestamp + schedule backfill."""
+        if 'mail_tracked' in vals and vals['mail_tracked']:
+            for partner in self:
+                if not partner.mail_tracked:
+                    vals.setdefault('mail_tracked_since', fields.Datetime.now())
+        res = super().write(vals)
+        if 'mail_tracked' in vals and vals['mail_tracked']:
+            for partner in self:
+                if partner.mail_tracked and partner.email:
+                    partner._schedule_backfill_history()
+        return res
+
+    def _schedule_backfill_history(self):
+        """Brief #6.1 — Schedule one-shot backfill for newly tracked partner."""
+        self.ensure_one()
+        if not self.email:
+            return
+        _logger.info("Brief #6.1: scheduling backfill for partner id=%s email=%s", self.id, self.email)
+        self.with_delay_backfill()
+
+    def with_delay_backfill(self):
+        """Run backfill inline (for now). Can be replaced with queue_job later."""
+        self.ensure_one()
+        try:
+            self.action_sync_full_email_history()
+        except Exception as e:
+            _logger.error("Brief #6.1: backfill error partner %s: %s", self.id, e)
+
+    def action_enable_mail_tracking(self):
+        """Bulk action for list view: enable tracking for selected partners."""
+        without_email = self.filtered(lambda p: not p.email)
+        if without_email:
+            raise UserError(
+                "I seguenti partner non hanno email e non possono essere tracciati:\n%s"
+                % "\n".join(p.name for p in without_email[:10])
+            )
+        self.write({'mail_tracked': True})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': 'Mail tracking attivato per %d partner.' % len(self),
+                'type': 'success',
+            },
+        }
 
     @api.depends('casafolino_mail_ids.email_date', 'casafolino_mail_ids.state')
     def _compute_casafolino_mail_stats(self):

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Mail Tracking tab in partner form -->
+    <record id="view_partner_form_mail_tracking" model="ir.ui.view">
+        <field name="name">res.partner.form.cf.mail.tracking</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Mail Tracking" name="cf_mail_tracking">
+                    <group>
+                        <group string="Stato">
+                            <field name="mail_tracked" widget="boolean_toggle"/>
+                            <field name="mail_tracked_since" readonly="1"/>
+                            <field name="mail_message_count" readonly="1"/>
+                        </group>
+                        <group string="Sync">
+                            <field name="mail_first_sync_done" readonly="1"/>
+                            <field name="mail_last_sync" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="o_row mb-3" invisible="not mail_tracked">
+                        <button name="action_sync_full_email_history"
+                                string="Riscarica storico completo"
+                                type="object" class="btn btn-secondary btn-sm"
+                                confirm="Riscarica tutte le mail per questo partner? Può richiedere qualche minuto."/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- mail_tracked column in partner list -->
+    <record id="view_partner_list_mail_tracking" model="ir.ui.view">
+        <field name="name">res.partner.list.cf.mail.tracking</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="mail_tracked" optional="hide" widget="boolean_toggle"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Bulk action: Attiva tracking mail -->
+    <record id="action_partner_enable_mail_tracking" model="ir.actions.server">
+        <field name="name">Attiva tracking mail</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+records.action_enable_mail_tracking()
+        </field>
+    </record>
+
+</odoo>

@@ -21,6 +21,7 @@
         'views/casafolino_mail_raw_views.xml',
         'views/create_lead_wizard_views.xml',
         'views/casafolino_mail_folder_views.xml',
+        'views/res_partner_mail_tracking_views.xml',
         'data/mail_v3_client_action.xml',
         'views/menus.xml',
         'data/snippet_seed.xml',
