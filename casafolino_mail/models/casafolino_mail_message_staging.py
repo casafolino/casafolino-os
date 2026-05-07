@@ -189,12 +189,26 @@ class CasafolinoMailMessage(models.Model):
     mail_message_id = fields.Many2one('mail.message', string='Ref chatter project',
                                        ondelete='set null')
 
-    @api.depends('cf_ai_processed', 'cf_ai_confidence')
+    @api.depends('cf_ai_processed', 'cf_ai_confidence',
+                 'partner_id', 'partner_id.cf_ai_accuracy_score')
     def _compute_cf_ai_confidence_band(self):
+        """Brief #6.3 — Dynamic threshold based on partner AI accuracy score.
+        accuracy >= 0.9 → high_threshold 0.7 (aggressive auto-accept)
+        accuracy <= 0.5 → high_threshold 0.9 (needs more confidence)
+        0.5..0.9 → linear interpolation 0.9..0.7
+        """
         for msg in self:
             if not msg.cf_ai_processed:
                 msg.cf_ai_confidence_band = 'none'
-            elif msg.cf_ai_confidence >= 0.8:
+                continue
+            accuracy = msg.partner_id.cf_ai_accuracy_score if msg.partner_id else 0.5
+            if accuracy >= 0.9:
+                high_threshold = 0.7
+            elif accuracy <= 0.5:
+                high_threshold = 0.9
+            else:
+                high_threshold = 0.9 - ((accuracy - 0.5) * 0.5)
+            if msg.cf_ai_confidence >= high_threshold:
                 msg.cf_ai_confidence_band = 'high'
             elif msg.cf_ai_confidence >= 0.4:
                 msg.cf_ai_confidence_band = 'medium'
