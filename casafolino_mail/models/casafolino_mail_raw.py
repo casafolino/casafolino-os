@@ -433,23 +433,9 @@ class CasafolinoMailRaw(models.Model):
 
         new_msg = Message.create(vals)
 
-        # Download body via IMAP
-        imap = None
-        try:
-            imap = account._get_imap_connection()
-            new_msg._download_body_imap(imap, raw.imap_folder or 'INBOX', raw.uid)
-        except Exception as e:
-            _logger.warning(
-                "[triage] Body download failed for RAW %d → MSG %d: %s",
-                raw.id, new_msg.id, e
-            )
-            # MESSAGE stays with fetch_state='pending', cron 85 will retry
-        finally:
-            if imap:
-                try:
-                    imap.logout()
-                except Exception:
-                    pass
+        # Brief #6.1: body download is LAZY — cron 85 handles it asynchronously.
+        # No IMAP connection during triage for performance.
+        # Body downloaded on-demand when user opens the message or via cron.
 
         # Auto-create sender preference if new inbound sender
         if actual_direction == 'inbound' and raw.sender_email:
