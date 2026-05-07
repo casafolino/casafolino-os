@@ -1,6 +1,6 @@
-# casafolino_mail — Contract (post Brief #6.3)
+# casafolino_mail — Contract (post Brief #6.4)
 
-**Last updated:** 2026-05-07 — Brief #6.3 AI feedback loop
+**Last updated:** 2026-05-07 — Brief #6.4 F8 AI assist
 **Module version:** 18.0.18.0.0
 
 ## Scope corrente del modulo
@@ -12,6 +12,7 @@
 - **Backfill storico** (Brief #6.1): async one-shot cron on mail_tracked activation
 - **Posizionatore mail** (Brief #6.2): AI-assisted positioning to project dossiers
 - **AI feedback loop** (Brief #6.3): feedback history, context injection, dynamic threshold
+- **F8 AI assist panel** (Brief #6.4): tone/language/signature/quick-replies in composer
 - AI classifier Groq (model: llama-3.3-70b-versatile, param: casafolino.groq_api_key)
 - F8 Outlook-style composer (compose_wizard_dialog.js, mail_v3_compose.js)
 - Lead scoring TOP 20 dashboard (lead_score.py)
@@ -67,6 +68,30 @@
 5. If partner NOT tracked → falls through to AI classifier (may still discard)
 6. Promote: creates `casafolino.mail.message` with `fetch_state='pending'`, `body_downloaded=False`
 7. Cron 85 "Body Fetch Pending" (10 min) → downloads body+attachments async
+
+### Brief #6.4 — F8 AI assist panel (deployed 2026-05-07)
+
+#### AbstractModel: cf.mail.compose.ai (6 endpoints)
+| Endpoint | Returns |
+|---|---|
+| cf_suggest_tone | {suggested_tone, reasoning, rewrite_hint} |
+| cf_detect_language | {detected_lang, partner_lang, mismatch} |
+| cf_translate | {translated} |
+| cf_get_signature | {signature_html, reason} |
+| cf_suggest_quick_replies | {replies: [{short_label, text, tone}]} |
+| cf_score_snippets | {scored_ids: [{id, score, why}]} |
+
+#### Component: CFComposeAIPanel
+Path: `static/src/compose_ai_panel/`
+Tabs: Tono / Lingua / Firma / Risposte
+Debounce: 800ms on lang detection
+Responsive: collapse under 1200px
+
+#### F8 integration (non-invasive)
+- ComposeWizard.static.components = { CFComposeAIPanel }
+- Callbacks: applyAIBody, appendAIBody, getBodyForAI
+- Props: partnerId, threadId from prefilled
+- Signature: contextual (new partner → extended, fidelized → short, intl → multilang)
 
 ### Brief #6.3 — AI feedback loop (deployed 2026-05-07)
 
