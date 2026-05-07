@@ -1,6 +1,7 @@
-# casafolino_mail — Contract (post Brief #6.5)
+# casafolino_mail — Contract (post Brief #6.6 — MODULE COMPLETE)
 
-**Last updated:** 2026-05-07 — Brief #6.5 inbox selector
+**Last updated:** 2026-05-07 — Brief #6.6 closure
+**Master document:** see `docs/MAIL_MODULE_v6.md` for full architecture
 **Module version:** 18.0.18.0.0
 
 ## Scope corrente del modulo
@@ -174,6 +175,13 @@ Zero regression if no feedback (empty section → same behavior as #6.2).
 **user** is NOT a service in Odoo 18. Use `import { user } from "@web/core/user"` then `user.userId`.
 Do NOT use `useService("user")` — crashes with "Service user is not available".
 
-### Backlog Brief #6.3+
+### Brief #6.6 — Closure (deployed 2026-05-07)
 
-See TODO.md for detailed backlog.
+- Backfill method `cf_backfill_ai_suggestion` added (batch 50, throttle 2s)
+- Empty deprecated XML files removed (policy_views, triage_wizard_views)
+- Performance baseline: OK at current scale (2977 msgs, index at >10k)
+- Master document: `docs/MAIL_MODULE_v6.md`
+
+### Backlog
+
+See TODO.md. Only Brief #B6 (tab Mail dashboard 360°) remains.
