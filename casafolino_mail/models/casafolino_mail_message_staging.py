@@ -309,6 +309,55 @@ class CasafolinoMailMessage(models.Model):
             'mail_message_id': chatter_msg.id,
         })
 
+        # Brief #6.3 — Record feedback for AI learning
+        self._record_position_feedback(project_id)
+
+    def _record_position_feedback(self, actual_project_id):
+        """Brief #6.3 — Create feedback record after positioning."""
+        self.ensure_one()
+        if not self.partner_id:
+            return
+        Feedback = self.env['cf.mail.position.feedback']
+        existing = Feedback.search([('message_id', '=', self.id)], limit=1)
+        if existing:
+            return  # idempotent
+        ai_top = self.cf_ai_suggestion_ids[:1]
+        Feedback.create({
+            'message_id': self.id,
+            'partner_id': self.partner_id.id,
+            'ai_suggested_project_id': ai_top.id if ai_top else False,
+            'ai_confidence_at_position': self.cf_ai_confidence,
+            'actual_project_id': actual_project_id,
+            'user_id': self.env.user.id,
+            'user_reason': self.env.context.get('cf_position_reason') or False,
+        })
+
+    @api.model
+    def _backfill_position_feedback(self):
+        """Brief #6.3 one-shot — Create retroactive feedback from already positioned mail."""
+        Feedback = self.env['cf.mail.position.feedback']
+        positioned = self.search([
+            ('cf_project_id', '!=', False),
+            ('partner_id', '!=', False),
+            ('cf_ai_processed', '=', True),
+        ])
+        created = 0
+        for msg in positioned:
+            if Feedback.search([('message_id', '=', msg.id)], limit=1):
+                continue
+            ai_top = msg.cf_ai_suggestion_ids[:1]
+            Feedback.create({
+                'message_id': msg.id,
+                'partner_id': msg.partner_id.id,
+                'ai_suggested_project_id': ai_top.id if ai_top else False,
+                'ai_confidence_at_position': msg.cf_ai_confidence,
+                'actual_project_id': msg.cf_project_id.id,
+                'user_id': msg.cf_positioned_by_id.id or self.env.user.id,
+            })
+            created += 1
+        _logger.info("Brief #6.3: backfill feedback — %d created", created)
+        return created
+
     def action_position_quick_high(self):
         """1-click confirm for HIGH confidence suggestion."""
         self.ensure_one()

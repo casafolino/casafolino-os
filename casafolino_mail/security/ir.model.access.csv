@@ -42,3 +42,5 @@ access_casafolino_mail_folder_rule_user,casafolino.mail.folder.rule user,model_c
 access_casafolino_mail_folder_rule_admin,casafolino.mail.folder.rule admin,model_casafolino_mail_folder_rule,base.group_system,1,1,1,1
 access_casafolino_mail_mass_action_log_user,casafolino.mail.mass.action.log user,model_casafolino_mail_mass_action_log,base.group_user,1,0,1,0
 access_casafolino_mail_mass_action_log_admin,casafolino.mail.mass.action.log admin,model_casafolino_mail_mass_action_log,base.group_system,1,1,1,1
+access_cf_mail_position_feedback_user,cf.mail.position.feedback user,model_cf_mail_position_feedback,base.group_user,1,1,1,0
+access_cf_mail_position_feedback_admin,cf.mail.position.feedback admin,model_cf_mail_position_feedback,base.group_system,1,1,1,1

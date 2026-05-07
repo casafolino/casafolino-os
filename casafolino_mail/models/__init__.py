@@ -26,3 +26,4 @@ from . import casafolino_mail_raw
 from . import casafolino_mail_folder
 from . import casafolino_mail_folder_rule
 from . import casafolino_mail_mass_action_log
+from . import cf_mail_position_feedback
