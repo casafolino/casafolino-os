@@ -9,7 +9,7 @@ _logger = logging.getLogger(__name__)
 
 class CasafolinoMailSenderPolicy(models.Model):
     _name = 'casafolino.mail.sender_policy'
-    _description = 'Regola triage mittente'
+    _description = '[DEPRECATED Brief #6.0] Regola triage mittente'
     _order = 'priority desc, id'
 
     name = fields.Char('Descrizione', required=True)

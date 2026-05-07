@@ -217,7 +217,9 @@ class CasafolinoMailAccount(models.Model):
         return self._fetch_folder_legacy(imap, folder_name, direction)
 
     def _fetch_folder_legacy(self, imap, folder_name, direction):
-        """Fetch legacy: whitelist CRM-based, scrive in casafolino.mail.message."""
+        """[DEPRECATED Brief #6.0] Fetch legacy: whitelist CRM-based, scrive in casafolino.mail.message.
+        Sarà rimosso in Phase 3. RAW pipeline lo sostituisce."""
+        _logger.warning("DEPRECATED _fetch_folder_legacy called; will be removed.")
         Message = self.env['casafolino.mail.message']
 
         new_count = 0

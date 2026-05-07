@@ -245,7 +245,9 @@ class CasafolinoMailMessage(models.Model):
                 rec.lead_stage_class = ''
 
     def _apply_sender_policy(self):
-        """Applica la prima sender_policy che matcha a questo messaggio."""
+        """[DEPRECATED Brief #6.0] Applica la prima sender_policy che matcha a questo messaggio.
+        Sarà rimosso in Phase 3. Sostituito dal flusso Brief #6.1."""
+        _logger.warning("DEPRECATED _apply_sender_policy called; will be removed.")
         self.ensure_one()
         Policy = self.env['casafolino.mail.sender_policy']
         policy = Policy.match_sender(self.sender_email, self.subject or '',

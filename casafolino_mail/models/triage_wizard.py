@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 
 class CasafolinoMailTriageWizard(models.TransientModel):
     _name = 'casafolino.mail.triage.wizard'
-    _description = 'Wizard triage orfano (form transient)'
+    _description = '[DEPRECATED Brief #6.0] Wizard triage orfano (form transient)'
 
     partner_id = fields.Many2one('res.partner', required=True, readonly=True)
     partner_name = fields.Char(related='partner_id.name', readonly=True)
