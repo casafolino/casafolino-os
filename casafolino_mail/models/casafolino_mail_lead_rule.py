@@ -220,27 +220,10 @@ class CasafolinoMailLeadRule(models.Model):
         return source
 
     def _get_excluded_partner_ids(self):
-        """Partner esclusi da auto-link: hanno decisione ignore o policy discard."""
+        """Partner esclusi da auto-link: hanno decisione ignore."""
         Decision = self.env['casafolino.mail.sender.decision'].sudo()
         ignored_decisions = Decision.search([
             ('active', '=', True),
             ('decision', 'in', ['ignored_sender', 'ignored_domain']),
         ])
-        ignored_ids = ignored_decisions.mapped('partner_id').ids
-
-        Policy = self.env['casafolino.mail.sender_policy'].sudo()
-        discard_policies = Policy.search([
-            ('active', '=', True),
-            ('action', '=', 'auto_discard'),
-        ])
-
-        discard_ids = []
-        if discard_policies:
-            Partner = self.env['res.partner'].sudo()
-            for policy in discard_policies:
-                if policy.pattern_type == 'domain':
-                    val = policy.pattern_value.replace('*', '%')
-                    partners = Partner.search([('email', '=ilike', val)])
-                    discard_ids.extend(partners.ids)
-
-        return list(set(ignored_ids + discard_ids))
+        return ignored_decisions.mapped('partner_id').ids

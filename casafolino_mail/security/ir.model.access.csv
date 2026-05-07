@@ -8,8 +8,6 @@ access_casafolino_mail_message_admin,casafolino.mail.message admin,model_casafol
 access_casafolino_assign_partner_wizard,casafolino.mail.assign.partner.wizard,model_casafolino_mail_assign_partner_wizard,base.group_user,1,1,1,1
 access_casafolino_assign_lead_wizard,casafolino.mail.assign.lead.wizard,model_casafolino_mail_assign_lead_wizard,base.group_user,1,1,1,1
 access_casafolino_assign_user_wizard,casafolino.mail.assign.user.wizard,model_casafolino_mail_assign_user_wizard,base.group_user,1,1,1,1
-access_casafolino_mail_sender_policy_user,casafolino.mail.sender_policy user,model_casafolino_mail_sender_policy,base.group_user,1,0,0,0
-access_casafolino_mail_sender_policy_admin,casafolino.mail.sender_policy admin,model_casafolino_mail_sender_policy,base.group_system,1,1,1,1
 access_casafolino_mail_tracking_user,casafolino.mail.tracking user,model_casafolino_mail_tracking,base.group_user,1,0,0,0
 access_casafolino_mail_tracking_admin,casafolino.mail.tracking admin,model_casafolino_mail_tracking,base.group_system,1,1,1,1
 access_casafolino_mail_sla_partner_user,casafolino.mail.sla.partner user,model_casafolino_mail_sla_partner,base.group_user,1,0,0,0
@@ -21,7 +19,6 @@ access_casafolino_mail_lead_score_admin,casafolino.mail.lead.score admin,model_c
 access_casafolino_mail_snippet_user,casafolino.mail.snippet user,model_casafolino_mail_snippet,base.group_user,1,1,1,1
 access_casafolino_mail_snippet_admin,casafolino.mail.snippet admin,model_casafolino_mail_snippet,base.group_system,1,1,1,1
 access_casafolino_mail_snippet_picker_user,casafolino.mail.snippet.picker user,model_casafolino_mail_snippet_picker,base.group_user,1,1,1,1
-access_casafolino_mail_triage_wizard_user,casafolino.mail.triage.wizard user,model_casafolino_mail_triage_wizard,base.group_user,1,1,1,1
 access_casafolino_mail_sender_decision_user,casafolino.mail.sender.decision user,model_casafolino_mail_sender_decision,base.group_user,1,1,1,0
 access_casafolino_mail_sender_decision_admin,casafolino.mail.sender.decision admin,model_casafolino_mail_sender_decision,base.group_system,1,1,1,1
 access_casafolino_mail_create_lead_wizard,casafolino.mail.create.lead.wizard,model_casafolino_mail_create_lead_wizard,base.group_user,1,1,1,1

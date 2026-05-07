@@ -38,8 +38,7 @@ class CasafolinoMailAccount(models.Model):
     active = fields.Boolean(default=True)
     gmail_label = fields.Char('Label Gmail', default='Odoo',
         help='Label Gmail da cui pescare email. Default: Odoo')
-    use_allowlist = fields.Boolean('Usa allowlist domini', default=True,
-        help='Se attivo, importa solo da domini con sender_policy auto_keep')
+    # [Brief #6.0] use_allowlist removed — sender_policy engine demolished
     last_successful_fetch_datetime = fields.Datetime('Ultimo fetch OK', readonly=True)
     fetch_inbox = fields.Boolean('Scarica INBOX', default=True)
     fetch_sent = fields.Boolean('Scarica Sent', default=True)
@@ -193,187 +192,13 @@ class CasafolinoMailAccount(models.Model):
                     return aid
         return self.id
 
-    def _load_exclude_rules(self):
-        """Carica set di email/domini da escludere da sender_policy auto_discard."""
-        excluded = set()
-        try:
-            policies = self.env['casafolino.mail.sender_policy'].sudo().search([
-                ('action', '=', 'auto_discard'), ('active', '=', True)
-            ])
-            for p in policies:
-                if p.pattern_type == 'email_exact' and p.pattern_value:
-                    excluded.add(p.pattern_value.lower().strip())
-        except Exception:
-            pass
-        return excluded
+    # [Brief #6.0] _load_exclude_rules() removed — sender_policy engine demolished
 
     def _fetch_folder(self, imap, folder_name, direction):
-        """Dispatcher: legacy (MESSAGE) o RAW in base a feature flag."""
-        use_raw = self.env['ir.config_parameter'].sudo().get_param(
-            'casafolino.use_raw_pipeline', 'false'
-        ).lower() == 'true'
-        if use_raw:
-            return self._fetch_folder_raw(imap, folder_name, direction)
-        return self._fetch_folder_legacy(imap, folder_name, direction)
+        """Dispatch to RAW pipeline. Legacy path removed in Brief #6.0."""
+        return self._fetch_folder_raw(imap, folder_name, direction)
 
-    def _fetch_folder_legacy(self, imap, folder_name, direction):
-        """[DEPRECATED Brief #6.0] Fetch legacy: whitelist CRM-based, scrive in casafolino.mail.message.
-        Sarà rimosso in Phase 3. RAW pipeline lo sostituisce."""
-        _logger.warning("DEPRECATED _fetch_folder_legacy called; will be removed.")
-        Message = self.env['casafolino.mail.message']
-
-        new_count = 0
-        skip_count = 0
-        filtered_out = 0
-
-        account_map = self._build_account_email_map()
-
-        status, data = imap.select('"%s"' % folder_name, readonly=True)
-        if status != 'OK':
-            _logger.warning("Cannot select folder %s: %s", folder_name, data)
-            return 0, 0, 0
-
-        if self.last_fetch_datetime:
-            since_date = self.last_fetch_datetime.strftime('%d-%b-%Y')
-        else:
-            since_date = self.sync_start_date.strftime('%d-%b-%Y')
-
-        search_criteria = '(SINCE %s)' % since_date
-        status, msg_ids = imap.search(None, search_criteria)
-
-        if status != 'OK' or not msg_ids[0]:
-            return 0, 0, 0
-
-        uid_list = msg_ids[0].split()
-        _logger.info("Folder %s: %d email trovate dal %s", folder_name, len(uid_list), since_date)
-
-        batch_size = 50
-        for i in range(0, len(uid_list), batch_size):
-            batch = uid_list[i:i + batch_size]
-
-            for uid in batch:
-                uid_str = uid.decode()
-
-                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
-                if status2 != 'OK':
-                    continue
-
-                raw_header = None
-                for part in header_data:
-                    if isinstance(part, tuple):
-                        raw_header = part[1]
-                        break
-                if not raw_header:
-                    continue
-
-                msg = email.message_from_bytes(raw_header)
-
-                message_id = msg.get('Message-ID', '').strip()
-                if not message_id:
-                    message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
-
-                sender_name, sender_email_addr = parseaddr(msg.get('From', ''))
-                sender_name = self._decode_header_value(sender_name)
-                sender_email_addr = sender_email_addr.lower().strip() if sender_email_addr else ''
-
-                to_raw = msg.get('To', '')
-                cc_raw = msg.get('Cc', '')
-                recipient_emails = self._extract_emails(to_raw)
-                cc_emails = self._extract_emails(cc_raw)
-
-                resolved_account_id = self._resolve_account_id(
-                    sender_email_addr, recipient_emails, cc_emails, account_map)
-
-                existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
-                if existing:
-                    skip_count += 1
-                    continue
-
-                Preference = self.env['casafolino.mail.sender_preference']
-                pref = Preference.search([
-                    ('email', '=ilike', sender_email_addr),
-                    ('account_id', '=', resolved_account_id),
-                ], limit=1)
-                if pref and pref.status == 'dismissed':
-                    filtered_out += 1
-                    continue
-
-                actual_direction = direction
-                if direction == 'inbound' and sender_email_addr == self.email_address.lower():
-                    actual_direction = 'outbound'
-
-                partner_id = False
-                match_type = 'none'
-
-                if actual_direction == 'outbound':
-                    ext_email = self._get_external_email(sender_email_addr, recipient_emails)
-                    if ext_email and ext_email != sender_email_addr:
-                        allowed, pid, mt = self.is_sender_allowed(ext_email)
-                        if allowed:
-                            partner_id = pid
-                            match_type = mt
-                else:
-                    allowed, pid, mt = self.is_sender_allowed(sender_email_addr)
-                    if not allowed:
-                        filtered_out += 1
-                        continue
-                    partner_id = pid
-                    match_type = mt
-
-                subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
-
-                date_str = msg.get('Date', '')
-                try:
-                    email_date = parsedate_to_datetime(date_str)
-                    if email_date.tzinfo is not None:
-                        email_date = email_date.astimezone(timezone.utc).replace(tzinfo=None)
-                except Exception:
-                    email_date = fields.Datetime.now()
-
-                vals = {
-                    'account_id': resolved_account_id,
-                    'message_id_rfc': message_id,
-                    'imap_uid': uid_str,
-                    'imap_folder': folder_name,
-                    'direction': actual_direction,
-                    'sender_email': sender_email_addr,
-                    'sender_name': sender_name,
-                    'recipient_emails': recipient_emails,
-                    'cc_emails': cc_emails,
-                    'subject': subject,
-                    'email_date': email_date,
-                    'state': 'new',
-                    'partner_id': partner_id,
-                    'match_type': match_type,
-                    'fetch_state': 'pending',
-                }
-
-                try:
-                    Message.create(vals)
-                    new_count += 1
-
-                    if actual_direction == 'inbound' and sender_email_addr and not pref:
-                        try:
-                            Preference.sudo().create({
-                                'email': sender_email_addr.lower().strip(),
-                                'account_id': resolved_account_id,
-                                'status': 'pending',
-                            })
-                        except Exception:
-                            pass
-
-                except Exception as e:
-                    _logger.warning("Error creating mail message: %s", e)
-                    continue
-
-            self.env.cr.commit()
-            _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
-
-        _logger.info(
-            "[%s] %s: fetched %d, skipped-dedup %d, filtered-out %d",
-            self.email_address, folder_name, new_count, skip_count, filtered_out
-        )
-        return new_count, skip_count, filtered_out
+    # [Brief #6.0] _fetch_folder_legacy() removed — RAW pipeline only now
 
     def _fetch_folder_raw(self, imap, folder_name, direction):
         """Fetch V13: scarica header + preview in casafolino.mail.raw.

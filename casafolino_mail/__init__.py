@@ -73,33 +73,7 @@ def _post_init_hook(env):
     # ── 2b. V13: No immediate fetch — cron pipeline handles it ──
     _logger.info("[casafolino_mail] Post-init: fetch deferred to cron pipeline (V13)")
 
-    # ── 3. Seed sender_policy di esempio ──
-    Policy = env['casafolino.mail.sender_policy'].sudo()
-    if not Policy.search_count([]):
-        Policy.create([
-            {
-                'name': 'Newsletter domain → discard',
-                'pattern_type': 'domain',
-                'pattern_value': '*mailup*',
-                'action': 'auto_discard',
-                'priority': 80,
-            },
-            {
-                'name': 'REWE group → keep auto',
-                'pattern_type': 'domain',
-                'pattern_value': '*rewe-group*',
-                'action': 'auto_keep',
-                'priority': 50,
-                'auto_create_partner': True,
-            },
-            {
-                'name': 'Default: review',
-                'pattern_type': 'domain',
-                'pattern_value': '*',
-                'action': 'review',
-                'priority': 1,
-            },
-        ])
+    # [Brief #6.0] sender_policy seed removed — engine demolished
 
     # ── 4. Cron Silent Partners Alert (dedup + idempotent) ──
     all_silent_crons = Cron.search([('cron_name', 'ilike', 'CasaFolino%Silent Partners%')])

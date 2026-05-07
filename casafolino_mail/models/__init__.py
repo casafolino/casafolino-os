@@ -2,7 +2,6 @@ from . import cf_contact
 from . import sender_filter
 from . import casafolino_mail_account
 from . import casafolino_mail_message_staging
-from . import casafolino_mail_sender_policy
 from . import crm_lead_ext
 from . import casafolino_mail_tracking
 from . import sla_partner
@@ -11,7 +10,6 @@ from . import lead_score
 from . import snippet
 from . import snippet_picker
 from . import sender_decision
-from . import triage_wizard
 from . import casafolino_mail_thread
 from . import casafolino_mail_draft
 from . import casafolino_mail_outbox

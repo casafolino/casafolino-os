@@ -79,8 +79,7 @@ class CasafolinoMailMessage(models.Model):
         ('review', 'Da valutare'),
     ], string='Stato', default='new', index=True)
 
-    policy_applied_id = fields.Many2one('casafolino.mail.sender_policy',
-        string='Regola applicata', ondelete='set null')
+    # [Brief #6.0] policy_applied_id removed — sender_policy engine demolished
 
     partner_id = fields.Many2one('res.partner', string='Contatto')
     match_type = fields.Selection([
@@ -244,41 +243,7 @@ class CasafolinoMailMessage(models.Model):
                 rec.lead_name = ''
                 rec.lead_stage_class = ''
 
-    def _apply_sender_policy(self):
-        """[DEPRECATED Brief #6.0] Applica la prima sender_policy che matcha a questo messaggio.
-        Sarà rimosso in Phase 3. Sostituito dal flusso Brief #6.1."""
-        _logger.warning("DEPRECATED _apply_sender_policy called; will be removed.")
-        self.ensure_one()
-        Policy = self.env['casafolino.mail.sender_policy']
-        policy = Policy.match_sender(self.sender_email, self.subject or '',
-                                     ai_category=self.ai_category)
-        if not policy:
-            return
-
-        vals = {'policy_applied_id': policy.id}
-
-        if policy.action == 'auto_keep':
-            vals['state'] = 'auto_keep'
-        elif policy.action == 'auto_discard':
-            vals['state'] = 'auto_discard'
-        elif policy.action == 'escalate':
-            vals['state'] = 'review'
-            vals['is_important'] = True
-        else:  # review
-            vals['state'] = 'review'
-
-        if policy.auto_create_partner and not self.partner_id:
-            partner = self.env['res.partner'].search(
-                [('email', '=ilike', self.sender_email)], limit=1)
-            if not partner:
-                partner = self.env['res.partner'].create({
-                    'name': self.sender_name or self.sender_email,
-                    'email': self.sender_email,
-                })
-            vals['partner_id'] = partner.id
-            vals['match_type'] = 'exact'
-
-        self.write(vals)
+    # [Brief #6.0] _apply_sender_policy() removed — sender_policy engine demolished
 
     # ── AI Classifier — Groq ────────────────────────────────────────
 
@@ -796,42 +761,7 @@ class CasafolinoMailMessage(models.Model):
         }
         self.env['mail.message'].sudo().create(msg_vals)
 
-    # ── Domain discard + Quick actions ────────────────────────────
-
-    def action_blacklist_domain(self):
-        """Crea sender_policy auto_discard per il dominio e scarta le email new."""
-        Policy = self.env['casafolino.mail.sender_policy'].sudo()
-        domains_done = set()
-
-        for record in self:
-            domain = record.sender_domain
-            if domain and domain not in domains_done:
-                existing = Policy.search([
-                    ('pattern_type', '=', 'domain'),
-                    ('pattern_value', '=', domain),
-                    ('action', '=', 'auto_discard'),
-                ], limit=1)
-                if not existing:
-                    Policy.create({
-                        'name': 'Auto-discard: %s' % domain,
-                        'pattern_type': 'domain',
-                        'pattern_value': domain,
-                        'action': 'auto_discard',
-                        'priority': 70,
-                    })
-                domains_done.add(domain)
-
-        # Scarta TUTTE le email new da questi domini
-        if domains_done:
-            all_from_domains = self.search([
-                ('sender_domain', 'in', list(domains_done)),
-                ('state', '=', 'new'),
-            ])
-            all_from_domains.write({
-                'state': 'discard',
-                'triage_user_id': self.env.user.id,
-                'triage_date': fields.Datetime.now(),
-            })
+    # [Brief #6.0] action_blacklist_domain() removed — sender_policy engine demolished
 
     def _get_contact_email_and_name(self):
         """Ritorna (email, name) del contatto esterno per questa email."""
@@ -1198,9 +1128,7 @@ class CasafolinoMailMessage(models.Model):
                 msg._classify_with_groq()
                 if msg.ai_classified_at:
                     classified += 1
-                    # Re-apply policy solo se il messaggio è ancora in state='new'
-                    if msg.state == 'new':
-                        msg._apply_sender_policy()
+                    # [Brief #6.0] _apply_sender_policy call removed
                     # Auto Lead AI: crea lead se classificato "commerciale"
                     if msg.ai_category == 'commerciale':
                         try:
@@ -1721,20 +1649,7 @@ class CasafolinoMailMessage(models.Model):
         if not msg.exists() or not msg.sender_email:
             return {'success': False}
         addr = msg.sender_email.strip().lower()
-        # Crea sender_policy auto_discard per questa email
-        Policy = self.env['casafolino.mail.sender_policy'].sudo()
-        existing = Policy.search([
-            ('pattern_type', '=', 'email_exact'),
-            ('pattern_value', '=', addr),
-        ], limit=1)
-        if not existing:
-            Policy.create({
-                'name': 'Block: %s' % addr,
-                'pattern_type': 'email_exact',
-                'pattern_value': addr,
-                'action': 'auto_discard',
-                'priority': 90,
-            })
+        # [Brief #6.0] sender_policy creation removed — just discard emails
         # Discard ALL emails from this sender (new + keep)
         to_discard = self.search([
             ('sender_email', '=ilike', addr),

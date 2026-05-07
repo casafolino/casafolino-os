@@ -44,8 +44,7 @@ class CasafolinoMailSenderDecision(models.Model):
     notes = fields.Text('Note')
     lead_id = fields.Many2one('crm.lead', string='Lead creato', ondelete='set null')
     activity_id = fields.Many2one('mail.activity', string='Activity creata', ondelete='set null')
-    sender_policy_id = fields.Many2one('casafolino.mail.sender_policy',
-                                        string='Policy creata', ondelete='set null')
+    # [Brief #6.0] sender_policy_id removed — sender_policy engine demolished
     active = fields.Boolean(default=True)
 
     _sql_constraints = [
@@ -63,10 +62,8 @@ class CasafolinoMailSenderDecision(models.Model):
                 rec.sender_domain = ''
 
     def action_undo(self):
-        """Annulla decisione: disattiva decision + sender_policy associata."""
+        """Annulla decisione: disattiva decision."""
         self.ensure_one()
-        if self.sender_policy_id:
-            self.sender_policy_id.active = False
         self.active = False
 
     # ── Helper: get last inbound email for a partner ─────────────────
