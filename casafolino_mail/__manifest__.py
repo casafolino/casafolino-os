@@ -22,6 +22,7 @@
         'views/create_lead_wizard_views.xml',
         'views/casafolino_mail_folder_views.xml',
         'views/res_partner_mail_tracking_views.xml',
+        'views/posizionatore_views.xml',
         'data/mail_v3_client_action.xml',
         'views/menus.xml',
         'data/snippet_seed.xml',
@@ -34,6 +35,8 @@
     ],
     'assets': {
         'web.assets_backend': [
+            # Brief #6.2 Posizionatore
+            'casafolino_mail/static/src/posizionatore/posizionatore.scss',
             # V11 existing
             'casafolino_mail/static/src/js/snippet_clipboard.js',
             'casafolino_mail/static/src/xml/snippet_clipboard.xml',

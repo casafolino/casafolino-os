@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ LIST VIEW ══════════════════════════════════════════════════ -->
+
+    <record id="view_cf_mail_posizionatore_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.posizionatore.list</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <list string="Posizionatore mail"
+                  decoration-success="cf_ai_confidence_band == 'high'"
+                  decoration-warning="cf_ai_confidence_band == 'medium'"
+                  decoration-muted="cf_ai_confidence_band == 'low' or cf_ai_confidence_band == 'none'"
+                  default_order="email_date desc">
+                <field name="email_date" widget="date" string="Data"/>
+                <field name="partner_id" string="Partner"/>
+                <field name="sender_email" string="Da"/>
+                <field name="subject" string="Oggetto"/>
+                <field name="cf_ai_confidence_band" widget="badge" string="AI"
+                       decoration-success="cf_ai_confidence_band == 'high'"
+                       decoration-warning="cf_ai_confidence_band == 'medium'"
+                       decoration-muted="cf_ai_confidence_band == 'low' or cf_ai_confidence_band == 'none'"/>
+                <field name="cf_ai_suggestion_ids" widget="many2many_tags"
+                       string="Suggerimenti" options="{'no_create': True}"/>
+                <button name="action_position_quick_high" type="object"
+                        string="Conferma" class="btn-success btn-sm"
+                        invisible="cf_ai_confidence_band != 'high'"/>
+                <button name="action_open_position_dialog" type="object"
+                        string="Posiziona..." class="btn-secondary btn-sm"
+                        invisible="cf_ai_confidence_band == 'high'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ FORM VIEW (dialog) ═════════════════════════════════════════ -->
+
+    <record id="view_cf_mail_posizionatore_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.posizionatore.form</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <form string="Posiziona mail">
+                <sheet>
+                    <div class="oe_title">
+                        <h2><field name="subject" readonly="1"/></h2>
+                        <div class="text-muted">
+                            Da <field name="sender_email" readonly="1" class="d-inline"/>
+                            il <field name="email_date" readonly="1" widget="date" class="d-inline"/>
+                        </div>
+                    </div>
+
+                    <group>
+                        <field name="partner_id" readonly="1"/>
+                    </group>
+
+                    <group string="Suggerimento AI" invisible="not cf_ai_processed">
+                        <group>
+                            <field name="cf_ai_confidence_band" widget="badge" readonly="1"
+                                   decoration-success="cf_ai_confidence_band == 'high'"
+                                   decoration-warning="cf_ai_confidence_band == 'medium'"
+                                   decoration-muted="cf_ai_confidence_band == 'low'"/>
+                            <field name="cf_ai_confidence" widget="percentage" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="cf_ai_reasoning" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Dossier candidati" invisible="not cf_ai_processed">
+                        <field name="cf_ai_suggestion_ids" widget="many2many_tags"
+                               readonly="1" nolabel="1"
+                               options="{'no_create': True}"/>
+                    </group>
+
+                    <group string="Posiziona">
+                        <field name="cf_project_id"
+                               domain="[('cf_status_dossier', '!=', False)]"
+                               options="{'no_create': True}"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_save_and_position" type="object"
+                            string="Posiziona" class="btn-primary"/>
+                    <button special="cancel" string="Annulla" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ SEARCH VIEW ════════════════════════════════════════════════ -->
+
+    <record id="view_cf_mail_posizionatore_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.posizionatore.search</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <search string="Posizionatore mail">
+                <field name="subject"/>
+                <field name="sender_email"/>
+                <field name="partner_id"/>
+                <filter name="pending" string="Da posizionare"
+                        domain="[('cf_project_id', '=', False)]"/>
+                <filter name="high" string="Alta confidence"
+                        domain="[('cf_ai_confidence_band', '=', 'high')]"/>
+                <filter name="medium" string="Media confidence"
+                        domain="[('cf_ai_confidence_band', '=', 'medium')]"/>
+                <filter name="low" string="Bassa confidence"
+                        domain="[('cf_ai_confidence_band', 'in', ['low', 'none'])]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_band" string="Confidence"
+                            context="{'group_by': 'cf_ai_confidence_band'}"/>
+                    <filter name="group_partner" string="Partner"
+                            context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══ ACTION ═════════════════════════════════════════════════════ -->
+
+    <record id="action_cf_mail_posizionatore" model="ir.actions.act_window">
+        <field name="name">Posizionatore mail</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('cf_project_id', '=', False), ('partner_id', '!=', False)]</field>
+        <field name="search_view_id" ref="view_cf_mail_posizionatore_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Nessuna mail in attesa di posizionamento
+            </p>
+            <p>Ogni mail di un partner tracciato appare qui finche non viene
+            assegnata a un dossier. AI suggerisce candidati con livello di confidence.</p>
+        </field>
+    </record>
+
+    <!-- Bind list view -->
+    <record id="action_cf_mail_posizionatore_list_bind" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_cf_mail_posizionatore_list"/>
+        <field name="act_window_id" ref="action_cf_mail_posizionatore"/>
+    </record>
+
+    <!-- ══ BULK ACTION ════════════════════════════════════════════════ -->
+
+    <record id="action_cf_mail_posizionatore_bulk_high" model="ir.actions.server">
+        <field name="name">Auto-accetta tutte le ALTE (&gt;80%)</field>
+        <field name="model_id" ref="casafolino_mail.model_casafolino_mail_message"/>
+        <field name="binding_model_id" ref="casafolino_mail.model_casafolino_mail_message"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+high_msgs = records.filtered(lambda m: m.cf_ai_confidence_band == 'high' and m.cf_ai_suggestion_ids)
+for msg in high_msgs:
+    msg.action_position_to_project(msg.cf_ai_suggestion_ids[0].id)
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Auto-posizionamento',
+        'message': '%d mail posizionate' % len(high_msgs),
+        'type': 'success',
+    }
+}
+        </field>
+    </record>
+
+    <!-- ══ MENU ═══════════════════════════════════════════════════════ -->
+
+    <menuitem id="menu_cf_mail_posizionatore"
+              name="Posizionatore"
+              parent="casafolino_mail.menu_casafolino_mail_root"
+              action="action_cf_mail_posizionatore"
+              sequence="2"/>
+
+</odoo>
