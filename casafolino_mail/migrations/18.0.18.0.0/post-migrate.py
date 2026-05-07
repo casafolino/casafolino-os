@@ -90,7 +90,7 @@ def migrate(cr, version):
     )
     cr.execute("""
         DELETE FROM ir_cron
-        WHERE ir_act_server_id IN (
+        WHERE ir_actions_server_id IN (
             SELECT id FROM ir_act_server
             WHERE model_id IN (
                 SELECT id FROM ir_model WHERE model IN %s
