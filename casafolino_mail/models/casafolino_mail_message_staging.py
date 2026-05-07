@@ -580,6 +580,41 @@ class CasafolinoMailMessage(models.Model):
             summary['total'] += count
         return summary
 
+    # ── Brief #6.6 — Backfill batch AI ─────────────────────────────
+
+    @api.model
+    def cf_backfill_ai_suggestion(self, batch_size=50, throttle_seconds=2, limit=None):
+        """Backfill AI suggestion in batch on existing mail in DB."""
+        import time
+        start = time.time()
+        domain = [
+            ('cf_ai_processed', '=', False),
+            ('partner_id', '!=', False),
+            ('cf_project_id', '=', False),
+        ]
+        pending = self.search(domain, limit=limit)
+        total = len(pending)
+        _logger.info("Brief #6.6: backfill AI on %d messages (batch=%d)", total, batch_size)
+        processed = errors = skipped = 0
+        for i in range(0, total, batch_size):
+            batch = pending[i:i + batch_size]
+            for msg in batch:
+                try:
+                    msg.action_run_ai_suggestion()
+                    processed += 1 if msg.cf_ai_processed else 0
+                    skipped += 0 if msg.cf_ai_processed else 1
+                except Exception as e:
+                    errors += 1
+                    _logger.warning("Brief #6.6: error msg %s: %s", msg.id, e)
+            if i + batch_size < total:
+                time.sleep(throttle_seconds)
+                self.env.cr.commit()
+        duration = time.time() - start
+        _logger.info("Brief #6.6: backfill done — processed=%d errors=%d skipped=%d %.1fs",
+                     processed, errors, skipped, duration)
+        return {'processed': processed, 'errors': errors, 'skipped': skipped,
+                'duration_seconds': round(duration, 1)}
+
     # ── Brief #6.5 — Inbox selector endpoints ─────────────────────
 
     @api.model
