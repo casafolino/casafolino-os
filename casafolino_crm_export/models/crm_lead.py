@@ -1,7 +1,8 @@
 import logging
 from datetime import date, datetime, timedelta
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -652,6 +653,21 @@ class CrmLead(models.Model):
     # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
+
+    def action_open_project_360(self):
+        """Open the 360° project dashboard for the linked project."""
+        self.ensure_one()
+        if not self.cf_project_id:
+            raise UserError(_("Nessun progetto collegato a questo lead."))
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_crm_export.project_dashboard',
+            'target': 'current',
+            'context': {
+                'active_id': self.cf_project_id.id,
+                'default_project_id': self.cf_project_id.id,
+            },
+        }
 
     def action_mark_contacted(self):
         self.write({

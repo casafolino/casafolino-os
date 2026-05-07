@@ -48,6 +48,8 @@
             'casafolino_crm_export/static/src/js/cf_wizard_new_dialog.js',
             'casafolino_crm_export/static/src/xml/cf_wizard_new.xml',
             'casafolino_crm_export/static/src/css/wizard_new.css',
+            'casafolino_crm_export/static/src/project_dashboard/project_dashboard.js',
+            'casafolino_crm_export/static/src/project_dashboard/project_dashboard.xml',
         ],
     },
     'post_init_hook': '_post_init_hook',

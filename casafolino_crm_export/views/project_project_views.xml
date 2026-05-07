@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Client action: Dashboard 360° -->
+    <record id="action_project_dashboard_360" model="ir.actions.client">
+        <field name="name">Vista progetto 360°</field>
+        <field name="tag">casafolino_crm_export.project_dashboard</field>
+        <field name="target">current</field>
+    </record>
+
     <!-- Form view extension -->
     <record id="project_project_form_casafolino" model="ir.ui.view">
         <field name="name">project.project.form.casafolino</field>
@@ -56,6 +63,15 @@
                         context="{'group_by': 'cf_managed_by_id'}"/>
             </xpath>
         </field>
+    </record>
+
+    <!-- Action: list all dossier projects (for menu) -->
+    <record id="action_cf_project_dossier" model="ir.actions.act_window">
+        <field name="name">Progetti 360°</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('cf_status_dossier', '!=', False)]</field>
+        <field name="context">{'default_cf_status_dossier': 'exploration'}</field>
     </record>
 
 </odoo>

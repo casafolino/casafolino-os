@@ -165,6 +165,9 @@
         <field name="arch" type="xml">
             <form string="Trattativa Export" class="cf-premium-form">
                 <header>
+                    <button name="action_open_project_360" string="Progetto 360°"
+                        type="object" class="oe_highlight"
+                        invisible="not cf_project_id"/>
                     <button name="action_mark_contacted" string="Contatto Registrato"
                         type="object" class="btn-primary"/>
                     <button name="action_schedule_followup" string="Follow-up +7gg"
@@ -511,6 +514,11 @@
         <field name="arch" type="xml">
 
             <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_project_360" type="object"
+                        class="oe_stat_button" icon="fa-compass"
+                        invisible="not cf_project_id">
+                    <span>360°</span>
+                </button>
                 <button name="action_view_samples" type="object"
                         class="oe_stat_button" icon="fa-flask">
                     <field name="cf_sample_count" widget="statinfo" string="Campionature"/>
