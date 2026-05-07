@@ -9,7 +9,7 @@ import uuid
 import requests as req
 
 from odoo import models, fields, api
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -167,6 +167,40 @@ class CasafolinoMailMessage(models.Model):
        store=True, index=True)
     hotness_snapshot = fields.Char('Hotness snapshot')
 
+    # ── Brief #6.2 — Posizionatore fields ─────────────────────────
+    cf_project_id = fields.Many2one(
+        'project.project', string='Dossier', ondelete='set null', index=True,
+        help='Dossier di progetto a cui questa mail è stata assegnata.')
+    cf_positioned_at = fields.Datetime('Posizionato il', readonly=True)
+    cf_positioned_by_id = fields.Many2one('res.users', string='Posizionato da', readonly=True)
+    cf_ai_suggestion_ids = fields.Many2many(
+        'project.project', 'cf_mail_msg_ai_sugg_rel',
+        'message_id', 'project_id', string='Dossier suggeriti AI')
+    cf_ai_confidence = fields.Float('AI confidence', digits=(3, 2), default=0.0)
+    cf_ai_confidence_band = fields.Selection([
+        ('high', 'Alta (>80%)'),
+        ('medium', 'Media (40-80%)'),
+        ('low', 'Bassa (<40%)'),
+        ('none', 'Non analizzata'),
+    ], string='Banda confidence', compute='_compute_cf_ai_confidence_band',
+       store=True, index=True)
+    cf_ai_processed = fields.Boolean('AI posizionamento elaborata', default=False)
+    cf_ai_reasoning = fields.Text('Motivazione AI')
+    mail_message_id = fields.Many2one('mail.message', string='Ref chatter project',
+                                       ondelete='set null')
+
+    @api.depends('cf_ai_processed', 'cf_ai_confidence')
+    def _compute_cf_ai_confidence_band(self):
+        for msg in self:
+            if not msg.cf_ai_processed:
+                msg.cf_ai_confidence_band = 'none'
+            elif msg.cf_ai_confidence >= 0.8:
+                msg.cf_ai_confidence_band = 'high'
+            elif msg.cf_ai_confidence >= 0.4:
+                msg.cf_ai_confidence_band = 'medium'
+            else:
+                msg.cf_ai_confidence_band = 'low'
+
     # ── V14 Folder fields ─────────────────────────────────────────
     folder_id = fields.Many2one(
         'casafolino.mail.folder', string='Cartella',
@@ -244,6 +278,206 @@ class CasafolinoMailMessage(models.Model):
                 rec.lead_stage_class = ''
 
     # [Brief #6.0] _apply_sender_policy() removed — sender_policy engine demolished
+
+    # ── Brief #6.2 — Posizionatore methods ──────────────────────────
+
+    def action_position_to_project(self, project_id):
+        """Posiziona mail su un dossier. Crea entry nel chatter del project."""
+        self.ensure_one()
+        Project = self.env['project.project'].browse(project_id)
+        if not Project.exists():
+            raise UserError("Dossier non trovato (id=%s)" % project_id)
+
+        body = self.body_html or self.body_plain or ''
+        chatter_msg = self.env['mail.message'].create({
+            'model': 'project.project',
+            'res_id': project_id,
+            'message_type': 'email',
+            'subtype_id': self.env.ref('mail.mt_note').id,
+            'body': body,
+            'subject': self.subject,
+            'email_from': self.sender_email,
+            'date': self.email_date,
+            'message_id': self.message_id_rfc,
+            'author_id': self.partner_id.id if self.partner_id else False,
+        })
+
+        self.write({
+            'cf_project_id': project_id,
+            'cf_positioned_at': fields.Datetime.now(),
+            'cf_positioned_by_id': self.env.user.id,
+            'mail_message_id': chatter_msg.id,
+        })
+
+    def action_position_quick_high(self):
+        """1-click confirm for HIGH confidence suggestion."""
+        self.ensure_one()
+        if not self.cf_ai_suggestion_ids:
+            raise UserError("Nessun dossier suggerito per questa mail.")
+        self.action_position_to_project(self.cf_ai_suggestion_ids[0].id)
+
+    def action_open_position_dialog(self):
+        """Open form dialog for MEDIUM/LOW positioning."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'casafolino.mail.message',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': self.env.ref('casafolino_mail.view_cf_mail_posizionatore_form').id,
+            'target': 'new',
+            'context': {'form_view_initial_mode': 'edit'},
+        }
+
+    def action_save_and_position(self):
+        """Footer button: position to selected cf_project_id."""
+        self.ensure_one()
+        if not self.cf_project_id:
+            raise UserError("Seleziona un dossier prima di posizionare.")
+        self.action_position_to_project(self.cf_project_id.id)
+
+    def action_run_ai_suggestion(self):
+        """Run Groq AI to generate dossier suggestions for positioning."""
+        for msg in self:
+            if msg.cf_ai_processed:
+                continue
+            try:
+                msg._do_ai_suggestion()
+            except Exception as e:
+                _logger.exception("Brief #6.2: AI suggestion failed msg %s: %s", msg.id, e)
+
+    def _do_ai_suggestion(self):
+        """Call Groq with structured prompt → JSON with candidate dossiers."""
+        self.ensure_one()
+        if not self.partner_id:
+            self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
+                        'cf_ai_reasoning': 'Nessun partner associato.'})
+            return
+
+        Project = self.env['project.project']
+        candidates = Project.search([
+            ('cf_status_dossier', '!=', False),
+            '|',
+            ('partner_id', '=', self.partner_id.id),
+            ('cf_lead_ids.partner_id', '=', self.partner_id.id),
+        ], limit=20)
+
+        if not candidates:
+            self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
+                        'cf_ai_reasoning': 'Nessun dossier candidato per il partner.'})
+            return
+
+        body_snippet = (self.body_html or self.body_plain or self.subject or '')[:2000]
+        cand_list = ', '.join(
+            ['id=%d "%s" (%s)' % (p.id, p.name, p.cf_status_dossier or 'n/a')
+             for p in candidates])
+
+        prompt = (
+            'Analyze this CRM email and suggest the best matching dossier.\n'
+            'Email FROM: %s\nSUBJECT: %s\nBODY snippet: %s\n'
+            'Partner: %s\n\n'
+            'Candidate dossiers: %s\n\n'
+            'Return JSON ONLY (no markdown):\n'
+            '{"suggestions": [{"project_id": <id>, "confidence": 0.0-1.0, '
+            '"reason": "<short>"}], "main_reasoning": "<1-2 sentences>"}\n'
+            'Order by confidence desc. Max 3 suggestions. '
+            'If no clear match, use confidence < 0.4.'
+        ) % (
+            self.sender_email or '',
+            self.subject or '(no subject)',
+            body_snippet,
+            self.partner_id.name or '',
+            cand_list,
+        )
+
+        api_key = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino.groq_api_key', '')
+        if not api_key:
+            self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
+                        'cf_ai_reasoning': 'Groq API key non configurata.'})
+            return
+
+        try:
+            resp = req.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                headers={
+                    'Authorization': 'Bearer %s' % api_key,
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'model': 'llama-3.3-70b-versatile',
+                    'messages': [
+                        {'role': 'system', 'content': 'You are a CRM email router. Respond with JSON only.'},
+                        {'role': 'user', 'content': prompt},
+                    ],
+                    'temperature': 0.1,
+                    'max_tokens': 300,
+                },
+                timeout=30,
+            )
+            if not resp.ok:
+                raise ValueError('Groq API %d: %s' % (resp.status_code, resp.text[:200]))
+
+            raw_text = resp.json().get('choices', [{}])[0].get('message', {}).get('content', '')
+            json_match = re.search(r'\{[\s\S]*\}', raw_text)
+            if not json_match:
+                raise ValueError('No JSON in Groq response')
+
+            data = json.loads(json_match.group())
+            suggestions = data.get('suggestions', [])
+            reasoning = data.get('main_reasoning', '')
+
+            valid_ids = candidates.ids
+            sugg_ids = [s['project_id'] for s in suggestions[:3]
+                        if s.get('project_id') in valid_ids]
+            top_conf = suggestions[0].get('confidence', 0.0) if suggestions else 0.0
+
+            self.write({
+                'cf_ai_suggestion_ids': [(6, 0, sugg_ids)],
+                'cf_ai_confidence': float(top_conf),
+                'cf_ai_reasoning': reasoning,
+                'cf_ai_processed': True,
+            })
+        except Exception as e:
+            _logger.warning("Brief #6.2: AI parse failed msg %s: %s", self.id, e)
+            self.write({
+                'cf_ai_processed': True,
+                'cf_ai_confidence': 0.0,
+                'cf_ai_reasoning': 'AI error: %s' % str(e)[:200],
+            })
+
+    @api.model
+    def _cron_run_ai_suggestion(self, batch_size=20):
+        """Brief #6.2 — Cron AI suggestion for pending positioning."""
+        pending = self.search([
+            ('cf_ai_processed', '=', False),
+            ('partner_id', '!=', False),
+            ('cf_project_id', '=', False),
+        ], limit=batch_size)
+        if pending:
+            pending.action_run_ai_suggestion()
+            _logger.info("Brief #6.2: AI suggestion on %d messages", len(pending))
+
+    @api.model
+    def cf_get_pending_count(self):
+        return self.search_count([
+            ('cf_project_id', '=', False),
+            ('partner_id', '!=', False),
+        ])
+
+    @api.model
+    def cf_get_pending_summary(self):
+        summary = {'high': 0, 'medium': 0, 'low': 0, 'none': 0, 'total': 0}
+        self.env.cr.execute("""
+            SELECT cf_ai_confidence_band, COUNT(*)
+            FROM casafolino_mail_message
+            WHERE cf_project_id IS NULL AND partner_id IS NOT NULL
+            GROUP BY cf_ai_confidence_band
+        """)
+        for band, count in self.env.cr.fetchall():
+            summary[band or 'none'] = count
+            summary['total'] += count
+        return summary
 
     # ── AI Classifier — Groq ────────────────────────────────────────
 
