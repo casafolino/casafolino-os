@@ -4,7 +4,7 @@
     'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions + Multi-utente per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
-    'depends': ['base', 'mail', 'web', 'utm', 'crm', 'casafolino_crm_export'],
+    'depends': ['base', 'mail', 'web', 'utm', 'crm'],
     'data': [
         'security/ir.model.access.csv',
         'security/ir_rules.xml',

@@ -83,7 +83,6 @@
 
                     <group string="Posiziona">
                         <field name="cf_project_id"
-                               domain="[('cf_status_dossier', '!=', False)]"
                                options="{'no_create': True}"/>
                     </group>
                 </sheet>
