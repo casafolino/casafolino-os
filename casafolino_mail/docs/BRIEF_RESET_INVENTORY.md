@@ -79,3 +79,11 @@ VACUUM ANALYZE eseguito.
 - Partner con email attivi: 11316
 - Partner mail_tracked attivi: 38
 - Duplicati rimanenti: 0
+
+## IMAP reconfig (Phase 3)
+
+- 3 caselle resettate: last_fetch_uid=NULL, last_fetch_datetime=NULL
+- sync_start_date=2026-04-01 su tutte
+- IMAP SINCE supportato: SI (riga 226 casafolino_mail_account.py)
+- Logica: se last_fetch_datetime NULL, usa sync_start_date come SINCE
+- Nessun fallback necessario
