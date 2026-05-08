@@ -1,6 +1,6 @@
 # CFProjectDashboard — Contract
 
-**Last updated:** 2026-05-07 — Brief #5.0
+**Last updated:** 2026-05-08 — Brief #B6
 **JS:** `casafolino_crm_export/static/src/project_dashboard/project_dashboard.js`
 **Template:** `casafolino_crm_export/static/src/project_dashboard/project_dashboard.xml`
 **SCSS:** `casafolino_crm_export/static/src/project_dashboard/project_dashboard.scss`
@@ -115,6 +115,24 @@ Opened via:
 | casafolino_crm_export.CFProjectDashboard | Root template |
 | casafolino_crm_export.CFProjectDashboard.CustomerPanel | Reusable customer panel (partner + contacts + lead summary) |
 
+## Brief #B6 — Tab Mail (deployed 2026-05-08)
+
+### Backend
+- `_cf_get_mail_timeline(limit=20)`: mail positioned on project, date desc
+- `_cf_get_mail_count()`: counter for tab nav chip
+- `cf_get_dashboard_data` extended with `mail` (list) + `mail_count` (int)
+
+### Frontend
+- Tab "Mail" enabled (removed from placeholder block)
+- Counter chip `Mail (N)` in tab nav
+- Timeline cards: in/out with colored border-left (blue/green)
+- Empty state when no mail positioned
+- Handlers: `onOpenMailThread` → partner form, `onQuickReply` → partner form
+
+### Dependencies
+- `casafolino_mail` must be installed (added to manifest depends)
+- Only shows mail positioned via Posizionatore (#6.2): cf_project_id set
+
 ## Backlog
 
 | Brief | Tab | Status |
@@ -122,7 +140,6 @@ Opened via:
 | #5.1 | Commerciale | Notification placeholder |
 | #5.1 | Campionature | Notification placeholder |
 | #5.2 | Documenti | Notification placeholder |
-| B6 | Mail | Notification placeholder |
 | #8 | Quick action mail | Notification placeholder |
 
 ## Maintenance
