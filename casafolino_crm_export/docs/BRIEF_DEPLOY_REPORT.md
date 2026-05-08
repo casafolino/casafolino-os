@@ -12,7 +12,18 @@
 
 ## Phase 1 — Deploy + smoke
 
-(da compilare)
+- **git pull:** `573de8e` synced (10 files, 931 insertions)
+- **cp modules:** casafolino_crm_export + casafolino_mail -> /docker/enterprise18/addons/custom/
+- **-u update:** SUCCESS ("Modules loaded" in 52.7s, no ERROR/CRITICAL)
+  - WARNING: `action_open_project_360 is not a valid action on crm.lead` (Studio validation noise, button type="object" not action — harmless)
+  - WARNING: `action_open_dashboard is not a valid action on project.project` (same — harmless)
+- **Module states:** both `installed`
+- **Cache invalidate:** 5 asset attachments deleted
+- **Container:** UP
+- **HTTP:** 200 (erp.casafolino.com/web/login)
+- **Logs post-restart:** clean (no ERROR/CRITICAL/Traceback)
+- **ORM smoke via shell:** NOT POSSIBLE — circular dependency casafolino_crm_export <-> casafolino_mail prevents shell from loading custom modules. Web app works fine (modules loaded by -u).
+- **Pattern check on server:** 0/4 (useService(user), this.user., `<tree>`, attrs=)
 
 ## Phase 2 — Cron + cleanup
 
