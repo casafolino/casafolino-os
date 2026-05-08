@@ -29,13 +29,9 @@
     ],
     "assets": {
         "web.assets_backend": [
-            "casafolino_home/static/src/scrivania_commerciale/scrivania_commerciale.scss",
-            "casafolino_home/static/src/scrivania_commerciale/scrivania_commerciale.xml",
-            "casafolino_home/static/src/scrivania_commerciale/scrivania_commerciale.js",
-            "casafolino_home/static/src/scrivania_operativa/scrivania_operativa.xml",
-            "casafolino_home/static/src/scrivania_operativa/scrivania_operativa.js",
-            "casafolino_home/static/src/scrivania_admin/scrivania_admin.xml",
-            "casafolino_home/static/src/scrivania_admin/scrivania_admin.js",
+            "casafolino_home/static/src/workspace/workspace.scss",
+            "casafolino_home/static/src/workspace/workspace.xml",
+            "casafolino_home/static/src/workspace/workspace.js",
         ],
     },
     "installable": True,
