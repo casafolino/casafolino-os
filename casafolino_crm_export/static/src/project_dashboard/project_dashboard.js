@@ -55,6 +55,7 @@ export class CFProjectDashboard extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+        this.dialog = useService("dialog");
 
         this.state = useState({
             isLoading: true,
@@ -166,10 +167,31 @@ export class CFProjectDashboard extends Component {
     }
 
     async onQuickActionMail() {
-        this.notification.add(
-            _t("Composer mail disponibile in Brief #8"),
-            { type: "info" }
-        );
+        const partnerEmail = this.state.data?.partner?.email || '';
+        try {
+            const { ComposeWizardDialog } = await import(
+                "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
+            );
+            this.dialog.add(ComposeWizardDialog, {
+                partnerEmail,
+                onSent: () => this.onRefresh(),
+            });
+            return;
+        } catch (_err) {
+            // Fallback: open partner form
+        }
+        const partnerId = this.state.data?.partner?.id;
+        if (partnerId) {
+            this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "res.partner",
+                res_id: partnerId,
+                views: [[false, "form"]],
+                target: "current",
+            });
+        } else {
+            this.notification.add(_t("Nessun partner collegato"), { type: "warning" });
+        }
     }
 
     async onQuickActionSample() {
@@ -317,8 +339,22 @@ export class CFProjectDashboard extends Component {
         });
     }
 
-    onQuickReply(mailEntry) {
+    async onQuickReply(mailEntry) {
         if (!mailEntry.partner_id) return;
+        // Try F8 ComposeWizardDialog from casafolino_mail
+        try {
+            const { ComposeWizardDialog } = await import(
+                "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
+            );
+            this.dialog.add(ComposeWizardDialog, {
+                partnerEmail: mailEntry.sender_email || '',
+                defaultSubject: mailEntry.subject ? 'Re: ' + mailEntry.subject : '',
+                onSent: () => this.onRefresh(),
+            });
+            return;
+        } catch (_err) {
+            // Fallback: open partner form
+        }
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "res.partner",
