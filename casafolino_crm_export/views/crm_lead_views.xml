@@ -530,6 +530,27 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
+                <page string="Dossier" name="cf_dossier">
+                    <group>
+                        <group>
+                            <field name="cf_project_id"
+                                   options="{'no_create_edit': False}"
+                                   string="Progetto / Dossier"/>
+                        </group>
+                        <group>
+                            <div class="alert alert-info" role="alert"
+                                 invisible="cf_project_id">
+                                <p>Linka un progetto/dossier per accedere alla
+                                <strong>vista 360°</strong> dal bottone in alto.</p>
+                            </div>
+                            <div class="alert alert-success" role="alert"
+                                 invisible="not cf_project_id">
+                                <p>Dossier collegato. Click "360°"
+                                in alto per la vista completa.</p>
+                            </div>
+                        </group>
+                    </group>
+                </page>
                 <page string="Export" name="export_info">
                     <group string="Classificazione" name="cf_export">
                         <group>
