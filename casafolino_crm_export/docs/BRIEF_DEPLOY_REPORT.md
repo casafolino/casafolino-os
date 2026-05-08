@@ -27,4 +27,17 @@
 
 ## Phase 2 — Cron + cleanup
 
-(da compilare)
+- **Cron AI suggestion mail** (id=138): every 5 minutes, active=True
+- **Cron Accuracy refresh mail AI** (id=139): every 1 day, active=True
+- **Backup cleanup:** 13 file eliminati (~5.5 GB liberati)
+- **Backup conservato:** `/tmp/backup_pre_deploy_20260508_065259.sql` (431 MB)
+
+## Stato finale
+
+PROGETTO RESTYLING SW CASAFOLINO LIVE IN PROD
+
+- Pipeline + List + Wizard nuovo lead
+- Dashboard 360 con 7 tab (Timeline, Cliente, Commerciale, Campionature, Documenti, Note, Mail)
+- Modulo mail end-to-end (ingestion, posizionatore, AI feedback, F8 + AI assist, multi-casella)
+- 2 cron attivi in background
+- Pattern check: 0/4 anti-pattern OWL18
