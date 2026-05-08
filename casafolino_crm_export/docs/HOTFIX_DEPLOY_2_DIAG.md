@@ -44,11 +44,25 @@ Odoo non riesce a costruire il grafo delle dipendenze → salta il caricamento d
 La dipendenza di `casafolino_mail` su `casafolino_crm_export` esiste per UNA sola ragione:
 - XML view `inherit_id ref="casafolino_crm_export.cf_crm_lead_view_form_premium"` in `casafolino_mail/views/casafolino_mail_hub_views.xml` (riga 363)
 
-## Fix in Phase 1
+## Fix applicato — Phase 1
 
-1. Rimuovere `casafolino_crm_export` dal `depends` di `casafolino_mail/__manifest__.py`
-2. Spostare la view ereditata in `casafolino_crm_export/views/crm_lead_views.xml` (che gia' dipende da `casafolino_mail`)
-3. Pulire record `ir_model_data` orfano del vecchio external ID
-4. Deploy entrambi i moduli
-5. Update con `-u casafolino_mail,casafolino_crm_export`
-6. Verificare: moduli `installed`, stringa nel bundle, hash cambiato
+### Operazioni
+1. Rimosso `casafolino_crm_export` da `depends` in `casafolino_mail/__manifest__.py`
+2. Spostata view `view_crm_lead_form_premium_mail_hub` in `casafolino_crm_export/views/crm_lead_views.xml`
+3. Pulito record `ir_model_data` orfano (`DELETE 1`)
+4. Rimossa dependency circolare da `ir_module_module_dependency` (`DELETE 1`)
+5. Deploy entrambi i moduli + `-u casafolino_mail,casafolino_crm_export`
+6. Asset cache pulita
+
+### Verifiche
+- **Module states**: tutti 16 moduli casafolino `installed`
+- **Inconsistent states error**: ASSENTE (risolto)
+- **KeyError su modelli casafolino**: ASSENTE (modelli caricati nel registry)
+- **Dependency casafolino_mail**: `base, crm, mail, utm, web` (no piu' casafolino_crm_export)
+- **Action DB**: id=1677, tag=`casafolino_card_scanner` presente
+- **Container**: UP
+- **HTTP**: 200
+- **Bundle `web.assets_web`**: compilazione lazy, sara' rigenerato al primo login backend con NUOVO hash (non piu' b5a6464)
+
+### Warning non-bloccante
+`project.project.cf_status_dossier` domain error in `posizionatore_views.xml` — view validation warning, non impedisce funzionamento. Da correggere separatamente.
