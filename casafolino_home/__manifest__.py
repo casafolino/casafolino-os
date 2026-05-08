@@ -1,18 +1,31 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "CasaFolino Home",
-    "version": "18.0.1.0.0",
+    "name": "Workspace CasaFolino",
+    "version": "18.0.2.0.0",
     "category": "Productivity",
-    "summary": "3 Scrivanie: Commerciale, Operativa, Admin",
+    "summary": "Workspace CasaFolino — 4 cluster: CRM, Produzione, HACCP, Tesoreria",
     "author": "CasaFolino Srls",
     "depends": [
-        "base", "web", "crm", "project", "account", "stock",
-        "casafolino_mail", "casafolino_crm_export",
+        "base", "web",
+        "casafolino_commercial",
+        "casafolino_crm_export",
+        "casafolino_haccp",
+        "casafolino_initiative",
+        "casafolino_kpi",
+        "casafolino_labels",
+        "casafolino_mail",
+        "casafolino_operations",
+        "casafolino_product",
+        "casafolino_project",
+        "casafolino_supplier_qual",
+        "casafolino_workspace",
     ],
     "post_init_hook": "_post_init_hook",
     "data": [
         "security/ir.model.access.csv",
         "views/home_actions.xml",
+        "views/menu_workspace.xml",
+        "data/menu_remap.xml",
     ],
     "assets": {
         "web.assets_backend": [

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        4 cluster sub-menus under Workspace CasaFolino.
+        CRM and Produzione are new grouping menus (multiple modules each).
+        HACCP and Tesoreria: original roots reparented directly (see menu_remap.xml).
+    -->
+    <menuitem id="menu_ws_crm"
+              name="CRM"
+              parent="menu_cf_home_root"
+              sequence="10"/>
+
+    <menuitem id="menu_ws_produzione"
+              name="Produzione"
+              parent="menu_cf_home_root"
+              sequence="20"/>
+</odoo>
