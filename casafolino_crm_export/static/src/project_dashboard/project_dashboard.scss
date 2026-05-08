@@ -847,3 +847,302 @@
         margin-left: 0;
     }
 }
+
+/* ================================
+   Brief #FINAL — Tab Commerciale
+   ================================ */
+
+.cf-comm-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.cf-comm-summary-card {
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    border: 0.5px solid var(--cf-dash-border, #E8E5DC);
+    border-radius: 12px;
+    padding: 12px 14px;
+
+    .cf-comm-label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--cf-dash-text-muted, #8A8578);
+        margin-bottom: 4px;
+    }
+
+    .cf-comm-value {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--cf-dash-text, #2D2A24);
+    }
+}
+
+.cf-orders-list,
+.cf-samples-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cf-order-card,
+.cf-sample-card {
+    background: var(--cf-dash-card-bg, #FFFFFF);
+    border: 0.5px solid var(--cf-dash-border, #E8E5DC);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: #C8C5BC;
+        background: var(--cf-dash-kpi-bg, #F5F3ED);
+    }
+}
+
+.cf-order-name,
+.cf-sample-name {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.cf-order-state-badge,
+.cf-sample-state-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    color: var(--cf-dash-text-muted, #8A8578);
+
+    &.cf-state-sale,
+    &.cf-sample-state-sent,
+    &.cf-sample-state-received,
+    &.cf-sample-state-feedback_ok {
+        background: #EAF3DE;
+        color: #173404;
+    }
+
+    &.cf-state-draft,
+    &.cf-state-sent,
+    &.cf-sample-state-draft,
+    &.cf-sample-state-prepared {
+        background: #FAEEDA;
+        color: #854F0B;
+    }
+
+    &.cf-state-cancel,
+    &.cf-sample-state-feedback_ko,
+    &.cf-sample-state-no_feedback {
+        background: #F1EFE8;
+        color: #5F5E5A;
+    }
+}
+
+.cf-order-meta,
+.cf-sample-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--cf-dash-text-muted, #8A8578);
+    gap: 8px;
+}
+
+.cf-order-amount {
+    font-weight: 500;
+    color: var(--cf-dash-text, #2D2A24);
+}
+
+.cf-samples-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.cf-samples-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.cf-sample-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    padding: 8px 16px;
+    border-radius: 10px;
+
+    .cf-sample-state-label {
+        font-size: 11px;
+        text-transform: capitalize;
+        color: var(--cf-dash-text-muted, #8A8578);
+    }
+
+    .cf-sample-state-count {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--cf-dash-text, #2D2A24);
+    }
+}
+
+.cf-section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cf-dash-text-muted, #8A8578);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 16px 0 10px;
+}
+
+.cf-moq-notes {
+    margin-top: 20px;
+    padding: 12px;
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    border-radius: 10px;
+}
+
+/* ================================
+   Brief #FINAL — Tab Documenti
+   ================================ */
+
+.cf-attachments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+}
+
+.cf-attachment-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--cf-dash-card-bg, #FFFFFF);
+    border: 0.5px solid var(--cf-dash-border, #E8E5DC);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: #C8C5BC;
+        background: var(--cf-dash-kpi-bg, #F5F3ED);
+        text-decoration: none;
+    }
+}
+
+.cf-attachment-icon {
+    font-size: 24px;
+    color: var(--cf-dash-text-muted, #8A8578);
+    flex-shrink: 0;
+}
+
+.cf-attachment-info {
+    flex: 1;
+    min-width: 0;
+
+    strong {
+        display: block;
+        font-size: 13px;
+        color: var(--cf-dash-text, #2D2A24);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.cf-attachment-meta {
+    font-size: 11px;
+    color: var(--cf-dash-text-muted, #8A8578);
+    margin-top: 2px;
+}
+
+.cf-attachment-source {
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+
+    &.cf-source-project {
+        background: #EAF3DE;
+        color: #173404;
+    }
+
+    &.cf-source-partner {
+        background: #E6F1FB;
+        color: #185FA5;
+    }
+}
+
+/* ================================
+   Brief #FINAL — Tab Note
+   ================================ */
+
+.cf-project-description {
+    margin-bottom: 24px;
+}
+
+.cf-description-box {
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    border: 0.5px solid var(--cf-dash-border, #E8E5DC);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--cf-dash-text, #2D2A24);
+    line-height: 1.5;
+    font-size: 13px;
+}
+
+.cf-notes-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cf-note-card {
+    background: var(--cf-dash-card-bg, #FFFFFF);
+    border: 0.5px solid var(--cf-dash-border, #E8E5DC);
+    border-radius: 10px;
+    padding: 12px 14px;
+    border-left: 3px solid #8B5CF6;
+}
+
+.cf-note-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+
+    strong {
+        font-size: 13px;
+        color: var(--cf-dash-text, #2D2A24);
+    }
+
+    .cf-note-date {
+        font-size: 11px;
+        color: var(--cf-dash-text-muted, #8A8578);
+    }
+}
+
+.cf-note-body {
+    font-size: 13px;
+    color: var(--cf-dash-text-muted, #8A8578);
+    line-height: 1.5;
+}
+
+/* ================================
+   Brief #FINAL — Responsive
+   ================================ */
+
+@media (max-width: 700px) {
+    .cf-attachments-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cf-comm-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+}
