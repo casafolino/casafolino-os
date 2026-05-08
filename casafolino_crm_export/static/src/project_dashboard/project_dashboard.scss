@@ -703,3 +703,147 @@
         flex: 0 0 calc(50% - 4px);
     }
 }
+
+/* ================================
+   Brief #B6 — Tab Mail
+   ================================ */
+
+.cf-dash-tab-counter {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 6px;
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    color: var(--cf-dash-text-muted, #8A8578);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.cf-dash-mail-tab {
+    padding: 8px 0;
+}
+
+.cf-mail-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cf-mail-card {
+    background: var(--cf-dash-card-bg, #FFFFFF);
+    border: 0.5px solid var(--cf-dash-border, #E8E5DC);
+    border-radius: 12px;
+    padding: 12px 14px;
+    transition: border-color 0.15s;
+
+    &:hover {
+        border-color: #C8C5BC;
+    }
+
+    &.cf-mail-inbound {
+        border-left: 3px solid #185FA5;
+    }
+
+    &.cf-mail-outbound {
+        border-left: 3px solid #173404;
+    }
+}
+
+.cf-mail-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.cf-mail-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--cf-dash-kpi-bg, #F5F3ED);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    i {
+        font-size: 14px;
+        color: var(--cf-dash-text-muted, #8A8578);
+    }
+}
+
+.cf-mail-card-title {
+    flex: 1;
+    min-width: 0;
+
+    strong {
+        display: block;
+        font-size: 14px;
+        color: var(--cf-dash-text, #2D2A24);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.cf-mail-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--cf-dash-text-muted, #8A8578);
+    margin-top: 2px;
+
+    .cf-mail-sender {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cf-mail-date {
+        flex-shrink: 0;
+    }
+}
+
+.cf-mail-card-body {
+    font-size: 13px;
+    color: var(--cf-dash-text-muted, #8A8578);
+    margin-left: 44px;
+    line-height: 1.5;
+
+    .cf-mail-preview {
+        margin: 0;
+        font-style: italic;
+    }
+}
+
+.cf-mail-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    margin-left: 44px;
+
+    button {
+        font-size: 12px;
+        padding: 4px 8px;
+
+        i { margin-right: 4px; }
+    }
+}
+
+.cf-mail-load-more {
+    text-align: center;
+    padding: 16px;
+
+    p {
+        font-size: 12px;
+        margin: 0;
+    }
+}
+
+@media (max-width: 700px) {
+    .cf-mail-card-body,
+    .cf-mail-card-actions {
+        margin-left: 0;
+    }
+}
