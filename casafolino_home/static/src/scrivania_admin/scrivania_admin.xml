@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_home.CFScrivaniaAdmin">
+    <div class="cf-scrivania">
+
+        <!-- Top bar 3 cluster -->
+        <div class="cf-scrivania-clusters">
+            <div t-on-click="onSwitchCommerciale" class="cf-cluster cf-cluster-commerciale">
+                <i class="fa fa-briefcase"/>
+                <span>Commerciale</span>
+            </div>
+            <div t-on-click="onSwitchOperativa" class="cf-cluster cf-cluster-operativa">
+                <i class="fa fa-cogs"/>
+                <span>Operativa</span>
+            </div>
+            <div class="cf-cluster cf-cluster-active cf-cluster-admin">
+                <i class="fa fa-money"/>
+                <span>Admin</span>
+            </div>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="cf-kpi-strip cf-kpi-strip-4">
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Qonto</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.cassa_qonto, 'currency')"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Revolut</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.cassa_revolut, 'currency')"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">BCC</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.cassa_bcc, 'currency')"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Fatture aperte</span>
+                <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.fatture_aperte)"/>
+            </div>
+        </div>
+
+        <!-- Pulsantiera Crea / Apri -->
+        <p class="cf-section-label">Crea / Apri</p>
+        <div class="cf-quick-actions">
+            <button t-on-click="onNewInvoice" class="cf-qa cf-qa-primary-amber">
+                <i class="fa fa-file-text-o"/>
+                <span class="cf-qa-label">Nuova Fattura</span>
+                <span class="cf-qa-hint">fatturazione attiva</span>
+            </button>
+            <button t-on-click="onNewBankMove" class="cf-qa">
+                <i class="fa fa-university"/>
+                <span class="cf-qa-label">Mov. Banca</span>
+            </button>
+            <button t-on-click="onOpenDocumenti" class="cf-qa">
+                <i class="fa fa-file-o"/>
+                <span class="cf-qa-label">Documenti</span>
+            </button>
+            <button t-on-click="onOpenCalendario" class="cf-qa">
+                <i class="fa fa-calendar"/>
+                <span class="cf-qa-label">Calendario</span>
+            </button>
+            <button t-on-click="onNewFiera" class="cf-qa">
+                <i class="fa fa-globe"/>
+                <span class="cf-qa-label">Nuova Fiera</span>
+            </button>
+        </div>
+
+        <!-- Prossima fiera info -->
+        <t t-if="state.kpi.prossima_fiera and state.kpi.prossima_fiera !== 'nessuna'">
+            <div class="cf-fiera-banner">
+                <i class="fa fa-globe"/>
+                <span>Prossima fiera: <strong t-out="state.kpi.prossima_fiera"/></span>
+            </div>
+        </t>
+
+        <!-- Sezioni -->
+        <p class="cf-section-label">Sezioni</p>
+        <div class="cf-sections-grid">
+            <div t-on-click="onOpenTesoreria" class="cf-section-card">
+                <i class="fa fa-money cf-section-icon" style="color: #633806;"/>
+                <p class="cf-section-title">Tesoreria</p>
+                <p class="cf-section-subtitle">Fatture e pagamenti</p>
+            </div>
+            <div t-on-click="onOpenDocumentiSection" class="cf-section-card">
+                <i class="fa fa-file-o cf-section-icon" style="color: #185FA5;"/>
+                <p class="cf-section-title">Documenti</p>
+                <p class="cf-section-subtitle">Archivio allegati</p>
+            </div>
+            <div t-on-click="onOpenCalendarioSection" class="cf-section-card">
+                <i class="fa fa-calendar cf-section-icon" style="color: #173404;"/>
+                <p class="cf-section-title">Calendario</p>
+                <p class="cf-section-subtitle">Appuntamenti e scadenze</p>
+            </div>
+            <div t-on-click="onOpenGDO" class="cf-section-card">
+                <i class="fa fa-globe cf-section-icon" style="color: #534AB7;"/>
+                <p class="cf-section-title">Fiere &amp; GDO</p>
+                <p class="cf-section-subtitle">Private Label, fiere</p>
+            </div>
+        </div>
+
+    </div>
+</t>
+
+</templates>
