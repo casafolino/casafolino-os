@@ -10,22 +10,24 @@
     --cf-warm-radius-button: 8px;
 }
 
-/* --- Modal overrides --- */
-.cf-wizard-warm-dialog .modal-dialog {
+/* --- Modal overrides ---
+   contentClass goes on .modal-body, so we use :has() to reach up
+   to .modal-dialog and .modal-content from within. */
+.modal-dialog:has(.cf-wizard-warm-dialog) {
     max-width: 640px !important;
 }
 
-.cf-wizard-warm-dialog .modal-content {
+.modal-content:has(.cf-wizard-warm-dialog) {
     border-radius: var(--cf-warm-radius-modal, 14px);
     overflow: hidden;
 }
 
-.cf-wizard-warm-dialog .modal-body {
+.cf-wizard-warm-dialog {
     padding: 0;
 }
 
-.cf-wizard-warm-dialog .modal-header,
-.cf-wizard-warm-dialog .modal-footer {
+.modal-content:has(.cf-wizard-warm-dialog) > .modal-header,
+.modal-content:has(.cf-wizard-warm-dialog) > .modal-footer {
     display: none;
 }
 
