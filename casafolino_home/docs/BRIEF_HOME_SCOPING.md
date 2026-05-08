@@ -58,7 +58,27 @@ Approccio: `UPDATE ir_ui_menu SET active = FALSE` — reversibile, nessun modulo
 - `casafolino_home/views/home_actions.xml`
 - Update `__init__.py` + `__manifest__.py`
 
-### Phase 5 — Cleanup menu (SQL only)
+### Phase 5 — Cleanup menu (SQL on server)
+
+Menu da nascondere (active=FALSE, 15 voci):
+- Helpdesk, Live Chat, WhatsApp, IoT, Knowledge
+- Email Marketing, Social Marketing, Marketing Automation
+- Survey, Website, eCommerce, Forum, Slides, Events, Live Events
+
+SQL:
+```sql
+UPDATE ir_ui_menu SET active = FALSE
+WHERE parent_id IS NULL
+  AND name IN ('Helpdesk','Live Chat','WhatsApp','IoT','Knowledge',
+               'Email Marketing','Social Marketing','Marketing Automation',
+               'Survey','Website','eCommerce','Forum','Slides','Events','Live Events');
+```
+
+Menu rimasti visibili post-cleanup (stima):
+- Casa (nuovo), Mail CRM, Export CRM, HACCP, Operazioni, Etichette,
+  Contatti, Contabilità, Inventario, Vendite, Acquisti, Progetti, CRM,
+  Calendario, Impostazioni
+
 ### Phase 6 — Deploy + smoke
 ### Phase 7 — Documentation
 
