@@ -77,7 +77,12 @@ class CasafolinoMailMessage(models.Model):
         ('auto_discard', 'Scartata (auto)'),
         ('discard', 'Scartata'),
         ('review', 'Da valutare'),
+        ('internal', 'Solo interna'),
     ], string='Stato', default='new', index=True)
+
+    is_outbound_from_team = fields.Boolean(
+        'Outbound dal team', compute='_compute_is_outbound_from_team',
+        store=True, index=True)
 
     # [Brief #6.0] policy_applied_id removed — sender_policy engine demolished
 
@@ -275,6 +280,87 @@ class CasafolinoMailMessage(models.Model):
                 rec.sender_domain = rec.sender_email.split('@')[1].lower().strip()
             else:
                 rec.sender_domain = ''
+
+    @api.depends('sender_domain')
+    def _compute_is_outbound_from_team(self):
+        internal_domains = self._get_internal_domains()
+        for rec in self:
+            rec.is_outbound_from_team = bool(
+                rec.sender_domain and rec.sender_domain.lower() in internal_domains
+            )
+
+    @api.model
+    def _get_internal_domains(self):
+        """Return list of internal company domains from config parameter."""
+        param = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino_mail.internal_domains', 'casafolino.com'
+        )
+        return [d.strip().lower() for d in param.split(',') if d.strip()]
+
+    def _extract_external_recipients(self, internal_domains):
+        """Parse recipient_emails (comma-separated), return external emails only."""
+        self.ensure_one()
+        raw_recipients = self.recipient_emails or ''
+        emails = [e.strip().lower() for e in raw_recipients.replace(';', ',').split(',') if e.strip()]
+        external = []
+        for em in emails:
+            if '@' not in em:
+                continue
+            domain = em.split('@')[1]
+            if domain not in internal_domains:
+                external.append(em)
+        return external
+
+    def _find_partner_by_email(self, email_addr):
+        """Find existing res.partner by email. Never auto-creates."""
+        if not email_addr:
+            return self.env['res.partner']
+        Partner = self.env['res.partner'].sudo()
+        partner = Partner.search([('email', '=ilike', email_addr)], limit=1)
+        return partner
+
+    def _apply_outbound_triage(self):
+        """Re-triage mail with internal sender: match on first external recipient.
+
+        For each message where sender_domain is internal:
+        - Extract external recipients
+        - If none → state='internal', direction='outbound'
+        - If found → match partner on first external, set direction='outbound',
+          state='auto_keep' if partner found, else state='new'
+        """
+        internal_domains = self._get_internal_domains()
+        for msg in self:
+            if not msg.sender_domain or msg.sender_domain.lower() not in internal_domains:
+                continue
+            # Already correctly triaged outbound — skip for idempotency
+            if msg.direction == 'outbound' and msg.state in ('auto_keep', 'internal'):
+                continue
+
+            external_recipients = msg._extract_external_recipients(internal_domains)
+            if not external_recipients:
+                msg.write({'state': 'internal', 'direction': 'outbound'})
+                continue
+
+            primary_recipient = external_recipients[0]
+            partner = msg._find_partner_by_email(primary_recipient)
+
+            vals = {
+                'direction': 'outbound',
+                'state': 'auto_keep' if partner else 'new',
+            }
+            if partner:
+                vals['partner_id'] = partner.id
+                vals['match_type'] = 'exact'
+
+            # Multi-domain external recipients: log in snippet for visibility
+            external_domains = {r.split('@')[1] for r in external_recipients if '@' in r}
+            if len(external_domains) > 1:
+                note = "Mail multi-cliente: %s" % ', '.join(sorted(external_domains))
+                existing_snippet = msg.snippet or ''
+                if 'multi-cliente' not in existing_snippet:
+                    vals['snippet'] = ('[MULTI] %s' % note)[:200]
+
+            msg.write(vals)
 
     def _compute_lead_info(self):
         for rec in self:
@@ -2764,3 +2850,88 @@ class CasafolinoMailMessage(models.Model):
     def get_templates(self, *args, **kw):
         """Templates non più disponibili (vecchio stack rimosso)."""
         return []
+
+    # ── Outbound backfill migration ───────────────────────────────
+
+    @api.model
+    def migrate_outbound_match(self, dry_run=True, batch_size=100):
+        """Retroactive outbound triage: re-match mail with internal sender.
+
+        Finds messages where sender is internal but partner_id points to an
+        internal contact (or is missing), and applies _apply_outbound_triage().
+
+        Args:
+            dry_run: If True (default), only logs what would change. No writes.
+            batch_size: Records per commit batch.
+
+        Returns:
+            dict with counts: total, modified, skipped, errors.
+        """
+        internal_domains = self._get_internal_domains()
+        if not internal_domains:
+            _logger.warning("[migrate_outbound] No internal domains configured")
+            return {'total': 0, 'modified': 0, 'skipped': 0, 'errors': 0}
+
+        domain_conditions = [('sender_domain', 'in', internal_domains)]
+        candidates = self.sudo().search(domain_conditions, order='email_date desc')
+        total = len(candidates)
+        _logger.info(
+            "[migrate_outbound] Found %d candidates (dry_run=%s)", total, dry_run
+        )
+
+        modified = 0
+        skipped = 0
+        errors = 0
+
+        for i in range(0, total, batch_size):
+            batch = candidates[i:i + batch_size]
+            for msg in batch:
+                try:
+                    # Already correctly triaged
+                    if msg.direction == 'outbound' and msg.state in ('auto_keep', 'internal'):
+                        skipped += 1
+                        continue
+
+                    external = msg._extract_external_recipients(internal_domains)
+                    if not external:
+                        new_state = 'internal'
+                        new_partner = False
+                    else:
+                        partner = msg._find_partner_by_email(external[0])
+                        new_state = 'auto_keep' if partner else 'new'
+                        new_partner = partner
+
+                    if dry_run:
+                        _logger.info(
+                            "[migrate_outbound][DRY-RUN] msg=%d subject='%s' "
+                            "sender=%s → direction=outbound state=%s partner=%s",
+                            msg.id, (msg.subject or '')[:50],
+                            msg.sender_email, new_state,
+                            new_partner.name if new_partner else 'None'
+                        )
+                        modified += 1
+                    else:
+                        vals = {'direction': 'outbound', 'state': new_state}
+                        if new_partner:
+                            vals['partner_id'] = new_partner.id
+                            vals['match_type'] = 'exact'
+                        msg.write(vals)
+                        modified += 1
+
+                except Exception as e:
+                    errors += 1
+                    _logger.warning(
+                        "[migrate_outbound] Error msg %d: %s", msg.id, e
+                    )
+
+            if not dry_run and i + batch_size < total:
+                self.env.cr.commit()
+
+        result = {
+            'total': total,
+            'modified': modified,
+            'skipped': skipped,
+            'errors': errors,
+        }
+        _logger.info("[migrate_outbound] Done: %s", result)
+        return result

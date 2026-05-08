@@ -14,6 +14,10 @@
                   decoration-muted="cf_ai_confidence_band == 'low' or cf_ai_confidence_band == 'none'"
                   default_order="email_date desc">
                 <field name="email_date" widget="date" string="Data"/>
+                <field name="is_outbound_from_team" column_invisible="1"/>
+                <field name="direction" widget="badge" string="Dir"
+                       decoration-info="direction == 'outbound'"
+                       optional="show"/>
                 <field name="partner_id" string="Partner"/>
                 <field name="sender_email" string="Da"/>
                 <field name="subject" string="Oggetto"/>
@@ -110,6 +114,11 @@
                         domain="[('cf_ai_confidence_band', '=', 'medium')]"/>
                 <filter name="low" string="Bassa confidence"
                         domain="[('cf_ai_confidence_band', 'in', ['low', 'none'])]"/>
+                <separator/>
+                <filter name="outbound_team" string="Outbound team"
+                        domain="[('is_outbound_from_team', '=', True)]"/>
+                <filter name="internal_only" string="Solo interne"
+                        domain="[('state', '=', 'internal')]"/>
                 <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_band" string="Confidence"
