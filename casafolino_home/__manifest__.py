@@ -9,8 +9,10 @@
         "base", "web", "crm", "project", "account", "stock",
         "casafolino_mail", "casafolino_crm_export",
     ],
+    "post_init_hook": "_post_init_hook",
     "data": [
         "security/ir.model.access.csv",
+        "views/home_actions.xml",
     ],
     "assets": {
         "web.assets_backend": [

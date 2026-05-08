@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Client action 3 scrivanie -->
+    <record id="action_scrivania_commerciale" model="ir.actions.client">
+        <field name="name">Scrivania Commerciale</field>
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+
+    <record id="action_scrivania_operativa" model="ir.actions.client">
+        <field name="name">Scrivania Operativa</field>
+        <field name="tag">cf_scrivania_operativa</field>
+    </record>
+
+    <record id="action_scrivania_admin" model="ir.actions.client">
+        <field name="name">Scrivania Admin</field>
+        <field name="tag">cf_scrivania_admin</field>
+    </record>
+
+    <!-- Menu root unico "Casa" — apre Commerciale di default -->
+    <menuitem id="menu_cf_home_root"
+              name="Casa"
+              action="action_scrivania_commerciale"
+              sequence="1"
+              web_icon="casafolino_home,static/description/icon.png"/>
+</odoo>
