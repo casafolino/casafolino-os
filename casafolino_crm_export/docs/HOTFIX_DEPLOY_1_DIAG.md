@@ -28,3 +28,17 @@ Codice, manifest e DB tutti corretti. Il bundle `web.assets_backend` non e' stat
 2. Re-update modulo `casafolino_crm_export` con `--stop-after-init --no-http`
 3. Restart container
 4. Verifica bundle rigenerato e azione funzionante
+
+## Fix applicato — Phase 1
+
+- **Caso:** Stale asset cache (variante Caso 3)
+- **Azioni eseguite:**
+  1. `DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%'` — rimossi 5 bundle stale
+  2. `docker exec odoo-app odoo -d folinofood -u casafolino_crm_export --stop-after-init --no-http` — SUCCESS (59s, no errors)
+  3. `docker restart odoo-app`
+- **File toccati:** nessuno (solo operazioni DB + restart)
+- **Esito update modulo:** Modules loaded, registry changed, clean shutdown
+- **Esito HTTP:** 303 (redirect to login — corretto)
+- **DB verifica:** `ir_act_client` id=1677, tag=`casafolino_card_scanner` presente
+- **Log:** puliti, nessun ERROR/CRITICAL/Traceback
+- **Note:** asset bundles si rigenerano lazy al primo caricamento pagina. Cache browser lato client potrebbe richiedere CTRL+SHIFT+R.
