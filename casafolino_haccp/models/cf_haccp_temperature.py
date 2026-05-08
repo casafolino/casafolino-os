@@ -36,12 +36,13 @@ class CfHaccpTemperatureLog(models.Model):
             else:
                 rec.esito = 'ok'
 
-    @api.model
-    def create(self, vals):
-        rec = super().create(vals)
-        if rec.esito == 'ko':
-            _logger.warning(
-                "HACCP ALERT: temperatura frigo fuori limite il %s — "
-                "Frigo1: %s°C, Frigo2: %s°C",
-                rec.date, rec.frigo1_temp, rec.frigo2_temp)
-        return rec
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.esito == 'ko':
+                _logger.warning(
+                    "HACCP ALERT: temperatura frigo fuori limite il %s — "
+                    "Frigo1: %s°C, Frigo2: %s°C",
+                    rec.date, rec.frigo1_temp, rec.frigo2_temp)
+        return records

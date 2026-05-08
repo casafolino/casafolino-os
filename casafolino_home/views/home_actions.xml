@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Client action 3 scrivanie -->
+    <!-- Client action 3 scrivanie (kept for backward compat, F2 evolves to 4) -->
     <record id="action_scrivania_commerciale" model="ir.actions.client">
         <field name="name">Scrivania Commerciale</field>
         <field name="tag">cf_scrivania_commerciale</field>
@@ -16,9 +16,9 @@
         <field name="tag">cf_scrivania_admin</field>
     </record>
 
-    <!-- Menu root unico "Casa" — apre Commerciale di default -->
+    <!-- Root menu: Workspace CasaFolino — sole visible tile in apps grid -->
     <menuitem id="menu_cf_home_root"
-              name="Casa"
+              name="Workspace CasaFolino"
               action="action_scrivania_commerciale"
               sequence="1"
               web_icon="casafolino_home,static/description/icon.png"/>

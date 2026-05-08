@@ -1,0 +1,278 @@
+.cf-scrivania {
+    padding: 24px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--color-background-tertiary, #FBFAF6);
+    min-height: 100vh;
+}
+
+/* ---- Cluster bar (4 columns) ---- */
+.cf-scrivania-clusters {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.cf-clusters-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.cf-cluster {
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    i {
+        font-size: 32px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    span {
+        font-weight: 500;
+        font-size: 16px;
+    }
+
+    &:hover {
+        border-color: var(--color-border-secondary, #D4D3CF);
+    }
+
+    /* CRM — blue */
+    &.cf-cluster-active.cf-cluster-crm {
+        background: #E6F1FB;
+        border-color: #2E5AAC;
+
+        i, span { color: #2E5AAC; }
+    }
+
+    /* Produzione — green */
+    &.cf-cluster-active.cf-cluster-produzione {
+        background: #EAF3DE;
+        border-color: #3F8A4F;
+
+        i, span { color: #3F8A4F; }
+    }
+
+    /* HACCP — brown */
+    &.cf-cluster-active.cf-cluster-haccp {
+        background: #F3ECDF;
+        border-color: #6B4A1E;
+
+        i, span { color: #6B4A1E; }
+    }
+
+    /* Tesoreria — amber/gold */
+    &.cf-cluster-active.cf-cluster-tesoreria {
+        background: #FBF5E0;
+        border-color: #C8A43A;
+
+        i, span { color: #9A7D1E; }
+    }
+}
+
+/* ---- KPI strip ---- */
+.cf-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.cf-kpi-strip-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.cf-kpi-card {
+    background: var(--color-background-secondary, #F5F4F0);
+    border-radius: 8px;
+    padding: 12px 14px;
+
+    .cf-kpi-label {
+        display: block;
+        font-size: 11px;
+        color: var(--color-text-secondary, #6B6B68);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 4px;
+    }
+
+    .cf-kpi-value {
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--color-text-primary, #1A1A19);
+
+        &.cf-kpi-warning {
+            color: #A32D2D;
+        }
+    }
+}
+
+/* ---- Section label ---- */
+.cf-section-label {
+    font-size: 13px;
+    color: var(--color-text-secondary, #6B6B68);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 0 0 8px;
+}
+
+/* ---- Quick actions ---- */
+.cf-quick-actions {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 32px;
+}
+
+.cf-quick-actions-4 {
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+}
+
+.cf-qa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 8px;
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+
+    i { font-size: 20px; }
+
+    .cf-qa-label {
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .cf-qa-hint {
+        font-size: 10px;
+        color: var(--color-text-secondary, #6B6B68);
+    }
+
+    .cf-qa-counter {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: #FAEEDA;
+        color: #633806;
+        font-size: 11px;
+        padding: 1px 6px;
+        border-radius: 999px;
+    }
+
+    &:hover {
+        border-color: var(--color-border-secondary, #D4D3CF);
+    }
+}
+
+/* Primary button variants per cluster */
+.cf-qa-primary-crm {
+    background: #E6F1FB;
+    border: 2px solid #2E5AAC;
+    padding: 18px 8px;
+
+    i { font-size: 26px; color: #2E5AAC; }
+    .cf-qa-label { color: #1A3D7A; font-size: 13px; }
+    .cf-qa-hint { color: #2E5AAC; }
+}
+
+.cf-qa-primary-produzione {
+    background: #EAF3DE;
+    border: 2px solid #3F8A4F;
+    padding: 18px 8px;
+
+    i { font-size: 26px; color: #3F8A4F; }
+    .cf-qa-label { color: #2D6338; font-size: 13px; }
+    .cf-qa-hint { color: #3F8A4F; }
+}
+
+.cf-qa-primary-haccp {
+    background: #F3ECDF;
+    border: 2px solid #6B4A1E;
+    padding: 18px 8px;
+
+    i { font-size: 26px; color: #6B4A1E; }
+    .cf-qa-label { color: #4A3314; font-size: 13px; }
+    .cf-qa-hint { color: #6B4A1E; }
+}
+
+.cf-qa-primary-tesoreria {
+    background: #FBF5E0;
+    border: 2px solid #C8A43A;
+    padding: 18px 8px;
+
+    i { font-size: 26px; color: #9A7D1E; }
+    .cf-qa-label { color: #6B5A14; font-size: 13px; }
+    .cf-qa-hint { color: #C8A43A; }
+}
+
+/* ---- Sections grid ---- */
+.cf-sections-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.cf-section-card {
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    .cf-section-icon { font-size: 18px; }
+
+    .cf-section-title {
+        font-size: 13px;
+        font-weight: 500;
+        margin: 6px 0 2px;
+    }
+
+    .cf-section-subtitle {
+        font-size: 11px;
+        color: var(--color-text-secondary, #6B6B68);
+        margin: 0;
+    }
+
+    &:hover {
+        border-color: var(--color-border-secondary, #D4D3CF);
+    }
+}
+
+/* ---- Fiera banner ---- */
+.cf-fiera-banner {
+    background: #FBF5E0;
+    border: 0.5px solid #E5D5B0;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #9A7D1E;
+
+    i { margin-right: 8px; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+    .cf-clusters-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cf-kpi-strip,
+    .cf-kpi-strip-4,
+    .cf-quick-actions,
+    .cf-quick-actions-4,
+    .cf-sections-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

@@ -212,9 +212,68 @@ class CFHomeKpi(models.AbstractModel):
         return row[0] if row else 0.0
 
     @api.model
+    def cf_get_kpi_haccp(self):
+        result = {}
+
+        # HACCP scadenze < 7gg
+        try:
+            Reminder = self.env.get('cf.haccp.reminder')
+            if Reminder is not None:
+                threshold = (datetime.now() + timedelta(days=7)).date()
+                result['haccp_scadenze'] = Reminder.search_count([
+                    ('next_date', '<=', threshold),
+                    ('active', '=', True),
+                ])
+            else:
+                result['haccp_scadenze'] = None
+        except Exception:
+            result['haccp_scadenze'] = None
+
+        # NC aperte
+        try:
+            NC = self.env.get('cf.haccp.nc')
+            if NC is not None:
+                result['nc_aperte'] = NC.search_count([
+                    ('state', 'not in', ['closed', 'done']),
+                ])
+            else:
+                result['nc_aperte'] = None
+        except Exception:
+            result['nc_aperte'] = None
+
+        # Calibrazioni in scadenza < 30gg
+        try:
+            Cal = self.env.get('cf.haccp.calibration')
+            if Cal is not None:
+                threshold = (datetime.now() + timedelta(days=30)).date()
+                result['calibrazioni_scadenza'] = Cal.search_count([
+                    ('next_calibration', '<=', threshold),
+                    ('active', '=', True),
+                ])
+            else:
+                result['calibrazioni_scadenza'] = None
+        except Exception:
+            result['calibrazioni_scadenza'] = None
+
+        # Quarantena attivi
+        try:
+            Quar = self.env.get('cf.haccp.quarantine')
+            if Quar is not None:
+                result['quarantena_attivi'] = Quar.search_count([
+                    ('state', 'not in', ['released', 'destroyed']),
+                ])
+            else:
+                result['quarantena_attivi'] = None
+        except Exception:
+            result['quarantena_attivi'] = None
+
+        return result
+
+    @api.model
     def cf_get_kpi_all(self):
         return {
             'commerciale': self.cf_get_kpi_commerciale(),
             'operativa': self.cf_get_kpi_operativa(),
+            'haccp': self.cf_get_kpi_haccp(),
             'admin': self.cf_get_kpi_admin(),
         }

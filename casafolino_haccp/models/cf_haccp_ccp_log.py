@@ -47,16 +47,17 @@ class CfHaccpCcpLog(models.Model):
             else:
                 rec.esito = 'ok'
 
-    @api.model
-    def create(self, vals):
-        rec = super().create(vals)
-        if rec.esito == 'fuori_limite':
-            _logger.warning(
-                "HACCP CCP ALERT: temperatura uscita %s°C fuori limite [%s-%s°C] "
-                "— CCP: %s",
-                rec.temperatura_uscita, rec.temperatura_min,
-                rec.temperatura_max, rec.ccp_type)
-        return rec
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.esito == 'fuori_limite':
+                _logger.warning(
+                    "HACCP CCP ALERT: temperatura uscita %s°C fuori limite [%s-%s°C] "
+                    "— CCP: %s",
+                    rec.temperatura_uscita, rec.temperatura_min,
+                    rec.temperatura_max, rec.ccp_type)
+        return records
 
 
 class MrpProductionCcp(models.Model):

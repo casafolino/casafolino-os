@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_home.CFWorkspace">
+    <div class="cf-scrivania">
+
+        <!-- Top bar 4 cluster -->
+        <div class="cf-scrivania-clusters cf-clusters-4">
+            <div t-on-click="onSwitchCRM"
+                 t-attf-class="cf-cluster cf-cluster-crm {{ activeCluster === 'crm' ? 'cf-cluster-active' : '' }}">
+                <i class="fa fa-briefcase"/>
+                <span>CRM</span>
+            </div>
+            <div t-on-click="onSwitchProduzione"
+                 t-attf-class="cf-cluster cf-cluster-produzione {{ activeCluster === 'produzione' ? 'cf-cluster-active' : '' }}">
+                <i class="fa fa-cogs"/>
+                <span>Produzione</span>
+            </div>
+            <div t-on-click="onSwitchHACCP"
+                 t-attf-class="cf-cluster cf-cluster-haccp {{ activeCluster === 'haccp' ? 'cf-cluster-active' : '' }}">
+                <i class="fa fa-shield"/>
+                <span>HACCP</span>
+            </div>
+            <div t-on-click="onSwitchTesoreria"
+                 t-attf-class="cf-cluster cf-cluster-tesoreria {{ activeCluster === 'tesoreria' ? 'cf-cluster-active' : '' }}">
+                <i class="fa fa-money"/>
+                <span>Tesoreria</span>
+            </div>
+        </div>
+
+        <!-- ============ CRM ============ -->
+        <t t-if="activeCluster === 'crm'">
+            <div class="cf-kpi-strip">
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Mail da smistare</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.mail_pending)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Lead aperti</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.lead_aperti)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Progetti attivi</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.progetti_attivi)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">SLA scadenza</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.crm.sla_scadenza)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Fatt. mese</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.fatturato_mese, 'currency')"/>
+                </div>
+            </div>
+
+            <p class="cf-section-label">Crea / Apri</p>
+            <div class="cf-quick-actions">
+                <button t-on-click="onNewProject" class="cf-qa cf-qa-primary-crm">
+                    <i class="fa fa-folder-open"/>
+                    <span class="cf-qa-label">Nuovo Progetto</span>
+                    <span class="cf-qa-hint">il punto di partenza</span>
+                </button>
+                <button t-on-click="onNewLead" class="cf-qa">
+                    <i class="fa fa-bullseye"/>
+                    <span class="cf-qa-label">Nuovo Lead</span>
+                </button>
+                <button t-on-click="onNewContact" class="cf-qa">
+                    <i class="fa fa-user-plus"/>
+                    <span class="cf-qa-label">Nuovo Contatto</span>
+                </button>
+                <button t-on-click="onOpenPosizionatore" class="cf-qa">
+                    <i class="fa fa-envelope-open"/>
+                    <span class="cf-qa-label">Posizionatore</span>
+                    <t t-if="state.kpi.crm.mail_pending">
+                        <span class="cf-qa-counter" t-out="state.kpi.crm.mail_pending"/>
+                    </t>
+                </button>
+                <button t-on-click="onOpenMiaCasella" class="cf-qa">
+                    <i class="fa fa-inbox"/>
+                    <span class="cf-qa-label">Mia Casella</span>
+                </button>
+            </div>
+
+            <p class="cf-section-label">Sezioni</p>
+            <div class="cf-sections-grid">
+                <div t-on-click="onOpenPipeline" class="cf-section-card">
+                    <i class="fa fa-tasks cf-section-icon" style="color: #2E5AAC;"/>
+                    <p class="cf-section-title">Pipeline Lead</p>
+                    <p class="cf-section-subtitle">Kanban opportunità</p>
+                </div>
+                <div t-on-click="onOpenProjects" class="cf-section-card">
+                    <i class="fa fa-folder-o cf-section-icon" style="color: #185FA5;"/>
+                    <p class="cf-section-title">Progetti / Dossier</p>
+                    <p class="cf-section-subtitle">Storia clienti</p>
+                </div>
+                <div t-on-click="onOpenLavagna" class="cf-section-card">
+                    <i class="fa fa-clipboard cf-section-icon" style="color: #173404;"/>
+                    <p class="cf-section-title">Lavagna</p>
+                    <p class="cf-section-subtitle">Iniziative trasversali</p>
+                </div>
+                <div t-on-click="onOpenAnalytics" class="cf-section-card">
+                    <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
+                    <p class="cf-section-title">Analytics</p>
+                    <p class="cf-section-subtitle">Dashboard 360°</p>
+                </div>
+            </div>
+        </t>
+
+        <!-- ============ PRODUZIONE ============ -->
+        <t t-if="activeCluster === 'produzione'">
+            <div class="cf-kpi-strip">
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Lotti attivi</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.produzione.lotti_produzione)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Produzioni attive</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.produzione.produzioni_attive)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Lotti in scadenza</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.produzione.lotti_scadenza)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">NC aperte</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.produzione.nc_aperte)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">HACCP scadenze</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.produzione.haccp_scadenze)"/>
+                </div>
+            </div>
+
+            <p class="cf-section-label">Crea / Apri</p>
+            <div class="cf-quick-actions">
+                <button t-on-click="onNewLot" class="cf-qa cf-qa-primary-produzione">
+                    <i class="fa fa-barcode"/>
+                    <span class="cf-qa-label">Nuovo Lotto</span>
+                    <span class="cf-qa-hint">tracciabilità</span>
+                </button>
+                <button t-on-click="onNewProduction" class="cf-qa">
+                    <i class="fa fa-industry"/>
+                    <span class="cf-qa-label">Nuova Produzione</span>
+                </button>
+                <button t-on-click="onOpenEtichette" class="cf-qa">
+                    <i class="fa fa-tags"/>
+                    <span class="cf-qa-label">Etichette</span>
+                </button>
+                <button t-on-click="onOpenFornitori" class="cf-qa">
+                    <i class="fa fa-truck"/>
+                    <span class="cf-qa-label">Fornitori</span>
+                </button>
+            </div>
+
+            <p class="cf-section-label">Sezioni</p>
+            <div class="cf-sections-grid">
+                <div t-on-click="onOpenProduzione" class="cf-section-card">
+                    <i class="fa fa-industry cf-section-icon" style="color: #3F8A4F;"/>
+                    <p class="cf-section-title">Produzione</p>
+                    <p class="cf-section-subtitle">Lotti e batch</p>
+                </div>
+                <div t-on-click="onOpenEtichetteSection" class="cf-section-card">
+                    <i class="fa fa-tags cf-section-icon" style="color: #534AB7;"/>
+                    <p class="cf-section-title">Etichette</p>
+                    <p class="cf-section-subtitle">Gestione label</p>
+                </div>
+                <div t-on-click="onOpenFornitoriSection" class="cf-section-card">
+                    <i class="fa fa-truck cf-section-icon" style="color: #633806;"/>
+                    <p class="cf-section-title">Fornitori</p>
+                    <p class="cf-section-subtitle">Qualifica e audit</p>
+                </div>
+            </div>
+        </t>
+
+        <!-- ============ HACCP ============ -->
+        <t t-if="activeCluster === 'haccp'">
+            <div class="cf-kpi-strip cf-kpi-strip-4">
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Scadenze HACCP</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.haccp.haccp_scadenze)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">NC aperte</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.haccp.nc_aperte)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Calibrazioni</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.haccp.calibrazioni_scadenza)"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Quarantena</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.haccp.quarantena_attivi)"/>
+                </div>
+            </div>
+
+            <p class="cf-section-label">Crea / Apri</p>
+            <div class="cf-quick-actions cf-quick-actions-4">
+                <button t-on-click="onOpenHACCPDashboard" class="cf-qa cf-qa-primary-haccp">
+                    <i class="fa fa-shield"/>
+                    <span class="cf-qa-label">Dashboard HACCP</span>
+                    <span class="cf-qa-hint">panoramica</span>
+                </button>
+                <button t-on-click="onOpenNC" class="cf-qa">
+                    <i class="fa fa-exclamation-triangle"/>
+                    <span class="cf-qa-label">Non Conformità</span>
+                </button>
+                <button t-on-click="onOpenCalibrations" class="cf-qa">
+                    <i class="fa fa-sliders"/>
+                    <span class="cf-qa-label">Calibrazioni</span>
+                </button>
+                <button t-on-click="onOpenRegistri" class="cf-qa">
+                    <i class="fa fa-book"/>
+                    <span class="cf-qa-label">Registri</span>
+                </button>
+            </div>
+
+            <p class="cf-section-label">Sezioni</p>
+            <div class="cf-sections-grid">
+                <div t-on-click="onOpenHACCPDashboard" class="cf-section-card">
+                    <i class="fa fa-shield cf-section-icon" style="color: #6B4A1E;"/>
+                    <p class="cf-section-title">Dashboard</p>
+                    <p class="cf-section-subtitle">HACCP overview</p>
+                </div>
+                <div t-on-click="onOpenNC" class="cf-section-card">
+                    <i class="fa fa-exclamation-triangle cf-section-icon" style="color: #A32D2D;"/>
+                    <p class="cf-section-title">Non Conformità</p>
+                    <p class="cf-section-subtitle">NC, azioni correttive</p>
+                </div>
+                <div t-on-click="onOpenQuarantine" class="cf-section-card">
+                    <i class="fa fa-ban cf-section-icon" style="color: #8B0000;"/>
+                    <p class="cf-section-title">Quarantena</p>
+                    <p class="cf-section-subtitle">Lotti bloccati</p>
+                </div>
+                <div t-on-click="onOpenHACCPDocuments" class="cf-section-card">
+                    <i class="fa fa-file-text cf-section-icon" style="color: #534AB7;"/>
+                    <p class="cf-section-title">Documenti</p>
+                    <p class="cf-section-subtitle">Certificati e manuali</p>
+                </div>
+            </div>
+        </t>
+
+        <!-- ============ TESORERIA ============ -->
+        <t t-if="activeCluster === 'tesoreria'">
+            <div class="cf-kpi-strip cf-kpi-strip-4">
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Qonto</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.tesoreria.cassa_qonto, 'currency')"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Revolut</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.tesoreria.cassa_revolut, 'currency')"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">BCC</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.tesoreria.cassa_bcc, 'currency')"/>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Fatture aperte</span>
+                    <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.tesoreria.fatture_aperte)"/>
+                </div>
+            </div>
+
+            <t t-if="state.kpi.tesoreria.prossima_fiera and state.kpi.tesoreria.prossima_fiera !== 'nessuna'">
+                <div class="cf-fiera-banner">
+                    <i class="fa fa-globe"/>
+                    <span>Prossima fiera: <strong t-out="state.kpi.tesoreria.prossima_fiera"/></span>
+                </div>
+            </t>
+
+            <p class="cf-section-label">Crea / Apri</p>
+            <div class="cf-quick-actions">
+                <button t-on-click="onNewInvoice" class="cf-qa cf-qa-primary-tesoreria">
+                    <i class="fa fa-file-text-o"/>
+                    <span class="cf-qa-label">Nuova Fattura</span>
+                    <span class="cf-qa-hint">fatturazione attiva</span>
+                </button>
+                <button t-on-click="onNewBankMove" class="cf-qa">
+                    <i class="fa fa-university"/>
+                    <span class="cf-qa-label">Mov. Banca</span>
+                </button>
+                <button t-on-click="onOpenDocumenti" class="cf-qa">
+                    <i class="fa fa-file-o"/>
+                    <span class="cf-qa-label">Documenti</span>
+                </button>
+                <button t-on-click="onOpenCalendario" class="cf-qa">
+                    <i class="fa fa-calendar"/>
+                    <span class="cf-qa-label">Calendario</span>
+                </button>
+                <button t-on-click="onNewFiera" class="cf-qa">
+                    <i class="fa fa-globe"/>
+                    <span class="cf-qa-label">Nuova Fiera</span>
+                </button>
+            </div>
+
+            <p class="cf-section-label">Sezioni</p>
+            <div class="cf-sections-grid">
+                <div t-on-click="onOpenTesoreria" class="cf-section-card">
+                    <i class="fa fa-money cf-section-icon" style="color: #C8A43A;"/>
+                    <p class="cf-section-title">Tesoreria</p>
+                    <p class="cf-section-subtitle">Fatture e pagamenti</p>
+                </div>
+                <div t-on-click="onOpenDocumenti" class="cf-section-card">
+                    <i class="fa fa-file-o cf-section-icon" style="color: #185FA5;"/>
+                    <p class="cf-section-title">Documenti</p>
+                    <p class="cf-section-subtitle">Archivio allegati</p>
+                </div>
+                <div t-on-click="onOpenCalendario" class="cf-section-card">
+                    <i class="fa fa-calendar cf-section-icon" style="color: #173404;"/>
+                    <p class="cf-section-title">Calendario</p>
+                    <p class="cf-section-subtitle">Appuntamenti e scadenze</p>
+                </div>
+                <div t-on-click="onOpenGDO" class="cf-section-card">
+                    <i class="fa fa-globe cf-section-icon" style="color: #534AB7;"/>
+                    <p class="cf-section-title">Fiere &amp; GDO</p>
+                    <p class="cf-section-subtitle">Private Label, fiere</p>
+                </div>
+            </div>
+        </t>
+
+    </div>
+</t>
+
+</templates>
