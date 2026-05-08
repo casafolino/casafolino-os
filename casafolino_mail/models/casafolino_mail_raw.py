@@ -457,6 +457,9 @@ class CasafolinoMailRaw(models.Model):
         # ── V14: Apply folder rules ──
         self._assign_folder(new_msg, raw)
 
+        # ── Outbound triage: re-match on external recipient if sender is internal ──
+        new_msg._apply_outbound_triage()
+
         raw.write({
             'triage_state': 'promoted',
             'triage_reason': reason,

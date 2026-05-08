@@ -30,6 +30,8 @@
                 <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
                 <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
                 <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
+                <filter name="outbound_team" string="Outbound team" domain="[('is_outbound_from_team', '=', True)]"/>
+                <filter name="internal_only" string="Solo interne" domain="[('state', '=', 'internal')]"/>
                 <separator/>
                 <filter name="fetch_pending" string="Fetch in coda" domain="[('fetch_state', '=', 'pending')]"/>
                 <filter name="fetch_error" string="Fetch errore" domain="[('fetch_state', '=', 'error')]"/>
