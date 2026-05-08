@@ -87,3 +87,12 @@ VACUUM ANALYZE eseguito.
 - IMAP SINCE supportato: SI (riga 226 casafolino_mail_account.py)
 - Logica: se last_fetch_datetime NULL, usa sync_start_date come SINCE
 - Nessun fallback necessario
+
+## Smoke test post-reset (Phase 4)
+
+- Cron riattivati: 13 (id 98 Auto-Attach rimane off, era gia' off pre-reset)
+- Container: UP 2h
+- HTTP: 200
+- Log: puliti (no ERROR/CRITICAL)
+- Stato finale: 0 mail, 0 lead, 0 dossier, 14052 partner attivi, 38 mail_tracked
+- IMAP: pronto per primo fetch (sync_start_date=2026-04-01, last_fetch_datetime=NULL)
