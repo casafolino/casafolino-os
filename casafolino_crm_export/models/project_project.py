@@ -146,6 +146,11 @@ class ProjectProject(models.Model):
             # Brief #B6
             'mail': self._cf_get_mail_timeline(limit=20),
             'mail_count': self._cf_get_mail_count(),
+            # Brief #FINAL
+            'commerciale': self._cf_get_commerciale(partner),
+            'campionature': self._cf_get_campionature(leads),
+            'documenti': self._cf_get_documenti(),
+            'note': self._cf_get_note(),
         }
 
     def _cf_serialize_project(self):
@@ -382,6 +387,167 @@ class ProjectProject(models.Model):
             'function': partner.function or '',
             'is_primary': is_primary,
         }
+
+    # ── Brief #FINAL — Commerciale ────────────────────────────────
+
+    def _cf_get_commerciale(self, partner):
+        """Sale orders del partner + pricelist + MOQ notes."""
+        if not partner:
+            return {
+                'orders': [], 'orders_count': 0,
+                'orders_total_amount': 0.0, 'pricelist_id': None,
+                'last_quote_date': None, 'moq_notes': None,
+            }
+        now = datetime.utcnow()
+        SaleOrder = self.env['sale.order']
+        orders = SaleOrder.search([
+            ('partner_id', '=', partner.id),
+        ], order='date_order desc', limit=10)
+        state_labels = dict(SaleOrder._fields['state'].selection) if 'state' in SaleOrder._fields else {}
+        return {
+            'orders': [
+                {
+                    'id': o.id,
+                    'name': o.name or '',
+                    'state': o.state or '',
+                    'state_label': state_labels.get(o.state, o.state or ''),
+                    'amount_total': o.amount_total or 0,
+                    'currency': o.currency_id.name if o.currency_id else 'EUR',
+                    'date_order': fields.Datetime.to_string(o.date_order) if o.date_order else None,
+                    'date_label': self._cf_relative_date(o.date_order, now) if o.date_order else '',
+                }
+                for o in orders
+            ],
+            'orders_count': SaleOrder.search_count([('partner_id', '=', partner.id)]),
+            'orders_total_amount': sum(o.amount_total for o in orders),
+            'pricelist_id': [partner.property_product_pricelist.id, partner.property_product_pricelist.name]
+                if partner.property_product_pricelist else None,
+            'last_quote_date': fields.Datetime.to_string(orders[0].date_order) if orders and orders[0].date_order else None,
+            'moq_notes': (partner.comment or '')[:500] or None,
+        }
+
+    # ── Brief #FINAL — Campionature ────────────────────────────────
+
+    def _cf_get_campionature(self, leads):
+        """cf.export.sample dei lead collegati al progetto."""
+        if not leads:
+            return {'samples': [], 'samples_count': 0, 'samples_by_state': {}}
+        now = datetime.utcnow()
+        Sample = self.env['cf.export.sample']
+        samples = Sample.search([
+            ('lead_id', 'in', leads.ids),
+        ], order='create_date desc', limit=15)
+        state_labels = dict(Sample._fields['state'].selection) if 'state' in Sample._fields else {}
+        by_state = {}
+        for s in samples:
+            st = s.state or 'draft'
+            by_state[st] = by_state.get(st, 0) + 1
+        return {
+            'samples': [
+                {
+                    'id': s.id,
+                    'name': s.reference or f"CAMP-{s.id}",
+                    'state': s.state or 'draft',
+                    'state_label': state_labels.get(s.state, s.state or ''),
+                    'create_date': fields.Datetime.to_string(s.create_date) if s.create_date else None,
+                    'date_label': self._cf_relative_date(s.create_date, now) if s.create_date else '',
+                    'lead_name': s.lead_id.name or '',
+                    'partner_name': s.partner_id.name or '',
+                    'product_count': len(s.product_ids),
+                    'feedback_score': s.feedback_score or '',
+                }
+                for s in samples
+            ],
+            'samples_count': Sample.search_count([('lead_id', 'in', leads.ids)]),
+            'samples_by_state': {state_labels.get(k, k): v for k, v in by_state.items()},
+        }
+
+    # ── Brief #FINAL — Documenti ───────────────────────────────────
+
+    def _cf_get_documenti(self, limit=20):
+        """ir.attachment del progetto + del partner."""
+        self.ensure_one()
+        partner_id = self.partner_id.id if self.partner_id else None
+        Attachment = self.env['ir.attachment']
+        domain = ['|',
+            '&', ('res_model', '=', 'project.project'), ('res_id', '=', self.id),
+            '&', ('res_model', '=', 'res.partner'), ('res_id', '=', partner_id or 0),
+        ]
+        atts = Attachment.search(domain, order='create_date desc', limit=limit)
+        now = datetime.utcnow()
+        return {
+            'attachments': [
+                {
+                    'id': a.id,
+                    'name': a.name or '',
+                    'size': a.file_size or 0,
+                    'size_label': self._cf_format_size(a.file_size),
+                    'mimetype': a.mimetype or 'application/octet-stream',
+                    'icon_class': self._cf_mimetype_icon(a.mimetype),
+                    'create_date': fields.Datetime.to_string(a.create_date),
+                    'date_label': self._cf_relative_date(a.create_date, now) if a.create_date else '',
+                    'source': 'project' if a.res_model == 'project.project' else 'partner',
+                    'url': '/web/content/%d?download=true' % a.id,
+                }
+                for a in atts
+            ],
+            'attachments_count': Attachment.search_count(domain),
+        }
+
+    # ── Brief #FINAL — Note ────────────────────────────────────────
+
+    def _cf_get_note(self):
+        """Chatter internal notes del progetto."""
+        self.ensure_one()
+        now = datetime.utcnow()
+        mt_note = self.env.ref('mail.mt_note', raise_if_not_found=False)
+        notes = self.env['mail.message'].search([
+            ('model', '=', 'project.project'),
+            ('res_id', '=', self.id),
+            ('subtype_id', '=', mt_note.id if mt_note else 0),
+            ('message_type', '=', 'comment'),
+        ], order='date desc', limit=15) if mt_note else self.env['mail.message']
+        return {
+            'notes': [
+                {
+                    'id': n.id,
+                    'body': n.body or '',
+                    'author_name': n.author_id.name if n.author_id else 'Sistema',
+                    'author_id': n.author_id.id if n.author_id else None,
+                    'date': fields.Datetime.to_string(n.date),
+                    'date_label': self._cf_relative_date(n.date, now) if n.date else '',
+                }
+                for n in notes
+            ],
+            'description': self.description or '',
+        }
+
+    # ── Brief #FINAL — Helpers ─────────────────────────────────────
+
+    def _cf_format_size(self, size_bytes):
+        if not size_bytes:
+            return '0 B'
+        if size_bytes < 1024:
+            return '%d B' % size_bytes
+        if size_bytes < 1024 * 1024:
+            return '%d KB' % (size_bytes // 1024)
+        return '%d MB' % (size_bytes // (1024 * 1024))
+
+    def _cf_mimetype_icon(self, mimetype):
+        if not mimetype:
+            return 'fa-file-o'
+        m = mimetype.lower()
+        if 'pdf' in m:
+            return 'fa-file-pdf-o'
+        if 'image' in m:
+            return 'fa-file-image-o'
+        if 'word' in m or 'document' in m:
+            return 'fa-file-word-o'
+        if 'excel' in m or 'spreadsheet' in m:
+            return 'fa-file-excel-o'
+        if 'zip' in m or 'compressed' in m:
+            return 'fa-file-archive-o'
+        return 'fa-file-o'
 
     # ── Brief #B6 — Mail timeline for dashboard ──────────────────
 
