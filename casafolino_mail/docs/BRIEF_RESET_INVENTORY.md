@@ -51,3 +51,22 @@ Nota: `sync_start_date` gia' impostato a 2026-04-01 su tutte le caselle.
 | 125 | Auto-Standby Lead inattivi | true | 1 day |
 | 138 | AI suggestion mail | true | 5 min |
 | 139 | Accuracy refresh mail AI | true | 1 day |
+
+## Post-wipe (Phase 1)
+
+13 cron CasaFolino disattivati.
+
+| Tabella | Pre | Post |
+|---|---|---|
+| casafolino_mail_message | 2995 | 0 |
+| casafolino_mail_raw | 418 | 0 |
+| cf_mail_position_feedback | 0 | 0 |
+| crm_lead | 561 | 0 |
+| project_project (dossier) | 60 | 0 |
+| cf_export_sample | 1 | 0 |
+| mail_message on project | 144 | 0 |
+| mail_message on lead | 1458 | 0 |
+| res_partner | 16399 | 16399 |
+
+FK cleanup: 970 threads, 1044 thread_partner_rel, 505 crm_tag_rel, 85 ir_attachment, 29 project_update, 87 project_tags_rel.
+VACUUM ANALYZE eseguito.
