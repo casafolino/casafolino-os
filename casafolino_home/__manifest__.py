@@ -1,0 +1,22 @@
+# -*- coding: utf-8 -*-
+{
+    "name": "CasaFolino Home",
+    "version": "18.0.1.0.0",
+    "category": "Productivity",
+    "summary": "3 Scrivanie: Commerciale, Operativa, Admin",
+    "author": "CasaFolino Srls",
+    "depends": [
+        "base", "web", "crm", "project", "account", "stock",
+        "casafolino_mail", "casafolino_crm_export",
+    ],
+    "data": [
+        "security/ir.model.access.csv",
+    ],
+    "assets": {
+        "web.assets_backend": [],
+    },
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
+    "icon": "casafolino_home/static/description/icon.png",
+}
