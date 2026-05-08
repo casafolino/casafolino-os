@@ -143,6 +143,9 @@ class ProjectProject(models.Model):
             'timeline': self._cf_get_timeline(limit=20),
             'contacts': self._cf_get_contacts(partner) if partner else [],
             'owner': self._cf_serialize_owner(),
+            # Brief #B6
+            'mail': self._cf_get_mail_timeline(limit=20),
+            'mail_count': self._cf_get_mail_count(),
         }
 
     def _cf_serialize_project(self):
@@ -379,3 +382,56 @@ class ProjectProject(models.Model):
             'function': partner.function or '',
             'is_primary': is_primary,
         }
+
+    # ── Brief #B6 — Mail timeline for dashboard ──────────────────
+
+    def _cf_get_mail_timeline(self, limit=20):
+        """Mail positioned on this project, ordered by date desc."""
+        self.ensure_one()
+        try:
+            Message = self.env['casafolino.mail.message']
+        except KeyError:
+            return []  # casafolino_mail not installed
+        messages = Message.search([
+            ('cf_project_id', '=', self.id),
+        ], limit=limit, order='email_date desc')
+        now = datetime.utcnow()
+        result = []
+        for msg in messages:
+            partner = msg.partner_id
+            if msg.body_downloaded and (msg.body_html or msg.body_plain):
+                import re as _re
+                body_text = _re.sub(r'<[^>]+>', ' ', msg.body_html or msg.body_plain or '')
+                body_text = _re.sub(r'\s+', ' ', body_text).strip()
+                preview = body_text[:150] + ('...' if len(body_text) > 150 else '')
+            else:
+                preview = '(corpo non scaricato)'
+            is_outbound = bool(
+                msg.account_id and msg.account_id.email_address
+                and msg.sender_email
+                and msg.account_id.email_address.lower() == (msg.sender_email or '').lower()
+            )
+            result.append({
+                'casafolino_id': msg.id,
+                'subject': msg.subject or '(no subject)',
+                'sender_email': msg.sender_email or '',
+                'sender_name': partner.name if partner else (msg.sender_email or '?'),
+                'partner_id': partner.id if partner else None,
+                'partner_name': partner.name if partner else '',
+                'email_date': fields.Datetime.to_string(msg.email_date) if msg.email_date else '',
+                'date_label': self._cf_relative_date(msg.email_date, now) if msg.email_date else '',
+                'preview_text': preview,
+                'is_outbound': is_outbound,
+                'mail_message_id': msg.mail_message_id.id if msg.mail_message_id else None,
+            })
+        return result
+
+    def _cf_get_mail_count(self):
+        """Count mail positioned on this project."""
+        self.ensure_one()
+        try:
+            return self.env['casafolino.mail.message'].search_count([
+                ('cf_project_id', '=', self.id)
+            ])
+        except KeyError:
+            return 0
