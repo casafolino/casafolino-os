@@ -133,14 +133,44 @@ Opened via:
 - `casafolino_mail` must be installed (added to manifest depends)
 - Only shows mail positioned via Posizionatore (#6.2): cf_project_id set
 
+## Brief #FINAL — Chiusura progetto (deployed 2026-05-08)
+
+### Cosa chiuso
+- Tab Commerciale: sale.order partner, pricelist, MOQ notes
+- Tab Campionature: cf.export.sample via leads, breakdown by state
+- Tab Documenti: ir.attachment project+partner, source badges
+- Tab Note: project description + chatter internal notes
+- F8 quick reply: ComposeWizardDialog via dialogService (fallback partner form)
+- Quick action Email: same F8 pattern, replaces Brief #8 placeholder
+- cf_project_id: esposto in form lead inherited (tab Dossier)
+- CSS warm bands wizard: :has() selectors fix
+
+### cf_get_dashboard_data — schema finale (13 keys)
+- project, lead, partner, kpi (Brief #5.0)
+- timeline, contacts, owner (Brief #5.0)
+- mail, mail_count (Brief #B6)
+- commerciale, campionature (Brief #FINAL)
+- documenti, note (Brief #FINAL)
+
+### Nuovi handler component
+- onOpenSaleOrder, onOpenSample, onCreateNewSample (#FINAL)
+- onQuickReply updated: F8 ComposeWizardDialog + fallback (#FINAL)
+- onQuickActionMail updated: F8 ComposeWizardDialog + fallback (#FINAL)
+
+### Nuove dipendenze runtime
+- `sale.order` (Commerciale)
+- `cf.export.sample` (Campionature, via lead_ids)
+- `ir.attachment` filtrato (Documenti)
+- `mail.message` chatter (Note)
+- `dialog` service (F8 quick reply)
+
+### Stato progetto
+Roadmap completa: Brief #1 -> #B6 + #FINAL.
+Sistema PRONTO per uso quotidiano + raccolta feedback team.
+
 ## Backlog
 
-| Brief | Tab | Status |
-|---|---|---|
-| #5.1 | Commerciale | Notification placeholder |
-| #5.1 | Campionature | Notification placeholder |
-| #5.2 | Documenti | Notification placeholder |
-| #8 | Quick action mail | Notification placeholder |
+Nessuno — tutte le tab e quick actions implementate.
 
 ## Maintenance
 

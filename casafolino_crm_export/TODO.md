@@ -1,15 +1,16 @@
-# casafolino_crm_export — TODO Backlog
+# Casafolino CRM Export — TODO post-#FINAL
 
-## Brief #5.1 (opzionale) — Vista 360° sezioni Commerciale + Campionature
-- Tab "Commerciale": lista quote/sale.order, listini, MOQ
-- Tab "Campionature": lista cf.export.sample filtrata per stato
-- Effort: 2.5h Code
+## Roadmap completa eseguita (#1 -> #FINAL)
 
-## Brief #5.2 (opzionale) — Vista 360° sezioni Documenti + Note
-- Tab "Documenti": schede tecniche, certificazioni, contratti
-- Tab "Note": textarea collaborativo
-- Effort: 3h Code
+Vedi `docs/PROJECT_RESTYLING_v1.md` per overview.
 
-## Mini-fix ops
-- CSS warm bands fallback verify (Brief #4.5 residuo, 30min)
-- Quick action "Email" in dashboard placeholder → connect to F8 (#8, 30min)
+## Backlog feedback-driven (da raccogliere uso reale)
+
+- Eventuali bug emergenti dall'uso quotidiano Josefina/Martina
+- Polish UX in base a feedback specifici (non speculare)
+- Manuale utente quando il sistema e' esercitato
+
+## Mini-debiti tecnici annotati
+
+- F8 quick reply usa fallback (partner form) se casafolino_mail non installato
+- AI Groq context injection si stabilizza dopo ~20 feedback per partner
