@@ -13,7 +13,11 @@
         "security/ir.model.access.csv",
     ],
     "assets": {
-        "web.assets_backend": [],
+        "web.assets_backend": [
+            "casafolino_home/static/src/scrivania_commerciale/scrivania_commerciale.scss",
+            "casafolino_home/static/src/scrivania_commerciale/scrivania_commerciale.xml",
+            "casafolino_home/static/src/scrivania_commerciale/scrivania_commerciale.js",
+        ],
     },
     "installable": True,
     "application": True,

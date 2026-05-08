@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_home.CFScrivaniaCommerciale">
+    <div class="cf-scrivania">
+
+        <!-- Top bar 3 cluster -->
+        <div class="cf-scrivania-clusters">
+            <div class="cf-cluster cf-cluster-active cf-cluster-commerciale">
+                <i class="fa fa-briefcase"/>
+                <span>Commerciale</span>
+            </div>
+            <div t-on-click="onSwitchOperativa" class="cf-cluster cf-cluster-operativa">
+                <i class="fa fa-cogs"/>
+                <span>Operativa</span>
+            </div>
+            <div t-on-click="onSwitchAdmin" class="cf-cluster cf-cluster-admin">
+                <i class="fa fa-money"/>
+                <span>Admin</span>
+            </div>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="cf-kpi-strip">
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Mail da smistare</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.mail_pending)"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Lead aperti</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.lead_aperti)"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Progetti attivi</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.progetti_attivi)"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">SLA scadenza</span>
+                <span class="cf-kpi-value cf-kpi-warning" t-out="formatKpi(state.kpi.sla_scadenza)"/>
+            </div>
+            <div class="cf-kpi-card">
+                <span class="cf-kpi-label">Fatt. mese</span>
+                <span class="cf-kpi-value" t-out="formatKpi(state.kpi.fatturato_mese, 'currency')"/>
+            </div>
+        </div>
+
+        <!-- Pulsantiera Crea / Apri -->
+        <p class="cf-section-label">Crea / Apri</p>
+        <div class="cf-quick-actions">
+            <button t-on-click="onNewProject" class="cf-qa cf-qa-primary">
+                <i class="fa fa-folder-open"/>
+                <span class="cf-qa-label">Nuovo Progetto</span>
+                <span class="cf-qa-hint">il punto di partenza</span>
+            </button>
+            <button t-on-click="onNewLead" class="cf-qa">
+                <i class="fa fa-bullseye"/>
+                <span class="cf-qa-label">Nuovo Lead</span>
+            </button>
+            <button t-on-click="onNewContact" class="cf-qa">
+                <i class="fa fa-user-plus"/>
+                <span class="cf-qa-label">Nuovo Contatto</span>
+            </button>
+            <button t-on-click="onOpenPosizionatore" class="cf-qa">
+                <i class="fa fa-envelope-open"/>
+                <span class="cf-qa-label">Posizionatore</span>
+                <t t-if="state.kpi.mail_pending">
+                    <span class="cf-qa-counter" t-out="state.kpi.mail_pending"/>
+                </t>
+            </button>
+            <button t-on-click="onOpenMiaCasella" class="cf-qa">
+                <i class="fa fa-inbox"/>
+                <span class="cf-qa-label">Mia Casella</span>
+            </button>
+        </div>
+
+        <!-- Sezioni -->
+        <p class="cf-section-label">Sezioni</p>
+        <div class="cf-sections-grid">
+            <div t-on-click="onOpenPipeline" class="cf-section-card">
+                <i class="fa fa-tasks cf-section-icon" style="color: #534AB7;"/>
+                <p class="cf-section-title">Pipeline Lead</p>
+                <p class="cf-section-subtitle">Kanban opportunità</p>
+            </div>
+            <div t-on-click="onOpenProjects" class="cf-section-card">
+                <i class="fa fa-folder-o cf-section-icon" style="color: #185FA5;"/>
+                <p class="cf-section-title">Progetti / Dossier</p>
+                <p class="cf-section-subtitle">Storia clienti</p>
+            </div>
+            <div t-on-click="onOpenLavagna" class="cf-section-card">
+                <i class="fa fa-clipboard cf-section-icon" style="color: #173404;"/>
+                <p class="cf-section-title">Lavagna</p>
+                <p class="cf-section-subtitle">Iniziative trasversali</p>
+            </div>
+            <div t-on-click="onOpenAnalytics" class="cf-section-card">
+                <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
+                <p class="cf-section-title">Analytics</p>
+                <p class="cf-section-subtitle">Dashboard 360°</p>
+            </div>
+        </div>
+
+    </div>
+</t>
+
+</templates>
