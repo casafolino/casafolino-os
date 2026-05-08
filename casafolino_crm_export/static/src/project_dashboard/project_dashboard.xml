@@ -98,13 +98,21 @@
         <!-- Tab nav -->
         <div class="cf-dash-tabs">
             <t t-foreach="tabs" t-as="tab" t-key="tab.id">
-                <button t-attf-class="cf-dash-tab #{state.activeTab === tab.id ? 'active' : ''} #{!tab.enabled ? 'disabled' : ''}"
+                <button t-attf-class="cf-dash-tab #{state.activeTab === tab.id ? 'active' : ''}"
                         t-on-click="() => this.onTabChange(tab.id)">
                     <t t-out="tab.label"/>
                     <span t-if="tab.id === 'mail' and state.data and state.data.mail_count"
                           class="cf-dash-tab-counter"
                           t-out="'(' + state.data.mail_count + ')'"/>
-                    <span t-if="!tab.enabled" class="cf-dash-tab-badge" t-out="tab.brief"/>
+                    <span t-if="tab.id === 'commerciale' and state.data and state.data.commerciale and state.data.commerciale.orders_count"
+                          class="cf-dash-tab-counter"
+                          t-out="'(' + state.data.commerciale.orders_count + ')'"/>
+                    <span t-if="tab.id === 'campionature' and state.data and state.data.campionature and state.data.campionature.samples_count"
+                          class="cf-dash-tab-counter"
+                          t-out="'(' + state.data.campionature.samples_count + ')'"/>
+                    <span t-if="tab.id === 'documenti' and state.data and state.data.documenti and state.data.documenti.attachments_count"
+                          class="cf-dash-tab-counter"
+                          t-out="'(' + state.data.documenti.attachments_count + ')'"/>
                 </button>
             </t>
         </div>
@@ -159,6 +167,147 @@
             <!-- Cliente tab -->
             <div t-if="state.activeTab === 'cliente'" class="cf-dash-cliente-tab">
                 <t t-call="casafolino_crm_export.CFProjectDashboard.CustomerPanel"/>
+            </div>
+
+            <!-- Commerciale tab (Brief #FINAL) -->
+            <div t-if="state.activeTab === 'commerciale'" class="cf-tab-commerciale-content">
+                <div class="cf-comm-summary">
+                    <div class="cf-comm-summary-card">
+                        <span class="cf-comm-label">Ordini totali</span>
+                        <span class="cf-comm-value" t-out="state.data.commerciale.orders_count"/>
+                    </div>
+                    <div class="cf-comm-summary-card">
+                        <span class="cf-comm-label">Valore aggregato</span>
+                        <span class="cf-comm-value">
+                            &#8364; <t t-out="(state.data.commerciale.orders_total_amount || 0).toLocaleString('it-IT', {maximumFractionDigits: 0})"/>
+                        </span>
+                    </div>
+                    <div class="cf-comm-summary-card" t-if="state.data.commerciale.pricelist_id">
+                        <span class="cf-comm-label">Listino</span>
+                        <span class="cf-comm-value" t-out="state.data.commerciale.pricelist_id[1]"/>
+                    </div>
+                </div>
+                <h5 class="cf-section-title">Ordini recenti</h5>
+                <div t-if="!state.data.commerciale.orders.length" class="cf-dash-empty">
+                    <i class="fa fa-shopping-cart"/>
+                    <span>Nessun ordine registrato per questo cliente</span>
+                </div>
+                <div t-else="" class="cf-orders-list">
+                    <t t-foreach="state.data.commerciale.orders" t-as="order" t-key="order.id">
+                        <div t-on-click="() => this.onOpenSaleOrder(order.id)" class="cf-order-card">
+                            <div class="cf-order-name">
+                                <strong t-out="order.name"/>
+                                <span t-attf-class="cf-order-state-badge cf-state-#{order.state}">
+                                    <t t-out="order.state_label"/>
+                                </span>
+                            </div>
+                            <div class="cf-order-meta">
+                                <span class="cf-order-date" t-out="order.date_label"/>
+                                <span class="cf-order-amount">
+                                    <t t-out="order.currency"/> <t t-out="order.amount_total.toLocaleString('it-IT', {maximumFractionDigits: 2})"/>
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div t-if="state.data.commerciale.moq_notes" class="cf-moq-notes">
+                    <h5 class="cf-section-title">Note commerciali</h5>
+                    <p class="text-muted" t-out="state.data.commerciale.moq_notes"/>
+                </div>
+            </div>
+
+            <!-- Campionature tab (Brief #FINAL) -->
+            <div t-if="state.activeTab === 'campionature'" class="cf-tab-campionature-content">
+                <div class="cf-samples-toolbar">
+                    <button t-on-click="onCreateNewSample" class="btn btn-sm btn-primary">
+                        <i class="fa fa-plus"/> Nuova campionatura
+                    </button>
+                </div>
+                <div t-if="Object.keys(state.data.campionature.samples_by_state).length" class="cf-samples-summary">
+                    <t t-foreach="Object.entries(state.data.campionature.samples_by_state)" t-as="entry" t-key="entry[0]">
+                        <div class="cf-sample-stat">
+                            <span class="cf-sample-state-label" t-out="entry[0]"/>
+                            <span class="cf-sample-state-count" t-out="entry[1]"/>
+                        </div>
+                    </t>
+                </div>
+                <h5 class="cf-section-title">Storico campionature</h5>
+                <div t-if="!state.data.campionature.samples.length" class="cf-dash-empty">
+                    <i class="fa fa-flask"/>
+                    <span>Nessuna campionatura registrata</span>
+                    <button t-on-click="onCreateNewSample" class="btn btn-sm btn-secondary">Crea la prima</button>
+                </div>
+                <div t-else="" class="cf-samples-list">
+                    <t t-foreach="state.data.campionature.samples" t-as="sample" t-key="sample.id">
+                        <div t-on-click="() => this.onOpenSample(sample.id)" class="cf-sample-card">
+                            <div class="cf-sample-name">
+                                <strong t-out="sample.name"/>
+                                <span t-attf-class="cf-sample-state-badge cf-sample-state-#{sample.state}">
+                                    <t t-out="sample.state_label"/>
+                                </span>
+                            </div>
+                            <div class="cf-sample-meta">
+                                <span t-out="sample.date_label"/>
+                                <span t-if="sample.product_count" class="text-muted">
+                                    <t t-out="sample.product_count"/> prodotti
+                                </span>
+                                <span t-if="sample.feedback_score" t-out="sample.feedback_score"/>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Documenti tab (Brief #FINAL) -->
+            <div t-if="state.activeTab === 'documenti'" class="cf-tab-documenti-content">
+                <div t-if="!state.data.documenti.attachments.length" class="cf-dash-empty">
+                    <i class="fa fa-folder-open-o"/>
+                    <span>Nessun documento allegato a questo progetto o cliente</span>
+                </div>
+                <div t-else="" class="cf-attachments-grid">
+                    <t t-foreach="state.data.documenti.attachments" t-as="att" t-key="att.id">
+                        <a t-att-href="att.url" target="_blank" class="cf-attachment-card">
+                            <i t-attf-class="fa #{att.icon_class} cf-attachment-icon"/>
+                            <div class="cf-attachment-info">
+                                <strong t-out="att.name"/>
+                                <div class="cf-attachment-meta">
+                                    <span t-out="att.size_label"/>
+                                    <span> · </span>
+                                    <span t-out="att.date_label"/>
+                                    <span> · </span>
+                                    <span t-attf-class="cf-attachment-source cf-source-#{att.source}">
+                                        <t t-if="att.source === 'project'">progetto</t>
+                                        <t t-else="">cliente</t>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Note tab (Brief #FINAL) -->
+            <div t-if="state.activeTab === 'note'" class="cf-tab-note-content">
+                <div t-if="state.data.note.description" class="cf-project-description">
+                    <h5 class="cf-section-title">Descrizione progetto</h5>
+                    <div class="cf-description-box" t-out="state.data.note.description"/>
+                </div>
+                <h5 class="cf-section-title">Note interne (chatter)</h5>
+                <div t-if="!state.data.note.notes.length" class="cf-dash-empty">
+                    <i class="fa fa-sticky-note-o"/>
+                    <span>Nessuna nota interna registrata</span>
+                </div>
+                <div t-else="" class="cf-notes-timeline">
+                    <t t-foreach="state.data.note.notes" t-as="note" t-key="note.id">
+                        <div class="cf-note-card">
+                            <div class="cf-note-header">
+                                <strong t-out="note.author_name"/>
+                                <span class="cf-note-date" t-out="note.date_label"/>
+                            </div>
+                            <div class="cf-note-body" t-out="note.body"/>
+                        </div>
+                    </t>
+                </div>
             </div>
 
             <!-- Mail tab (Brief #B6) -->

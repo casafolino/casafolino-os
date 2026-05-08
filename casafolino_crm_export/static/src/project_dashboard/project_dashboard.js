@@ -138,9 +138,10 @@ export class CFProjectDashboard extends Component {
         return [
             { id: "timeline", label: "Timeline", enabled: true },
             { id: "cliente", label: "Cliente", enabled: true },
-            { id: "commerciale", label: "Commerciale", enabled: false, brief: "5.1" },
-            { id: "campionature", label: "Campionature", enabled: false, brief: "5.1" },
-            { id: "documenti", label: "Documenti", enabled: false, brief: "5.2" },
+            { id: "commerciale", label: "Commerciale", enabled: true },
+            { id: "campionature", label: "Campionature", enabled: true },
+            { id: "documenti", label: "Documenti", enabled: true },
+            { id: "note", label: "Note", enabled: true },
             { id: "mail", label: "Mail", enabled: true },
         ];
     }
@@ -157,14 +158,6 @@ export class CFProjectDashboard extends Component {
     // --- Handlers ---
 
     onTabChange(tabId) {
-        const tab = this.tabs.find((t) => t.id === tabId);
-        if (tab && !tab.enabled) {
-            this.notification.add(
-                _t("Sezione disponibile in Brief #%s", tab.brief),
-                { type: "info" }
-            );
-            return;
-        }
         this.state.activeTab = tabId;
     }
 
@@ -221,6 +214,43 @@ export class CFProjectDashboard extends Component {
                 default_res_model: "project.project",
                 default_res_id: projectId,
             },
+        });
+    }
+
+    // Brief #FINAL — Commerciale + Campionature handlers
+
+    async onOpenSaleOrder(orderId) {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "sale.order",
+            res_id: orderId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    async onOpenSample(sampleId) {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "cf.export.sample",
+            res_id: sampleId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    async onCreateNewSample() {
+        const leadId = this.state.data?.lead?.id;
+        if (!leadId) {
+            this.notification.add(_t("Nessun lead collegato"), { type: "warning" });
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "cf.export.sample",
+            views: [[false, "form"]],
+            target: "new",
+            context: { default_lead_id: leadId },
         });
     }
 
