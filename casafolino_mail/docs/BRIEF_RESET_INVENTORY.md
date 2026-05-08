@@ -70,3 +70,12 @@ Nota: `sync_start_date` gia' impostato a 2026-04-01 su tutte le caselle.
 
 FK cleanup: 970 threads, 1044 thread_partner_rel, 505 crm_tag_rel, 85 ir_attachment, 29 project_update, 87 project_tags_rel.
 VACUUM ANALYZE eseguito.
+
+## Dedup partner (Phase 2)
+
+- Empty records: skip (referenziati da sale_order, non cancellabili)
+- Duplicati per email marcati `active=FALSE`: 2325
+- Partner attivi finali: 14052 (85.7% del pre-reset)
+- Partner con email attivi: 11316
+- Partner mail_tracked attivi: 38
+- Duplicati rimanenti: 0
