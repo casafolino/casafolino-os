@@ -101,6 +101,9 @@
                 <button t-attf-class="cf-dash-tab #{state.activeTab === tab.id ? 'active' : ''} #{!tab.enabled ? 'disabled' : ''}"
                         t-on-click="() => this.onTabChange(tab.id)">
                     <t t-out="tab.label"/>
+                    <span t-if="tab.id === 'mail' and state.data and state.data.mail_count"
+                          class="cf-dash-tab-counter"
+                          t-out="'(' + state.data.mail_count + ')'"/>
                     <span t-if="!tab.enabled" class="cf-dash-tab-badge" t-out="tab.brief"/>
                 </button>
             </t>
@@ -156,6 +159,55 @@
             <!-- Cliente tab -->
             <div t-if="state.activeTab === 'cliente'" class="cf-dash-cliente-tab">
                 <t t-call="casafolino_crm_export.CFProjectDashboard.CustomerPanel"/>
+            </div>
+
+            <!-- Mail tab (Brief #B6) -->
+            <div t-if="state.activeTab === 'mail'" class="cf-dash-mail-tab">
+                <div t-if="!state.data.mail or !state.data.mail.length" class="cf-dash-empty">
+                    <i class="fa fa-envelope-o"/>
+                    <span>Nessuna mail su questo dossier</span>
+                    <p class="text-muted" style="font-size:12px;">
+                        Le mail posizionate dal Posizionatore compariranno qui.
+                    </p>
+                </div>
+                <div t-else="" class="cf-mail-timeline">
+                    <t t-foreach="state.data.mail" t-as="m" t-key="m.casafolino_id">
+                        <div t-attf-class="cf-mail-card #{m.is_outbound ? 'cf-mail-outbound' : 'cf-mail-inbound'}">
+                            <div class="cf-mail-card-header">
+                                <div class="cf-mail-icon">
+                                    <i t-attf-class="fa #{m.is_outbound ? 'fa-paper-plane' : 'fa-envelope'}"/>
+                                </div>
+                                <div class="cf-mail-card-title">
+                                    <strong t-out="m.subject"/>
+                                    <div class="cf-mail-meta">
+                                        <span class="cf-mail-sender">
+                                            <t t-if="m.is_outbound">a </t>
+                                            <t t-out="m.sender_name"/>
+                                        </span>
+                                        <span class="cf-mail-date" t-out="m.date_label"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cf-mail-card-body">
+                                <p class="cf-mail-preview" t-out="m.preview_text"/>
+                            </div>
+                            <div class="cf-mail-card-actions">
+                                <button t-on-click="() => this.onOpenMailThread(m)"
+                                        class="btn btn-sm btn-link">
+                                    <i class="fa fa-external-link"/> Apri thread
+                                </button>
+                                <button t-on-click="() => this.onQuickReply(m)"
+                                        class="btn btn-sm btn-link"
+                                        t-att-disabled="!m.partner_id">
+                                    <i class="fa fa-reply"/> Risposta veloce
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                    <div t-if="state.data.mail.length >= 20" class="cf-mail-load-more">
+                        <p class="text-muted">Le 20 piu recenti. Apri il chatter del partner per la cronologia completa.</p>
+                    </div>
+                </div>
             </div>
         </div>
 

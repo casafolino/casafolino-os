@@ -141,7 +141,7 @@ export class CFProjectDashboard extends Component {
             { id: "commerciale", label: "Commerciale", enabled: false, brief: "5.1" },
             { id: "campionature", label: "Campionature", enabled: false, brief: "5.1" },
             { id: "documenti", label: "Documenti", enabled: false, brief: "5.2" },
-            { id: "mail", label: "Mail", enabled: false, brief: "B6" },
+            { id: "mail", label: "Mail", enabled: true },
         ];
     }
 
@@ -270,6 +270,29 @@ export class CFProjectDashboard extends Component {
             type: "ir.actions.act_window",
             res_model: "res.partner",
             res_id: contactId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    // Brief #B6 — Mail tab handlers
+    onOpenMailThread(mailEntry) {
+        if (!mailEntry.partner_id) return;
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "res.partner",
+            res_id: mailEntry.partner_id,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    onQuickReply(mailEntry) {
+        if (!mailEntry.partner_id) return;
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "res.partner",
+            res_id: mailEntry.partner_id,
             views: [[false, "form"]],
             target: "current",
         });
