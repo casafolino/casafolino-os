@@ -38,10 +38,8 @@
         <field name="sequence">60</field>
     </record>
 
-    <record id="casafolino_commercial.menu_cf_eventi_root" model="ir.ui.menu">
-        <field name="parent_id" ref="casafolino_home.menu_ws_crm"/>
-        <field name="sequence">70</field>
-    </record>
+    <!-- NOTE: casafolino_commercial.menu_cf_eventi_root (Fiere & Eventi)
+         exists only in prod, not stage. Will be remapped on prod install. -->
 
     <record id="casafolino_project.menu_cf_project_root" model="ir.ui.menu">
         <field name="parent_id" ref="casafolino_home.menu_ws_crm"/>
