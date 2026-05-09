@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <record id="tag_distributore" model="crm.tag">
-        <field name="name">Distributore</field>
-        <field name="color">1</field>
-    </record>
+    <!-- Tags already in DB (handled by seed script): Distributore, Private Label -->
     <record id="tag_export" model="crm.tag">
         <field name="name">Export</field>
         <field name="color">2</field>
@@ -11,10 +8,6 @@
     <record id="tag_retail_chain" model="crm.tag">
         <field name="name">Retail Chain</field>
         <field name="color">3</field>
-    </record>
-    <record id="tag_private_label" model="crm.tag">
-        <field name="name">Private Label</field>
-        <field name="color">4</field>
     </record>
     <record id="tag_co_development" model="crm.tag">
         <field name="name">Co-development</field>
