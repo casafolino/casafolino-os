@@ -19,7 +19,7 @@
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
 
-            <!-- ── HEADER: hide standard, add dossier statusbar ──── -->
+            <!-- ── HEADER: hide standard, add dossier statusbar (4 stages) ── -->
 
             <xpath expr="//button[@name='action_open_share_project_wizard']"
                    position="attributes">
@@ -38,10 +38,10 @@
                         class="btn-primary"
                         icon="fa-pie-chart"/>
                 <field name="cf_status_dossier" widget="statusbar"
-                       statusbar_visible="exploration,active,on_hold,won,closed"/>
+                       statusbar_visible="exploration,active,on_hold,closed"/>
             </xpath>
 
-            <!-- ── BUTTON BOX: hide standard, add 5 dossier stats ── -->
+            <!-- ── BUTTON BOX: hide standard + casafolino_project, add 5 dossier stats ── -->
 
             <xpath expr="//button[@name='action_view_tasks']"
                    position="attributes">
@@ -50,6 +50,17 @@
 
             <xpath expr="//button[@name='project_update_all_action']"
                    position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Hide casafolino_project stat buttons (traffic light, fair, child count) -->
+            <xpath expr="//button[@icon='fa-circle']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@icon='fa-folder']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@icon='fa-check-square-o']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
@@ -76,6 +87,13 @@
                 </button>
             </xpath>
 
+            <!-- ── RIBBON: "Vinto" when cf_is_won ── -->
+
+            <xpath expr="//div[@name='button_box']" position="after">
+                <widget name="web_ribbon" title="Vinto" bg_color="bg-success"
+                        invisible="not cf_is_won"/>
+            </xpath>
+
             <!-- ── TITLE: fix placeholder, hide star ──── -->
 
             <xpath expr="//field[@name='is_favorite']"
@@ -97,73 +115,61 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- ── HIDE casafolino_project header groups ──── -->
-
-            <xpath expr="//field[@name='cf_template_id']/.." position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//field[@name='cf_partner_id']/.." position="attributes">
+            <!-- ── HIDE entire casafolino_project wrapper div ──── -->
+            <!-- cf_template_id → group "CasaFolino" → group col=2 → outer div -->
+            <xpath expr="//field[@name='cf_template_id']/../../.." position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- ── BODY: 2 rows x 2 columns layout ──── -->
+            <!-- ── BODY: clean 2-column layout ──── -->
 
             <xpath expr="//field[@name='label_tasks']" position="before">
-                <!-- Row 1: CLIENTE | BRIEF COMMERCIALE -->
-                <group col="2">
+                <!-- Row 1: CLIENTE | PIANIFICAZIONE -->
+                <group>
                     <group string="Cliente">
-                        <label for="partner_id" string="Cliente"/>
-                        <field name="partner_id" nolabel="1"/>
-                        <label for="cf_buyer_id" string="Buyer"/>
-                        <field name="cf_buyer_id" nolabel="1"
+                        <field name="partner_id" string="Cliente / Partner"/>
+                        <field name="cf_buyer_id" string="Buyer"
                                options="{'no_create': True}"
                                context="{'default_parent_id': partner_id}"/>
-                        <label for="cf_dossier_lang" string="Lingua"/>
-                        <field name="cf_dossier_lang" nolabel="1"/>
+                        <field name="cf_partner_country_id" string="Paese"/>
+                        <field name="cf_dossier_lang" string="Lingua"/>
+                        <field name="cf_partner_email" string="Email" widget="email"/>
                     </group>
-                    <group string="Brief Commerciale">
-                        <label for="cf_project_type" string="Tipo Progetto"/>
-                        <field name="cf_project_type" nolabel="1" widget="selection"/>
-                        <label for="cf_volume_target" string="Volume Target"/>
-                        <div class="o_row">
-                            <field name="cf_volume_target" nolabel="1" class="oe_inline"/>
-                            <field name="cf_volume_unit" nolabel="1" class="oe_inline"/>
-                        </div>
-                        <label for="cf_margin_target" string="Margine Target %"/>
-                        <field name="cf_margin_target" nolabel="1" widget="percentage"/>
-                        <label for="cf_certification_ids" string="Certificazioni"/>
-                        <field name="cf_certification_ids" nolabel="1" widget="many2many_tags"
-                               options="{'color_field': 'color', 'no_create': True}"/>
-                        <label for="cf_next_action" string="Prossima Azione"/>
-                        <field name="cf_next_action" nolabel="1" placeholder="es. Inviare campionature 220g"/>
-                        <label for="cf_next_action_date" string="Data Prossima Azione"/>
-                        <field name="cf_next_action_date" nolabel="1"/>
+                    <group string="Pianificazione">
+                        <field name="user_id" string="Responsabile"/>
+                        <field name="cf_co_user_ids" string="Co-responsabili"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field name="date" string="Data Target"/>
+                        <field name="cf_next_action" string="Prossima Azione"
+                               placeholder="es. Inviare campionature 220g"/>
+                        <field name="cf_next_action_date" string="Data Prossima Azione"/>
                     </group>
                 </group>
-                <!-- Row 2: META | DETTAGLI COMMERCIALI -->
-                <group col="2">
-                    <group string="Meta">
-                        <label for="cf_template_origin_id" string="Da Template"/>
-                        <field name="cf_template_origin_id" nolabel="1" readonly="1"/>
-                        <label for="date" string="Data Target"/>
-                        <field name="date" nolabel="1"/>
-                        <label for="user_id" string="Responsabile"/>
-                        <field name="user_id" nolabel="1"/>
-                        <label for="cf_co_user_ids" string="Co-responsabili"/>
-                        <field name="cf_co_user_ids" nolabel="1" widget="many2many_tags"
-                               options="{'no_create': True}"/>
+                <!-- Row 2: BRIEF COMMERCIALE | TERMINI -->
+                <group>
+                    <group string="Brief Commerciale">
+                        <field name="cf_project_type" string="Tipo Progetto"
+                               widget="selection"/>
+                        <label for="cf_volume_target" string="Volume Target"/>
+                        <div class="o_row">
+                            <field name="cf_volume_target" nolabel="1"
+                                   class="oe_inline"/>
+                            <field name="cf_volume_unit" nolabel="1"
+                                   class="oe_inline"/>
+                        </div>
+                        <field name="cf_margin_target" string="Margine Target %"
+                               widget="percentage"/>
+                        <field name="cf_certification_ids" string="Certificazioni"
+                               widget="many2many_tags"
+                               options="{'color_field': 'color', 'no_create': True}"/>
                     </group>
-                    <group string="Dettagli Commerciali">
-                        <label for="cf_incoterms" string="Incoterms"/>
-                        <field name="cf_incoterms" nolabel="1"/>
-                        <label for="cf_payment_term" string="Pagamento"/>
-                        <field name="cf_payment_term" nolabel="1"/>
-                        <label for="cf_moq" string="MOQ"/>
-                        <field name="cf_moq" nolabel="1"/>
-                        <label for="cf_lead_time" string="Lead Time (gg)"/>
-                        <field name="cf_lead_time" nolabel="1"/>
-                        <label for="cf_shelf_life" string="Shelf Life (mesi)"/>
-                        <field name="cf_shelf_life" nolabel="1"/>
+                    <group string="Termini">
+                        <field name="cf_incoterms" string="Incoterms"/>
+                        <field name="cf_payment_term" string="Pagamento"/>
+                        <field name="cf_moq" string="MOQ"/>
+                        <field name="cf_lead_time" string="Lead Time (gg)"/>
+                        <field name="cf_shelf_life" string="Shelf Life (mesi)"/>
                     </group>
                 </group>
             </xpath>
@@ -249,21 +255,31 @@
                            nolabel="1"/>
                 </page>
 
+                <page string="Esito" name="cf_outcome">
+                    <group>
+                        <group string="Esito">
+                            <field name="cf_is_won"/>
+                            <field name="cf_won_date" invisible="not cf_is_won"/>
+                            <field name="cf_recurring" invisible="not cf_is_won"/>
+                        </group>
+                        <group string="Relazioni">
+                            <field name="cf_managed_by_id" string="Agente"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </page>
+
                 <page string="Dossier commerciale" name="cf_dossier">
                     <group>
                         <group string="Stato">
                             <field name="cf_status_dossier"/>
                             <field name="cf_dossier_priority" widget="priority"/>
                         </group>
-                        <group string="Relazioni">
-                            <field name="cf_managed_by_id"
-                                   options="{'no_create': True}"/>
-                        </group>
-                    </group>
-                    <group>
                         <group string="Valore">
                             <field name="cf_dossier_value_estimate" widget="monetary"/>
                         </group>
+                    </group>
+                    <group>
                         <group string="Statistiche">
                             <field name="cf_lead_count" readonly="1"/>
                             <field name="cf_open_issues_count" readonly="1"/>
@@ -271,6 +287,28 @@
                         </group>
                     </group>
                 </page>
+
+                <page string="Tecnico" name="cf_meta" groups="base.group_no_one">
+                    <group>
+                        <group string="Origine">
+                            <field name="cf_template_origin_id" string="Da Template"
+                                   readonly="1"/>
+                        </group>
+                        <group string="Metadati">
+                            <field name="create_uid" string="Creato da" readonly="1"/>
+                            <field name="create_date" string="Data creazione" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+
+            </xpath>
+
+            <!-- ── HIDE casafolino_project notebook tabs from dossier ── -->
+            <xpath expr="//page[@name='cf_shipments']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='cf_children']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
 
         </field>

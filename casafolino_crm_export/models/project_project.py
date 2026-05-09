@@ -29,7 +29,7 @@ class ProjectProject(models.Model):
             ('exploration', 'Esplorativo'),
             ('active', 'Attivo'),
             ('on_hold', 'In pausa'),
-            ('won', 'Vinto / ricorrente'),
+            ('won', 'Vinto / ricorrente'),  # kept for backward compat until migration
             ('closed', 'Chiuso'),
         ],
         string='Status dossier',
@@ -37,6 +37,10 @@ class ProjectProject(models.Model):
         index=True,
         tracking=True,
     )
+
+    cf_is_won = fields.Boolean(string='Vinto', default=False, tracking=True)
+    cf_won_date = fields.Date(string='Data vinto')
+    cf_recurring = fields.Boolean(string='Ricorrente')
 
     cf_dossier_priority = fields.Selection(
         selection=[
