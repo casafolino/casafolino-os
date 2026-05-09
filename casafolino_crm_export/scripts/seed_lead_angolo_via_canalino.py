@@ -254,64 +254,44 @@ import os as _os
 
 ATT_MASTER_NAME = 'CasaFolino Catalogue EN 2026 \u2014 Master'
 
-# Cerca catalogo EN tra tutti i PDF in Documents (ricerca per nome, poi per dimensione)
-keywords = ['catalogue', 'catalog', 'catalogo']
+# Step 0: check if master attachment already exists (from previous run / compression)
+attachment = env['ir.attachment'].search([
+    ('name', '=', ATT_MASTER_NAME),
+    ('public', '=', True),
+    ('mimetype', '=', 'application/pdf'),
+], limit=1, order='id desc')
 
-# Step 1: search in "Cataloghi" folders
 cataloghi_folders = env['documents.document'].search([
     ('name', 'ilike', 'Cataloghi'),
     ('type', '=', 'folder'),
 ])
-candidates = env['documents.document']
-if cataloghi_folders:
-    candidates = env['documents.document'].search([
-        ('folder_id', 'in', cataloghi_folders.ids),
-        ('type', '!=', 'folder'),
-    ])
-    print(f"✓ Folders 'Cataloghi' trovati: {[(f.id, f.name) for f in cataloghi_folders]}")
 
-# Step 2: filter by keyword
-matches = [d for d in candidates if d.attachment_id and any(kw in (d.name or '').lower() for kw in keywords)]
+if attachment:
+    print(f"✓ Catalogo master gia esistente: att_id={attachment.id}, {attachment.file_size/1048576:.2f} MB")
+else:
+    # Search in Cataloghi folders for EN catalogue
+    keywords = ['catalogue', 'catalog', 'catalogo']
+    candidates = env['documents.document']
+    if cataloghi_folders:
+        candidates = env['documents.document'].search([
+            ('folder_id', 'in', cataloghi_folders.ids),
+            ('type', '!=', 'folder'),
+        ])
 
-# Step 3: if nothing in Cataloghi folders, broaden search
-if not matches:
-    all_pdfs = env['documents.document'].search([
-        ('type', '!=', 'folder'),
-    ], limit=100)
-    matches = [d for d in all_pdfs if d.attachment_id and any(kw in (d.name or '').lower() for kw in keywords)]
-    if matches:
-        print(f"✓ Catalogo trovato via ricerca globale")
+    matches = [d for d in candidates if d.attachment_id and any(kw in (d.name or '').lower() for kw in keywords)]
+    en_matches = [d for d in matches if 'en' in (d.name or '').lower()]
+    if en_matches:
+        matches = en_matches
 
-if not matches:
-    print("⚠ Nessun PDF con nome catalogue/catalog/catalogo trovato in Documents")
-    raise Exception("Catalogo non identificabile — caricare il PDF nel folder 'Cataloghi' di Documents")
+    if not matches:
+        raise Exception("Catalogo EN non trovato in Documents")
 
-# Filter for EN specifically if multiple
-en_matches = [d for d in matches if 'en' in (d.name or '').lower()]
-if en_matches:
-    matches = en_matches
-
-# Pick largest
-matches.sort(key=lambda d: d.attachment_id.file_size if d.attachment_id else 0, reverse=True)
-if len(matches) > 1:
-    print(f"⚠ {len(matches)} candidati — uso il piu grande:")
-    for d in matches:
-        size = d.attachment_id.file_size if d.attachment_id else 0
-        print(f"   - {d.name} (id={d.id}, {round(size/1024/1024, 1)} MB)")
-
-doc = matches[0]
-attachment = doc.attachment_id
-if not attachment:
-    raise Exception(f"documents.document id={doc.id} non ha attachment_id collegato")
-
-# Rendi pubblico + rinomina attachment per matching controller
-attachment.write({
-    'public': True,
-    'name': ATT_MASTER_NAME,
-})
-print(f"✓ Catalogo identificato in Documents:")
-print(f"   documents.document: id={doc.id}, name={doc.name}")
-print(f"   ir.attachment: id={attachment.id}, name={attachment.name}, public=True, size={attachment.file_size} bytes")
+    # Pick smallest EN catalogue (likely the compressed one)
+    matches.sort(key=lambda d: d.attachment_id.file_size if d.attachment_id else 0)
+    doc = matches[0]
+    attachment = doc.attachment_id
+    attachment.write({'public': True, 'name': ATT_MASTER_NAME})
+    print(f"✓ Catalogo identificato e reso pubblico: att_id={attachment.id}, {attachment.file_size/1048576:.2f} MB")
 
 # === Attach 3 PDF al template: Catalogo + Novita + Company Profile ===
 # Cerca Novita e Company Profile nello stesso folder o folder 141/187
