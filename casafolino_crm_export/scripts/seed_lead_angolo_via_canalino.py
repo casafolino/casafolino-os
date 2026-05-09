@@ -313,10 +313,33 @@ print(f"✓ Catalogo identificato in Documents:")
 print(f"   documents.document: id={doc.id}, name={doc.name}")
 print(f"   ir.attachment: id={attachment.id}, name={attachment.name}, public=True, size={attachment.file_size} bytes")
 
-# Rimuovi eventuali vecchi attachment dal template (il catalogo ora va via link)
-if template.attachment_ids:
-    template.write({'attachment_ids': [(5, 0, 0)]})
-    print("✓ Vecchi attachment rimossi dal template (catalogo ora via link CTA)")
+# === Attach 3 PDF al template: Catalogo + Novita + Company Profile ===
+# Cerca Novita e Company Profile nello stesso folder o folder 141/187
+novita_doc = env['documents.document'].search([
+    ('name', 'ilike', 'Novit'),
+    ('folder_id', 'in', cataloghi_folders.ids),
+], limit=1)
+profile_doc = env['documents.document'].search([
+    ('name', '=', 'Company Profile.pdf'),
+    ('folder_id', 'in', cataloghi_folders.ids),
+], limit=1)
+
+all_att_ids = [attachment.id]  # catalogo compresso
+if novita_doc and novita_doc.attachment_id:
+    all_att_ids.append(novita_doc.attachment_id.id)
+    print(f"✓ Novita CasaFolino: att_id={novita_doc.attachment_id.id}, {novita_doc.attachment_id.file_size/1048576:.2f} MB")
+else:
+    print("⚠ Novita CasaFolino non trovata — skip")
+
+if profile_doc and profile_doc.attachment_id:
+    all_att_ids.append(profile_doc.attachment_id.id)
+    print(f"✓ Company Profile: att_id={profile_doc.attachment_id.id}, {profile_doc.attachment_id.file_size/1048576:.2f} MB")
+else:
+    print("⚠ Company Profile non trovata — skip")
+
+template.write({'attachment_ids': [(6, 0, all_att_ids)]})
+total_size = sum(env['ir.attachment'].browse(aid).file_size for aid in all_att_ids)
+print(f"✓ Template aggiornato: {len(all_att_ids)} allegati, totale {total_size/1048576:.2f} MB")
 
 env.cr.commit()
 
