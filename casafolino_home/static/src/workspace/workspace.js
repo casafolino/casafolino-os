@@ -90,7 +90,7 @@ export class CFWorkspace extends Component {
             res_model: "project.project",
             views: [[false, "form"]],
             target: "current",
-            context: { default_cf_status_dossier: "attivo", default_user_id: user.userId },
+            context: { default_cf_status_dossier: "active", default_user_id: user.userId },
         });
     }
 

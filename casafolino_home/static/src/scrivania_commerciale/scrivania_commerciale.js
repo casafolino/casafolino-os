@@ -61,7 +61,7 @@ export class CFScrivaniaCommerciale extends Component {
             views: [[false, "form"]],
             target: "current",
             context: {
-                default_cf_status_dossier: "attivo",
+                default_cf_status_dossier: "active",
                 default_user_id: user.userId,
             },
         });
