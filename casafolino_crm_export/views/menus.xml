@@ -57,6 +57,10 @@
     <menuitem id="menu_cf_fairs" name="Fiere"
         parent="menu_cf_export_root" action="action_cf_fair" sequence="31"/>
 
+    <!-- Nuovo Dossier da Template -->
+    <menuitem id="menu_cf_new_dossier_template" name="Nuovo Dossier da Template"
+        parent="menu_cf_export_root" action="action_cf_dossier_create_from_template" sequence="26"/>
+
     <!-- Configurazione -->
     <menuitem id="menu_cf_config" name="Configurazione"
         parent="menu_cf_export_root" sequence="99" groups="base.group_system"/>
@@ -64,7 +68,9 @@
         parent="menu_cf_config" action="action_cf_sequence" sequence="1"/>
     <menuitem id="menu_cf_certs" name="Certificazioni"
         parent="menu_cf_config" action="action_cf_cert" sequence="2"/>
+    <menuitem id="menu_cf_templates" name="Template Dossier"
+        parent="menu_cf_config" action="action_cf_dossier_template" sequence="3"/>
     <menuitem id="menu_cf_settings" name="Fair Follow-up Settings"
-        parent="menu_cf_config" action="action_crm_export_config" sequence="3"/>
+        parent="menu_cf_config" action="action_crm_export_config" sequence="4"/>
 
 </odoo>

@@ -10,3 +10,9 @@ access_cf_sequence_log_line,cf.export.sequence.log.line,model_cf_export_sequence
 access_cf_bulk_owner_wizard,crm.lead.bulk.change.owner.wizard,model_crm_lead_bulk_change_owner_wizard,base.group_user,1,1,1,1
 access_cf_bulk_stage_wizard,crm.lead.bulk.change.stage.wizard,model_crm_lead_bulk_change_stage_wizard,base.group_user,1,1,1,1
 access_crm_lead_wizard_new,crm.lead.wizard.new,model_crm_lead_wizard_new,base.group_user,1,1,1,1
+access_cf_dossier_template,cf.dossier.template,model_cf_dossier_template,base.group_user,1,1,1,0
+access_cf_dossier_template_checkpoint,cf.dossier.template.checkpoint,model_cf_dossier_template_checkpoint,base.group_user,1,1,1,0
+access_cf_dossier_template_admin,cf.dossier.template.admin,model_cf_dossier_template,base.group_system,1,1,1,1
+access_cf_dossier_template_checkpoint_admin,cf.dossier.template.checkpoint.admin,model_cf_dossier_template_checkpoint,base.group_system,1,1,1,1
+access_cf_dossier_actor,cf.dossier.actor,model_cf_dossier_actor,base.group_user,1,1,1,1
+access_cf_dossier_create_wizard,cf.dossier.create.from.template,model_cf_dossier_create_from_template,base.group_user,1,1,1,1
