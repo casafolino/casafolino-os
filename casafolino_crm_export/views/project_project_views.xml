@@ -8,13 +8,96 @@
         <field name="target">current</field>
     </record>
 
-    <!-- Form view extension -->
+    <!-- ══════════════════════════════════════════════════════════════
+         FORM VIEW — Dossier Commerciale CasaFolino
+         Inherits project.edit_project and reshapes it for B2B sales.
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="project_project_form_casafolino" model="ir.ui.view">
         <field name="name">project.project.form.casafolino</field>
         <field name="model">project.project</field>
         <field name="priority">99</field>
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
+
+            <!-- ── HEADER: hide standard, add dossier statusbar ──── -->
+
+            <!-- Hide "Share Project" button -->
+            <xpath expr="//button[@name='action_open_share_project_wizard']"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Hide standard kanban stage_id statusbar -->
+            <xpath expr="//header/field[@name='stage_id']"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Add Vista 360° button + dossier statusbar -->
+            <xpath expr="//header" position="inside">
+                <button name="%(action_project_dashboard_360)d"
+                        string="Apri Vista 360°"
+                        type="action"
+                        class="oe_highlight"
+                        icon="fa-compass"/>
+                <field name="cf_status_dossier" widget="statusbar"
+                       statusbar_visible="exploration,active,on_hold,won,closed"/>
+            </xpath>
+
+            <!-- ── BUTTON BOX: hide standard, add dossier stats ──── -->
+
+            <!-- Hide standard Tasks stat button -->
+            <xpath expr="//button[@name='action_view_tasks']"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Hide standard Dashboard stat button -->
+            <xpath expr="//button[@name='project_update_all_action']"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Add dossier stat buttons (display-only, no Python action) -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" icon="fa-handshake-o"
+                        style="pointer-events: none;">
+                    <field name="cf_lead_count" string="Lead" widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" icon="fa-exclamation-triangle"
+                        style="pointer-events: none;">
+                    <field name="cf_open_issues_count" string="Issues" widget="statinfo"/>
+                </button>
+            </xpath>
+
+            <!-- ── TITLE: fix placeholder, hide star ──── -->
+
+            <!-- Hide favorites star -->
+            <xpath expr="//field[@name='is_favorite']"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Replace placeholder -->
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="placeholder">es. Costco Canada — Miele acacia 2026</attribute>
+            </xpath>
+
+            <!-- ── BODY: hide task-tracking fields ──── -->
+
+            <!-- Hide label_tasks (task naming) -->
+            <xpath expr="//field[@name='label_tasks']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Hide tag_ids (project tags — irrelevant for dossier) -->
+            <xpath expr="//field[@name='tag_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- ── NOTEBOOK: dossier commerciale tab ──── -->
+
             <xpath expr="//notebook" position="inside">
                 <page string="Dossier commerciale" name="cf_dossier">
                     <group>
@@ -39,10 +122,14 @@
                     </group>
                 </page>
             </xpath>
+
         </field>
     </record>
 
-    <!-- Search view extension -->
+    <!-- ══════════════════════════════════════════════════════════════
+         SEARCH VIEW — Dossier filters
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="project_project_search_casafolino" model="ir.ui.view">
         <field name="name">project.project.search.casafolino</field>
         <field name="model">project.project</field>
@@ -65,7 +152,10 @@
         </field>
     </record>
 
-    <!-- Action: list all dossier projects (for menu) -->
+    <!-- ══════════════════════════════════════════════════════════════
+         ACTION: Progetti 360° (list/form)
+         ══════════════════════════════════════════════════════════════ -->
+
     <record id="action_cf_project_dossier" model="ir.actions.act_window">
         <field name="name">Progetti 360°</field>
         <field name="res_model">project.project</field>
