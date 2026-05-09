@@ -10,7 +10,6 @@
 
     <!-- ══════════════════════════════════════════════════════════════
          FORM VIEW — Dossier Commerciale CasaFolino
-         Inherits project.edit_project and reshapes it for B2B sales.
          ══════════════════════════════════════════════════════════════ -->
 
     <record id="project_project_form_casafolino" model="ir.ui.view">
@@ -22,83 +21,112 @@
 
             <!-- ── HEADER: hide standard, add dossier statusbar ──── -->
 
-            <!-- Hide "Share Project" button -->
             <xpath expr="//button[@name='action_open_share_project_wizard']"
                    position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- Hide standard kanban stage_id statusbar -->
             <xpath expr="//header/field[@name='stage_id']"
                    position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- Add Vista 360° button + dossier statusbar -->
             <xpath expr="//header" position="inside">
-                <button name="%(action_project_dashboard_360)d"
+                <button name="action_open_project_dashboard_360"
                         string="Apri Vista 360°"
-                        type="action"
-                        class="oe_highlight"
-                        icon="fa-compass"/>
+                        type="object"
+                        class="btn-primary"
+                        icon="fa-pie-chart"/>
                 <field name="cf_status_dossier" widget="statusbar"
                        statusbar_visible="exploration,active,on_hold,won,closed"/>
             </xpath>
 
-            <!-- ── BUTTON BOX: hide standard, add dossier stats ──── -->
+            <!-- ── BUTTON BOX: hide standard, add 4 dossier stats ── -->
 
-            <!-- Hide standard Tasks stat button -->
             <xpath expr="//button[@name='action_view_tasks']"
                    position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- Hide standard Dashboard stat button -->
             <xpath expr="//button[@name='project_update_all_action']"
                    position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- Add dossier stat buttons (display-only, no Python action) -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button class="oe_stat_button" icon="fa-handshake-o"
-                        style="pointer-events: none;">
+                        type="object" name="action_open_dossier_leads">
                     <field name="cf_lead_count" string="Lead" widget="statinfo"/>
                 </button>
-                <button class="oe_stat_button" icon="fa-exclamation-triangle"
-                        style="pointer-events: none;">
-                    <field name="cf_open_issues_count" string="Issues" widget="statinfo"/>
+                <button class="oe_stat_button" icon="fa-envelope-o"
+                        type="object" name="action_open_dossier_mails">
+                    <field name="cf_mail_count" string="Mail" widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" icon="fa-flask"
+                        type="object" name="action_open_dossier_samples">
+                    <field name="cf_sample_count" string="Campion." widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" icon="fa-shopping-cart"
+                        type="object" name="action_open_dossier_orders">
+                    <field name="cf_order_count" string="Ordini" widget="statinfo"/>
                 </button>
             </xpath>
 
             <!-- ── TITLE: fix placeholder, hide star ──── -->
 
-            <!-- Hide favorites star -->
             <xpath expr="//field[@name='is_favorite']"
                    position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- Replace placeholder -->
             <xpath expr="//field[@name='name']" position="attributes">
                 <attribute name="placeholder">es. Costco Canada — Miele acacia 2026</attribute>
             </xpath>
 
             <!-- ── BODY: hide task-tracking fields ──── -->
 
-            <!-- Hide label_tasks (task naming) -->
             <xpath expr="//field[@name='label_tasks']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- Hide tag_ids (project tags — irrelevant for dossier) -->
             <xpath expr="//field[@name='tag_ids']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- ── NOTEBOOK: dossier commerciale tab ──── -->
+            <!-- ── BODY: add CLIENTE + BRIEF COMMERCIALE groups ──── -->
+
+            <xpath expr="//field[@name='label_tasks']" position="before">
+                <group col="2">
+                    <group string="Cliente">
+                        <field name="cf_buyer_id"
+                               options="{'no_create': True}"
+                               context="{'default_parent_id': partner_id}"/>
+                        <field name="cf_dossier_lang"/>
+                    </group>
+                    <group string="Brief Commerciale">
+                        <label for="cf_volume_target" string="Volume Target"/>
+                        <div class="o_row">
+                            <field name="cf_volume_target" class="oe_inline"/>
+                            <field name="cf_volume_unit" class="oe_inline"/>
+                        </div>
+                        <field name="cf_margin_target" widget="percentage"/>
+                        <field name="cf_certification_ids" widget="many2many_tags"
+                               options="{'color_field': 'color', 'no_create': True}"/>
+                        <field name="cf_next_action" placeholder="es. Inviare campionature 220g"/>
+                        <field name="cf_next_action_date"/>
+                    </group>
+                </group>
+            </xpath>
+
+            <!-- ── NOTEBOOK: dossier tabs ──── -->
 
             <xpath expr="//notebook" position="inside">
+                <page string="Note interne" name="cf_notes">
+                    <field name="cf_internal_notes"
+                           placeholder="Note interne (solo team)..."
+                           nolabel="1"/>
+                </page>
+
                 <page string="Dossier commerciale" name="cf_dossier">
                     <group>
                         <group string="Stato">

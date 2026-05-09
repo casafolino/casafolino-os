@@ -19,6 +19,7 @@
         'data/ir_config_parameter_data.xml',
         'data/mail_template_sial_montreal_en.xml',
         'data/mail_template_sial_montreal_fr.xml',
+        'data/cf_certification_data.xml',
         'views/crm_lead_views.xml',
         'views/crm_lead_list_enriched_view.xml',
         'views/res_partner_views.xml',
