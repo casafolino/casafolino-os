@@ -252,60 +252,49 @@ print()
 
 import os as _os
 
-DOCUMENTS_FOLDER_TOKEN = 'vIeQ6iwcSeirC1opwEAKJAobb'
 ATT_MASTER_NAME = 'CasaFolino Catalogue EN 2026 \u2014 Master'
 
-# Cerca folder Documents tramite access_token (document_token in Odoo 18)
-folder = env['documents.document'].search([
-    ('document_token', '=', DOCUMENTS_FOLDER_TOKEN),
-    ('type', '=', 'folder'),
-], limit=1)
-
-if not folder:
-    # Fallback: campo access_token
-    folder = env['documents.document'].search([
-        ('type', '=', 'folder'),
-    ])
-    # Try matching by token in URL-accessible fields
-    for f in folder:
-        if hasattr(f, 'access_token') and f.access_token == DOCUMENTS_FOLDER_TOKEN:
-            folder = f
-            break
-        if hasattr(f, 'document_token') and f.document_token == DOCUMENTS_FOLDER_TOKEN:
-            folder = f
-            break
-    else:
-        # Last resort: search all PDFs with catalogue-like name
-        print(f"⚠ Folder con token {DOCUMENTS_FOLDER_TOKEN} non trovato. Cerco catalogo per nome...")
-        folder = None
-
-if folder and hasattr(folder, 'id'):
-    print(f"✓ Folder Documents trovato: id={folder.id}, name={folder.name}")
-    candidates = env['documents.document'].search([
-        ('folder_id', '=', folder.id),
-        ('mimetype', '=', 'application/pdf'),
-    ])
-else:
-    # Search all PDF documents for catalogue
-    candidates = env['documents.document'].search([
-        ('mimetype', '=', 'application/pdf'),
-    ], limit=50)
-    print(f"⚠ Folder non trovato — cerco tra tutti i PDF ({len(candidates)} candidati)")
-
-# Filtra per nome
+# Cerca catalogo EN tra tutti i PDF in Documents (ricerca per nome, poi per dimensione)
 keywords = ['catalogue', 'catalog', 'catalogo']
-matches = [d for d in candidates if any(kw in (d.name or '').lower() for kw in keywords)]
 
-if len(matches) == 0:
-    print(f"⚠ Nessun match per keyword. PDF presenti:")
-    for d in candidates[:20]:
-        print(f"   - {d.name} (id={d.id}, att_id={d.attachment_id.id if d.attachment_id else 'N/A'})")
-    raise Exception("Catalogo non identificabile per nome")
+# Step 1: search in "Cataloghi" folders
+cataloghi_folders = env['documents.document'].search([
+    ('name', 'ilike', 'Cataloghi'),
+    ('type', '=', 'folder'),
+])
+candidates = env['documents.document']
+if cataloghi_folders:
+    candidates = env['documents.document'].search([
+        ('folder_id', 'in', cataloghi_folders.ids),
+        ('type', '!=', 'folder'),
+    ])
+    print(f"✓ Folders 'Cataloghi' trovati: {[(f.id, f.name) for f in cataloghi_folders]}")
 
+# Step 2: filter by keyword
+matches = [d for d in candidates if d.attachment_id and any(kw in (d.name or '').lower() for kw in keywords)]
+
+# Step 3: if nothing in Cataloghi folders, broaden search
+if not matches:
+    all_pdfs = env['documents.document'].search([
+        ('type', '!=', 'folder'),
+    ], limit=100)
+    matches = [d for d in all_pdfs if d.attachment_id and any(kw in (d.name or '').lower() for kw in keywords)]
+    if matches:
+        print(f"✓ Catalogo trovato via ricerca globale")
+
+if not matches:
+    print("⚠ Nessun PDF con nome catalogue/catalog/catalogo trovato in Documents")
+    raise Exception("Catalogo non identificabile — caricare il PDF nel folder 'Cataloghi' di Documents")
+
+# Filter for EN specifically if multiple
+en_matches = [d for d in matches if 'en' in (d.name or '').lower()]
+if en_matches:
+    matches = en_matches
+
+# Pick largest
+matches.sort(key=lambda d: d.attachment_id.file_size if d.attachment_id else 0, reverse=True)
 if len(matches) > 1:
-    # Pick the largest one (most likely the full catalogue)
-    matches.sort(key=lambda d: d.attachment_id.file_size if d.attachment_id else 0, reverse=True)
-    print(f"⚠ {len(matches)} candidati trovati — uso il più grande:")
+    print(f"⚠ {len(matches)} candidati — uso il piu grande:")
     for d in matches:
         size = d.attachment_id.file_size if d.attachment_id else 0
         print(f"   - {d.name} (id={d.id}, {round(size/1024/1024, 1)} MB)")
