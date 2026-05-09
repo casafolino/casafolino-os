@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_template_inbound_it_dettaglio_gourmet_apology" model="mail.template">
+        <field name="name">Inbound IT Dettaglio Gourmet — Variante con apologia</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">CasaFolino — riscontro alla sua richiesta (e scuse)</field>
+        <field name="email_from">martina.sinopoli@casafolino.com</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="email_cc">antonio@casafolino.com</field>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
+
+<p>Buongiorno {{ object.contact_name or object.partner_name }},</p>
+
+<p>prima di tutto le devo delle <strong>scuse</strong>: ci risulta che lei abbia provato a contattarci
+più volte senza ricevere riscontro. Questo non è il livello di servizio che vogliamo offrire, e proprio
+in queste settimane stiamo strutturando meglio i flussi di gestione delle richieste in arrivo per non
+far ripetere situazioni del genere.</p>
+
+<p>La ringrazio per la pazienza e per averci ricontattato: sapere che <strong>{{ object.partner_name }}</strong>
+ci pensa come fornitore complementare per il dettaglio è per noi un riconoscimento.</p>
+
+<p>In allegato trova la nostra presentazione prodotti, con la gamma completa: creme spalmabili, mieli
+aromatizzati e mousse di miele, crispy chili, risotti, miscele di spezie, cantucci e cioccolati.
+Tutto produzione nostra, in Calabria.</p>
+
+<p style="margin: 28px 0;">
+  <a href="https://erp.casafolino.com/catalogue/en-2026"
+     style="display: inline-block; background-color: #6B4A1E; color: #ffffff;
+            padding: 14px 28px; text-decoration: none; border-radius: 4px;
+            font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
+    &#128213; Scarica il catalogo prodotti
+  </a>
+</p>
+
+<p>Per prepararle un'offerta su misura, mi servirebbero alcune informazioni:</p>
+
+<ol>
+  <li>Su quali linee sarebbe più interessato a partire? (creme, risotti, spezie, cantucci e cioccolati sono particolarmente complementari a un'offerta apistica)</li>
+  <li>Volumi indicativi che ha in mente per un primo ordine</li>
+  <li>Ragione sociale e P.IVA per intestare correttamente l'offerta</li>
+</ol>
+
+<p>Se preferisce, possiamo anche fare una breve telefonata la prossima settimana.</p>
+
+<p>Grazie ancora per la pazienza,</p>
+
+<p>Un caro saluto,<br/>
+<strong>Martina Sinopoli</strong><br/>
+CasaFolino S.r.l. Società Benefit<br/>
+<a href="mailto:martina.sinopoli@casafolino.com" style="color: #6B4A1E;">martina.sinopoli@casafolino.com</a></p>
+
+</div>
+        </field>
+    </record>
+</odoo>

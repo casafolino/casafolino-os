@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_template_inbound_private_label_it" model="mail.template">
+        <field name="name">Inbound Private Label IT — Co-development</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">CasaFolino — sviluppo prodotto private label</field>
+        <field name="email_from">antonio@casafolino.com</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="email_cc">josefina.lazzaro@casafolino.com</field>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
+
+<p>Buongiorno {{ object.contact_name or object.partner_name }},</p>
+
+<p>grazie per averci scritto e per averci pensato per il vostro progetto. Il tipo di sviluppo
+prodotto che descrive — ricetta strutturata, formato vetro, volumi ben dimensionati — è
+esattamente l'ambito su cui ci troviamo bene a lavorare.</p>
+
+<p>CasaFolino è certificata <strong>EU Organic</strong> e abbiamo già esperienza nello sviluppo
+di referenze in vetro per clienti private label, anche per mercati extra-UE.</p>
+
+<p style="margin: 28px 0;">
+  <a href="https://erp.casafolino.com/catalogue/en-2026"
+     style="display: inline-block; background-color: #6B4A1E; color: #ffffff;
+            padding: 14px 28px; text-decoration: none; border-radius: 4px;
+            font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
+    &#128213; Catalogo CasaFolino (riferimento)
+  </a>
+</p>
+
+<p>Per portare avanti la valutazione di fattibilità, vorrei coinvolgere direttamente la nostra
+responsabile qualità e laboratorio, <strong>Maria Mirabelli</strong>, e fissare una call di
+30-45 minuti la prossima settimana. Questi i punti su cui mi piacerebbe ragionare insieme:</p>
+
+<ol>
+  <li><strong>Tecnica</strong> — acidità, conservabilità, processo termico, fattibilità ricetta con materie prime BIO disponibili</li>
+  <li><strong>Packaging</strong> — formato vetro, opzioni e tempi forniture</li>
+  <li><strong>Etichettatura</strong> — requisiti del mercato finale (lingua, claim BIO compliant)</li>
+  <li><strong>Timing &amp; pricing</strong> — target price, finestra di consegna, eventuale piano produzioni ricorrenti</li>
+  <li><strong>Documentazione</strong> — certificati BIO, schede tecniche, allergeni</li>
+</ol>
+
+<p>In allegato trova il nostro company profile e il catalogo CasaFolino come riferimento — anche se
+nel vostro caso il valore aggiunto sarà sullo sviluppo dedicato.</p>
+
+<p>Quando preferite per la call?</p>
+
+<p>Un caro saluto,<br/>
+<strong>Antonio Folino</strong><br/>
+CEO &amp; Founder<br/>
+CasaFolino S.r.l. Società Benefit<br/>
+<a href="mailto:antonio@casafolino.com" style="color: #6B4A1E;">antonio@casafolino.com</a></p>
+
+</div>
+        </field>
+    </record>
+</odoo>

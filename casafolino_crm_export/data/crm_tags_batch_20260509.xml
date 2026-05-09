@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="tag_distributore" model="crm.tag">
+        <field name="name">Distributore</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_export" model="crm.tag">
+        <field name="name">Export</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_retail_chain" model="crm.tag">
+        <field name="name">Retail Chain</field>
+        <field name="color">3</field>
+    </record>
+    <record id="tag_private_label" model="crm.tag">
+        <field name="name">Private Label</field>
+        <field name="color">4</field>
+    </record>
+    <record id="tag_co_development" model="crm.tag">
+        <field name="name">Co-development</field>
+        <field name="color">5</field>
+    </record>
+    <record id="tag_bio" model="crm.tag">
+        <field name="name">Bio</field>
+        <field name="color">6</field>
+    </record>
+    <record id="tag_apicoltura" model="crm.tag">
+        <field name="name">Apicoltura</field>
+        <field name="color">7</field>
+    </record>
+    <record id="tag_apologia" model="crm.tag">
+        <field name="name">Apologia</field>
+        <field name="color">8</field>
+    </record>
+    <record id="tag_stagionalita_estiva" model="crm.tag">
+        <field name="name">Stagionalità estiva</field>
+        <field name="color">9</field>
+    </record>
+    <record id="tag_adv_social" model="crm.tag">
+        <field name="name">Adv Social</field>
+        <field name="color">10</field>
+    </record>
+    <record id="tag_calabria" model="crm.tag">
+        <field name="name">Calabria</field>
+        <field name="color">11</field>
+    </record>
+    <record id="tag_lombardia" model="crm.tag">
+        <field name="name">Lombardia</field>
+        <field name="color">1</field>
+    </record>
+    <record id="tag_marche" model="crm.tag">
+        <field name="name">Marche</field>
+        <field name="color">2</field>
+    </record>
+    <record id="tag_geo_fr" model="crm.tag">
+        <field name="name">FR</field>
+        <field name="color">3</field>
+    </record>
+    <record id="tag_geo_br" model="crm.tag">
+        <field name="name">BR</field>
+        <field name="color">4</field>
+    </record>
+    <record id="tag_geo_en_market" model="crm.tag">
+        <field name="name">EN</field>
+        <field name="color">5</field>
+    </record>
+    <record id="tag_salon_gourmets_2026" model="crm.tag">
+        <field name="name">Salón Gourmets 2026</field>
+        <field name="color">6</field>
+    </record>
+    <record id="tag_marca_bologna_2026" model="crm.tag">
+        <field name="name">Marca Bologna 2026</field>
+        <field name="color">7</field>
+    </record>
+    <record id="tag_australia_market" model="crm.tag">
+        <field name="name">Australia (mercato finale)</field>
+        <field name="color">8</field>
+    </record>
+    <record id="tag_direct_import" model="crm.tag">
+        <field name="name">Direct Import</field>
+        <field name="color">9</field>
+    </record>
+</odoo>
