@@ -99,7 +99,10 @@
 
             <!-- ── HIDE casafolino_project header groups ──── -->
 
-            <xpath expr="//group[@string='CasaFolino']/.." position="attributes">
+            <xpath expr="//field[@name='cf_template_id']/.." position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='cf_partner_id']/.." position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
 
