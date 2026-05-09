@@ -247,44 +247,87 @@ env.cr.commit()
 print()
 
 # ═══════════════════════════════════════════════════════════════
-# 5. ATTACHMENT — collegare catalogo al template
+# 5. CATALOGO — identifica in Odoo Documents e rendi pubblico
 # ═══════════════════════════════════════════════════════════════
 
-catalogue_att = env['ir.attachment'].search([
-    ('name', '=', 'CasaFolino_Catalogue_EN_2026.pdf'),
-    ('res_model', '=', 'mail.template'),
-    ('res_id', '=', template.id),
+import os as _os
+
+DOCUMENTS_FOLDER_TOKEN = 'vIeQ6iwcSeirC1opwEAKJAobb'
+ATT_MASTER_NAME = 'CasaFolino Catalogue EN 2026 \u2014 Master'
+
+# Cerca folder Documents tramite access_token (document_token in Odoo 18)
+folder = env['documents.document'].search([
+    ('document_token', '=', DOCUMENTS_FOLDER_TOKEN),
+    ('type', '=', 'folder'),
 ], limit=1)
 
-if not catalogue_att:
-    # Read from static path
-    import base64
-    pdf_path = '/mnt/extra-addons/custom/casafolino_crm_export/static/catalogue/casafolino_catalogue_en_2026.pdf'
-    # Fallback for local dev
-    import os as _os
-    if not _os.path.exists(pdf_path):
-        pdf_path = '/Users/antoniofolino/casafolino-os/casafolino_crm_export/static/catalogue/casafolino_catalogue_en_2026.pdf'
-    if _os.path.exists(pdf_path):
-        with open(pdf_path, 'rb') as f:
-            pdf_data = base64.b64encode(f.read())
-        catalogue_att = env['ir.attachment'].create({
-            'name': 'CasaFolino_Catalogue_EN_2026.pdf',
-            'type': 'binary',
-            'datas': pdf_data,
-            'mimetype': 'application/pdf',
-            'res_model': 'mail.template',
-            'res_id': template.id,
-        })
-        # Link to template
-        template.write({'attachment_ids': [(4, catalogue_att.id)]})
-        print(f"✓ Attachment catalogo creato: ID {catalogue_att.id} ({len(pdf_data) // 1024} KB base64)")
+if not folder:
+    # Fallback: campo access_token
+    folder = env['documents.document'].search([
+        ('type', '=', 'folder'),
+    ])
+    # Try matching by token in URL-accessible fields
+    for f in folder:
+        if hasattr(f, 'access_token') and f.access_token == DOCUMENTS_FOLDER_TOKEN:
+            folder = f
+            break
+        if hasattr(f, 'document_token') and f.document_token == DOCUMENTS_FOLDER_TOKEN:
+            folder = f
+            break
     else:
-        print(f"⚠ PDF non trovato a {pdf_path} — attachment non creato")
+        # Last resort: search all PDFs with catalogue-like name
+        print(f"⚠ Folder con token {DOCUMENTS_FOLDER_TOKEN} non trovato. Cerco catalogo per nome...")
+        folder = None
+
+if folder and hasattr(folder, 'id'):
+    print(f"✓ Folder Documents trovato: id={folder.id}, name={folder.name}")
+    candidates = env['documents.document'].search([
+        ('folder_id', '=', folder.id),
+        ('mimetype', '=', 'application/pdf'),
+    ])
 else:
-    # Ensure linked to template
-    if catalogue_att.id not in template.attachment_ids.ids:
-        template.write({'attachment_ids': [(4, catalogue_att.id)]})
-    print(f"✓ Attachment catalogo (esistente): ID {catalogue_att.id}")
+    # Search all PDF documents for catalogue
+    candidates = env['documents.document'].search([
+        ('mimetype', '=', 'application/pdf'),
+    ], limit=50)
+    print(f"⚠ Folder non trovato — cerco tra tutti i PDF ({len(candidates)} candidati)")
+
+# Filtra per nome
+keywords = ['catalogue', 'catalog', 'catalogo']
+matches = [d for d in candidates if any(kw in (d.name or '').lower() for kw in keywords)]
+
+if len(matches) == 0:
+    print(f"⚠ Nessun match per keyword. PDF presenti:")
+    for d in candidates[:20]:
+        print(f"   - {d.name} (id={d.id}, att_id={d.attachment_id.id if d.attachment_id else 'N/A'})")
+    raise Exception("Catalogo non identificabile per nome")
+
+if len(matches) > 1:
+    # Pick the largest one (most likely the full catalogue)
+    matches.sort(key=lambda d: d.attachment_id.file_size if d.attachment_id else 0, reverse=True)
+    print(f"⚠ {len(matches)} candidati trovati — uso il più grande:")
+    for d in matches:
+        size = d.attachment_id.file_size if d.attachment_id else 0
+        print(f"   - {d.name} (id={d.id}, {round(size/1024/1024, 1)} MB)")
+
+doc = matches[0]
+attachment = doc.attachment_id
+if not attachment:
+    raise Exception(f"documents.document id={doc.id} non ha attachment_id collegato")
+
+# Rendi pubblico + rinomina attachment per matching controller
+attachment.write({
+    'public': True,
+    'name': ATT_MASTER_NAME,
+})
+print(f"✓ Catalogo identificato in Documents:")
+print(f"   documents.document: id={doc.id}, name={doc.name}")
+print(f"   ir.attachment: id={attachment.id}, name={attachment.name}, public=True, size={attachment.file_size} bytes")
+
+# Rimuovi eventuali vecchi attachment dal template (il catalogo ora va via link)
+if template.attachment_ids:
+    template.write({'attachment_ids': [(5, 0, 0)]})
+    print("✓ Vecchi attachment rimossi dal template (catalogo ora via link CTA)")
 
 env.cr.commit()
 
