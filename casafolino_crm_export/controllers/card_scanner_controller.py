@@ -11,6 +11,8 @@ _logger = logging.getLogger(__name__)
 COUNTRY_LANG_MAP = {
     'FR': 'fr_FR', 'MC': 'fr_FR', 'BE': 'fr_FR',
     'CA': 'en_US',
+    'IT': 'it_IT', 'SM': 'it_IT', 'VA': 'it_IT',
+    'DE': 'de_DE', 'AT': 'de_DE', 'CH': 'de_DE', 'LI': 'de_DE',
 }
 FR_CITIES = {'montréal', 'montreal', 'québec', 'quebec'}
 DEFAULT_LANG = 'en_US'
@@ -89,11 +91,11 @@ class CardScannerController(http.Controller):
         return {'error': None, 'data': data}
 
     @http.route('/casafolino/crm/card-confirm', type='json', auth='user', methods=['POST'])
-    def confirm_card(self, form_data, image_data, language='en_US', send_email=True):
+    def confirm_card(self, form_data, image_data, language='en_US', send_email=True, fair='sial'):
         """Create partner + lead + send follow-up email."""
         try:
             result = request.env['crm.lead'].create_from_card_scan(
-                form_data, image_data, language, send_email,
+                form_data, image_data, language, send_email, fair=fair,
             )
             return result
         except Exception as e:

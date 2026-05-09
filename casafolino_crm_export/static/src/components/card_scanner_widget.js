@@ -9,6 +9,11 @@ class CardScannerWidget extends Component {
     static props = ["*"];
 
     setup() {
+        // Read fair config from action context (default: sial)
+        const context = this.props.action?.context || {};
+        this.fair = context.fair || "sial";
+        this.fairLabel = context.fair_label || "SIAL Canada Montréal 2026";
+
         this.state = useState({
             step: "capture",
             imageData: null,
@@ -32,6 +37,7 @@ class CardScannerWidget extends Component {
             leadId: null,
             leadName: null,
             emailSent: false,
+            fairLabel: this.fairLabel,
         });
         this.fileInputRef = useRef("fileInput");
         this.notification = useService("notification");
@@ -110,6 +116,7 @@ class CardScannerWidget extends Component {
                 image_data: this.state.imageData,
                 language: this.state.language,
                 send_email: sendEmail,
+                fair: this.fair,
             });
             if (result.success) {
                 this.state.leadId = result.lead_id;

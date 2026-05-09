@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Card Scanner client action -->
+    <!-- Card Scanner client action — SIAL -->
     <record id="action_card_scanner" model="ir.actions.client">
         <field name="name">Card Scanner SIAL</field>
         <field name="tag">casafolino_card_scanner</field>
+        <field name="context">{"fair": "sial", "fair_label": "SIAL Canada Montréal 2026"}</field>
+    </record>
+
+    <!-- Card Scanner client action — Tuttofood -->
+    <record id="action_card_scanner_tuttofood" model="ir.actions.client">
+        <field name="name">Card Scanner Tuttofood</field>
+        <field name="tag">casafolino_card_scanner</field>
+        <field name="context">{"fair": "tuttofood", "fair_label": "Tuttofood 2026 — Milano Rho"}</field>
     </record>
 
     <!-- Actions config -->
@@ -33,9 +41,11 @@
     <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
         web_icon="casafolino_crm_export,static/description/icon.png"/>
 
-    <!-- Card Scanner — first item -->
-    <menuitem id="menu_card_scanner" name="Nuovo lead da biglietto"
+    <!-- Card Scanners -->
+    <menuitem id="menu_card_scanner" name="Scanner SIAL"
         parent="menu_cf_export_root" action="action_card_scanner" sequence="0"/>
+    <menuitem id="menu_card_scanner_tuttofood" name="Scanner Tuttofood"
+        parent="menu_cf_export_root" action="action_card_scanner_tuttofood" sequence="1"/>
 
     <!-- Pipeline principale -->
     <menuitem id="menu_cf_all" name="Tutte le Pipeline"
