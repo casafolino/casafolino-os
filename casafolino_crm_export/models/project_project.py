@@ -72,6 +72,163 @@ class ProjectProject(models.Model):
         string='Lead CRM collegati',
     )
 
+    # ------------------------------------------------------------------
+    # Brief Commerciale fields
+    # ------------------------------------------------------------------
+
+    cf_buyer_id = fields.Many2one(
+        'res.partner', string='Buyer',
+        ondelete='set null', index=True,
+    )
+    cf_dossier_lang = fields.Selection([
+        ('it', 'Italiano'), ('en', 'English'), ('es', 'Español'),
+        ('fr', 'Français'), ('de', 'Deutsch'), ('pt', 'Português'),
+        ('ar', 'العربية'), ('zh', '中文'),
+    ], string='Lingua', default='en')
+    cf_volume_target = fields.Float('Volume Target')
+    cf_volume_unit = fields.Selection([
+        ('unit', 'Unità (pezzi)'), ('cartoni', 'Cartoni'),
+        ('pallet', 'Pallet'), ('kg', 'Kg'), ('tonnellate', 'Tonnellate'),
+    ], string='Unità', default='unit')
+    cf_margin_target = fields.Float(
+        'Margine Target %',
+        help='Margine in percentuale (es. 32 per 32%)',
+    )
+    cf_certification_ids = fields.Many2many(
+        'cf.export.certification', string='Certificazioni',
+    )
+    cf_next_action = fields.Char('Prossima Azione', size=256)
+    cf_next_action_date = fields.Date('Data Prossima Azione')
+    cf_internal_notes = fields.Text('Note Interne')
+
+    # ------------------------------------------------------------------
+    # Stat button counts (mail, sample, order — lead/issues in existing)
+    # ------------------------------------------------------------------
+
+    cf_mail_count = fields.Integer(
+        compute='_compute_cf_mail_count', string='Mail',
+    )
+    cf_sample_count = fields.Integer(
+        compute='_compute_cf_sample_count', string='Campionature',
+    )
+    cf_order_count = fields.Integer(
+        compute='_compute_cf_order_count', string='Ordini',
+    )
+
+    @api.depends('partner_id')
+    def _compute_cf_mail_count(self):
+        for rec in self:
+            try:
+                MailMsg = self.env.get('casafolino.mail.message')
+                if MailMsg and rec.partner_id:
+                    rec.cf_mail_count = MailMsg.search_count([
+                        ('partner_id', '=', rec.partner_id.id),
+                        ('state', 'in', ('keep', 'auto_keep')),
+                    ])
+                else:
+                    rec.cf_mail_count = 0
+            except Exception:
+                rec.cf_mail_count = 0
+
+    @api.depends('partner_id')
+    def _compute_cf_sample_count(self):
+        for rec in self:
+            try:
+                Sample = self.env.get('cf.export.sample')
+                if Sample and rec.partner_id:
+                    rec.cf_sample_count = Sample.search_count([
+                        ('partner_id', '=', rec.partner_id.id),
+                    ])
+                else:
+                    rec.cf_sample_count = 0
+            except Exception:
+                rec.cf_sample_count = 0
+
+    @api.depends('partner_id')
+    def _compute_cf_order_count(self):
+        for rec in self:
+            try:
+                SO = self.env.get('sale.order')
+                if SO and rec.partner_id:
+                    rec.cf_order_count = SO.search_count([
+                        ('partner_id', '=', rec.partner_id.id),
+                        ('state', 'not in', ('draft', 'cancel')),
+                    ])
+                else:
+                    rec.cf_order_count = 0
+            except Exception:
+                rec.cf_order_count = 0
+
+    # ------------------------------------------------------------------
+    # Stat button actions
+    # ------------------------------------------------------------------
+
+    def action_open_dossier_leads(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lead — %s' % self.name,
+            'res_model': 'crm.lead',
+            'view_mode': 'list,kanban,form',
+            'domain': [('cf_project_id', '=', self.id)],
+            'context': {
+                'default_cf_project_id': self.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+            },
+        }
+
+    def action_open_dossier_mails(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Mail — %s' % self.name,
+            'res_model': 'casafolino.mail.message',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
+                ('state', 'in', ('keep', 'auto_keep')),
+            ],
+        }
+
+    def action_open_dossier_samples(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Campionature — %s' % self.name,
+            'res_model': 'cf.export.sample',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
+            ],
+        }
+
+    def action_open_dossier_orders(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Ordini — %s' % self.name,
+            'res_model': 'sale.order',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
+                ('state', 'not in', ('draft', 'cancel')),
+            ],
+        }
+
+    def action_open_project_dashboard_360(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_crm_export.project_dashboard',
+            'name': 'Vista 360° — %s' % self.name,
+            'context': {
+                'default_project_id': self.id,
+                'active_id': self.id,
+                'active_model': 'project.project',
+            },
+            'target': 'main',
+        }
+
     @api.depends('partner_id')
     def _compute_cf_dossier_stats(self):
         if not self.ids:
