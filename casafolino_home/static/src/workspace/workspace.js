@@ -85,13 +85,9 @@ export class CFWorkspace extends Component {
     // ======== CRM actions ========
 
     async onNewProject() {
-        await this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "project.project",
-            views: [[false, "form"]],
-            target: "current",
-            context: { default_cf_status_dossier: "active", default_user_id: user.userId },
-        });
+        await this.action.doAction(
+            "casafolino_crm_export.action_cf_commercial_project_wizard"
+        );
     }
 
     async onNewLead() {
