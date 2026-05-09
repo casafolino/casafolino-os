@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_template_inbound_it_dettaglio_gourmet" model="mail.template">
+        <field name="name">Inbound IT — Dettaglio Gourmet — Qualifica con catalogo EN</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">CasaFolino — riscontro alla sua richiesta</field>
+        <field name="email_from">martina.sinopoli@casafolino.com</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="email_cc">antonio@casafolino.com</field>
+        <field name="body_html" type="html">
+<p>Buongiorno <t t-if="object.contact_name"><t t-out="object.contact_name"/></t><t t-else=""><t t-out="object.partner_name or 'gentile cliente'"/></t>,</p>
+
+<p>grazie per averci contattato tramite il sito. Abbiamo visto che gestite
+<strong><t t-out="object.partner_name or ''"/></strong><t t-if="object.city"> a <t t-out="object.city"/></t>:
+un negozio molto in linea con il tipo di cliente con cui ci troviamo bene a lavorare,
+soprattutto per la parte ceste e confezioni regalo.</p>
+
+<p>In allegato trova la nostra <strong>presentazione prodotti</strong>, con la gamma completa:
+creme spalmabili, mieli aromatizzati e mousse di miele, crispy chili, risotti,
+miscele di spezie, cantucci e cioccolati. Tutto produzione nostra, in Calabria.</p>
+
+<p>Per prepararle un'offerta davvero utile e non un listino generico,
+mi servirebbero due-tre informazioni:</p>
+
+<ol>
+  <li>Su quali linee è più interessata a partire? (la combinazione mieli + creme + cantucci funziona molto bene per il gift)</li>
+  <li>Volumi indicativi che ha in mente per un primo ordine</li>
+  <li>Ragione sociale e P.IVA per intestare correttamente l'offerta</li>
+</ol>
+
+<p>Appena ho questi elementi le invio listino dedicato con condizioni, MOQ e tempi di consegna.
+Se preferisce, possiamo anche fare una breve call di 15 minuti la prossima settimana:
+a volte è il modo più veloce per capire cosa fa al caso vostro.</p>
+
+<p>Resto a disposizione.</p>
+
+<p>Un caro saluto,<br/>
+<strong>Martina Sinopoli</strong><br/>
+CasaFolino S.r.l. Società Benefit<br/>
+<a href="mailto:martina.sinopoli@casafolino.com">martina.sinopoli@casafolino.com</a></p>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+</odoo>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ══════ Fonte (color 4 = verde chiaro) ══════ -->
+    <record id="tag_inbound_shopify" model="crm.tag">
+        <field name="name">Inbound Shopify</field>
+        <field name="color">4</field>
+    </record>
+
+    <!-- ══════ Tipologia negozio (color 5 = viola) ══════ -->
+    <record id="tag_dettaglio_gourmet" model="crm.tag">
+        <field name="name">Dettaglio gourmet</field>
+        <field name="color">5</field>
+    </record>
+    <record id="tag_gift_ceste" model="crm.tag">
+        <field name="name">Gift / ceste regalo</field>
+        <field name="color">5</field>
+    </record>
+
+    <!-- ══════ Geo regionale (color 7 = azzurro) ══════ -->
+    <record id="tag_geo_emilia_romagna" model="crm.tag">
+        <field name="name">Emilia-Romagna</field>
+        <field name="color">7</field>
+    </record>
+    <record id="tag_geo_it" model="crm.tag">
+        <field name="name">IT</field>
+        <field name="color">1</field>
+    </record>
+
+    <!-- ══════ UTM source ══════ -->
+    <record id="utm_source_shopify_contact_form" model="utm.source">
+        <field name="name">Shopify Contact Form</field>
+    </record>
+
+</odoo>
