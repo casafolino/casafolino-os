@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -102,6 +103,74 @@ class ProjectProject(models.Model):
     cf_internal_notes = fields.Text('Note Interne')
 
     # ------------------------------------------------------------------
+    # Dettagli Commerciali
+    # ------------------------------------------------------------------
+
+    cf_incoterms = fields.Selection([
+        ('exw', 'EXW'), ('fca', 'FCA'), ('fob', 'FOB'),
+        ('cif', 'CIF'), ('ddp', 'DDP'),
+    ], string='Incoterms')
+    cf_payment_term = fields.Selection([
+        ('advance', 'Anticipo 100%'),
+        ('30_70', '30% advance / 70% balance'),
+        ('50_50', '50/50'),
+        ('lc', 'LC at sight'),
+        ('30_days', '30 giorni FM'),
+        ('60_days', '60 giorni FM'),
+        ('open_account', 'Open account'),
+    ], string='Pagamento')
+    cf_moq = fields.Char('MOQ', size=128)
+    cf_lead_time = fields.Integer('Lead Time (gg)')
+    cf_shelf_life = fields.Integer('Shelf Life (mesi)')
+
+    # ------------------------------------------------------------------
+    # Multi-operatore
+    # ------------------------------------------------------------------
+
+    cf_co_user_ids = fields.Many2many(
+        'res.users', 'project_co_user_rel',
+        string='Co-responsabili',
+        help='Operatori interni che possono visualizzare e modificare il dossier',
+    )
+
+    # ------------------------------------------------------------------
+    # Template origin
+    # ------------------------------------------------------------------
+
+    cf_template_origin_id = fields.Many2one(
+        'cf.dossier.template', string='Da template',
+        ondelete='set null', readonly=True,
+    )
+
+    # ------------------------------------------------------------------
+    # Network & Commissioni
+    # ------------------------------------------------------------------
+
+    cf_actor_ids = fields.One2many(
+        'cf.dossier.actor', 'project_id', string='Network e Commissioni',
+    )
+    cf_actor_count = fields.Integer(
+        compute='_compute_cf_actor_count', string='Network',
+    )
+
+    # ------------------------------------------------------------------
+    # Related inline lists (read-only computed Many2many)
+    # ------------------------------------------------------------------
+
+    cf_dossier_mail_ids = fields.Many2many(
+        'casafolino.mail.message', compute='_compute_cf_dossier_mail_ids',
+        string='Mail dossier',
+    )
+    cf_dossier_sample_ids = fields.Many2many(
+        'cf.export.sample', compute='_compute_cf_dossier_sample_ids',
+        string='Campionature dossier',
+    )
+    cf_dossier_attachment_ids = fields.Many2many(
+        'ir.attachment', compute='_compute_cf_dossier_attachment_ids',
+        string='Documenti dossier',
+    )
+
+    # ------------------------------------------------------------------
     # Stat button counts (mail, sample, order — lead/issues in existing)
     # ------------------------------------------------------------------
 
@@ -159,6 +228,68 @@ class ProjectProject(models.Model):
             except Exception:
                 rec.cf_order_count = 0
 
+    @api.depends('cf_actor_ids')
+    def _compute_cf_actor_count(self):
+        for rec in self:
+            rec.cf_actor_count = len(rec.cf_actor_ids)
+
+    @api.depends('partner_id')
+    def _compute_cf_dossier_mail_ids(self):
+        for rec in self:
+            try:
+                MailMsg = self.env.get('casafolino.mail.message')
+                if MailMsg and rec.partner_id:
+                    rec.cf_dossier_mail_ids = MailMsg.search([
+                        ('partner_id', '=', rec.partner_id.id),
+                    ], order='email_date desc', limit=50)
+                else:
+                    rec.cf_dossier_mail_ids = False
+            except Exception:
+                rec.cf_dossier_mail_ids = False
+
+    @api.depends('partner_id')
+    def _compute_cf_dossier_sample_ids(self):
+        for rec in self:
+            try:
+                Sample = self.env.get('cf.export.sample')
+                if Sample and rec.partner_id:
+                    rec.cf_dossier_sample_ids = Sample.search([
+                        ('partner_id', '=', rec.partner_id.id),
+                    ], order='create_date desc', limit=50)
+                else:
+                    rec.cf_dossier_sample_ids = False
+            except Exception:
+                rec.cf_dossier_sample_ids = False
+
+    @api.depends('partner_id')
+    def _compute_cf_dossier_attachment_ids(self):
+        for rec in self:
+            try:
+                Att = self.env['ir.attachment']
+                domain = ['|',
+                    '&', ('res_model', '=', 'project.project'), ('res_id', '=', rec.id),
+                    '&', ('res_model', '=', 'res.partner'),
+                          ('res_id', '=', rec.partner_id.id if rec.partner_id else 0),
+                ]
+                rec.cf_dossier_attachment_ids = Att.search(domain, order='create_date desc', limit=50)
+            except Exception:
+                rec.cf_dossier_attachment_ids = False
+
+    # ------------------------------------------------------------------
+    # Write override: auto-add co-responsabili as followers
+    # ------------------------------------------------------------------
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'cf_co_user_ids' in vals:
+            for rec in self:
+                partner_ids = rec.cf_co_user_ids.mapped('partner_id').ids
+                existing = rec.message_partner_ids.ids
+                to_add = [pid for pid in partner_ids if pid and pid not in existing]
+                if to_add:
+                    rec.message_subscribe(partner_ids=to_add)
+        return res
+
     # ------------------------------------------------------------------
     # Stat button actions
     # ------------------------------------------------------------------
@@ -213,6 +344,17 @@ class ProjectProject(models.Model):
                 ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
                 ('state', 'not in', ('draft', 'cancel')),
             ],
+        }
+
+    def action_open_dossier_actors(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Network — %s' % self.name,
+            'res_model': 'cf.dossier.actor',
+            'view_mode': 'list,form',
+            'domain': [('project_id', '=', self.id)],
+            'context': {'default_project_id': self.id},
         }
 
     def action_open_project_dashboard_360(self):

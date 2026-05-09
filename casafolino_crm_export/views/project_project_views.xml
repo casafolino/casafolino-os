@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Client action: Dashboard 360° -->
+    <!-- Client action: Dashboard 360 -->
     <record id="action_project_dashboard_360" model="ir.actions.client">
-        <field name="name">Vista progetto 360°</field>
+        <field name="name">Vista progetto 360</field>
         <field name="tag">casafolino_crm_export.project_dashboard</field>
         <field name="target">current</field>
     </record>
@@ -33,7 +33,7 @@
 
             <xpath expr="//header" position="inside">
                 <button name="action_open_project_dashboard_360"
-                        string="Apri Vista 360°"
+                        string="Apri Vista 360"
                         type="object"
                         class="btn-primary"
                         icon="fa-pie-chart"/>
@@ -41,7 +41,7 @@
                        statusbar_visible="exploration,active,on_hold,won,closed"/>
             </xpath>
 
-            <!-- ── BUTTON BOX: hide standard, add 4 dossier stats ── -->
+            <!-- ── BUTTON BOX: hide standard, add 5 dossier stats ── -->
 
             <xpath expr="//button[@name='action_view_tasks']"
                    position="attributes">
@@ -70,6 +70,10 @@
                         type="object" name="action_open_dossier_orders">
                     <field name="cf_order_count" string="Ordini" widget="statinfo"/>
                 </button>
+                <button class="oe_stat_button" icon="fa-users"
+                        type="object" name="action_open_dossier_actors">
+                    <field name="cf_actor_count" string="Network" widget="statinfo"/>
+                </button>
             </xpath>
 
             <!-- ── TITLE: fix placeholder, hide star ──── -->
@@ -93,11 +97,13 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
 
-            <!-- ── BODY: add CLIENTE + BRIEF COMMERCIALE groups ──── -->
+            <!-- ── BODY: 2 rows x 2 columns layout ──── -->
 
             <xpath expr="//field[@name='label_tasks']" position="before">
+                <!-- Row 1: CLIENTE | BRIEF COMMERCIALE -->
                 <group col="2">
                     <group string="Cliente">
+                        <field name="partner_id" string="Cliente"/>
                         <field name="cf_buyer_id"
                                options="{'no_create': True}"
                                context="{'default_parent_id': partner_id}"/>
@@ -116,11 +122,100 @@
                         <field name="cf_next_action_date"/>
                     </group>
                 </group>
+                <!-- Row 2: META | DETTAGLI COMMERCIALI -->
+                <group col="2">
+                    <group string="Meta">
+                        <field name="cf_template_origin_id" readonly="1" string="Da template"/>
+                        <field name="date" string="Data target"/>
+                        <field name="user_id" string="Responsabile"/>
+                        <field name="cf_co_user_ids" widget="many2many_tags"
+                               options="{'no_create': True}" string="Co-responsabili"/>
+                    </group>
+                    <group string="Dettagli Commerciali">
+                        <field name="cf_incoterms"/>
+                        <field name="cf_payment_term"/>
+                        <field name="cf_moq" string="MOQ"/>
+                        <field name="cf_lead_time" string="Lead Time (gg)"/>
+                        <field name="cf_shelf_life" string="Shelf Life (mesi)"/>
+                    </group>
+                </group>
             </xpath>
 
             <!-- ── NOTEBOOK: dossier tabs ──── -->
 
             <xpath expr="//notebook" position="inside">
+
+                <page string="Checkpoint" name="cf_checkpoint">
+                    <field name="task_ids" mode="list">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="user_ids" widget="many2many_tags"/>
+                            <field name="stage_id"/>
+                            <field name="date_deadline"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page string="Mail timeline" name="cf_mail_timeline">
+                    <field name="cf_dossier_mail_ids" mode="list" readonly="1">
+                        <list>
+                            <field name="email_date" string="Data"/>
+                            <field name="subject"/>
+                            <field name="sender_email" string="Da"/>
+                            <field name="partner_id" string="Contatto"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page string="Lead correlati" name="cf_leads">
+                    <field name="cf_lead_ids" mode="list">
+                        <list>
+                            <field name="name"/>
+                            <field name="stage_id"/>
+                            <field name="expected_revenue"/>
+                            <field name="user_id"/>
+                            <field name="create_date"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page string="Campionature" name="cf_samples">
+                    <field name="cf_dossier_sample_ids" mode="list" readonly="1">
+                        <list>
+                            <field name="reference"/>
+                            <field name="state" widget="badge"/>
+                            <field name="partner_id"/>
+                            <field name="create_date"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page string="Documenti" name="cf_documents">
+                    <field name="cf_dossier_attachment_ids" mode="list">
+                        <list>
+                            <field name="name"/>
+                            <field name="mimetype" string="Tipo"/>
+                            <field name="file_size" string="Dimensione"/>
+                            <field name="create_date" string="Caricato il"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page string="Network e Commissioni" name="cf_network">
+                    <field name="cf_actor_ids" mode="list">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="partner_id"/>
+                            <field name="user_id"/>
+                            <field name="role"/>
+                            <field name="commission_basis"/>
+                            <field name="commission_value"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                </page>
+
                 <page string="Note interne" name="cf_notes">
                     <field name="cf_internal_notes"
                            placeholder="Note interne (solo team)..."
@@ -169,8 +264,10 @@
                         domain="[('cf_status_dossier', '=', 'active')]"/>
                 <filter string="Dossier esplorativi" name="dossier_exploration"
                         domain="[('cf_status_dossier', '=', 'exploration')]"/>
-                <filter string="Priorità alta" name="dossier_high_priority"
+                <filter string="Priorita alta" name="dossier_high_priority"
                         domain="[('cf_dossier_priority', '=', 'high')]"/>
+                <filter string="Miei dossier (resp. o co-resp.)" name="dossier_mine"
+                        domain="['|',('user_id', '=', uid),('cf_co_user_ids', 'in', [uid])]"/>
                 <separator/>
                 <filter string="Raggruppa per Status" name="group_by_status"
                         context="{'group_by': 'cf_status_dossier'}"/>
@@ -181,11 +278,11 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════
-         ACTION: Progetti 360° (list/form)
+         ACTION: Progetti 360 (list/form)
          ══════════════════════════════════════════════════════════════ -->
 
     <record id="action_cf_project_dossier" model="ir.actions.act_window">
-        <field name="name">Progetti 360°</field>
+        <field name="name">Progetti 360</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('cf_status_dossier', '!=', False)]</field>

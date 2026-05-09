@@ -11,3 +11,5 @@ from . import cf_export_sample
 from . import cf_export_fair
 from . import cf_export_sequence
 from . import res_config_settings
+from . import cf_dossier_template
+from . import cf_dossier_actor
