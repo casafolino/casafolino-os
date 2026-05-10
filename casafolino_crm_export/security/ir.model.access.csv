@@ -17,3 +17,4 @@ access_cf_dossier_template_checkpoint_admin,cf.dossier.template.checkpoint.admin
 access_cf_dossier_actor,cf.dossier.actor,model_cf_dossier_actor,base.group_user,1,1,1,1
 access_cf_dossier_create_wizard,cf.dossier.create.from.template,model_cf_dossier_create_from_template,base.group_user,1,1,1,1
 access_cf_commercial_project_wizard,cf.commercial.project.wizard,model_cf_commercial_project_wizard,base.group_user,1,1,1,1
+access_cf_project_contact,cf.project.contact,model_cf_project_contact,base.group_user,1,1,1,1

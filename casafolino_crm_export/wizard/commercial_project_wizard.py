@@ -238,7 +238,18 @@ class CfCommercialProjectWizard(models.TransientModel):
 
         project = self.env['project.project'].create(vals)
 
-        # 4. Origin info — chatter log
+        # 4. Create primary contact
+        self.env['cf.project.contact'].create({
+            'project_id': project.id,
+            'partner_id': partner.id,
+            'name': self.buyer_name or partner.name,
+            'email': partner.email or '',
+            'phone': partner.phone or partner.mobile or '',
+            'role': 'commercial',
+            'is_primary': True,
+        })
+
+        # 5. Origin info — chatter log
         origin_map = dict(self._fields['origin_type'].selection or [])
         origin_label = origin_map.get(self.origin_type, '')
         origin_parts = [origin_label]
