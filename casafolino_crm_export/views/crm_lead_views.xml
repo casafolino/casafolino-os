@@ -165,6 +165,9 @@
         <field name="arch" type="xml">
             <form string="Trattativa Export" class="cf-premium-form">
                 <header>
+                    <button name="action_compose_email_f8" string="Scrivi mail"
+                        type="object" icon="fa-envelope" class="oe_highlight"
+                        invisible="not partner_id"/>
                     <button name="action_open_project_360" string="Progetto 360°"
                         type="object" class="oe_highlight"
                         invisible="not cf_project_id"/>
@@ -526,6 +529,11 @@
                 <button name="action_view_partner_emails" type="object"
                         class="oe_stat_button" icon="fa-envelope">
                     <field name="cf_email_count" widget="statinfo" string="Email"/>
+                </button>
+                <button name="action_compose_email_f8" type="object"
+                        class="oe_stat_button" icon="fa-pencil-square-o"
+                        invisible="not partner_id">
+                    <span class="o_stat_text">Scrivi mail</span>
                 </button>
             </xpath>
 

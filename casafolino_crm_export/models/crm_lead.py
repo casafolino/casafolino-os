@@ -759,6 +759,18 @@ class CrmLead(models.Model):
             )),
         }
 
+    def action_compose_email_f8(self):
+        self.ensure_one()
+        email = self.partner_id.email if self.partner_id else (self.email_from or '')
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_mail.compose_f8',
+            'context': {
+                'default_partner_email': email,
+                'default_subject': 'Re: %s' % (self.name or ''),
+            },
+        }
+
 
 class CfExportCertification(models.Model):
     _name = 'cf.export.certification'

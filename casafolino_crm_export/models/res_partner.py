@@ -98,3 +98,13 @@ class ResPartner(models.Model):
                 ('partner_id.commercial_partner_id', '=', commercial.id),
             ],
         }
+
+    def action_compose_email_f8(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_mail.compose_f8',
+            'context': {
+                'default_partner_email': self.email or '',
+            },
+        }
