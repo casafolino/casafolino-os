@@ -19,7 +19,6 @@ def _post_init_bank_resilience(env):
             'code': 'model.cf_bulk_resolve_archived_banks()',
             'interval_number': 1,
             'interval_type': 'days',
-            'numbercall': -1,
             'active': True,
         })
         _logger.info("CF Bank Resilience: cron giornaliero creato.")

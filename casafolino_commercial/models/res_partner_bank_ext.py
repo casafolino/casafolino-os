@@ -45,7 +45,7 @@ class ResPartnerBankExt(models.Model):
             JOIN res_partner_bank rpb ON rpb.id = am.partner_bank_id
             WHERE am.state IN ('draft', 'posted')
               AND am.payment_state IN ('not_paid', 'partial', 'in_payment')
-              AND rpb.active = FALSE
+              AND (rpb.active = FALSE OR rpb.active IS NULL)
         """)
         move_ids = [r[0] for r in self.env.cr.fetchall()]
 
