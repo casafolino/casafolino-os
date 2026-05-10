@@ -23,6 +23,8 @@
                           t-on-click="() => this.onNavigate('cal')">Agenda</span>
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'qa' ? 'active' : ''}"
                           t-on-click="() => this.onNavigate('qa')">Qualità</span>
+                    <span class="cf-ws-nav-item"
+                          t-on-click="onOpenDossierExport">Dossier</span>
                 </div>
             </div>
             <div class="cf-ws-header-center">

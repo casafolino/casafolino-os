@@ -103,6 +103,11 @@
                     <p class="cf-section-title">Analytics</p>
                     <p class="cf-section-subtitle">Dashboard 360°</p>
                 </div>
+                <div t-on-click="onOpenDossierExport" class="cf-section-card">
+                    <i class="fa fa-filter cf-section-icon" style="color: #6B4A1E;"/>
+                    <p class="cf-section-title">CRM Export</p>
+                    <p class="cf-section-subtitle">Pipeline dossier</p>
+                </div>
             </div>
         </t>
 
