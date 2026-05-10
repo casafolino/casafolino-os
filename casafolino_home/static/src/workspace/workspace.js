@@ -185,6 +185,10 @@ export class CFWorkspace extends Component {
         }
     }
 
+    async onOpenDossierExport() {
+        await this.action.doAction("casafolino_crm_export.action_cf_project_dossier");
+    }
+
     // ======== Produzione actions ========
 
     async onNewLot() {

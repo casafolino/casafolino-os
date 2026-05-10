@@ -30,7 +30,7 @@
     </record>
 
     <!-- Root menu -->
-    <menuitem id="menu_cf_export_root" name="Export CRM" sequence="20"
+    <menuitem id="menu_cf_export_root" name="CRM Export" sequence="26"
         web_icon="casafolino_crm_export,static/description/icon.png"/>
 
     <!-- Card Scanner — first item -->

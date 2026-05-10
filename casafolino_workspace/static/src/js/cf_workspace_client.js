@@ -2,6 +2,7 @@
 import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
+import { useService } from "@web/core/utils/hooks";
 import { WorkspaceHero } from "./components/workspace_hero";
 import { WorkspaceKpis } from "./components/workspace_kpis";
 import { WorkspaceMacro } from "./components/workspace_macro";
@@ -32,6 +33,7 @@ class CfWorkspaceMain extends Component {
     };
 
     setup() {
+        this.actionService = useService("action");
         this.state = useState({
             page: "home",
             loading: true,
@@ -115,6 +117,12 @@ class CfWorkspaceMain extends Component {
 
     onGoHome() {
         this.state.page = "home";
+    }
+
+    async onOpenDossierExport() {
+        await this.actionService.doAction(
+            "casafolino_crm_export.action_cf_project_dossier"
+        );
     }
 }
 
