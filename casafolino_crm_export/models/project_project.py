@@ -197,6 +197,42 @@ class ProjectProject(models.Model):
         compute='_compute_cf_order_count', string='Ordini',
     )
 
+    # ------------------------------------------------------------------
+    # Client-aware: storico partner (ordini, fatture, DDT, lead, mail)
+    # ------------------------------------------------------------------
+
+    company_currency_id = fields.Many2one(
+        'res.currency', related='company_id.currency_id',
+        string='Valuta', readonly=True,
+    )
+
+    cf_partner_orders_count = fields.Integer(
+        compute='_compute_partner_orders', string='Ordini partner',
+    )
+    cf_partner_orders_amount = fields.Monetary(
+        compute='_compute_partner_orders', string='Fatturato ordini',
+        currency_field='company_currency_id',
+    )
+    cf_partner_invoices_count = fields.Integer(
+        compute='_compute_partner_invoices', string='Fatture partner',
+    )
+    cf_partner_ddt_count = fields.Integer(
+        compute='_compute_partner_ddt', string='DDT partner',
+    )
+    cf_partner_leads_count = fields.Integer(
+        compute='_compute_partner_leads', string='Lead partner',
+    )
+    cf_partner_mails_count = fields.Integer(
+        compute='_compute_partner_mails', string='Mail partner',
+    )
+    cf_sibling_dossiers_ids = fields.Many2many(
+        'project.project', compute='_compute_sibling_dossiers',
+        string='Altri dossier stesso cliente',
+    )
+    cf_sibling_dossiers_count = fields.Integer(
+        compute='_compute_sibling_dossiers', string='Altri dossier',
+    )
+
     @api.depends('partner_id', 'cf_contact_ids', 'cf_contact_ids.email_normalized')
     def _compute_cf_mail_count(self):
         for rec in self:
@@ -241,6 +277,198 @@ class ProjectProject(models.Model):
                     rec.cf_order_count = 0
             except Exception:
                 rec.cf_order_count = 0
+
+    # ------------------------------------------------------------------
+    # Client-aware compute methods
+    # ------------------------------------------------------------------
+
+    def _get_partner_related_ids(self):
+        """Return list of partner IDs related to this dossier's partner:
+        the partner itself, children, and siblings under same commercial_partner."""
+        self.ensure_one()
+        if not self.partner_id:
+            return []
+        commercial = self.partner_id.commercial_partner_id or self.partner_id
+        return self.env['res.partner'].search([
+            '|',
+            ('id', '=', self.partner_id.id),
+            '|',
+            ('parent_id', '=', commercial.id),
+            ('commercial_partner_id', '=', commercial.id),
+        ]).ids
+
+    @api.depends('partner_id')
+    def _compute_partner_orders(self):
+        SO = self.env['sale.order']
+        for p in self:
+            if not p.partner_id:
+                p.cf_partner_orders_count = 0
+                p.cf_partner_orders_amount = 0
+                continue
+            related_ids = p._get_partner_related_ids()
+            orders = SO.search([
+                ('partner_id', 'in', related_ids),
+                ('state', 'in', ['sale', 'done']),
+            ])
+            p.cf_partner_orders_count = len(orders)
+            p.cf_partner_orders_amount = sum(orders.mapped('amount_total'))
+
+    def action_view_partner_orders(self):
+        self.ensure_one()
+        related_ids = self._get_partner_related_ids()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Ordini di %s') % (self.partner_id.name or ''),
+            'res_model': 'sale.order',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_id', 'in', related_ids),
+                ('state', 'in', ['sale', 'done']),
+            ],
+        }
+
+    @api.depends('partner_id')
+    def _compute_partner_invoices(self):
+        AM = self.env['account.move']
+        for p in self:
+            if not p.partner_id:
+                p.cf_partner_invoices_count = 0
+                continue
+            related_ids = p._get_partner_related_ids()
+            p.cf_partner_invoices_count = AM.search_count([
+                ('partner_id', 'in', related_ids),
+                ('move_type', 'in', ['out_invoice', 'out_refund']),
+                ('state', '!=', 'cancel'),
+            ])
+
+    def action_view_partner_invoices(self):
+        self.ensure_one()
+        related_ids = self._get_partner_related_ids()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Fatture di %s') % (self.partner_id.name or ''),
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_id', 'in', related_ids),
+                ('move_type', 'in', ['out_invoice', 'out_refund']),
+                ('state', '!=', 'cancel'),
+            ],
+        }
+
+    @api.depends('partner_id')
+    def _compute_partner_ddt(self):
+        SP = self.env['stock.picking']
+        for p in self:
+            if not p.partner_id:
+                p.cf_partner_ddt_count = 0
+                continue
+            related_ids = p._get_partner_related_ids()
+            p.cf_partner_ddt_count = SP.search_count([
+                ('partner_id', 'in', related_ids),
+                ('state', '=', 'done'),
+                ('picking_type_id.code', '=', 'outgoing'),
+            ])
+
+    def action_view_partner_ddt(self):
+        self.ensure_one()
+        related_ids = self._get_partner_related_ids()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('DDT di %s') % (self.partner_id.name or ''),
+            'res_model': 'stock.picking',
+            'view_mode': 'list,form',
+            'domain': [
+                ('partner_id', 'in', related_ids),
+                ('state', '=', 'done'),
+                ('picking_type_id.code', '=', 'outgoing'),
+            ],
+        }
+
+    @api.depends('partner_id')
+    def _compute_partner_leads(self):
+        Lead = self.env['crm.lead']
+        for p in self:
+            if not p.partner_id:
+                p.cf_partner_leads_count = 0
+                continue
+            related_ids = p._get_partner_related_ids()
+            p.cf_partner_leads_count = Lead.search_count([
+                ('partner_id', 'in', related_ids),
+            ])
+
+    def action_view_partner_leads(self):
+        self.ensure_one()
+        related_ids = self._get_partner_related_ids()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Lead di %s') % (self.partner_id.name or ''),
+            'res_model': 'crm.lead',
+            'view_mode': 'list,kanban,form',
+            'domain': [('partner_id', 'in', related_ids)],
+        }
+
+    @api.depends('partner_id')
+    def _compute_partner_mails(self):
+        MM = self.env['mail.message']
+        for p in self:
+            if not p.partner_id:
+                p.cf_partner_mails_count = 0
+                continue
+            related_ids = p._get_partner_related_ids()
+            if not related_ids:
+                p.cf_partner_mails_count = 0
+                continue
+            p.cf_partner_mails_count = MM.search_count([
+                '|',
+                ('author_id', 'in', related_ids),
+                ('partner_ids', 'in', related_ids),
+            ])
+
+    def action_view_partner_mails(self):
+        self.ensure_one()
+        if not self.partner_id:
+            return False
+        related_ids = self._get_partner_related_ids()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Mail di %s') % (self.partner_id.name or ''),
+            'res_model': 'mail.message',
+            'view_mode': 'list,form',
+            'domain': [
+                '|',
+                ('author_id', 'in', related_ids),
+                ('partner_ids', 'in', related_ids),
+            ],
+        }
+
+    @api.depends('partner_id')
+    def _compute_sibling_dossiers(self):
+        Project = self.env['project.project']
+        for p in self:
+            if not p.partner_id:
+                p.cf_sibling_dossiers_ids = False
+                p.cf_sibling_dossiers_count = 0
+                continue
+            commercial = p.partner_id.commercial_partner_id or p.partner_id
+            siblings = Project.search([
+                ('id', '!=', p.id),
+                '|',
+                ('partner_id.commercial_partner_id', '=', commercial.id),
+                ('partner_id', '=', commercial.id),
+            ])
+            p.cf_sibling_dossiers_ids = siblings
+            p.cf_sibling_dossiers_count = len(siblings)
+
+    def action_view_sibling_dossiers(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Altri dossier %s') % (self.partner_id.name if self.partner_id else ''),
+            'res_model': 'project.project',
+            'view_mode': 'list,kanban,form',
+            'domain': [('id', 'in', self.cf_sibling_dossiers_ids.ids)],
+        }
 
     @api.depends('cf_actor_ids')
     def _compute_cf_actor_count(self):
