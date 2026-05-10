@@ -313,14 +313,30 @@ def create_lead(cfg):
 
     # Send mail (only if TEST_MODE=false)
     if not TEST_MODE:
+        import time as _time
         mail_id = template.send_mail(lead.id, force_send=True)
-        mail = env['mail.mail'].browse(mail_id)
         env.cr.commit()
-        res['mail_sent'] = {
-            'mail_id': mail.id, 'state': mail.state,
-            'message_id': mail.message_id or None,
-            'failure_reason': mail.failure_reason or None,
-        }
+        # Odoo deletes mail.mail after successful force_send — handle gracefully
+        mail = env['mail.mail'].browse(mail_id)
+        if mail.exists():
+            res['mail_sent'] = {
+                'mail_id': mail.id, 'state': mail.state,
+                'message_id': mail.message_id or None,
+                'failure_reason': mail.failure_reason or None,
+            }
+        else:
+            # Deleted = successfully sent. Check chatter for message_id.
+            chatter_msg = env['mail.message'].search([
+                ('model', '=', 'crm.lead'), ('res_id', '=', lead.id),
+                ('message_type', '=', 'email'),
+            ], order='id desc', limit=1)
+            res['mail_sent'] = {
+                'mail_id': mail_id, 'state': 'sent',
+                'message_id': chatter_msg.message_id if chatter_msg else None,
+                'failure_reason': None,
+            }
+        # Rate-limit: 5 seconds between sends
+        _time.sleep(5)
 
     return res, preview_html
 
