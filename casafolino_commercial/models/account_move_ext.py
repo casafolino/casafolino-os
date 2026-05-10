@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields, _
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -84,6 +84,55 @@ class AccountMoveExt(models.Model):
             })
 
         return True
+
+    def _cf_resolve_archived_bank(self):
+        """Resolve archived partner_bank_id on this move."""
+        self.ensure_one()
+        bank = self.partner_bank_id
+        if not bank or bank.active:
+            return {'action': 'noop', 'bank_id': bank.id if bank else False, 'old_bank_id': None}
+
+        old_bank_id = bank.id
+        sanitized = bank.sanitized_acc_number
+
+        # Try to find an active bank with the same IBAN on the partner
+        if sanitized and self.partner_id:
+            active_bank = self.env['res.partner.bank'].search([
+                ('partner_id', '=', self.partner_id.id),
+                ('sanitized_acc_number', '=', sanitized),
+                ('active', '=', True),
+            ], limit=1)
+            if active_bank:
+                self.partner_bank_id = active_bank
+                self.message_post(
+                    body=_(
+                        "Bank account riassegnato da archiviato (ID %(old)s) "
+                        "a attivo (ID %(new)s), stesso IBAN %(iban)s.",
+                        old=old_bank_id, new=active_bank.id, iban=sanitized,
+                    ),
+                )
+                _logger.info("CF Bank Resilience: fattura %s — riassegnato bank %s → %s",
+                             self.name, old_bank_id, active_bank.id)
+                return {'action': 'reassigned', 'bank_id': active_bank.id, 'old_bank_id': old_bank_id}
+
+        # No active duplicate found — reactivate the archived one
+        bank.with_context(force_archive=True).write({'active': True})
+        self.message_post(
+            body=_(
+                "Bank account riattivato automaticamente (ID %(bank)s, IBAN %(iban)s): "
+                "era archiviato ma in uso su questa fattura.",
+                bank=bank.id, iban=sanitized or 'N/A',
+            ),
+        )
+        _logger.info("CF Bank Resilience: fattura %s — riattivato bank %s", self.name, bank.id)
+        return {'action': 'unarchived', 'bank_id': bank.id, 'old_bank_id': old_bank_id}
+
+    def action_post(self):
+        """Before posting, auto-resolve archived partner bank accounts."""
+        for move in self:
+            if move.partner_bank_id and not move.partner_bank_id.active:
+                move._cf_resolve_archived_bank()
+        return super().action_post()
 
     def action_open_footer_blocks(self):
         return {

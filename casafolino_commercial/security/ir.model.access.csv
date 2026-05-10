@@ -15,3 +15,4 @@ access_cf_export_wizard,cf.treasury.export.wizard,model_cf_treasury_export_wizar
 access_sale_discount_wizard,sale.discount.wizard,model_sale_discount_wizard,base.group_user,1,1,1,1
 access_cf_doc_footer_block_user,cf.doc.footer.block user,model_cf_doc_footer_block,base.group_user,1,1,1,0
 access_cf_doc_footer_block_mgr,cf.doc.footer.block manager,model_cf_doc_footer_block,base.group_system,1,1,1,1
+access_cf_bank_resilience_runner,cf.bank.resilience.runner,model_cf_bank_resilience_runner,base.group_user,1,1,1,1
