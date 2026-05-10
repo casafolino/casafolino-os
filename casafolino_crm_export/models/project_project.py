@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -37,6 +37,10 @@ class ProjectProject(models.Model):
         index=True,
         tracking=True,
     )
+
+    cf_is_won = fields.Boolean(string='Vinto', default=False, tracking=True)
+    cf_won_date = fields.Date(string='Data vinto')
+    cf_recurring = fields.Boolean(string='Ricorrente')
 
     cf_dossier_priority = fields.Selection(
         selection=[
@@ -154,6 +158,15 @@ class ProjectProject(models.Model):
     )
 
     # ------------------------------------------------------------------
+    # Multi-contatti per dossier
+    # ------------------------------------------------------------------
+
+    cf_contact_ids = fields.One2many(
+        'cf.project.contact', 'project_id',
+        string='Contatti progetto',
+    )
+
+    # ------------------------------------------------------------------
     # Related inline lists (read-only computed Many2many)
     # ------------------------------------------------------------------
 
@@ -184,16 +197,17 @@ class ProjectProject(models.Model):
         compute='_compute_cf_order_count', string='Ordini',
     )
 
-    @api.depends('partner_id')
+    @api.depends('partner_id', 'cf_contact_ids', 'cf_contact_ids.email_normalized')
     def _compute_cf_mail_count(self):
         for rec in self:
             try:
                 MailMsg = self.env.get('casafolino.mail.message')
-                if MailMsg and rec.partner_id:
-                    rec.cf_mail_count = MailMsg.search_count([
-                        ('partner_id', '=', rec.partner_id.id),
-                        ('state', 'in', ('keep', 'auto_keep')),
-                    ])
+                if not MailMsg:
+                    rec.cf_mail_count = 0
+                    continue
+                domain = rec._cf_mail_domain()
+                if domain:
+                    rec.cf_mail_count = MailMsg.search_count(domain)
                 else:
                     rec.cf_mail_count = 0
             except Exception:
@@ -233,19 +247,72 @@ class ProjectProject(models.Model):
         for rec in self:
             rec.cf_actor_count = len(rec.cf_actor_ids)
 
-    @api.depends('partner_id')
+    @api.depends('partner_id', 'cf_contact_ids', 'cf_contact_ids.email_normalized')
     def _compute_cf_dossier_mail_ids(self):
         for rec in self:
             try:
                 MailMsg = self.env.get('casafolino.mail.message')
-                if MailMsg and rec.partner_id:
-                    rec.cf_dossier_mail_ids = MailMsg.search([
-                        ('partner_id', '=', rec.partner_id.id),
-                    ], order='email_date desc', limit=50)
+                if not MailMsg:
+                    rec.cf_dossier_mail_ids = False
+                    continue
+                domain = rec._cf_mail_domain()
+                if domain:
+                    rec.cf_dossier_mail_ids = MailMsg.search(
+                        domain, order='email_date desc', limit=200)
                 else:
                     rec.cf_dossier_mail_ids = False
             except Exception:
                 rec.cf_dossier_mail_ids = False
+
+    def _cf_mail_domain(self):
+        """Build search domain for casafolino.mail.message matching
+        partner_id OR any contact email."""
+        self.ensure_one()
+        emails = list(filter(
+            None, self.cf_contact_ids.mapped('email_normalized')))
+        partner_ids = []
+        if self.partner_id:
+            partner_ids.append(self.partner_id.id)
+        partner_ids += self.cf_contact_ids.mapped('partner_id').ids
+        partner_ids = list(set(filter(None, partner_ids)))
+
+        if not emails and not partner_ids:
+            return None
+
+        parts = []
+        if partner_ids:
+            parts.append(('partner_id', 'in', partner_ids))
+        if emails:
+            parts.append(('sender_email', 'in', emails))
+
+        if len(parts) == 2:
+            return ['|'] + parts
+        return parts
+
+    def action_cf_compose_mail(self):
+        """Open standard Odoo mail composer pre-populated."""
+        self.ensure_one()
+        primary = self.cf_contact_ids.filtered('is_primary')[:1]
+        partner = (
+            primary.partner_id or self.partner_id
+            if primary else self.partner_id
+        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Scrivi mail'),
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_composition_mode': 'comment',
+                'default_model': 'project.project',
+                'default_res_ids': [self.id],
+                'default_partner_ids': (
+                    [partner.id] if partner else []
+                ),
+                'default_subject': '[%s] ' % (self.name or ''),
+            },
+        }
 
     @api.depends('partner_id')
     def _compute_cf_dossier_sample_ids(self):
