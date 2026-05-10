@@ -297,6 +297,58 @@ class ProjectProject(models.Model):
             ('commercial_partner_id', '=', commercial.id),
         ]).ids
 
+    # ------------------------------------------------------------------
+    # Domain-based email matching (for mail only)
+    # ------------------------------------------------------------------
+
+    _GENERIC_EMAIL_DOMAINS = {
+        'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com',
+        'yahoo.com', 'yahoo.it', 'live.com', 'icloud.com', 'me.com',
+        'libero.it', 'virgilio.it', 'tiscali.it', 'tin.it', 'alice.it',
+        'aol.com', 'protonmail.com', 'pec.it',
+    }
+
+    def _get_email_domains(self):
+        """Extract non-generic email domains from partner_id + cf_contact_ids."""
+        self.ensure_one()
+        domains = set()
+
+        def _extract(email):
+            if not email or '@' not in email:
+                return None
+            d = email.split('@')[-1].strip().lower()
+            return None if d in self._GENERIC_EMAIL_DOMAINS else d
+
+        if self.partner_id and self.partner_id.email:
+            d = _extract(self.partner_id.email)
+            if d:
+                domains.add(d)
+        for c in self.cf_contact_ids:
+            d = _extract(c.email)
+            if d:
+                domains.add(d)
+        return domains
+
+    def _get_partner_ids_by_domain(self):
+        """Find res.partner whose email matches dossier email domains."""
+        self.ensure_one()
+        domains = self._get_email_domains()
+        if not domains:
+            return []
+        domain = []
+        for d in domains:
+            if domain:
+                domain.insert(0, '|')
+            domain.append(('email', '=ilike', '%%@%s' % d))
+        return self.env['res.partner'].search(domain).ids
+
+    def _get_all_related_partner_ids(self):
+        """Union: partner_id tree + partners matching email domains."""
+        self.ensure_one()
+        ids = set(self._get_partner_related_ids())
+        ids.update(self._get_partner_ids_by_domain())
+        return list(ids)
+
     @api.depends('partner_id')
     def _compute_partner_orders(self):
         SO = self.env['sale.order']
@@ -408,14 +460,11 @@ class ProjectProject(models.Model):
             'domain': [('partner_id', 'in', related_ids)],
         }
 
-    @api.depends('partner_id')
+    @api.depends('partner_id', 'cf_contact_ids.email')
     def _compute_partner_mails(self):
         MM = self.env['mail.message']
         for p in self:
-            if not p.partner_id:
-                p.cf_partner_mails_count = 0
-                continue
-            related_ids = p._get_partner_related_ids()
+            related_ids = p._get_all_related_partner_ids()
             if not related_ids:
                 p.cf_partner_mails_count = 0
                 continue
@@ -427,12 +476,12 @@ class ProjectProject(models.Model):
 
     def action_view_partner_mails(self):
         self.ensure_one()
-        if not self.partner_id:
+        related_ids = self._get_all_related_partner_ids()
+        if not related_ids:
             return False
-        related_ids = self._get_partner_related_ids()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Mail di %s') % (self.partner_id.name or ''),
+            'name': _('Mail di %s') % (self.partner_id.name or 'cliente'),
             'res_model': 'mail.message',
             'view_mode': 'list,form',
             'domain': [
