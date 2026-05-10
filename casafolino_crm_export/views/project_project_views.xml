@@ -25,6 +25,12 @@
 
             <xpath expr="//header" position="replace">
                 <header>
+                    <button name="action_compose_email_f8"
+                            type="object"
+                            string="Scrivi mail"
+                            icon="fa-envelope"
+                            class="oe_highlight"
+                            invisible="not partner_id"/>
                     <field name="cf_status_dossier" widget="statusbar"
                            options="{'clickable': '1'}"
                            statusbar_visible="exploration,active,on_hold,closed"/>

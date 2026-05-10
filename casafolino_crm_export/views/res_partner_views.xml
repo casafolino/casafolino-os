@@ -15,6 +15,11 @@
                     <field name="cf_dossiers_count" widget="statinfo"
                            string="Dossier"/>
                 </button>
+                <button name="action_compose_email_f8" type="object"
+                        class="oe_stat_button" icon="fa-envelope"
+                        invisible="not email">
+                    <span class="o_stat_text">Scrivi mail</span>
+                </button>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Relazioni CasaFolino" name="cf_relations">

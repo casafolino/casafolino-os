@@ -591,6 +591,21 @@ class ProjectProject(models.Model):
             },
         }
 
+    def action_compose_email_f8(self):
+        """Open F8 Outlook-style composer via client action."""
+        self.ensure_one()
+        primary = self.cf_contact_ids.filtered('is_primary')[:1]
+        partner = primary.partner_id or self.partner_id if primary else self.partner_id
+        email = partner.email if partner else ''
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_mail.compose_f8',
+            'context': {
+                'default_partner_email': email,
+                'default_subject': '[%s] ' % (self.name or ''),
+            },
+        }
+
     @api.depends('partner_id')
     def _compute_cf_dossier_sample_ids(self):
         for rec in self:
