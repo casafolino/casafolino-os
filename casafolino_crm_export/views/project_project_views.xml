@@ -10,6 +10,8 @@
 
     <!-- ══════════════════════════════════════════════════════════════
          FORM VIEW — Dossier Commerciale CasaFolino
+         Architecture: xpath puntuali su base project.edit_project
+         Owner unico: casafolino_crm_export
          ══════════════════════════════════════════════════════════════ -->
 
     <record id="project_project_form_casafolino" model="ir.ui.view">
@@ -19,7 +21,7 @@
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
 
-            <!-- ══ HEADER: replace with dossier statusbar only ══ -->
+            <!-- ══ HEADER: replace with dossier statusbar ══ -->
 
             <xpath expr="//header" position="replace">
                 <header>
@@ -29,336 +31,347 @@
                 </header>
             </xpath>
 
-            <!-- ══ SHEET: replace entire sheet with clean dossier layout ══ -->
+            <!-- ══ BUTTON BOX: replace with client-aware stat buttons ══ -->
 
-            <xpath expr="//sheet" position="replace">
-                <sheet>
-                    <!-- Smart buttons — client-aware -->
-                    <div class="oe_button_box" name="button_box">
-                        <button class="oe_stat_button" icon="fa-shopping-cart"
-                                type="object" name="action_view_partner_orders"
-                                invisible="not partner_id">
-                            <field name="cf_partner_orders_count" string="Ordini"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-file-text-o"
-                                type="object" name="action_view_partner_invoices"
-                                invisible="not partner_id">
-                            <field name="cf_partner_invoices_count" string="Fatture"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-truck"
-                                type="object" name="action_view_partner_ddt"
-                                invisible="not partner_id">
-                            <field name="cf_partner_ddt_count" string="DDT"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-bullseye"
-                                type="object" name="action_view_partner_leads"
-                                invisible="not partner_id">
-                            <field name="cf_partner_leads_count" string="Lead"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-envelope"
-                                type="object" name="action_view_partner_mails"
-                                invisible="not partner_id">
-                            <field name="cf_partner_mails_count" string="Mail"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-folder-open-o"
-                                type="object" name="action_view_sibling_dossiers"
-                                invisible="cf_sibling_dossiers_count == 0">
-                            <field name="cf_sibling_dossiers_count" string="Altri dossier"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-envelope-o"
-                                type="object" name="action_open_dossier_mails">
-                            <field name="cf_mail_count" string="Mail dossier"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-flask"
-                                type="object" name="action_open_dossier_samples">
-                            <field name="cf_sample_count" string="Campioni"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-users"
-                                type="object" name="action_open_dossier_actors">
-                            <field name="cf_actor_count" string="Network"
-                                   widget="statinfo"/>
-                        </button>
-                    </div>
+            <xpath expr="//div[@name='button_box']" position="replace">
+                <div class="oe_button_box" name="button_box">
+                    <button class="oe_stat_button" icon="fa-shopping-cart"
+                            type="object" name="action_view_partner_orders"
+                            invisible="not partner_id">
+                        <field name="cf_partner_orders_count" string="Ordini"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-file-text-o"
+                            type="object" name="action_view_partner_invoices"
+                            invisible="not partner_id">
+                        <field name="cf_partner_invoices_count" string="Fatture"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-truck"
+                            type="object" name="action_view_partner_ddt"
+                            invisible="not partner_id">
+                        <field name="cf_partner_ddt_count" string="DDT"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-bullseye"
+                            type="object" name="action_view_partner_leads"
+                            invisible="not partner_id">
+                        <field name="cf_partner_leads_count" string="Lead"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-envelope"
+                            type="object" name="action_view_partner_mails"
+                            invisible="not partner_id">
+                        <field name="cf_partner_mails_count" string="Mail"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-folder-open-o"
+                            type="object" name="action_view_sibling_dossiers"
+                            invisible="cf_sibling_dossiers_count == 0">
+                        <field name="cf_sibling_dossiers_count" string="Altri dossier"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-envelope-o"
+                            type="object" name="action_open_dossier_mails">
+                        <field name="cf_mail_count" string="Mail dossier"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-flask"
+                            type="object" name="action_open_dossier_samples">
+                        <field name="cf_sample_count" string="Campioni"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-users"
+                            type="object" name="action_open_dossier_actors">
+                        <field name="cf_actor_count" string="Network"
+                               widget="statinfo"/>
+                    </button>
+                </div>
+            </xpath>
 
-                    <widget name="web_ribbon" title="Vinto" bg_color="bg-success"
-                            invisible="not cf_is_won"/>
+            <!-- ══ RIBBON: Vinto ══ -->
 
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name"
-                                   placeholder="es. Costco Canada — Miele acacia 2026"/>
-                        </h1>
-                    </div>
+            <xpath expr="//widget[@name='web_ribbon']" position="replace">
+                <widget name="web_ribbon" title="Vinto" bg_color="bg-success"
+                        invisible="not cf_is_won"/>
+            </xpath>
 
-                    <!-- Row 1: Cliente | Pianificazione -->
-                    <group>
-                        <group string="Cliente">
-                            <field name="partner_id" string="Cliente / Partner"
-                                   options="{'no_create_edit': False}"/>
-                            <field name="cf_buyer_id" string="Buyer"
-                                   options="{'no_create': True}"
-                                   context="{'default_parent_id': partner_id}"/>
-                            <field name="cf_partner_country_id" string="Paese"/>
-                            <field name="cf_dossier_lang" string="Lingua"/>
-                            <field name="cf_partner_email" string="Email"
-                                   widget="email"/>
-                        </group>
-                        <group string="Pianificazione">
-                            <field name="user_id" string="Responsabile"/>
-                            <field name="cf_co_user_ids" string="Co-responsabili"
-                                   widget="many2many_tags"
-                                   options="{'no_create': True}"/>
-                            <field name="date" string="Data Target"/>
-                            <field name="cf_next_action" string="Prossima Azione"
-                                   placeholder="es. Inviare campionature 220g"/>
-                            <field name="cf_next_action_date"
-                                   string="Data Prossima Azione"/>
-                        </group>
+            <!-- ══ TITLE: replace with dossier title (no favorites star) ══ -->
+
+            <xpath expr="//div[hasclass('oe_title')]" position="replace">
+                <div class="oe_title">
+                    <h1>
+                        <field name="name"
+                               placeholder="es. Costco Canada — Miele acacia 2026"/>
+                    </h1>
+                </div>
+            </xpath>
+
+            <!-- ══ BODY: replace base groups with dossier layout ══ -->
+
+            <xpath expr="//sheet/group" position="replace">
+                <!-- Row 1: Cliente | Pianificazione -->
+                <group>
+                    <group string="Cliente">
+                        <field name="partner_id" string="Cliente / Partner"
+                               options="{'no_create_edit': False}"/>
+                        <field name="cf_buyer_id" string="Buyer"
+                               options="{'no_create': True}"
+                               context="{'default_parent_id': partner_id}"/>
+                        <field name="cf_partner_country_id" string="Paese"/>
+                        <field name="cf_dossier_lang" string="Lingua"/>
+                        <field name="cf_partner_email" string="Email"
+                               widget="email"/>
                     </group>
-
-                    <!-- Row 2: Brief | Termini -->
-                    <group>
-                        <group string="Brief Commerciale">
-                            <field name="cf_project_type" string="Tipo Progetto"
-                                   widget="selection"/>
-                            <label for="cf_volume_target" string="Volume Target"/>
-                            <div class="o_row">
-                                <field name="cf_volume_target" nolabel="1"
-                                       class="oe_inline"/>
-                                <field name="cf_volume_unit" nolabel="1"
-                                       class="oe_inline"/>
-                            </div>
-                            <field name="cf_margin_target"
-                                   string="Margine Target %"
-                                   widget="percentage"/>
-                            <field name="cf_certification_ids"
-                                   string="Certificazioni"
-                                   widget="many2many_tags"
-                                   options="{'color_field': 'color', 'no_create': True}"/>
-                        </group>
-                        <group string="Termini">
-                            <field name="cf_incoterms" string="Incoterms"/>
-                            <field name="cf_payment_term" string="Pagamento"/>
-                            <field name="cf_moq" string="MOQ"/>
-                            <field name="cf_lead_time" string="Lead Time (gg)"/>
-                            <field name="cf_shelf_life" string="Shelf Life (mesi)"/>
-                        </group>
+                    <group string="Pianificazione">
+                        <field name="user_id" string="Responsabile"/>
+                        <field name="cf_co_user_ids" string="Co-responsabili"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field name="date" string="Data Target"/>
+                        <field name="cf_next_action" string="Prossima Azione"
+                               placeholder="es. Inviare campionature 220g"/>
+                        <field name="cf_next_action_date"
+                               string="Data Prossima Azione"/>
                     </group>
+                </group>
+                <!-- Row 2: Brief | Termini -->
+                <group>
+                    <group string="Brief Commerciale">
+                        <field name="cf_project_type" string="Tipo Progetto"
+                               widget="selection"/>
+                        <label for="cf_volume_target" string="Volume Target"/>
+                        <div class="o_row">
+                            <field name="cf_volume_target" nolabel="1"
+                                   class="oe_inline"/>
+                            <field name="cf_volume_unit" nolabel="1"
+                                   class="oe_inline"/>
+                        </div>
+                        <field name="cf_margin_target"
+                               string="Margine Target %"
+                               widget="percentage"/>
+                        <field name="cf_certification_ids"
+                               string="Certificazioni"
+                               widget="many2many_tags"
+                               options="{'color_field': 'color', 'no_create': True}"/>
+                    </group>
+                    <group string="Termini">
+                        <field name="cf_incoterms" string="Incoterms"/>
+                        <field name="cf_payment_term" string="Pagamento"/>
+                        <field name="cf_moq" string="MOQ"/>
+                        <field name="cf_lead_time" string="Lead Time (gg)"/>
+                        <field name="cf_shelf_life" string="Shelf Life (mesi)"/>
+                    </group>
+                </group>
+            </xpath>
 
-                    <!-- Notebook -->
-                    <notebook>
-                        <page string="Contatti" name="cf_contacts">
-                            <field name="cf_contact_ids">
-                                <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="is_primary"
-                                           widget="boolean_toggle"/>
-                                    <field name="name"/>
-                                    <field name="email"/>
-                                    <field name="phone"/>
-                                    <field name="role"/>
-                                    <field name="is_external"
-                                           widget="boolean_toggle"/>
-                                    <field name="partner_id"
-                                           options="{'no_create_edit': True}"/>
-                                    <field name="note" optional="hide"/>
-                                </list>
-                            </field>
-                        </page>
+            <!-- ══ NOTEBOOK: replace with dossier tabs ══ -->
 
-                        <page string="Mail" name="cf_mail_timeline">
-                            <div class="o_row mb-3">
-                                <button name="action_cf_compose_mail"
-                                        type="object"
-                                        string="Scrivi mail"
-                                        class="btn btn-primary"/>
-                            </div>
-                            <field name="cf_dossier_mail_ids" mode="list"
+            <xpath expr="//notebook" position="replace">
+                <notebook>
+                    <page string="Contatti" name="cf_contacts">
+                        <field name="cf_contact_ids">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="is_primary"
+                                       widget="boolean_toggle"/>
+                                <field name="name"/>
+                                <field name="email"/>
+                                <field name="phone"/>
+                                <field name="role"/>
+                                <field name="is_external"
+                                       widget="boolean_toggle"/>
+                                <field name="partner_id"
+                                       options="{'no_create_edit': True}"/>
+                                <field name="note" optional="hide"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Mail" name="cf_mail_timeline">
+                        <div class="o_row mb-3">
+                            <button name="action_cf_compose_mail"
+                                    type="object"
+                                    string="Scrivi mail"
+                                    class="btn btn-primary"/>
+                        </div>
+                        <field name="cf_dossier_mail_ids" mode="list"
+                               readonly="1">
+                            <list>
+                                <field name="email_date" string="Data"/>
+                                <field name="subject"/>
+                                <field name="sender_email" string="Da"/>
+                                <field name="partner_id"
+                                       string="Contatto"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Checkpoint" name="cf_checkpoint">
+                        <field name="task_ids" mode="list">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="name"/>
+                                <field name="user_ids"
+                                       widget="many2many_tags"/>
+                                <field name="stage_id"/>
+                                <field name="date_deadline"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Lead" name="cf_leads">
+                        <field name="cf_lead_ids" mode="list">
+                            <list>
+                                <field name="name"/>
+                                <field name="stage_id"/>
+                                <field name="expected_revenue"/>
+                                <field name="user_id"/>
+                                <field name="create_date"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Campionature" name="cf_samples">
+                        <field name="cf_dossier_sample_ids" mode="list"
+                               readonly="1">
+                            <list>
+                                <field name="reference"/>
+                                <field name="state" widget="badge"/>
+                                <field name="partner_id"/>
+                                <field name="create_date"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Documenti" name="cf_documents">
+                        <field name="cf_dossier_attachment_ids"
+                               mode="list">
+                            <list>
+                                <field name="name"/>
+                                <field name="mimetype" string="Tipo"/>
+                                <field name="file_size"
+                                       string="Dimensione"/>
+                                <field name="create_date"
+                                       string="Caricato il"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Network" name="cf_network">
+                        <field name="cf_actor_ids" mode="list">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="partner_id"/>
+                                <field name="user_id"/>
+                                <field name="role"/>
+                                <field name="commission_basis"/>
+                                <field name="commission_value"/>
+                                <field name="notes"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Note" name="cf_notes">
+                        <field name="cf_internal_notes"
+                               placeholder="Note interne (solo team)..."
+                               nolabel="1"/>
+                    </page>
+
+                    <page string="Storico cliente" name="client_history"
+                          invisible="not partner_id">
+                        <group string="Riepilogo">
+                            <group>
+                                <field name="cf_partner_orders_count"
+                                       string="Ordini totali" readonly="1"/>
+                                <field name="cf_partner_orders_amount"
+                                       string="Fatturato ordini"
+                                       widget="monetary"
+                                       options="{'currency_field': 'company_currency_id'}"
+                                       readonly="1"/>
+                                <field name="cf_partner_invoices_count"
+                                       string="Fatture emesse" readonly="1"/>
+                                <field name="cf_partner_ddt_count"
+                                       string="DDT spediti" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="cf_partner_leads_count"
+                                       string="Lead pregressi" readonly="1"/>
+                                <field name="cf_partner_mails_count"
+                                       string="Mail scambiate" readonly="1"/>
+                                <field name="cf_sibling_dossiers_count"
+                                       string="Altri dossier aperti"
+                                       readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Altri dossier con questo cliente"
+                               invisible="cf_sibling_dossiers_count == 0">
+                            <field name="cf_sibling_dossiers_ids" nolabel="1"
                                    readonly="1">
                                 <list>
-                                    <field name="email_date" string="Data"/>
-                                    <field name="subject"/>
-                                    <field name="sender_email" string="Da"/>
-                                    <field name="partner_id"
-                                           string="Contatto"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <page string="Checkpoint" name="cf_checkpoint">
-                            <field name="task_ids" mode="list">
-                                <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>
                                     <field name="name"/>
-                                    <field name="user_ids"
-                                           widget="many2many_tags"/>
-                                    <field name="stage_id"/>
-                                    <field name="date_deadline"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <page string="Lead" name="cf_leads">
-                            <field name="cf_lead_ids" mode="list">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="stage_id"/>
-                                    <field name="expected_revenue"/>
-                                    <field name="user_id"/>
-                                    <field name="create_date"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <page string="Campionature" name="cf_samples">
-                            <field name="cf_dossier_sample_ids" mode="list"
-                                   readonly="1">
-                                <list>
-                                    <field name="reference"/>
-                                    <field name="state" widget="badge"/>
-                                    <field name="partner_id"/>
-                                    <field name="create_date"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <page string="Documenti" name="cf_documents">
-                            <field name="cf_dossier_attachment_ids"
-                                   mode="list">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="mimetype" string="Tipo"/>
-                                    <field name="file_size"
-                                           string="Dimensione"/>
-                                    <field name="create_date"
-                                           string="Caricato il"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <page string="Network" name="cf_network">
-                            <field name="cf_actor_ids" mode="list">
-                                <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="partner_id"/>
-                                    <field name="user_id"/>
-                                    <field name="role"/>
-                                    <field name="commission_basis"/>
-                                    <field name="commission_value"/>
-                                    <field name="notes"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <page string="Note" name="cf_notes">
-                            <field name="cf_internal_notes"
-                                   placeholder="Note interne (solo team)..."
-                                   nolabel="1"/>
-                        </page>
-
-                        <page string="Storico cliente" name="client_history"
-                              invisible="not partner_id">
-                            <group string="Riepilogo">
-                                <group>
-                                    <field name="cf_partner_orders_count"
-                                           string="Ordini totali" readonly="1"/>
-                                    <field name="cf_partner_orders_amount"
-                                           string="Fatturato ordini"
-                                           widget="monetary"
-                                           options="{'currency_field': 'company_currency_id'}"
-                                           readonly="1"/>
-                                    <field name="cf_partner_invoices_count"
-                                           string="Fatture emesse" readonly="1"/>
-                                    <field name="cf_partner_ddt_count"
-                                           string="DDT spediti" readonly="1"/>
-                                </group>
-                                <group>
-                                    <field name="cf_partner_leads_count"
-                                           string="Lead pregressi" readonly="1"/>
-                                    <field name="cf_partner_mails_count"
-                                           string="Mail scambiate" readonly="1"/>
-                                    <field name="cf_sibling_dossiers_count"
-                                           string="Altri dossier aperti"
-                                           readonly="1"/>
-                                </group>
-                            </group>
-                            <group string="Altri dossier con questo cliente"
-                                   invisible="cf_sibling_dossiers_count == 0">
-                                <field name="cf_sibling_dossiers_ids" nolabel="1"
-                                       readonly="1">
-                                    <list>
-                                        <field name="name"/>
-                                        <field name="cf_status_dossier"/>
-                                        <field name="cf_is_won"
-                                               widget="boolean_toggle"
-                                               readonly="1"/>
-                                        <field name="user_id"/>
-                                        <field name="create_date"/>
-                                    </list>
-                                </field>
-                            </group>
-                            <div class="text-muted mt-3">
-                                <i class="fa fa-info-circle"/>
-                                I numeri includono tutto lo storico del partner
-                                (incluse sedi/contatti collegati), anche pre-apertura dossier.
-                            </div>
-                        </page>
-
-                        <page string="Esito" name="cf_outcome">
-                            <group>
-                                <group string="Esito">
-                                    <field name="cf_is_won"/>
-                                    <field name="cf_won_date"
-                                           invisible="not cf_is_won"/>
-                                    <field name="cf_recurring"
-                                           invisible="not cf_is_won"/>
-                                </group>
-                                <group string="Relazioni">
-                                    <field name="cf_managed_by_id"
-                                           string="Agente"
-                                           options="{'no_create': True}"/>
-                                    <field name="cf_dossier_priority"
-                                           string="Priorità"
-                                           widget="priority"/>
-                                    <field name="cf_dossier_value_estimate"
-                                           string="Valore stimato"/>
-                                </group>
-                            </group>
-                        </page>
-
-                        <page string="Tecnico" name="cf_meta"
-                              groups="base.group_no_one">
-                            <group>
-                                <group string="Origine">
-                                    <field name="cf_template_origin_id"
-                                           string="Da Template" readonly="1"/>
                                     <field name="cf_status_dossier"/>
-                                </group>
-                                <group string="Metadati">
-                                    <field name="create_uid"
-                                           string="Creato da" readonly="1"/>
-                                    <field name="create_date"
-                                           string="Data creazione"
+                                    <field name="cf_is_won"
+                                           widget="boolean_toggle"
                                            readonly="1"/>
-                                    <field name="write_uid"
-                                           string="Modificato da"
-                                           readonly="1"/>
-                                    <field name="write_date"
-                                           string="Data modifica"
-                                           readonly="1"/>
-                                </group>
+                                    <field name="user_id"/>
+                                    <field name="create_date"/>
+                                </list>
+                            </field>
+                        </group>
+                        <div class="text-muted mt-3">
+                            <i class="fa fa-info-circle" title="Info"/>
+                            I numeri includono tutto lo storico del partner
+                            (incluse sedi/contatti collegati), anche pre-apertura dossier.
+                        </div>
+                    </page>
+
+                    <page string="Esito" name="cf_outcome">
+                        <group>
+                            <group string="Esito">
+                                <field name="cf_is_won"/>
+                                <field name="cf_won_date"
+                                       invisible="not cf_is_won"/>
+                                <field name="cf_recurring"
+                                       invisible="not cf_is_won"/>
                             </group>
-                        </page>
-                    </notebook>
-                </sheet>
+                            <group string="Relazioni">
+                                <field name="cf_managed_by_id"
+                                       string="Agente"
+                                       options="{'no_create': True}"/>
+                                <field name="cf_dossier_priority"
+                                       string="Priorità"
+                                       widget="priority"/>
+                                <field name="cf_dossier_value_estimate"
+                                       string="Valore stimato"/>
+                            </group>
+                        </group>
+                    </page>
+
+                    <page string="Tecnico" name="cf_meta"
+                          groups="base.group_no_one">
+                        <group>
+                            <group string="Origine">
+                                <field name="cf_template_origin_id"
+                                       string="Da Template" readonly="1"/>
+                                <field name="cf_status_dossier"/>
+                            </group>
+                            <group string="Metadati">
+                                <field name="create_uid"
+                                       string="Creato da" readonly="1"/>
+                                <field name="create_date"
+                                       string="Data creazione"
+                                       readonly="1"/>
+                                <field name="write_uid"
+                                       string="Modificato da"
+                                       readonly="1"/>
+                                <field name="write_date"
+                                       string="Data modifica"
+                                       readonly="1"/>
+                            </group>
+                        </group>
+                    </page>
+                </notebook>
             </xpath>
 
         </field>
