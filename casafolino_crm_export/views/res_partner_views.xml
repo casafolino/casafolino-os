@@ -8,6 +8,14 @@
         <field name="priority">99</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_cf_dossiers" type="object"
+                        class="oe_stat_button" icon="fa-folder-open-o"
+                        invisible="cf_dossiers_count == 0">
+                    <field name="cf_dossiers_count" widget="statinfo"
+                           string="Dossier"/>
+                </button>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Relazioni CasaFolino" name="cf_relations">
                     <group>

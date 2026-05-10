@@ -33,26 +33,52 @@
 
             <xpath expr="//sheet" position="replace">
                 <sheet>
-                    <!-- Smart buttons -->
+                    <!-- Smart buttons — client-aware -->
                     <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-shopping-cart"
+                                type="object" name="action_view_partner_orders"
+                                invisible="not partner_id">
+                            <field name="cf_partner_orders_count" string="Ordini"
+                                   widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-text-o"
+                                type="object" name="action_view_partner_invoices"
+                                invisible="not partner_id">
+                            <field name="cf_partner_invoices_count" string="Fatture"
+                                   widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-truck"
+                                type="object" name="action_view_partner_ddt"
+                                invisible="not partner_id">
+                            <field name="cf_partner_ddt_count" string="DDT"
+                                   widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-bullseye"
+                                type="object" name="action_view_partner_leads"
+                                invisible="not partner_id">
+                            <field name="cf_partner_leads_count" string="Lead"
+                                   widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-envelope"
+                                type="object" name="action_view_partner_mails"
+                                invisible="not partner_id">
+                            <field name="cf_partner_mails_count" string="Mail"
+                                   widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-folder-open-o"
+                                type="object" name="action_view_sibling_dossiers"
+                                invisible="cf_sibling_dossiers_count == 0">
+                            <field name="cf_sibling_dossiers_count" string="Altri dossier"
+                                   widget="statinfo"/>
+                        </button>
                         <button class="oe_stat_button" icon="fa-envelope-o"
                                 type="object" name="action_open_dossier_mails">
-                            <field name="cf_mail_count" string="Mail"
+                            <field name="cf_mail_count" string="Mail dossier"
                                    widget="statinfo"/>
                         </button>
                         <button class="oe_stat_button" icon="fa-flask"
                                 type="object" name="action_open_dossier_samples">
                             <field name="cf_sample_count" string="Campioni"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-shopping-cart"
-                                type="object" name="action_open_dossier_orders">
-                            <field name="cf_order_count" string="Ordini"
-                                   widget="statinfo"/>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-handshake-o"
-                                type="object" name="action_open_dossier_leads">
-                            <field name="cf_lead_count" string="Lead"
                                    widget="statinfo"/>
                         </button>
                         <button class="oe_stat_button" icon="fa-users"
@@ -236,6 +262,54 @@
                             <field name="cf_internal_notes"
                                    placeholder="Note interne (solo team)..."
                                    nolabel="1"/>
+                        </page>
+
+                        <page string="Storico cliente" name="client_history"
+                              invisible="not partner_id">
+                            <group string="Riepilogo">
+                                <group>
+                                    <field name="cf_partner_orders_count"
+                                           string="Ordini totali" readonly="1"/>
+                                    <field name="cf_partner_orders_amount"
+                                           string="Fatturato ordini"
+                                           widget="monetary"
+                                           options="{'currency_field': 'company_currency_id'}"
+                                           readonly="1"/>
+                                    <field name="cf_partner_invoices_count"
+                                           string="Fatture emesse" readonly="1"/>
+                                    <field name="cf_partner_ddt_count"
+                                           string="DDT spediti" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="cf_partner_leads_count"
+                                           string="Lead pregressi" readonly="1"/>
+                                    <field name="cf_partner_mails_count"
+                                           string="Mail scambiate" readonly="1"/>
+                                    <field name="cf_sibling_dossiers_count"
+                                           string="Altri dossier aperti"
+                                           readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="Altri dossier con questo cliente"
+                                   invisible="cf_sibling_dossiers_count == 0">
+                                <field name="cf_sibling_dossiers_ids" nolabel="1"
+                                       readonly="1">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="cf_status_dossier"/>
+                                        <field name="cf_is_won"
+                                               widget="boolean_toggle"
+                                               readonly="1"/>
+                                        <field name="user_id"/>
+                                        <field name="create_date"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <div class="text-muted mt-3">
+                                <i class="fa fa-info-circle"/>
+                                I numeri includono tutto lo storico del partner
+                                (incluse sedi/contatti collegati), anche pre-apertura dossier.
+                            </div>
                         </page>
 
                         <page string="Esito" name="cf_outcome">

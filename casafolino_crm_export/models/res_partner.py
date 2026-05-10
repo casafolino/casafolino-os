@@ -1,8 +1,12 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
+
+    cf_dossiers_count = fields.Integer(
+        compute='_compute_cf_dossiers_count', string='Dossier',
+    )
 
     cf_partner_role = fields.Selection(
         selection=[
@@ -69,3 +73,28 @@ class ResPartner(models.Model):
         for agent in agents:
             agent.cf_managed_partners_count = partner_counts.get(agent.id, 0)
             agent.cf_managed_projects_count = project_counts.get(agent.id, 0)
+
+    def _compute_cf_dossiers_count(self):
+        Project = self.env['project.project']
+        for p in self:
+            commercial = p.commercial_partner_id or p
+            p.cf_dossiers_count = Project.search_count([
+                '|',
+                ('partner_id', '=', commercial.id),
+                ('partner_id.commercial_partner_id', '=', commercial.id),
+            ])
+
+    def action_view_cf_dossiers(self):
+        self.ensure_one()
+        commercial = self.commercial_partner_id or self
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Dossier %s') % self.name,
+            'res_model': 'project.project',
+            'view_mode': 'kanban,list,form',
+            'domain': [
+                '|',
+                ('partner_id', '=', commercial.id),
+                ('partner_id.commercial_partner_id', '=', commercial.id),
+            ],
+        }
