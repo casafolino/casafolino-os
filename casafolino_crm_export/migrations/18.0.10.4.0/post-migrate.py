@@ -21,13 +21,18 @@ def migrate(cr, version):
     """)
     _logger.info("[crm_export 10.4.0] Deactivated %d obsolete form inherits", cr.rowcount)
 
-    # 2. Deactivate Vista 360 client action (riattivabile via SQL)
+    # 2. Vista 360 client action — no active column on ir_act_client,
+    #    so we remove the menu entry that links to it instead
     cr.execute("""
-        UPDATE ir_act_client
-        SET active = false
-        WHERE tag = 'casafolino_crm_export.project_dashboard'
+        DELETE FROM ir_ui_menu
+        WHERE action = (
+            SELECT CONCAT('ir.actions.client,', id)
+            FROM ir_act_client
+            WHERE tag = 'casafolino_crm_export.project_dashboard'
+            LIMIT 1
+        )
     """)
-    _logger.info("[crm_export 10.4.0] Deactivated Vista 360 action: %d rows", cr.rowcount)
+    _logger.info("[crm_export 10.4.0] Removed Vista 360 menu entries: %d rows", cr.rowcount)
 
     # 3. Clear asset cache
     cr.execute("""
