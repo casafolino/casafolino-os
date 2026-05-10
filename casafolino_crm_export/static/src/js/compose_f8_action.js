@@ -1,8 +1,7 @@
 /** @odoo-module **/
 /**
- * Client action wrapper: opens ComposeWizardDialog from casafolino_mail
- * as a dialog, then closes itself. Allows Python buttons to invoke the
- * F8 Outlook-style composer via ir.actions.client.
+ * Client action: opens the F8 Outlook-style ComposeWizardDialog
+ * from casafolino_mail as a dialog overlay, then navigates back.
  *
  * Context keys:
  *   default_partner_email — pre-fill "To" field
@@ -19,14 +18,16 @@ class ComposeF8Action extends Component {
 
     setup() {
         this.dialog = useService("dialog");
-        this.action = useService("action");
+        this.actionService = useService("action");
 
         onMounted(async () => {
+            const ctx = this.props.action?.context || {};
+
             try {
                 const { ComposeWizardDialog } = await import(
                     "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
                 );
-                const ctx = this.props.action?.context || {};
+
                 this.dialog.add(ComposeWizardDialog, {
                     partnerEmail: ctx.default_partner_email || "",
                     defaultSubject: ctx.default_subject || "",
@@ -34,10 +35,12 @@ class ComposeF8Action extends Component {
                     onSent: () => {},
                 });
             } catch (e) {
-                console.error("ComposeF8Action: failed to open composer", e);
+                console.error("[ComposeF8] Failed to open composer:", e);
             }
-            // Close the action (navigate back to previous view)
-            this.action.doAction({ type: "ir.actions.act_window_close" });
+
+            // Navigate back to previous view after dialog is spawned.
+            // The dialog lives in the dialog overlay, independent of actions.
+            this.actionService.restore();
         });
     }
 }
