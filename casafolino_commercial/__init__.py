@@ -13,6 +13,7 @@ def _post_init_bank_resilience(env):
     ], limit=1)
     if not cron:
         env['ir.cron'].create({
+            'name': 'CF: Bonifica bank account archiviati',
             'cron_name': 'CF: Bonifica bank account archiviati',
             'model_id': env.ref('base.model_res_partner_bank').id,
             'state': 'code',
