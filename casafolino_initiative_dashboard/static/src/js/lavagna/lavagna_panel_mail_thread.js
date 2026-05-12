@@ -51,6 +51,9 @@ export class LavagnaPanelMailThread extends Component {
         this.dialogService.add(ComposeWizardDialog, {
             partnerEmail: partnerEmail,
             defaultSubject: '',
+            partnerId: partnerId || null,
+            threadId: init.id || null,
+            threadModel: 'cf.initiative',
             onSent: () => {
                 this.notificationService.add('Mail inviata', { type: 'success' });
                 this.env.actions.refreshData();

@@ -183,6 +183,9 @@ export class LavagnaKpiRail extends Component {
         this.dialogService.add(ComposeWizardDialog, {
             partnerEmail: partnerEmail,
             defaultSubject: 'Re: ' + initName,
+            partnerId: partnerId || null,
+            threadId: this.initiative.id || null,
+            threadModel: 'cf.initiative',
             onSent: () => {
                 this.notificationService.add('Mail inviata', { type: 'success' });
                 this.env.actions.refreshData();

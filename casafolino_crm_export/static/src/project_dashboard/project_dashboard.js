@@ -349,6 +349,9 @@ export class CFProjectDashboard extends Component {
             this.dialog.add(ComposeWizardDialog, {
                 partnerEmail: mailEntry.sender_email || '',
                 defaultSubject: mailEntry.subject ? 'Re: ' + mailEntry.subject : '',
+                partnerId: mailEntry.partner_id || null,
+                threadId: mailEntry.partner_id || null,
+                threadModel: 'res.partner',
                 onSent: () => this.onRefresh(),
             });
             return;

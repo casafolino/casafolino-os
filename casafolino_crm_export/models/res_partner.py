@@ -106,5 +106,8 @@ class ResPartner(models.Model):
             'tag': 'casafolino_mail.compose_f8',
             'context': {
                 'default_partner_email': self.email or '',
+                'default_partner_id': self.id,
+                'default_thread_id': self.id,
+                'default_thread_model': 'res.partner',
             },
         }

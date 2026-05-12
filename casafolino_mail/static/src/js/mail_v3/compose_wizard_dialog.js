@@ -30,15 +30,22 @@ export class ComposeWizardDialog extends Component {
             draftId: null,
             prefilled: null,
             accountId: null,
+            noAccount: false,
             error: null,
         });
 
         onWillStart(async () => {
             try {
-                const result = await rpc('/cf/mail/v3/compose/prepare', {
+                const prepareParams = {
                     mode: 'new',
                     prefilled_body: '',
-                });
+                };
+                // Pass caller-resolved account_id to prepare endpoint
+                if (this.props.accountId) {
+                    prepareParams.account_id = this.props.accountId;
+                }
+
+                const result = await rpc('/cf/mail/v3/compose/prepare', prepareParams);
                 if (!result || !result.draft_id) {
                     this.state.error = 'Impossibile creare bozza mail';
                     return;
@@ -56,8 +63,20 @@ export class ComposeWizardDialog extends Component {
                 if (this.props.defaultBody) {
                     pf.body_html = (this.props.defaultBody || '') + (pf.body_html || '');
                 }
+                // Inject context props for AI/snippet/template features
+                if (this.props.partnerId) {
+                    pf.partner_id = this.props.partnerId;
+                }
+                if (this.props.threadId) {
+                    pf.thread_id = this.props.threadId;
+                }
+                if (this.props.threadModel) {
+                    pf.thread_model = this.props.threadModel;
+                }
+
                 this.state.prefilled = pf;
-                this.state.accountId = pf.account_id || null;
+                this.state.accountId = pf.account_id || this.props.accountId || null;
+                this.state.noAccount = !this.state.accountId;
             } catch (e) {
                 this.state.error = 'Errore preparazione composer: ' + (e.message || e);
             } finally {

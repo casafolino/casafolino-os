@@ -9,7 +9,13 @@
                 <i class="fa fa-exclamation-triangle"/>
                 <span t-esc="state.error"/>
             </div>
-            <ComposeWizard t-else=""
+            <div t-if="!state.loading and !state.error and state.noAccount"
+                 class="alert alert-warning mb-0 rounded-0 d-flex align-items-center gap-2"
+                 style="border-left: 4px solid #f0ad4e;">
+                <i class="fa fa-exclamation-triangle"/>
+                <span>Nessun account IMAP attivo per l'utente. Invio disabilitato.</span>
+            </div>
+            <ComposeWizard t-if="!state.loading and !state.error"
                            draftId="state.draftId"
                            prefilled="state.prefilled"
                            accountId="state.accountId"

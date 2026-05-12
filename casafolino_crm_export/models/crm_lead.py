@@ -768,6 +768,9 @@ class CrmLead(models.Model):
             'context': {
                 'default_partner_email': email,
                 'default_subject': 'Re: %s' % (self.name or ''),
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+                'default_thread_id': self.id,
+                'default_thread_model': 'crm.lead',
             },
         }
 

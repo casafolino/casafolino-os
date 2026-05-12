@@ -603,6 +603,9 @@ class ProjectProject(models.Model):
             'context': {
                 'default_partner_email': email,
                 'default_subject': '[%s] ' % (self.name or ''),
+                'default_partner_id': partner.id if partner else False,
+                'default_thread_id': self.id,
+                'default_thread_model': 'project.project',
             },
         }
 
