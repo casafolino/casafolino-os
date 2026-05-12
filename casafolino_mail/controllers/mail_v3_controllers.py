@@ -975,6 +975,7 @@ class MailV3Controller(http.Controller):
             account_id = account.id if account else False
 
         prefilled = {
+            'account_id': account_id or False,
             'to': '',
             'cc': '',
             'bcc': '',
