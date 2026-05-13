@@ -695,21 +695,8 @@ class CrmLead(models.Model):
         }
 
     def action_send_email(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Scrivi Email',
-            'res_model': 'mail.compose.message',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_model': 'crm.lead',
-                'default_res_ids': [self.id],
-                'default_partner_ids': [self.partner_id.id] if self.partner_id else [],
-                'default_composition_mode': 'comment',
-                'default_email_from': self.env.user.email,
-            },
-        }
+        """Redirect to F8 ComposeWizardDialog."""
+        return self.action_compose_email_f8()
 
     def action_view_samples(self):
         self.ensure_one()

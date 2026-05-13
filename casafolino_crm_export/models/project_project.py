@@ -567,29 +567,8 @@ class ProjectProject(models.Model):
         return parts
 
     def action_cf_compose_mail(self):
-        """Open standard Odoo mail composer pre-populated."""
-        self.ensure_one()
-        primary = self.cf_contact_ids.filtered('is_primary')[:1]
-        partner = (
-            primary.partner_id or self.partner_id
-            if primary else self.partner_id
-        )
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Scrivi mail'),
-            'res_model': 'mail.compose.message',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_composition_mode': 'comment',
-                'default_model': 'project.project',
-                'default_res_ids': [self.id],
-                'default_partner_ids': (
-                    [partner.id] if partner else []
-                ),
-                'default_subject': '[%s] ' % (self.name or ''),
-            },
-        }
+        """Redirect to F8 ComposeWizardDialog."""
+        return self.action_compose_email_f8()
 
     def action_compose_email_f8(self):
         """Open F8 Outlook-style composer via client action."""
