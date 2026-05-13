@@ -14,6 +14,7 @@
 import { Component, onMounted } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 import { rpc } from "@web/core/network/rpc";
 
 class ComposeF8Action extends Component {
@@ -23,7 +24,6 @@ class ComposeF8Action extends Component {
     setup() {
         this.dialog = useService("dialog");
         this.actionService = useService("action");
-        this.user = useService("user");
 
         onMounted(async () => {
             const ctx = this.props.action?.context || {};
@@ -40,7 +40,7 @@ class ComposeF8Action extends Component {
                         model: "casafolino.mail.account",
                         method: "search_read",
                         args: [[
-                            ["responsible_user_id", "=", this.user.userId],
+                            ["responsible_user_id", "=", user.userId],
                             ["active", "=", true],
                         ]],
                         kwargs: { fields: ["id"], limit: 1 },
