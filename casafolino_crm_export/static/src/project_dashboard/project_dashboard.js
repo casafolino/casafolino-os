@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
 import { _t } from "@web/core/l10n/translation";
+import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 const STATUS_LABELS = {
     exploration: "Esplorativo",
@@ -168,25 +169,10 @@ export class CFProjectDashboard extends Component {
 
     async onQuickActionMail() {
         const partnerEmail = this.state.data?.partner?.email || '';
-        try {
-            const { ComposeWizardDialog } = await import(
-                "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
-            );
-            this.dialog.add(ComposeWizardDialog, {
-                partnerEmail,
-                onSent: () => this.onRefresh(),
-            });
-            return;
-        } catch (_err) {
-            // Fallback: open partner form
-        }
-        const partnerId = this.state.data?.partner?.id;
-        if (partnerId) {
-            this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "res.partner",
-                res_id: partnerId,
-                views: [[false, "form"]],
+        this.dialog.add(ComposeWizardDialog, {
+            partnerEmail,
+            onSent: () => this.onRefresh(),
+        });
                 target: "current",
             });
         } else {
@@ -341,29 +327,13 @@ export class CFProjectDashboard extends Component {
 
     async onQuickReply(mailEntry) {
         if (!mailEntry.partner_id) return;
-        // Try F8 ComposeWizardDialog from casafolino_mail
-        try {
-            const { ComposeWizardDialog } = await import(
-                "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
-            );
-            this.dialog.add(ComposeWizardDialog, {
-                partnerEmail: mailEntry.sender_email || '',
-                defaultSubject: mailEntry.subject ? 'Re: ' + mailEntry.subject : '',
-                partnerId: mailEntry.partner_id || null,
-                threadId: mailEntry.partner_id || null,
-                threadModel: 'res.partner',
-                onSent: () => this.onRefresh(),
-            });
-            return;
-        } catch (_err) {
-            // Fallback: open partner form
-        }
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "res.partner",
-            res_id: mailEntry.partner_id,
-            views: [[false, "form"]],
-            target: "current",
+        this.dialog.add(ComposeWizardDialog, {
+            partnerEmail: mailEntry.sender_email || '',
+            defaultSubject: mailEntry.subject ? 'Re: ' + mailEntry.subject : '',
+            partnerId: mailEntry.partner_id || null,
+            threadId: mailEntry.partner_id || null,
+            threadModel: 'res.partner',
+            onSent: () => this.onRefresh(),
         });
     }
 }

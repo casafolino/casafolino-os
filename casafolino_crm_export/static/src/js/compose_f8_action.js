@@ -16,6 +16,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
 import { rpc } from "@web/core/network/rpc";
+import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 class ComposeF8Action extends Component {
     static template = "casafolino_crm_export.ComposeF8Action";
@@ -28,43 +29,35 @@ class ComposeF8Action extends Component {
         onMounted(async () => {
             const ctx = this.props.action?.context || {};
 
+            // Resolve account_id from current user via DB lookup
+            let accountId = null;
             try {
-                const { ComposeWizardDialog } = await import(
-                    "@casafolino_mail/js/mail_v3/compose_wizard_dialog"
-                );
-
-                // Resolve account_id from current user via DB lookup
-                let accountId = null;
-                try {
-                    const accounts = await rpc("/web/dataset/call_kw", {
-                        model: "casafolino.mail.account",
-                        method: "search_read",
-                        args: [[
-                            ["responsible_user_id", "=", user.userId],
-                            ["active", "=", true],
-                        ]],
-                        kwargs: { fields: ["id"], limit: 1 },
-                    });
-                    if (accounts && accounts.length) {
-                        accountId = accounts[0].id;
-                    }
-                } catch (e) {
-                    console.warn("[ComposeF8] account lookup failed:", e);
-                }
-
-                this.dialog.add(ComposeWizardDialog, {
-                    partnerEmail: ctx.default_partner_email || "",
-                    defaultSubject: ctx.default_subject || "",
-                    defaultBody: ctx.default_body || "",
-                    partnerId: ctx.default_partner_id || null,
-                    threadId: ctx.default_thread_id || null,
-                    threadModel: ctx.default_thread_model || null,
-                    accountId: accountId,
-                    onSent: () => {},
+                const accounts = await rpc("/web/dataset/call_kw", {
+                    model: "casafolino.mail.account",
+                    method: "search_read",
+                    args: [[
+                        ["responsible_user_id", "=", user.userId],
+                        ["active", "=", true],
+                    ]],
+                    kwargs: { fields: ["id"], limit: 1 },
                 });
+                if (accounts && accounts.length) {
+                    accountId = accounts[0].id;
+                }
             } catch (e) {
-                console.error("[ComposeF8] Failed to open composer:", e);
+                console.warn("[ComposeF8] account lookup failed:", e);
             }
+
+            this.dialog.add(ComposeWizardDialog, {
+                partnerEmail: ctx.default_partner_email || "",
+                defaultSubject: ctx.default_subject || "",
+                defaultBody: ctx.default_body || "",
+                partnerId: ctx.default_partner_id || null,
+                threadId: ctx.default_thread_id || null,
+                threadModel: ctx.default_thread_model || null,
+                accountId: accountId,
+                onSent: () => {},
+            });
 
             // Navigate back to previous view after dialog is spawned.
             // The dialog lives in the dialog overlay, independent of actions.
