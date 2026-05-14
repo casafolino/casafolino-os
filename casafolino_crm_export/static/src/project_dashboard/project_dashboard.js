@@ -168,16 +168,11 @@ export class CFProjectDashboard extends Component {
     }
 
     async onQuickActionMail() {
-        const partnerEmail = this.state.data?.partner?.email || '';
+        const partnerEmail = this.state.data?.partner?.email || "";
         this.dialog.add(ComposeWizardDialog, {
             partnerEmail,
             onSent: () => this.onRefresh(),
         });
-                target: "current",
-            });
-        } else {
-            this.notification.add(_t("Nessun partner collegato"), { type: "warning" });
-        }
     }
 
     async onQuickActionSample() {
