@@ -654,27 +654,40 @@ class CrmLead(models.Model):
     # Actions
     # ------------------------------------------------------------------
 
-    def action_open_project_360(self):
-        """Open the 360° project dashboard for the linked project."""
+    def _ensure_project_360(self):
+        """Return a linked dossier project, creating one when missing."""
         self.ensure_one()
-        if not self.cf_project_id:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Progetto mancante',
-                    'message': 'Collega questo lead a un progetto/dossier (campo "Progetto") prima di aprire la Vista 360°.',
-                    'type': 'warning',
-                    'sticky': False,
-                },
-            }
+        if self.cf_project_id:
+            return self.cf_project_id
+
+        partner = self.partner_id
+        project_name = (
+            "%s — %s" % (partner.name, self.name)
+            if partner else (self.name or "Dossier commerciale")
+        )
+        project = self.env["project.project"].create({
+            "name": project_name,
+            "partner_id": partner.id if partner else False,
+            "user_id": self.user_id.id or self.env.user.id,
+            "cf_status_dossier": "exploration",
+            "cf_dossier_priority": "medium",
+        })
+        self.cf_project_id = project.id
+        return project
+
+    def action_open_project_360(self):
+        """Open the 360° project dashboard, creating a dossier if needed."""
+        self.ensure_one()
+        project = self._ensure_project_360()
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_crm_export.project_dashboard',
-            'target': 'current',
-            'context': {
-                'active_id': self.cf_project_id.id,
-                'default_project_id': self.cf_project_id.id,
+            "type": "ir.actions.client",
+            "tag": "casafolino_crm_export.project_dashboard",
+            "name": "Vista 360° — %s" % project.name,
+            "target": "main",
+            "context": {
+                "active_id": project.id,
+                "default_project_id": project.id,
+                "active_model": "project.project",
             },
         }
 
