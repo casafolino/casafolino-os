@@ -658,7 +658,16 @@ class CrmLead(models.Model):
         """Open the 360° project dashboard for the linked project."""
         self.ensure_one()
         if not self.cf_project_id:
-            raise UserError(_("Nessun progetto collegato a questo lead."))
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Progetto mancante',
+                    'message': 'Collega questo lead a un progetto/dossier (campo "Progetto") prima di aprire la Vista 360°.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
         return {
             'type': 'ir.actions.client',
             'tag': 'casafolino_crm_export.project_dashboard',

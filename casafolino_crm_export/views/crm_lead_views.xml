@@ -169,8 +169,7 @@
                         type="object" icon="fa-envelope" class="oe_highlight"
                         invisible="not partner_id"/>
                     <button name="action_open_project_360" string="Progetto 360°"
-                        type="object" class="oe_highlight"
-                        invisible="not cf_project_id"/>
+                        type="object" class="oe_highlight"/>
                     <button name="action_mark_contacted" string="Contatto Registrato"
                         type="object" class="btn-primary"/>
                     <button name="action_schedule_followup" string="Follow-up +7gg"
