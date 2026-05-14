@@ -56,17 +56,18 @@ class ComposeF8Action extends Component {
                 threadId: ctx.default_thread_id || null,
                 threadModel: ctx.default_thread_model || null,
                 accountId: accountId,
-                onSent: () => {},
+                onSent: () => this.restorePreviousView(),
+                onClose: () => this.restorePreviousView(),
             });
-
-            // Navigate back to previous view after dialog is spawned.
-            // The dialog lives in the dialog overlay, independent of actions.
-            try {
-                await this.actionService.restore();
-            } catch (e) {
-                console.warn("[ComposeF8] restore() failed (non-critical):", e);
-            }
         });
+    }
+
+    async restorePreviousView() {
+        try {
+            await this.actionService.restore();
+        } catch (e) {
+            console.warn("[ComposeF8] restore() failed (non-critical):", e);
+        }
     }
 }
 

@@ -86,11 +86,12 @@ export class ComposeWizardDialog extends Component {
     }
 
     onComposeSent() {
-        if (this.props.onSent) this.props.onSent();
         this.props.close();
+        if (this.props.onSent) this.props.onSent();
     }
 
     onComposeClose() {
         this.props.close();
+        if (this.props.onClose) this.props.onClose();
     }
 }
