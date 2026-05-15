@@ -190,6 +190,9 @@ class ProjectProject(models.Model):
     cf_mail_count = fields.Integer(
         compute='_compute_cf_mail_count', string='Mail',
     )
+    cf_unread_mail_count = fields.Integer(
+        compute='_compute_cf_unread_mail_count', string='Mail nuove',
+    )
     cf_sample_count = fields.Integer(
         compute='_compute_cf_sample_count', string='Campionature',
     )
@@ -248,6 +251,20 @@ class ProjectProject(models.Model):
                     rec.cf_mail_count = 0
             except Exception:
                 rec.cf_mail_count = 0
+
+    @api.depends('partner_id')
+    def _compute_cf_unread_mail_count(self):
+        MailMsg = self.env.get('casafolino.mail.message')
+        for rec in self:
+            if not MailMsg or not rec.id:
+                rec.cf_unread_mail_count = 0
+                continue
+            rec.cf_unread_mail_count = MailMsg.search_count([
+                ('cf_project_id', '=', rec.id),
+                ('direction', '=', 'inbound'),
+                ('is_read', '=', False),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ])
 
     @api.depends('partner_id')
     def _compute_cf_sample_count(self):
