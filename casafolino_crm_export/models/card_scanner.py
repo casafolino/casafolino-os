@@ -5,8 +5,10 @@ from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
-SIAL_TAG_NAME = 'SIAL_MONTREAL_2026'
-SIAL_SOURCE_NAME = 'Fiera SIAL Canada 2026'
+FAIR_TAG_NAME = 'TUTTOFOOD_2026'
+FAIR_SOURCE_NAME = 'Fiera TUTTOFOOD Milano 2026'
+FAIR_LEAD_PREFIX = 'Lead Fiera TUTTOFOOD Milano 2026'
+FAIR_XMLID = 'casafolino_crm_export.cf_export_fair_tuttofood_2026'
 
 
 class CrmLeadCardScanner(models.Model):
@@ -24,7 +26,7 @@ class CrmLeadCardScanner(models.Model):
             'name': ' '.join(filter(None, [
                 form_data.get('first_name', ''),
                 form_data.get('last_name', ''),
-            ])).strip() or 'Contact SIAL',
+            ])).strip() or 'Contact TUTTOFOOD',
             'email': form_data.get('email') or False,
             'phone': form_data.get('phone') or False,
             'mobile': form_data.get('mobile') or False,
@@ -60,7 +62,7 @@ class CrmLeadCardScanner(models.Model):
 
         # Partner category tag
         category = self.env['res.partner.category'].search(
-            [('name', '=', SIAL_TAG_NAME)], limit=1,
+            [('name', '=', FAIR_TAG_NAME)], limit=1,
         )
         if category:
             partner_vals['category_id'] = [(4, category.id)]
@@ -80,14 +82,15 @@ class CrmLeadCardScanner(models.Model):
 
         # --- Lead ---
         crm_tag = self.env['crm.tag'].search(
-            [('name', '=', SIAL_TAG_NAME)], limit=1,
+            [('name', '=', FAIR_TAG_NAME)], limit=1,
         )
         utm_source = self.env['utm.source'].search(
-            [('name', '=', SIAL_SOURCE_NAME)], limit=1,
+            [('name', '=', FAIR_SOURCE_NAME)], limit=1,
         )
+        fair = self.env.ref(FAIR_XMLID, raise_if_not_found=False)
 
         lead_vals = {
-            'name': f'Lead Fiera SIAL Canada 2026 — {company_name or partner.name}',
+            'name': f'{FAIR_LEAD_PREFIX} - {company_name or partner.name}',
             'partner_id': partner.id,
             'contact_name': partner.name,
             'partner_name': company_name or '',
@@ -101,6 +104,8 @@ class CrmLeadCardScanner(models.Model):
             lead_vals['tag_ids'] = [(4, crm_tag.id)]
         if utm_source:
             lead_vals['source_id'] = utm_source.id
+        if fair:
+            lead_vals['cf_fair_id'] = fair.id
 
         lead = self.create(lead_vals)
 
@@ -120,16 +125,21 @@ class CrmLeadCardScanner(models.Model):
         # --- Send email ---
         email_sent = False
         if send_email and partner.email:
-            email_sent = self._send_sial_followup(lead, partner, language, card_attachment)
+            email_sent = self._send_fair_followup(lead, partner, language, card_attachment)
 
         # --- Chatter log ---
+        lang_label = {
+            'it_IT': 'Italiano',
+            'fr_FR': 'Français',
+            'en_US': 'English',
+        }.get(language, language or '-')
         body = _(
-            '<p><strong>Lead creato da Card Scanner SIAL Montreal 2026</strong></p>'
+            '<p><strong>Lead creato da Card Scanner TUTTOFOOD Milano 2026</strong></p>'
             '<p>Contatto: %(name)s<br/>Azienda: %(company)s<br/>'
             'Lingua email: %(lang)s<br/>Email inviata: %(sent)s</p>',
             name=partner.name,
             company=company_name or '-',
-            lang='Français' if language == 'fr_FR' else 'English',
+            lang=lang_label,
             sent='Sì' if email_sent else 'No',
         )
         lead.message_post(body=body, message_type='comment', subtype_xmlid='mail.mt_note')
@@ -142,14 +152,16 @@ class CrmLeadCardScanner(models.Model):
             'email_sent': email_sent,
         }
 
-    def _send_sial_followup(self, lead, partner, language, card_attachment):
-        """Send SIAL follow-up email with fair attachments."""
+    def _send_fair_followup(self, lead, partner, language, card_attachment):
+        """Send TUTTOFOOD follow-up email with fair attachments."""
         ICP = self.env['ir.config_parameter'].sudo()
-        template_xmlid = (
-            'casafolino_crm_export.email_template_sial_montreal_fr'
-            if language == 'fr_FR'
-            else 'casafolino_crm_export.email_template_sial_montreal_en'
-        )
+        template_by_language = {
+            'it_IT': 'casafolino_crm_export.email_template_tuttofood_2026_it',
+            'fr_FR': 'casafolino_crm_export.email_template_tuttofood_2026_fr',
+            'en_US': 'casafolino_crm_export.email_template_tuttofood_2026_en',
+        }
+        template_xmlid = template_by_language.get(
+            language, 'casafolino_crm_export.email_template_tuttofood_2026_en')
         template = self.env.ref(template_xmlid, raise_if_not_found=False)
         if not template:
             _logger.warning('Mail template %s not found', template_xmlid)
@@ -178,7 +190,7 @@ class CrmLeadCardScanner(models.Model):
             mail.send()
             return True
         except Exception as e:
-            _logger.warning('SIAL email send failed for lead %s: %s', lead.id, e)
+            _logger.warning('TUTTOFOOD email send failed for lead %s: %s', lead.id, e)
             try:
                 lead.activity_schedule(
                     'mail.mail_activity_data_todo',

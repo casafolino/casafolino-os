@@ -5,6 +5,9 @@
     <record id="crm_tag_sial_montreal_2026" model="crm.tag">
         <field name="cf_category">fair</field>
     </record>
+    <record id="crm_tag_tuttofood_2026" model="crm.tag">
+        <field name="cf_category">fair</field>
+    </record>
 
     <!-- Set cf_category on market tags (geo) -->
     <record id="tag_market_america" model="crm.tag">

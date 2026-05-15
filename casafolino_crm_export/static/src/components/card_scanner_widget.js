@@ -27,7 +27,7 @@ class CardScannerWidget extends Component {
                 website: "",
                 country_code: "",
             },
-            language: "en_US",
+            language: "it_IT",
             error: null,
             leadId: null,
             leadName: null,
@@ -151,7 +151,7 @@ class CardScannerWidget extends Component {
         Object.keys(this.state.formData).forEach((key) => {
             this.state.formData[key] = "";
         });
-        this.state.language = "en_US";
+        this.state.language = "it_IT";
         if (this.fileInputRef.el) {
             this.fileInputRef.el.value = "";
         }

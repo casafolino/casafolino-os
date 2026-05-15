@@ -4,4 +4,9 @@
         <field name="name">SIAL_MONTREAL_2026</field>
         <field name="color">3</field>
     </record>
+
+    <record id="partner_category_tuttofood_2026" model="res.partner.category">
+        <field name="name">TUTTOFOOD_2026</field>
+        <field name="color">4</field>
+    </record>
 </odoo>
