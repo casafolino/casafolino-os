@@ -585,6 +585,7 @@ class ProjectProject(models.Model):
                 'default_partner_id': partner.id if partner else False,
                 'default_thread_id': self.id,
                 'default_thread_model': 'project.project',
+                'default_project_id': self.id,
             },
         }
 

@@ -17,6 +17,10 @@ class CasafolinoMailDraft(models.Model):
     in_reply_to_message_id = fields.Many2one('casafolino.mail.message',
                                               string='In risposta a',
                                               ondelete='set null')
+    cf_project_id = fields.Many2one(
+        'project.project', string='Dossier',
+        ondelete='set null', index=True,
+        help='Dossier commerciale a cui appartiene questa bozza.')
     to_emails = fields.Text('A')
     cc_emails = fields.Text('CC')
     bcc_emails = fields.Text('BCC')
@@ -86,6 +90,7 @@ class CasafolinoMailDraft(models.Model):
                 in_reply_to=self.in_reply_to_message_id.message_id_rfc if self.in_reply_to_message_id else '',
                 attachment_ids=self.attachment_ids.ids or None,
                 source_message_id=self.in_reply_to_message_id.id if self.in_reply_to_message_id else False,
+                cf_project_id=self.cf_project_id.id if self.cf_project_id else False,
             )
             _logger.info('[mail v3] Draft %s queued to outbox %s', self.id, outbox.id)
             self.unlink()
@@ -93,4 +98,3 @@ class CasafolinoMailDraft(models.Model):
         except Exception as e:
             _logger.error('[mail v3] Draft %s send failed: %s', self.id, e)
             return {'success': False, 'error': str(e)[:200]}
-

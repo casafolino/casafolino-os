@@ -10,6 +10,7 @@
  *   default_partner_id     — partner record id (for AI/snippet context)
  *   default_thread_id      — source record id
  *   default_thread_model   — source model (crm.lead, res.partner, …)
+ *   default_project_id     — link outbound email to this dossier
  */
 import { Component, onMounted } from "@odoo/owl";
 import { registry } from "@web/core/registry";
@@ -55,6 +56,7 @@ class ComposeF8Action extends Component {
                 partnerId: ctx.default_partner_id || null,
                 threadId: ctx.default_thread_id || null,
                 threadModel: ctx.default_thread_model || null,
+                projectId: ctx.default_project_id || null,
                 accountId: accountId,
                 onSent: () => this.restorePreviousView(),
                 onClose: () => this.restorePreviousView(),

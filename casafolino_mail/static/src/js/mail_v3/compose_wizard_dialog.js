@@ -11,6 +11,7 @@
  *   this.dialogService.add(ComposeWizardDialog, {
  *       partnerEmail: "buyer@example.com",
  *       defaultSubject: "Re: Quotation",
+ *       projectId: 42,
  *       onSent: () => { ... },
  *   });
  */
@@ -39,6 +40,7 @@ export class ComposeWizardDialog extends Component {
                 const prepareParams = {
                     mode: 'new',
                     prefilled_body: '',
+                    project_id: this.props.projectId || false,
                 };
                 // Pass caller-resolved account_id to prepare endpoint
                 if (this.props.accountId) {
