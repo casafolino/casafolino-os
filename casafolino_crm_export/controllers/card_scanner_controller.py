@@ -10,6 +10,7 @@ _logger = logging.getLogger(__name__)
 
 COUNTRY_LANG_MAP = {
     'FR': 'fr_FR', 'MC': 'fr_FR', 'BE': 'fr_FR',
+    'IT': 'it_IT',
     'CA': 'en_US',
 }
 FR_CITIES = {'montréal', 'montreal', 'québec', 'quebec'}

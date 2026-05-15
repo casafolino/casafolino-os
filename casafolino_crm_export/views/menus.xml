@@ -3,7 +3,7 @@
 
     <!-- Card Scanner client action -->
     <record id="action_card_scanner" model="ir.actions.client">
-        <field name="name">Card Scanner SIAL</field>
+        <field name="name">Card Scanner TUTTOFOOD</field>
         <field name="tag">casafolino_card_scanner</field>
     </record>
 
