@@ -906,6 +906,7 @@ class MailV3Controller(http.Controller):
         mode = kw.get('mode', 'new')
         reply_to_id = kw.get('reply_to_id')
         prefilled_body = kw.get('prefilled_body', '')
+        project_id = kw.get('project_id') or False
 
         if not account_id:
             account = request.env['casafolino.mail.account'].search([
@@ -981,7 +982,20 @@ class MailV3Controller(http.Controller):
             'subject': '',
             'body_html': prefilled_body or '',
             'signature_html': '',
+            'project_id': project_id,
+            'project_name': '',
         }
+
+        if project_id:
+            project = request.env['project.project'].browse(int(project_id))
+            if project.exists():
+                prefilled['project_name'] = project.name or ''
+                if project.partner_id and project.partner_id.email:
+                    prefilled['to'] = project.partner_id.email
+                prefilled['subject'] = '[%s] ' % (project.name or '')
+            else:
+                project_id = False
+                prefilled['project_id'] = False
 
         # Load signature
         if account_id:
@@ -999,6 +1013,10 @@ class MailV3Controller(http.Controller):
         if reply_to_id and mode in ('reply', 'reply_all', 'forward'):
             orig = request.env['casafolino.mail.message'].browse(reply_to_id)
             if orig.exists():
+                if not project_id and orig.cf_project_id:
+                    project_id = orig.cf_project_id.id
+                    prefilled['project_id'] = project_id
+                    prefilled['project_name'] = orig.cf_project_id.name or ''
                 if mode == 'reply':
                     prefilled['to'] = orig.sender_email if orig.direction == 'inbound' else (orig.recipient_emails or '')
                     prefilled['subject'] = 'Re: ' + _normalize_subject(orig.subject or '')
@@ -1032,6 +1050,8 @@ class MailV3Controller(http.Controller):
         }
         if reply_to_id:
             draft_vals['in_reply_to_message_id'] = reply_to_id
+        if project_id:
+            draft_vals['cf_project_id'] = int(project_id)
 
         draft = request.env['casafolino.mail.draft'].create(draft_vals)
 
@@ -1132,6 +1152,7 @@ class MailV3Controller(http.Controller):
             in_reply_to=draft.in_reply_to_message_id.message_id_rfc if draft.in_reply_to_message_id else '',
             attachment_ids=draft.attachment_ids.ids or None,
             source_message_id=draft.in_reply_to_message_id.id if draft.in_reply_to_message_id else False,
+            cf_project_id=draft.cf_project_id.id if draft.cf_project_id else False,
         )
         outbox.write({'state': 'undoable', 'undo_until': undo_until})
 
@@ -1162,6 +1183,7 @@ class MailV3Controller(http.Controller):
             'subject': outbox.subject,
             'body_html': outbox.body_html,
             'in_reply_to_message_id': outbox.source_message_id.id if outbox.source_message_id else False,
+            'cf_project_id': outbox.cf_project_id.id if outbox.cf_project_id else False,
         })
         outbox.unlink()
         return {'success': True, 'draft_id': draft.id}
@@ -2765,6 +2787,55 @@ class MailV3Controller(http.Controller):
         return {
             'unread_count': unread_count,
             'new_since_last_poll': new_since,
+            'server_time': str(fields.Datetime.now()),
+        }
+
+    @http.route('/cf/mail/v3/dossier_notifications', type='json', auth='user')
+    def dossier_notifications(self, **kw):
+        """Return unread inbound mail grouped by dossier for the Odoo home view."""
+        account_ids = self._get_user_account_ids()
+        if not account_ids:
+            return {'total': 0, 'dossiers': []}
+
+        Message = request.env['casafolino.mail.message']
+        messages = Message.search([
+            ('account_id', 'in', account_ids),
+            ('cf_project_id', '!=', False),
+            ('direction', '=', 'inbound'),
+            ('is_read', '=', False),
+            ('is_deleted', '=', False),
+            ('is_archived', '=', False),
+            ('state', 'in', ['keep', 'auto_keep']),
+        ], order='email_date desc', limit=80)
+
+        grouped = {}
+        for msg in messages:
+            project = msg.cf_project_id
+            data = grouped.setdefault(project.id, {
+                'project_id': project.id,
+                'project_name': project.name or '',
+                'count': 0,
+                'latest_subject': '',
+                'latest_sender': '',
+                'latest_date': '',
+            })
+            data['count'] += 1
+            if not data['latest_date']:
+                data['latest_subject'] = msg.subject or ''
+                data['latest_sender'] = msg.sender_email or ''
+                data['latest_date'] = (
+                    fields.Datetime.to_string(msg.email_date)
+                    if msg.email_date else ''
+                )
+
+        dossiers = sorted(
+            grouped.values(),
+            key=lambda d: d.get('latest_date') or '',
+            reverse=True,
+        )
+        return {
+            'total': sum(d['count'] for d in dossiers),
+            'dossiers': dossiers[:20],
             'server_time': str(fields.Datetime.now()),
         }
 

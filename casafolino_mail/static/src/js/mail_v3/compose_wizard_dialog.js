@@ -11,6 +11,7 @@
  *   this.dialogService.add(ComposeWizardDialog, {
  *       partnerEmail: "buyer@example.com",
  *       defaultSubject: "Re: Quotation",
+ *       projectId: 42,
  *       onSent: () => { ... },
  *   });
  */
@@ -38,6 +39,7 @@ export class ComposeWizardDialog extends Component {
                 const result = await rpc('/cf/mail/v3/compose/prepare', {
                     mode: 'new',
                     prefilled_body: '',
+                    project_id: this.props.projectId || false,
                 });
                 if (!result || !result.draft_id) {
                     this.state.error = 'Impossibile creare bozza mail';

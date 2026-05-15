@@ -190,6 +190,9 @@ class ProjectProject(models.Model):
     cf_mail_count = fields.Integer(
         compute='_compute_cf_mail_count', string='Mail',
     )
+    cf_unread_mail_count = fields.Integer(
+        compute='_compute_cf_unread_mail_count', string='Mail nuove',
+    )
     cf_sample_count = fields.Integer(
         compute='_compute_cf_sample_count', string='Campionature',
     )
@@ -248,6 +251,19 @@ class ProjectProject(models.Model):
                     rec.cf_mail_count = 0
             except Exception:
                 rec.cf_mail_count = 0
+
+    def _compute_cf_unread_mail_count(self):
+        MailMsg = self.env.get('casafolino.mail.message')
+        for rec in self:
+            if not MailMsg or not rec.id:
+                rec.cf_unread_mail_count = 0
+                continue
+            rec.cf_unread_mail_count = MailMsg.search_count([
+                ('cf_project_id', '=', rec.id),
+                ('direction', '=', 'inbound'),
+                ('is_read', '=', False),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ])
 
     @api.depends('partner_id')
     def _compute_cf_sample_count(self):
@@ -542,54 +558,20 @@ class ProjectProject(models.Model):
                 rec.cf_dossier_mail_ids = False
 
     def _cf_mail_domain(self):
-        """Build search domain for casafolino.mail.message matching
-        partner_id OR any contact email."""
+        """Build the dossier-first mail domain.
+
+        A dossier timeline must show messages explicitly positioned on the
+        dossier. Partner/domain matches stay in the Posizionatore until a user
+        or AI assigns them, so Odoo does not become a duplicate Gmail inbox.
+        """
         self.ensure_one()
-        emails = list(filter(
-            None, self.cf_contact_ids.mapped('email_normalized')))
-        partner_ids = []
-        if self.partner_id:
-            partner_ids.append(self.partner_id.id)
-        partner_ids += self.cf_contact_ids.mapped('partner_id').ids
-        partner_ids = list(set(filter(None, partner_ids)))
-
-        if not emails and not partner_ids:
+        if not self.id:
             return None
-
-        parts = []
-        if partner_ids:
-            parts.append(('partner_id', 'in', partner_ids))
-        if emails:
-            parts.append(('sender_email', 'in', emails))
-
-        if len(parts) == 2:
-            return ['|'] + parts
-        return parts
+        return [('cf_project_id', '=', self.id)]
 
     def action_cf_compose_mail(self):
-        """Open standard Odoo mail composer pre-populated."""
-        self.ensure_one()
-        primary = self.cf_contact_ids.filtered('is_primary')[:1]
-        partner = (
-            primary.partner_id or self.partner_id
-            if primary else self.partner_id
-        )
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Scrivi mail'),
-            'res_model': 'mail.compose.message',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_composition_mode': 'comment',
-                'default_model': 'project.project',
-                'default_res_ids': [self.id],
-                'default_partner_ids': (
-                    [partner.id] if partner else []
-                ),
-                'default_subject': '[%s] ' % (self.name or ''),
-            },
-        }
+        """Open the dossier-bound F8 composer."""
+        return self.action_compose_email_f8()
 
     def action_compose_email_f8(self):
         """Open F8 Outlook-style composer via client action."""
@@ -603,6 +585,7 @@ class ProjectProject(models.Model):
             'context': {
                 'default_partner_email': email,
                 'default_subject': '[%s] ' % (self.name or ''),
+                'default_project_id': self.id,
             },
         }
 
@@ -675,10 +658,26 @@ class ProjectProject(models.Model):
             'res_model': 'casafolino.mail.message',
             'view_mode': 'list,form',
             'domain': [
-                ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
+                ('cf_project_id', '=', self.id),
                 ('state', 'in', ('keep', 'auto_keep')),
             ],
+            'context': {
+                'search_default_dossier_linked': 1,
+                'default_cf_project_id': self.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+            },
         }
+
+    def action_open_dossier_unread_mails(self):
+        self.ensure_one()
+        action = self.action_open_dossier_mails()
+        action['name'] = 'Mail nuove — %s' % self.name
+        action['domain'] = action['domain'] + [
+            ('direction', '=', 'inbound'),
+            ('is_read', '=', False),
+        ]
+        action['context'] = dict(action.get('context', {}), search_default_unread=1)
+        return action
 
     def action_open_dossier_samples(self):
         self.ensure_one()

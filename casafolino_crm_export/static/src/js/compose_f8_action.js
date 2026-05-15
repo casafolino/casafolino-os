@@ -7,6 +7,7 @@
  *   default_partner_email — pre-fill "To" field
  *   default_subject       — pre-fill subject
  *   default_body          — pre-fill body HTML
+ *   default_project_id    — link outbound email to this dossier
  */
 import { Component, onMounted } from "@odoo/owl";
 import { registry } from "@web/core/registry";
@@ -32,6 +33,7 @@ class ComposeF8Action extends Component {
                     partnerEmail: ctx.default_partner_email || "",
                     defaultSubject: ctx.default_subject || "",
                     defaultBody: ctx.default_body || "",
+                    projectId: ctx.default_project_id || false,
                     onSent: () => {},
                 });
             } catch (e) {

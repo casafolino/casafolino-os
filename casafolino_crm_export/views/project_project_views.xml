@@ -82,6 +82,12 @@
                         <field name="cf_mail_count" string="Mail dossier"
                                widget="statinfo"/>
                     </button>
+                    <button class="oe_stat_button" icon="fa-bell-o"
+                            type="object" name="action_open_dossier_unread_mails"
+                            invisible="cf_unread_mail_count == 0">
+                        <field name="cf_unread_mail_count" string="Mail nuove"
+                               widget="statinfo"/>
+                    </button>
                     <button class="oe_stat_button" icon="fa-flask"
                             type="object" name="action_open_dossier_samples">
                         <field name="cf_sample_count" string="Campioni"
@@ -205,6 +211,8 @@
                                readonly="1">
                             <list>
                                 <field name="email_date" string="Data"/>
+                                <field name="direction" string="Dir" widget="badge"/>
+                                <field name="is_read" string="Letta"/>
                                 <field name="subject"/>
                                 <field name="sender_email" string="Da"/>
                                 <field name="partner_id"

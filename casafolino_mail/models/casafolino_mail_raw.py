@@ -411,6 +411,7 @@ class CasafolinoMailRaw(models.Model):
 
         # Determine direction
         actual_direction = raw.direction or 'inbound'
+        thread_msg = self._find_referenced_message(raw)
 
         # Create MESSAGE record
         vals = {
@@ -430,6 +431,15 @@ class CasafolinoMailRaw(models.Model):
             'match_type': match_type or 'none',
             'fetch_state': 'pending',
         }
+        if thread_msg:
+            if thread_msg.cf_project_id:
+                vals['cf_project_id'] = thread_msg.cf_project_id.id
+                vals['state'] = 'keep'
+            if thread_msg.partner_id and not vals['partner_id']:
+                vals['partner_id'] = thread_msg.partner_id.id
+                vals['match_type'] = 'thread'
+            if thread_msg.lead_id:
+                vals['lead_id'] = thread_msg.lead_id.id
 
         new_msg = Message.create(vals)
 
@@ -468,6 +478,25 @@ class CasafolinoMailRaw(models.Model):
         })
 
     # ── V14: Folder assignment ─────────────────────────────────────
+
+    def _find_referenced_message(self, raw):
+        """Find an existing staged message from In-Reply-To/References."""
+        Message = self.env['casafolino.mail.message']
+        ref_ids = []
+        in_reply_to = self._extract_header(raw.headers_raw, 'In-Reply-To')
+        references = self._extract_header(raw.headers_raw, 'References')
+        if in_reply_to:
+            ref_ids.append(in_reply_to.strip())
+        if references:
+            ref_ids.extend(references.split())
+        for ref_id in ref_ids:
+            ref_id = ref_id.strip()
+            if not ref_id:
+                continue
+            msg = Message.search([('message_id_rfc', '=', ref_id)], limit=1)
+            if msg:
+                return msg
+        return Message
 
     def _assign_folder(self, message, raw):
         """Apply folder rules to a promoted message. First match wins.

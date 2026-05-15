@@ -90,6 +90,7 @@ class CasafolinoMailMessage(models.Model):
     match_type = fields.Selection([
         ('exact', 'Email esatta'),
         ('domain', 'Dominio'),
+        ('thread', 'Thread dossier'),
         ('manual', 'Manuale'),
         ('none', 'Nessuno'),
     ], string='Tipo match', default='none')
@@ -402,12 +403,15 @@ class CasafolinoMailMessage(models.Model):
             'author_id': self.partner_id.id if self.partner_id else False,
         })
 
-        self.write({
+        vals = {
             'cf_project_id': project_id,
             'cf_positioned_at': fields.Datetime.now(),
             'cf_positioned_by_id': self.env.user.id,
             'mail_message_id': chatter_msg.id,
-        })
+        }
+        if self.state in ('new', 'review', 'auto_attached'):
+            vals['state'] = 'keep'
+        self.write(vals)
 
         # Brief #6.3 — Record feedback for AI learning
         self._record_position_feedback(project_id)

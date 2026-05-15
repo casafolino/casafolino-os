@@ -50,12 +50,16 @@ class CasafolinoMailOutbox(models.Model):
     source_message_id = fields.Many2one('casafolino.mail.message',
         string='Messaggio originale', ondelete='set null',
         help='Se risposta, link al messaggio originale')
+    cf_project_id = fields.Many2one(
+        'project.project', string='Dossier',
+        ondelete='set null', index=True,
+        help='Dossier commerciale a cui collegare la mail inviata.')
 
     @api.model
     def queue_send(self, account_id, to_emails, subject, body_html,
                    cc_emails='', bcc_emails='', signature_html='',
                    in_reply_to='', references='', attachment_ids=None,
-                   priority='0', source_message_id=False):
+                   priority='0', source_message_id=False, cf_project_id=False):
         """Queue an email for async sending. Returns outbox record."""
         vals = {
             'account_id': account_id,
@@ -70,6 +74,7 @@ class CasafolinoMailOutbox(models.Model):
             'priority': priority,
             'state': 'queued',
             'source_message_id': source_message_id,
+            'cf_project_id': cf_project_id,
         }
         if attachment_ids:
             vals['attachment_ids'] = [(6, 0, attachment_ids)]
@@ -205,6 +210,7 @@ class CasafolinoMailOutbox(models.Model):
                 'imap_flags_synced': True,
                 'partner_id': self._find_partner_for_recipients(),
                 'match_type': 'exact' if self._find_partner_for_recipients() else 'none',
+                'cf_project_id': self.cf_project_id.id if self.cf_project_id else False,
             })
         except Exception as e:
             _logger.warning("[outbox] Create outbound msg error: %s", e)
@@ -254,4 +260,3 @@ class CasafolinoMailOutbox(models.Model):
 
         if sent or errors:
             _logger.info("[outbox] Cron: %d sent, %d errors", sent, errors)
-
