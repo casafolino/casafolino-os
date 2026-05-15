@@ -663,6 +663,17 @@ class ProjectProject(models.Model):
             ],
         }
 
+    def action_open_dossier_unread_mails(self):
+        self.ensure_one()
+        action = self.action_open_dossier_mails()
+        action["name"] = "Mail nuove - %s" % self.name
+        action["domain"] = action["domain"] + [
+            ("direction", "=", "inbound"),
+            ("is_read", "=", False),
+        ]
+        action["context"] = dict(action.get("context", {}), search_default_unread=1)
+        return action
+
     def action_open_dossier_samples(self):
         self.ensure_one()
         return {
