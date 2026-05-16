@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        4 cluster sub-menus under Workspace CasaFolino.
+        4 cluster sub-menus under Scrivania.
         CRM and Produzione are new grouping menus (multiple modules each).
         HACCP and Tesoreria: original roots reparented directly (see menu_remap.xml).
     -->

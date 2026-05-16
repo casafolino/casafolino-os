@@ -4,6 +4,61 @@
 <t t-name="casafolino_home.CFWorkspace">
     <div class="cf-scrivania">
 
+        <div class="cf-cockpit-header">
+            <div>
+                <p class="cf-cockpit-kicker">CasaFolino</p>
+                <h1 class="cf-cockpit-title">Scrivania</h1>
+            </div>
+            <button t-on-click="onRefresh" class="cf-cockpit-refresh" title="Aggiorna">
+                <i class="fa fa-refresh"/>
+            </button>
+        </div>
+
+        <div class="cf-cockpit-overview">
+            <t t-foreach="cockpitCards" t-as="card" t-key="card.id">
+                <button t-on-click="() => card.action()"
+                        t-attf-class="cf-cockpit-card cf-cockpit-#{card.tone}">
+                    <i t-attf-class="fa #{card.icon}"/>
+                    <span class="cf-cockpit-card-body">
+                        <span class="cf-cockpit-card-label" t-out="card.label"/>
+                        <span class="cf-cockpit-card-value" t-out="card.value"/>
+                        <span class="cf-cockpit-card-detail" t-out="card.detail"/>
+                    </span>
+                </button>
+            </t>
+        </div>
+
+        <p class="cf-section-label">Operazioni veloci</p>
+        <div class="cf-global-actions">
+            <button t-on-click="onNewProject" class="cf-qa cf-qa-primary-crm">
+                <i class="fa fa-folder-open"/>
+                <span class="cf-qa-label">Nuovo Dossier</span>
+            </button>
+            <button t-on-click="onNewLead" class="cf-qa">
+                <i class="fa fa-bullseye"/>
+                <span class="cf-qa-label">Nuovo Lead</span>
+            </button>
+            <button t-on-click="onOpenPosizionatore" class="cf-qa">
+                <i class="fa fa-envelope-open"/>
+                <span class="cf-qa-label">Posizionatore</span>
+                <t t-if="state.kpi.crm.mail_pending">
+                    <span class="cf-qa-counter" t-out="state.kpi.crm.mail_pending"/>
+                </t>
+            </button>
+            <button t-on-click="onNewLot" class="cf-qa">
+                <i class="fa fa-barcode"/>
+                <span class="cf-qa-label">Nuovo Lotto</span>
+            </button>
+            <button t-on-click="onNewInvoice" class="cf-qa">
+                <i class="fa fa-file-text-o"/>
+                <span class="cf-qa-label">Nuova Fattura</span>
+            </button>
+            <button t-on-click="onOpenCalendario" class="cf-qa">
+                <i class="fa fa-calendar"/>
+                <span class="cf-qa-label">Calendario</span>
+            </button>
+        </div>
+
         <!-- Top bar 4 cluster -->
         <div class="cf-scrivania-clusters cf-clusters-4">
             <div t-on-click="onSwitchCRM"
@@ -90,7 +145,7 @@
                 </div>
                 <div t-on-click="onOpenProjects" class="cf-section-card">
                     <i class="fa fa-folder-o cf-section-icon" style="color: #185FA5;"/>
-                    <p class="cf-section-title">Progetti / Dossier</p>
+                    <p class="cf-section-title">Dossier Commerciali</p>
                     <p class="cf-section-subtitle">Storia clienti</p>
                 </div>
                 <div t-on-click="onOpenLavagna" class="cf-section-card">
@@ -100,13 +155,13 @@
                 </div>
                 <div t-on-click="onOpenAnalytics" class="cf-section-card">
                     <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
-                    <p class="cf-section-title">Analytics</p>
-                    <p class="cf-section-subtitle">Dashboard 360°</p>
+                    <p class="cf-section-title">Vista 360</p>
+                    <p class="cf-section-subtitle">Apri da un dossier</p>
                 </div>
-                <div t-on-click="onOpenDossierExport" class="cf-section-card">
-                    <i class="fa fa-filter cf-section-icon" style="color: #6B4A1E;"/>
-                    <p class="cf-section-title">CRM Export</p>
-                    <p class="cf-section-subtitle">Pipeline dossier</p>
+                <div t-on-click="onOpenInternalProjects" class="cf-section-card">
+                    <i class="fa fa-check-square-o cf-section-icon" style="color: #3F8A4F;"/>
+                    <p class="cf-section-title">Progetti interni</p>
+                    <p class="cf-section-subtitle">Task e avanzamenti</p>
                 </div>
             </div>
         </t>

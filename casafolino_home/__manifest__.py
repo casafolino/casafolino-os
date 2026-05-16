@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Workspace CasaFolino",
-    "version": "18.0.2.0.0",
+    "name": "Scrivania CasaFolino",
+    "version": "18.0.2.1.0",
     "category": "Productivity",
-    "summary": "Workspace CasaFolino — 4 cluster: CRM, Produzione, HACCP, Tesoreria",
+    "summary": "Scrivania CasaFolino — cockpit aziendale con CRM, Produzione, HACCP e Tesoreria",
     "author": "CasaFolino Srls",
     "depends": [
         "base", "web",

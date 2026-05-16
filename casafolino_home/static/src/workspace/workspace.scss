@@ -1,16 +1,132 @@
 .cf-scrivania {
     padding: 24px 32px;
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
     background: var(--color-background-tertiary, #FBFAF6);
     min-height: 100vh;
+}
+
+.cf-cockpit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.cf-cockpit-kicker {
+    color: var(--color-text-secondary, #6B6B68);
+    font-size: 12px;
+    letter-spacing: 0.4px;
+    margin: 0 0 2px;
+    text-transform: uppercase;
+}
+
+.cf-cockpit-title {
+    color: var(--color-text-primary, #1A1A19);
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.cf-cockpit-refresh {
+    align-items: center;
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 8px;
+    color: var(--color-text-secondary, #6B6B68);
+    cursor: pointer;
+    display: flex;
+    height: 38px;
+    justify-content: center;
+    width: 38px;
+
+    &:hover {
+        border-color: var(--color-border-secondary, #D4D3CF);
+        color: var(--color-text-primary, #1A1A19);
+    }
+}
+
+.cf-cockpit-overview {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-bottom: 24px;
+}
+
+.cf-cockpit-card {
+    align-items: center;
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    min-height: 92px;
+    padding: 14px;
+    text-align: left;
+    transition: all 0.15s;
+
+    i {
+        align-items: center;
+        border-radius: 8px;
+        display: flex;
+        flex: 0 0 36px;
+        font-size: 18px;
+        height: 36px;
+        justify-content: center;
+        width: 36px;
+    }
+
+    &:hover {
+        border-color: var(--color-border-secondary, #D4D3CF);
+    }
+}
+
+.cf-cockpit-card-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.cf-cockpit-card-label,
+.cf-cockpit-card-detail {
+    color: var(--color-text-secondary, #6B6B68);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cf-cockpit-card-value {
+    color: var(--color-text-primary, #1A1A19);
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.15;
+}
+
+.cf-cockpit-crm i { background: #E6F1FB; color: #2E5AAC; }
+.cf-cockpit-produzione i { background: #EAF3DE; color: #3F8A4F; }
+.cf-cockpit-haccp i { background: #F3ECDF; color: #6B4A1E; }
+.cf-cockpit-tesoreria i { background: #FBF5E0; color: #9A7D1E; }
+.cf-cockpit-alert {
+    border-color: #E5C5C5;
+
+    i { background: #FAECE7; color: #A32D2D; }
+}
+
+.cf-global-actions {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1.4fr repeat(5, 1fr);
+    margin-bottom: 28px;
 }
 
 /* ---- Cluster bar (4 columns) ---- */
 .cf-scrivania-clusters {
     display: grid;
     gap: 16px;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
 }
 
 .cf-clusters-4 {
@@ -270,9 +386,28 @@
 
     .cf-kpi-strip,
     .cf-kpi-strip-4,
+    .cf-cockpit-overview,
+    .cf-global-actions,
     .cf-quick-actions,
     .cf-quick-actions-4,
     .cf-sections-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .cf-scrivania {
+        padding: 18px 14px;
+    }
+
+    .cf-cockpit-overview,
+    .cf-global-actions,
+    .cf-kpi-strip,
+    .cf-kpi-strip-4,
+    .cf-quick-actions,
+    .cf-quick-actions-4,
+    .cf-sections-grid,
+    .cf-clusters-4 {
+        grid-template-columns: 1fr;
     }
 }

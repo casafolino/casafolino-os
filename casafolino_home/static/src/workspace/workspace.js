@@ -53,6 +53,60 @@ export class CFWorkspace extends Component {
         }
     }
 
+    get cockpitCards() {
+        const crm = this.state.kpi.crm || {};
+        const produzione = this.state.kpi.produzione || {};
+        const haccp = this.state.kpi.haccp || {};
+        const tesoreria = this.state.kpi.tesoreria || {};
+        return [
+            {
+                id: "crm",
+                label: "Commerciale",
+                value: this.formatKpi(crm.progetti_attivi),
+                detail: `${this.formatKpi(crm.lead_aperti)} lead aperti`,
+                icon: "fa-briefcase",
+                tone: "crm",
+                action: () => this.onOpenProjects(),
+            },
+            {
+                id: "mail",
+                label: "Mail da posizionare",
+                value: this.formatKpi(crm.mail_pending),
+                detail: `${this.formatKpi(crm.sla_scadenza)} SLA scaduti`,
+                icon: "fa-envelope-open",
+                tone: crm.mail_pending ? "alert" : "crm",
+                action: () => this.onOpenPosizionatore(),
+            },
+            {
+                id: "ops",
+                label: "Produzione",
+                value: this.formatKpi(produzione.produzioni_attive),
+                detail: `${this.formatKpi(produzione.lotti_scadenza)} lotti in scadenza`,
+                icon: "fa-cogs",
+                tone: produzione.lotti_scadenza ? "alert" : "produzione",
+                action: () => this.onSwitchProduzione(),
+            },
+            {
+                id: "quality",
+                label: "Qualità",
+                value: this.formatKpi(haccp.nc_aperte),
+                detail: `${this.formatKpi(haccp.haccp_scadenze)} scadenze HACCP`,
+                icon: "fa-shield",
+                tone: haccp.nc_aperte || haccp.haccp_scadenze ? "alert" : "haccp",
+                action: () => this.onSwitchHACCP(),
+            },
+            {
+                id: "cash",
+                label: "Tesoreria",
+                value: this.formatKpi(tesoreria.fatture_aperte),
+                detail: "fatture aperte",
+                icon: "fa-university",
+                tone: tesoreria.fatture_aperte ? "alert" : "tesoreria",
+                action: () => this.onSwitchTesoreria(),
+            },
+        ];
+    }
+
     get activeCluster() {
         return this.state.activeCluster;
     }
@@ -166,27 +220,37 @@ export class CFWorkspace extends Component {
 
     async onOpenLavagna() {
         try {
-            await this.action.doAction("casafolino_initiative_dashboard.action_lavagna_template");
+            await this.action.doAction("casafolino_initiative.action_cf_initiative");
         } catch {
             await this.action.doAction({
                 type: "ir.actions.act_window",
-                res_model: "project.project",
-                views: [[false, "kanban"], [false, "list"]],
+                res_model: "cf.initiative",
+                views: [[false, "kanban"], [false, "list"], [false, "form"]],
                 target: "current",
             });
         }
     }
 
     async onOpenAnalytics() {
-        try {
-            await this.action.doAction("casafolino_crm_export.action_project_dashboard_360");
-        } catch {
-            console.warn("Analytics action not available");
-        }
+        await this.onOpenProjects();
     }
 
     async onOpenDossierExport() {
         await this.action.doAction("casafolino_crm_export.action_cf_project_dossier");
+    }
+
+    async onOpenInternalProjects() {
+        try {
+            await this.action.doAction("casafolino_project.action_cf_project_all");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "project.project",
+                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                target: "current",
+                name: "Progetti interni",
+            });
+        }
     }
 
     // ======== Produzione actions ========

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Reparent all custom root menus under the 4 Workspace clusters.
-        After this, only "Workspace CasaFolino" remains in the apps grid.
+        Reparent all custom root menus under the Scrivania clusters.
+        After this, only "Scrivania" remains in the apps grid.
     -->
 
     <!-- ============================================================
@@ -44,6 +44,7 @@
     <record id="casafolino_project.menu_cf_project_root" model="ir.ui.menu">
         <field name="parent_id" ref="casafolino_home.menu_ws_crm"/>
         <field name="sequence">80</field>
+        <field name="active" eval="False"/>
     </record>
 
     <record id="casafolino_commercial.menu_cf_doc_footer_root" model="ir.ui.menu">
@@ -102,10 +103,11 @@
     </record>
 
     <!-- ============================================================
-         Legacy: Scrivania (casafolino_workspace) — reparent under Workspace, bottom
+         Legacy: Scrivania (casafolino_workspace) — absorbed by the unified cockpit
          ============================================================ -->
     <record id="casafolino_workspace.menu_cf_workspace_root" model="ir.ui.menu">
         <field name="parent_id" ref="casafolino_home.menu_cf_home_root"/>
         <field name="sequence">99</field>
+        <field name="active" eval="False"/>
     </record>
 </odoo>
