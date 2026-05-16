@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ============================================================
+         Tuttofood 2026 Follow-up Templates (IT / EN / FR / ES)
+         CC fisso: martina.sinopoli@casafolino.com
+         Reply-To: antonio@casafolino.com
+         CTA → Odoo Documents share
+         ============================================================ -->
+
+    <!-- ==================== IT ==================== -->
+    <record id="tuttofood_2026_followup_it" model="mail.template">
+        <field name="name">Tuttofood 2026 Follow-up IT</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="subject">Tuttofood 2026 — Materiali CasaFolino come anticipato</field>
+        <field name="email_from">antonio@casafolino.com</field>
+        <field name="email_cc">martina.sinopoli@casafolino.com</field>
+        <field name="reply_to">antonio@casafolino.com</field>
+        <field name="body_html" type="html">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding:30px 10px;font-family:Arial,Helvetica,sans-serif;color:#333333;line-height:1.6;">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" border="0" width="600" style="background:#ffffff;border-radius:8px;border:1px solid #e0e0e0;">
+<tr><td style="padding:35px 30px;">
+
+<p style="margin:0 0 16px">Gentile <t t-out="object.name or 'Signore/Signora'"/>,</p>
+
+<p style="margin:0 0 16px">è stato un piacere conoscerla durante <strong>Tuttofood 2026</strong> e confrontarci sulle possibili opportunità di collaborazione.</p>
+
+<p style="margin:0 0 16px">Come anticipato, CasaFolino è un'azienda italiana specializzata nello sviluppo e produzione di prodotti gourmet mediterranei per retail, private label e foodservice.</p>
+
+<p style="margin:0 0 16px">Il nostro approccio è semplice e concreto: creare prodotti che funzionino davvero sul mercato, con qualità percepita, buona rotazione e continuità commerciale, mantenendo un posizionamento sostenibile nel tempo.</p>
+
+<p style="margin:0 0 8px"><strong>&#129387; Le nostre principali categorie:</strong></p>
+<ul style="margin:0 0 16px;padding-left:20px;">
+<li>Creme spalmabili dolci e salate</li>
+<li>Mieli aromatizzati e mousse di miele</li>
+<li>Risotti pronti e condimenti gourmet</li>
+<li>Crispy chili e mix di spezie mediterranee</li>
+<li>Cioccolati e bakery specialty</li>
+<li>Babà napoletano in miele e in crema</li>
+<li>Nuove linee innovative gourmet e food experience</li>
+</ul>
+
+<p style="margin:0 0 16px"><strong>&#128230; Formati flessibili da 28g fino a 25kg per:</strong><br/>
+Retail branded &#8226; Private Label &#8226; Ho.Re.Ca. &amp; Foodservice &#8226; Co-manufacturing</p>
+
+<p style="margin:0 0 20px">&#10003; Made in Italy &#10003; Certificazioni BRC &amp; IFS &#10003; Halal, Kosher e BIO su referenze selezionate</p>
+
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+<tr><td align="center">
+<a href="https://erp.casafolino.com/odoo/documents/pXVhThTeQV-hoCRqh2n2yQocf" target="_blank" style="display:inline-block;background-color:#6B4A1E;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:bold;">APRI I MATERIALI &#8594;</a>
+</td></tr>
+<tr><td align="center" style="padding-top:8px;font-size:13px;color:#888888;">
+Company Profile, Catalogo EN 2026, Brochure Novità
+</td></tr>
+</table>
+
+<p style="margin:0 0 16px">&#129309; La nostra Export Manager <strong>Josefina Lazzaro</strong> la contatterà a breve per la fase commerciale: listino dedicato, call di approfondimento, invio campioni.</p>
+
+<p style="margin:0 0 16px">Saremmo lieti di esplorare una possibile collaborazione e capire meglio le sue priorità.</p>
+
+<p style="margin:0 0 4px">Un caro saluto,</p>
+<p style="margin:0;"><strong>Antonio Folino</strong><br/>
+CEO — CasaFolino Srl Società Benefit<br/>
++39 335 166 5306 | <a href="mailto:antonio@casafolino.com">antonio@casafolino.com</a> | <a href="https://casafolino.com">casafolino.com</a></p>
+
+</td></tr>
+</table>
+</td></tr>
+</table>
+        </field>
+    </record>
+
+    <!-- ==================== EN ==================== -->
+    <record id="tuttofood_2026_followup_en" model="mail.template">
+        <field name="name">Tuttofood 2026 Follow-up EN</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="subject">Tuttofood 2026 — CasaFolino materials as discussed</field>
+        <field name="email_from">antonio@casafolino.com</field>
+        <field name="email_cc">martina.sinopoli@casafolino.com</field>
+        <field name="reply_to">antonio@casafolino.com</field>
+        <field name="body_html" type="html">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding:30px 10px;font-family:Arial,Helvetica,sans-serif;color:#333333;line-height:1.6;">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" border="0" width="600" style="background:#ffffff;border-radius:8px;border:1px solid #e0e0e0;">
+<tr><td style="padding:35px 30px;">
+
+<p style="margin:0 0 16px">Dear <t t-out="object.name or 'Sir/Madam'"/>,</p>
+
+<p style="margin:0 0 16px">It was a real pleasure meeting you at <strong>Tuttofood 2026</strong> and discussing possible collaboration opportunities.</p>
+
+<p style="margin:0 0 16px">As mentioned, CasaFolino is an Italian company specialized in developing and producing Mediterranean gourmet products for retail, private label and foodservice.</p>
+
+<p style="margin:0 0 16px">Our approach is simple and concrete: creating products that genuinely perform on the market, with strong perceived quality, healthy rotation and commercial continuity — all while keeping a sustainable long-term positioning.</p>
+
+<p style="margin:0 0 8px"><strong>&#129387; Our main categories:</strong></p>
+<ul style="margin:0 0 16px;padding-left:20px;">
+<li>Sweet and savoury spreadable creams</li>
+<li>Flavoured honeys and honey mousses</li>
+<li>Ready-to-cook risottos and gourmet condiments</li>
+<li>Crispy chili and Mediterranean spice mixes</li>
+<li>Chocolates and bakery specialties</li>
+<li>Neapolitan Babà in honey and cream</li>
+<li>New innovative gourmet and food experience lines</li>
+</ul>
+
+<p style="margin:0 0 16px"><strong>&#128230; Flexible formats from 28g up to 25kg for:</strong><br/>
+Retail branded &#8226; Private Label &#8226; Ho.Re.Ca. &amp; Foodservice &#8226; Industrial co-manufacturing</p>
+
+<p style="margin:0 0 20px">&#10003; Made in Italy &#10003; BRC &amp; IFS certified &#10003; Halal, Kosher and Organic on selected references</p>
+
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+<tr><td align="center">
+<a href="https://erp.casafolino.com/odoo/documents/pXVhThTeQV-hoCRqh2n2yQocf" target="_blank" style="display:inline-block;background-color:#6B4A1E;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:bold;">OPEN THE MATERIALS &#8594;</a>
+</td></tr>
+<tr><td align="center" style="padding-top:8px;font-size:13px;color:#888888;">
+Company Profile, Product Catalogue EN 2026, New Products Brochure
+</td></tr>
+</table>
+
+<p style="margin:0 0 16px">&#129309; Our Export Manager <strong>Josefina Lazzaro</strong> will be in touch shortly for the commercial follow-up: dedicated pricelist, deep-dive call, samples shipment.</p>
+
+<p style="margin:0 0 16px">We would be glad to explore a possible collaboration and better understand your priorities.</p>
+
+<p style="margin:0 0 4px">Warm regards,</p>
+<p style="margin:0;"><strong>Antonio Folino</strong><br/>
+CEO — CasaFolino Srl Società Benefit<br/>
++39 335 166 5306 | <a href="mailto:antonio@casafolino.com">antonio@casafolino.com</a> | <a href="https://casafolino.com">casafolino.com</a></p>
+
+</td></tr>
+</table>
+</td></tr>
+</table>
+        </field>
+    </record>
+
+    <!-- ==================== FR ==================== -->
+    <record id="tuttofood_2026_followup_fr" model="mail.template">
+        <field name="name">Tuttofood 2026 Follow-up FR</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="subject">Tuttofood 2026 — Documents CasaFolino comme convenu</field>
+        <field name="email_from">antonio@casafolino.com</field>
+        <field name="email_cc">martina.sinopoli@casafolino.com</field>
+        <field name="reply_to">antonio@casafolino.com</field>
+        <field name="body_html" type="html">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding:30px 10px;font-family:Arial,Helvetica,sans-serif;color:#333333;line-height:1.6;">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" border="0" width="600" style="background:#ffffff;border-radius:8px;border:1px solid #e0e0e0;">
+<tr><td style="padding:35px 30px;">
+
+<p style="margin:0 0 16px">Cher <t t-out="object.name or 'Monsieur/Madame'"/>,</p>
+
+<p style="margin:0 0 16px">Ce fut un réel plaisir de vous rencontrer à <strong>Tuttofood 2026</strong> et d'échanger sur les opportunités de collaboration.</p>
+
+<p style="margin:0 0 16px">Comme évoqué, CasaFolino est une entreprise italienne spécialisée dans le développement et la production de produits gourmets méditerranéens pour le retail, la marque distributeur et la restauration.</p>
+
+<p style="margin:0 0 16px">Notre approche est simple et concrète : créer des produits réellement performants sur le marché, avec une qualité perçue forte, une bonne rotation et une continuité commerciale, tout en maintenant un positionnement durable dans le temps.</p>
+
+<p style="margin:0 0 8px"><strong>&#129387; Nos principales catégories :</strong></p>
+<ul style="margin:0 0 16px;padding-left:20px;">
+<li>Crèmes à tartiner sucrées et salées</li>
+<li>Miels aromatisés et mousses de miel</li>
+<li>Risottos prêts à cuisiner et condiments gourmets</li>
+<li>Crispy chili et mélanges d'épices méditerranéennes</li>
+<li>Chocolats et spécialités de pâtisserie</li>
+<li>Babà napolitain au miel et en crème</li>
+<li>Nouvelles lignes innovantes gourmet et food experience</li>
+</ul>
+
+<p style="margin:0 0 16px"><strong>&#128230; Formats flexibles de 28g à 25kg pour :</strong><br/>
+Retail marque &#8226; MDD &#8226; Ho.Re.Ca. &amp; Restauration &#8226; Co-manufacturing industriel</p>
+
+<p style="margin:0 0 20px">&#10003; Made in Italy &#10003; Certifications BRC &amp; IFS &#10003; Halal, Casher et BIO sur références sélectionnées</p>
+
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+<tr><td align="center">
+<a href="https://erp.casafolino.com/odoo/documents/pXVhThTeQV-hoCRqh2n2yQocf" target="_blank" style="display:inline-block;background-color:#6B4A1E;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:bold;">OUVRIR LES DOCUMENTS &#8594;</a>
+</td></tr>
+<tr><td align="center" style="padding-top:8px;font-size:13px;color:#888888;">
+Company Profile, Catalogue produits EN 2026, Brochure nouveautés
+</td></tr>
+</table>
+
+<p style="margin:0 0 16px">&#129309; Notre Export Manager <strong>Josefina Lazzaro</strong> vous contactera prochainement pour la phase commerciale : tarif dédié, call d'approfondissement, envoi d'échantillons.</p>
+
+<p style="margin:0 0 16px">Nous serions ravis d'explorer une collaboration et de mieux comprendre vos priorités.</p>
+
+<p style="margin:0 0 4px">Cordialement,</p>
+<p style="margin:0;"><strong>Antonio Folino</strong><br/>
+CEO — CasaFolino Srl Società Benefit<br/>
++39 335 166 5306 | <a href="mailto:antonio@casafolino.com">antonio@casafolino.com</a> | <a href="https://casafolino.com">casafolino.com</a></p>
+
+</td></tr>
+</table>
+</td></tr>
+</table>
+        </field>
+    </record>
+
+    <!-- ==================== ES ==================== -->
+    <record id="tuttofood_2026_followup_es" model="mail.template">
+        <field name="name">Tuttofood 2026 Follow-up ES</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="subject">Tuttofood 2026 — Materiales CasaFolino como acordado</field>
+        <field name="email_from">antonio@casafolino.com</field>
+        <field name="email_cc">martina.sinopoli@casafolino.com</field>
+        <field name="reply_to">antonio@casafolino.com</field>
+        <field name="body_html" type="html">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding:30px 10px;font-family:Arial,Helvetica,sans-serif;color:#333333;line-height:1.6;">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" border="0" width="600" style="background:#ffffff;border-radius:8px;border:1px solid #e0e0e0;">
+<tr><td style="padding:35px 30px;">
+
+<p style="margin:0 0 16px">Estimado/a <t t-out="object.name or 'Señor/Señora'"/>,</p>
+
+<p style="margin:0 0 16px">Ha sido un verdadero placer conocerle en <strong>Tuttofood 2026</strong> y poder intercambiar sobre las posibles oportunidades de colaboración.</p>
+
+<p style="margin:0 0 16px">Como anticipado, CasaFolino es una empresa italiana especializada en el desarrollo y producción de productos gourmet mediterráneos para retail, marca propia y foodservice.</p>
+
+<p style="margin:0 0 16px">Nuestro enfoque es sencillo y concreto: crear productos que funcionen realmente en el mercado, con calidad percibida, buena rotación y continuidad comercial, manteniendo un posicionamiento sostenible en el tiempo.</p>
+
+<p style="margin:0 0 8px"><strong>&#129387; Nuestras principales categorías:</strong></p>
+<ul style="margin:0 0 16px;padding-left:20px;">
+<li>Cremas para untar dulces y saladas</li>
+<li>Mieles aromatizadas y mousses de miel</li>
+<li>Risottos listos y condimentos gourmet</li>
+<li>Crispy chili y mezclas de especias mediterráneas</li>
+<li>Chocolates y especialidades de bakery</li>
+<li>Babà napolitano en miel y en crema</li>
+<li>Nuevas líneas innovadoras gourmet y food experience</li>
+</ul>
+
+<p style="margin:0 0 16px"><strong>&#128230; Formatos flexibles desde 28g hasta 25kg para:</strong><br/>
+Retail branded &#8226; Marca propia &#8226; Ho.Re.Ca. &amp; Foodservice &#8226; Co-manufacturing industrial</p>
+
+<p style="margin:0 0 20px">&#10003; Made in Italy &#10003; Certificaciones BRC &amp; IFS &#10003; Halal, Kosher y BIO en referencias seleccionadas</p>
+
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+<tr><td align="center">
+<a href="https://erp.casafolino.com/odoo/documents/pXVhThTeQV-hoCRqh2n2yQocf" target="_blank" style="display:inline-block;background-color:#6B4A1E;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:bold;">ABRIR LOS MATERIALES &#8594;</a>
+</td></tr>
+<tr><td align="center" style="padding-top:8px;font-size:13px;color:#888888;">
+Company Profile, Catálogo productos EN 2026, Folleto novedades
+</td></tr>
+</table>
+
+<p style="margin:0 0 16px">&#129309; Nuestra Export Manager <strong>Josefina Lazzaro</strong> le contactará en breve para la fase comercial: tarifa dedicada, call de profundización, envío de muestras.</p>
+
+<p style="margin:0 0 16px">Estaríamos encantados de explorar una posible colaboración y entender mejor sus prioridades.</p>
+
+<p style="margin:0 0 4px">Un cordial saludo,</p>
+<p style="margin:0;"><strong>Antonio Folino</strong><br/>
+CEO — CasaFolino Srl Società Benefit<br/>
++39 335 166 5306 | <a href="mailto:antonio@casafolino.com">antonio@casafolino.com</a> | <a href="https://casafolino.com">casafolino.com</a></p>
+
+</td></tr>
+</table>
+</td></tr>
+</table>
+        </field>
+    </record>
+
+</odoo>

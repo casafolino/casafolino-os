@@ -1,0 +1,784 @@
+id,numero,data,riferimento,tipo,cliente,totale,residuo,stato_pagamento
+9663,FAT/2024/00060,2024-01-02,IT24-90085I-1,Fattura,Advisio srl,9.99,9.99,not_paid
+9757,FAT/2024/00063,2024-01-02,IT24-90085I-1,Fattura,Advisio srl,9.99,9.99,not_paid
+9659,FAT/2024/00150,2024-01-03,IT4U90085I1,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9753,FAT/2024/00163,2024-01-03,IT4U90085I1,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9661,FAT/2024/00151,2024-01-04,IT4U90085I3,Fattura,Bensi Restaurant llc,17.05,17.05,not_paid
+9755,FAT/2024/00152,2024-01-04,IT4U90085I3,Fattura,Bensi Restaurant llc,17.05,17.05,not_paid
+9660,FAT/2024/00240,2024-01-04,IT4U90085I2,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9754,FAT/2024/00241,2024-01-04,IT4U90085I2,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9664,FAT/2024/00272,2024-01-08,IT4U90085I4,Fattura,Bensi Restaurant llc,35.35,35.35,not_paid
+9758,FAT/2024/00273,2024-01-08,IT4U90085I4,Fattura,Bensi Restaurant llc,35.35,35.35,not_paid
+9662,FAT/2024/00064,2024-01-09,IT4U90085I5,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9756,FAT/2024/00065,2024-01-09,IT4U90085I5,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9583,FAT/2024/00093,2024-01-12,IT24-90085I-2,Fattura,BESCAN SPRL,9.47,9.47,not_paid
+9677,FAT/2024/00108,2024-01-12,IT24-90085I-2,Fattura,BESCAN SPRL,9.47,9.47,not_paid
+9584,FAT/2024/00176,2024-01-12,IT4U90085I6,Fattura,Bensi Restaurant llc,18.00,18.00,not_paid
+9678,FAT/2024/00177,2024-01-12,IT4U90085I6,Fattura,Bensi Restaurant llc,18.00,18.00,not_paid
+9585,FAT/2024/00136,2024-01-14,IT4U90085I7,Fattura,Bensi Restaurant llc,13.07,13.07,not_paid
+9679,FAT/2024/00137,2024-01-14,IT4U90085I7,Fattura,Bensi Restaurant llc,13.07,13.07,not_paid
+9587,FAT/2024/00066,2024-01-15,IT24-90085I-3,Fattura,Arianna Milia,9.99,9.99,not_paid
+9681,FAT/2024/00067,2024-01-15,IT24-90085I-3,Fattura,Arianna Milia,9.99,9.99,not_paid
+9588,FAT/2024/00342,2024-01-15,IT24-90085I-4,Fattura,Bensi Restaurant llc,78.99,78.99,not_paid
+9682,FAT/2024/00343,2024-01-15,IT24-90085I-4,Fattura,Bensi Restaurant llc,78.99,78.99,not_paid
+9589,FAT/2024/00164,2024-01-16,IT4U90085I8,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9683,FAT/2024/00165,2024-01-16,IT4U90085I8,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9590,FAT/2024/00178,2024-01-16,IT4U90085I9,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9684,FAT/2024/00179,2024-01-16,IT4U90085I9,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9673,FAT/2024/00447,2024-01-16,FATT/1/24,Fattura,MANCUSO COSTANTINO,305.00,305.00,not_paid
+9582,FAT/2024/00448,2024-01-16,RICEV/64/24,Fattura,SORINAT SRL,621.87,621.87,not_paid
+9676,FAT/2024/00449,2024-01-16,RICEV/64/24,Fattura,SORINAT SRL,621.87,621.87,not_paid
+9592,FAT/2024/00242,2024-01-17,IT4U90085I10,Fattura,Bensi Restaurant llc,21.48,21.48,not_paid
+9686,FAT/2024/00243,2024-01-17,IT4U90085I10,Fattura,Bensi Restaurant llc,21.48,21.48,not_paid
+9688,FAT/2024/00397,2024-01-19,IT24-90085I-5,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9594,FAT/2024/00450,2024-01-19,IT24-90085I-5,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9603,FAT/2024/00166,2024-01-22,IT4U90085I12,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9697,FAT/2024/00167,2024-01-22,IT4U90085I12,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9605,FAT/2024/00274,2024-01-22,IT4U90085I11,Fattura,Bensi Restaurant llc,37.37,37.37,not_paid
+9699,FAT/2024/00275,2024-01-22,IT4U90085I11,Fattura,Bensi Restaurant llc,37.37,37.37,not_paid
+9604,FAT/2024/00276,2024-01-22,IT4U90085I13,Fattura,Bensi Restaurant llc,29.90,29.90,not_paid
+9698,FAT/2024/00277,2024-01-22,IT4U90085I13,Fattura,Bensi Restaurant llc,29.90,29.90,not_paid
+9613,FAT/2024/00078,2024-01-24,IT4U90085I15,Fattura,Bensi Restaurant llc,9.34,9.34,not_paid
+9707,FAT/2024/00079,2024-01-24,IT4U90085I15,Fattura,Bensi Restaurant llc,9.34,9.34,not_paid
+9610,FAT/2024/00138,2024-01-24,IT4U90085I14,Fattura,Bensi Restaurant llc,13.26,13.26,not_paid
+9704,FAT/2024/00139,2024-01-24,IT4U90085I14,Fattura,Bensi Restaurant llc,13.26,13.26,not_paid
+9614,FAT/2024/00244,2024-01-24,IT4U90085I16,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9708,FAT/2024/00245,2024-01-24,IT4U90085I16,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9615,FAT/2024/00246,2024-01-24,IT4U90085I17,Fattura,Bensi Restaurant llc,25.22,25.22,not_paid
+9709,FAT/2024/00247,2024-01-24,IT4U90085I17,Fattura,Bensi Restaurant llc,25.22,25.22,not_paid
+9616,FAT/2024/00109,2024-01-25,IT4U90085I18,Fattura,Bensi Restaurant llc,9.47,9.47,not_paid
+9710,FAT/2024/00110,2024-01-25,IT4U90085I18,Fattura,Bensi Restaurant llc,9.47,9.47,not_paid
+9617,FAT/2024/00278,2024-01-26,IT4U90085I19,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9711,FAT/2024/00279,2024-01-26,IT4U90085I19,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9580,FAT/2024/00451,2024-01-30,FATTE/1/24,Fattura,Andrea Menichelli,602.16,0.00,not_paid
+9623,FAT/2024/00068,2024-01-31,IT4U90085I20,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9717,FAT/2024/00069,2024-01-31,IT4U90085I20,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9628,FAT/2024/00111,2024-02-02,IT24-90085I-6,Fattura,Canzio Romano,12.99,12.99,not_paid
+9722,FAT/2024/00112,2024-02-02,IT24-90085I-6,Fattura,Canzio Romano,12.99,12.99,not_paid
+9630,FAT/2024/00153,2024-02-05,IT24-90085I-7,Fattura,spa groane srl,17.50,17.50,not_paid
+9724,FAT/2024/00154,2024-02-05,IT24-90085I-7,Fattura,spa groane srl,17.50,17.50,not_paid
+9726,FAT/2024/00113,2024-02-06,IT24-90085I-8,Fattura,R.B.T. Service s.a.s.,12.99,12.99,not_paid
+9632,FAT/2024/00122,2024-02-06,IT24-90085I-8,Fattura,R.B.T. Service s.a.s.,12.99,12.99,not_paid
+9631,FAT/2024/00168,2024-02-06,IT4U90085I21,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9725,FAT/2024/00169,2024-02-06,IT4U90085I21,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9633,FAT/2024/00280,2024-02-09,IT4U90085I22,Fattura,Bensi Restaurant llc,28.02,28.02,not_paid
+9727,FAT/2024/00281,2024-02-09,IT4U90085I22,Fattura,Bensi Restaurant llc,28.02,28.02,not_paid
+9634,FAT/2024/00208,2024-02-12,IT4U90085I23,Fattura,Bensi Restaurant llc,18.94,18.94,not_paid
+9728,FAT/2024/00209,2024-02-12,IT4U90085I23,Fattura,Bensi Restaurant llc,18.94,18.94,not_paid
+9635,FAT/2024/00210,2024-02-12,IT4U90085I24,Fattura,Bensi Restaurant llc,18.68,18.68,not_paid
+9729,FAT/2024/00211,2024-02-12,IT4U90085I24,Fattura,Bensi Restaurant llc,18.68,18.68,not_paid
+9636,FAT/2024/00212,2024-02-12,IT4U90085I25,Fattura,Bensi Restaurant llc,18.68,18.68,not_paid
+9730,FAT/2024/00213,2024-02-12,IT4U90085I25,Fattura,Bensi Restaurant llc,18.68,18.68,not_paid
+9638,FAT/2024/00114,2024-02-13,IT4U90085I26,Fattura,Bensi Restaurant llc,9.47,9.47,not_paid
+9732,FAT/2024/00115,2024-02-13,IT4U90085I26,Fattura,Bensi Restaurant llc,9.47,9.47,not_paid
+9637,FAT/2024/00282,2024-02-14,IT24-90085I-9,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9731,FAT/2024/00283,2024-02-14,IT24-90085I-9,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9669,FAT/2024/00344,2024-02-14,FATTE/2/24,Fattura,Kellerwälder Kaffeerösterei-Kim Noack,154.38,154.38,not_paid
+9668,FAT/2024/00345,2024-02-14,FATTE/4/24,Fattura,Jordan Errigo,110.64,110.64,not_paid
+9577,FAT/2024/00346,2024-02-14,FATTE/5/24,Fattura,od chocolat odeliceschoc- o delices chocolathéolathé,103.52,103.52,not_paid
+9571,FAT/2024/00347,2024-02-14,FATTE/6/24,Fattura,sandrine meurice A la passion du bien etre - sandrine meurice,111.48,111.48,not_paid
+9575,FAT/2024/00438,2024-02-14,FATTE/2/24,Fattura,Kellerwälder Kaffeerösterei-Kim Noack,154.38,154.38,not_paid
+9581,FAT/2024/00439,2024-02-14,FATTE/3/24,Fattura,Eric van Amerongen,206.17,206.17,not_paid
+9675,FAT/2024/00440,2024-02-14,FATTE/3/24,Fattura,Eric van Amerongen,206.17,206.17,not_paid
+9671,FAT/2024/00441,2024-02-14,FATTE/5/24,Fattura,od chocolat odeliceschoc- o delices chocolathéolathé,103.52,103.52,not_paid
+9665,FAT/2024/00442,2024-02-14,FATTE/6/24,Fattura,sandrine meurice A la passion du bien etre - sandrine meurice,111.48,111.48,not_paid
+9574,FAT/2024/00452,2024-02-14,FATTE/4/24,Fattura,Jordan Errigo,110.64,110.64,not_paid
+9640,FAT/2024/00180,2024-02-18,IT4U90085I27,Fattura,Bensi Restaurant llc,19.99,19.99,not_paid
+9734,FAT/2024/00181,2024-02-18,IT4U90085I27,Fattura,Bensi Restaurant llc,19.99,19.99,not_paid
+9639,FAT/2024/00140,2024-02-19,IT4U90085I28,Fattura,Bensi Restaurant llc,12.25,12.25,not_paid
+9733,FAT/2024/00141,2024-02-19,IT4U90085I28,Fattura,Bensi Restaurant llc,12.25,12.25,not_paid
+9641,FAT/2024/00214,2024-02-22,IT4U90085I29,Fattura,Bensi Restaurant llc,18.94,18.94,not_paid
+9735,FAT/2024/00215,2024-02-22,IT4U90085I29,Fattura,Bensi Restaurant llc,18.94,18.94,not_paid
+9642,FAT/2024/00216,2024-02-26,IT4U90085I30,Fattura,Bensi Restaurant llc,18.68,18.68,not_paid
+9736,FAT/2024/00217,2024-02-26,IT4U90085I30,Fattura,Bensi Restaurant llc,18.68,18.68,not_paid
+9644,FAT/2024/00284,2024-02-27,IT4U90085I31,Fattura,Bensi Restaurant llc,38.95,38.95,not_paid
+9738,FAT/2024/00285,2024-02-27,IT4U90085I31,Fattura,Bensi Restaurant llc,38.95,38.95,not_paid
+9643,FAT/2024/00398,2024-02-27,IT24-90085I-10,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9645,RFAT/2024/00008,2024-02-27,IT4U90085C1,Nota Credito,Bensi Restaurant llc,19.99,19.99,not_paid
+9739,RFAT/2024/00009,2024-02-27,IT4U90085C1,Nota Credito,Bensi Restaurant llc,19.99,19.99,not_paid
+9647,FAT/2024/00061,2024-02-29,IT4U90085I33,Fattura,Bensi Restaurant llc,8.12,8.12,not_paid
+9741,FAT/2024/00062,2024-02-29,IT4U90085I33,Fattura,Bensi Restaurant llc,8.12,8.12,not_paid
+9646,FAT/2024/00070,2024-02-29,IT4U90085I32,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9740,FAT/2024/00071,2024-02-29,IT4U90085I32,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9648,FAT/2024/00286,2024-02-29,IT4U90085I34,Fattura,Bensi Restaurant llc,33.97,33.97,not_paid
+9742,FAT/2024/00287,2024-02-29,IT4U90085I34,Fattura,Bensi Restaurant llc,33.97,33.97,not_paid
+9649,FAT/2024/00348,2024-02-29,IT4U90085I35,Fattura,Bensi Restaurant llc,39.75,39.75,not_paid
+9743,FAT/2024/00349,2024-02-29,IT4U90085I35,Fattura,Bensi Restaurant llc,39.75,39.75,not_paid
+9650,FAT/2024/00080,2024-03-02,IT4U90085I36,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9744,FAT/2024/00081,2024-03-02,IT4U90085I36,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9652,FAT/2024/00155,2024-03-04,IT4U90085I38,Fattura,Bensi Restaurant llc,15.87,15.87,not_paid
+9746,FAT/2024/00156,2024-03-04,IT4U90085I38,Fattura,Bensi Restaurant llc,15.87,15.87,not_paid
+9651,FAT/2024/00170,2024-03-04,IT4U90085I37,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9745,FAT/2024/00171,2024-03-04,IT4U90085I37,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9654,FAT/2024/00172,2024-03-04,IT4U90085I40,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9748,FAT/2024/00173,2024-03-04,IT4U90085I40,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9653,FAT/2024/00218,2024-03-04,IT4U90085I39,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9747,FAT/2024/00219,2024-03-04,IT4U90085I39,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9655,RFAT/2024/00010,2024-03-04,IT4U90085C2,Nota Credito,Bensi Restaurant llc,38.95,38.95,not_paid
+9749,RFAT/2024/00011,2024-03-04,IT4U90085C2,Nota Credito,Bensi Restaurant llc,38.95,38.95,not_paid
+9656,FAT/2024/00220,2024-03-05,IT4U90085I41,Fattura,Bensi Restaurant llc,20.99,20.99,not_paid
+9750,FAT/2024/00221,2024-03-05,IT4U90085I41,Fattura,Bensi Restaurant llc,20.99,20.99,not_paid
+9657,FAT/2024/00072,2024-03-06,IT4U90085I42,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9751,FAT/2024/00073,2024-03-06,IT4U90085I42,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9658,FAT/2024/00222,2024-03-06,IT24-90085I-11,Fattura,Giuseppina Parisi,21.94,21.94,not_paid
+9752,FAT/2024/00223,2024-03-06,IT24-90085I-11,Fattura,Giuseppina Parisi,21.94,21.94,not_paid
+9586,FAT/2024/00174,2024-03-11,IT4U90085I43,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9680,FAT/2024/00175,2024-03-11,IT4U90085I43,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9591,FAT/2024/00350,2024-03-13,IT24-90085I-12,Fattura,METROPOLE 1850,40.38,40.38,not_paid
+9685,FAT/2024/00351,2024-03-13,IT24-90085I-12,Fattura,METROPOLE 1850,40.38,40.38,not_paid
+9593,FAT/2024/00142,2024-03-14,IT4U90085I44,Fattura,Bensi Restaurant llc,13.26,13.26,not_paid
+9687,FAT/2024/00143,2024-03-14,IT4U90085I44,Fattura,Bensi Restaurant llc,13.26,13.26,not_paid
+9670,FAT/2024/00352,2024-03-15,FATTE/7/24,Fattura,karyne chimento- sas l entre 2,111.91,111.91,not_paid
+9573,FAT/2024/00353,2024-03-15,FATTE/8/24,Fattura,Charlotte Mule- Au Panier Gourmand,105.10,105.10,not_paid
+9667,FAT/2024/00354,2024-03-15,FATTE/8/24,Fattura,Charlotte Mule- Au Panier Gourmand,105.10,105.10,not_paid
+9578,FAT/2024/00355,2024-03-15,FATTE/9/24,Fattura,L'ENTRE TEMPS-ROMANG,124.24,124.24,not_paid
+9576,FAT/2024/00443,2024-03-15,FATTE/7/24,Fattura,karyne chimento- sas l entre 2,111.91,111.91,not_paid
+9672,FAT/2024/00444,2024-03-15,FATTE/9/24,Fattura,L'ENTRE TEMPS-ROMANG,124.24,124.24,not_paid
+9694,FAT/2024/00082,2024-03-18,IT4U90085I48,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9606,FAT/2024/00094,2024-03-18,IT4U90085I45,Fattura,Bensi Restaurant llc,9.43,9.43,not_paid
+9700,FAT/2024/00095,2024-03-18,IT4U90085I45,Fattura,Bensi Restaurant llc,9.43,9.43,not_paid
+9600,FAT/2024/00096,2024-03-18,IT4U90085I48,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9602,FAT/2024/00097,2024-03-18,IT4U90085I50,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9696,FAT/2024/00098,2024-03-18,IT4U90085I50,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9607,FAT/2024/00116,2024-03-18,IT4U90085I51,Fattura,Bensi Restaurant llc,9.47,9.47,not_paid
+9701,FAT/2024/00117,2024-03-18,IT4U90085I51,Fattura,Bensi Restaurant llc,9.47,9.47,not_paid
+9598,FAT/2024/00123,2024-03-18,IT24-90085I-14,Fattura,DIACONU MARIA ELISABETA,12.99,12.99,not_paid
+9692,FAT/2024/00124,2024-03-18,IT24-90085I-14,Fattura,DIACONU MARIA ELISABETA,12.99,12.99,not_paid
+9599,FAT/2024/00125,2024-03-18,IT24-90085I-15,Fattura,Snap Kitchen s.r.l.,12.99,12.99,not_paid
+9693,FAT/2024/00126,2024-03-18,IT24-90085I-15,Fattura,Snap Kitchen s.r.l.,12.99,12.99,not_paid
+9601,FAT/2024/00224,2024-03-18,IT4U90085I49,Fattura,Bensi Restaurant llc,18.84,18.84,not_paid
+9695,FAT/2024/00225,2024-03-18,IT4U90085I49,Fattura,Bensi Restaurant llc,18.84,18.84,not_paid
+9597,FAT/2024/00288,2024-03-18,IT4U90085I47,Fattura,Bensi Restaurant llc,28.41,28.41,not_paid
+9691,FAT/2024/00289,2024-03-18,IT4U90085I47,Fattura,Bensi Restaurant llc,28.41,28.41,not_paid
+9596,FAT/2024/00356,2024-03-18,IT4U90085I46,Fattura,Bensi Restaurant llc,41.25,41.25,not_paid
+9690,FAT/2024/00357,2024-03-18,IT4U90085I46,Fattura,Bensi Restaurant llc,41.25,41.25,not_paid
+9612,FAT/2024/00074,2024-03-19,IT4U90085I52,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9706,FAT/2024/00075,2024-03-19,IT4U90085I52,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9609,FAT/2024/00127,2024-03-19,IT24-90085I-17,Fattura,Ristorante bar Al Caminetto di Laiti Daniel,12.99,12.99,not_paid
+9703,FAT/2024/00128,2024-03-19,IT24-90085I-17,Fattura,Ristorante bar Al Caminetto di Laiti Daniel,12.99,12.99,not_paid
+9608,FAT/2024/00182,2024-03-19,IT24-90085I-16,Fattura,DECA SRL,18.99,18.99,not_paid
+9702,FAT/2024/00183,2024-03-19,IT24-90085I-16,Fattura,DECA SRL,18.99,18.99,not_paid
+9611,FAT/2024/00290,2024-03-20,IT4U90085I53,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9705,FAT/2024/00291,2024-03-20,IT4U90085I53,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9619,FAT/2024/00248,2024-03-23,IT4U90085I54,Fattura,Bensi Restaurant llc,21.19,21.19,not_paid
+9713,FAT/2024/00249,2024-03-23,IT4U90085I54,Fattura,Bensi Restaurant llc,21.19,21.19,not_paid
+9618,RFAT/2024/00012,2024-03-23,IT24-90085C-1,Nota Credito,DECA SRL,18.99,18.99,not_paid
+9712,RFAT/2024/00013,2024-03-23,IT24-90085C-1,Nota Credito,DECA SRL,18.99,18.99,not_paid
+9620,FAT/2024/00226,2024-03-25,IT24-90085I-18,Fattura,Pizzeria cote sud,18.63,18.63,not_paid
+9714,FAT/2024/00227,2024-03-25,IT24-90085I-18,Fattura,Pizzeria cote sud,18.63,18.63,not_paid
+9621,FAT/2024/00228,2024-03-25,IT4U90085I55,Fattura,Bensi Restaurant llc,18.84,18.84,not_paid
+9715,FAT/2024/00229,2024-03-25,IT4U90085I55,Fattura,Bensi Restaurant llc,18.84,18.84,not_paid
+9622,FAT/2024/00076,2024-03-26,IT24-90085I-19,Fattura,Thegrill Srl,9.99,9.99,not_paid
+9716,FAT/2024/00077,2024-03-26,IT24-90085I-19,Fattura,Thegrill Srl,9.99,9.99,not_paid
+9625,FAT/2024/00083,2024-03-27,IT24-90085I-20,Fattura,D.S. COSTRUZIONI S.R.L.S.,10.00,10.00,not_paid
+9719,FAT/2024/00084,2024-03-27,IT24-90085I-20,Fattura,D.S. COSTRUZIONI S.R.L.S.,10.00,10.00,not_paid
+9624,FAT/2024/00118,2024-03-27,IT4U90085I56,Fattura,Bensi Restaurant llc,11.77,11.77,not_paid
+9718,FAT/2024/00119,2024-03-27,IT4U90085I56,Fattura,Bensi Restaurant llc,11.77,11.77,not_paid
+9626,FAT/2024/00184,2024-03-27,IT4U90085I58,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9720,FAT/2024/00185,2024-03-27,IT4U90085I58,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9627,FAT/2024/00230,2024-03-27,IT4U90085I57,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9721,FAT/2024/00250,2024-03-27,IT4U90085I57,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9572,FAT/2024/00358,2024-03-28,FATT/3/24,Fattura,Antonella Grande,220.00,220.00,not_paid
+9666,FAT/2024/00445,2024-03-28,FATT/3/24,Fattura,Antonella Grande,220.00,220.00,not_paid
+9629,FAT/2024/00099,2024-03-30,IT4U90085I59,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9723,FAT/2024/00100,2024-03-30,IT4U90085I59,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9465,FAT/2024/00186,2024-04-02,IT4U90085I60,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9464,FAT/2024/00251,2024-04-02,IT4U90085I61,Fattura,Bensi Restaurant llc,22.74,22.74,not_paid
+9462,FAT/2024/00430,2024-04-02,FATT/7/24,Fattura,Bilait S.r.l.,5000.00,0.00,not_paid
+9451,FAT/2024/00431,2024-04-02,FATT/8/24,Fattura,FRATELLI GIAMPA' SNC di Giampa' Francesco,257.71,0.01,not_paid
+9439,FAT/2024/00446,2024-04-02,FATT/9/24,Fattura,Occhiuto Lucia,239.82,239.82,not_paid
+9467,FAT/2024/00292,2024-04-04,IT24-90085I-22,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9438,FAT/2024/00359,2024-04-04,FATT/13/24,Fattura,MACELLERIA PELUSO GIOVANNI,60.19,60.19,not_paid
+9428,FAT/2024/00360,2024-04-04,FATT/14/24,Fattura,Scarcella Beverage srls,92.17,92.17,not_paid
+9442,FAT/2024/00361,2024-04-04,RICEV/464/24,Fattura,Antica Salumeria srl,182.36,182.36,not_paid
+9434,FAT/2024/00362,2024-04-04,RICEV/465/24,Fattura,Sfizi della Carne,100.03,100.03,not_paid
+9448,FAT/2024/00363,2024-04-04,RICEV/466/24,Fattura,Mi.Co di Costantino Ruffolo,114.37,114.37,not_paid
+9437,FAT/2024/00364,2024-04-04,RICEV/467/24,Fattura,Macelleria 48 di Celestino Emanuele,85.51,85.51,not_paid
+9443,FAT/2024/00432,2024-04-04,FATT/10/24,Fattura,Concetta Tripodi Patisserie,859.99,859.99,not_paid
+9449,FAT/2024/00433,2024-04-04,FATT/11/24,Fattura,Il Fornaio di Luigi Angotti e figli Srl,275.03,275.03,not_paid
+9458,FAT/2024/00434,2024-04-04,FATT/12/24,Fattura,Antonella Grande,220.00,220.00,not_paid
+9469,FAT/2024/00187,2024-04-05,IT24-90085I-23,Fattura,Ristorante bar Al Caminetto di Laiti Daniel,19.97,19.97,not_paid
+9468,FAT/2024/00293,2024-04-05,IT4U90085I62,Fattura,Bensi Restaurant llc,29.90,29.90,not_paid
+9454,FAT/2024/00435,2024-04-05,FATT/15/24,Fattura,Cantafio Group di Gennaccaro Angela,307.52,307.52,not_paid
+9446,RFAT/2024/00014,2024-04-05,RFATT/2/24,Nota Credito,Veltri & Gagliardi Srl,239.88,239.88,not_paid
+9461,RFAT/2024/00015,2024-04-05,RFATT/3/24,Nota Credito,Mastroianni Group Srl,669.32,669.32,not_paid
+9432,RFAT/2024/00024,2024-04-05,RFATT/4/24,Nota Credito,TemaGroup,420.09,420.09,not_paid
+9429,FAT/2024/00436,2024-04-06,FATT/16/24,Fattura,Caffe Love Di Antonio Folino,1760.00,1760.00,not_paid
+9445,FAT/2024/00437,2024-04-06,FATT/2/24,Fattura, NETO FERDINANDO,139.77,0.00,not_paid
+9470,FAT/2024/00252,2024-04-08,IT4U90085I63,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9472,FAT/2024/00157,2024-04-12,IT4U90085I64,Fattura,Bensi Restaurant llc,14.94,14.94,not_paid
+9471,FAT/2024/00365,2024-04-12,IT24-90085I-24,Fattura,Sarda Servizi Ambientali S.r.l.,55.98,55.98,not_paid
+9474,FAT/2024/00129,2024-04-15,IT24-90085I-25,Fattura,Laura Formosa,12.99,12.99,not_paid
+9473,FAT/2024/00188,2024-04-15,IT4U90085I65,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9430,FAT/2024/00366,2024-04-18,FATTE/2022/11/0014,Fattura,Bensi Restaurant,109.56,109.56,not_paid
+9435,FAT/2024/00367,2024-04-18,FATTE/2022/12/0038,Fattura,Ildiko Hurlin,175.97,175.97,not_paid
+9476,FAT/2024/00189,2024-04-22,IT4U90085I67,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9475,FAT/2024/00231,2024-04-22,IT4U90085I66,Fattura,Bensi Restaurant llc,21.99,21.99,not_paid
+9477,FAT/2024/00294,2024-04-23,IT4U90085I68,Fattura,Bensi Restaurant llc,37.70,37.70,not_paid
+9478,FAT/2024/00158,2024-04-29,IT4U90085I69,Fattura,Bensi Restaurant llc,15.99,15.99,not_paid
+9479,FAT/2024/00190,2024-04-29,IT4U90085I70,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9480,FAT/2024/00191,2024-04-30,IT4U90085I71,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9481,FAT/2024/00295,2024-05-02,IT4U90085I72,Fattura,Bensi Restaurant llc,36.00,36.00,not_paid
+9482,FAT/2024/00296,2024-05-02,IT4U90085I73,Fattura,Bensi Restaurant llc,29.90,29.90,not_paid
+9426,FAT/2024/00368,2024-05-10,FATTE/31/24,Fattura,Stefan Marson,101.48,101.48,not_paid
+9459,FAT/2024/00369,2024-05-10,RICEV/531/183,Fattura, NETO FERDINANDO,163.72,0.00,not_paid
+9450,FAT/2024/00424,2024-05-10,FATTE/30/24,Fattura,David Luci,313.22,313.22,not_paid
+9455,FAT/2024/00425,2024-05-10,FATTE/9/01,Fattura,David Luci,313.22,313.22,not_paid
+9460,FAT/2024/00426,2024-05-10,FATTE/9/26,Fattura,Bensi Restaurant,289.32,289.32,not_paid
+9497,FAT/2024/00192,2024-05-13,IT4U90085I74,Fattura,Bensi Restaurant llc,18.10,18.10,not_paid
+9498,FAT/2024/00297,2024-05-13,IT4U90085I75,Fattura,Bensi Restaurant llc,36.08,36.08,not_paid
+9499,RFAT/2024/00016,2024-05-14,IT4U90085C3,Nota Credito,Bensi Restaurant llc,21.99,21.99,not_paid
+9501,FAT/2024/00144,2024-05-15,IT24-90085I-26,Fattura,Remo Di Paolo,14.99,14.99,not_paid
+9500,FAT/2024/00370,2024-05-15,IT4U90085I76,Fattura,Bensi Restaurant llc,45.48,45.48,not_paid
+9505,FAT/2024/00253,2024-05-16,IT4U90085I78,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9504,FAT/2024/00371,2024-05-16,IT4U90085I77,Fattura,Bensi Restaurant llc,87.16,87.16,not_paid
+9502,FAT/2024/00232,2024-05-20,IT4U90085I79,Fattura,Bensi Restaurant llc,18.95,18.95,not_paid
+9503,FAT/2024/00254,2024-05-24,IT4U90085I80,Fattura,Bensi Restaurant llc,26.99,26.99,not_paid
+9484,FAT/2024/00145,2024-05-27,IT24-90085I-27,Fattura,Scuola maravilla srl,14.98,14.98,not_paid
+9483,FAT/2024/00372,2024-05-27,IT4U90085I81,Fattura,Bensi Restaurant llc,70.96,70.96,not_paid
+9485,FAT/2024/00233,2024-05-28,IT4U90085I82,Fattura,Bensi Restaurant llc,20.55,20.55,not_paid
+9486,FAT/2024/00255,2024-05-29,IT4U90085I83,Fattura,Bensi Restaurant llc,24.28,24.28,not_paid
+9487,FAT/2024/00146,2024-05-31,IT24-90085I-28,Fattura,RS Meccanica di Rebecchi Stefano,14.99,14.99,not_paid
+9433,FAT/2024/00427,2024-05-31,FATT/9/26,Fattura,Bilait S.r.l.,136970.40,136970.40,not_paid
+9436,FAT/2024/00428,2024-06-01,FATTE/9/27,Fattura,Bensi Restaurant,342.00,342.00,not_paid
+9509,FAT/2024/00429,2024-06-01,FATTE/9/27,Fattura,Bensi Restaurant,342.00,342.00,not_paid
+9488,FAT/2024/00373,2024-06-03,IT4U90085I84,Fattura,Bensi Restaurant llc,45.53,45.53,not_paid
+9528,FAT/2024/00374,2024-06-03,IT4U90085I84,Fattura,Bensi Restaurant llc,45.53,45.53,not_paid
+9489,FAT/2024/00298,2024-06-10,IT24-90085I-29,Fattura,Bensi Restaurant llc,29.99,29.99,not_paid
+9533,FAT/2024/00299,2024-06-10,IT24-90085I-29,Fattura,Bensi Restaurant llc,29.99,29.99,not_paid
+9431,FAT/2024/00416,2024-06-10,FATT/9/27,Fattura,EUROPA COMMERCIALE SRL,492.90,0.00,not_paid
+9508,FAT/2024/00417,2024-06-10,FATT/9/27,Fattura,EUROPA COMMERCIALE SRL,492.90,0.00,not_paid
+9427,FAT/2024/00418,2024-06-10,FATTE/9/28,Fattura,Bensi Restaurant,13500.12,13500.12,not_paid
+9506,FAT/2024/00419,2024-06-10,FATTE/9/28,Fattura,Bensi Restaurant,13500.12,13500.12,not_paid
+9463,FAT/2024/00420,2024-06-11,FATTE/9/29,Fattura,Bensi Restaurant,14850.20,14850.20,not_paid
+9522,FAT/2024/00421,2024-06-11,FATTE/9/29,Fattura,Bensi Restaurant,14850.20,14850.20,not_paid
+9456,FAT/2024/00422,2024-06-12,FATTE/9/30,Fattura,Bensi Restaurant,802.66,802.66,not_paid
+9518,FAT/2024/00423,2024-06-12,FATTE/9/30,Fattura,Bensi Restaurant,802.66,802.66,not_paid
+9447,FAT/2024/00375,2024-06-14,FATTE/9/31,Fattura,Andrea Menichelli,69.68,0.00,not_paid
+9514,FAT/2024/00376,2024-06-14,FATTE/9/31,Fattura,Andrea Menichelli,69.68,0.00,not_paid
+9453,FAT/2024/00377,2024-06-14,FATTE/9/33,Fattura,Eric van Amerongen,103.28,103.28,not_paid
+9516,FAT/2024/00378,2024-06-14,FATTE/9/33,Fattura,Eric van Amerongen,103.28,103.28,not_paid
+9444,FAT/2024/00379,2024-06-14,RICEV/531/287,Fattura,Sfizi della Carne,72.97,72.97,not_paid
+9513,FAT/2024/00380,2024-06-14,RICEV/531/287,Fattura,Sfizi della Carne,72.97,72.97,not_paid
+9457,FAT/2024/00381,2024-06-14,RICEV/531/288,Fattura,CAMPOVERDE SPA AGRICOLA,105.05,105.05,not_paid
+9519,FAT/2024/00382,2024-06-14,RICEV/531/288,Fattura,CAMPOVERDE SPA AGRICOLA,105.05,105.05,not_paid
+9490,FAT/2024/00130,2024-06-17,IT24-90085I-30,Fattura,christian Tognali,12.99,12.99,not_paid
+9536,FAT/2024/00131,2024-06-17,IT24-90085I-30,Fattura,christian Tognali,12.99,12.99,not_paid
+9452,FAT/2024/00410,2024-06-17,FATT/9/28,Fattura,Bilait S.r.l.,172100.00,172100.00,not_paid
+9515,FAT/2024/00411,2024-06-17,FATT/9/28,Fattura,Bilait S.r.l.,172100.00,172100.00,not_paid
+9492,FAT/2024/00193,2024-06-19,IT4U90085I86,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9539,FAT/2024/00194,2024-06-19,IT4U90085I86,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9491,FAT/2024/00383,2024-06-19,IT4U90085I85,Fattura,Bensi Restaurant llc,44.00,44.00,not_paid
+9538,FAT/2024/00384,2024-06-19,IT4U90085I85,Fattura,Bensi Restaurant llc,44.00,44.00,not_paid
+9494,FAT/2024/00101,2024-06-20,IT4U90085I87,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9546,FAT/2024/00102,2024-06-20,IT4U90085I87,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9493,FAT/2024/00300,2024-06-21,IT4U90085I88,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9545,FAT/2024/00301,2024-06-21,IT4U90085I88,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9495,FAT/2024/00302,2024-06-24,IT4U90085I89,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9550,FAT/2024/00303,2024-06-24,IT4U90085I89,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9496,FAT/2024/00085,2024-06-25,IT4U90085I90,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9557,FAT/2024/00086,2024-06-25,IT4U90085I90,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9561,FAT/2024/00256,2024-07-02,IT24-90085I-31,Fattura,Arch. Claudio Cuda,25.99,25.99,not_paid
+9566,RFAT/2024/00017,2024-07-07,IT4U90085C4,Nota Credito,Bensi Restaurant llc,25.46,25.46,not_paid
+9563,FAT/2024/00132,2024-07-08,IT24-90085I-32,Fattura,Mirenda Nino,12.99,12.99,not_paid
+9565,FAT/2024/00304,2024-07-08,IT4U90085I91,Fattura,Bensi Restaurant llc,34.08,34.08,not_paid
+9564,FAT/2024/00385,2024-07-08,IT4U90085I92,Fattura,Bensi Restaurant llc,39.78,39.78,not_paid
+9567,FAT/2024/00133,2024-07-09,IT24-90085I-33,Fattura,Studio Politecnico Italiano SRL,12.99,12.99,not_paid
+9568,FAT/2024/00257,2024-07-10,IT4U90085I93,Fattura,Bensi Restaurant llc,24.64,24.64,not_paid
+9570,RFAT/2024/00018,2024-07-11,IT4U90085C9,Nota Credito,Bensi Restaurant llc,24.64,24.64,not_paid
+9569,FAT/2024/00234,2024-07-12,IT4U90085I94,Fattura,Bensi Restaurant llc,18.94,18.94,not_paid
+9525,FAT/2024/00195,2024-07-17,IT4U90085I97,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9523,FAT/2024/00235,2024-07-17,IT4U90085I96,Fattura,Bensi Restaurant llc,21.98,21.98,not_paid
+9524,FAT/2024/00305,2024-07-17,IT4U90085I95,Fattura,Bensi Restaurant llc,36.43,36.43,not_paid
+9507,FAT/2024/00412,2024-07-17,FATTE/28/24,Fattura,SONNENTOR Kräuterhandels GmbH,5929.28,0.00,not_paid
+9526,FAT/2024/00258,2024-07-18,IT4U90085I98,Fattura,Bensi Restaurant llc,22.74,22.74,not_paid
+9527,FAT/2024/00147,2024-07-22,IT24-90085I-34,Fattura,Cofiliwire SRL,14.99,14.99,not_paid
+9521,FAT/2024/00413,2024-07-27,FATTE/9/37,Fattura,"Bibi e Bibo, S.L.",1625.45,0.00,not_paid
+13337,FAT/2024/00453,2024-07-27,FATTE/9/36,Fattura,Misono Food ltd,18975.50,18975.50,not_paid
+9530,RFAT/2024/00019,2024-07-30,IT4U90085C5,Nota Credito,Bensi Restaurant llc,22.74,22.74,not_paid
+9531,FAT/2024/00159,2024-07-31,IT4U90085I99,Fattura,Bensi Restaurant llc,15.15,15.15,not_paid
+9532,FAT/2024/00306,2024-07-31,IT4U90085I100,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9517,FAT/2024/00386,2024-07-31,FATT/9/29,Fattura,DEGUSTIBUS DI PUTRINO GIUSEPPE,178.75,0.00,not_paid
+9520,FAT/2024/00387,2024-07-31,FATTE/9/38,Fattura,chez Angélina l'atelier des pâtes,106.08,106.08,not_paid
+9510,FAT/2024/00388,2024-07-31,FATTE/9/39,Fattura,Pierre Emans Buona vita Concept Store,100.08,100.08,not_paid
+9534,FAT/2024/00307,2024-08-02,IT4U90085I101,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9511,FAT/2024/00389,2024-08-03,FATTE/33/24,Fattura,Bensi Restaurant,102.36,102.36,not_paid
+9535,FAT/2024/00308,2024-08-08,IT4U90085I102,Fattura,Bensi Restaurant llc,37.32,37.32,not_paid
+9537,FAT/2024/00309,2024-08-12,IT4U90085I103,Fattura,Bensi Restaurant llc,25.68,25.68,not_paid
+9540,FAT/2024/00087,2024-08-13,IT24-90085I-36,Fattura,Rec Security di Fabio Morando,9.99,9.99,not_paid
+9541,FAT/2024/00120,2024-08-14,IT4U90085I104,Fattura,Bensi Restaurant llc,9.48,9.48,not_paid
+9543,FAT/2024/00196,2024-08-16,IT4U90085I105,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9542,FAT/2024/00310,2024-08-16,IT4U90085I106,Fattura,Bensi Restaurant llc,29.75,29.75,not_paid
+9544,FAT/2024/00103,2024-08-18,IT4U90085I107,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9549,FAT/2024/00088,2024-08-19,IT4U90085I110,Fattura,Bensi Restaurant llc,9.34,9.34,not_paid
+9548,FAT/2024/00104,2024-08-19,IT4U90085I108,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9551,FAT/2024/00105,2024-08-19,IT4U90085I111,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9547,FAT/2024/00259,2024-08-19,IT4U90085I109,Fattura,Bensi Restaurant llc,21.48,21.48,not_paid
+9552,FAT/2024/00236,2024-08-20,IT4U90085I112,Fattura,Bensi Restaurant llc,18.94,18.94,not_paid
+9554,FAT/2024/00106,2024-08-21,IT4U90085I114,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9553,FAT/2024/00160,2024-08-21,IT4U90085I113,Fattura,Bensi Restaurant llc,14.94,14.94,not_paid
+9555,FAT/2024/00107,2024-08-22,IT4U90085I115,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9556,FAT/2024/00148,2024-08-22,IT4U90085I116,Fattura,Bensi Restaurant llc,13.26,13.26,not_paid
+9558,FAT/2024/00121,2024-08-24,IT4U90085I117,Fattura,Bensi Restaurant llc,9.48,9.48,not_paid
+9560,FAT/2024/00260,2024-08-26,IT4U90085I118,Fattura,Bensi Restaurant llc,24.64,24.64,not_paid
+9559,FAT/2024/00311,2024-08-26,IT4U90085I119,Fattura,Bensi Restaurant llc,28.62,28.62,not_paid
+9562,FAT/2024/00197,2024-08-29,IT4U90085I120,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9372,FAT/2024/00161,2024-09-02,IT4U90085I121,Fattura,Bensi Restaurant llc,14.20,14.20,not_paid
+9373,FAT/2024/00198,2024-09-02,IT4U90085I122,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9374,FAT/2024/00149,2024-09-03,IT4U90085I123,Fattura,Bensi Restaurant llc,13.72,13.72,not_paid
+9375,FAT/2024/00134,2024-09-04,IT24-90085I-37,Fattura,Easy Sistem di Raffaele Bianchetti,12.99,12.99,not_paid
+9376,RFAT/2024/00020,2024-09-04,IT4U90085C6,Nota Credito,Bensi Restaurant llc,25.46,25.46,not_paid
+9377,FAT/2024/00162,2024-09-05,IT4U90085I124,Fattura,Bensi Restaurant llc,14.94,14.94,not_paid
+9378,FAT/2024/00312,2024-09-06,IT4U90085I125,Fattura,Bensi Restaurant llc,30.53,30.53,not_paid
+9370,FAT/2024/00414,2024-09-06,FATT/25/24,Fattura,CAMPOVERDE SPA AGRICOLA,270.22,270.22,not_paid
+9380,FAT/2024/00199,2024-09-09,IT4U90085I127,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9379,FAT/2024/00261,2024-09-09,IT4U90085I126,Fattura,Bensi Restaurant llc,24.28,24.28,not_paid
+9381,FAT/2024/00237,2024-09-10,IT4U90085I128,Fattura,Bensi Restaurant llc,21.99,21.99,not_paid
+9382,RFAT/2024/00021,2024-09-10,IT4U90085C7,Nota Credito,Bensi Restaurant llc,28.62,28.62,not_paid
+9383,FAT/2024/00135,2024-09-12,IT24-90085I-38,Fattura,DIACONU MARIA ELISABETA,12.99,12.99,not_paid
+9384,FAT/2024/00262,2024-09-12,IT4U90085I129,Fattura,Bensi Restaurant llc,23.35,23.35,not_paid
+9389,FAT/2024/00390,2024-09-13,IT4U90085I130,Fattura,Bensi Restaurant llc,46.70,46.70,not_paid
+9386,FAT/2024/00089,2024-09-16,IT4U90085I131,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9385,FAT/2024/00090,2024-09-17,IT4U90085I132,Fattura,Bensi Restaurant llc,9.34,9.34,not_paid
+9391,FAT/2024/00391,2024-09-19,IT4U90085I133,Fattura,Bensi Restaurant llc,71.66,71.66,not_paid
+9371,FAT/2024/00415,2024-09-23,FATT/26/24,Fattura,Italiana Bakery srls,2365.26,0.00,not_paid
+9365,FAT/2024/00399,2024-09-24,FATT/27/24,Fattura,Bilait S.r.l.,172090.00,172090.00,not_paid
+9357,FAT/2024/00400,2024-09-24,FATT/28/24,Fattura,Bilait S.r.l.,162795.18,162795.18,not_paid
+9388,FAT/2024/00091,2024-09-25,IT4U90085I134,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9390,FAT/2024/00092,2024-09-29,IT4U90085I135,Fattura,Bensi Restaurant llc,9.99,9.99,not_paid
+9392,FAT/2024/00200,2024-09-30,IT4U90085I136,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9395,FAT/2024/00201,2024-09-30,IT4U90085I139,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9394,FAT/2024/00263,2024-09-30,IT4U90085I137,Fattura,Bensi Restaurant llc,24.28,24.28,not_paid
+9393,FAT/2024/00313,2024-09-30,IT4U90085I138,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9396,RFAT/2024/00022,2024-10-04,IT4U90085C8,Nota Credito,Bensi Restaurant llc,71.66,71.66,not_paid
+9782,RFAT/2024/00023,2024-10-04,IT4U90085C8,Nota Credito,Bensi Restaurant llc,71.66,71.66,not_paid
+9398,FAT/2024/00314,2024-10-07,IT4U90085I140,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9784,FAT/2024/00315,2024-10-07,IT4U90085I140,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9397,FAT/2024/00316,2024-10-07,IT4U90085I141,Fattura,Bensi Restaurant llc,27.32,27.32,not_paid
+9783,FAT/2024/00317,2024-10-07,IT4U90085I141,Fattura,Bensi Restaurant llc,27.32,27.32,not_paid
+9399,FAT/2024/00318,2024-10-10,IT4U90085I142,Fattura,Bensi Restaurant llc,36.43,36.43,not_paid
+9785,FAT/2024/00319,2024-10-10,IT4U90085I142,Fattura,Bensi Restaurant llc,36.43,36.43,not_paid
+9402,FAT/2024/00202,2024-10-11,IT4U90085I143,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9788,FAT/2024/00203,2024-10-11,IT4U90085I143,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9403,FAT/2024/00264,2024-10-11,IT4U90085I144,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9789,FAT/2024/00265,2024-10-11,IT4U90085I144,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9407,FAT/2024/00204,2024-10-14,IT4U90085I146,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9793,FAT/2024/00205,2024-10-14,IT4U90085I146,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9405,FAT/2024/00320,2024-10-14,IT24-90085I-40,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9791,FAT/2024/00321,2024-10-14,IT24-90085I-40,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9404,FAT/2024/00322,2024-10-14,IT4U90085I147,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9790,FAT/2024/00323,2024-10-14,IT4U90085I147,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9406,FAT/2024/00392,2024-10-14,IT4U90085I145,Fattura,Bensi Restaurant llc,52.87,52.87,not_paid
+9792,FAT/2024/00393,2024-10-14,IT4U90085I145,Fattura,Bensi Restaurant llc,52.87,52.87,not_paid
+9772,FAT/2024/00394,2024-10-15,FATT/31/24,Fattura,Pastificio Pirro srl,115.63,115.63,not_paid
+9367,FAT/2024/00401,2024-10-15,FATT/31/24,Fattura,Pastificio Pirro srl,115.63,115.63,not_paid
+9410,FAT/2024/00324,2024-10-22,IT24-90085I-41,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9799,FAT/2024/00325,2024-10-22,IT24-90085I-41,Fattura,Bensi Restaurant llc,35.99,35.99,not_paid
+9409,FAT/2024/00326,2024-10-22,IT4U90085I148,Fattura,Bensi Restaurant llc,33.61,33.61,not_paid
+9798,FAT/2024/00327,2024-10-22,IT4U90085I148,Fattura,Bensi Restaurant llc,33.61,33.61,not_paid
+9408,FAT/2024/00328,2024-10-22,IT4U90085I149,Fattura,Bensi Restaurant llc,38.63,38.63,not_paid
+9797,FAT/2024/00329,2024-10-22,IT4U90085I149,Fattura,Bensi Restaurant llc,38.63,38.63,not_paid
+9413,FAT/2024/00206,2024-10-30,IT4U90085I152,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9804,FAT/2024/00207,2024-10-30,IT4U90085I152,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+9411,FAT/2024/00266,2024-10-30,IT4U90085I150,Fattura,Bensi Restaurant llc,24.64,24.64,not_paid
+9802,FAT/2024/00267,2024-10-30,IT4U90085I150,Fattura,Bensi Restaurant llc,24.64,24.64,not_paid
+9412,FAT/2024/00268,2024-10-30,IT4U90085I151,Fattura,Bensi Restaurant llc,23.35,23.35,not_paid
+9803,FAT/2024/00269,2024-10-30,IT4U90085I151,Fattura,Bensi Restaurant llc,23.35,23.35,not_paid
+9358,FAT/2024/00402,2024-11-01,FATT/33/24,Fattura,MARANO BONAVENTURA,7683.07,0.00,not_paid
+9366,FAT/2024/00404,2024-11-01,FATT/34/24,Fattura,FATTORIA SILA SRL FATTORIA SILA SRL,679.03,0.00,not_paid
+9771,FAT/2024/00405,2024-11-01,FATT/34/24,Fattura,FATTORIA SILA SRL FATTORIA SILA SRL,679.03,0.00,not_paid
+9361,FAT/2024/00406,2024-11-01,FATTE/34/24,Fattura,Eric van Amerongen,272.77,272.77,not_paid
+9764,FAT/2024/00407,2024-11-01,FATTE/34/24,Fattura,Eric van Amerongen,272.77,272.77,not_paid
+9414,FAT/2024/00330,2024-11-03,IT4U90085I153,Fattura,Bensi Restaurant llc,26.16,26.16,not_paid
+9805,FAT/2024/00331,2024-11-03,IT4U90085I153,Fattura,Bensi Restaurant llc,26.16,26.16,not_paid
+9415,FAT/2024/00270,2024-11-04,IT4U90085I154,Fattura,Bensi Restaurant llc,27.45,27.45,not_paid
+9806,FAT/2024/00271,2024-11-04,IT4U90085I154,Fattura,Bensi Restaurant llc,27.45,27.45,not_paid
+9417,FAT/2024/00332,2024-11-04,IT24-90085I-42,Fattura,Bensi Restaurant llc,28.99,28.99,not_paid
+9808,FAT/2024/00333,2024-11-04,IT24-90085I-42,Fattura,Bensi Restaurant llc,28.99,28.99,not_paid
+9416,FAT/2024/00334,2024-11-04,IT4U90085I155,Fattura,Bensi Restaurant llc,30.32,30.32,not_paid
+9807,FAT/2024/00335,2024-11-04,IT4U90085I155,Fattura,Bensi Restaurant llc,30.32,30.32,not_paid
+9418,FAT/2024/00395,2024-11-04,IT4U90085I156,Fattura,Bensi Restaurant llc,85.26,85.26,not_paid
+9809,FAT/2024/00396,2024-11-04,IT4U90085I156,Fattura,Bensi Restaurant llc,85.26,85.26,not_paid
+9419,FAT/2024/00336,2024-11-05,IT4U90085I157,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9810,FAT/2024/00337,2024-11-05,IT4U90085I157,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9420,FAT/2024/00338,2024-11-07,IT4U90085I158,Fattura,Bensi Restaurant llc,26.53,26.53,not_paid
+9817,FAT/2024/00339,2024-11-07,IT4U90085I158,Fattura,Bensi Restaurant llc,26.53,26.53,not_paid
+9421,FAT/2024/00340,2024-11-11,IT4U90085I159,Fattura,Bensi Restaurant llc,28.29,28.29,not_paid
+9819,FAT/2024/00341,2024-11-11,IT4U90085I159,Fattura,Bensi Restaurant llc,28.29,28.29,not_paid
+9422,FAT/2024/00238,2024-11-15,IT24-90085I-43,Fattura,BESCAN SPRL,18.63,18.63,not_paid
+9825,FAT/2024/00239,2024-11-15,IT24-90085I-43,Fattura,BESCAN SPRL,18.63,18.63,not_paid
+9423,FAT/2024/00408,2024-11-15,IT4U90085I160,Fattura,Bensi Restaurant llc,201.48,201.48,not_paid
+9826,FAT/2024/00409,2024-11-15,IT4U90085I160,Fattura,Bensi Restaurant llc,201.48,201.48,not_paid
+9769,FAT/2024/00051,2024-11-19,FATT/37/24,Fattura,Panificio cardace Snc,807.84,807.84,not_paid
+9775,FAT/2024/00052,2024-11-19,FATT/38/24,Fattura,Italiana Bakery srls,19399.18,13899.18,not_paid
+9766,FAT/2024/00053,2024-11-19,FATT/39/24,Fattura,Bilait S.r.l.,218000.00,218000.00,not_paid
+9364,FAT/2024/00055,2024-11-19,FATT/37/24,Fattura,Panificio cardace Snc,807.84,807.84,not_paid
+9368,FAT/2024/00056,2024-11-19,FATT/38/24,Fattura,Italiana Bakery srls,19399.18,19399.18,not_paid
+9362,FAT/2024/00057,2024-11-19,FATT/39/24,Fattura,Bilait S.r.l.,218000.00,218000.00,not_paid
+9763,FAT/2024/00058,2024-11-19,RICEV/1121/24,Fattura,Bilait S.r.l.,152000.00,152000.00,not_paid
+9360,FAT/2024/00059,2024-11-19,RICEV/1121/24,Fattura,Bilait S.r.l.,152000.00,152000.00,not_paid
+9776,FAT/2024/00001,2024-11-20,FATT/40/24,Fattura,Bilait S.r.l.,6800.00,6800.00,not_paid
+9768,FAT/2024/00049,2024-11-20,FATTE/35/24,Fattura,Bensi Restaurant,2998.80,0.00,not_paid
+9762,FAT/2024/00050,2024-11-20,FATTE/36/24,Fattura,MARKETING PETROLI SRL,1176.16,1176.16,not_paid
+9425,FAT/2024/00002,2024-11-21,IT24-90085I-44,Fattura,CFCS,26.21,26.21,not_paid
+9828,FAT/2024/00003,2024-11-21,IT24-90085I-44,Fattura,CFCS,26.21,26.21,not_paid
+9424,FAT/2024/00004,2024-11-21,IT4U90085I161,Fattura,Bensi Restaurant llc,20.55,20.55,not_paid
+9827,FAT/2024/00005,2024-11-21,IT4U90085I161,Fattura,Bensi Restaurant llc,20.55,20.55,not_paid
+9401,FAT/2024/00006,2024-11-28,IT4U90085I162,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9787,FAT/2024/00007,2024-11-28,IT4U90085I162,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9400,FAT/2024/00008,2024-11-28,IT4U90085I163,Fattura,Bensi Restaurant llc,41.10,41.10,not_paid
+9786,FAT/2024/00009,2024-11-28,IT4U90085I163,Fattura,Bensi Restaurant llc,41.10,41.10,not_paid
+9795,FAT/2024/00010,2024-12-03,IT4U90085I164,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9794,FAT/2024/00011,2024-12-03,IT4U90085I165,Fattura,Bensi Restaurant llc,20.84,20.84,not_paid
+9796,FAT/2024/00012,2024-12-05,IT4U90085I166,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9800,FAT/2024/00013,2024-12-10,IT4U90085I167,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9801,FAT/2024/00014,2024-12-10,IT4U90085I168,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9774,FAT/2024/00015,2024-12-13,RICEV/1143/24,Fattura,Panificio cardace Snc,736.56,564.70,not_paid
+9813,FAT/2024/00016,2024-12-17,IT4U90085I169,Fattura,Bensi Restaurant llc,58.75,58.75,not_paid
+9812,FAT/2024/00017,2024-12-17,IT4U90085I170,Fattura,Bensi Restaurant llc,52.24,52.24,not_paid
+9816,FAT/2024/00018,2024-12-17,IT4U90085I171,Fattura,Bensi Restaurant llc,64.44,64.44,not_paid
+9814,FAT/2024/00019,2024-12-17,IT4U90085I172,Fattura,Bensi Restaurant llc,20.55,20.55,not_paid
+9811,FAT/2024/00020,2024-12-17,IT4U90085I173,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9815,FAT/2024/00021,2024-12-17,IT4U90085I174,Fattura,Bensi Restaurant llc,25.46,25.46,not_paid
+9778,FAT/2024/00022,2024-12-18,RICEV/1144/24,Fattura,Branditalia,1391.53,1391.53,not_paid
+9818,FAT/2024/00023,2024-12-22,IT4U90085I175,Fattura,Bensi Restaurant llc,26.16,26.16,not_paid
+9820,FAT/2024/00024,2024-12-22,IT4U90085I176,Fattura,Bensi Restaurant llc,9.42,9.42,not_paid
+9822,FAT/2024/00025,2024-12-23,IT4U90085I177,Fattura,Bensi Restaurant llc,30.32,30.32,not_paid
+9821,FAT/2024/00026,2024-12-23,IT4U90085I178,Fattura,Bensi Restaurant llc,28.96,28.96,not_paid
+9781,FAT/2024/00027,2024-12-27,FATTE/37/24,Fattura,"Conca D'oro Importers, LLC.",9100.00,0.00,not_paid
+9780,FAT/2024/00028,2024-12-27,FATTE/39/24,Fattura,Smell like chocolate,68.64,68.64,not_paid
+9765,FAT/2024/00029,2024-12-27,FATTE/41/24,Fattura,La halle aux fruits,107.99,107.99,not_paid
+9773,FAT/2024/00030,2024-12-27,FATTE/42/24,Fattura,SEIDELDRINKS GmbH,132.10,132.10,not_paid
+9767,FAT/2024/00031,2024-12-27,FATTE/43/24,Fattura,L'ENTRE TEMPS-ROMANG,222.71,222.71,not_paid
+9760,FAT/2024/00032,2024-12-27,FATTE/44/24,Fattura,DA'HOME.STORE,128.87,128.87,not_paid
+9777,FAT/2024/00033,2024-12-27,FATTE/45/24,Fattura,Andrea Menichelli,264.23,0.00,not_paid
+9770,FAT/2024/00034,2024-12-27,FATTE/46/24,Fattura,Arte e Gusto,360.04,360.04,not_paid
+9779,FAT/2024/00035,2024-12-27,FATTE/47/24,Fattura,Andrea Menichelli,280.28,0.00,not_paid
+9823,FAT/2024/00036,2024-12-27,IT4U90085I179,Fattura,Bensi Restaurant llc,18.99,18.99,not_paid
+9824,FAT/2024/00037,2024-12-27,IT4U90085I180,Fattura,Bensi Restaurant llc,17.74,17.74,not_paid
+10895,FAT/2024/00038,2024-12-31,FATT/01/24,Fattura,Bilait S.r.l.,194184.00,59.00,not_paid
+10896,FAT/2024/00039,2024-12-31,FATT/02/24,Fattura,Bilait S.r.l.,87792.00,22.00,not_paid
+10894,FAT/2024/00040,2024-12-31,FATT/03/24,Fattura,Bilait S.r.l.,42966.00,0.00,not_paid
+10897,FAT/2024/00041,2024-12-31,FATT/04/24,Fattura,Bilait S.r.l.,66169.50,24.50,not_paid
+10890,FAT/2024/00042,2024-12-31,FATT/05/24,Fattura,Bilait S.r.l.,72786.45,72786.45,not_paid
+10893,FAT/2024/00043,2024-12-31,FATT/06/24,Fattura,Bilait S.r.l.,47262.60,47262.60,not_paid
+10892,FAT/2024/00044,2024-12-31,FATT/07/24,Fattura,Bilait S.r.l.,96571.20,96571.20,not_paid
+10891,FAT/2024/00045,2024-12-31,FATT/08/24,Fattura,Bilait S.r.l.,213602.40,213602.40,not_paid
+10881,FAT/2024/00046,2024-12-31,FATT/09/24,Fattura,Bilait S.r.l.,150667.44,150667.44,not_paid
+10883,FAT/2024/00047,2024-12-31,FATT/20/24,Fattura,Bilait S.r.l.,239800.00,239800.00,not_paid
+10884,FAT/2024/00048,2024-12-31,FATT/21/24,Fattura,Bilait S.r.l.,189310.00,179310.00,not_paid
+10901,RFAT/2024/00001,2024-12-31,2024-000001,Nota Credito,Bilait S.r.l.,172100.00,172100.00,not_paid
+10905,RFAT/2024/00002,2024-12-31,2024-000002,Nota Credito,Bilait S.r.l.,42966.00,42966.00,not_paid
+10903,RFAT/2024/00003,2024-12-31,2024-000003,Nota Credito,Bilait S.r.l.,194184.00,194184.00,not_paid
+10904,RFAT/2024/00004,2024-12-31,2024-000004,Nota Credito,Bilait S.r.l.,87792.00,0.00,not_paid
+10906,RFAT/2024/00005,2024-12-31,2024-000005,Nota Credito,Bilait S.r.l.,66169.50,66169.50,not_paid
+10900,RFAT/2024/00006,2024-12-31,2024-000006,Nota Credito,Bilait S.r.l.,136970.40,136970.40,not_paid
+10902,RFAT/2024/00007,2024-12-31,2024-000007,Nota Credito,Bilait S.r.l.,218000.00,218000.00,not_paid
+10889,FAT/2025/00001,2025-01-08,FATT/01/25,Fattura,L. & G. S.R.L.,1565.80,0.00,not_paid
+10898,FAT/2025/00012,2025-01-08,FATT-EXUE/1/25,Fattura,Bensi Restaurant llc,5000.00,0.00,not_paid
+10875,FAT/2025/00011,2025-01-23,FATT-EXUE/3/25,Fattura,Misono Food ltd,8173.96,8173.96,not_paid
+10878,FAT/2025/00009,2025-01-26,FATT-EXUE/6/25,Fattura,Taswik Istitmar,7733.76,7733.76,not_paid
+10876,FAT/2025/00010,2025-01-26,FATT-EXUE/5/25,Fattura,Taswik Istitmar,21639.94,21639.94,not_paid
+10880,FAT/2025/00014,2025-01-27,FATT-EXUE/4/25,Fattura,Bensi Restaurant,11.29,11.29,not_paid
+10879,FAT/2025/00002,2025-02-07,FATT/02/25,Fattura,La Fenice Food Services International Srl,786.42,0.00,not_paid
+10877,FAT/2025/00003,2025-02-19,FATT/05/25,Fattura,Panificio cardace Snc,1322.64,0.00,not_paid
+10899,FAT/2025/00008,2025-03-03,FATT-EXUE/10/25,Fattura,Taswik Istitmar,1000.00,1000.00,not_paid
+10874,FAT/2025/00004,2025-03-04,FATT-EXUE/15/25,Fattura,Danube Company For Foodstuffs and Commodities,7617.60,39.60,not_paid
+10873,FAT/2025/00005,2025-03-04,FATT-EXUE/13/25,Fattura,Re Italo ltd,1980.00,1980.00,not_paid
+10872,FAT/2025/00006,2025-03-04,FATT-EXUE/11/25,Fattura,Re Italo ltd,3780.00,0.00,not_paid
+10870,FAT/2025/00007,2025-03-04,FATT-EXUE/12/25,Fattura,Re Italo ltd,5821.45,5821.45,not_paid
+11462,FATEX/2025/00004,2025-03-20,,Fattura,Valentino Fine Foods,9817.00,0.00,not_paid
+11269,FAT/2025/00013,2025-04-29,,Fattura,Bensi Restaurant,144.36,144.36,not_paid
+9356,FATEX/2025/00001,2025-04-29,,Fattura,DOUCEFRANCE,0.00,0.00,not_paid
+11454,FATEX/2025/00002,2025-05-21,,Fattura,Taswik Istitmar,1000.00,1000.00,not_paid
+11455,FATEX/2025/00003,2025-05-21,,Fattura,Taswik Istitmar,1170.00,20.00,not_paid
+11463,FATEX/2025/00005,2025-05-22,,Fattura,GOMES PRATA CARVALHO RUI MANUEL,6033.16,0.00,not_paid
+11464,FATEX/2025/00006,2025-05-22,,Fattura,Misono Food ltd,397.60,397.60,not_paid
+11466,FAT/2025/00015,2025-05-26,,Fattura,FRATELLI GIAMPA' SNC di Giampa' Francesco,759.00,0.00,not_paid
+11524,FAT/2025/00016,2025-05-26,,Fattura,PANGEA S.R.L.,0.00,0.00,not_paid
+11525,FAT/2025/00017,2025-05-26,,Fattura,FLORA FOOD,0.03,0.03,not_paid
+11526,FAT/2025/00018,2025-05-26,,Fattura,ANDREA BIFOLCO,0.03,0.03,not_paid
+11520,FATEX/2025/00007,2025-05-26,,Fattura,Word Market,0.00,0.00,not_paid
+11521,FATEX/2025/00008,2025-05-26,,Fattura,Eurok Inc,0.00,0.00,not_paid
+11522,FATEX/2025/00009,2025-05-26,,Fattura,Town & Contry Markets Inc,0.00,0.00,not_paid
+11523,FATEX/2025/00010,2025-05-26,,Fattura,Jusami Import,0.00,0.00,not_paid
+11527,FAT/2025/00019,2025-05-28,,Fattura,GELATO SENZA PECCATO SRL,651.40,651.40,not_paid
+11528,FATEX/2025/00011,2025-05-28,,Fattura,Misono Food ltd,3360.88,3360.88,not_paid
+11451,FAT/2025/00020,2025-06-07,,Fattura,Pastificio Pirro srl,88.80,88.80,not_paid
+12837,FAT/2025/00024,2025-06-20,,Fattura, NETO FERDINANDO,436.68,0.00,not_paid
+12033,FAT/2025/00021,2025-06-21,,Fattura,Bilait S.r.l.,467500.00,0.00,not_paid
+12048,FATEX/2025/00012,2025-06-22,,Fattura,SHOPPING DISTRIBUIDORA DE ALIMENTOS E BEBIDAS LTDA,4998.00,0.00,not_paid
+12724,FAT/2025/00023,2025-06-25,,Fattura,DOLCE ANGELO S.R.L.,1268.00,0.00,not_paid
+12862,FAT/2025/00025,2025-07-02,#2406,Fattura,Guglielmo Ribichini,16.58,16.58,not_paid
+12861,FAT/2025/00026,2025-07-02,#2405,Fattura,Armando Bevilacqua,16.58,16.58,not_paid
+12858,FAT/2025/00027,2025-07-02,#2402,Fattura,Sandro Melaranci,15.58,15.58,not_paid
+12857,FAT/2025/00028,2025-07-02,#2398,Fattura,Paola Balbi,14.68,14.68,not_paid
+12856,FAT/2025/00029,2025-07-02,#2397,Fattura,Selda Eken,20.56,20.56,not_paid
+12879,FAT/2025/00030,2025-07-02,,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,33.00,33.00,not_paid
+12940,FAT/2025/00031,2025-07-10,,Fattura,Pastificio Pirro srl,88.70,88.70,not_paid
+12941,FAT/2025/00032,2025-07-10,,Fattura,Angelica Zecchin,14.98,14.98,not_paid
+12942,FAT/2025/00033,2025-07-10,,Fattura,ALESSIA CALZOLARI,14.98,14.98,not_paid
+13019,FAT/2025/00034,2025-07-15,,Fattura,Arpaia spa,396.01,396.01,not_paid
+13059,FATEX/2025/00013,2025-07-17,,Fattura,Frank DiBiase,0.00,0.00,not_paid
+13061,FATEX/2025/00014,2025-07-17,,Fattura,Lettieri,0.00,0.00,not_paid
+13137,FATUE/2025/00001,2025-07-24,,Fattura,FTM NUTRI SERVICES,15980.89,16.07,not_paid
+13144,FATEX/2025/00015,2025-07-25,,Fattura,Valentino Fine Foods,10811.44,1258.13,not_paid
+13159,FPOS/2025/00001,2025-07-26,CaffèLove/0004,Fattura,CasaFolino Srl Societa' Benefit,20.00,0.00,not_paid
+13183,FATUE/2025/00002,2025-07-29,,Fattura,Rohlik.cz,0.00,0.00,not_paid
+13208,FAT/2025/00035,2025-07-30,,Fattura,AUTODEMOLIZIONE GUALTIERI S.R.L.,22.00,0.00,not_paid
+13209,FAT/2025/00036,2025-07-30,,Fattura,PUBLISUD GIORDANO S.R.L.S. UNIPERSONALE,52.00,52.00,not_paid
+13211,FATEX/2025/00016,2025-07-30,,Fattura,Bensi Restaurant,1852.36,1852.36,not_paid
+13212,FATEX/2025/00017,2025-07-30,,Fattura,Bensi Restaurant,580.66,580.66,not_paid
+13213,FATEX/2025/00018,2025-07-30,,Fattura,Bensi Restaurant,2416.23,2416.23,not_paid
+13197,FPOS/2025/00002,2025-07-30,CaffèLove/0106,Fattura,STUDIO DENTISTICO ATTANASIO,25.00,25.00,not_paid
+13223,FATEX/2025/00019,2025-07-31,,Fattura,Williams Sonoma,0.00,0.00,not_paid
+13224,FPOS/2025/00003,2025-07-31,CaffèLove/0161,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,17.46,17.46,not_paid
+12859,FAT/2025/00037,2025-08-01,,Fattura,Michelle,15.98,15.98,not_paid
+12860,FAT/2025/00038,2025-08-01,#2404,Fattura,Michelle amicafe',16.58,16.58,not_paid
+13241,FATEX/2025/00020,2025-08-01,,Fattura,Cioffis Meat Market & Deli,5621.68,12.00,not_paid
+13851,FATEX/2025/00029,2025-08-01,,Fattura,Christine's on Canterbury,527.79,527.79,not_paid
+13246,FPOS/2025/00004,2025-08-01,,Fattura,clear planet Srl ,10.08,10.08,not_paid
+13247,FPOS/2025/00005,2025-08-01,,Fattura,SUD ALLESTIMENTI DI CARUSO PASQUALINA,4.64,4.64,not_paid
+13248,FPOS/2025/00006,2025-08-01,,Fattura,Girsun It Srl(Roberto Ferrise),22.01,22.01,not_paid
+13249,FPOS/2025/00007,2025-08-01,,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,35.08,35.08,not_paid
+13251,FPOS/2025/00008,2025-08-01,,Fattura,Girsun It Srl(Roberto Ferrise),52.00,52.00,not_paid
+13252,FPOS/2025/00009,2025-08-01,,Fattura,PUBLISUD GIORDANO S.R.L.S. UNIPERSONALE,133.54,133.54,not_paid
+13253,FPOS/2025/00010,2025-08-01,,Fattura,Consorzio scuola lavoro calabria soc.coop,134.52,134.52,not_paid
+13254,FPOS/2025/00011,2025-08-01,,Fattura,Studio Medico Rubino Michele,7.91,7.91,not_paid
+13255,FPOS/2025/00012,2025-08-01,,Fattura,Mercuri Natalino,22.01,22.01,not_paid
+13256,FPOS/2025/00013,2025-08-01,,Fattura,clear planet Srl ,92.04,92.04,not_paid
+13279,FAT/2025/00039,2025-08-02,,Fattura,ASSOCIAZIONE INTERNATIONAL LANGUAGE CENTRE,81.00,81.00,not_paid
+13281,FAT/2025/00040,2025-08-02,,Fattura,STUDIO DENTISTICO ATTANASIO,50.02,25.02,not_paid
+13282,FAT/2025/00041,2025-08-02,,Fattura,Cimino Angelo,99.07,99.07,not_paid
+13283,FAT/2025/00042,2025-08-02,,Fattura,EMPLOYMENT CAMPUS SOCIETA' COOPERATIVA SOCIALE,32.70,32.70,not_paid
+13284,FAT/2025/00043,2025-08-02,,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,79.05,79.05,not_paid
+13286,FAT/2025/00044,2025-08-02,,Fattura,Ing. ARCIERI OTTAVIO,22.01,22.01,not_paid
+13276,FPOS/2025/00014,2025-08-02,,Fattura,Risto Project srls,41.91,41.91,not_paid
+13277,FPOS/2025/00015,2025-08-02,,Fattura,DOLCIARIA LAMETINA EREDI MASCARO MICHELE DI ANTONIO E DOMENICO MA SCARO S.N.C.,20.01,20.01,not_paid
+13280,FPOS/2025/00016,2025-08-02,,Fattura,MO'MO' LAB SRL,35.01,35.01,not_paid
+13336,FATEX/2025/00021,2025-08-05,,Fattura,Frank DiBiase,0.00,0.00,not_paid
+13352,FATEX/2025/00022,2025-08-06,,Fattura,Milo Magnano Jr.,0.00,0.00,not_paid
+13353,FATEX/2025/00023,2025-08-06,,Fattura,Just Gourmet Foods,0.00,0.00,not_paid
+13354,FATEX/2025/00024,2025-08-06,,Fattura,Allen Schnapp,0.00,0.00,not_paid
+13355,FATEX/2025/00025,2025-08-06,,Fattura,Luis Treviño,0.00,0.00,not_paid
+13410,FPOS/2025/00017,2025-08-08,CaffèLove/0389,Fattura,MO'MO' LAB SRL,54.30,54.30,not_paid
+13412,FPOS/2025/00018,2025-08-08,CaffèLove/0391,Fattura,ape srls,12.00,12.00,not_paid
+13414,FPOS/2025/00019,2025-08-08,CaffèLove/0392,Fattura,ape srls,5.80,5.80,not_paid
+13443,FATEX/2025/00026,2025-08-11,,Fattura,Jusami Import,6050.08,0.00,not_paid
+13444,FPOS/2025/00020,2025-08-11,CaffèLove/0433,Fattura,giancarlo cuiuli Sportissimo,35.90,0.00,not_paid
+13476,FPOS/2025/00021,2025-08-13,CaffèLove/0488,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,28.50,28.50,not_paid
+13536,FPOS/2025/00022,2025-08-18,CaffèLove/0560,Fattura,PUBLISUD GIORDANO S.R.L.S. UNIPERSONALE,22.00,22.00,not_paid
+13563,FATEX/2025/00027,2025-08-19,,Fattura,Jusami Import,1962.62,1962.62,not_paid
+13639,FPOS/2025/00023,2025-08-25,CaffèLove/0707,Fattura,Girsun It Srl(Roberto Ferrise),10.00,0.00,not_paid
+13673,FATEX/2025/00028,2025-08-26,,Fattura,1649338 ONTARIO INC,0.00,0.00,not_paid
+13688,FPOS/2025/00024,2025-08-27,CaffèLove/0776,Fattura,SUD ALLESTIMENTI DI CARUSO PASQUALINA,10.00,0.00,not_paid
+13690,FPOS/2025/00025,2025-08-27,CaffèLove/0783,Fattura,Mercuri Natalino,14.50,14.50,not_paid
+13776,FPOS/2025/00026,2025-09-01,CaffèLove/0938,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,2.50,0.00,not_paid
+13804,FPOS/2025/00027,2025-09-02,CaffèLove/0959,Fattura,PUBLISUD GIORDANO S.R.L.S. UNIPERSONALE,37.80,37.80,not_paid
+13812,FPOS/2025/00028,2025-09-02,,Fattura,STUDIO DENTISTICO ATTANASIO,25.00,25.00,not_paid
+13826,FAT/2025/00045,2025-09-03,,Fattura,Arpaia spa,197.50,197.50,not_paid
+13862,FAT/2025/00046,2025-09-05,,Fattura,CHARME DI CARUSO MARIA CHIARA,26.00,0.88,not_paid
+13923,FATEX/2025/00030,2025-09-10,,Fattura,ITALIAN PRODUCTS & BEYOND.,7522.29,0.00,not_paid
+14013,FAT/2025/00047,2025-09-17,,Fattura,ASTORINO PASTA S.R.L.,47.12,47.12,not_paid
+14065,FPOS/2025/00029,2025-09-22,CaffèLove/1472,Fattura,STUDIO DENTISTICO ATTANASIO,25.00,25.00,not_paid
+14090,FATUE/2025/00003,2025-09-24,,Fattura,UP CIPTRONIC SRL,7596.36,2506.36,not_paid
+14123,FPOS/2025/00030,2025-09-26,CaffeLove/1585,Fattura,Arpaia spa,147.00,0.00,not_paid
+14125,FPOS/2025/00031,2025-09-26,CaffeLove/1604,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,46.80,0.00,not_paid
+14127,FPOS/2025/00032,2025-09-26,CaffeLove/1606,Fattura,LUAR COSTRUZIONI SRL 10,45.20,0.00,not_paid
+14156,FATEX/2025/00031,2025-09-30,,Fattura,"Conca D'oro Importers, LLC.",4524.66,4524.66,not_paid
+14174,FAT/2025/00048,2025-10-01,,Fattura,ICHOOSEITALIA S.R.L.,21960.00,10960.00,not_paid
+14167,FATEX/2025/00032,2025-10-01,,Fattura,Jusami Import,2648.96,2648.96,not_paid
+14169,FATEX/2025/00033,2025-10-01,,Fattura,Jusami Import,11762.31,11762.31,not_paid
+14168,FATUE/2025/00004,2025-10-01,,Fattura,Healthy Branding SL.,7689.00,7689.00,not_paid
+14170,FATUE/2025/00005,2025-10-01,,Fattura,Hofer KG,75934.08,144.00,not_paid
+14166,FPOS/2025/00033,2025-10-01,,Fattura,CHARME DI CARUSO MARIA CHIARA,52.00,0.00,not_paid
+14175,FPOS/2025/00034,2025-10-01,CaffeLove/1754,Fattura,PUBLISUD GIORDANO S.R.L.S. UNIPERSONALE,24.50,0.00,not_paid
+14177,FPOS/2025/00035,2025-10-01,CaffeLove/1755,Fattura,PUBLISUD GIORDANO S.R.L.S. UNIPERSONALE,22.00,0.00,not_paid
+14222,FPOS/2025/00036,2025-10-04,CaffeLove/1851,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,14.38,0.00,not_paid
+14251,FAT/2025/00049,2025-10-08,,Fattura,CUORDIFARINA SRLS,5490.00,0.00,not_paid
+14263,FAT/2025/00050,2025-10-08,,Fattura,PARENTE S.R.L.,5490.00,0.00,not_paid
+14280,FAT/2025/00051,2025-10-08,,Fattura,CONALFOOD SRL,5490.00,0.00,not_paid
+14276,FPOS/2025/00037,2025-10-08,CaffeLove/1940,Fattura,SUD ALLESTIMENTI DI CARUSO PASQUALINA,15.00,0.00,not_paid
+14313,FPOS/2025/00038,2025-10-11,CaffeLove/2016,Fattura,studio calabria srl,60.00,0.00,not_paid
+14317,FPOS/2025/00039,2025-10-11,,Fattura,CHARME DI CARUSO MARIA CHIARA,26.00,0.00,not_paid
+14335,FPOS/2025/00040,2025-10-14,CaffeLove/2094,Fattura,STUDIO DENTISTICO ATTANASIO,12.50,0.00,not_paid
+14344,FATUE/2025/00006,2025-10-15,,Fattura,Degusta Box Es,31455.00,31455.00,not_paid
+14345,FATUE/2025/00007,2025-10-15,,Fattura,Degusta Box,34950.00,34950.00,not_paid
+14342,FPOS/2025/00041,2025-10-15,CaffeLove/2106,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,5.60,0.00,not_paid
+14346,FPOS/2025/00042,2025-10-15,CaffeLove/2128,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,33.72,0.00,not_paid
+14348,FPOS/2025/00043,2025-10-15,CaffeLove/2134,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,15.00,0.00,not_paid
+14474,FAT/2025/00052,2025-10-23,,Fattura,Bensi Restaurant llc,7.90,7.90,not_paid
+14491,FAT/2025/00053,2025-10-23,,Fattura,Valentino Fine Foods,0.00,0.00,not_paid
+14494,FAT/2025/00054,2025-10-23,,Fattura,1649338 ONTARIO INC.,0.00,0.00,not_paid
+14495,FAT/2025/00055,2025-10-23,,Fattura,Degusta Box,0.00,0.00,not_paid
+14496,FAT/2025/00056,2025-10-23,,Fattura,ACI EXPRESS SRL COUPANG,0.00,0.00,not_paid
+14559,FAT/2025/00057,2025-10-23,,Fattura,Tommaso Ferazzoli,11.26,11.26,not_paid
+14560,FAT/2025/00058,2025-10-23,,Fattura,Elena Fiorini,34.10,34.10,not_paid
+14573,FAT/2025/00059,2025-10-23,,Fattura,LORE' SRL-,0.00,0.00,not_paid
+14574,FAT/2025/00060,2025-10-23,#2407,Fattura,Pamela Bedinelli,15.58,15.58,not_paid
+14577,FAT/2025/00061,2025-10-23,#2408,Fattura,Simone zavaglia,15.58,15.58,not_paid
+14631,FAT/2025/00062,2025-10-23,,Fattura,DOUCEFRANCE,30.10,30.10,not_paid
+14632,FAT/2025/00063,2025-10-23,,Fattura,ITALIAN PRODUCTS,6.00,6.00,not_paid
+15077,FAT/2025/00064,2025-10-23,,Fattura,Italiana Bakery srls,7492.48,4492.48,not_paid
+15084,FAT/2025/00065,2025-10-23,,Fattura,PERSEPOLI SRL,8800.00,3800.00,not_paid
+15405,FAT/2025/00066,2025-10-23,,Fattura,PANGEA S.R.L.,3373.39,0.00,not_paid
+15079,FATUE/2025/00009,2025-10-23,,Fattura,Degusta Box De,27960.00,27960.00,not_paid
+15083,FATUE/2025/00010,2025-10-23,,Fattura,Degusta Box UK,12582.00,12582.00,not_paid
+15085,FATUE/2025/00011,2025-10-23,,Fattura,Healthy Branding SL.,7689.00,7689.00,not_paid
+15081,FPOS/2025/00044,2025-10-23,,Fattura,CHARME DI CARUSO MARIA CHIARA,26.00,7.96,not_paid
+15082,FPOS/2025/00045,2025-10-23,,Fattura,AUTODEMOLIZIONE GUALTIERI S.R.L.,29.50,0.00,not_paid
+15407,FPOS/2025/00046,2025-10-23,CaffeLove/2344,Fattura,LUAR COSTRUZIONI SRL 10,54.30,0.00,not_paid
+15483,FPOS/2025/00047,2025-10-29,CaffeLove/2501,Fattura,Cimino Angelo,43.00,0.00,not_paid
+15496,FPOS/2025/00048,2025-10-30,CaffeLove/2531,Fattura,STUDIO DENTISTICO ATTANASIO,21.00,0.00,not_paid
+15517,FPOS/2025/00049,2025-10-31,CaffeLove/2583,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,11.40,0.00,not_paid
+15539,FATUE/2025/00012,2025-11-03,,Fattura,Maison Ramel,360.00,360.00,not_paid
+15573,FAT/2025/00068,2025-11-05,,Fattura,ANTICA PASTICCERIA ARTIGIANALE SRL,5490.00,0.00,not_paid
+15565,FPOS/2025/00050,2025-11-05,CaffeLove/2671,Fattura,giancarlo cuiuli Sportissimo,54.00,0.00,not_paid
+15569,FPOS/2025/00051,2025-11-05,CaffeLove/2676,Fattura,Mercuri Luciano,7.90,0.00,not_paid
+15571,FPOS/2025/00052,2025-11-05,CaffeLove/2679,Fattura,CHARME DI CARUSO MARIA CHIARA,36.00,0.00,not_paid
+15574,FPOS/2025/00053,2025-11-05,CaffeLove/2687,Fattura,Costabile Allestimenti srls,26.00,0.00,not_paid
+15696,FAT/2025/00069,2025-11-10,,Fattura,LORE' SRL-,187.75,187.75,not_paid
+15827,FAT/2025/00070,2025-11-18,,Fattura,LORE' SRL-,797.93,797.93,not_paid
+15828,FAT/2025/00071,2025-11-18,,Fattura,Giulio De Ambrosis Vigna,0.00,0.00,not_paid
+15854,FPOS/2025/00054,2025-11-20,CaffeLove/2761,Fattura,STUDIO DENTISTICO ATTANASIO,21.00,0.00,not_paid
+15870,FPOS/2025/00055,2025-11-22,CaffeLove/2790,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,51.51,0.00,not_paid
+15970,FAT/2025/00072,2025-11-25,,Fattura,Ala Srl,0.00,0.00,not_paid
+15972,FATEX/2025/00034,2025-11-25,,Fattura,1649338 ONTARIO INC,0.00,0.00,not_paid
+15971,FATUE/2025/00013,2025-11-25,,Fattura,FTM NUTRI SERVICES,0.00,0.00,not_paid
+15973,FATUE/2025/00014,2025-11-25,,Fattura,CAMERA DI COMMERCIO ITALO-ELLENICA DI ATENE,0.00,0.00,not_paid
+15985,FATUE/2025/00015,2025-11-26,,Fattura,UP CIPTRONIC SRL,7321.88,0.03,not_paid
+15984,FPOS/2025/00056,2025-11-26,,Fattura,CHARME DI CARUSO MARIA CHIARA,82.00,0.00,not_paid
+15986,FPOS/2025/00057,2025-11-26,,Fattura,Arpaia spa,265.99,265.99,not_paid
+15987,FPOS/2025/00058,2025-11-26,,Fattura,AUTODEMOLIZIONE GUALTIERI S.R.L.,25.00,25.00,not_paid
+15988,FPOS/2025/00059,2025-11-26,,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,40.00,40.00,not_paid
+15989,FPOS/2025/00060,2025-11-26,,Fattura,G. Management,44.00,44.00,not_paid
+15990,FPOS/2025/00061,2025-11-26,,Fattura,Flyservice srl,63.00,63.00,not_paid
+15996,FATUE/2025/00016,2025-11-27,,Fattura,FTM NUTRI SERVICES,8756.05,0.00,not_paid
+15994,FPOS/2025/00062,2025-11-27,,Fattura,Adone srls,79.90,79.90,not_paid
+15995,FPOS/2025/00063,2025-11-28,,Fattura,CHARME DI CARUSO MARIA CHIARA,26.00,0.00,not_paid
+16027,FPOS/2025/00064,2025-12-05,,Fattura,Arpaia spa,60.00,60.00,not_paid
+16041,FPOS/2025/00065,2025-12-06,,Fattura,CHARME DI CARUSO MARIA CHIARA,46.00,0.00,not_paid
+16078,FAT/2025/00073,2025-12-07,,Fattura,Italiana Bakery srls,2509.34,2509.34,not_paid
+16079,FAT/2025/00074,2025-12-07,,Fattura,Panificio cardace Snc,4290.52,4290.52,not_paid
+16112,FAT/2025/00075,2025-12-07,,Fattura,APICULTURA VANGELISTI S.R.L.,0.00,0.00,not_paid
+16117,FAT/2025/00076,2025-12-07,,Fattura,APICULTURA VANGELISTI S.R.L.,0.00,0.00,not_paid
+16135,FAT/2025/00077,2025-12-07,,Fattura,ACI EXPRESS SRL COUPANG,28.51,28.51,not_paid
+16311,FAT/2025/00078,2025-12-07,,Fattura,Degusta Box,33552.00,33552.00,not_paid
+16315,FAT/2025/00079,2025-12-07,,Fattura,PANGEA S.R.L.,1984.08,0.00,not_paid
+16077,FATEX/2025/00035,2025-12-07,,Fattura,Degusta Box UK,8807.40,8807.40,not_paid
+16310,FATEX/2025/00036,2025-12-07,,Fattura,Re Italo ltd,87992.56,67182.94,not_paid
+16313,FATEX/2025/00037,2025-12-07,,Fattura,Martelli Foods INC,10277.98,10277.98,not_paid
+16316,FATEX/2025/00038,2025-12-07,,Fattura,Bensi Restaurant llc,812.96,812.96,not_paid
+16318,FATEX/2025/00039,2025-12-07,,Fattura,Bensi Restaurant llc,434.00,434.00,not_paid
+16312,FATUE/2025/00017,2025-12-07,,Fattura,Degusta Box FR,33552.00,33552.00,not_paid
+16314,FATUE/2025/00018,2025-12-07,,Fattura,Würth Biokäse & Feinkost GmbH,6796.80,0.00,not_paid
+16333,FPOS/2025/00066,2025-12-08,CaffeLove/3101,Fattura,Farmacia Vallefiorita sas di A&F F Pharma sas del Dr Francesco LUCIA &c.,32.20,0.00,not_paid
+16364,FPOS/2025/00067,2025-12-10,CaffeLove/3132,Fattura,PROFESSIONAL DANNI SRL,70.20,0.00,not_paid
+16366,FPOS/2025/00068,2025-12-10,CaffeLove/3133,Fattura,LUAR COSTRUZIONI SRL 10,42.58,42.58,not_paid
+16398,FPOS/2025/00069,2025-12-10,CaffeLove/3147,Fattura,CHARME DI CARUSO MARIA CHIARA,15.12,0.00,not_paid
+16426,FAT/2025/00081,2025-12-11,,Fattura,Liquorificio Pirozzi srl,5490.00,5490.00,not_paid
+16424,FPOS/2025/00070,2025-12-11,CaffeLove/3173,Fattura,STUDIO DENTISTICO ATTANASIO,25.00,0.00,not_paid
+16472,FAT/2025/00082,2025-12-12,,Fattura,Effeci Grafica di Caparello Fortunato,549.00,549.00,not_paid
+16473,FAT/2025/00083,2025-12-12,,Fattura,PANIFICIO PANCOTTO di Pettinato Serafino,407.56,407.56,not_paid
+16474,FAT/2025/00084,2025-12-12,,Fattura, NETO FERDINANDO,299.20,299.20,not_paid
+16489,FATEX/2025/00040,2025-12-13,,Fattura,Cioffis Meat Market & Deli,12403.24,12403.24,not_paid
+16867,FPOS/2025/00071,2025-12-17,,Fattura,Cimino Angelo,43.00,43.00,not_paid
+16882,FAT/2025/00085,2025-12-19,,Fattura,PANIFICIO PANCOTTO di Pettinato Serafino,94.80,94.80,not_paid
+16909,FPOS/2025/00072,2025-12-22,,Fattura,CHARME DI CARUSO MARIA CHIARA,31.00,0.00,not_paid
+16960,FAT/2025/00086,2025-12-23,,Fattura,MARANO BONAVENTURA,9788.74,4348.86,not_paid
+17002,FPOS/2025/00073,2025-12-27,CaffeLove/3604,Fattura,Cimino Angelo,13.00,0.00,not_paid
+17081,FPOS/2025/00074,2025-12-29,CaffeLove/3627,Fattura,Flyservice srl,60.00,0.00,not_paid
+17100,FPOS/2025/00075,2025-12-30,CaffeLove/3683,Fattura,CHARME DI CARUSO MARIA CHIARA,31.00,0.00,not_paid
+17260,FATUE/2025/00019,2025-12-31,,Fattura,Pura Finura Espacio Gourmet,103.60,103.60,not_paid
+17261,FATUE/2025/00020,2025-12-31,,Fattura,RIVA SAS,161.76,161.76,not_paid
+17213,FPOS/2026/00001,2026-01-07,CaffeLove/3840,Fattura,Cimino Angelo,13.50,0.00,not_paid
+17225,FPOS/2026/00002,2026-01-08,CaffeLove/3861,Fattura,giancarlo cuiuli Sportissimo,47.00,0.00,not_paid
+17262,FPOS/2026/00003,2026-01-08,CaffeLove/3866,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,27.00,0.00,not_paid
+17275,FAT/2026/00001,2026-01-09,,Fattura,Voltem d.o.o,2654.40,0.00,not_paid
+17294,FPOS/2026/00004,2026-01-10,CaffeLove/3923,Fattura,CHARME DI CARUSO MARIA CHIARA,46.00,0.00,not_paid
+17303,FAT/2026/00002,2026-01-11,,Fattura,ICHOOSEITALIA S.R.L.,5490.00,5490.00,not_paid
+17380,FATEX/2026/00001,2026-01-12,,Fattura,Cioffis Meat Market & Deli,8384.37,8384.37,not_paid
+17322,FPOS/2026/00005,2026-01-13,CaffeLove/3984,Fattura,Cimino Angelo,47.99,0.00,not_paid
+17329,FPOS/2026/00006,2026-01-14,CaffeLove/4008,Fattura,STUDIO DENTISTICO ATTANASIO,25.00,0.00,not_paid
+17352,FPOS/2026/00007,2026-01-15,CaffeLove/4037,Fattura,Roda srl,14.00,0.00,not_paid
+17366,FPOS/2026/00008,2026-01-17,,Fattura,Arpaia spa,274.01,274.01,not_paid
+17381,FPOS/2026/00009,2026-01-19,CaffeLove/4100,Fattura,clear planet Srl ,22.00,0.00,not_paid
+17410,FPOS/2026/00010,2026-01-21,CaffeLove/4145,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,16.50,0.00,not_paid
+17412,FPOS/2026/00011,2026-01-21,CaffeLove/4146,Fattura,SUD ALLESTIMENTI DI CARUSO PASQUALINA,15.00,0.00,not_paid
+17429,FPOS/2026/00012,2026-01-22,CaffeLove/4159,Fattura,Risto Project srls,62.20,0.00,not_paid
+17431,FPOS/2026/00013,2026-01-22,CaffeLove/4184,Fattura,Avv. Alessandro Cortese,24.00,24.00,not_paid
+17447,FPOS/2026/00014,2026-01-23,CaffeLove/4220,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,23.99,0.00,not_paid
+17459,FPOS/2026/00015,2026-01-24,CaffeLove/4229,Fattura,CHARME DI CARUSO MARIA CHIARA,41.00,0.00,not_paid
+17461,FPOS/2026/00016,2026-01-24,CaffeLove/4249,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,47.80,0.00,not_paid
+17512,FATEX/2026/00002,2026-01-29,,Fattura,"Conca D'oro Importers, LLC.",2194.92,2194.92,not_paid
+17521,FAT/2026/00003,2026-02-01,,Fattura,GE.FI. S.P.A. - GESTIONE FIERE,361.15,0.00,not_paid
+17543,FPOS/2026/00017,2026-02-02,CaffeLove/4407,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,15.00,0.00,not_paid
+17761,FAT/2026/00005,2026-02-03,,Fattura, NETO FERDINANDO,129.80,0.00,not_paid
+17563,FPOS/2026/00018,2026-02-04,CaffeLove/4450,Fattura,STUDIO DENTISTICO ATTANASIO,25.00,0.00,not_paid
+17651,FATUE/2026/00001,2026-02-10,,Fattura,RIVA SAS,134.30,134.30,not_paid
+17652,FATUE/2026/00002,2026-02-10,,Fattura,SOLE DEL SUC- ANDREA VULCANO,101.96,101.96,not_paid
+17690,FPOS/2026/00019,2026-02-14,CaffeLove/4641,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,17.99,0.00,not_paid
+17701,FAT/2026/00004,2026-02-18,,Fattura,EUROPA COMMERCIALE SRL,10902.53,10902.53,not_paid
+17705,FPOS/2026/00020,2026-02-19,CaffeLove/4735,Fattura,PROFESSIONAL DANNI SRL,53.70,0.00,not_paid
+17716,FATEX/2026/00003,2026-02-20,,Fattura,Jusami Import,9461.76,9461.76,not_paid
+17714,FPOS/2026/00021,2026-02-20,CaffeLove/4754,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,25.00,0.00,not_paid
+17720,FPOS/2026/00022,2026-02-21,CaffeLove/4771,Fattura,CHARME DI CARUSO MARIA CHIARA,41.00,0.00,not_paid
+17722,FPOS/2026/00023,2026-02-21,CaffeLove/4772,Fattura,CHARME DI CARUSO MARIA CHIARA,26.00,0.00,not_paid
+17747,FPOS/2026/00024,2026-02-23,CaffeLove/4814,Fattura,Cimino Angelo,23.00,0.00,not_paid
+17749,FPOS/2026/00025,2026-02-23,CaffeLove/4819,Fattura,STUDIO DENTISTICO ATTANASIO,5.00,0.00,not_paid
+17759,FPOS/2026/00026,2026-02-24,CaffeLove/4839,Fattura,Arpaia spa,157.00,0.00,not_paid
+17794,FPOS/2026/00027,2026-02-26,CaffeLove/4932,Fattura,Security 4K di Mazza Marco Antonio,20.70,0.00,not_paid
+17807,FAT/2026/00006,2026-02-27,,Fattura,Mercato Eccellenze Italiane S.r.l.,0.00,0.00,not_paid
+17805,FPOS/2026/00028,2026-02-27,CaffeLove/4942,Fattura,STUDIO DENTISTICO ATTANASIO,5.00,0.00,not_paid
+17841,FPOS/2026/00029,2026-03-03,CaffeLove/5054,Fattura,STUDIO DENTISTICO ATTANASIO,23.00,0.00,not_paid
+17866,FATUE/2026/00003,2026-03-04,,Fattura,UP CIPTRONIC SRL,5939.89,0.00,not_paid
+17864,FPOS/2026/00030,2026-03-04,CaffeLove/5107,Fattura,CHARME DI CARUSO MARIA CHIARA,18.04,0.00,not_paid
+17881,FPOS/2026/00031,2026-03-05,CaffeLove/5148,Fattura,giancarlo cuiuli Sportissimo,48.20,0.00,not_paid
+17954,FAT/2026/00007,2026-03-11,,Fattura,CasaFolino Srl Societa' Benefit,397.00,397.00,not_paid
+17956,FPOS/2026/00032,2026-03-11,CaffeLove/5309,Fattura,Risto Project srls,37.20,0.00,not_paid
+17958,FPOS/2026/00033,2026-03-11,CaffeLove/5310,Fattura,CHARME DI CARUSO MARIA CHIARA,32.20,0.00,not_paid
+17960,FPOS/2026/00034,2026-03-11,CaffeLove/5319,Fattura,Risto Project srls,25.00,0.00,not_paid
+17955,RFAT/2026/00001,2026-03-11,"Storno di: FAT/2025/00086, errata fatturazione",Nota Credito,MARANO BONAVENTURA,1439.88,0.00,not_paid
+17979,FPOS/2026/00035,2026-03-12,CaffeLove/5324,Fattura,AUTODEMOLIZIONE GUALTIERI S.R.L.,22.00,0.00,not_paid
+17981,FPOS/2026/00036,2026-03-12,CaffeLove/5325,Fattura,AUTODEMOLIZIONE GUALTIERI S.R.L.,15.00,0.00,not_paid
+18044,FAT/2026/00008,2026-03-13,,Fattura,Italiana Bakery srls,132.00,1.32,not_paid
+18045,FPOS/2026/00037,2026-03-13,CaffeLove/5389,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,42.20,0.00,not_paid
+18055,FPOS/2026/00038,2026-03-14,CaffeLove/5403,Fattura,Arpaia spa,105.10,0.00,not_paid
+18070,FATEX/2026/00004,2026-03-16,,Fattura,Scoop Artisan Gelato Ul.,1.00,1.00,not_paid
+18133,FPOS/2026/00039,2026-03-18,CaffeLove/5504,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,10.00,0.00,not_paid
+18143,FAT/2026/00009,2026-03-19,,Fattura,CHARME DI CARUSO MARIA CHIARA,40.20,40.20,not_paid
+18152,FAT/2026/00010,2026-03-20,,Fattura,Giacinto Callipo Conserve Alimentari Srl a socio unico,1251.37,1251.37,not_paid
+18239,FPOS/2026/00040,2026-03-21,CaffeLove/5617,Fattura,show net srl,17.99,0.00,not_paid
+18271,FATEX/2026/00005,2026-03-31,,Fattura,Voltem d.o.o,17021.34,0.00,not_paid
+18270,FATEX/2026/00006,2026-03-31,,Fattura,Voltem d.o.o,9012.60,0.00,not_paid
+18268,FPOS/2026/00041,2026-03-31,CaffeLove/5677,Fattura,SUD ALLESTIMENTI DI CARUSO PASQUALINA,23.05,0.00,not_paid
+18280,FPOS/2026/00042,2026-04-01,CaffeLove/5720,Fattura,Mercuri Luciano,20.00,0.00,not_paid
+18293,FAT/2026/00011,2026-04-02,,Fattura,CasaFolino Srl Societa' Benefit,0.00,0.00,not_paid
+18294,FAT/2026/00012,2026-04-02,,Fattura,CasaFolino Srl Societa' Benefit,0.00,0.00,not_paid
+18291,FPOS/2026/00043,2026-04-02,CaffeLove/5739,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,60.00,0.00,not_paid
+18303,FPOS/2026/00044,2026-04-03,CaffeLove/5765,Fattura,travaglio eugenio,22.00,0.00,not_paid
+18311,FAT/2026/00013,2026-04-04,,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,46.10,46.10,not_paid
+18312,FAT/2026/00014,2026-04-04,,Fattura,STUDIO DENTISTICO ATTANASIO,22.00,22.00,not_paid
+18309,FPOS/2026/00045,2026-04-04,CaffeLove/5818,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,10.00,0.00,not_paid
+18321,FPOS/2026/00046,2026-04-07,CaffeLove/5915,Fattura,show net srl,27.60,0.00,not_paid
+18339,FPOS/2026/00047,2026-04-09,CaffeLove/5960,Fattura,STUDIO DENTISTICO ATTANASIO,22.00,0.00,not_paid
+18352,FAT/2026/00015,2026-04-10,,Fattura,AUTODEMOLIZIONE GUALTIERI S.R.L.,52.00,52.00,not_paid
+18353,FAT/2026/00016,2026-04-10,,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,10.00,10.00,not_paid
+18354,FAT/2026/00017,2026-04-10,,Fattura,CHARME DI CARUSO MARIA CHIARA,50.20,50.20,not_paid
+18355,FAT/2026/00018,2026-04-10,,Fattura,Arpaia spa,124.00,124.00,not_paid
+18373,FPOS/2026/00048,2026-04-13,CaffeLove/6045,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,19.99,0.00,not_paid
+31513,FPOS/2026/00049,2026-04-15,CaffeLove/6114,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,12.50,0.00,not_paid
+31515,FPOS/2026/00050,2026-04-15,CaffeLove/6115,Fattura,CHARME DI CARUSO MARIA CHIARA,23.08,0.00,not_paid
+31522,FPOS/2026/00051,2026-04-16,CaffeLove/6127,Fattura,COSTANZO ASSICURAZIONI 1936 SRL,41.35,0.00,not_paid
+31524,FPOS/2026/00052,2026-04-16,CaffeLove/6148,Fattura,VIRIBUS s.r.l.s.,16.00,0.00,not_paid
+31541,FAT/2026/00019,2026-04-17,,Fattura,Letizia Santucci,15.38,15.38,not_paid
+31538,FPOS/2026/00053,2026-04-17,CaffeLove/6163,Fattura,centro estetico crialesi marinella,30.00,0.00,not_paid
+43113,FPOS/2026/00054,2026-04-20,CaffeLove/6234,Fattura,Flyservice srl,52.00,0.00,not_paid
+43151,FPOS/2026/00055,2026-04-24,CaffeLove/6320,Fattura,CHARME DI CARUSO MARIA CHIARA,23.00,0.00,not_paid
+43199,FPOS/2026/00056,2026-05-02,CaffeLove/6547,Fattura,CHARME DI CARUSO MARIA CHIARA,36.09,0.00,not_paid
+43222,FPOS/2026/00057,2026-05-05,CaffeLove/6591,Fattura,STUDIO DENTISTICO ATTANASIO,22.00,0.00,not_paid
+43239,FPOS/2026/00058,2026-05-06,CaffeLove/6629,Fattura,PAROLE E PENSIERI DI GAMBERALE FERNANDO,22.00,0.00,not_paid
+43248,FATEX/2026/00007,2026-05-07,,Fattura,Riba Smith - Delvi Inc.,16179.12,16179.12,not_paid
+43291,FPOS/2026/00059,2026-05-12,CaffeLove/6791,Fattura,LUAR COSTRUZIONI SRL 10,14.70,0.00,not_paid
+43318,FPOS/2026/00060,2026-05-15,CaffeLove/6867,Fattura,CHARME DI CARUSO MARIA CHIARA,36.00,0.00,not_paid
+43320,FPOS/2026/00061,2026-05-15,CaffeLove/6873,Fattura,ARTE BIANCA DI PUGLIESE SOCIETA' A RESPONSABILITA' LIMITATA SEMPL IFICATA,45.00,0.00,not_paid
