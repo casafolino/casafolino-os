@@ -272,7 +272,9 @@ class CrmLeadCardScanner(models.Model):
         if not fair:
             return False
         Template = self.env['cf.fair.mail.template']
-        languages = [language, LANG_FALLBACK, 'it_IT']
+        languages = [language, LANG_FALLBACK]
+        if language == 'it_IT':
+            languages.append('it_IT')
         for lang in [l for i, l in enumerate(languages) if l and l not in languages[:i]]:
             template = Template.search([
                 ('fair_id', '=', fair.id),
