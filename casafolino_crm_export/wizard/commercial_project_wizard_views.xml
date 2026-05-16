@@ -7,12 +7,13 @@
         <field name="arch" type="xml">
             <form string="Nuovo progetto commerciale">
                 <sheet>
-                    <!-- AI suggestion banner -->
-                    <field name="ai_suggestion" widget="html" nolabel="1"
-                           invisible="not ai_suggestion"
-                           colspan="2"/>
+                    <field name="wizard_step" invisible="1"/>
+                    <field name="step_html" widget="html" nolabel="1"/>
 
-                    <group>
+                    <field name="ai_suggestion" widget="html" nolabel="1"
+                           invisible="not ai_suggestion"/>
+
+                    <group invisible="wizard_step != 'client'">
                         <group string="Cliente">
                             <field name="partner_id"
                                    options="{'no_create_edit': False}"
@@ -27,47 +28,100 @@
                             <field name="country_id"/>
                             <field name="lang"/>
                         </group>
-                        <group string="Owner">
+                        <group string="Responsabilità">
                             <field name="user_id"/>
                             <field name="agent_name"
-                                   placeholder="es. Mario Rossi (Agente esterno)"/>
+                                   placeholder="es. Mario Rossi (agente esterno)"/>
                         </group>
                     </group>
 
-                    <group>
-                        <group string="Origine">
+                    <group invisible="wizard_step != 'origin'">
+                        <group string="Da dove nasce">
                             <field name="origin_type" widget="radio"/>
                             <field name="origin_fair_tag_id"
                                    invisible="origin_type != 'fair'"
                                    required="origin_type == 'fair'"/>
                             <field name="origin_note"
-                                   invisible="origin_type == 'fair'"
-                                   placeholder="es. Email da sito web"/>
+                                   placeholder="es. Mail da sito, buyer program, referral"/>
                         </group>
-                        <group string="Brief commerciale">
+                        <group string="Contesto">
+                            <div class="alert alert-info" role="status" colspan="2">
+                                L'origine serve per capire il follow-up giusto:
+                                fiera, mail, agente, web o riordino non hanno la
+                                stessa urgenza.
+                            </div>
+                        </group>
+                    </group>
+
+                    <group invisible="wizard_step != 'brief'">
+                        <group string="Identità dossier">
+                            <field name="project_name"
+                                   placeholder="es. Costco Canada — Miele acacia 2026"/>
+                            <field name="project_type"/>
                             <field name="product_category"/>
-                            <field name="volume_target"
-                                   placeholder="es. 12.000 pz/anno"/>
-                            <field name="margin_target"/>
                             <field name="priority" widget="radio"
                                    options="{'horizontal': true}"/>
+                            <field name="target_date"/>
+                        </group>
+                        <group string="Valore commerciale">
+                            <field name="value_estimate"/>
+                            <label for="volume_qty" string="Volume target"/>
+                            <div class="o_row">
+                                <field name="volume_qty" nolabel="1"
+                                       class="oe_inline"/>
+                                <field name="volume_unit" nolabel="1"
+                                       class="oe_inline"/>
+                            </div>
+                            <field name="volume_target"
+                                   placeholder="nota libera se non è numerico"/>
+                            <field name="margin_target"/>
+                            <field name="certification_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
                         </group>
                     </group>
 
-                    <group string="Prossima azione (facoltativa)">
-                        <field name="next_action"
-                               placeholder="es. Mandare offerta tagliata"/>
-                        <field name="next_action_date"/>
+                    <group invisible="wizard_step != 'plan'">
+                        <group string="Condizioni">
+                            <field name="incoterms"/>
+                            <field name="payment_term"/>
+                            <field name="moq"/>
+                            <field name="lead_time"/>
+                            <field name="shelf_life"/>
+                        </group>
+                        <group string="Piano operativo">
+                            <field name="next_action"
+                                   placeholder="es. Mandare offerta tagliata"/>
+                            <field name="next_action_date"/>
+                            <field name="create_lead"/>
+                            <field name="lead_name"
+                                   invisible="not create_lead"/>
+                            <field name="expected_revenue"
+                                   invisible="not create_lead"/>
+                        </group>
                     </group>
 
-                    <group string="Anteprima card">
-                        <field name="preview_html" widget="html"
-                               nolabel="1" colspan="2"/>
+                    <group invisible="wizard_step != 'confirm'">
+                        <group string="Anteprima">
+                            <field name="preview_html" widget="html"
+                                   nolabel="1" colspan="2"/>
+                        </group>
+                        <group string="Note interne">
+                            <field name="internal_notes" nolabel="1"
+                                   placeholder="Vincoli, promesse fatte, prodotti richiesti, prossimi dubbi..."/>
+                        </group>
                     </group>
                 </sheet>
                 <footer>
+                    <button name="action_prev_step" type="object"
+                            string="Indietro" class="btn-secondary"
+                            invisible="wizard_step == 'client'"/>
+                    <button name="action_next_step" type="object"
+                            string="Avanti" class="btn-primary"
+                            invisible="wizard_step == 'confirm'"/>
                     <button name="action_create_project" type="object"
-                            string="Crea progetto" class="btn-primary"/>
+                            string="Crea dossier" class="btn-primary"
+                            invisible="wizard_step != 'confirm'"/>
                     <button special="cancel" string="Annulla"
                             class="btn-secondary"/>
                 </footer>
