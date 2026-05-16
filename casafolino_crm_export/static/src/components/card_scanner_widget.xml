@@ -11,8 +11,20 @@
                     <div class="cf-scanner-logo">
                         <i class="fa fa-camera fa-3x"/>
                     </div>
-                    <h2>TUTTOFOOD Milano 2026</h2>
+                    <h2><t t-esc="state.fairName || 'Card Scanner Fiere'"/></h2>
                     <p class="text-muted">Scansiona un biglietto da visita per creare un lead e inviare il follow-up</p>
+                    <div class="cf-scanner-fair-select mb-3">
+                        <label class="form-label">Fiera</label>
+                        <select class="form-select form-select-lg" t-on-change="onFairChange">
+                            <option value="">Seleziona fiera</option>
+                            <t t-foreach="state.fairs" t-as="fair" t-key="fair.id">
+                                <option t-att-value="fair.id" t-att-selected="state.fairId === fair.id">
+                                    <t t-esc="fair.name"/>
+                                    <t t-if="fair.template_count"> · <t t-esc="fair.template_count"/> template</t>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
                     <button class="btn btn-primary btn-lg cf-scanner-btn" t-on-click="onCaptureClick">
                         <i class="fa fa-camera me-2"/>Nuovo lead da biglietto
                     </button>
@@ -34,6 +46,12 @@
                     <i class="fa fa-exclamation-triangle me-1"/>
                     <t t-esc="state.error"/>
                     <span> — compila manualmente i campi sotto.</span>
+                </div>
+
+                <div class="alert alert-info mb-3" role="status">
+                    <i class="fa fa-calendar me-1"/>
+                    <span>Fiera selezionata: </span>
+                    <strong><t t-esc="state.fairName || '-'"/></strong>
                 </div>
 
                 <div class="cf-scanner-preview-layout">
@@ -120,6 +138,8 @@
                                     <option value="it_IT" t-att-selected="state.language === 'it_IT'">Italiano</option>
                                     <option value="en_US" t-att-selected="state.language === 'en_US'">English</option>
                                     <option value="fr_FR" t-att-selected="state.language === 'fr_FR'">Français</option>
+                                    <option value="es_ES" t-att-selected="state.language === 'es_ES'">Español</option>
+                                    <option value="de_DE" t-att-selected="state.language === 'de_DE'">Deutsch</option>
                                 </select>
                             </div>
                         </div>

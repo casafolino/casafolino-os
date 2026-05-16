@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_cf_fair_mail_template_folder" model="ir.actions.act_window">
+        <field name="name">Cartelle Template Mail</field>
+        <field name="res_model">cf.fair.mail.template.folder</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_cf_fair_mail_template" model="ir.actions.act_window">
+        <field name="name">Template Mail Fiera</field>
+        <field name="res_model">cf.fair.mail.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_auto_send_on_card_scan': True}</field>
+    </record>
+
+    <record id="cf_fair_mail_template_folder_view_list" model="ir.ui.view">
+        <field name="name">cf.fair.mail.template.folder.list</field>
+        <field name="model">cf.fair.mail.template.folder</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="cf_fair_mail_template_folder_view_form" model="ir.ui.view">
+        <field name="name">cf.fair.mail.template.folder.form</field>
+        <field name="model">cf.fair.mail.template.folder</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="sequence"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="cf_fair_mail_template_view_list" model="ir.ui.view">
+        <field name="name">cf.fair.mail.template.list</field>
+        <field name="model">cf.fair.mail.template</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="folder_id"/>
+                <field name="fair_id"/>
+                <field name="language"/>
+                <field name="auto_send_on_card_scan" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="last_generated_translation"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="cf_fair_mail_template_view_form" model="ir.ui.view">
+        <field name="name">cf.fair.mail.template.form</field>
+        <field name="model">cf.fair.mail.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate_translations" type="object"
+                            string="Genera traduzioni" class="btn-primary"
+                            invisible="language != 'it_IT'"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nome template"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="folder_id"/>
+                            <field name="fair_id"/>
+                            <field name="language"/>
+                            <field name="translated_from_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="auto_send_on_card_scan"/>
+                            <field name="active"/>
+                            <field name="last_generated_translation" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="subject"/>
+                    </group>
+                    <notebook>
+                        <page string="Corpo Email" name="body">
+                            <field name="body_html" nolabel="1" widget="html"/>
+                        </page>
+                        <page string="Allegati" name="attachments">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Note" name="notes">
+                            <field name="notes" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="cf_fair_mail_template_view_search" model="ir.ui.view">
+        <field name="name">cf.fair.mail.template.search</field>
+        <field name="model">cf.fair.mail.template</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="fair_id"/>
+                <field name="folder_id"/>
+                <filter string="Invio automatico" name="auto_send" domain="[('auto_send_on_card_scan','=',True)]"/>
+                <filter string="Attivi" name="active_templates" domain="[('active','=',True)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Cartella" name="group_folder" context="{'group_by': 'folder_id'}"/>
+                    <filter string="Fiera" name="group_fair" context="{'group_by': 'fair_id'}"/>
+                    <filter string="Lingua" name="group_language" context="{'group_by': 'language'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

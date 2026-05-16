@@ -23,7 +23,16 @@ class CfExportFair(models.Model):
     budget = fields.Float(string='Budget €')
     notes = fields.Text(string='Note')
     lead_ids = fields.One2many('crm.lead', 'cf_fair_id', string='Trattative')
+    mail_template_ids = fields.One2many(
+        'cf.fair.mail.template',
+        'fair_id',
+        string='Template Mail',
+    )
     lead_count = fields.Integer(string='N. Trattative', compute='_compute_lead_count')
+    mail_template_count = fields.Integer(
+        string='N. Template',
+        compute='_compute_mail_template_count',
+    )
     revenue_generated = fields.Float(string='Ricavi Generati', compute='_compute_roi')
     roi = fields.Float(string='ROI %', compute='_compute_roi')
 
@@ -31,6 +40,11 @@ class CfExportFair(models.Model):
     def _compute_lead_count(self):
         for rec in self:
             rec.lead_count = len(rec.lead_ids)
+
+    @api.depends('mail_template_ids')
+    def _compute_mail_template_count(self):
+        for rec in self:
+            rec.mail_template_count = len(rec.mail_template_ids)
 
     @api.depends('lead_ids.expected_revenue', 'budget')
     def _compute_roi(self):
@@ -48,4 +62,18 @@ class CfExportFair(models.Model):
             'view_mode': 'kanban,list,form',
             'domain': [('cf_fair_id', '=', self.id)],
             'context': {'default_cf_fair_id': self.id},
+        }
+
+    def action_view_mail_templates(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Template Mail Fiera',
+            'res_model': 'cf.fair.mail.template',
+            'view_mode': 'list,form',
+            'domain': [('fair_id', '=', self.id)],
+            'context': {
+                'default_fair_id': self.id,
+                'default_auto_send_on_card_scan': True,
+            },
         }
