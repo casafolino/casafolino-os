@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Scrivania CasaFolino",
-    "version": "18.0.2.1.0",
+    "version": "18.0.2.2.0",
     "category": "Productivity",
     "summary": "Scrivania CasaFolino — cockpit aziendale con CRM, Produzione, HACCP e Tesoreria",
     "author": "CasaFolino Srls",

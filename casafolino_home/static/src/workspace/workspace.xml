@@ -4,15 +4,51 @@
 <t t-name="casafolino_home.CFWorkspace">
     <div class="cf-scrivania">
 
-        <div class="cf-cockpit-header">
-            <div>
-                <p class="cf-cockpit-kicker">CasaFolino</p>
-                <h1 class="cf-cockpit-title">Scrivania</h1>
+        <div class="cf-ws-top">
+            <div class="cf-ws-logo">CF</div>
+            <div class="cf-ws-title">
+                <strong>Scrivania</strong>
+                <nav class="cf-ws-nav">
+                    <t t-foreach="quickLinks" t-as="link" t-key="link.id">
+                        <button t-on-click="() => link.action()"
+                                t-attf-class="{{ link.id === 'home' ? 'active' : '' }}">
+                            <t t-out="link.label"/>
+                        </button>
+                    </t>
+                </nav>
+            </div>
+            <div class="cf-ws-search">
+                <i class="fa fa-search"/>
+                <span>Cerca cliente, dossier, pipeline...</span>
             </div>
             <button t-on-click="onRefresh" class="cf-cockpit-refresh" title="Aggiorna">
                 <i class="fa fa-refresh"/>
             </button>
         </div>
+
+        <section class="cf-ws-hero">
+            <div class="cf-ws-hello">
+                <div class="cf-ws-avatar">AF</div>
+                <div>
+                    <h1>Scrivania commerciale</h1>
+                    <p>
+                        <t t-out="formatKpi(state.kpi.crm.progetti_attivi)"/> dossier attivi ·
+                        <t t-out="formatKpi(state.kpi.crm.lead_aperti)"/> lead aperti ·
+                        accesso rapido a pipeline, fiere, campionature e biglietti scansionati
+                    </p>
+                </div>
+            </div>
+            <div class="cf-ws-pulse">
+                <div class="cf-ws-progress">
+                    <span><span t-attf-style="width: #{dailyProgress}%"/></span>
+                    <small><t t-out="dailyProgress"/>% lavoro commerciale presidiato</small>
+                </div>
+                <div class="cf-ws-tip">
+                    <i class="fa fa-bullseye"/>
+                    <span>Parti dai lead caldi, crea il dossier quando il progetto prende forma, poi governa attività, preventivi e campionature dalla Vista 360.</span>
+                </div>
+            </div>
+        </section>
 
         <div class="cf-cockpit-overview">
             <t t-foreach="cockpitCards" t-as="card" t-key="card.id">
@@ -38,24 +74,21 @@
                 <i class="fa fa-bullseye"/>
                 <span class="cf-qa-label">Nuovo Lead</span>
             </button>
-            <button t-on-click="onOpenPosizionatore" class="cf-qa">
-                <i class="fa fa-envelope-open"/>
-                <span class="cf-qa-label">Posizionatore</span>
-                <t t-if="state.kpi.crm.mail_pending">
-                    <span class="cf-qa-counter" t-out="state.kpi.crm.mail_pending"/>
-                </t>
-            </button>
-            <button t-on-click="onNewLot" class="cf-qa">
-                <i class="fa fa-barcode"/>
-                <span class="cf-qa-label">Nuovo Lotto</span>
-            </button>
-            <button t-on-click="onNewInvoice" class="cf-qa">
+            <button t-on-click="onNewQuotation" class="cf-qa">
                 <i class="fa fa-file-text-o"/>
-                <span class="cf-qa-label">Nuova Fattura</span>
+                <span class="cf-qa-label">Nuovo Preventivo</span>
             </button>
-            <button t-on-click="onOpenCalendario" class="cf-qa">
-                <i class="fa fa-calendar"/>
-                <span class="cf-qa-label">Calendario</span>
+            <button t-on-click="onOpenPipeline" class="cf-qa">
+                <i class="fa fa-tasks"/>
+                <span class="cf-qa-label">Pipeline</span>
+            </button>
+            <button t-on-click="onOpenFairs" class="cf-qa">
+                <i class="fa fa-globe"/>
+                <span class="cf-qa-label">Fiere</span>
+            </button>
+            <button t-on-click="onOpenSamples" class="cf-qa">
+                <i class="fa fa-flask"/>
+                <span class="cf-qa-label">Campionature</span>
             </button>
         </div>
 
@@ -87,16 +120,16 @@
         <t t-if="activeCluster === 'crm'">
             <div class="cf-kpi-strip">
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label">Mail da smistare</span>
-                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.mail_pending)"/>
+                    <span class="cf-kpi-label">Dossier attivi</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.progetti_attivi)"/>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Lead aperti</span>
                     <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.lead_aperti)"/>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label">Progetti attivi</span>
-                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.progetti_attivi)"/>
+                    <span class="cf-kpi-label">Pipeline</span>
+                    <span class="cf-kpi-value" t-out="formatKpi(state.kpi.crm.lead_aperti)"/>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">SLA scadenza</span>
@@ -123,16 +156,9 @@
                     <i class="fa fa-user-plus"/>
                     <span class="cf-qa-label">Nuovo Contatto</span>
                 </button>
-                <button t-on-click="onOpenPosizionatore" class="cf-qa">
-                    <i class="fa fa-envelope-open"/>
-                    <span class="cf-qa-label">Posizionatore</span>
-                    <t t-if="state.kpi.crm.mail_pending">
-                        <span class="cf-qa-counter" t-out="state.kpi.crm.mail_pending"/>
-                    </t>
-                </button>
-                <button t-on-click="onOpenMiaCasella" class="cf-qa">
-                    <i class="fa fa-inbox"/>
-                    <span class="cf-qa-label">Mia Casella</span>
+                <button t-on-click="onNewQuotation" class="cf-qa">
+                    <i class="fa fa-file-text-o"/>
+                    <span class="cf-qa-label">Nuovo Preventivo</span>
                 </button>
             </div>
 
@@ -152,6 +178,21 @@
                     <i class="fa fa-clipboard cf-section-icon" style="color: #173404;"/>
                     <p class="cf-section-title">Lavagna</p>
                     <p class="cf-section-subtitle">Iniziative trasversali</p>
+                </div>
+                <div t-on-click="onOpenFairs" class="cf-section-card">
+                    <i class="fa fa-globe cf-section-icon" style="color: #633806;"/>
+                    <p class="cf-section-title">Fiere</p>
+                    <p class="cf-section-subtitle">Eventi e follow-up</p>
+                </div>
+                <div t-on-click="onOpenSamples" class="cf-section-card">
+                    <i class="fa fa-flask cf-section-icon" style="color: #3F8A4F;"/>
+                    <p class="cf-section-title">Campionature</p>
+                    <p class="cf-section-subtitle">Invii, esiti, richiami</p>
+                </div>
+                <div t-on-click="onOpenCardScanner" class="cf-section-card">
+                    <i class="fa fa-id-card-o cf-section-icon" style="color: #534AB7;"/>
+                    <p class="cf-section-title">Biglietti scansionati</p>
+                    <p class="cf-section-subtitle">Da biglietto a lead</p>
                 </div>
                 <div t-on-click="onOpenAnalytics" class="cf-section-card">
                     <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
@@ -193,11 +234,6 @@
 
             <p class="cf-section-label">Crea / Apri</p>
             <div class="cf-quick-actions">
-                <button t-on-click="onNewLot" class="cf-qa cf-qa-primary-produzione">
-                    <i class="fa fa-barcode"/>
-                    <span class="cf-qa-label">Nuovo Lotto</span>
-                    <span class="cf-qa-hint">tracciabilità</span>
-                </button>
                 <button t-on-click="onNewProduction" class="cf-qa">
                     <i class="fa fa-industry"/>
                     <span class="cf-qa-label">Nuova Produzione</span>
@@ -329,10 +365,10 @@
 
             <p class="cf-section-label">Crea / Apri</p>
             <div class="cf-quick-actions">
-                <button t-on-click="onNewInvoice" class="cf-qa cf-qa-primary-tesoreria">
+                <button t-on-click="onNewQuotation" class="cf-qa cf-qa-primary-tesoreria">
                     <i class="fa fa-file-text-o"/>
-                    <span class="cf-qa-label">Nuova Fattura</span>
-                    <span class="cf-qa-hint">fatturazione attiva</span>
+                    <span class="cf-qa-label">Nuovo Preventivo</span>
+                    <span class="cf-qa-hint">offerta commerciale</span>
                 </button>
                 <button t-on-click="onNewBankMove" class="cf-qa">
                     <i class="fa fa-university"/>

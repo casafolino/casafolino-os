@@ -1,9 +1,182 @@
 .cf-scrivania {
-    padding: 24px 32px;
-    max-width: 1280px;
+    padding: 0 32px 48px;
+    max-width: 1320px;
     margin: 0 auto;
     background: var(--color-background-tertiary, #FBFAF6);
     min-height: 100vh;
+}
+
+.cf-ws-top {
+    align-items: center;
+    background: #6B4A1E;
+    border-radius: 0 0 14px 14px;
+    color: #F5E6C8;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: auto minmax(0, 1fr) minmax(240px, 420px) auto;
+    min-height: 58px;
+    margin: 0 -8px 22px;
+    padding: 10px 18px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.cf-ws-logo {
+    align-items: center;
+    background: #F5E6C8;
+    border-radius: 8px;
+    color: #6B4A1E;
+    display: flex;
+    font-weight: 800;
+    height: 36px;
+    justify-content: center;
+    width: 36px;
+}
+
+.cf-ws-title {
+    align-items: center;
+    display: flex;
+    gap: 18px;
+    min-width: 0;
+
+    strong {
+        color: #F5E6C8;
+        font-size: 16px;
+        white-space: nowrap;
+    }
+}
+
+.cf-ws-nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+
+    button {
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+        color: rgba(245, 230, 200, 0.72);
+        cursor: pointer;
+        padding: 7px 10px;
+        white-space: nowrap;
+
+        &.active {
+            background: rgba(255, 255, 255, 0.13);
+            color: #F5E6C8;
+        }
+    }
+}
+
+.cf-ws-search {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    color: rgba(245, 230, 200, 0.62);
+    display: flex;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    min-width: 0;
+
+    span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.cf-ws-hero {
+    align-items: center;
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(62, 37, 24, 0.06);
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr 360px;
+    margin-bottom: 20px;
+    padding: 20px 24px;
+}
+
+.cf-ws-hello {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    min-width: 0;
+
+    h1 {
+        color: #3E2518;
+        font-size: 22px;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    p {
+        color: #806A50;
+        font-size: 13px;
+        margin: 4px 0 0;
+    }
+}
+
+.cf-ws-avatar {
+    align-items: center;
+    background: #F5E6C8;
+    border: 3px solid #C8A43A;
+    border-radius: 999px;
+    color: #3E2518;
+    display: flex;
+    flex: 0 0 54px;
+    font-size: 18px;
+    font-weight: 800;
+    height: 54px;
+    justify-content: center;
+    width: 54px;
+}
+
+.cf-ws-pulse {
+    display: grid;
+    gap: 10px;
+}
+
+.cf-ws-progress {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+
+    > span {
+        background: #E8E4DE;
+        border-radius: 99px;
+        flex: 1;
+        height: 7px;
+        overflow: hidden;
+
+        span {
+            background: #C8A43A;
+            display: block;
+            height: 100%;
+        }
+    }
+
+    small {
+        color: #806A50;
+        white-space: nowrap;
+    }
+}
+
+.cf-ws-tip {
+    align-items: flex-start;
+    background: #FAEEDA;
+    border-radius: 8px;
+    color: #633806;
+    display: flex;
+    gap: 8px;
+    padding: 9px 11px;
+
+    span {
+        font-size: 12px;
+    }
 }
 
 .cf-cockpit-header {
@@ -50,7 +223,7 @@
 .cf-cockpit-overview {
     display: grid;
     gap: 10px;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     margin-bottom: 24px;
 }
 
@@ -106,6 +279,9 @@
 }
 
 .cf-cockpit-crm i { background: #E6F1FB; color: #2E5AAC; }
+.cf-cockpit-pipeline i { background: #FBEAF0; color: #7A3250; }
+.cf-cockpit-fairs i { background: #FAEEDA; color: #633806; }
+.cf-cockpit-samples i { background: #E1F5EE; color: #2F7A59; }
 .cf-cockpit-produzione i { background: #EAF3DE; color: #3F8A4F; }
 .cf-cockpit-haccp i { background: #F3ECDF; color: #6B4A1E; }
 .cf-cockpit-tesoreria i { background: #FBF5E0; color: #9A7D1E; }
@@ -380,6 +556,18 @@
 
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
+    .cf-ws-top {
+        grid-template-columns: auto 1fr auto;
+    }
+
+    .cf-ws-search {
+        display: none;
+    }
+
+    .cf-ws-hero {
+        grid-template-columns: 1fr;
+    }
+
     .cf-clusters-4 {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -397,7 +585,30 @@
 
 @media (max-width: 560px) {
     .cf-scrivania {
-        padding: 18px 14px;
+        padding: 0 14px 32px;
+    }
+
+    .cf-ws-top {
+        margin-left: -6px;
+        margin-right: -6px;
+        padding: 10px 12px;
+    }
+
+    .cf-ws-nav {
+        display: none;
+    }
+
+    .cf-ws-hero {
+        padding: 16px;
+    }
+
+    .cf-ws-progress {
+        align-items: flex-start;
+        flex-direction: column;
+
+        > span {
+            width: 100%;
+        }
     }
 
     .cf-cockpit-overview,

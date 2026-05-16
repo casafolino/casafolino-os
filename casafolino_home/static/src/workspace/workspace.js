@@ -6,6 +6,14 @@ import { user } from "@web/core/user";
 import { registry } from "@web/core/registry";
 
 const CLUSTERS = ["crm", "produzione", "haccp", "tesoreria"];
+const QUICK_LINKS = [
+    { id: "home", label: "Home", action: "onSwitchCRM" },
+    { id: "pipeline", label: "Pipeline", action: "onOpenPipeline" },
+    { id: "projects", label: "Dossier", action: "onOpenProjects" },
+    { id: "fairs", label: "Fiere", action: "onOpenFairs" },
+    { id: "samples", label: "Campionature", action: "onOpenSamples" },
+    { id: "cards", label: "Biglietti", action: "onOpenCardScanner" },
+];
 
 export class CFWorkspace extends Component {
     static template = "casafolino_home.CFWorkspace";
@@ -69,22 +77,31 @@ export class CFWorkspace extends Component {
                 action: () => this.onOpenProjects(),
             },
             {
-                id: "mail",
-                label: "Mail da posizionare",
-                value: this.formatKpi(crm.mail_pending),
-                detail: `${this.formatKpi(crm.sla_scadenza)} SLA scaduti`,
-                icon: "fa-envelope-open",
-                tone: crm.mail_pending ? "alert" : "crm",
-                action: () => this.onOpenPosizionatore(),
+                id: "pipeline",
+                label: "Pipeline",
+                value: this.formatKpi(crm.lead_aperti),
+                detail: "lead e opportunità",
+                icon: "fa-tasks",
+                tone: "pipeline",
+                action: () => this.onOpenPipeline(),
             },
             {
-                id: "ops",
-                label: "Produzione",
-                value: this.formatKpi(produzione.produzioni_attive),
-                detail: `${this.formatKpi(produzione.lotti_scadenza)} lotti in scadenza`,
-                icon: "fa-cogs",
-                tone: produzione.lotti_scadenza ? "alert" : "produzione",
-                action: () => this.onSwitchProduzione(),
+                id: "fairs",
+                label: "Fiere",
+                value: "\u2192",
+                detail: "eventi e contatti",
+                icon: "fa-globe",
+                tone: "fairs",
+                action: () => this.onOpenFairs(),
+            },
+            {
+                id: "samples",
+                label: "Campionature",
+                value: "\u2192",
+                detail: "invii e follow-up",
+                icon: "fa-flask",
+                tone: "samples",
+                action: () => this.onOpenSamples(),
             },
             {
                 id: "quality",
@@ -105,6 +122,20 @@ export class CFWorkspace extends Component {
                 action: () => this.onSwitchTesoreria(),
             },
         ];
+    }
+
+    get quickLinks() {
+        return QUICK_LINKS.map((link) => ({
+            ...link,
+            action: () => this[link.action](),
+        }));
+    }
+
+    get dailyProgress() {
+        const crm = this.state.kpi.crm || {};
+        const total = Number(crm.progetti_attivi || 0) + Number(crm.lead_aperti || 0);
+        const resolved = Math.max(0, total - Number(crm.sla_scadenza || 0));
+        return total ? Math.round((resolved / total) * 100) : 62;
     }
 
     get activeCluster() {
@@ -163,33 +194,6 @@ export class CFWorkspace extends Component {
         });
     }
 
-    async onOpenPosizionatore() {
-        try {
-            await this.action.doAction("casafolino_mail.action_cf_mail_posizionatore");
-        } catch {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "casafolino.mail.message",
-                views: [[false, "list"], [false, "form"]],
-                domain: [["cf_project_id", "=", false], ["partner_id", "!=", false]],
-                target: "current",
-            });
-        }
-    }
-
-    async onOpenMiaCasella() {
-        try {
-            await this.action.doAction("casafolino_mail.action_casafolino_mail_my_mailbox");
-        } catch {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "casafolino.mail.message",
-                views: [[false, "list"], [false, "form"]],
-                target: "current",
-            });
-        }
-    }
-
     async onOpenPipeline() {
         try {
             await this.action.doAction("casafolino_crm_export.action_cf_crm_all");
@@ -228,6 +232,42 @@ export class CFWorkspace extends Component {
                 views: [[false, "kanban"], [false, "list"], [false, "form"]],
                 target: "current",
             });
+        }
+    }
+
+    async onOpenFairs() {
+        try {
+            await this.action.doAction("casafolino_crm_export.action_cf_fair");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "cf.export.fair",
+                views: [[false, "list"], [false, "form"]],
+                target: "current",
+                name: "Fiere",
+            });
+        }
+    }
+
+    async onOpenSamples() {
+        try {
+            await this.action.doAction("casafolino_crm_export.action_cf_sample");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "cf.export.sample",
+                views: [[false, "list"], [false, "form"]],
+                target: "current",
+                name: "Campionature",
+            });
+        }
+    }
+
+    async onOpenCardScanner() {
+        try {
+            await this.action.doAction("casafolino_crm_export.action_card_scanner");
+        } catch {
+            console.warn("Card scanner action not available");
         }
     }
 
@@ -385,13 +425,14 @@ export class CFWorkspace extends Component {
 
     // ======== Tesoreria actions ========
 
-    async onNewInvoice() {
+    async onNewQuotation() {
         await this.action.doAction({
             type: "ir.actions.act_window",
-            res_model: "account.move",
+            res_model: "sale.order",
             views: [[false, "form"]],
             target: "current",
-            context: { default_move_type: "out_invoice" },
+            context: { default_user_id: user.userId },
+            name: "Nuovo preventivo",
         });
     }
 
@@ -454,17 +495,7 @@ export class CFWorkspace extends Component {
     }
 
     async onOpenGDO() {
-        try {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "cf.export.fair",
-                views: [[false, "list"], [false, "form"]],
-                target: "current",
-                name: "Fiere & GDO",
-            });
-        } catch {
-            console.warn("GDO/Fair action not available");
-        }
+        await this.onOpenFairs();
     }
 }
 
