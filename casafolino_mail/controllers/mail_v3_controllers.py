@@ -967,6 +967,7 @@ class MailV3Controller(http.Controller):
         mode = kw.get('mode', 'new')
         reply_to_id = kw.get('reply_to_id')
         prefilled_body = kw.get('prefilled_body', '')
+        project_id = kw.get('project_id') or False
 
         if not account_id:
             account = request.env['casafolino.mail.account'].search([
