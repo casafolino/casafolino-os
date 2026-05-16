@@ -65,8 +65,7 @@ class CardScannerWidget extends Component {
 
     onCaptureClick() {
         if (!this.state.fairId) {
-            this.notification.add("Seleziona una fiera prima di scansionare.", { type: "warning" });
-            return;
+            this.notification.add("Fiera non caricata: userò la fiera predefinita.", { type: "info" });
         }
         this.fileInputRef.el.click();
     }

@@ -24,11 +24,13 @@ class CardScannerController(http.Controller):
 
     @http.route('/casafolino/crm/card-scanner/init', type='json', auth='user', methods=['POST'])
     def scanner_init(self):
-        fairs = request.env['cf.export.fair'].search([
-            ('state', 'in', ['confirmed', 'active', 'followup', 'planned']),
-        ], order='date_start desc, id desc')
+        fairs = request.env['cf.export.fair'].search([], order='date_start desc, id desc')
         fair_rows = []
         default_fair_id = False
+        default_fair = request.env.ref(
+            'casafolino_crm_export.cf_export_fair_tuttofood_2026',
+            raise_if_not_found=False,
+        )
         for fair in fairs:
             template_count = request.env['cf.fair.mail.template'].search_count([
                 ('fair_id', '=', fair.id),
@@ -40,7 +42,9 @@ class CardScannerController(http.Controller):
                 'name': fair.name,
                 'template_count': template_count,
             })
-            if not default_fair_id and fair.state in ('active', 'followup', 'confirmed'):
+            if default_fair and fair.id == default_fair.id:
+                default_fair_id = fair.id
+            elif not default_fair_id and fair.state in ('active', 'followup', 'confirmed'):
                 default_fair_id = fair.id
         if not default_fair_id and fair_rows:
             default_fair_id = fair_rows[0]['id']
