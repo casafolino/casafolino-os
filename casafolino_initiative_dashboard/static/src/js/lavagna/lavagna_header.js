@@ -38,4 +38,43 @@ export class LavagnaHeader extends Component {
             day: 'numeric', month: 'short', year: 'numeric',
         });
     }
+
+    onCreateSaleOrder() {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            res_model: "sale.order",
+            views: [[false, "form"]],
+            target: "current",
+            context: {
+                default_partner_id: this.props.initiative.partner_id || false,
+                default_initiative_id: this.props.initiative.id,
+            },
+        });
+    }
+
+    onCreateSample() {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            res_model: "cf.sample.request",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_partner_id: this.props.initiative.partner_id || false,
+                default_initiative_id: this.props.initiative.id,
+            },
+        });
+    }
+
+    onCreateTask() {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            res_model: "project.task",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_partner_id: this.props.initiative.partner_id || false,
+                default_initiative_id: this.props.initiative.id,
+            },
+        });
+    }
 }

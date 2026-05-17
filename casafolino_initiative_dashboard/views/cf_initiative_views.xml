@@ -19,6 +19,10 @@
                 </button>
             </xpath>
 
+            <xpath expr="//field[@name='child_ids']/list" position="inside">
+                <button name="action_open_lavagna" type="object" string="Apri Lavagna" icon="fa-external-link" invisible="not lavagna_enabled"/>
+            </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Lavagna" name="lavagna_config">
                     <group>

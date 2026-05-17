@@ -34,6 +34,11 @@
             </div>
 
             <div class="o_lavagna_header_right">
+                <div class="o_lavagna_quick_actions d-flex gap-2 me-3">
+                    <button class="btn btn-primary btn-sm" t-on-click="onCreateSaleOrder" title="Nuovo Ordine"><i class="fa fa-shopping-cart"/> Ordine</button>
+                    <button class="btn btn-secondary btn-sm" t-on-click="onCreateSample" title="Nuova Campionatura"><i class="fa fa-gift"/> Campionatura</button>
+                    <button class="btn btn-secondary btn-sm" t-on-click="onCreateTask" title="Nuovo Task"><i class="fa fa-tasks"/> Task</button>
+                </div>
                 <div class="o_lavagna_members" t-if="(props.initiative.members || []).length">
                     <div t-foreach="(props.initiative.members || []).slice(0, 5)" t-as="member" t-key="member.id"
                          class="o_member_avatar" t-att-title="member.name">
