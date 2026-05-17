@@ -68,6 +68,8 @@ class CasafolinoMailAccount(models.Model):
             else:
                 imap = imaplib.IMAP4(self.imap_host, self.imap_port, timeout=60)
             imap.login(self.email_address, self.imap_password)
+            if self.state != 'connected' or self.error_message:
+                self.write({'state': 'connected', 'error_message': False})
             return imap
         except Exception as e:
             self.write({'state': 'error', 'error_message': str(e)})

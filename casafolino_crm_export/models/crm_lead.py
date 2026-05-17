@@ -676,18 +676,21 @@ class CrmLead(models.Model):
         return project
 
     def action_open_project_360(self):
-        """Open the 360° project dashboard, creating a dossier if needed."""
+        """Open the CasaFolino dossier form, creating a dossier if needed."""
         self.ensure_one()
         project = self._ensure_project_360()
         return {
-            "type": "ir.actions.client",
-            "tag": "casafolino_crm_export.project_dashboard",
-            "name": "Vista 360° — %s" % project.name,
-            "target": "main",
+            "type": "ir.actions.act_window",
+            "name": "Dossier — %s" % project.name,
+            "res_model": "project.project",
+            "res_id": project.id,
+            "view_mode": "form",
+            "views": [(self.env.ref("project.edit_project").id, "form")],
+            "target": "current",
             "context": {
                 "active_id": project.id,
-                "default_project_id": project.id,
                 "active_model": "project.project",
+                "form_view_initial_mode": "edit",
             },
         }
 

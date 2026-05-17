@@ -210,14 +210,16 @@ class ResPartnerMailExt(models.Model):
 
     def write(self, vals):
         """Brief #6.1 — On mail_tracked activation: set timestamp + schedule backfill."""
+        to_schedule = self.env['res.partner']
         if 'mail_tracked' in vals and vals['mail_tracked']:
+            to_schedule = self.filtered(lambda p: not p.mail_tracked and p.email)
             for partner in self:
                 if not partner.mail_tracked:
                     vals.setdefault('mail_tracked_since', fields.Datetime.now())
         res = super().write(vals)
         if 'mail_tracked' in vals and vals['mail_tracked']:
-            for partner in self:
-                if partner.mail_tracked and partner.email:
+            for partner in to_schedule:
+                if partner.exists() and partner.mail_tracked:
                     partner._schedule_backfill_history()
         return res
 
@@ -233,14 +235,16 @@ class ResPartnerMailExt(models.Model):
             'name': 'Backfill mail partner %s' % self.id,
             'model_id': model_id,
             'state': 'code',
-            'code': "env['res.partner'].browse(%d).action_sync_full_email_history()" % self.id,
+            'code': (
+                "env['res.partner'].browse(%d).action_sync_full_email_history()\n"
+                "env['ir.cron'].search([('cron_name', '=', 'Backfill mail partner %d (%s)')], limit=1).write({'active': False})"
+            ) % (self.id, self.id, (self.name or '').replace("'", "\\'")),
         })
         self.env['ir.cron'].sudo().create({
             'name': 'Backfill mail partner %s (%s)' % (self.id, self.name or ''),
             'ir_actions_server_id': server_action.id,
             'interval_number': 1,
             'interval_type': 'minutes',
-            'numbercall': 1,
             'active': True,
             'nextcall': fields.Datetime.now(),
             'user_id': self.env.ref('base.user_admin').id,
@@ -287,13 +291,40 @@ class ResPartnerMailExt(models.Model):
     # ── Sync storico email per contatto (Step 7) ─────────────────────
 
     def action_sync_full_email_history(self):
-        """Scarica tutto lo storico email per questo contatto da tutte le caselle."""
+        """Scarica lo storico email mirato per questo contatto/azienda.
+
+        Non fa mai full-sync della casella: cerca solo indirizzi espliciti e,
+        per i partner azienda, i domini collegati al partner.
+        """
         self.ensure_one()
         if not self.email:
             raise UserError("Il contatto non ha un indirizzo email.")
 
-        accounts = self.env['casafolino.mail.account'].search([('state', '=', 'connected')])
+        accounts = self.env['casafolino.mail.account'].search([
+            ('active', '=', True),
+            ('imap_password', '!=', False),
+        ])
+        if not accounts:
+            raise UserError("Nessun account IMAP attivo configurato.")
+
         email_lower = self.email.lower().strip()
+        emails = {email_lower}
+        for child in self.child_ids:
+            if child.email:
+                emails.add(child.email.lower().strip())
+
+        domains = set()
+        if '@' in email_lower:
+            domains.add(email_lower.split('@', 1)[1])
+        for domain in (self.email_domains_extra or '').split(','):
+            domain = domain.lower().strip()
+            if domain:
+                domains.add(domain)
+
+        search_terms = sorted(emails)
+        if self.is_company:
+            search_terms += sorted(domains)
+
         Message = self.env['casafolino.mail.message']
 
         for account in accounts:
@@ -310,15 +341,29 @@ class ResPartnerMailExt(models.Model):
                     if status != 'OK':
                         continue
 
-                    # Cerca TUTTE le email da/a questo indirizzo, SENZA limite di data
-                    search_criteria = '(OR FROM "%s" TO "%s")' % (email_lower, email_lower)
-                    status, msg_ids = imap.search(None, search_criteria)
+                    uid_set = set()
+                    for term in search_terms:
+                        # Gmail cerca il termine negli header indicati; per aziende
+                        # il dominio consente backfill mirato senza leggere tutta la casella.
+                        criteria = '(OR OR FROM "%s" TO "%s" CC "%s")' % (term, term, term)
+                        try:
+                            status, msg_ids = imap.search(None, criteria)
+                        except Exception as e:
+                            _logger.warning(
+                                "History search error for %s in %s/%s: %s",
+                                term, account.email_address, folder_name, e)
+                            continue
 
-                    if status != 'OK' or not msg_ids[0]:
+                        if status == 'OK' and msg_ids and msg_ids[0]:
+                            uid_set.update(msg_ids[0].split())
+
+                    if not uid_set:
                         continue
 
-                    uid_list = msg_ids[0].split()
-                    _logger.info("Storico %s in %s: %d email", email_lower, folder_name, len(uid_list))
+                    uid_list = sorted(uid_set, key=lambda v: int(v))
+                    _logger.info(
+                        "Storico mirato %s in %s/%s: %d email",
+                        self.display_name, account.email_address, folder_name, len(uid_list))
 
                     for uid in uid_list:
                         uid_str = uid.decode()
@@ -354,6 +399,8 @@ class ResPartnerMailExt(models.Model):
                         subject = account._decode_header_value(msg.get('Subject', ''))
                         try:
                             email_date = parsedate_to_datetime(msg.get('Date', ''))
+                            if email_date and email_date.tzinfo is not None:
+                                email_date = email_date.astimezone().replace(tzinfo=None)
                         except Exception:
                             email_date = fields.Datetime.now()
 
@@ -375,7 +422,7 @@ class ResPartnerMailExt(models.Model):
                                 'email_date': email_date,
                                 'state': 'keep',
                                 'partner_id': self.id,
-                                'match_type': 'exact',
+                                'match_type': 'domain' if self.is_company else 'exact',
                                 'triage_user_id': self.env.user.id,
                                 'triage_date': fields.Datetime.now(),
                             })

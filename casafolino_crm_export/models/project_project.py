@@ -462,17 +462,20 @@ class ProjectProject(models.Model):
 
     @api.depends('partner_id', 'cf_contact_ids.email')
     def _compute_partner_mails(self):
-        MM = self.env['mail.message']
         for p in self:
             related_ids = p._get_all_related_partner_ids()
             if not related_ids:
                 p.cf_partner_mails_count = 0
                 continue
-            p.cf_partner_mails_count = MM.search_count([
-                '|',
-                ('author_id', 'in', related_ids),
-                ('partner_ids', 'in', related_ids),
-            ])
+            self.env.cr.execute("""
+                SELECT COUNT(DISTINCT mm.id)
+                  FROM mail_message mm
+             LEFT JOIN mail_message_res_partner_rel rel
+                    ON rel.mail_message_id = mm.id
+                 WHERE mm.author_id = ANY(%s)
+                    OR rel.res_partner_id = ANY(%s)
+            """, (related_ids, related_ids))
+            p.cf_partner_mails_count = self.env.cr.fetchone()[0] or 0
 
     def action_view_partner_mails(self):
         self.ensure_one()
@@ -701,15 +704,18 @@ class ProjectProject(models.Model):
     def action_open_project_dashboard_360(self):
         self.ensure_one()
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_crm_export.project_dashboard',
-            'name': 'Vista 360° — %s' % self.name,
+            'type': 'ir.actions.act_window',
+            'name': 'Dossier — %s' % self.name,
+            'res_model': 'project.project',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'views': [(self.env.ref('project.edit_project').id, 'form')],
+            'target': 'current',
             'context': {
-                'default_project_id': self.id,
                 'active_id': self.id,
                 'active_model': 'project.project',
+                'form_view_initial_mode': 'edit',
             },
-            'target': 'main',
         }
 
     @api.depends('partner_id')

@@ -424,7 +424,7 @@
         <field name="name">Progetti 360</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('cf_status_dossier', '!=', False)]</field>
+        <field name="domain">[('cf_status_dossier', '!=', False), ('cf_parent_project_id', '=', False), ('active', '=', True)]</field>
         <field name="context">{'default_cf_status_dossier': 'exploration'}</field>
     </record>
 

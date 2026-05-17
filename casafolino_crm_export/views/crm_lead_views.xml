@@ -9,7 +9,7 @@
         <field name="name">Tutte le Pipeline</field>
         <field name="res_model">crm.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[('type','=','opportunity')]</field>
+        <field name="domain">[('type', '=', 'opportunity'), ('active', '=', True)]</field>
         <field name="context">{'default_type': 'opportunity'}</field>
     </record>
 
