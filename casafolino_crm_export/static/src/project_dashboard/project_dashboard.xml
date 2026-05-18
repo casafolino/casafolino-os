@@ -119,6 +119,70 @@
 
         <!-- Content area -->
         <div class="cf-dash-content">
+            <!-- Cockpit tab -->
+            <div t-if="state.activeTab === 'cockpit'" class="cf-cockpit-grid">
+                <section class="cf-cockpit-main">
+                    <div class="cf-cockpit-strip">
+                        <div class="cf-cockpit-metric">
+                            <span class="cf-cockpit-label">Prossima azione</span>
+                            <strong t-out="state.data.project.next_action || 'Da definire'"/>
+                            <small t-if="state.data.project.next_action_date"
+                                   t-out="state.data.project.next_action_date"/>
+                        </div>
+                        <div class="cf-cockpit-metric">
+                            <span class="cf-cockpit-label">Mail dossier</span>
+                            <strong t-out="state.data.mail_count || 0"/>
+                            <button class="cf-cockpit-link" t-on-click="onSyncDossierMail">
+                                <i class="fa fa-refresh"/> aggiorna storico
+                            </button>
+                        </div>
+                        <div class="cf-cockpit-metric">
+                            <span class="cf-cockpit-label">Referenti</span>
+                            <strong t-out="state.data.contacts.length || 0"/>
+                            <small>cliente, team, broker</small>
+                        </div>
+                        <div class="cf-cockpit-metric">
+                            <span class="cf-cockpit-label">Responsabile</span>
+                            <strong t-out="state.data.project.owner_name || '—'"/>
+                            <small t-out="statusLabel"/>
+                        </div>
+                    </div>
+
+                    <div class="cf-cockpit-section">
+                        <div class="cf-cockpit-section-head">
+                            <h3>Mail recenti</h3>
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onTabChange('mail')">
+                                <i class="fa fa-envelope-o"/> Tutte
+                            </button>
+                        </div>
+                        <div t-if="!state.data.mail || !state.data.mail.length" class="cf-dash-empty cf-cockpit-empty">
+                            <i class="fa fa-envelope-o"/>
+                            <span>Nessuna mail ancora posizionata</span>
+                            <button class="btn btn-sm btn-secondary" t-on-click="onSyncDossierMail">Scarica storico referenti</button>
+                        </div>
+                        <div t-else="" class="cf-cockpit-mail-list">
+                            <t t-foreach="state.data.mail.slice(0, 6)" t-as="m" t-key="m.casafolino_id">
+                                <button t-attf-class="cf-cockpit-mail-row #{m.is_outbound ? 'outbound' : 'inbound'}"
+                                        t-on-click="() => this.onOpenMailThread(m)">
+                                    <span class="cf-cockpit-mail-dir">
+                                        <i t-attf-class="fa #{m.is_outbound ? 'fa-paper-plane' : 'fa-inbox'}"/>
+                                    </span>
+                                    <span class="cf-cockpit-mail-copy">
+                                        <strong t-out="m.subject"/>
+                                        <small>
+                                            <t t-out="m.sender_name"/> · <t t-out="m.date_label"/>
+                                        </small>
+                                    </span>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="cf-cockpit-side">
+                    <t t-call="casafolino_crm_export.CFProjectDashboard.CustomerPanel"/>
+                </aside>
+            </div>
 
             <!-- Timeline tab -->
             <div t-if="state.activeTab === 'timeline'" class="cf-dash-content-row">
@@ -420,15 +484,21 @@
                             <t t-set="cInitial" t-value="(contact.name || '?')[0].toUpperCase()"/>
                             <t t-out="cInitial"/>
                         </div>
-                        <div class="cf-dash-contact-info">
-                            <div class="cf-dash-contact-name">
-                                <t t-out="contact.name"/>
-                                <span t-if="contact.is_primary" class="cf-dash-primary-badge">P</span>
+                            <div class="cf-dash-contact-info">
+                                <div class="cf-dash-contact-name">
+                                    <t t-out="contact.name"/>
+                                    <span t-if="contact.is_primary" class="cf-dash-primary-badge">P</span>
+                                    <span t-if="contact.is_external" class="cf-dash-external-badge">EXT</span>
+                                </div>
+                                <div class="cf-dash-contact-meta" t-if="contact.function"
+                                     t-out="contact.function"/>
+                                <div class="cf-dash-contact-meta" t-if="contact.email">
+                                    <i class="fa fa-envelope-o"/>
+                                    <t t-out="contact.email"/>
+                                    <span t-if="contact.mail_count"> · <t t-out="contact.mail_count"/> mail</span>
+                                </div>
                             </div>
-                            <div class="cf-dash-contact-meta" t-if="contact.function"
-                                 t-out="contact.function"/>
                         </div>
-                    </div>
                 </t>
             </div>
         </div>

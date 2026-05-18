@@ -36,6 +36,10 @@
                             icon="fa-envelope"
                             class="oe_highlight"
                             invisible="not partner_id"/>
+                    <button name="action_sync_dossier_mail_history"
+                            type="object"
+                            string="Sync mail"
+                            icon="fa-refresh"/>
                     <field name="cf_status_dossier" widget="statusbar"
                            options="{'clickable': '1'}"
                            statusbar_visible="exploration,active,on_hold,closed"/>
@@ -198,8 +202,15 @@
                                 <field name="role"/>
                                 <field name="is_external"
                                        widget="boolean_toggle"/>
+                                <field name="mail_sync_enabled"
+                                       widget="boolean_toggle"/>
+                                <field name="mail_message_count"
+                                       readonly="1"/>
+                                <field name="mail_last_sync"
+                                       readonly="1"
+                                       optional="hide"/>
                                 <field name="partner_id"
-                                       options="{'no_create_edit': True}"/>
+                                       options="{'no_create_edit': False}"/>
                                 <field name="note" optional="hide"/>
                             </list>
                         </field>
@@ -211,6 +222,10 @@
                                     type="object"
                                     string="Scrivi mail"
                                     class="btn btn-primary"/>
+                            <button name="action_sync_dossier_mail_history"
+                                    type="object"
+                                    string="Scarica storico referenti"
+                                    class="btn btn-secondary"/>
                         </div>
                         <field name="cf_dossier_mail_ids" mode="list"
                                readonly="1">

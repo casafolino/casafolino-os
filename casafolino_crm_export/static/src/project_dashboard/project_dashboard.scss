@@ -1,18 +1,20 @@
 /* Dashboard 360° — Brief #5.0 */
-/* Palette warm-soft coerente Brief #4.4.1 */
+/* Dense CRM workbench palette */
 
 :root {
-    --cf-dash-bg: #FBFAF6;
+    --cf-dash-bg: #F6F7F9;
     --cf-dash-card-bg: #FFFFFF;
-    --cf-dash-border: #E8E5DC;
-    --cf-dash-text: #2D2A24;
-    --cf-dash-text-muted: #8A8578;
-    --cf-dash-accent: #5A6E3A;
-    --cf-dash-accent-light: rgba(90, 110, 58, 0.1);
-    --cf-dash-kpi-bg: #F5F3ED;
-    --cf-dash-seg-active: #5A6E3A;
-    --cf-dash-seg-current: rgba(90, 110, 58, 0.5);
-    --cf-dash-seg-todo: #E8E5DC;
+    --cf-dash-border: #DDE3EA;
+    --cf-dash-text: #20242A;
+    --cf-dash-text-muted: #687386;
+    --cf-dash-accent: #2364AA;
+    --cf-dash-accent-light: rgba(35, 100, 170, 0.1);
+    --cf-dash-kpi-bg: #EEF3F8;
+    --cf-dash-seg-active: #2364AA;
+    --cf-dash-seg-current: rgba(35, 100, 170, 0.5);
+    --cf-dash-seg-todo: #DDE3EA;
+    --cf-dash-green: #2F7D5C;
+    --cf-dash-amber: #B76E00;
 }
 
 /* ================================
@@ -332,6 +334,150 @@
     padding: 20px 24px;
 }
 
+.cf-cockpit-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 20px;
+    align-items: start;
+}
+
+.cf-cockpit-main,
+.cf-cockpit-side {
+    min-width: 0;
+}
+
+.cf-cockpit-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.cf-cockpit-metric {
+    min-height: 104px;
+    padding: 14px;
+    border: 1px solid var(--cf-dash-border);
+    border-radius: 8px;
+    background: var(--cf-dash-card-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    strong {
+        font-size: 18px;
+        line-height: 1.25;
+        color: var(--cf-dash-text);
+        overflow-wrap: anywhere;
+    }
+
+    small {
+        color: var(--cf-dash-text-muted);
+    }
+}
+
+.cf-cockpit-label {
+    color: var(--cf-dash-text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.cf-cockpit-link {
+    border: 0;
+    background: transparent;
+    color: var(--cf-dash-accent);
+    padding: 0;
+    text-align: left;
+    font-size: 12px;
+}
+
+.cf-cockpit-section {
+    border: 1px solid var(--cf-dash-border);
+    border-radius: 8px;
+    background: var(--cf-dash-card-bg);
+    overflow: hidden;
+}
+
+.cf-cockpit-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--cf-dash-border);
+
+    h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+    }
+}
+
+.cf-cockpit-mail-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.cf-cockpit-mail-row {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--cf-dash-border);
+    background: #fff;
+    padding: 12px 16px;
+    text-align: left;
+
+    &:hover {
+        background: #F8FAFC;
+    }
+
+    &:last-child {
+        border-bottom: 0;
+    }
+}
+
+.cf-cockpit-mail-dir {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #E8F1FB;
+    color: var(--cf-dash-accent);
+}
+
+.cf-cockpit-mail-row.outbound .cf-cockpit-mail-dir {
+    background: #EAF6EF;
+    color: var(--cf-dash-green);
+}
+
+.cf-cockpit-mail-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    strong,
+    small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    small {
+        color: var(--cf-dash-text-muted);
+    }
+}
+
+.cf-cockpit-empty {
+    min-height: 220px;
+}
+
 .cf-dash-content-row {
     display: flex;
     gap: 24px;
@@ -579,6 +725,16 @@
     line-height: 16px;
 }
 
+.cf-dash-external-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #FEF3C7;
+    color: var(--cf-dash-amber);
+    font-size: 9px;
+    font-weight: 700;
+}
+
 .cf-dash-contact-meta {
     font-size: 12px;
     color: var(--cf-dash-text-muted, #8A8578);
@@ -656,6 +812,11 @@
    ================================ */
 
 @media (max-width: 900px) {
+    .cf-cockpit-grid,
+    .cf-cockpit-strip {
+        grid-template-columns: 1fr;
+    }
+
     .cf-dash-content-row {
         flex-direction: column;
     }

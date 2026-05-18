@@ -61,7 +61,7 @@ export class CFProjectDashboard extends Component {
         this.state = useState({
             isLoading: true,
             data: null,
-            activeTab: "timeline",
+            activeTab: "cockpit",
             timelineFilter: "all",
             error: null,
         });
@@ -138,13 +138,14 @@ export class CFProjectDashboard extends Component {
 
     get tabs() {
         return [
+            { id: "cockpit", label: "Cockpit", enabled: true },
             { id: "timeline", label: "Timeline", enabled: true },
-            { id: "cliente", label: "Cliente", enabled: true },
+            { id: "cliente", label: "Persone", enabled: true },
+            { id: "mail", label: "Mail", enabled: true },
             { id: "commerciale", label: "Commerciale", enabled: true },
             { id: "campionature", label: "Campionature", enabled: true },
             { id: "documenti", label: "Documenti", enabled: true },
             { id: "note", label: "Note", enabled: true },
-            { id: "mail", label: "Mail", enabled: true },
         ];
     }
 
@@ -295,6 +296,18 @@ export class CFProjectDashboard extends Component {
         this.state.isLoading = true;
         this.state.error = null;
         await this._loadData();
+    }
+
+    async onSyncDossierMail() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.orm.call(
+            "project.project",
+            "action_sync_dossier_mail_history",
+            [[projectId]]
+        );
+        this.notification.add(_t("Storico mail aggiornato"), { type: "success" });
+        await this.onRefresh();
     }
 
     onContactClick(contactId) {
