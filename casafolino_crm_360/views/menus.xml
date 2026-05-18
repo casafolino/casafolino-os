@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_crm360_root"
+              name="Vista 360"
+              parent="crm.crm_menu_root"
+              action="action_crm360_dossiers"
+              sequence="6"/>
+
+    <menuitem id="casafolino_crm_export.menu_cf_projects_360"
+              name="Vista 360"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_crm360_dossiers"
+              sequence="25"/>
+
+</odoo>
