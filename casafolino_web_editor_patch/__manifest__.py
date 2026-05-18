@@ -1,6 +1,6 @@
 {
     "name": "CasaFolino — Web Editor Patch",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.0.1",
     "category": "Customization",
     "summary": "Guard difensivo per widget ImageCrop",
     "description": "Patch OWL di ImageCrop._onCropOptionClick e _save con guard "

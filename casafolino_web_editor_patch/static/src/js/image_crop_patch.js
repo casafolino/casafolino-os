@@ -6,10 +6,12 @@ import { patch } from "@web/core/utils/patch";
 patch(ImageCrop.prototype, {
     /**
      * Guard: if cropper not initialized, ignore click silently.
+     * Prevents TypeError when crop ratio buttons clicked before
+     * cropper.js instance is ready.
      */
     _onCropOptionClick(ev) {
         if (!this.$cropperImage || !this.$cropperImage.length || !this.$cropperImage[0].cropper) {
-            console.warn("[CasaFolino] ImageCrop._onCropOptionClick: cropper not initialized, ignoring click.");
+            console.warn("[CasaFolino] ImageCrop._onCropOptionClick: cropper not ready, ignoring.");
             if (ev && ev.preventDefault) ev.preventDefault();
             if (ev && ev.stopPropagation) ev.stopPropagation();
             return;
@@ -18,17 +20,21 @@ patch(ImageCrop.prototype, {
     },
 
     /**
-     * Guard: if media element missing, abort silently.
+     * Guard: if media element missing, force-close state without
+     * touching DOM refs. Prevents TypeError on this.media.setAttribute
+     * when _closeCropper runs against a destroyed/missing media element.
      */
-    async _save(refreshOptions = true) {
+    _closeCropper() {
+        if (this._cropperClosed) return;
         if (!this.media) {
-            console.warn("[CasaFolino] ImageCrop._save: no media element, aborting silently.");
+            console.warn("[CasaFolino] ImageCrop._closeCropper: no media element, force-closing state.");
+            this._cropperClosed = true;
+            if (this.$cropperImage) {
+                try { this.$cropperImage.cropper('destroy'); } catch (_e) { /* noop */ }
+            }
+            this.state.active = false;
             return;
         }
-        if (!this.$cropperImage || !this.$cropperImage.length || !this.$cropperImage[0].cropper) {
-            console.warn("[CasaFolino] ImageCrop._save: cropper not initialized, aborting silently.");
-            return;
-        }
-        return super._save(refreshOptions);
+        return super._closeCropper();
     },
 });
