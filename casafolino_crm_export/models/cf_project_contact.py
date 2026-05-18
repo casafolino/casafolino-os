@@ -54,9 +54,12 @@ class CfProjectContact(models.Model):
 
     @api.depends('email_normalized')
     def _compute_mail_message_count(self):
-        MailMsg = self.env.get('casafolino.mail.message')
+        try:
+            MailMsg = self.env['casafolino.mail.message'].sudo()
+        except KeyError:
+            MailMsg = False
         for contact in self:
-            if not MailMsg or not contact.email_normalized:
+            if MailMsg is False or not contact.email_normalized:
                 contact.mail_message_count = 0
                 continue
             contact.mail_message_count = MailMsg.search_count([

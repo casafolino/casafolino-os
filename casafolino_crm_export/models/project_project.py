@@ -1176,7 +1176,9 @@ class ProjectProject(models.Model):
     def _cf_count_contact_mail(self, email):
         if not email:
             return 0
-        if not self.env.get('casafolino.mail.message'):
+        try:
+            self.env['casafolino.mail.message']
+        except KeyError:
             return 0
         email = email.strip().lower()
         self.env.cr.execute("""
