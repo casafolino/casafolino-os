@@ -1176,17 +1176,17 @@ class ProjectProject(models.Model):
     def _cf_count_contact_mail(self, email):
         if not email:
             return 0
-        MailMsg = self.env.get('casafolino.mail.message')
-        if not MailMsg:
+        if not self.env.get('casafolino.mail.message'):
             return 0
-        MailMsg = MailMsg.sudo()
         email = email.strip().lower()
-        return MailMsg.search_count([
-            '|', '|',
-            ('sender_email', '=ilike', email),
-            ('recipient_emails', 'ilike', email),
-            ('cc_emails', 'ilike', email),
-        ])
+        self.env.cr.execute("""
+            SELECT COUNT(*)
+              FROM casafolino_mail_message
+             WHERE lower(coalesce(sender_email, '')) = %s
+                OR lower(coalesce(recipient_emails, '')) LIKE %s
+                OR lower(coalesce(cc_emails, '')) LIKE %s
+        """, (email, '%%' + email + '%%', '%%' + email + '%%'))
+        return self.env.cr.fetchone()[0] or 0
 
     # ── Brief #FINAL — Commerciale ────────────────────────────────
 
