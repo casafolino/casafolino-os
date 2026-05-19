@@ -1,0 +1,581 @@
+import logging
+from datetime import timedelta
+
+from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
+
+
+class CfPipelineControl(models.AbstractModel):
+    _name = 'cf.pipeline.control'
+    _description = 'CasaFolino Pipeline Control data provider'
+
+    @api.model
+    def get_dashboard_data(self):
+        today = fields.Date.context_today(self)
+        user = self.env.user
+        return {
+            'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
+            'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
+            'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today), {'kpis': [], 'columns': []}),
+            'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
+            'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
+            'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
+        }
+
+    def _safe_section(self, name, func, fallback):
+        try:
+            return func()
+        except Exception:
+            _logger.exception("Pipeline Control section %s failed", name)
+            return fallback
+
+    def _get_kpis(self, today, user):
+        Mail = self.env['casafolino.mail.message']
+        Lead = self.env['crm.lead']
+        Sample = self.env['cf.export.sample']
+        Project = self.env['project.project']
+
+        to_reply_domain = self._mail_to_reply_domain(user)
+        followup_domain = self._lead_followup_domain(today)
+        hot_domain = self._hot_lead_domain()
+        samples_domain = self._sample_feedback_overdue_domain(today)
+        blocked_domain = self._blocked_project_domain()
+
+        return [
+            {
+                'key': 'to_reply',
+                'label': 'Da rispondere',
+                'value': Mail.search_count(to_reply_domain),
+                'hint': 'Email cliente con azione richiesta',
+                'tone': 'red',
+            },
+            {
+                'key': 'followups',
+                'label': 'Follow-up oggi',
+                'value': Lead.search_count(followup_domain),
+                'hint': 'Lead con prossima azione scaduta',
+                'tone': 'amber',
+            },
+            {
+                'key': 'hot_leads',
+                'label': 'Clienti caldi',
+                'value': Lead.search_count(hot_domain),
+                'hint': 'Priorita alta o valore stimato',
+                'tone': 'green',
+            },
+            {
+                'key': 'sample_feedback',
+                'label': 'Campioni scaduti',
+                'value': Sample.search_count(samples_domain),
+                'hint': 'Feedback atteso non ricevuto',
+                'tone': 'red',
+            },
+            {
+                'key': 'blocked_dossiers',
+                'label': 'Dossier bloccati',
+                'value': Project.search_count(blocked_domain),
+                'hint': 'Semaforo rosso/giallo o in pausa',
+                'tone': 'amber',
+            },
+            {
+                'key': 'open_quotes',
+                'label': 'Quotazioni aperte',
+                'value': self.env['sale.order'].search_count([
+                    ('state', 'in', ['draft', 'sent']),
+                ]),
+                'hint': 'Preventivi da seguire',
+                'tone': 'blue',
+            },
+        ]
+
+    def _get_control_lanes(self, today, user):
+        Mail = self.env['casafolino.mail.message']
+        Lead = self.env['crm.lead']
+        Project = self.env['project.project']
+
+        to_reply = Mail.search(self._mail_to_reply_domain(user), limit=6)
+        followups = Lead.search(self._lead_followup_domain(today), order='cf_date_next_followup asc, date_deadline asc, id desc', limit=6)
+        hot = Lead.search(self._hot_lead_domain(), order='expected_revenue desc, create_date desc', limit=6)
+        blocked = Project.search(self._blocked_project_domain(), limit=6)
+
+        return [
+            {
+                'key': 'to_reply',
+                'title': 'Tocca a noi',
+                'tone': 'red',
+                'count': len(to_reply),
+                'items': [self._format_mail_item(msg) for msg in to_reply],
+            },
+            {
+                'key': 'followups',
+                'title': 'Follow-up oggi',
+                'tone': 'amber',
+                'count': len(followups),
+                'items': [self._format_lead_item(lead, today) for lead in followups],
+            },
+            {
+                'key': 'hot',
+                'title': 'Clienti caldi',
+                'tone': 'green',
+                'count': len(hot),
+                'items': [self._format_lead_item(lead, today) for lead in hot],
+            },
+            {
+                'key': 'blocked',
+                'title': 'Bloccati',
+                'tone': 'red',
+                'count': len(blocked),
+                'items': [self._format_project_item(project) for project in blocked],
+            },
+        ]
+
+    def _get_post_fair_data(self, today):
+        Fair = self.env['cf.export.fair']
+        fair = Fair.search([('state', 'in', ['done', 'followup', 'active', 'confirmed'])], limit=1)
+        if not fair:
+            fair = Fair.search([], limit=1)
+        if not fair:
+            return {
+                'fair': False,
+                'kpis': [],
+                'columns': [],
+            }
+
+        leads = fair.lead_ids
+        first_followup = leads.filtered(lambda lead: bool(lead.cf_date_last_contact))
+        replied_ids = self._lead_ids_with_mail(leads.ids)
+        replied = leads.filtered(lambda lead: lead.id in replied_ids)
+        quoted = leads.filtered(lambda lead: lead.expected_revenue and lead.expected_revenue > 0)
+        samples = self.env['cf.export.sample'].search([('lead_id', 'in', leads.ids)]) if leads else self.env['cf.export.sample']
+        dossiers = leads.filtered(lambda lead: bool(lead.cf_project_id))
+
+        def pct(part, total):
+            return round((part / total) * 100) if total else 0
+
+        return {
+            'fair': {
+                'id': fair.id,
+                'name': fair.name,
+                'date': self._date_label(fair.date_end or fair.date_start),
+            },
+            'kpis': [
+                {'label': 'Lead raccolti', 'value': len(leads), 'hint': 'Trattative collegate'},
+                {'label': 'Follow-up inviati', 'value': len(first_followup), 'hint': '%s%% del totale' % pct(len(first_followup), len(leads))},
+                {'label': 'Response rate', 'value': '%s%%' % pct(len(replied), len(leads)), 'hint': 'Almeno una email collegata'},
+                {'label': 'Quotazioni', 'value': len(quoted), 'hint': 'Con valore atteso'},
+                {'label': 'Campionature', 'value': len(samples), 'hint': 'Standard/custom'},
+                {'label': 'Dossier', 'value': len(dossiers), 'hint': 'Lead promossi'},
+            ],
+            'columns': [
+                self._fair_column('Da contattare', leads.filtered(lambda lead: not lead.cf_date_last_contact), today),
+                self._fair_column('Follow-up inviato', first_followup, today),
+                self._fair_column('Ha risposto', replied, today),
+                self._fair_column('Quotazione', quoted, today),
+                self._fair_column('Dossier', dossiers, today),
+            ],
+        }
+
+    def _lead_ids_with_mail(self, lead_ids):
+        if not lead_ids:
+            return set()
+        groups = self.env['casafolino.mail.message'].read_group(
+            [('lead_id', 'in', lead_ids), ('direction_computed', '=', 'inbound')],
+            ['lead_id'],
+            ['lead_id'],
+        )
+        return {group['lead_id'][0] for group in groups if group.get('lead_id')}
+
+    def _get_pipeline_data(self, today):
+        Lead = self.env['crm.lead']
+        stages = self.env['crm.stage'].search([], order='sequence asc, id asc', limit=8)
+        columns = []
+        for stage in stages:
+            leads = Lead.search([('stage_id', '=', stage.id)], order='expected_revenue desc, create_date desc', limit=5)
+            columns.append({
+                'id': stage.id,
+                'title': stage.name,
+                'count': Lead.search_count([('stage_id', '=', stage.id)]),
+                'items': [self._format_lead_item(lead, today) for lead in leads],
+            })
+        return columns
+
+    def _get_inbox_data(self, user):
+        inbox, waiting = self._get_latest_commercial_threads(user)
+        return {
+            'to_reply': [self._format_mail_row(msg) for msg in inbox[:24]],
+            'waiting_customer': [self._format_mail_row(msg) for msg in waiting[:24]],
+        }
+
+    @api.model
+    def mail_quick_action(self, message_id, quick_action):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
+
+        if quick_action == 'open':
+            return self._open_record(msg, 'Email')
+        if quick_action == 'reply':
+            return self._reply_from_message(msg)
+        if quick_action == 'open_lead':
+            if msg.lead_id:
+                return self._open_record(msg.lead_id, 'Lead')
+            return msg.action_create_lead()
+        if quick_action == 'create_lead':
+            return msg.action_create_lead()
+        if quick_action == 'link_lead':
+            return self._open_record(msg, 'Collega lead')
+        if quick_action == 'task':
+            return self._new_task_from_message(msg)
+        if quick_action == 'quote':
+            return self._new_quote_from_message(msg)
+        if quick_action == 'sample':
+            return self._new_sample_from_message(msg)
+        if quick_action == 'snooze':
+            return self._snooze_message_thread(msg)
+        if quick_action == 'archive':
+            msg.action_archive()
+            return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla sala controllo.', reload=True)
+        return self._notify('Azione non disponibile', quick_action, 'warning')
+
+    def _get_latest_commercial_threads(self, user):
+        Mail = self.env['casafolino.mail.message']
+        domain = [
+            ('is_archived', '=', False),
+            ('is_deleted', '=', False),
+            ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
+            '|',
+            ('partner_id', '!=', False),
+            ('lead_id', '!=', False),
+        ]
+        if user and not user.has_group('base.group_system'):
+            domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
+        messages = Mail.search(domain, order='email_date desc, id desc', limit=250)
+        latest_by_thread = {}
+        for msg in messages:
+            key = msg.thread_key or (msg.partner_id.id and 'partner:%s' % msg.partner_id.id) or msg.sender_email or msg.subject or msg.id
+            if key not in latest_by_thread:
+                latest_by_thread[key] = msg
+        to_reply = []
+        waiting = []
+        for msg in latest_by_thread.values():
+            if msg.direction_computed == 'inbound' or msg.ai_action_required:
+                to_reply.append(msg)
+            elif msg.direction_computed == 'outbound':
+                waiting.append(msg)
+        return to_reply, waiting
+
+    def _get_dossier_data(self, today):
+        Project = self.env['project.project']
+        projects = Project.search(self._blocked_project_domain(), limit=10)
+        return [self._format_project_detail(project, today) for project in projects]
+
+    def _mail_to_reply_domain(self, user):
+        domain = [
+            ('direction_computed', '=', 'inbound'),
+            ('is_archived', '=', False),
+            ('is_deleted', '=', False),
+            ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
+        ]
+        if user and not user.has_group('base.group_system'):
+            domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
+        return domain
+
+    def _mail_waiting_customer_domain(self, user):
+        domain = [
+            ('direction_computed', '=', 'outbound'),
+            ('is_archived', '=', False),
+            ('is_deleted', '=', False),
+            ('state', 'in', ['keep', 'auto_keep', 'auto_attached']),
+        ]
+        if user and not user.has_group('base.group_system'):
+            domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
+        return domain
+
+    def _lead_followup_domain(self, today):
+        domain = [('type', '=', 'opportunity'), ('active', '=', True)]
+        if 'cf_date_next_followup' in self.env['crm.lead']._fields:
+            domain.append(('cf_date_next_followup', '<=', today))
+        else:
+            domain.append(('date_deadline', '<=', today))
+        return domain
+
+    def _hot_lead_domain(self):
+        fields_map = self.env['crm.lead']._fields
+        base = [('type', '=', 'opportunity'), ('active', '=', True)]
+        priority_field = fields_map.get('casafolino_signals_priority')
+        if priority_field and priority_field.store:
+            return base + ['|', ('casafolino_signals_priority', '=', 'hot'), ('expected_revenue', '>', 0)]
+        return base + [('expected_revenue', '>', 0)]
+
+    def _sample_feedback_overdue_domain(self, today):
+        return [
+            ('date_feedback_expected', '<=', today),
+            ('state', 'not in', ['done', 'cancelled']),
+        ]
+
+    def _blocked_project_domain(self):
+        Project = self.env['project.project']
+        fields_map = Project._fields
+        domain = []
+        if 'cf_traffic_light' in fields_map:
+            domain = ['|', ('cf_traffic_light', 'in', ['red', 'yellow']), ('cf_tasks_blocked', '>', 0)]
+        elif 'cf_status_dossier' in fields_map:
+            domain = [('cf_status_dossier', 'in', ['on_hold', 'active'])]
+        else:
+            domain = [('active', '=', True)]
+        return domain
+
+    def _fair_column(self, title, leads, today):
+        return {
+            'title': title,
+            'count': len(leads),
+            'items': [self._format_lead_item(lead, today) for lead in leads[:6]],
+        }
+
+    def _format_mail_item(self, msg):
+        partner = msg.partner_id
+        lead = msg.lead_id
+        return {
+            'id': msg.id,
+            'model': msg._name,
+            'title': partner.display_name if partner else (msg.sender_name or msg.sender_email or 'Email senza partner'),
+            'subtitle': msg.subject or 'Senza oggetto',
+            'meta': self._date_label(msg.email_date),
+            'tone': 'red' if msg.ai_urgency == 'high' or msg.ai_action_required else 'amber',
+            'badges': self._compact([
+                'tocca a noi',
+                msg.ai_category,
+                msg.ai_language,
+                lead.stage_id.name if lead and lead.stage_id else False,
+            ]),
+            'res_id': msg.id,
+        }
+
+    def _format_mail_row(self, msg):
+        item = self._format_mail_item(msg)
+        item.update({
+            'lead': msg.lead_id.display_name if msg.lead_id else '',
+            'lead_id': msg.lead_id.id if msg.lead_id else False,
+            'partner_id': msg.partner_id.id if msg.partner_id else False,
+            'thread_id': msg.thread_id.id if msg.thread_id else False,
+            'owner': ', '.join(msg.assigned_user_ids.mapped('name')) or '',
+            'snippet': msg.snippet or '',
+            'can_sample': bool(msg.lead_id),
+        })
+        return item
+
+    def _open_record(self, record, name):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': name,
+            'res_model': record._name,
+            'res_id': record.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
+    def _reply_from_message(self, msg):
+        partner = msg.partner_id
+        partner_email = partner.email if partner else (msg.sender_email or '')
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_mail.compose_f8',
+            'context': {
+                'default_partner_email': partner_email,
+                'default_subject': 'Re: %s' % (msg.subject or ''),
+                'default_partner_id': partner.id if partner else False,
+                'default_thread_id': msg.id,
+                'default_thread_model': 'casafolino.mail.message',
+            },
+        }
+
+    def _new_task_from_message(self, msg):
+        lead = msg.lead_id
+        project = getattr(lead, 'cf_project_id', False) if lead else False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova task commerciale',
+            'res_model': 'project.task',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'default_name': msg.subject or 'Follow-up commerciale',
+                'default_project_id': project.id if project else False,
+                'default_partner_id': msg.partner_id.id if msg.partner_id else False,
+                'default_description': msg.snippet or '',
+            },
+        }
+
+    def _new_quote_from_message(self, msg):
+        partner = msg.partner_id or msg.lead_id.partner_id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova quotazione',
+            'res_model': 'sale.order',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+            'context': {
+                'default_partner_id': partner.id if partner else False,
+                'default_opportunity_id': msg.lead_id.id if msg.lead_id else False,
+                'default_origin': msg.subject or '',
+            },
+        }
+
+    def _new_sample_from_message(self, msg):
+        if not msg.lead_id:
+            return self._notify('Lead richiesto', 'Collega o crea prima una trattativa CRM.', 'warning')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova campionatura',
+            'res_model': 'cf.export.sample',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {'default_lead_id': msg.lead_id.id},
+        }
+
+    def _snooze_message_thread(self, msg):
+        if not msg.thread_id:
+            return self._notify('Thread richiesto', 'Questa email non ha ancora un thread V3.', 'warning')
+        wake_at = fields.Datetime.now() + timedelta(days=1)
+        self.env['casafolino.mail.snooze'].create({
+            'thread_id': msg.thread_id.id,
+            'user_id': self.env.user.id,
+            'snooze_type': 'until_date',
+            'wake_at': wake_at,
+            'snoozed_at': fields.Datetime.now(),
+            'note': 'Posticipato da Inbox Commerciale',
+        })
+        msg.thread_id.write({'is_snoozed': True})
+        return self._notify('Thread posticipato', 'Rientra domani nella gestione commerciale.', reload=True)
+
+    def _notify(self, title, message, notification_type='success', reload=False):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': message,
+                'type': notification_type,
+                'sticky': False,
+            },
+            'reload': reload,
+        }
+
+    def _format_lead_item(self, lead, today):
+        partner = lead.partner_id
+        next_date = lead.cf_date_next_followup if 'cf_date_next_followup' in lead._fields else lead.date_deadline
+        overdue = bool(next_date and next_date <= today)
+        badges = [
+            lead.stage_id.name if lead.stage_id else False,
+            partner.country_id.code if partner and partner.country_id else False,
+            'follow-up oggi' if overdue else False,
+            'dossier' if getattr(lead, 'cf_project_id', False) else False,
+        ]
+        if 'casafolino_signals_priority' in lead._fields and lead.casafolino_signals_priority:
+            badges.append(lead.casafolino_signals_priority)
+        return {
+            'id': lead.id,
+            'model': lead._name,
+            'title': partner.display_name if partner else lead.name,
+            'subtitle': lead.name,
+            'meta': self._date_label(next_date) if next_date else 'Nessuna prossima azione',
+            'value': lead.expected_revenue or 0,
+            'tone': 'red' if overdue else 'green' if lead.expected_revenue else 'blue',
+            'badges': self._compact(badges),
+            'res_id': lead.id,
+        }
+
+    def _format_project_item(self, project):
+        return {
+            'id': project.id,
+            'model': project._name,
+            'title': project.name,
+            'subtitle': self._project_partner_name(project),
+            'meta': self._project_blocker_label(project),
+            'tone': 'red',
+            'badges': self._compact([
+                self._project_status(project),
+                self._project_blocker_label(project),
+            ]),
+            'res_id': project.id,
+        }
+
+    def _format_project_detail(self, project, today):
+        return {
+            'id': project.id,
+            'name': project.name,
+            'partner': self._project_partner_name(project),
+            'status': self._project_status(project),
+            'blocker': self._project_blocker_label(project),
+            'target_date': self._date_label(getattr(project, 'cf_target_date', False) or getattr(project, 'date', False)),
+            'departments': self._project_departments(project),
+        }
+
+    def _project_departments(self, project):
+        tasks = self.env['project.task'].search([('project_id', '=', project.id)], limit=40)
+        buckets = {
+            'commerciale': [],
+            'back office': [],
+            'produzione': [],
+            'logistica': [],
+            'qualita': [],
+        }
+        for task in tasks:
+            label = (task.name or '').lower()
+            key = 'back office'
+            if any(word in label for word in ['produzione', 'ricetta', 'campione']):
+                key = 'produzione'
+            elif any(word in label for word in ['logistica', 'spedizione', 'tracking']):
+                key = 'logistica'
+            elif any(word in label for word in ['qualita', 'allergeni', 'certificat', 'etichetta']):
+                key = 'qualita'
+            elif any(word in label for word in ['cliente', 'prezzo', 'quotazione', 'commerciale']):
+                key = 'commerciale'
+            buckets[key].append({
+                'id': task.id,
+                'name': task.name,
+                'is_overdue': self._is_overdue(task.date_deadline),
+                'assignee': ', '.join(task.user_ids.mapped('name')) if 'user_ids' in task._fields else '',
+            })
+        return [{'name': name.title(), 'tasks': tasks[:4]} for name, tasks in buckets.items()]
+
+    def _is_overdue(self, value):
+        if not value:
+            return False
+        deadline = fields.Date.to_date(value)
+        return bool(deadline and deadline < fields.Date.context_today(self))
+
+    def _project_partner_name(self, project):
+        partner = getattr(project, 'partner_id', False) or getattr(project, 'cf_partner_id', False)
+        return partner.display_name if partner else ''
+
+    def _project_status(self, project):
+        if 'cf_traffic_light' in project._fields and project.cf_traffic_light:
+            return project.cf_traffic_light
+        if 'cf_status_dossier' in project._fields and project.cf_status_dossier:
+            return dict(project._fields['cf_status_dossier'].selection).get(project.cf_status_dossier, project.cf_status_dossier)
+        return ''
+
+    def _project_blocker_label(self, project):
+        if 'cf_main_blocker' in project._fields and project.cf_main_blocker:
+            return dict(project._fields['cf_main_blocker'].selection).get(project.cf_main_blocker, project.cf_main_blocker)
+        if 'cf_tasks_blocked' in project._fields and project.cf_tasks_blocked:
+            return '%s task bloccate' % project.cf_tasks_blocked
+        if 'cf_next_action' in project._fields and project.cf_next_action:
+            return project.cf_next_action
+        return 'Da verificare'
+
+    def _date_label(self, value):
+        if not value:
+            return ''
+        if isinstance(value, str):
+            return value[:10]
+        return fields.Date.to_string(value) if not hasattr(value, 'hour') else fields.Datetime.to_string(value)[:16]
+
+    def _compact(self, values):
+        return [value for value in values if value]

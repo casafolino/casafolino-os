@@ -1,0 +1,457 @@
+.cf-pipeline-control {
+    min-height: calc(100vh - 48px);
+    background: #f4f5f2;
+    color: #20251f;
+
+    .cf-pc-loading,
+    .cf-pc-error {
+        min-height: 360px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        color: #667061;
+    }
+
+    .cf-pc-error {
+        color: #9a332b;
+    }
+
+    .cf-pc-shell {
+        display: grid;
+        grid-template-columns: 232px minmax(0, 1fr);
+        min-height: calc(100vh - 48px);
+    }
+
+    .cf-pc-sidebar {
+        position: sticky;
+        top: 0;
+        height: calc(100vh - 48px);
+        padding: 18px 14px;
+        background: #26342c;
+        color: #f7faf4;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .cf-pc-brand {
+        padding: 4px 8px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, .15);
+
+        strong {
+            display: block;
+            font-size: 17px;
+            line-height: 1.2;
+        }
+
+        span {
+            display: block;
+            margin-top: 4px;
+            color: #bdc9bd;
+            font-size: 12px;
+        }
+    }
+
+    .cf-pc-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .cf-pc-nav-btn {
+        border: 0;
+        background: transparent;
+        color: #dfe8dd;
+        border-radius: 7px;
+        padding: 10px 9px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+        text-align: left;
+
+        &:hover,
+        &.active {
+            background: rgba(255, 255, 255, .12);
+            color: #fff;
+        }
+
+        em {
+            min-width: 22px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .16);
+            font-size: 11px;
+            font-style: normal;
+            text-align: center;
+        }
+    }
+
+    .cf-pc-note {
+        margin-top: auto;
+        padding: 12px;
+        background: rgba(255, 255, 255, .1);
+        border: 1px solid rgba(255, 255, 255, .14);
+        border-radius: 8px;
+        color: #e7eee5;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .cf-pc-main {
+        min-width: 0;
+        padding: 20px;
+    }
+
+    .cf-pc-topbar,
+    .cf-pc-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+
+        h1,
+        h2 {
+            margin: 0;
+            font-weight: 750;
+            line-height: 1.15;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        p {
+            margin: 5px 0 0;
+            color: #667061;
+            font-size: 13px;
+        }
+    }
+
+    .cf-pc-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .cf-pc-kpis {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(130px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .cf-pc-kpi {
+        min-height: 86px;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+
+        .cf-pc-kpi-label {
+            color: #667061;
+            font-size: 12px;
+        }
+
+        strong {
+            display: block;
+            margin-top: 8px;
+            color: #20251f;
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        small {
+            display: block;
+            margin-top: 8px;
+            color: #667061;
+            font-size: 12px;
+        }
+    }
+
+    .cf-pc-board {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(230px, 1fr));
+        gap: 12px;
+        align-items: start;
+        overflow-x: auto;
+        padding-bottom: 8px;
+
+        &.cf-pc-board-wide {
+            grid-template-columns: repeat(5, minmax(230px, 1fr));
+        }
+    }
+
+    .cf-pc-lane,
+    .cf-pc-panel {
+        background: rgba(255, 255, 255, .65);
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .cf-pc-lane header,
+    .cf-pc-panel header {
+        padding: 10px 11px;
+        border-bottom: 1px solid #dfe3da;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        background: #f8faf6;
+
+        h2 {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 4px 0 0;
+            color: #667061;
+            font-size: 12px;
+        }
+    }
+
+    .cf-pc-lane-body {
+        min-height: 120px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+    .cf-pc-card {
+        padding: 11px;
+        background: #fff;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+    }
+
+    .cf-pc-card-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+
+        strong {
+            display: block;
+            font-size: 14px;
+            line-height: 1.25;
+        }
+
+        p {
+            margin: 3px 0 0;
+            color: #667061;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+    }
+
+    .cf-pc-card-meta {
+        margin-top: 7px;
+        color: #667061;
+        font-size: 12px;
+    }
+
+    .cf-pc-value {
+        color: #2f7d57;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .cf-pc-badges {
+        margin-top: 9px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .cf-pc-pill,
+    .cf-pc-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: #edf0ea;
+        color: #4b5548;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .cf-pc-pill {
+        padding: 3px 7px;
+    }
+
+    .cf-pc-badge {
+        padding: 3px 7px;
+    }
+
+    .tone-red {
+        background: #f6e2df;
+        color: #8c2c24;
+    }
+
+    .tone-amber {
+        background: #f7ead8;
+        color: #7c4b0c;
+    }
+
+    .tone-green {
+        background: #e5f2ea;
+        color: #256245;
+    }
+
+    .tone-blue {
+        background: #e6f0f7;
+        color: #245b82;
+    }
+
+    .cf-pc-card-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .cf-pc-empty {
+        padding: 18px 8px;
+        color: #667061;
+        text-align: center;
+        font-size: 13px;
+    }
+
+    .cf-pc-grid-2 {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr);
+        gap: 12px;
+        align-items: start;
+    }
+
+    .cf-pc-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        font-size: 13px;
+
+        th,
+        td {
+            padding: 9px 8px;
+            border-bottom: 1px solid #dfe3da;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: #667061;
+            background: #fafbf8;
+            font-weight: 650;
+        }
+
+        small {
+            display: block;
+            color: #667061;
+            font-size: 12px;
+        }
+    }
+
+    .cf-pc-row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 4px;
+        min-width: 148px;
+
+        .btn {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    .cf-pc-dossiers {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .cf-pc-depts {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(160px, 1fr));
+        gap: 10px;
+        padding: 12px;
+        overflow-x: auto;
+    }
+
+    .cf-pc-dept {
+        min-width: 160px;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+
+        strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+    }
+
+    .cf-pc-task {
+        margin-top: 7px;
+        padding: 8px;
+        border: 1px solid #dfe3da;
+        border-radius: 6px;
+        background: #f9faf7;
+        font-size: 12px;
+        line-height: 1.35;
+
+        &.overdue {
+            border-color: #e5b5af;
+            background: #f6e2df;
+        }
+
+        small {
+            display: block;
+            margin-top: 3px;
+            color: #667061;
+        }
+    }
+}
+
+@media (max-width: 1200px) {
+    .cf-pipeline-control {
+        .cf-pc-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .cf-pc-sidebar {
+            position: static;
+            height: auto;
+        }
+
+        .cf-pc-nav {
+            flex-direction: row;
+            overflow-x: auto;
+        }
+
+        .cf-pc-note {
+            display: none;
+        }
+
+        .cf-pc-kpis {
+            grid-template-columns: repeat(3, minmax(130px, 1fr));
+        }
+
+        .cf-pc-grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+}

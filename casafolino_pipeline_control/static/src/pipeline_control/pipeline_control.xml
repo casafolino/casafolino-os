@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_pipeline_control.CFPipelineControl">
+    <div class="cf-pipeline-control">
+        <div t-if="state.loading" class="cf-pc-loading">
+            <i class="fa fa-spinner fa-spin"/>
+            <span>Caricamento sala controllo...</span>
+        </div>
+
+        <div t-elif="state.error" class="cf-pc-error">
+            <i class="fa fa-exclamation-triangle"/>
+            <div>
+                <strong>Errore nel caricamento</strong>
+                <p t-out="state.error"/>
+                <button class="btn btn-primary btn-sm" t-on-click="loadData">Riprova</button>
+            </div>
+        </div>
+
+        <div t-else="" class="cf-pc-shell">
+            <aside class="cf-pc-sidebar">
+                <div class="cf-pc-brand">
+                    <strong>Pipeline Export</strong>
+                    <span>Sala controllo operativa</span>
+                </div>
+                <div class="cf-pc-nav">
+                    <t t-foreach="navItems" t-as="nav" t-key="nav.id">
+                        <button t-attf-class="cf-pc-nav-btn #{state.activeView === nav.id ? 'active' : ''}"
+                                t-on-click="() => this.setView(nav.id)">
+                            <span t-out="nav.label"/>
+                            <em t-out="nav.count"/>
+                        </button>
+                    </t>
+                </div>
+                <div class="cf-pc-note">
+                    Dati letti da Odoo: CRM, mail, campionature, progetti e preventivi.
+                </div>
+            </aside>
+
+            <main class="cf-pc-main">
+                <div class="cf-pc-topbar">
+                    <div>
+                        <h1 t-if="state.activeView === 'control'">Sala Controllo</h1>
+                        <h1 t-elif="state.activeView === 'fair'">Post-Fiera</h1>
+                        <h1 t-elif="state.activeView === 'inbox'">Inbox Commerciale</h1>
+                        <h1 t-elif="state.activeView === 'pipeline'">Pipeline Export</h1>
+                        <h1 t-elif="state.activeView === 'dossiers'">Dossier</h1>
+                        <p>Priorita, prossime azioni e blocchi in un'unica postazione.</p>
+                    </div>
+                    <div class="cf-pc-actions">
+                        <button class="btn btn-light" t-on-click="loadData" title="Aggiorna">
+                            <i class="fa fa-refresh"/>
+                        </button>
+                        <button class="btn btn-light" t-on-click="newLead">
+                            <i class="fa fa-plus"/>
+                            Nuova richiesta
+                        </button>
+                        <button class="btn btn-primary" t-on-click="newDossier">
+                            <i class="fa fa-folder-open"/>
+                            Dossier
+                        </button>
+                    </div>
+                </div>
+
+                <t t-if="state.activeView === 'control'">
+                    <div class="cf-pc-kpis">
+                        <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.key">
+                            <div t-attf-class="cf-pc-kpi tone-#{kpi.tone}">
+                                <div class="cf-pc-kpi-label">
+                                    <span t-out="kpi.label"/>
+                                </div>
+                                <strong t-out="kpi.value"/>
+                                <small t-out="kpi.hint"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="cf-pc-board">
+                        <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
+                            <section class="cf-pc-lane">
+                                <header>
+                                    <h2 t-out="lane.title"/>
+                                    <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
+                                </header>
+                                <div class="cf-pc-lane-body">
+                                    <t t-if="lane.items.length">
+                                        <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
+                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                        </t>
+                                    </t>
+                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                                </div>
+                            </section>
+                        </t>
+                    </div>
+                </t>
+
+                <t t-elif="state.activeView === 'fair'">
+                    <div class="cf-pc-section-head">
+                        <div>
+                            <h2 t-out="state.data.post_fair.fair ? state.data.post_fair.fair.name : 'Nessuna fiera'"/>
+                            <p t-if="state.data.post_fair.fair" t-out="state.data.post_fair.fair.date"/>
+                        </div>
+                        <button class="btn btn-light" t-on-click="() => this.openModel('cf.export.fair', 'Fiere')">Apri fiere</button>
+                    </div>
+                    <div class="cf-pc-kpis">
+                        <t t-foreach="state.data.post_fair.kpis" t-as="kpi" t-key="kpi.label">
+                            <div class="cf-pc-kpi">
+                                <div class="cf-pc-kpi-label" t-out="kpi.label"/>
+                                <strong t-out="kpi.value"/>
+                                <small t-out="kpi.hint"/>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="cf-pc-board">
+                        <t t-foreach="state.data.post_fair.columns" t-as="column" t-key="column.title">
+                            <section class="cf-pc-lane">
+                                <header>
+                                    <h2 t-out="column.title"/>
+                                    <span class="cf-pc-pill" t-out="column.count"/>
+                                </header>
+                                <div class="cf-pc-lane-body">
+                                    <t t-foreach="column.items" t-as="item" t-key="item.model + '-' + item.id">
+                                        <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                    </t>
+                                </div>
+                            </section>
+                        </t>
+                    </div>
+                </t>
+
+                <t t-elif="state.activeView === 'inbox'">
+                    <div class="cf-pc-grid-2">
+                        <section class="cf-pc-panel">
+                            <header>
+                                <h2>Tocca a noi</h2>
+                                <span class="cf-pc-pill tone-red" t-out="state.data.inbox.to_reply.length"/>
+                            </header>
+                            <table class="cf-pc-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Segnale</th>
+                                        <th>Lead</th>
+                                        <th>Owner</th>
+                                        <th/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.inbox.to_reply" t-as="row" t-key="'reply-' + row.id">
+                                        <tr>
+                                            <td>
+                                                <strong t-out="row.title"/>
+                                                <small t-out="row.meta"/>
+                                            </td>
+                                            <td>
+                                                <span t-out="row.subtitle"/>
+                                                <small t-out="row.snippet"/>
+                                            </td>
+                                            <td t-out="row.lead"/>
+                                            <td t-out="row.owner"/>
+                                            <td>
+                                                <div class="cf-pc-row-actions">
+                                                    <button class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(row, 'reply')" title="Rispondi">
+                                                        <i class="fa fa-reply"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open')" title="Apri email">
+                                                        <i class="fa fa-envelope-open-o"/>
+                                                    </button>
+                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
+                                                        <i class="fa fa-handshake-o"/>
+                                                    </button>
+                                                    <button t-else="" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
+                                                        <i class="fa fa-plus"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
+                                                        <i class="fa fa-check-square-o"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'quote')" title="Crea quotazione">
+                                                        <i class="fa fa-file-text-o"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'sample')" title="Crea campionatura">
+                                                        <i class="fa fa-flask"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'snooze')" title="Posticipa">
+                                                        <i class="fa fa-clock-o"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'archive')" title="Archivia">
+                                                        <i class="fa fa-archive"/>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="cf-pc-panel">
+                            <header>
+                                <h2>Tocca al cliente</h2>
+                                <span class="cf-pc-pill tone-amber" t-out="state.data.inbox.waiting_customer.length"/>
+                            </header>
+                            <table class="cf-pc-table">
+                                <tbody>
+                                    <t t-foreach="state.data.inbox.waiting_customer" t-as="row" t-key="'wait-' + row.id">
+                                        <tr>
+                                            <td>
+                                                <strong t-out="row.title"/>
+                                                <small t-out="row.subtitle"/>
+                                            </td>
+                                            <td t-out="row.meta"/>
+                                            <td>
+                                                <div class="cf-pc-row-actions">
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open')" title="Apri email">
+                                                        <i class="fa fa-envelope-open-o"/>
+                                                    </button>
+                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
+                                                        <i class="fa fa-handshake-o"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
+                                                        <i class="fa fa-check-square-o"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'snooze')" title="Posticipa">
+                                                        <i class="fa fa-clock-o"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'archive')" title="Archivia">
+                                                        <i class="fa fa-archive"/>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </section>
+                    </div>
+                </t>
+
+                <t t-elif="state.activeView === 'pipeline'">
+                    <div class="cf-pc-board cf-pc-board-wide">
+                        <t t-foreach="state.data.pipeline" t-as="column" t-key="column.id">
+                            <section class="cf-pc-lane">
+                                <header>
+                                    <h2 t-out="column.title"/>
+                                    <span class="cf-pc-pill" t-out="column.count"/>
+                                </header>
+                                <div class="cf-pc-lane-body">
+                                    <t t-foreach="column.items" t-as="item" t-key="item.model + '-' + item.id">
+                                        <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                    </t>
+                                </div>
+                            </section>
+                        </t>
+                    </div>
+                </t>
+
+                <t t-elif="state.activeView === 'dossiers'">
+                    <div class="cf-pc-dossiers">
+                        <t t-foreach="state.data.dossiers" t-as="dossier" t-key="dossier.id">
+                            <section class="cf-pc-panel">
+                                <header>
+                                    <div>
+                                        <h2 t-out="dossier.name"/>
+                                        <p>
+                                            <span t-out="dossier.partner"/>
+                                            <span t-if="dossier.target_date"> - <t t-out="dossier.target_date"/></span>
+                                        </p>
+                                    </div>
+                                    <span class="cf-pc-pill tone-amber" t-out="dossier.blocker"/>
+                                </header>
+                                <div class="cf-pc-depts">
+                                    <t t-foreach="dossier.departments" t-as="dept" t-key="dept.name">
+                                        <div class="cf-pc-dept">
+                                            <strong t-out="dept.name"/>
+                                            <t t-if="dept.tasks.length">
+                                                <t t-foreach="dept.tasks" t-as="task" t-key="task.id">
+                                                    <div t-attf-class="cf-pc-task #{task.is_overdue ? 'overdue' : ''}">
+                                                        <span t-out="task.name"/>
+                                                        <small t-if="task.assignee" t-out="task.assignee"/>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <small t-else="">Nessun task aperto</small>
+                                        </div>
+                                    </t>
+                                </div>
+                            </section>
+                        </t>
+                    </div>
+                </t>
+            </main>
+        </div>
+    </div>
+</t>
+
+<t t-name="casafolino_pipeline_control.ControlCard">
+    <article class="cf-pc-card">
+        <div class="cf-pc-card-title">
+            <div>
+                <strong t-out="item.title"/>
+                <p t-out="item.subtitle"/>
+            </div>
+            <span t-if="item.value" class="cf-pc-value">
+                € <t t-out="Math.round(item.value).toLocaleString('it-IT')"/>
+            </span>
+        </div>
+        <div class="cf-pc-card-meta" t-out="item.meta"/>
+        <div class="cf-pc-badges">
+            <t t-foreach="item.badges" t-as="badge" t-key="badge_index">
+                <span t-attf-class="cf-pc-badge tone-#{item.tone}" t-out="badge"/>
+            </t>
+        </div>
+        <div class="cf-pc-card-actions">
+            <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord(item)">
+                Apri
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.newSample(item)">
+                Campione
+            </button>
+        </div>
+    </article>
+</t>
+
+</templates>
