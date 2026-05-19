@@ -6,9 +6,13 @@ from odoo.http import request
 
 class CasaFolinoVoiceAIController(http.Controller):
     def _check_token(self):
-        expected = request.env['ir.config_parameter'].sudo().get_param('casafolino_voice_ai.webhook_token')
-        if not expected:
+        params = request.env['ir.config_parameter'].sudo()
+        require_token = params.get_param('casafolino_voice_ai.require_token', 'False') == 'True'
+        expected = params.get_param('casafolino_voice_ai.webhook_token')
+        if not require_token:
             return True
+        if not expected:
+            return False
         auth = request.httprequest.headers.get('Authorization', '')
         return auth == 'Bearer %s' % expected
 
@@ -19,6 +23,22 @@ class CasaFolinoVoiceAIController(http.Controller):
     @http.route('/voice_ai/health', type='http', auth='public', methods=['GET'], csrf=False)
     def health(self):
         return request.make_json_response({'ok': True, 'service': 'casafolino_voice_ai'})
+
+    @http.route('/voice_ai/config', type='http', auth='public', methods=['GET'], csrf=False)
+    def bridge_config(self):
+        if not self._check_token():
+            return request.make_json_response({'error': 'unauthorized'}, status=401)
+        params = request.env['ir.config_parameter'].sudo()
+        return request.make_json_response({
+            'ok': True,
+            'public_base_url': params.get_param('casafolino_voice_ai.public_base_url'),
+            'realtime_model': params.get_param('casafolino_voice_ai.openai_realtime_model') or 'gpt-realtime-2',
+            'realtime_voice': params.get_param('casafolino_voice_ai.openai_voice') or 'marin',
+            'human_transfer_uri': params.get_param('casafolino_voice_ai.human_transfer_uri'),
+            'allow_outbound': params.get_param('casafolino_voice_ai.allow_outbound', 'False') == 'True',
+            'has_openai_key': bool(params.get_param('casafolino_voice_ai.openai_api_key')),
+            'requires_token': params.get_param('casafolino_voice_ai.require_token', 'False') == 'True',
+        })
 
     def _find_partner(self, payload):
         Partner = request.env['res.partner'].sudo()
