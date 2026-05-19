@@ -22,6 +22,17 @@ class CasaFolinoVoiceCall(models.Model):
     partner_id = fields.Many2one('res.partner', string='Customer', tracking=True)
     phone = fields.Char(tracking=True)
     agent_id = fields.Many2one('casafolino.voice.agent', tracking=True)
+    routing_rule_id = fields.Many2one('casafolino.voice.routing.rule', string='Routing Rule')
+    called_number_id = fields.Many2one('casafolino.voice.number', string='Called Number')
+    route_action = fields.Selection([
+        ('agent', 'AI Agent'),
+        ('ivr', 'IVR Menu'),
+        ('queue', 'Queue'),
+        ('voicemail', 'Voicemail'),
+        ('external', 'External Number'),
+        ('callback', 'Callback Request'),
+        ('hangup', 'Hangup'),
+    ])
     outbound_queue_id = fields.Many2one('casafolino.voice.outbound.queue', string='Outbound Job')
     external_call_id = fields.Char(index=True, copy=False)
     started_at = fields.Datetime(default=fields.Datetime.now, tracking=True)
@@ -72,4 +83,3 @@ class CasaFolinoVoiceCall(models.Model):
                 summary='Richiamare cliente da chiamata AI',
                 note=call.summary or call.next_action or 'Richiamata richiesta dal centralino AI.',
             )
-

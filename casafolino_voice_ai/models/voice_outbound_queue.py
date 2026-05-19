@@ -11,6 +11,14 @@ class CasaFolinoVoiceOutboundQueue(models.Model):
     partner_id = fields.Many2one('res.partner', string='Customer', required=True, tracking=True)
     phone = fields.Char(required=True, tracking=True)
     reason = fields.Char(required=True, tracking=True)
+    language = fields.Selection([
+        ('auto', 'Ask / Auto-detect'),
+        ('it-IT', 'Italian'),
+        ('en-US', 'English'),
+        ('fr-FR', 'French'),
+        ('es-ES', 'Spanish'),
+        ('de-DE', 'German'),
+    ], default='auto', required=True, tracking=True)
     state = fields.Selection([
         ('queued', 'Queued'),
         ('ready', 'Ready'),
@@ -107,10 +115,11 @@ class CasaFolinoVoiceOutboundQueue(models.Model):
             'partner_id': job.partner_id.id,
             'partner_name': job.partner_id.display_name,
             'reason': job.reason,
+            'language': job.language,
             'agent': agent.build_realtime_payload({
                 'cliente': job.partner_id.display_name,
                 'telefono': job.phone,
                 'motivo': job.reason,
+                'lingua': job.language,
             }) if agent else {},
         }
-

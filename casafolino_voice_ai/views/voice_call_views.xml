@@ -13,6 +13,7 @@
                 <field name="phone"/>
                 <field name="outcome"/>
                 <field name="agent_id"/>
+                <field name="route_action"/>
             </list>
         </field>
     </record>
@@ -35,7 +36,10 @@
                             <field name="direction"/>
                             <field name="partner_id"/>
                             <field name="phone"/>
+                            <field name="called_number_id"/>
                             <field name="agent_id"/>
+                            <field name="routing_rule_id"/>
+                            <field name="route_action"/>
                         </group>
                         <group>
                             <field name="external_call_id"/>
@@ -66,4 +70,3 @@
         <field name="view_mode">list,form</field>
     </record>
 </odoo>
-

@@ -18,6 +18,7 @@
                     </div>
                     <group>
                         <field name="voice_outbound_consent"/>
+                        <field name="voice_ai_language"/>
                     </group>
                     <notebook>
                         <page string="Consensi" name="voice_consents">
@@ -61,4 +62,3 @@
         </field>
     </record>
 </odoo>
-

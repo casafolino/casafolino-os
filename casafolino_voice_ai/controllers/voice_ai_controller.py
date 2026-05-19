@@ -31,13 +31,24 @@ class CasaFolinoVoiceAIController(http.Controller):
         if event_type == 'realtime.call.incoming':
             call_id = data.get('call_id') or data.get('id')
             phone = data.get('from') or data.get('caller') or ''
+            called_number = data.get('to') or data.get('called_number') or ''
             partner = request.env['res.partner'].sudo().search([
                 '|', ('phone', '=', phone), ('mobile', '=', phone),
             ], limit=1)
-            agent = request.env['casafolino.voice.agent'].sudo().search([
-                ('direction', '=', 'inbound'),
+            number = request.env['casafolino.voice.number'].sudo().search([
+                ('phone_number', '=', called_number),
                 ('active', '=', True),
             ], limit=1)
+            route = request.env['casafolino.voice.routing.rule'].sudo().resolve_inbound_route(
+                caller_phone=phone,
+                called_number=called_number,
+            )
+            agent = route.agent_id if route and route.action == 'agent' else number.default_agent_id
+            if not agent:
+                agent = request.env['casafolino.voice.agent'].sudo().search([
+                    ('direction', '=', 'inbound'),
+                    ('active', '=', True),
+                ], limit=1)
             call = request.env['casafolino.voice.call'].sudo().create({
                 'direction': 'inbound',
                 'state': 'active',
@@ -45,11 +56,15 @@ class CasaFolinoVoiceAIController(http.Controller):
                 'phone': phone,
                 'partner_id': partner.id if partner else False,
                 'agent_id': agent.id if agent else False,
+                'called_number_id': number.id if number else False,
+                'routing_rule_id': route.id if route else False,
+                'route_action': route.action if route else 'agent',
             })
             return request.make_json_response({
                 'ok': True,
                 'call_id': call.id,
                 'agent': agent.build_realtime_payload() if agent else {},
+                'route': route.build_route_payload() if route else {},
             })
 
         return request.make_json_response({'ok': True, 'ignored': event_type})
@@ -68,6 +83,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             'partner_id': partner_id,
             'phone': phone,
             'reason': reason,
+            'language': payload.get('language') or request.env['res.partner'].sudo().browse(partner_id).voice_ai_language or 'auto',
         })
         job.action_check_ready()
         return request.make_json_response({'ok': True, 'job_id': job.id, 'state': job.state})
@@ -97,4 +113,3 @@ class CasaFolinoVoiceAIController(http.Controller):
         if call.outbound_queue_id:
             call.outbound_queue_id.write({'state': 'done' if call.state == 'completed' else call.state})
         return request.make_json_response({'ok': True})
-

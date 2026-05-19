@@ -10,6 +10,7 @@
                 <field name="state"/>
                 <field name="partner_id"/>
                 <field name="phone"/>
+                <field name="language"/>
                 <field name="reason"/>
                 <field name="attempt_count"/>
                 <field name="blocked_reason"/>
@@ -34,6 +35,7 @@
                             <field name="name"/>
                             <field name="partner_id"/>
                             <field name="phone"/>
+                            <field name="language"/>
                             <field name="reason"/>
                             <field name="agent_id"/>
                         </group>
@@ -62,4 +64,3 @@
         <field name="view_mode">list,form</field>
     </record>
 </odoo>
-

@@ -7,6 +7,14 @@ class ResPartner(models.Model):
     voice_consent_ids = fields.One2many('casafolino.voice.consent', 'partner_id', string='Voice AI Consents')
     voice_call_ids = fields.One2many('casafolino.voice.call', 'partner_id', string='Voice AI Calls')
     voice_outbound_queue_ids = fields.One2many('casafolino.voice.outbound.queue', 'partner_id', string='Voice AI Follow-ups')
+    voice_ai_language = fields.Selection([
+        ('auto', 'Ask / Auto-detect'),
+        ('it-IT', 'Italian'),
+        ('en-US', 'English'),
+        ('fr-FR', 'French'),
+        ('es-ES', 'Spanish'),
+        ('de-DE', 'German'),
+    ], string='Voice AI language', default='auto')
     voice_outbound_consent = fields.Boolean(
         string='Voice outbound consent',
         compute='_compute_voice_outbound_consent',
@@ -30,6 +38,6 @@ class ResPartner(models.Model):
                 'default_partner_id': self.id,
                 'default_phone': phone,
                 'default_reason': 'Follow-up cliente',
+                'default_language': self.voice_ai_language or 'auto',
             },
         }
-

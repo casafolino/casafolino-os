@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="schedule_business_hours" model="casafolino.voice.schedule">
+        <field name="name">Orario ufficio CasaFolino</field>
+        <field name="timezone">Europe/Rome</field>
+    </record>
+
+    <record id="schedule_line_monday" model="casafolino.voice.schedule.line">
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="dayofweek">0</field>
+        <field name="hour_from">9.0</field>
+        <field name="hour_to">18.0</field>
+    </record>
+    <record id="schedule_line_tuesday" model="casafolino.voice.schedule.line">
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="dayofweek">1</field>
+        <field name="hour_from">9.0</field>
+        <field name="hour_to">18.0</field>
+    </record>
+    <record id="schedule_line_wednesday" model="casafolino.voice.schedule.line">
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="dayofweek">2</field>
+        <field name="hour_from">9.0</field>
+        <field name="hour_to">18.0</field>
+    </record>
+    <record id="schedule_line_thursday" model="casafolino.voice.schedule.line">
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="dayofweek">3</field>
+        <field name="hour_from">9.0</field>
+        <field name="hour_to">18.0</field>
+    </record>
+    <record id="schedule_line_friday" model="casafolino.voice.schedule.line">
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="dayofweek">4</field>
+        <field name="hour_from">9.0</field>
+        <field name="hour_to">18.0</field>
+    </record>
+
+    <record id="queue_general" model="casafolino.voice.queue">
+        <field name="name">Centralino generale</field>
+        <field name="strategy">ring_all</field>
+        <field name="timeout_seconds">25</field>
+        <field name="max_wait_seconds">120</field>
+        <field name="overflow_action">callback</field>
+        <field name="greeting">La metto in contatto con il team CasaFolino.</field>
+    </record>
+
+    <record id="ivr_main" model="casafolino.voice.ivr.menu">
+        <field name="name">IVR principale CasaFolino</field>
+        <field name="prompt">Benvenuto in CasaFolino. Premere 1 per commerciale, 2 per assistenza, 3 per amministrazione, oppure restare in linea per parlare con l'assistente AI.</field>
+        <field name="repeat_prompt">Non ho ricevuto una scelta valida. Premere 1 per commerciale, 2 per assistenza, 3 per amministrazione, oppure restare in linea.</field>
+        <field name="fallback_action">agent</field>
+        <field name="fallback_agent_id" ref="agent_inbound_centralino"/>
+    </record>
+
+    <record id="ivr_option_commerciale" model="casafolino.voice.ivr.option">
+        <field name="menu_id" ref="ivr_main"/>
+        <field name="digit">1</field>
+        <field name="label">Commerciale</field>
+        <field name="action">queue</field>
+        <field name="queue_id" ref="queue_general"/>
+    </record>
+    <record id="ivr_option_assistenza" model="casafolino.voice.ivr.option">
+        <field name="menu_id" ref="ivr_main"/>
+        <field name="digit">2</field>
+        <field name="label">Assistenza</field>
+        <field name="action">agent</field>
+        <field name="agent_id" ref="agent_inbound_centralino"/>
+    </record>
+    <record id="ivr_option_amministrazione" model="casafolino.voice.ivr.option">
+        <field name="menu_id" ref="ivr_main"/>
+        <field name="digit">3</field>
+        <field name="label">Amministrazione</field>
+        <field name="action">callback</field>
+        <field name="callback_reason">Richiesta amministrativa</field>
+    </record>
+    <record id="ivr_option_operatore" model="casafolino.voice.ivr.option">
+        <field name="menu_id" ref="ivr_main"/>
+        <field name="digit">0</field>
+        <field name="label">Operatore</field>
+        <field name="action">queue</field>
+        <field name="queue_id" ref="queue_general"/>
+    </record>
+
+    <record id="routing_open_hours" model="casafolino.voice.routing.rule">
+        <field name="sequence">10</field>
+        <field name="name">Aperto: IVR principale</field>
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="when">open</field>
+        <field name="action">ivr</field>
+        <field name="ivr_menu_id" ref="ivr_main"/>
+    </record>
+
+    <record id="routing_after_hours" model="casafolino.voice.routing.rule">
+        <field name="sequence">20</field>
+        <field name="name">Chiuso: assistente AI e richiamata</field>
+        <field name="schedule_id" ref="schedule_business_hours"/>
+        <field name="when">closed</field>
+        <field name="action">agent</field>
+        <field name="agent_id" ref="agent_inbound_centralino"/>
+    </record>
+</odoo>
+
