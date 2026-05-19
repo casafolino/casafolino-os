@@ -1,0 +1,23 @@
+{
+    'name': 'CasaFolino Voice AI',
+    'version': '18.0.1.0.0',
+    'category': 'CasaFolino',
+    'summary': 'Agenti vocali AI per centralino e follow-up clienti',
+    'author': 'CasaFolino S.R.L.',
+    'depends': ['base', 'mail', 'contacts', 'crm'],
+    'data': [
+        'security/ir.model.access.csv',
+        'data/voice_agent_data.xml',
+        'views/voice_agent_views.xml',
+        'views/voice_call_views.xml',
+        'views/voice_consent_views.xml',
+        'views/voice_outbound_queue_views.xml',
+        'views/res_partner_views.xml',
+        'views/menus.xml',
+    ],
+    'post_init_hook': 'post_init_hook',
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}
+

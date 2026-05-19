@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_voice_call" model="ir.sequence">
+        <field name="name">CasaFolino Voice Call</field>
+        <field name="code">casafolino.voice.call</field>
+        <field name="prefix">CALL-AI-</field>
+        <field name="padding">5</field>
+    </record>
+
+    <record id="seq_voice_outbound_queue" model="ir.sequence">
+        <field name="name">CasaFolino Voice Outbound Queue</field>
+        <field name="code">casafolino.voice.outbound.queue</field>
+        <field name="prefix">OUT-AI-</field>
+        <field name="padding">5</field>
+    </record>
+
+    <record id="agent_inbound_centralino" model="casafolino.voice.agent">
+        <field name="name">Centralino CasaFolino</field>
+        <field name="direction">inbound</field>
+        <field name="model">gpt-realtime-2</field>
+        <field name="voice">marin</field>
+        <field name="language">it-IT</field>
+        <field name="instructions">Sei il centralino telefonico AI di CasaFolino. Parli italiano naturale, con tono professionale, breve e cordiale. Saluta, capisci il motivo della chiamata, raccogli nome, azienda, telefono e oggetto. Non inventare informazioni. Se la richiesta richiede giudizio umano, dati sensibili, reclami, amministrazione o decisioni commerciali, proponi trasferimento o richiamata.</field>
+        <field name="transfer_policy">Trasferisci se il cliente chiede un umano, se c'e un reclamo, se ci sono dati amministrativi sensibili, o se non sei certo della risposta.</field>
+    </record>
+
+    <record id="agent_outbound_followup" model="casafolino.voice.agent">
+        <field name="name">Follow-up CasaFolino</field>
+        <field name="direction">outbound</field>
+        <field name="model">gpt-realtime-2</field>
+        <field name="voice">marin</field>
+        <field name="language">it-IT</field>
+        <field name="instructions">Sei l'assistente vocale AI di CasaFolino per follow-up operativi verso clienti gia acquisiti o consenzienti. All'inizio presentati come assistente vocale AI, spiega il motivo della chiamata e chiedi se e un buon momento. Se il cliente non vuole proseguire, registra opt-out o preferenza di ricontatto e chiudi. Non fare pressione commerciale.</field>
+        <field name="transfer_policy">Trasferisci o crea attivita se il cliente chiede una persona, se emerge una opportunita commerciale concreta o se c'e un problema da gestire.</field>
+    </record>
+</odoo>
+
