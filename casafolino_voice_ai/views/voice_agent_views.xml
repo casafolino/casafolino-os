@@ -26,6 +26,7 @@
                             <field name="direction"/>
                             <field name="active"/>
                             <field name="language"/>
+                            <field name="temperature"/>
                         </group>
                         <group>
                             <field name="model"/>
@@ -35,11 +36,26 @@
                         </group>
                     </group>
                     <notebook>
+                        <page string="Profilo" name="profile">
+                            <field name="persona"/>
+                            <field name="first_message"/>
+                        </page>
                         <page string="Istruzioni" name="instructions">
                             <field name="instructions" nolabel="1"/>
                         </page>
+                        <page string="Lingua" name="language_policy">
+                            <field name="language_policy" nolabel="1"/>
+                        </page>
+                        <page string="Strumenti" name="tools">
+                            <field name="tool_policy" nolabel="1"/>
+                        </page>
                         <page string="Trasferimento" name="transfer">
                             <field name="transfer_policy" nolabel="1"/>
+                        </page>
+                        <page string="Qualita" name="quality">
+                            <field name="success_criteria"/>
+                            <field name="guardrails"/>
+                            <field name="closing_policy"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -54,4 +70,3 @@
         <field name="view_mode">list,form</field>
     </record>
 </odoo>
-
