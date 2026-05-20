@@ -338,6 +338,90 @@
         margin-top: 10px;
     }
 
+    .cf-pc-route-panel {
+        margin-top: 12px;
+    }
+
+    .cf-pc-route-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(220px, 1fr));
+        gap: 10px;
+        padding: 10px;
+        overflow-x: auto;
+    }
+
+    .cf-pc-route {
+        min-width: 220px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+
+        header {
+            padding: 9px 10px;
+            border-bottom: 1px solid #dfe3da;
+            background: #fafbf8;
+
+            h3 {
+                margin: 0;
+                font-size: 13px;
+                line-height: 1.2;
+            }
+        }
+    }
+
+    .cf-pc-route-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .cf-pc-compact-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        padding: 8px;
+        border: 1px solid #edf0ea;
+        border-radius: 7px;
+        background: #f9faf7;
+
+        .cf-pc-row-actions {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+            min-width: 0;
+        }
+    }
+
+    .cf-pc-compact-main {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        min-width: 0;
+
+        strong,
+        small {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        strong {
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        small {
+            margin-top: 2px;
+            color: #667061;
+            font-size: 12px;
+        }
+    }
+
     .cf-pc-empty {
         padding: 18px 8px;
         color: #667061;

@@ -21,7 +21,7 @@ export class CFPipelineControl extends Component {
             data: {
                 kpis: [],
                 lanes: [],
-                followup: { kpis: [], columns: [], timeline: [] },
+                followup: { kpis: [], columns: [], routes: [], timeline: [] },
                 post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
                 inbox: { kpis: [], to_reply: [], waiting_customer: [] },

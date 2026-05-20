@@ -18,7 +18,7 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
             'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
-            'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'timeline': []}),
+            'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []}),
             'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
@@ -134,8 +134,51 @@ class CfPipelineControl(models.AbstractModel):
                 self._followup_column('Da pianificare', no_plan, today, 'blue'),
                 self._followup_column('Clienti caldi', hot, today, 'green'),
             ],
+            'routes': self._followup_routes(today, user),
             'timeline': self._followup_timeline(overdue | week | no_plan | waiting_leads, today),
         }
+
+    def _followup_routes(self, today, user):
+        inbox, waiting = self._get_latest_commercial_threads(user)
+        signal_items = [
+            self._format_followup_lead_item(msg.lead_id, today) if msg.lead_id else self._format_mail_item(msg)
+            for msg in inbox[:8]
+        ]
+        quotes = self._open_quotes()
+        samples = self.env['cf.export.sample'].search([
+            ('state', 'not in', ['feedback_ok', 'feedback_ko', 'no_feedback']),
+        ], order='date_feedback_expected asc, create_date desc', limit=8)
+        dossiers = self.env['project.project'].search(self._active_project_domain(), order='write_date desc, id desc', limit=8)
+        return [
+            {
+                'title': 'Inbound / nuove risposte',
+                'count': len(inbox),
+                'tone': 'red',
+                'items': signal_items,
+                'empty': 'Nessuna risposta inbound',
+            },
+            {
+                'title': 'Quotazioni aperte',
+                'count': len(quotes),
+                'tone': 'blue',
+                'items': [self._format_quote_item(order) for order in quotes[:8]],
+                'empty': 'Nessuna quotazione aperta',
+            },
+            {
+                'title': 'Campionature',
+                'count': len(samples),
+                'tone': 'amber',
+                'items': [self._format_sample_item(sample, today) for sample in samples[:8]],
+                'empty': 'Nessuna campionatura attiva',
+            },
+            {
+                'title': 'Dossier / progetti',
+                'count': len(dossiers),
+                'tone': 'green',
+                'items': [self._format_project_item(project) for project in dossiers[:8]],
+                'empty': 'Nessun dossier attivo',
+            },
+        ]
 
     def _waiting_customer_leads(self, user):
         _inbox, waiting = self._get_latest_commercial_threads(user)
@@ -412,6 +455,10 @@ class CfPipelineControl(models.AbstractModel):
             return self._new_quote_from_lead(lead)
         if quick_action == 'task':
             return self._new_task_from_lead(lead)
+        if quick_action == 'today':
+            date_field = 'cf_date_next_followup' if 'cf_date_next_followup' in lead._fields else 'date_deadline'
+            lead.write({date_field: fields.Date.context_today(self)})
+            return self._notify('Follow-up messo a oggi', 'La trattativa rientra nella lista scaduti / oggi.', reload=True)
         if quick_action == 'dossier':
             return {
                 'type': 'ir.actions.act_window',
@@ -510,6 +557,17 @@ class CfPipelineControl(models.AbstractModel):
         else:
             domain = [('active', '=', True)]
         return domain
+
+    def _active_project_domain(self):
+        Project = self.env['project.project']
+        if 'cf_status_dossier' in Project._fields:
+            return [('cf_status_dossier', 'in', ['exploration', 'active', 'on_hold'])]
+        return [('active', '=', True)]
+
+    def _open_quotes(self):
+        Sale = self.env['sale.order']
+        domain = [('state', 'in', ['draft', 'sent'])]
+        return Sale.search(domain, order='validity_date asc, write_date desc, id desc', limit=24)
 
     def _fair_column(self, title, leads, today, mail_stats=None):
         return {
@@ -777,6 +835,47 @@ class CfPipelineControl(models.AbstractModel):
                 self._project_blocker_label(project),
             ]),
             'res_id': project.id,
+        }
+
+    def _format_quote_item(self, order):
+        partner = order.partner_id
+        validity = getattr(order, 'validity_date', False)
+        overdue = bool(validity and fields.Date.to_date(validity) <= fields.Date.context_today(self))
+        return {
+            'id': order.id,
+            'model': order._name,
+            'title': partner.display_name if partner else order.name,
+            'subtitle': order.name,
+            'meta': self._date_label(validity) if validity else 'Senza scadenza offerta',
+            'value': order.amount_total or 0,
+            'tone': 'red' if overdue else 'blue',
+            'badges': self._compact([
+                dict(order._fields['state'].selection).get(order.state, order.state) if order.state else False,
+                order.user_id.name if order.user_id else False,
+                'scade oggi' if overdue else False,
+            ]),
+            'res_id': order.id,
+        }
+
+    def _format_sample_item(self, sample, today):
+        deadline = sample.date_feedback_expected
+        overdue = bool(deadline and fields.Date.to_date(deadline) <= today)
+        lead = sample.lead_id
+        partner = sample.partner_id
+        return {
+            'id': sample.id,
+            'model': sample._name,
+            'title': partner.display_name if partner else sample.reference,
+            'subtitle': lead.name if lead else sample.reference,
+            'meta': self._date_label(deadline) if deadline else 'Feedback non pianificato',
+            'value': 0,
+            'tone': 'red' if overdue else 'amber',
+            'badges': self._compact([
+                dict(sample._fields['state'].selection).get(sample.state, sample.state) if sample.state else False,
+                'feedback atteso' if deadline else False,
+                'scaduto' if overdue else False,
+            ]),
+            'res_id': sample.id,
         }
 
     def _format_project_detail(self, project, today):

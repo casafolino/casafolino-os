@@ -126,6 +126,31 @@
                         </t>
                     </div>
 
+                    <section class="cf-pc-panel cf-pc-route-panel">
+                        <header>
+                            <h2>Strade operative</h2>
+                            <span class="cf-pc-pill" t-out="state.data.followup.routes.length"/>
+                        </header>
+                        <div class="cf-pc-route-grid">
+                            <t t-foreach="state.data.followup.routes" t-as="route" t-key="'route-' + route.title">
+                                <section class="cf-pc-route">
+                                    <header>
+                                        <h3 t-out="route.title"/>
+                                        <span t-attf-class="cf-pc-pill tone-#{route.tone}" t-out="route.count"/>
+                                    </header>
+                                    <div class="cf-pc-route-body">
+                                        <t t-if="route.items.length">
+                                            <t t-foreach="route.items" t-as="item" t-key="'route-item-' + item.model + '-' + item.id">
+                                                <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                            </t>
+                                        </t>
+                                        <div t-else="" class="cf-pc-empty" t-out="route.empty"/>
+                                    </div>
+                                </section>
+                            </t>
+                        </div>
+                    </section>
+
                     <section class="cf-pc-panel cf-pc-timeline-panel">
                         <header>
                             <h2>Agenda follow-up</h2>
@@ -500,11 +525,50 @@
             <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'followup7')">
                 +7gg
             </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'today')">
+                Oggi
+            </button>
             <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'sample')">
                 Campione
             </button>
             <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'dossier')">
                 Dossier
+            </button>
+        </div>
+    </article>
+</t>
+
+<t t-name="casafolino_pipeline_control.CompactActionRow">
+    <article class="cf-pc-compact-row">
+        <button class="cf-pc-compact-main" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)">
+            <strong t-out="item.title"/>
+            <small>
+                <t t-out="item.subtitle"/>
+                <t t-if="item.meta"> · <t t-out="item.meta"/></t>
+            </small>
+        </button>
+        <span t-if="item.value" class="cf-pc-value">€ <t t-out="Math.round(item.value).toLocaleString('it-IT')"/></span>
+        <div class="cf-pc-row-actions">
+            <button class="btn btn-sm btn-light" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)" title="Apri">
+                <i class="fa fa-folder-open-o"/>
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'email')" title="Email">
+                <i class="fa fa-envelope-o"/>
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'today')" title="Metti a oggi">
+                <i class="fa fa-calendar-check-o"/>
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'quote')" title="Quotazione">
+                <i class="fa fa-file-text-o"/>
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'sample')" title="Campione">
+                <i class="fa fa-flask"/>
+            </button>
+            <button t-if="item.model === 'casafolino.mail.message'" class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(item, 'reply')" title="Rispondi">
+                <i class="fa fa-reply"/>
+            </button>
+            <button t-if="item.model === 'casafolino.mail.message'" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(item, 'link_lead')" title="Collega lead">
+                <i class="fa fa-link"/>
             </button>
         </div>
     </article>
