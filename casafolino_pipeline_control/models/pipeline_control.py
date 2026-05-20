@@ -427,7 +427,14 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'sample':
             return self._new_sample_from_message(msg)
         if quick_action == 'snooze':
-            return self._snooze_message_thread(msg)
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Posticipa thread',
+                'res_model': 'cf.pipeline.snooze.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_message_id': msg.id},
+            }
         if quick_action == 'archive':
             msg.action_archive()
             return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla sala controllo.', reload=True)
@@ -736,21 +743,6 @@ class CfPipelineControl(models.AbstractModel):
             'target': 'new',
             'context': {'default_lead_id': lead.id},
         }
-
-    def _snooze_message_thread(self, msg):
-        if not msg.thread_id:
-            return self._notify('Thread richiesto', 'Questa email non ha ancora un thread V3.', 'warning')
-        wake_at = fields.Datetime.now() + timedelta(days=1)
-        self.env['casafolino.mail.snooze'].create({
-            'thread_id': msg.thread_id.id,
-            'user_id': self.env.user.id,
-            'snooze_type': 'until_date',
-            'wake_at': wake_at,
-            'snoozed_at': fields.Datetime.now(),
-            'note': 'Posticipato da Inbox Commerciale',
-        })
-        msg.thread_id.write({'is_snoozed': True})
-        return self._notify('Thread posticipato', 'Rientra domani nella gestione commerciale.', reload=True)
 
     def _notify(self, title, message, notification_type='success', reload=False):
         return {
@@ -1092,3 +1084,60 @@ class CfPipelineLinkLeadWizard(models.TransientModel):
                 ('active', '=', True),
             ], order='write_date desc, id desc', limit=1)
         return self.env['crm.lead']
+
+
+class CfPipelineSnoozeWizard(models.TransientModel):
+    _name = 'cf.pipeline.snooze.wizard'
+    _description = 'Posticipa thread commerciale'
+
+    message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
+    thread_id = fields.Many2one('casafolino.mail.thread', string='Thread', readonly=True)
+    wake_at = fields.Datetime(string='Rientra il', required=True)
+    note = fields.Char(string='Nota')
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        message = self.env['casafolino.mail.message'].browse(self.env.context.get('default_message_id')).exists()
+        if message:
+            res.update({
+                'message_id': message.id,
+                'thread_id': message.thread_id.id if message.thread_id else False,
+                'wake_at': fields.Datetime.now() + timedelta(days=1),
+                'note': 'Posticipato da Inbox Commerciale',
+            })
+        return res
+
+    def action_snooze(self):
+        self.ensure_one()
+        if not self.thread_id:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Thread richiesto',
+                    'message': 'Questa email non ha ancora un thread V3.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        self.env['casafolino.mail.snooze'].create({
+            'thread_id': self.thread_id.id,
+            'user_id': self.env.user.id,
+            'snooze_type': 'until_date',
+            'wake_at': self.wake_at,
+            'snoozed_at': fields.Datetime.now(),
+            'note': self.note or 'Posticipato da Inbox Commerciale',
+        })
+        self.thread_id.write({'is_snoozed': True})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Thread posticipato',
+                'message': 'La conversazione rientra nella data scelta.',
+                'type': 'success',
+                'sticky': False,
+            },
+            'reload': True,
+        }
