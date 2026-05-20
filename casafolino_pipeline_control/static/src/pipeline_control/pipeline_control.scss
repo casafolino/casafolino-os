@@ -1,5 +1,8 @@
 .cf-pipeline-control {
-    min-height: calc(100vh - 48px);
+    height: calc(100vh - 48px);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: #f4f5f2;
     color: #20251f;
 
@@ -20,7 +23,7 @@
     .cf-pc-shell {
         display: grid;
         grid-template-columns: 232px minmax(0, 1fr);
-        min-height: calc(100vh - 48px);
+        min-height: 100%;
     }
 
     .cf-pc-sidebar {
@@ -102,6 +105,7 @@
     .cf-pc-main {
         min-width: 0;
         padding: 20px;
+        padding-bottom: 56px;
     }
 
     .cf-pc-topbar,
