@@ -392,7 +392,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             'session': {
                 'type': 'realtime',
                 'model': params.get_param('casafolino_voice_ai.openai_realtime_model') or 'gpt-realtime-2',
-                'output_modalities': ['audio', 'text'],
+                'output_modalities': ['audio'],
                 'instructions': instructions,
                 'audio': {
                     'input': {
