@@ -108,6 +108,18 @@ class CasaFolinoVoiceAIController(http.Controller):
             if query:
                 domain += ['|', '|', ('title', 'ilike', query), ('keywords', 'ilike', query), ('content', 'ilike', query)]
             items = request.env['casafolino.voice.knowledge'].sudo().search(domain, limit=6)
+            if not items and category:
+                items = request.env['casafolino.voice.knowledge'].sudo().search([
+                    ('active', '=', True),
+                    ('category', '=', category),
+                ], limit=6)
+            if not items and query:
+                tokens = [token for token in query.replace(',', ' ').split() if len(token) >= 4][:5]
+                token_domain = [('active', '=', True)]
+                for token in tokens:
+                    token_domain += ['|', '|', ('title', 'ilike', token), ('keywords', 'ilike', token), ('content', 'ilike', token)]
+                if len(token_domain) > 1:
+                    items = request.env['casafolino.voice.knowledge'].sudo().search(token_domain, limit=6)
             return request.make_json_response({'ok': True, 'results': items.build_payload()})
 
         if tool_name == 'lookup_order_status':

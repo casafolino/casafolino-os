@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
+    "simulate": "node scripts/simulate-text-call.js",
     "check": "node --check src/server.js"
   },
   "dependencies": {
