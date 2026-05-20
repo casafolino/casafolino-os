@@ -105,6 +105,30 @@ export class CFPipelineControl extends Component {
         }
     }
 
+    async recordQuickAction(item, quickAction) {
+        if (!item || !item.model || !item.res_id) {
+            this.notification.add(_t("Record non disponibile"), { type: "warning" });
+            return;
+        }
+        if (item.model === "crm.lead") {
+            return this.leadQuickAction(item, quickAction);
+        }
+        if (item.model === "casafolino.mail.message") {
+            return this.mailQuickAction(item, quickAction);
+        }
+        try {
+            const result = await this.orm.call("cf.pipeline.control", "record_quick_action", [item.model, item.res_id, quickAction]);
+            if (result) {
+                await this.action.doAction(result);
+                if (result.reload) {
+                    await this.loadData();
+                }
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
     async openModel(model, name) {
         await this.action.doAction({
             type: "ir.actions.act_window",

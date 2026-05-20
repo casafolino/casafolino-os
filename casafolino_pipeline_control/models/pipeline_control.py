@@ -477,6 +477,29 @@ class CfPipelineControl(models.AbstractModel):
             }
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
+    @api.model
+    def record_quick_action(self, model, res_id, quick_action):
+        allowed_models = {
+            'sale.order': 'Quotazione',
+            'cf.export.sample': 'Campionatura',
+            'project.project': 'Dossier',
+            'project.task': 'Task',
+        }
+        if model not in allowed_models:
+            return self._notify('Azione non disponibile', model, 'warning')
+        record = self.env[model].browse(int(res_id)).exists()
+        if not record:
+            return self._notify('%s non trovato' % allowed_models[model], 'Il record non e piu disponibile.', 'warning')
+        if quick_action == 'open':
+            return self._open_record(record, allowed_models[model])
+        if quick_action == 'task':
+            return self._new_operational_task(record)
+        if quick_action == 'followup7':
+            return self._new_followup_task(record, fields.Date.context_today(self) + timedelta(days=7))
+        if quick_action == 'today':
+            return self._new_followup_task(record, fields.Date.context_today(self))
+        return self._notify('Azione non disponibile', quick_action, 'warning')
+
     def _get_latest_commercial_threads(self, user):
         Mail = self.env['casafolino.mail.message']
         domain = [
@@ -715,6 +738,30 @@ class CfPipelineControl(models.AbstractModel):
             },
         }
 
+    def _new_operational_task(self, record):
+        partner = self._record_partner(record)
+        project = record if record._name == 'project.project' else getattr(record, 'project_id', False)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova task operativa',
+            'res_model': 'project.task',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'default_name': self._task_title_for_record(record),
+                'default_project_id': project.id if project else False,
+                'default_partner_id': partner.id if partner else False,
+                'default_description': self._task_description_for_record(record),
+            },
+        }
+
+    def _new_followup_task(self, record, deadline):
+        action = self._new_operational_task(record)
+        action['name'] = 'Pianifica follow-up'
+        action['context'] = dict(action['context'], default_date_deadline=deadline)
+        return action
+
     def _new_quote_from_message(self, msg):
         partner = msg.partner_id or msg.lead_id.partner_id
         return self._new_quote_action(partner, msg.lead_id, msg.subject or '')
@@ -752,6 +799,27 @@ class CfPipelineControl(models.AbstractModel):
             'target': 'new',
             'context': {'default_lead_id': lead.id},
         }
+
+    def _record_partner(self, record):
+        return getattr(record, 'partner_id', False) or getattr(record, 'cf_partner_id', False)
+
+    def _task_title_for_record(self, record):
+        if record._name == 'sale.order':
+            return 'Follow-up quotazione: %s' % (record.name or record.display_name)
+        if record._name == 'cf.export.sample':
+            return 'Sollecito feedback campione: %s' % (record.display_name or getattr(record, 'reference', ''))
+        if record._name == 'project.project':
+            return 'Prossima azione dossier: %s' % (record.name or record.display_name)
+        return 'Task operativa: %s' % (record.display_name or record.id)
+
+    def _task_description_for_record(self, record):
+        if record._name == 'sale.order':
+            return 'Verificare stato quotazione, prossima decisione cliente e possibilita ordine.'
+        if record._name == 'cf.export.sample':
+            return 'Verificare feedback campionatura, eventuali note qualita/logistica e prossima azione commerciale.'
+        if record._name == 'project.project':
+            return 'Aggiornare stato reparto, blocchi, prossima decisione e owner.'
+        return ''
 
     def _notify(self, title, message, notification_type='success', reload=False):
         return {
@@ -882,6 +950,8 @@ class CfPipelineControl(models.AbstractModel):
     def _format_project_detail(self, project, today):
         return {
             'id': project.id,
+            'model': project._name,
+            'res_id': project.id,
             'name': project.name,
             'partner': self._project_partner_name(project),
             'status': self._project_status(project),

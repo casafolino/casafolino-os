@@ -471,7 +471,15 @@
                                             <span t-if="dossier.target_date"> - <t t-out="dossier.target_date"/></span>
                                         </p>
                                     </div>
-                                    <span class="cf-pc-pill tone-amber" t-out="dossier.blocker"/>
+                                    <div class="cf-pc-row-actions">
+                                        <span class="cf-pc-pill tone-amber" t-out="dossier.blocker"/>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'open')" title="Apri dossier">
+                                            <i class="fa fa-folder-open-o"/>
+                                        </button>
+                                        <button class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(dossier, 'task')" title="Nuova task">
+                                            <i class="fa fa-plus"/>
+                                        </button>
+                                    </div>
                                 </header>
                                 <div class="cf-pc-depts">
                                     <t t-foreach="dossier.departments" t-as="dept" t-key="dept.name">
@@ -540,7 +548,7 @@
 
 <t t-name="casafolino_pipeline_control.CompactActionRow">
     <article class="cf-pc-compact-row">
-        <button class="cf-pc-compact-main" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)">
+        <button class="cf-pc-compact-main" t-on-click="() => this.recordQuickAction(item, 'open')">
             <strong t-out="item.title"/>
             <small>
                 <t t-out="item.subtitle"/>
@@ -549,7 +557,7 @@
         </button>
         <span t-if="item.value" class="cf-pc-value">€ <t t-out="Math.round(item.value).toLocaleString('it-IT')"/></span>
         <div class="cf-pc-row-actions">
-            <button class="btn btn-sm btn-light" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)" title="Apri">
+            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(item, 'open')" title="Apri">
                 <i class="fa fa-folder-open-o"/>
             </button>
             <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'email')" title="Email">
@@ -569,6 +577,15 @@
             </button>
             <button t-if="item.model === 'casafolino.mail.message'" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(item, 'link_lead')" title="Collega lead">
                 <i class="fa fa-link"/>
+            </button>
+            <button t-if="['sale.order', 'cf.export.sample', 'project.project'].includes(item.model)" class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(item, 'today')" title="Follow-up oggi">
+                <i class="fa fa-calendar-check-o"/>
+            </button>
+            <button t-if="['sale.order', 'cf.export.sample', 'project.project'].includes(item.model)" class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(item, 'followup7')" title="Follow-up tra 7 giorni">
+                <i class="fa fa-calendar-plus-o"/>
+            </button>
+            <button t-if="['sale.order', 'cf.export.sample', 'project.project'].includes(item.model)" class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(item, 'task')" title="Nuova task operativa">
+                <i class="fa fa-plus"/>
             </button>
         </div>
     </article>
