@@ -114,13 +114,15 @@ class CasaFolinoVoiceAIController(http.Controller):
             SaleOrder = request.env['sale.order'].sudo()
             domain = []
             order_name = payload.get('order_name')
-            if order_name:
+            if order_name and len(order_name.strip()) >= 6:
                 domain.append(('name', 'ilike', order_name))
             partner = partner or self._find_partner(payload)
             if partner:
                 domain.append(('partner_id', 'child_of', partner.commercial_partner_id.id))
             if not domain:
-                return request.make_json_response({'error': 'order_name or customer identifier required'}, status=400)
+                return request.make_json_response({
+                    'error': 'specific order reference or customer identifier required',
+                }, status=400)
             orders = SaleOrder.search(domain, order='date_order desc, id desc', limit=5)
             return request.make_json_response({
                 'ok': True,
@@ -130,8 +132,6 @@ class CasaFolinoVoiceAIController(http.Controller):
                     'customer': order.partner_id.display_name,
                     'state': order.state,
                     'date_order': fields.Datetime.to_string(order.date_order) if order.date_order else False,
-                    'amount_total': order.amount_total,
-                    'currency': order.currency_id.name,
                     'invoice_status': order.invoice_status,
                     'delivery_status': getattr(order, 'delivery_status', False),
                 } for order in orders],
