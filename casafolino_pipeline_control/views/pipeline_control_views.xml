@@ -143,6 +143,61 @@
         </field>
     </record>
 
+    <record id="view_crm_lead_premium_legacy_360_to_dossier" model="ir.ui.view">
+        <field name="name">crm.lead.form.cf.premium.legacy.360.to.dossier</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="casafolino_crm_export.cf_crm_lead_view_form_premium"/>
+        <field name="priority">130</field>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_project_360']" position="attributes">
+                <attribute name="string">Apri dossier</attribute>
+                <attribute name="icon">fa-briefcase</attribute>
+                <attribute name="class">btn-secondary</attribute>
+            </xpath>
+            <xpath expr="//i[contains(@class, 'fa-globe')]" position="attributes">
+                <attribute name="title">Paese</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_standard_legacy_360_to_dossier" model="ir.ui.view">
+        <field name="name">crm.lead.form.cf.legacy.360.to.dossier</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="casafolino_crm_export.cf_crm_lead_view_form"/>
+        <field name="priority">130</field>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_project_360']" position="attributes">
+                <attribute name="icon">fa-briefcase</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_open_project_360']/span" position="replace">
+                <span>Dossier</span>
+            </xpath>
+            <xpath expr="//page[@name='cf_dossier']//strong[contains(., 'vista 360')]" position="replace">
+                <strong>dossier operativo</strong>
+            </xpath>
+            <xpath expr="//page[@name='cf_dossier']//p[contains(., 'Linka un progetto')]" position="replace">
+                <p>Collega o crea un progetto/dossier per gestire il flusso operativo.</p>
+            </xpath>
+            <xpath expr="//page[@name='cf_dossier']//p[contains(., 'Dossier collegato')]" position="replace">
+                <p>Dossier collegato. Usa il bottone in alto per aprirlo.</p>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_form_legacy_360_to_dossier" model="ir.ui.view">
+        <field name="name">project.project.form.legacy.360.to.dossier</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="casafolino_crm_export.project_project_form_casafolino"/>
+        <field name="priority">130</field>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_project_dashboard_360']" position="attributes">
+                <attribute name="string">Dossier</attribute>
+                <attribute name="icon">fa-briefcase</attribute>
+                <attribute name="class">btn-secondary</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_cf_pipeline_control" model="ir.actions.client">
         <field name="name">Sala Controllo</field>
         <field name="tag">casafolino_pipeline_control</field>
@@ -176,6 +231,17 @@
         <field name="name">Dossier / Progetti</field>
         <field name="tag">casafolino_pipeline_control</field>
         <field name="context">{'default_view': 'dossiers'}</field>
+    </record>
+
+    <record id="casafolino_crm_export.action_project_dashboard_360" model="ir.actions.client">
+        <field name="name">Dossier / Progetti</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="target">current</field>
+        <field name="context">{'default_view': 'dossiers'}</field>
+    </record>
+
+    <record id="casafolino_crm_export.menu_cf_projects_360" model="ir.ui.menu">
+        <field name="active" eval="False"/>
     </record>
 
     <menuitem id="menu_cf_pipeline_control_root"

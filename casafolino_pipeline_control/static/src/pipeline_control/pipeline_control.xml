@@ -33,7 +33,7 @@
                     </t>
                 </div>
                 <div class="cf-pc-note">
-                    Dati letti da Odoo: CRM, mail, campionature, progetti e preventivi.
+                    Vista operativa per il lavoro commerciale di giornata.
                 </div>
             </aside>
 
@@ -561,23 +561,23 @@
             </t>
         </div>
         <div class="cf-pc-card-actions">
-            <button class="btn btn-sm btn-light" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)">
-                Apri
+            <button class="btn btn-sm btn-light" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)" title="Apri">
+                <i class="fa fa-folder-open-o"/>
             </button>
-            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'email')">
-                Email
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(item, 'email')" title="Scrivi email">
+                <i class="fa fa-envelope-o"/>
             </button>
-            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'followup7')">
-                +7gg
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'today')" title="Metti a oggi">
+                <i class="fa fa-calendar-check-o"/>
             </button>
-            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'today')">
-                Oggi
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'followup7')" title="Follow-up tra 7 giorni">
+                <i class="fa fa-calendar-plus-o"/>
             </button>
-            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'sample')">
-                Campione
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'sample')" title="Campionatura">
+                <i class="fa fa-flask"/>
             </button>
-            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'dossier')">
-                Dossier
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'dossier')" title="Promuovi a dossier">
+                <i class="fa fa-briefcase"/>
             </button>
         </div>
     </article>

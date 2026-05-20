@@ -71,6 +71,41 @@ class CrmLeadPipelineControl(models.Model):
             'context': {'default_view': default_view},
         }
 
+    def action_open_project_360(self):
+        """Legacy CRM Export button: keep it useful, but route to the dossier."""
+        self.ensure_one()
+        project = getattr(self, 'cf_project_id', False)
+        if not project and hasattr(self, '_ensure_project_360'):
+            project = self._ensure_project_360()
+        if project:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Dossier',
+                'res_model': 'project.project',
+                'res_id': project.id,
+                'view_mode': 'form',
+                'views': [(False, 'form')],
+                'target': 'current',
+            }
+        return self.action_cf_pc_promote_dossier()
+
+
+class ProjectProjectPipelineControl(models.Model):
+    _inherit = 'project.project'
+
+    def action_open_project_dashboard_360(self):
+        """Legacy project button: the active operational view is now the dossier form."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Dossier',
+            'res_model': 'project.project',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
 
 class CfPipelineControl(models.AbstractModel):
     _name = 'cf.pipeline.control'
@@ -494,6 +529,7 @@ class CfPipelineControl(models.AbstractModel):
                 'view_mode': 'form',
                 'target': 'new',
                 'context': {'default_message_id': msg.id},
+                'reload': True,
             }
         if quick_action == 'task':
             return self._new_task_from_message(msg)
@@ -509,6 +545,7 @@ class CfPipelineControl(models.AbstractModel):
                 'view_mode': 'form',
                 'target': 'new',
                 'context': {'default_message_id': msg.id},
+                'reload': True,
             }
         if quick_action == 'archive':
             msg.action_archive()
@@ -549,6 +586,7 @@ class CfPipelineControl(models.AbstractModel):
                 'view_mode': 'form',
                 'target': 'new',
                 'context': {'default_lead_id': lead.id},
+                'reload': True,
             }
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
@@ -564,6 +602,7 @@ class CfPipelineControl(models.AbstractModel):
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_fair_id': fair.id},
+            'reload': True,
         }
 
     @api.model
@@ -671,7 +710,7 @@ class CfPipelineControl(models.AbstractModel):
     def _sample_feedback_overdue_domain(self, today):
         return [
             ('date_feedback_expected', '<=', today),
-            ('state', 'not in', ['done', 'cancelled']),
+            ('state', 'not in', ['feedback_ok', 'feedback_ko', 'no_feedback']),
         ]
 
     def _blocked_project_domain(self):
