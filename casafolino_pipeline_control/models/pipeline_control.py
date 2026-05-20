@@ -506,7 +506,7 @@ class CfPipelineControl(models.AbstractModel):
 
     def _get_dossier_data(self, today):
         Project = self.env['project.project']
-        projects = Project.search(self._blocked_project_domain(), limit=10)
+        projects = Project.search(self._active_project_domain(), order='write_date desc, id desc', limit=16)
         return [self._format_project_detail(project, today) for project in projects]
 
     def _mail_to_reply_domain(self, user):

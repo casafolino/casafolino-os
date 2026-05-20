@@ -91,6 +91,30 @@
         <field name="context">{'default_view': 'inbox'}</field>
     </record>
 
+    <record id="action_cf_pipeline_followup" model="ir.actions.client">
+        <field name="name">Follow-up Clienti</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'followup'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_post_fair" model="ir.actions.client">
+        <field name="name">Post-Fiera</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'fair'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_pipeline" model="ir.actions.client">
+        <field name="name">Pipeline Export</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'pipeline'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_dossiers" model="ir.actions.client">
+        <field name="name">Dossier / Progetti</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'dossiers'}</field>
+    </record>
+
     <menuitem id="menu_cf_pipeline_control_root"
               name="Sala Controllo"
               action="action_cf_pipeline_control"
@@ -108,5 +132,29 @@
               parent="casafolino_crm_export.menu_cf_export_root"
               action="action_cf_pipeline_inbox"
               sequence="2"/>
+
+    <menuitem id="menu_cf_pipeline_followup"
+              name="Follow-up Clienti"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_followup"
+              sequence="3"/>
+
+    <menuitem id="menu_cf_pipeline_post_fair"
+              name="Post-Fiera"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_post_fair"
+              sequence="4"/>
+
+    <menuitem id="menu_cf_pipeline_pipeline"
+              name="Pipeline Export"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_pipeline"
+              sequence="5"/>
+
+    <menuitem id="menu_cf_pipeline_dossiers"
+              name="Dossier / Progetti"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_dossiers"
+              sequence="6"/>
 
 </odoo>
