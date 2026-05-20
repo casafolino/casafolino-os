@@ -57,22 +57,22 @@
         <field name="menu_id" ref="ivr_main"/>
         <field name="digit">1</field>
         <field name="label">Commerciale</field>
-        <field name="action">queue</field>
-        <field name="queue_id" ref="queue_general"/>
+        <field name="action">agent</field>
+        <field name="agent_id" ref="agent_inbound_commerciale"/>
     </record>
     <record id="ivr_option_assistenza" model="casafolino.voice.ivr.option">
         <field name="menu_id" ref="ivr_main"/>
         <field name="digit">2</field>
         <field name="label">Assistenza</field>
         <field name="action">agent</field>
-        <field name="agent_id" ref="agent_inbound_centralino"/>
+        <field name="agent_id" ref="agent_inbound_assistenza"/>
     </record>
     <record id="ivr_option_amministrazione" model="casafolino.voice.ivr.option">
         <field name="menu_id" ref="ivr_main"/>
         <field name="digit">3</field>
         <field name="label">Amministrazione</field>
-        <field name="action">callback</field>
-        <field name="callback_reason">Richiesta amministrativa</field>
+        <field name="action">agent</field>
+        <field name="agent_id" ref="agent_inbound_amministrazione"/>
     </record>
     <record id="ivr_option_operatore" model="casafolino.voice.ivr.option">
         <field name="menu_id" ref="ivr_main"/>
@@ -100,4 +100,3 @@
         <field name="agent_id" ref="agent_inbound_centralino"/>
     </record>
 </odoo>
-

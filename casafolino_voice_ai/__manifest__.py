@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Voice AI',
-    'version': '18.0.4.0.0',
+    'version': '18.0.5.0.0',
     'category': 'CasaFolino',
     'summary': 'Agenti vocali AI per centralino e follow-up clienti',
     'author': 'CasaFolino S.R.L.',
