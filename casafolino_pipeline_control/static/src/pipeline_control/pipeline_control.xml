@@ -292,10 +292,26 @@
                                             <span t-if="row.value">€ <t t-out="Math.round(row.value).toLocaleString('it-IT')"/></span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord(row)">Apri</button>
+                                            <div class="cf-pc-row-actions">
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(row, 'open')" title="Apri lead">
+                                                    <i class="fa fa-folder-open-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(row, 'email')" title="Scrivi email">
+                                                    <i class="fa fa-envelope-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(row, 'today')" title="Metti a oggi">
+                                                    <i class="fa fa-calendar-check-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(row, 'followup7')" title="Follow-up tra 7 giorni">
+                                                    <i class="fa fa-calendar-plus-o"/>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </t>
+                                <tr t-if="!state.data.post_fair.timeline.length">
+                                    <td colspan="7" class="cf-pc-empty">Nessun lead per questa fiera</td>
+                                </tr>
                             </tbody>
                         </table>
                     </section>

@@ -264,6 +264,10 @@ class CfPipelineControl(models.AbstractModel):
         samples = self.env['cf.export.sample'].search([('lead_id', 'in', leads.ids)]) if leads else self.env['cf.export.sample']
         dossiers = leads.filtered(lambda lead: bool(lead.cf_project_id))
         no_reply = leads.filtered(lambda lead: mail_stats.get(lead.id, {}).get('inbound', 0) == 0)
+        date_field = 'cf_date_next_followup' if 'cf_date_next_followup' in self.env['crm.lead']._fields else 'date_deadline'
+        due_today = leads.filtered(lambda lead: bool(lead[date_field]) and fields.Date.to_date(lead[date_field]) == today)
+        overdue = leads.filtered(lambda lead: bool(lead[date_field]) and fields.Date.to_date(lead[date_field]) < today)
+        no_plan = leads.filtered(lambda lead: not lead[date_field])
         no_outbound = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) == 0 and not lead.cf_date_last_contact)
         followup_1 = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) == 1 or (lead.cf_date_last_contact and mail_stats.get(lead.id, {}).get('outbound', 0) == 0))
         followup_2 = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) == 2)
@@ -283,6 +287,9 @@ class CfPipelineControl(models.AbstractModel):
             'fair_options': fair_options,
             'kpis': [
                 {'label': 'Lead raccolti', 'value': len(leads), 'hint': 'Trattative collegate'},
+                {'label': 'Da fare oggi', 'value': len(due_today), 'hint': 'Prossima azione oggi'},
+                {'label': 'In ritardo', 'value': len(overdue), 'hint': 'Follow-up scaduti'},
+                {'label': 'Da pianificare', 'value': len(no_plan), 'hint': 'Senza prossima azione'},
                 {'label': 'Follow-up 1', 'value': len(first_followup), 'hint': '%s%% del totale' % pct(len(first_followup), len(leads))},
                 {'label': 'Follow-up 2', 'value': len(second_followup), 'hint': '%s%% del totale' % pct(len(second_followup), len(leads))},
                 {'label': 'Follow-up 3', 'value': len(third_followup), 'hint': '%s%% del totale' % pct(len(third_followup), len(leads))},
@@ -292,6 +299,8 @@ class CfPipelineControl(models.AbstractModel):
                 {'label': 'Dossier', 'value': len(dossiers), 'hint': 'Lead promossi'},
             ],
             'columns': [
+                self._fair_column('Da fare oggi', due_today, today, mail_stats),
+                self._fair_column('In ritardo', overdue, today, mail_stats),
                 self._fair_column('Da contattare', no_outbound, today, mail_stats),
                 self._fair_column('Follow-up 1', followup_1, today, mail_stats),
                 self._fair_column('Follow-up 2', followup_2, today, mail_stats),
