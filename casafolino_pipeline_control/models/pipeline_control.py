@@ -14,6 +14,7 @@ class CfPipelineControl(models.AbstractModel):
     def get_dashboard_data(self, fair_id=False):
         today = fields.Date.context_today(self)
         user = self.env.user
+        fair_id = self._normalize_fair_id(fair_id)
         return {
             'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
             'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
@@ -23,6 +24,15 @@ class CfPipelineControl(models.AbstractModel):
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
             'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
         }
+
+    def _normalize_fair_id(self, fair_id):
+        if not fair_id:
+            return False
+        try:
+            return int(fair_id)
+        except (TypeError, ValueError):
+            _logger.warning("Ignoring invalid fair_id for Pipeline Control: %s", fair_id)
+            return False
 
     def _safe_section(self, name, func, fallback):
         try:
