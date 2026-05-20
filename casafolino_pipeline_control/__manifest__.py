@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Pipeline Control',
-    'version': '18.0.1.0.8',
+    'version': '18.0.1.0.9',
     'category': 'CasaFolino',
     'summary': 'Sala controllo export: follow-up, inbox commerciale, pipeline e dossier',
     'author': 'CasaFolino S.R.L.',
@@ -14,6 +14,7 @@
         'casafolino_project',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'views/pipeline_control_views.xml',
     ],
     'assets': {
