@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="knowledge_company_identity" model="casafolino.voice.knowledge">
+        <field name="sequence">10</field>
+        <field name="category">company</field>
+        <field name="title">CasaFolino identity</field>
+        <field name="keywords">company, history, who we are, made in italy, family, calabria</field>
+        <field name="source">Company Profile.pdf</field>
+        <field name="content">CasaFolino is a family-owned Italian gourmet food company with roots dating to 1962. The brand focuses on authentic Italian Mediterranean products, high-quality ingredients, traceability, sustainability and practical gourmet formats. Production site: Italy, Calabria.</field>
+    </record>
+
+    <record id="knowledge_product_categories" model="casafolino.voice.knowledge">
+        <field name="sequence">20</field>
+        <field name="category">products</field>
+        <field name="title">Main product categories</field>
+        <field name="keywords">products, catalog, categories, spreads, risotto, honey, spices, mousse, chili, biscuits, cantucci, chocolate</field>
+        <field name="source">Company Profile.pdf; CasaFolino_Catalogo_EN_2026_HQ.pdf</field>
+        <field name="content">CasaFolino product categories include spreadable creams, crunchy creams, flavored honeys, ready risottos with Sibari rice, Italian spice mixes, gastronomic mousses, crispy chilli, biscuits, cantucci, chocolate bars, chocolate chunks, organic/Bio products and gift boxes.</field>
+    </record>
+
+    <record id="knowledge_formats" model="casafolino.voice.knowledge">
+        <field name="sequence">30</field>
+        <field name="category">formats</field>
+        <field name="title">Retail formats and packaging</field>
+        <field name="keywords">formats, grams, packaging, jar, glass, box, pallet, shelf life, private label</field>
+        <field name="source">Company Profile.pdf; CasaFolino_Catalogo_EN_2026_HQ.pdf</field>
+        <field name="content">Known retail formats: spreadable creams 220 g; ready risottos 200 g; flavored honeys 250 g; spice mixes 80 g; gastronomic mousses 220 g; crispy chilli 190 g; biscuits and cantucci about 210-260 g; chocolate bars and chunks about 220-250 g. Packaging includes glass jars, retail-ready formats, bulk solutions, customized packaging, gift boxes and private label packaging.</field>
+    </record>
+
+    <record id="knowledge_certifications" model="casafolino.voice.knowledge">
+        <field name="sequence">40</field>
+        <field name="category">certifications</field>
+        <field name="title">Certifications and compliance</field>
+        <field name="keywords">certifications, brc, ifs, organic, bio, kosher, halal, rex, food safety, compliance</field>
+        <field name="source">Company Profile.pdf; CasaFolino_Catalogo_EN_2026_HQ.pdf</field>
+        <field name="content">CasaFolino communicates certifications including BRC, IFS, Organic/Bio, Kosher, Halal and Rex. These support food safety, quality, traceability and export readiness. If a caller asks for certificates or technical documents, the agent should create a callback or email activity for the responsible team rather than inventing document details.</field>
+    </record>
+
+    <record id="knowledge_operations_capacity" model="casafolino.voice.knowledge">
+        <field name="sequence">50</field>
+        <field name="category">operations</field>
+        <field name="title">Production capacity</field>
+        <field name="keywords">production, capacity, operations, jars per day, lead time, moq, scalability</field>
+        <field name="source">Company Profile.pdf</field>
+        <field name="content">Current daily production capacity indicated in the company profile: spreadable cream line 10,000-15,000 jars/day; honey line 10,000-15,000 jars/day; mousse line 8,000-10,000 jars/day; crispy chilli line 8,000-10,000 jars/day; ready-to-cook risotto and dry mix line 7,000-9,000 jars/day. MOQ is flexible and adaptable by product category and market. Annual capacity is scalable by demand and project planning.</field>
+    </record>
+
+    <record id="knowledge_markets_channels" model="casafolino.voice.knowledge">
+        <field name="sequence">60</field>
+        <field name="category">markets</field>
+        <field name="title">Markets and channels</field>
+        <field name="keywords">markets, export, countries, channels, distributors, wholesalers, ecommerce, gdo</field>
+        <field name="source">Company Profile.pdf</field>
+        <field name="content">CasaFolino is export-oriented and operates through direct sales, wholesalers, retailers, distributors and e-commerce. Countries/areas mentioned include Saudi Arabia, United States, Canada, Australia, Dubai, Morocco and Europe.</field>
+    </record>
+
+    <record id="knowledge_private_label" model="casafolino.voice.knowledge">
+        <field name="sequence">70</field>
+        <field name="category">services</field>
+        <field name="title">Private label and custom recipes</field>
+        <field name="keywords">private label, custom recipes, custom product, brand, recipe, formulation, packaging</field>
+        <field name="source">CasaFolino_Catalogo_EN_2026_HQ.pdf; Company Profile.pdf</field>
+        <field name="content">CasaFolino supports private label, custom product development, customized packaging and custom recipes. For private label or custom recipe requests, collect company name, contact, market/country, product category, expected volumes if known and requested timing, then create a commercial lead or callback.</field>
+    </record>
+
+    <record id="knowledge_voice_guardrails" model="casafolino.voice.knowledge">
+        <field name="sequence">80</field>
+        <field name="category">guardrails</field>
+        <field name="title">Commercial information guardrails</field>
+        <field name="keywords">price, availability, delivery, contract, payment, guarantee, quote, listino</field>
+        <field name="source">Voice AI operating policy</field>
+        <field name="content">The voice agent may describe product categories, known formats, certifications and general company positioning. It must not invent prices, stock availability, delivery dates, payment terms, contract terms or order changes. For those requests it must lookup the customer/order where allowed, create a note/activity/lead, or transfer to a human.</field>
+    </record>
+</odoo>

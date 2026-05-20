@@ -14,6 +14,7 @@ access_voice_queue_user,casafolino.voice.queue user,model_casafolino_voice_queue
 access_voice_ivr_menu_user,casafolino.voice.ivr.menu user,model_casafolino_voice_ivr_menu,base.group_user,1,1,1,0
 access_voice_ivr_option_user,casafolino.voice.ivr.option user,model_casafolino_voice_ivr_option,base.group_user,1,1,1,0
 access_voice_routing_rule_user,casafolino.voice.routing.rule user,model_casafolino_voice_routing_rule,base.group_user,1,1,1,0
+access_voice_knowledge_user,casafolino.voice.knowledge user,model_casafolino_voice_knowledge,base.group_user,1,1,1,0
 access_voice_number_manager,casafolino.voice.number manager,model_casafolino_voice_number,base.group_system,1,1,1,1
 access_voice_schedule_manager,casafolino.voice.schedule manager,model_casafolino_voice_schedule,base.group_system,1,1,1,1
 access_voice_schedule_line_manager,casafolino.voice.schedule.line manager,model_casafolino_voice_schedule_line,base.group_system,1,1,1,1
@@ -21,3 +22,4 @@ access_voice_queue_manager,casafolino.voice.queue manager,model_casafolino_voice
 access_voice_ivr_menu_manager,casafolino.voice.ivr.menu manager,model_casafolino_voice_ivr_menu,base.group_system,1,1,1,1
 access_voice_ivr_option_manager,casafolino.voice.ivr.option manager,model_casafolino_voice_ivr_option,base.group_system,1,1,1,1
 access_voice_routing_rule_manager,casafolino.voice.routing.rule manager,model_casafolino_voice_routing_rule,base.group_system,1,1,1,1
+access_voice_knowledge_manager,casafolino.voice.knowledge manager,model_casafolino_voice_knowledge,base.group_system,1,1,1,1

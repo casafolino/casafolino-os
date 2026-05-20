@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Voice AI',
-    'version': '18.0.5.0.0',
+    'version': '18.0.6.0.0',
     'category': 'CasaFolino',
     'summary': 'Agenti vocali AI per centralino e follow-up clienti',
     'author': 'CasaFolino S.R.L.',
@@ -8,11 +8,13 @@
     'data': [
         'security/ir.model.access.csv',
         'data/voice_config_data.xml',
+        'data/voice_knowledge_data.xml',
         'data/voice_agent_data.xml',
         'data/voice_pbx_data.xml',
         'views/voice_agent_views.xml',
         'views/voice_call_views.xml',
         'views/voice_consent_views.xml',
+        'views/voice_knowledge_views.xml',
         'views/voice_outbound_queue_views.xml',
         'views/voice_pbx_views.xml',
         'views/res_config_settings_views.xml',

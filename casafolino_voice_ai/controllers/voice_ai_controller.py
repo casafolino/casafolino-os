@@ -99,6 +99,95 @@ class CasaFolinoVoiceAIController(http.Controller):
                 })
             return request.make_json_response({'ok': True, 'partner_id': partner.id if partner else None})
 
+        if tool_name == 'lookup_knowledge':
+            query = payload.get('query') or ''
+            category = payload.get('category')
+            domain = [('active', '=', True)]
+            if category:
+                domain.append(('category', '=', category))
+            if query:
+                domain += ['|', '|', ('title', 'ilike', query), ('keywords', 'ilike', query), ('content', 'ilike', query)]
+            items = request.env['casafolino.voice.knowledge'].sudo().search(domain, limit=6)
+            return request.make_json_response({'ok': True, 'results': items.build_payload()})
+
+        if tool_name == 'lookup_order_status':
+            SaleOrder = request.env['sale.order'].sudo()
+            domain = []
+            order_name = payload.get('order_name')
+            if order_name:
+                domain.append(('name', 'ilike', order_name))
+            partner = partner or self._find_partner(payload)
+            if partner:
+                domain.append(('partner_id', 'child_of', partner.commercial_partner_id.id))
+            if not domain:
+                return request.make_json_response({'error': 'order_name or customer identifier required'}, status=400)
+            orders = SaleOrder.search(domain, order='date_order desc, id desc', limit=5)
+            return request.make_json_response({
+                'ok': True,
+                'orders': [{
+                    'id': order.id,
+                    'name': order.name,
+                    'customer': order.partner_id.display_name,
+                    'state': order.state,
+                    'date_order': fields.Datetime.to_string(order.date_order) if order.date_order else False,
+                    'amount_total': order.amount_total,
+                    'currency': order.currency_id.name,
+                    'invoice_status': order.invoice_status,
+                    'delivery_status': getattr(order, 'delivery_status', False),
+                } for order in orders],
+            })
+
+        if tool_name == 'create_call_note':
+            note = payload.get('note')
+            summary = payload.get('summary') or 'Nota Voice AI'
+            target = False
+            call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
+            lead = request.env['crm.lead'].sudo().browse(payload.get('lead_id'))
+            partner = partner or request.env['res.partner'].sudo().browse(payload.get('partner_id'))
+            if call.exists():
+                target = call
+            elif lead.exists():
+                target = lead
+            elif partner.exists():
+                target = partner
+            if not target:
+                return request.make_json_response({'error': 'target not found'}, status=404)
+            message = target.message_post(body=note, subject=summary, message_type='comment', subtype_xmlid='mail.mt_note')
+            return request.make_json_response({'ok': True, 'message_id': message.id})
+
+        if tool_name == 'create_crm_lead':
+            partner = partner or self._find_partner(payload)
+            lead = request.env['crm.lead'].sudo().create({
+                'name': payload.get('name'),
+                'partner_id': partner.id if partner else False,
+                'contact_name': payload.get('contact_name') or payload.get('customer_name'),
+                'partner_name': payload.get('company_name'),
+                'phone': payload.get('phone'),
+                'email_from': payload.get('email'),
+                'description': '%s\n\nInteresse: %s\nPaese/area: %s' % (
+                    payload.get('description') or 'Lead creato da chiamata Voice AI.',
+                    payload.get('interest') or '',
+                    payload.get('country') or '',
+                ),
+                'type': 'opportunity',
+            })
+            return request.make_json_response({'ok': True, 'lead_id': lead.id, 'lead_name': lead.name})
+
+        if tool_name == 'create_email_activity':
+            subject = payload.get('subject')
+            body = payload.get('body')
+            lead = request.env['crm.lead'].sudo().browse(payload.get('lead_id'))
+            partner = partner or request.env['res.partner'].sudo().browse(payload.get('partner_id'))
+            target = lead if lead.exists() else partner if partner.exists() else False
+            if not target:
+                return request.make_json_response({'error': 'partner_id or lead_id required'}, status=400)
+            target.activity_schedule(
+                'mail.mail_activity_data_email',
+                summary=subject,
+                note='%s\n\nEmail destinatario: %s' % (body, payload.get('email') or getattr(target, 'email', '') or ''),
+            )
+            return request.make_json_response({'ok': True})
+
         if tool_name == 'record_call_outcome':
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
             if not call.exists():

@@ -63,7 +63,12 @@ Frasi esempio:
         ]]></field>
         <field name="tool_policy"><![CDATA[
 - Usa lookup_customer quando hai telefono, nome o email.
+- Usa lookup_knowledge per rispondere su prodotti, formati, certificazioni, mercati, capacita produttiva, private label e company profile.
+- Usa lookup_order_status quando il cliente chiede stato ordine e fornisce riferimento ordine o dati cliente.
+- Usa create_call_note per registrare informazioni operative importanti emerse in chiamata.
+- Usa create_email_activity quando serve preparare una mail di follow-up da far gestire a un umano.
 - Usa create_callback quando il cliente vuole essere richiamato o quando non puoi risolvere.
+- Usa create_crm_lead per richieste commerciali, private label, catalogo, listino, campionature o nuovi clienti.
 - Usa transfer_to_human se il cliente chiede un referente, una persona specifica o un reparto.
 - Usa opt_out_customer solo se il cliente chiede di non essere piu contattato da chiamate AI/outbound.
 - Usa record_call_outcome prima di chiudere ogni chiamata.
@@ -125,7 +130,7 @@ Comportamento:
 - Se il cliente chiede un referente commerciale, usa transfer_to_human.
         ]]></field>
         <field name="language_policy">Segui la lingua del cliente. Per contatti esteri, se il cliente parla inglese o francese, continua in quella lingua e registra la lingua rilevata.</field>
-        <field name="tool_policy">Usa lookup_customer appena hai telefono, email o nome azienda. Usa create_callback per richieste catalogo/listino/campionature. Usa transfer_to_human per richieste esplicite di referente.</field>
+        <field name="tool_policy">Usa lookup_knowledge per prodotti, formati, certificazioni e private label. Usa lookup_customer appena hai telefono, email o nome azienda. Usa create_crm_lead per nuovi clienti, private label, catalogo, listino e campionature. Usa create_email_activity se serve inviare catalogo o schede tecniche da parte di un umano. Usa create_callback per richiamata commerciale. Usa transfer_to_human per richieste esplicite di referente.</field>
         <field name="transfer_policy">Trasferisci o crea callback per prezzi, contratti, private label, GDO, export, reclami commerciali o richieste urgenti.</field>
         <field name="success_criteria">Successo significa avere contatto, azienda, richiesta commerciale e prossima azione registrati senza promettere condizioni non autorizzate.</field>
         <field name="guardrails">Non fornire prezzi, sconti, condizioni di pagamento, disponibilita o promesse di fornitura se non sono nel contesto.</field>
@@ -156,7 +161,7 @@ Comportamento:
 - Per reclami, problemi urgenti o consegne critiche, crea callback high o trasferisci.
         ]]></field>
         <field name="language_policy">Segui la lingua del cliente. Se l'audio e rumoroso, chiedi di ripetere prima di registrare dati di ordine.</field>
-        <field name="tool_policy">Usa lookup_customer per identificare il cliente. Usa create_callback per problemi ordine/consegna. Usa record_call_outcome sempre a fine chiamata.</field>
+        <field name="tool_policy">Usa lookup_customer per identificare il cliente. Usa lookup_order_status quando il cliente chiede stato ordine e fornisce dati sufficienti. Usa create_call_note per dettagli operativi. Usa create_email_activity per follow-up documentale. Usa create_callback per problemi ordine/consegna. Usa record_call_outcome sempre a fine chiamata.</field>
         <field name="transfer_policy">Trasferisci per reclami, urgenze logistiche, consegne critiche, cliente irritato o richiesta di operatore.</field>
         <field name="success_criteria">Successo significa problema raccolto, cliente identificato se possibile, urgenza chiara e callback/trasferimento registrato.</field>
         <field name="guardrails">Non promettere consegne, modifiche ordine, sostituzioni o accrediti. Non attribuire responsabilita a corrieri, clienti o reparti.</field>
@@ -187,7 +192,7 @@ Comportamento:
 - Mantieni tono neutro e riservato.
         ]]></field>
         <field name="language_policy">Segui la lingua del cliente, ma per dati amministrativi resta prudente e chiedi solo dati minimi di contatto.</field>
-        <field name="tool_policy">Usa lookup_customer per riconoscere il contatto. Usa create_callback per quasi tutte le richieste amministrative. Usa transfer_to_human se il cliente chiede una persona.</field>
+        <field name="tool_policy">Usa lookup_customer per riconoscere il contatto. Usa create_call_note per registrare la richiesta senza dati sensibili. Usa create_email_activity se serve far preparare una risposta amministrativa. Usa create_callback per quasi tutte le richieste amministrative. Usa transfer_to_human se il cliente chiede una persona.</field>
         <field name="transfer_policy">Trasferisci o crea callback per fatture, pagamenti, solleciti, dati bancari, note di credito, condizioni e scadenze.</field>
         <field name="success_criteria">Successo significa richiesta amministrativa raccolta senza esporre dati sensibili e con prossima azione chiara.</field>
         <field name="guardrails">Non comunicare importi, IBAN, scadenze, dati fiscali o giudizi su pagamenti. Non confermare dati sensibili al telefono.</field>

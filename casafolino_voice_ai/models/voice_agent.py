@@ -36,6 +36,94 @@ VOICE_AI_TOOL_SCHEMAS = [
     },
     {
         'type': 'function',
+        'name': 'lookup_knowledge',
+        'description': 'Cerca informazioni approvate su CasaFolino, prodotti, formati, certificazioni, capacita produttiva, mercati e private label.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'query': {'type': 'string'},
+                'category': {
+                    'type': 'string',
+                    'enum': ['company', 'products', 'formats', 'certifications', 'operations', 'markets', 'services', 'guardrails'],
+                },
+            },
+            'required': ['query'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
+        'name': 'lookup_order_status',
+        'description': 'Cerca lo stato di un ordine Odoo usando riferimento ordine, cliente, telefono o email.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'order_name': {'type': 'string'},
+                'partner_id': {'type': 'integer'},
+                'customer_name': {'type': 'string'},
+                'phone': {'type': 'string'},
+                'email': {'type': 'string'},
+            },
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
+        'name': 'create_call_note',
+        'description': 'Crea una nota interna in Odoo collegata a chiamata, cliente o lead.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'call_id': {'type': 'integer'},
+                'partner_id': {'type': 'integer'},
+                'lead_id': {'type': 'integer'},
+                'note': {'type': 'string'},
+                'summary': {'type': 'string'},
+            },
+            'required': ['note'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
+        'name': 'create_crm_lead',
+        'description': 'Crea un lead/opportunita CRM da una chiamata commerciale o da una richiesta prodotto.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'name': {'type': 'string'},
+                'partner_id': {'type': 'integer'},
+                'contact_name': {'type': 'string'},
+                'company_name': {'type': 'string'},
+                'phone': {'type': 'string'},
+                'email': {'type': 'string'},
+                'country': {'type': 'string'},
+                'interest': {'type': 'string'},
+                'description': {'type': 'string'},
+            },
+            'required': ['name', 'interest'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
+        'name': 'create_email_activity',
+        'description': 'Crea una attivita email da preparare/inviare da un umano, senza inviare automaticamente email.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'partner_id': {'type': 'integer'},
+                'lead_id': {'type': 'integer'},
+                'email': {'type': 'string'},
+                'subject': {'type': 'string'},
+                'body': {'type': 'string'},
+            },
+            'required': ['subject', 'body'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
         'name': 'record_call_outcome',
         'description': 'Registra esito, riepilogo e prossima azione della chiamata.',
         'parameters': {
