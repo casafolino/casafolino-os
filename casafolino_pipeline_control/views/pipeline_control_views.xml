@@ -184,6 +184,42 @@
               sequence="24"
               web_icon="casafolino_crm_export,static/description/icon.png"/>
 
+    <menuitem id="menu_cf_pipeline_root_control"
+              name="Sala Controllo"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_control"
+              sequence="1"/>
+
+    <menuitem id="menu_cf_pipeline_root_inbox"
+              name="Inbox Commerciale"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_inbox"
+              sequence="2"/>
+
+    <menuitem id="menu_cf_pipeline_root_followup"
+              name="Follow-up Clienti"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_followup"
+              sequence="3"/>
+
+    <menuitem id="menu_cf_pipeline_root_post_fair"
+              name="Post-Fiera"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_post_fair"
+              sequence="4"/>
+
+    <menuitem id="menu_cf_pipeline_root_pipeline"
+              name="Pipeline Export"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_pipeline"
+              sequence="5"/>
+
+    <menuitem id="menu_cf_pipeline_root_dossiers"
+              name="Dossier / Progetti"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_dossiers"
+              sequence="6"/>
+
     <menuitem id="menu_cf_pipeline_control"
               name="Sala Controllo"
               parent="casafolino_crm_export.menu_cf_export_root"
