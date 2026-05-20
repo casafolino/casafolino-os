@@ -374,6 +374,54 @@ class CasaFolinoVoiceAIController(http.Controller):
             detail = exc.read().decode('utf-8')
             raise ValueError('OpenAI speech error %s: %s' % (exc.code, detail[:500])) from exc
 
+    def _openai_realtime_client_secret(self, agent, scenario):
+        api_key = request.env['ir.config_parameter'].sudo().get_param('casafolino_voice_ai.openai_api_key')
+        if not api_key:
+            raise ValueError('OpenAI API key not configured')
+        params = request.env['ir.config_parameter'].sudo()
+        knowledge_items = request.env['casafolino.voice.knowledge'].sudo().search([('active', '=', True)], limit=12)
+        knowledge_lines = []
+        for item in knowledge_items:
+            knowledge_lines.append('- %s: %s' % (item.title, item.content[:700]))
+        instructions = '%s\n\nModalita simulatore realtime: questa e una conversazione vocale diretta. Rispondi come al telefono, con frasi brevi, una domanda alla volta, senza leggere testi lunghi. Interrompiti se il cliente parla sopra. Non inventare prezzi, disponibilita, tempi di consegna o condizioni commerciali.\n\nScenario formazione: %s\n\nKnowledge approvata CasaFolino:\n%s' % (
+            agent._compose_instructions() if agent else 'Sei l assistente vocale CasaFolino.',
+            scenario or 'Simulazione libera',
+            '\n'.join(knowledge_lines),
+        )
+        payload = json.dumps({
+            'session': {
+                'type': 'realtime',
+                'model': params.get_param('casafolino_voice_ai.openai_realtime_model') or 'gpt-realtime-2',
+                'output_modalities': ['audio', 'text'],
+                'instructions': instructions,
+                'audio': {
+                    'input': {
+                        'turn_detection': {
+                            'type': 'semantic_vad',
+                        },
+                    },
+                    'output': {
+                        'voice': params.get_param('casafolino_voice_ai.openai_voice') or 'marin',
+                    },
+                },
+            },
+        }).encode('utf-8')
+        req = urllib.request.Request(
+            'https://api.openai.com/v1/realtime/client_secrets',
+            data=payload,
+            headers={
+                'Authorization': 'Bearer %s' % api_key,
+                'Content-Type': 'application/json',
+            },
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                return json.loads(response.read().decode('utf-8'))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode('utf-8')
+            raise ValueError('OpenAI realtime error %s: %s' % (exc.code, detail[:500])) from exc
+
     def _execute_voice_tool(self, tool_name, payload):
         partner = self._find_partner(payload)
 
@@ -611,6 +659,8 @@ class CasaFolinoVoiceAIController(http.Controller):
     textarea { min-height: 92px; resize: vertical; }
     button { border: 0; border-radius: 6px; padding: 10px 14px; background: #1f5eff; color: #fff; font-weight: 650; cursor: pointer; }
     button.secondary { background: #eef2f7; color: #1f2933; }
+    button.realtime { background: #7c3aed; }
+    button.danger { background: #b91c1c; }
     button.mic { background: #047857; }
     button.mic.listening { background: #b91c1c; }
     button:disabled { opacity: .55; cursor: not-allowed; }
@@ -644,13 +694,17 @@ class CasaFolinoVoiceAIController(http.Controller):
       <input id="phone" value="+390000000000">
       <div class="row">
         <button id="start">Avvia chiamata</button>
+        <button id="start_realtime" class="realtime">Avvia realtime</button>
         <button id="finish" class="secondary" disabled>Chiudi</button>
+      </div>
+      <div class="row">
+        <button id="stop_realtime" class="danger" disabled>Ferma realtime</button>
       </div>
       <div class="row">
         <button id="mic" class="mic" disabled>Parla</button>
         <button id="speak_toggle" class="secondary" type="button">Voce naturale: ON</button>
       </div>
-      <div class="voice-status" id="voice_status">Avvia una chiamata, poi usa Parla. Il microfono richiede HTTPS.</div>
+      <div class="voice-status" id="voice_status">Per una telefonata vera usa Avvia realtime da HTTPS. Avvia chiamata resta disponibile come fallback a turni.</div>
       <p class="hint">Le simulazioni vengono salvate in Chiamate AI. Se chiedi callback, lead o attivita, possono nascere record reali: usa dati TEST quando ti alleni.</p>
       <div class="tools" id="trace">Tool trace vuoto.</div>
     </aside>
@@ -664,7 +718,7 @@ class CasaFolinoVoiceAIController(http.Controller):
   </main>
   <script>
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const state = { callId: null, trace: [], recognition: null, listening: false, speak: true, audio: null };
+    const state = { callId: null, trace: [], recognition: null, listening: false, speak: true, audio: null, pc: null, dc: null, localStream: null };
     const messages = document.getElementById('messages');
     const trace = document.getElementById('trace');
     const voiceStatus = document.getElementById('voice_status');
@@ -718,6 +772,89 @@ class CasaFolinoVoiceAIController(http.Controller):
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || ('HTTP ' + res.status));
       return data;
+    }
+    function stopRealtime() {
+      if (state.dc) state.dc.close();
+      if (state.pc) state.pc.close();
+      if (state.localStream) state.localStream.getTracks().forEach((track) => track.stop());
+      state.dc = null;
+      state.pc = null;
+      state.localStream = null;
+      document.getElementById('stop_realtime').disabled = true;
+      document.getElementById('start_realtime').disabled = false;
+      setVoiceStatus('Realtime fermato.');
+    }
+    async function startRealtime() {
+      if (!window.isSecureContext) {
+        setVoiceStatus('Realtime richiede HTTPS. Apri https://erp.casafolino.com/voice_ai/simulator');
+        return;
+      }
+      stopRealtime();
+      setVoiceStatus('Apro microfono e connessione realtime...');
+      const data = await post('/voice_ai/simulator/realtime/session', {
+        agent_id: Number(document.getElementById('agent_id').value),
+        scenario: document.getElementById('scenario').value,
+        phone: document.getElementById('phone').value
+      });
+      state.callId = data.call_id;
+      add('system', 'Realtime avviato: ' + data.call_name + '. Puoi parlare liberamente.');
+      const secret = data.client_secret?.value || data.value;
+      if (!secret) throw new Error('Realtime client secret mancante');
+      const pc = new RTCPeerConnection();
+      const audio = document.createElement('audio');
+      audio.autoplay = true;
+      pc.ontrack = (event) => {
+        audio.srcObject = event.streams[0];
+      };
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      const dc = pc.createDataChannel('oai-events');
+      dc.onopen = () => {
+        setVoiceStatus('Realtime attivo. Parla normalmente: l agente deve interrompersi se parli sopra.');
+      };
+      dc.onmessage = (event) => {
+        const payload = JSON.parse(event.data);
+        if (payload.type === 'response.output_text.delta' && payload.delta) {
+          setVoiceStatus('Agente sta parlando...');
+        }
+        if (payload.type === 'input_audio_buffer.speech_started') {
+          setVoiceStatus('Ti sto ascoltando...');
+        }
+        if (payload.type === 'response.done') {
+          setVoiceStatus('Pronto. Continua pure a parlare.');
+        }
+        if (payload.type === 'error') {
+          add('system', payload.error?.message || 'Errore realtime');
+        }
+      };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      const sdpResponse = await fetch('https://api.openai.com/v1/realtime/calls', {
+        method: 'POST',
+        body: offer.sdp,
+        headers: {
+          Authorization: 'Bearer ' + secret,
+          'Content-Type': 'application/sdp'
+        }
+      });
+      if (!sdpResponse.ok) {
+        throw new Error('Realtime SDP failed: HTTP ' + sdpResponse.status);
+      }
+      await pc.setRemoteDescription({
+        type: 'answer',
+        sdp: await sdpResponse.text()
+      });
+      state.pc = pc;
+      state.dc = dc;
+      state.localStream = stream;
+      document.getElementById('start_realtime').disabled = true;
+      document.getElementById('stop_realtime').disabled = false;
     }
     async function sendTurn(text) {
       if (!text || !state.callId) return;
@@ -800,6 +937,19 @@ class CasaFolinoVoiceAIController(http.Controller):
         add('system', err.message);
       }
     };
+    document.getElementById('start_realtime').onclick = async () => {
+      try {
+        messages.innerHTML = '';
+        state.trace = [];
+        trace.textContent = 'Tool trace vuoto.';
+        await startRealtime();
+      } catch (err) {
+        add('system', err.message);
+        setVoiceStatus(err.message);
+        stopRealtime();
+      }
+    };
+    document.getElementById('stop_realtime').onclick = () => stopRealtime();
     document.getElementById('send').onclick = async () => {
       const input = utteranceInput;
       const text = input.value.trim();
@@ -839,6 +989,7 @@ class CasaFolinoVoiceAIController(http.Controller):
       document.getElementById('send').disabled = true;
       document.getElementById('finish').disabled = true;
       micButton.disabled = true;
+      stopRealtime();
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       setVoiceStatus('Chiamata chiusa.');
     };
@@ -880,6 +1031,35 @@ class CasaFolinoVoiceAIController(http.Controller):
             'call_id': call.id,
             'call_name': call.name,
             'first_message': agent.first_message,
+        })
+
+    @http.route('/voice_ai/simulator/realtime/session', type='http', auth='user', methods=['POST'], csrf=False)
+    def simulator_realtime_session(self):
+        payload = self._json_body()
+        agent = request.env['casafolino.voice.agent'].sudo().browse(payload.get('agent_id'))
+        if not agent.exists():
+            agent = request.env['casafolino.voice.agent'].sudo().search([('direction', '=', 'inbound'), ('active', '=', True)], limit=1)
+        if not agent:
+            return request.make_json_response({'error': 'no active voice agent found'}, status=400)
+        scenario = payload.get('scenario') or 'Simulazione realtime'
+        call = request.env['casafolino.voice.call'].sudo().create({
+            'direction': agent.direction,
+            'state': 'active',
+            'external_call_id': 'web_realtime_%s' % fields.Datetime.now(),
+            'phone': payload.get('phone'),
+            'agent_id': agent.id,
+            'route_action': 'agent',
+            'summary': 'Simulazione realtime: %s' % scenario,
+        })
+        try:
+            client_secret = self._openai_realtime_client_secret(agent, scenario)
+        except ValueError as exc:
+            return request.make_json_response({'error': str(exc)}, status=502)
+        return request.make_json_response({
+            'ok': True,
+            'call_id': call.id,
+            'call_name': call.name,
+            'client_secret': client_secret,
         })
 
     @http.route('/voice_ai/simulator/turn', type='http', auth='user', methods=['POST'], csrf=False)
