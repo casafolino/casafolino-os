@@ -383,9 +383,14 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'task':
             return self._new_task_from_lead(lead)
         if quick_action == 'dossier':
-            if hasattr(lead, 'action_open_project_360'):
-                return lead.action_open_project_360()
-            return self._notify('Dossier non disponibile', 'Azione progetto non configurata sul lead.', 'warning')
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Promuovi a dossier',
+                'res_model': 'cf.pipeline.promote.dossier.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_lead_id': lead.id},
+            }
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     def _get_latest_commercial_threads(self, user):
@@ -803,3 +808,85 @@ class CfPipelineControl(models.AbstractModel):
 
     def _compact(self, values):
         return [value for value in values if value]
+
+
+class CfPipelinePromoteDossierWizard(models.TransientModel):
+    _name = 'cf.pipeline.promote.dossier.wizard'
+    _description = 'Promuovi lead a dossier operativo'
+
+    lead_id = fields.Many2one('crm.lead', string='Lead', required=True, readonly=True)
+    partner_id = fields.Many2one('res.partner', string='Cliente', readonly=True)
+    project_name = fields.Char(string='Nome dossier', required=True)
+    next_action = fields.Char(string='Prossima azione')
+    next_action_date = fields.Date(string='Data prossima azione')
+    target_date = fields.Date(string='Data obiettivo')
+    create_next_task = fields.Boolean(string='Crea task prossima azione', default=True)
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        lead = self.env['crm.lead'].browse(self.env.context.get('default_lead_id')).exists()
+        if lead:
+            partner = lead.partner_id
+            res.update({
+                'lead_id': lead.id,
+                'partner_id': partner.id if partner else False,
+                'project_name': self._default_project_name(lead),
+                'next_action': 'Follow-up commerciale',
+                'next_action_date': fields.Date.context_today(self) + timedelta(days=7),
+            })
+        return res
+
+    def action_promote(self):
+        self.ensure_one()
+        lead = self.lead_id
+        project = getattr(lead, 'cf_project_id', False)
+        if not project:
+            vals = {
+                'name': self.project_name,
+                'partner_id': lead.partner_id.id if lead.partner_id else False,
+                'user_id': lead.user_id.id or self.env.user.id,
+            }
+            Project = self.env['project.project']
+            if 'cf_status_dossier' in Project._fields:
+                vals['cf_status_dossier'] = 'exploration'
+            if 'cf_dossier_priority' in Project._fields:
+                vals['cf_dossier_priority'] = 'medium'
+            if 'cf_next_action' in Project._fields:
+                vals['cf_next_action'] = self.next_action or False
+            if 'cf_next_action_date' in Project._fields:
+                vals['cf_next_action_date'] = self.next_action_date or False
+            if 'date' in Project._fields:
+                vals['date'] = self.target_date or self.next_action_date or False
+            project = Project.create(vals)
+            if 'cf_project_id' in lead._fields:
+                lead.cf_project_id = project.id
+        else:
+            project.write({'name': self.project_name})
+
+        if self.create_next_task and self.next_action:
+            self.env['project.task'].create({
+                'name': self.next_action,
+                'project_id': project.id,
+                'partner_id': lead.partner_id.id if lead.partner_id else False,
+                'user_ids': [(6, 0, [lead.user_id.id or self.env.user.id])],
+                'date_deadline': self.next_action_date or False,
+            })
+        if self.next_action_date and 'cf_date_next_followup' in lead._fields:
+            lead.cf_date_next_followup = self.next_action_date
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Dossier',
+            'res_model': 'project.project',
+            'res_id': project.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
+    def _default_project_name(self, lead):
+        partner = lead.partner_id
+        if partner and lead.name:
+            return '%s - %s' % (partner.name, lead.name)
+        return lead.name or (partner.name if partner else 'Dossier commerciale')
