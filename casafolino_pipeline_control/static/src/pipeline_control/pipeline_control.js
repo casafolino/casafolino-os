@@ -21,6 +21,7 @@ export class CFPipelineControl extends Component {
             data: {
                 kpis: [],
                 lanes: [],
+                followup: { kpis: [], columns: [], timeline: [] },
                 post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
                 inbox: { to_reply: [], waiting_customer: [] },
@@ -86,6 +87,24 @@ export class CFPipelineControl extends Component {
         }
     }
 
+    async leadQuickAction(item, quickAction) {
+        if (!item || !item.id) {
+            this.notification.add(_t("Lead non disponibile"), { type: "warning" });
+            return;
+        }
+        try {
+            const result = await this.orm.call("cf.pipeline.control", "lead_quick_action", [item.id, quickAction]);
+            if (result) {
+                await this.action.doAction(result);
+                if (result.reload) {
+                    await this.loadData();
+                }
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
     async openModel(model, name) {
         await this.action.doAction({
             type: "ir.actions.act_window",
@@ -137,6 +156,7 @@ export class CFPipelineControl extends Component {
     get navItems() {
         return [
             { id: "control", label: "Sala Controllo", count: this.totalLaneCount },
+            { id: "followup", label: "Follow-up", count: this.state.data.followup?.kpis?.[0]?.value || 0 },
             { id: "fair", label: "Post-Fiera", count: this.state.data.post_fair?.fair ? this.state.data.post_fair.kpis?.[0]?.value : 0 },
             { id: "inbox", label: "Inbox", count: this.state.data.inbox?.to_reply?.length || 0 },
             { id: "pipeline", label: "Pipeline", count: this.pipelineCount },

@@ -17,6 +17,7 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
             'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
+            'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'timeline': []}),
             'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
@@ -88,6 +89,61 @@ class CfPipelineControl(models.AbstractModel):
                 'tone': 'blue',
             },
         ]
+
+    def _get_followup_data(self, today, user):
+        Lead = self.env['crm.lead']
+        week_end = today + timedelta(days=7)
+        base = [('type', '=', 'opportunity'), ('active', '=', True)]
+        if user and not user.has_group('base.group_system'):
+            base.append(('user_id', 'in', [False, user.id]))
+
+        date_field = 'cf_date_next_followup' if 'cf_date_next_followup' in Lead._fields else 'date_deadline'
+        overdue_domain = base + [(date_field, '<=', today)]
+        week_domain = base + [(date_field, '>', today), (date_field, '<=', week_end)]
+        no_plan_domain = base + [(date_field, '=', False)]
+        hot_domain = self._hot_lead_domain()
+        if user and not user.has_group('base.group_system'):
+            hot_domain = hot_domain + [('user_id', 'in', [False, user.id])]
+
+        overdue = Lead.search(overdue_domain, order='%s asc, expected_revenue desc, id desc' % date_field, limit=12)
+        week = Lead.search(week_domain, order='%s asc, expected_revenue desc, id desc' % date_field, limit=12)
+        no_plan = Lead.search(no_plan_domain, order='create_date desc, id desc', limit=12)
+        hot = Lead.search(hot_domain, order='expected_revenue desc, create_date desc', limit=12)
+        waiting_leads = self._waiting_customer_leads(user)
+
+        return {
+            'kpis': [
+                {'label': 'Scaduti / oggi', 'value': Lead.search_count(overdue_domain), 'hint': 'Prossima azione entro oggi'},
+                {'label': 'Prossimi 7 giorni', 'value': Lead.search_count(week_domain), 'hint': 'Follow-up pianificati'},
+                {'label': 'Da pianificare', 'value': Lead.search_count(no_plan_domain), 'hint': 'Lead senza prossima azione'},
+                {'label': 'In attesa cliente', 'value': len(waiting_leads), 'hint': 'Ultimo segnale outbound'},
+            ],
+            'columns': [
+                self._followup_column('Scaduti / oggi', overdue, today, 'red'),
+                self._followup_column('Prossimi 7 giorni', week, today, 'amber'),
+                self._followup_column('Da pianificare', no_plan, today, 'blue'),
+                self._followup_column('Clienti caldi', hot, today, 'green'),
+            ],
+            'timeline': self._followup_timeline(overdue | week | no_plan | waiting_leads, today),
+        }
+
+    def _waiting_customer_leads(self, user):
+        _inbox, waiting = self._get_latest_commercial_threads(user)
+        lead_ids = [msg.lead_id.id for msg in waiting if msg.lead_id]
+        return self.env['crm.lead'].browse(lead_ids).exists()
+
+    def _followup_column(self, title, leads, today, tone):
+        return {
+            'title': title,
+            'count': len(leads),
+            'tone': tone,
+            'items': [self._format_followup_lead_item(lead, today) for lead in leads[:8]],
+        }
+
+    def _followup_timeline(self, leads, today):
+        rows = [self._format_followup_timeline_row(lead, today) for lead in leads[:40]]
+        rows.sort(key=lambda row: (not row['is_overdue'], row['next_action'] or '9999-12-31', row['value'] * -1))
+        return rows[:20]
 
     def _get_control_lanes(self, today, user):
         Mail = self.env['casafolino.mail.message']
@@ -304,6 +360,34 @@ class CfPipelineControl(models.AbstractModel):
             return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla sala controllo.', reload=True)
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
+    @api.model
+    def lead_quick_action(self, lead_id, quick_action):
+        lead = self.env['crm.lead'].browse(int(lead_id)).exists()
+        if not lead:
+            return self._notify('Lead non trovato', 'La trattativa non e piu disponibile.', 'warning')
+
+        if quick_action == 'open':
+            return self._open_record(lead, 'Lead')
+        if quick_action == 'email' and hasattr(lead, 'action_compose_email_f8'):
+            return lead.action_compose_email_f8()
+        if quick_action == 'followup7':
+            if hasattr(lead, 'action_schedule_followup'):
+                lead.action_schedule_followup()
+            else:
+                lead.write({'date_deadline': fields.Date.context_today(self) + timedelta(days=7)})
+            return self._notify('Follow-up pianificato', 'Prossima azione tra 7 giorni.', reload=True)
+        if quick_action == 'sample':
+            return self._new_sample_from_lead(lead)
+        if quick_action == 'quote':
+            return self._new_quote_from_lead(lead)
+        if quick_action == 'task':
+            return self._new_task_from_lead(lead)
+        if quick_action == 'dossier':
+            if hasattr(lead, 'action_open_project_360'):
+                return lead.action_open_project_360()
+            return self._notify('Dossier non disponibile', 'Azione progetto non configurata sul lead.', 'warning')
+        return self._notify('Azione non disponibile', quick_action, 'warning')
+
     def _get_latest_commercial_threads(self, user):
         Mail = self.env['casafolino.mail.message']
         domain = [
@@ -491,8 +575,30 @@ class CfPipelineControl(models.AbstractModel):
             },
         }
 
+    def _new_task_from_lead(self, lead):
+        project = getattr(lead, 'cf_project_id', False)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova task commerciale',
+            'res_model': 'project.task',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'default_name': 'Follow-up: %s' % (lead.name or lead.display_name),
+                'default_project_id': project.id if project else False,
+                'default_partner_id': lead.partner_id.id if lead.partner_id else False,
+            },
+        }
+
     def _new_quote_from_message(self, msg):
         partner = msg.partner_id or msg.lead_id.partner_id
+        return self._new_quote_action(partner, msg.lead_id, msg.subject or '')
+
+    def _new_quote_from_lead(self, lead):
+        return self._new_quote_action(lead.partner_id, lead, lead.name or '')
+
+    def _new_quote_action(self, partner, lead, origin):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Nuova quotazione',
@@ -502,14 +608,17 @@ class CfPipelineControl(models.AbstractModel):
             'target': 'current',
             'context': {
                 'default_partner_id': partner.id if partner else False,
-                'default_opportunity_id': msg.lead_id.id if msg.lead_id else False,
-                'default_origin': msg.subject or '',
+                'default_opportunity_id': lead.id if lead else False,
+                'default_origin': origin,
             },
         }
 
     def _new_sample_from_message(self, msg):
         if not msg.lead_id:
             return self._notify('Lead richiesto', 'Collega o crea prima una trattativa CRM.', 'warning')
+        return self._new_sample_from_lead(msg.lead_id)
+
+    def _new_sample_from_lead(self, lead):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Nuova campionatura',
@@ -517,7 +626,7 @@ class CfPipelineControl(models.AbstractModel):
             'view_mode': 'form',
             'views': [(False, 'form')],
             'target': 'new',
-            'context': {'default_lead_id': msg.lead_id.id},
+            'context': {'default_lead_id': lead.id},
         }
 
     def _snooze_message_thread(self, msg):
@@ -554,6 +663,7 @@ class CfPipelineControl(models.AbstractModel):
         overdue = bool(next_date and next_date <= today)
         badges = [
             lead.stage_id.name if lead.stage_id else False,
+            self._lead_origin_label(lead),
             partner.country_id.code if partner and partner.country_id else False,
             'follow-up oggi' if overdue else False,
             'dossier' if getattr(lead, 'cf_project_id', False) else False,
@@ -571,6 +681,38 @@ class CfPipelineControl(models.AbstractModel):
             'badges': self._compact(badges),
             'res_id': lead.id,
         }
+
+    def _format_followup_lead_item(self, lead, today):
+        item = self._format_lead_item(lead, today)
+        item['owner'] = lead.user_id.name if lead.user_id else ''
+        item['origin'] = self._lead_origin_label(lead)
+        return item
+
+    def _format_followup_timeline_row(self, lead, today):
+        next_date = lead.cf_date_next_followup if 'cf_date_next_followup' in lead._fields else lead.date_deadline
+        overdue = bool(next_date and fields.Date.to_date(next_date) <= today)
+        return {
+            'id': lead.id,
+            'model': lead._name,
+            'res_id': lead.id,
+            'title': lead.partner_id.display_name if lead.partner_id else lead.name,
+            'subtitle': lead.name,
+            'origin': self._lead_origin_label(lead),
+            'stage': lead.stage_id.name if lead.stage_id else '',
+            'owner': lead.user_id.name if lead.user_id else '',
+            'next_action': self._date_label(next_date),
+            'is_overdue': overdue,
+            'value': lead.expected_revenue or 0,
+        }
+
+    def _lead_origin_label(self, lead):
+        if 'cf_fair_id' in lead._fields and lead.cf_fair_id:
+            return 'Fiera'
+        if 'source_email_id' in lead._fields and lead.source_email_id:
+            return 'Email'
+        if lead.source_id:
+            return lead.source_id.name
+        return 'Manuale'
 
     def _format_project_item(self, project):
         return {

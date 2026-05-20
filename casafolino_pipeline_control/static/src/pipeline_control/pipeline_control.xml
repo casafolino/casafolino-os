@@ -41,6 +41,7 @@
                 <div class="cf-pc-topbar">
                     <div>
                         <h1 t-if="state.activeView === 'control'">Sala Controllo</h1>
+                        <h1 t-elif="state.activeView === 'followup'">Follow-up</h1>
                         <h1 t-elif="state.activeView === 'fair'">Post-Fiera</h1>
                         <h1 t-elif="state.activeView === 'inbox'">Inbox Commerciale</h1>
                         <h1 t-elif="state.activeView === 'pipeline'">Pipeline Export</h1>
@@ -93,6 +94,90 @@
                             </section>
                         </t>
                     </div>
+                </t>
+
+                <t t-elif="state.activeView === 'followup'">
+                    <div class="cf-pc-kpis cf-pc-kpis-4">
+                        <t t-foreach="state.data.followup.kpis" t-as="kpi" t-key="kpi.label">
+                            <div class="cf-pc-kpi">
+                                <div class="cf-pc-kpi-label" t-out="kpi.label"/>
+                                <strong t-out="kpi.value"/>
+                                <small t-out="kpi.hint"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="cf-pc-board">
+                        <t t-foreach="state.data.followup.columns" t-as="column" t-key="column.title">
+                            <section class="cf-pc-lane">
+                                <header>
+                                    <h2 t-out="column.title"/>
+                                    <span t-attf-class="cf-pc-pill tone-#{column.tone}" t-out="column.count"/>
+                                </header>
+                                <div class="cf-pc-lane-body">
+                                    <t t-if="column.items.length">
+                                        <t t-foreach="column.items" t-as="item" t-key="item.model + '-' + item.id">
+                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                        </t>
+                                    </t>
+                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                                </div>
+                            </section>
+                        </t>
+                    </div>
+
+                    <section class="cf-pc-panel cf-pc-timeline-panel">
+                        <header>
+                            <h2>Agenda follow-up</h2>
+                            <span class="cf-pc-pill" t-out="state.data.followup.timeline.length"/>
+                        </header>
+                        <table class="cf-pc-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Origine</th>
+                                    <th>Stage</th>
+                                    <th>Owner</th>
+                                    <th>Prossima azione</th>
+                                    <th>Valore</th>
+                                    <th/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.data.followup.timeline" t-as="row" t-key="'followup-line-' + row.id">
+                                    <tr t-attf-class="#{row.is_overdue ? 'is-overdue' : ''}">
+                                        <td>
+                                            <strong t-out="row.title"/>
+                                            <small t-out="row.subtitle"/>
+                                        </td>
+                                        <td t-out="row.origin"/>
+                                        <td t-out="row.stage"/>
+                                        <td t-out="row.owner"/>
+                                        <td t-out="row.next_action || 'Da pianificare'"/>
+                                        <td>
+                                            <span t-if="row.value">€ <t t-out="Math.round(row.value).toLocaleString('it-IT')"/></span>
+                                        </td>
+                                        <td>
+                                            <div class="cf-pc-row-actions">
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(row, 'open')" title="Apri lead">
+                                                    <i class="fa fa-folder-open-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(row, 'email')" title="Scrivi email">
+                                                    <i class="fa fa-envelope-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(row, 'followup7')" title="Follow-up tra 7 giorni">
+                                                    <i class="fa fa-calendar-plus-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(row, 'dossier')" title="Promuovi a dossier">
+                                                    <i class="fa fa-briefcase"/>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </section>
                 </t>
 
                 <t t-elif="state.activeView === 'fair'">
@@ -374,11 +459,20 @@
             </t>
         </div>
         <div class="cf-pc-card-actions">
-            <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord(item)">
+            <button class="btn btn-sm btn-light" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)">
                 Apri
             </button>
-            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.newSample(item)">
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'email')">
+                Email
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'followup7')">
+                +7gg
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'sample')">
                 Campione
+            </button>
+            <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'dossier')">
+                Dossier
             </button>
         </div>
     </article>

@@ -161,6 +161,10 @@
         grid-template-columns: repeat(6, minmax(130px, 1fr));
         gap: 10px;
         margin-bottom: 16px;
+
+        &.cf-pc-kpis-4 {
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+        }
     }
 
     .cf-pc-kpi {
