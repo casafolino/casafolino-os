@@ -36,7 +36,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             'ok': True,
             'public_base_url': params.get_param('casafolino_voice_ai.public_base_url'),
             'realtime_model': params.get_param('casafolino_voice_ai.openai_realtime_model') or 'gpt-realtime-2',
-            'realtime_voice': params.get_param('casafolino_voice_ai.openai_voice') or 'marin',
+            'realtime_voice': params.get_param('casafolino_voice_ai.openai_voice') or 'cedar',
             'human_transfer_uri': params.get_param('casafolino_voice_ai.human_transfer_uri'),
             'allow_outbound': params.get_param('casafolino_voice_ai.allow_outbound', 'False') == 'True',
             'has_openai_key': bool(params.get_param('casafolino_voice_ai.openai_api_key')),
@@ -374,7 +374,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             detail = exc.read().decode('utf-8')
             raise ValueError('OpenAI speech error %s: %s' % (exc.code, detail[:500])) from exc
 
-    def _openai_realtime_client_secret(self, agent, scenario):
+    def _openai_realtime_client_secret(self, agent, scenario, voice=None):
         api_key = request.env['ir.config_parameter'].sudo().get_param('casafolino_voice_ai.openai_api_key')
         if not api_key:
             raise ValueError('OpenAI API key not configured')
@@ -383,7 +383,10 @@ class CasaFolinoVoiceAIController(http.Controller):
         knowledge_lines = []
         for item in knowledge_items:
             knowledge_lines.append('- %s: %s' % (item.title, item.content[:700]))
-        instructions = '%s\n\nModalita simulatore realtime: questa e una conversazione vocale diretta. Rispondi come al telefono, con frasi brevi, una domanda alla volta, senza leggere testi lunghi. Interrompiti se il cliente parla sopra. Non inventare prezzi, disponibilita, tempi di consegna o condizioni commerciali.\n\nScenario formazione: %s\n\nKnowledge approvata CasaFolino:\n%s' % (
+        selected_voice = voice or params.get_param('casafolino_voice_ai.openai_voice') or 'cedar'
+        if selected_voice not in ['cedar', 'marin', 'coral', 'sage', 'verse', 'alloy', 'ash', 'ballad', 'echo', 'shimmer']:
+            selected_voice = 'cedar'
+        instructions = '%s\n\nModalita simulatore realtime: questa e una conversazione vocale diretta e deve sembrare una telefonata naturale, non un IVR. Rispondi con tono umano, caldo, commerciale e leggermente conversazionale. Usa micro-pause naturali, frasi brevi, una domanda alla volta. Se il cliente parla sopra, fermati e ascolta. Non leggere elenchi lunghi: proponi una sintesi e poi chiedi cosa interessa approfondire. Non inventare prezzi, disponibilita, tempi di consegna o condizioni commerciali.\n\nScenario formazione: %s\n\nKnowledge approvata CasaFolino:\n%s' % (
             agent._compose_instructions() if agent else 'Sei l assistente vocale CasaFolino.',
             scenario or 'Simulazione libera',
             '\n'.join(knowledge_lines),
@@ -401,7 +404,7 @@ class CasaFolinoVoiceAIController(http.Controller):
                         },
                     },
                     'output': {
-                        'voice': params.get_param('casafolino_voice_ai.openai_voice') or 'marin',
+                        'voice': selected_voice,
                     },
                 },
             },
@@ -692,6 +695,14 @@ class CasaFolinoVoiceAIController(http.Controller):
       <textarea id="scenario" placeholder="Esempio: cliente GDO chiede certificazioni, catalogo e private label al pistacchio"></textarea>
       <label>Telefono simulato</label>
       <input id="phone" value="+390000000000">
+      <label>Voce realtime</label>
+      <select id="realtime_voice">
+        <option value="cedar" selected>Cedar - piu naturale</option>
+        <option value="marin">Marin - chiara</option>
+        <option value="coral">Coral</option>
+        <option value="sage">Sage</option>
+        <option value="verse">Verse</option>
+      </select>
       <div class="row">
         <button id="start">Avvia chiamata</button>
         <button id="start_realtime" class="realtime">Avvia realtime</button>
@@ -794,7 +805,8 @@ class CasaFolinoVoiceAIController(http.Controller):
       const data = await post('/voice_ai/simulator/realtime/session', {
         agent_id: Number(document.getElementById('agent_id').value),
         scenario: document.getElementById('scenario').value,
-        phone: document.getElementById('phone').value
+        phone: document.getElementById('phone').value,
+        voice: document.getElementById('realtime_voice').value
       });
       state.callId = data.call_id;
       add('system', 'Realtime avviato: ' + data.call_name + '. Puoi parlare liberamente.');
@@ -1052,7 +1064,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             'summary': 'Simulazione realtime: %s' % scenario,
         })
         try:
-            client_secret = self._openai_realtime_client_secret(agent, scenario)
+            client_secret = self._openai_realtime_client_secret(agent, scenario, voice=payload.get('voice'))
         except ValueError as exc:
             return request.make_json_response({'error': str(exc)}, status=502)
         return request.make_json_response({
