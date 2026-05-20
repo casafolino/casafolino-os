@@ -19,6 +19,7 @@
                         <field name="next_action"/>
                         <field name="next_action_date"/>
                         <field name="create_next_task"/>
+                        <field name="create_department_tasks"/>
                     </group>
                 </sheet>
                 <footer>

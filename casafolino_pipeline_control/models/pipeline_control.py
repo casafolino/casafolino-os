@@ -957,6 +957,7 @@ class CfPipelinePromoteDossierWizard(models.TransientModel):
     next_action_date = fields.Date(string='Data prossima azione')
     target_date = fields.Date(string='Data obiettivo')
     create_next_task = fields.Boolean(string='Crea task prossima azione', default=True)
+    create_department_tasks = fields.Boolean(string='Crea task reparti', default=True)
 
     @api.model
     def default_get(self, fields_list):
@@ -1008,6 +1009,8 @@ class CfPipelinePromoteDossierWizard(models.TransientModel):
                 'user_ids': [(6, 0, [lead.user_id.id or self.env.user.id])],
                 'date_deadline': self.next_action_date or False,
             })
+        if self.create_department_tasks:
+            self._ensure_department_tasks(project, lead)
         if self.next_action_date and 'cf_date_next_followup' in lead._fields:
             lead.cf_date_next_followup = self.next_action_date
 
@@ -1026,6 +1029,32 @@ class CfPipelinePromoteDossierWizard(models.TransientModel):
         if partner and lead.name:
             return '%s - %s' % (partner.name, lead.name)
         return lead.name or (partner.name if partner else 'Dossier commerciale')
+
+    def _ensure_department_tasks(self, project, lead):
+        Task = self.env['project.task']
+        existing_names = set(Task.search([('project_id', '=', project.id)]).mapped('name'))
+        partner_id = lead.partner_id.id if lead.partner_id else False
+        owner_id = lead.user_id.id or self.env.user.id
+        start_date = self.next_action_date or fields.Date.context_today(self)
+        templates = [
+            ('Commerciale - confermare richiesta cliente', 0, owner_id),
+            ('Back office - verificare dati cliente e condizioni', 1, owner_id),
+            ('Produzione - valutare fattibilita campione/prodotto', 2, False),
+            ('Qualita - controllare requisiti, allergeni e certificazioni', 3, False),
+            ('Logistica - stimare spedizione, imballo e tempi', 4, False),
+        ]
+        for name, offset, user_id in templates:
+            if name in existing_names:
+                continue
+            vals = {
+                'name': name,
+                'project_id': project.id,
+                'partner_id': partner_id,
+                'date_deadline': start_date + timedelta(days=offset),
+            }
+            if user_id:
+                vals['user_ids'] = [(6, 0, [user_id])]
+            Task.create(vals)
 
 
 class CfPipelineLinkLeadWizard(models.TransientModel):
