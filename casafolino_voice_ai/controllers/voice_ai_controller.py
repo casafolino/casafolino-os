@@ -575,6 +575,8 @@ class CasaFolinoVoiceAIController(http.Controller):
     textarea { min-height: 92px; resize: vertical; }
     button { border: 0; border-radius: 6px; padding: 10px 14px; background: #1f5eff; color: #fff; font-weight: 650; cursor: pointer; }
     button.secondary { background: #eef2f7; color: #1f2933; }
+    button.mic { background: #047857; }
+    button.mic.listening { background: #b91c1c; }
     button:disabled { opacity: .55; cursor: not-allowed; }
     .chat { display: flex; flex-direction: column; min-height: 680px; }
     .messages { flex: 1; padding: 18px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
@@ -586,6 +588,7 @@ class CasaFolinoVoiceAIController(http.Controller):
     .tools { margin-top: 16px; max-height: 260px; overflow: auto; background: #0f172a; color: #dbeafe; border-radius: 6px; padding: 10px; font-size: 12px; white-space: pre-wrap; }
     .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
     .hint { color: #5b6878; font-size: 13px; line-height: 1.4; }
+    .voice-status { margin-top: 12px; padding: 10px; border-radius: 6px; background: #f1f5f9; color: #334155; font-size: 13px; line-height: 1.4; }
     @media (max-width: 900px) { main { grid-template-columns: 1fr; } .chat { min-height: 560px; } }
   </style>
 </head>
@@ -606,21 +609,34 @@ class CasaFolinoVoiceAIController(http.Controller):
         <button id="start">Avvia chiamata</button>
         <button id="finish" class="secondary" disabled>Chiudi</button>
       </div>
+      <div class="row">
+        <button id="mic" class="mic" disabled>Parla</button>
+        <button id="speak_toggle" class="secondary" type="button">Audio agente: ON</button>
+      </div>
+      <div class="voice-status" id="voice_status">Avvia una chiamata, poi usa Parla. Il microfono richiede HTTPS.</div>
       <p class="hint">Le simulazioni vengono salvate in Chiamate AI. Se chiedi callback, lead o attivita, possono nascere record reali: usa dati TEST quando ti alleni.</p>
       <div class="tools" id="trace">Tool trace vuoto.</div>
     </aside>
     <section class="chat">
       <div class="messages" id="messages"></div>
       <div class="composer">
-        <textarea id="utterance" placeholder="Scrivi quello che dice il cliente..." disabled></textarea>
+        <textarea id="utterance" placeholder="Scrivi o usa Parla..." disabled></textarea>
         <button id="send" disabled>Invia</button>
       </div>
     </section>
   </main>
   <script>
-    const state = { callId: null, trace: [] };
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const state = { callId: null, trace: [], recognition: null, listening: false, speak: true };
     const messages = document.getElementById('messages');
     const trace = document.getElementById('trace');
+    const voiceStatus = document.getElementById('voice_status');
+    const micButton = document.getElementById('mic');
+    const speakToggle = document.getElementById('speak_toggle');
+    const utteranceInput = document.getElementById('utterance');
+    function setVoiceStatus(text) {
+      voiceStatus.textContent = text;
+    }
     function add(role, text) {
       const node = document.createElement('div');
       node.className = 'bubble ' + role;
@@ -628,11 +644,78 @@ class CasaFolinoVoiceAIController(http.Controller):
       messages.appendChild(node);
       messages.scrollTop = messages.scrollHeight;
     }
+    function speak(text) {
+      if (!state.speak || !('speechSynthesis' in window) || !text) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'it-IT';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
     async function post(url, body) {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || ('HTTP ' + res.status));
       return data;
+    }
+    async function sendTurn(text) {
+      if (!text || !state.callId) return;
+      add('user', text);
+      document.getElementById('send').disabled = true;
+      micButton.disabled = true;
+      setVoiceStatus('Agente sta rispondendo...');
+      try {
+        const data = await post('/voice_ai/simulator/turn', { call_id: state.callId, message: text });
+        add('assistant', data.answer || '');
+        speak(data.answer || '');
+        state.trace = data.trace || [];
+        trace.textContent = state.trace.length ? JSON.stringify(state.trace, null, 2) : 'Tool trace vuoto.';
+        setVoiceStatus('Pronto. Premi Parla per continuare.');
+      } catch (err) {
+        add('system', err.message);
+        setVoiceStatus(err.message);
+      } finally {
+        document.getElementById('send').disabled = false;
+        micButton.disabled = false;
+        utteranceInput.focus();
+      }
+    }
+    function setupRecognition() {
+      if (!SpeechRecognition) {
+        micButton.disabled = true;
+        setVoiceStatus('Il browser non supporta il riconoscimento vocale. Usa Chrome o Edge su HTTPS.');
+        return;
+      }
+      state.recognition = new SpeechRecognition();
+      state.recognition.lang = 'it-IT';
+      state.recognition.interimResults = true;
+      state.recognition.continuous = false;
+      state.recognition.onstart = () => {
+        state.listening = true;
+        micButton.classList.add('listening');
+        micButton.textContent = 'Sto ascoltando...';
+        setVoiceStatus('Parla ora. Mi fermo quando smetti di parlare.');
+      };
+      state.recognition.onresult = (event) => {
+        let text = '';
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          text += event.results[i][0].transcript;
+        }
+        utteranceInput.value = text.trim();
+      };
+      state.recognition.onerror = (event) => {
+        setVoiceStatus('Microfono non disponibile: ' + event.error + '. Apri da HTTPS e autorizza il microfono.');
+      };
+      state.recognition.onend = () => {
+        state.listening = false;
+        micButton.classList.remove('listening');
+        micButton.textContent = 'Parla';
+        const text = utteranceInput.value.trim();
+        utteranceInput.value = '';
+        if (text) sendTurn(text);
+        else setVoiceStatus('Non ho sentito una frase. Premi Parla e riprova.');
+      };
     }
     document.getElementById('start').onclick = async () => {
       try {
@@ -650,28 +733,39 @@ class CasaFolinoVoiceAIController(http.Controller):
         document.getElementById('utterance').disabled = false;
         document.getElementById('send').disabled = false;
         document.getElementById('finish').disabled = false;
+        micButton.disabled = false;
+        setVoiceStatus(SpeechRecognition ? 'Pronto. Premi Parla e autorizza il microfono.' : 'Il browser non supporta il riconoscimento vocale. Puoi scrivere.');
+        if (data.first_message) speak(data.first_message);
       } catch (err) {
         add('system', err.message);
       }
     };
     document.getElementById('send').onclick = async () => {
-      const input = document.getElementById('utterance');
+      const input = utteranceInput;
       const text = input.value.trim();
       if (!text || !state.callId) return;
       input.value = '';
-      add('user', text);
-      document.getElementById('send').disabled = true;
-      try {
-        const data = await post('/voice_ai/simulator/turn', { call_id: state.callId, message: text });
-        add('assistant', data.answer || '');
-        state.trace = data.trace || [];
-        trace.textContent = state.trace.length ? JSON.stringify(state.trace, null, 2) : 'Tool trace vuoto.';
-      } catch (err) {
-        add('system', err.message);
-      } finally {
-        document.getElementById('send').disabled = false;
-        input.focus();
+      sendTurn(text);
+    };
+    micButton.onclick = () => {
+      if (!state.callId) return;
+      if (!window.isSecureContext) {
+        setVoiceStatus('Il microfono e bloccato perche questa pagina non e HTTPS. Apri https://erp.casafolino.com/voice_ai/simulator');
+        return;
       }
+      if (!state.recognition) setupRecognition();
+      if (!state.recognition) return;
+      if (state.listening) {
+        state.recognition.stop();
+      } else {
+        window.speechSynthesis?.cancel();
+        state.recognition.start();
+      }
+    };
+    speakToggle.onclick = () => {
+      state.speak = !state.speak;
+      speakToggle.textContent = state.speak ? 'Audio agente: ON' : 'Audio agente: OFF';
+      if (!state.speak && 'speechSynthesis' in window) window.speechSynthesis.cancel();
     };
     document.getElementById('utterance').addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) document.getElementById('send').click();
@@ -683,7 +777,11 @@ class CasaFolinoVoiceAIController(http.Controller):
       document.getElementById('utterance').disabled = true;
       document.getElementById('send').disabled = true;
       document.getElementById('finish').disabled = true;
+      micButton.disabled = true;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      setVoiceStatus('Chiamata chiusa.');
     };
+    setupRecognition();
   </script>
 </body>
 </html>""".replace('__VOICE_AGENT_OPTIONS__', ''.join(options))
