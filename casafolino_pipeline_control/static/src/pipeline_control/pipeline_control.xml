@@ -311,11 +311,20 @@
                             </article>
                         </t>
                     </div>
+                    <div class="cf-pc-segment-row">
+                        <t t-foreach="inboxFilterOptions" t-as="filter" t-key="'inbox-filter-' + filter.id">
+                            <button t-attf-class="btn btn-sm #{state.inboxFilter === filter.id ? 'btn-primary' : 'btn-light'}"
+                                    t-on-click="() => this.setInboxFilter(filter.id)">
+                                <t t-out="filter.label"/>
+                                <span class="cf-pc-mini-count" t-out="filter.count"/>
+                            </button>
+                        </t>
+                    </div>
                     <div class="cf-pc-grid-2">
                         <section class="cf-pc-panel">
                             <header>
                                 <h2>Tocca a noi</h2>
-                                <span class="cf-pc-pill tone-red" t-out="state.data.inbox.to_reply.length"/>
+                                <span class="cf-pc-pill tone-red" t-out="filteredToReplyRows.length"/>
                             </header>
                             <table class="cf-pc-table">
                                 <thead>
@@ -328,7 +337,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <t t-foreach="state.data.inbox.to_reply" t-as="row" t-key="'reply-' + row.id">
+                                    <t t-foreach="filteredToReplyRows" t-as="row" t-key="'reply-' + row.id">
                                         <tr>
                                             <td>
                                                 <strong t-out="row.title"/>
@@ -386,6 +395,9 @@
                                             </td>
                                         </tr>
                                     </t>
+                                    <tr t-if="!filteredToReplyRows.length">
+                                        <td colspan="5" class="cf-pc-empty">Nessun thread per questo filtro</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </section>
@@ -393,11 +405,11 @@
                         <section class="cf-pc-panel">
                             <header>
                                 <h2>Tocca al cliente</h2>
-                                <span class="cf-pc-pill tone-amber" t-out="state.data.inbox.waiting_customer.length"/>
+                                <span class="cf-pc-pill tone-amber" t-out="filteredWaitingRows.length"/>
                             </header>
                             <table class="cf-pc-table">
                                 <tbody>
-                                    <t t-foreach="state.data.inbox.waiting_customer" t-as="row" t-key="'wait-' + row.id">
+                                    <t t-foreach="filteredWaitingRows" t-as="row" t-key="'wait-' + row.id">
                                         <tr>
                                             <td>
                                                 <strong t-out="row.title"/>
@@ -435,6 +447,9 @@
                                             </td>
                                         </tr>
                                     </t>
+                                    <tr t-if="!filteredWaitingRows.length">
+                                        <td colspan="3" class="cf-pc-empty">Nessun thread per questo filtro</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </section>

@@ -152,6 +152,27 @@
         flex-wrap: wrap;
     }
 
+    .cf-pc-segment-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: -4px 0 14px;
+    }
+
+    .cf-pc-mini-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 18px;
+        margin-left: 6px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.55);
+        font-size: 11px;
+        line-height: 1;
+    }
+
     .cf-pc-select {
         width: min(360px, 42vw);
     }

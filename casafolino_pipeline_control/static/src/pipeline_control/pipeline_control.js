@@ -18,6 +18,7 @@ export class CFPipelineControl extends Component {
             error: null,
             activeView: this.props.action?.context?.default_view || "control",
             selectedFairId: false,
+            inboxFilter: "all",
             data: {
                 kpis: [],
                 lanes: [],
@@ -53,6 +54,10 @@ export class CFPipelineControl extends Component {
     async selectFair(ev) {
         this.state.selectedFairId = parseInt(ev.target.value, 10) || false;
         await this.loadData();
+    }
+
+    setInboxFilter(filter) {
+        this.state.inboxFilter = filter;
     }
 
     async openRecord(item) {
@@ -194,6 +199,49 @@ export class CFPipelineControl extends Component {
 
     get pipelineCount() {
         return (this.state.data.pipeline || []).reduce((sum, column) => sum + (column.count || 0), 0);
+    }
+
+    get inboxFilterOptions() {
+        const rows = this.allInboxRows;
+        return [
+            { id: "all", label: "Tutti", count: rows.length },
+            { id: "urgent", label: "Urgenti", count: rows.filter((row) => row.urgency === "high").length },
+            { id: "no_lead", label: "Senza lead", count: rows.filter((row) => !row.lead_id).length },
+            { id: "with_lead", label: "Con lead", count: rows.filter((row) => row.lead_id).length },
+            { id: "ai_action", label: "Azione AI", count: rows.filter((row) => row.needs_action).length },
+        ];
+    }
+
+    get filteredToReplyRows() {
+        return this.filterInboxRows(this.state.data.inbox?.to_reply || []);
+    }
+
+    get filteredWaitingRows() {
+        return this.filterInboxRows(this.state.data.inbox?.waiting_customer || []);
+    }
+
+    get allInboxRows() {
+        return [
+            ...(this.state.data.inbox?.to_reply || []),
+            ...(this.state.data.inbox?.waiting_customer || []),
+        ];
+    }
+
+    filterInboxRows(rows) {
+        const filter = this.state.inboxFilter;
+        if (filter === "urgent") {
+            return rows.filter((row) => row.urgency === "high");
+        }
+        if (filter === "no_lead") {
+            return rows.filter((row) => !row.lead_id);
+        }
+        if (filter === "with_lead") {
+            return rows.filter((row) => row.lead_id);
+        }
+        if (filter === "ai_action") {
+            return rows.filter((row) => row.needs_action);
+        }
+        return rows;
     }
 }
 
