@@ -484,6 +484,9 @@ class CfPipelineControl(models.AbstractModel):
             ('is_deleted', '=', False),
             ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
             '|',
+            ('thread_id', '=', False),
+            ('thread_id.is_snoozed', '=', False),
+            '|',
             ('partner_id', '!=', False),
             ('lead_id', '!=', False),
         ]
@@ -515,6 +518,9 @@ class CfPipelineControl(models.AbstractModel):
             ('is_archived', '=', False),
             ('is_deleted', '=', False),
             ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
+            '|',
+            ('thread_id', '=', False),
+            ('thread_id.is_snoozed', '=', False),
         ]
         if user and not user.has_group('base.group_system'):
             domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
@@ -526,6 +532,9 @@ class CfPipelineControl(models.AbstractModel):
             ('is_archived', '=', False),
             ('is_deleted', '=', False),
             ('state', 'in', ['keep', 'auto_keep', 'auto_attached']),
+            '|',
+            ('thread_id', '=', False),
+            ('thread_id.is_snoozed', '=', False),
         ]
         if user and not user.has_group('base.group_system'):
             domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
