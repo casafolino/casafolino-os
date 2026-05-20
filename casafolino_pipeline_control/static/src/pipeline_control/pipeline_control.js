@@ -182,6 +182,25 @@ export class CFPipelineControl extends Component {
         });
     }
 
+    async planPostFairFollowups() {
+        const fairId = this.state.selectedFairId || this.state.data.post_fair?.fair?.id;
+        if (!fairId) {
+            this.notification.add(_t("Seleziona prima una fiera"), { type: "warning" });
+            return;
+        }
+        try {
+            const result = await this.orm.call("cf.pipeline.control", "plan_fair_followups", [fairId]);
+            if (result) {
+                await this.action.doAction(result);
+                if (result.reload) {
+                    await this.loadData();
+                }
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
     get navItems() {
         return [
             { id: "control", label: "Sala Controllo", count: this.totalLaneCount },

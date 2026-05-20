@@ -228,6 +228,7 @@
                                 </t>
                             </select>
                             <button class="btn btn-light" t-on-click="() => this.openModel('cf.export.fair', 'Fiere')">Apri fiere</button>
+                            <button class="btn btn-primary" t-on-click="planPostFairFollowups">Pianifica follow-up</button>
                         </div>
                     </div>
                     <div class="cf-pc-kpis">

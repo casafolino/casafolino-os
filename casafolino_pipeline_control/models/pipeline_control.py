@@ -487,6 +487,20 @@ class CfPipelineControl(models.AbstractModel):
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     @api.model
+    def plan_fair_followups(self, fair_id=False):
+        fair = self.env['cf.export.fair'].browse(int(fair_id)).exists() if fair_id else self.env['cf.export.fair']
+        if not fair:
+            return self._notify('Fiera richiesta', 'Seleziona prima una fiera.', 'warning')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Pianifica follow-up fiera',
+            'res_model': 'cf.pipeline.plan.fair.followup.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_fair_id': fair.id},
+        }
+
+    @api.model
     def record_quick_action(self, model, res_id, quick_action):
         allowed_models = {
             'sale.order': 'Quotazione',
@@ -1258,3 +1272,90 @@ class CfPipelineSnoozeWizard(models.TransientModel):
             },
             'reload': True,
         }
+
+
+class CfPipelinePlanFairFollowupWizard(models.TransientModel):
+    _name = 'cf.pipeline.plan.fair.followup.wizard'
+    _description = 'Pianifica follow-up massivi post-fiera'
+
+    fair_id = fields.Many2one('cf.export.fair', string='Fiera', required=True, readonly=True)
+    start_date = fields.Date(string='Prima data follow-up', required=True)
+    batch_size = fields.Integer(string='Lead per giorno', default=20, required=True)
+    batch_gap_days = fields.Integer(string='Giorni tra batch', default=1, required=True)
+    only_without_plan = fields.Boolean(string='Solo lead senza prossima azione', default=True)
+    create_tasks = fields.Boolean(string='Crea task commerciale per ogni lead', default=False)
+    affected_count = fields.Integer(string='Lead coinvolti', compute='_compute_affected_count')
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        fair = self.env['cf.export.fair'].browse(self.env.context.get('default_fair_id')).exists()
+        if fair:
+            res.update({
+                'fair_id': fair.id,
+                'start_date': fields.Date.context_today(self) + timedelta(days=1),
+                'batch_size': 20,
+                'batch_gap_days': 1,
+                'only_without_plan': True,
+                'create_tasks': False,
+            })
+        return res
+
+    @api.depends('fair_id', 'only_without_plan')
+    def _compute_affected_count(self):
+        for wizard in self:
+            wizard.affected_count = len(wizard._candidate_leads())
+
+    def action_plan(self):
+        self.ensure_one()
+        leads = self._candidate_leads()
+        if not leads:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Nessun lead da pianificare',
+                    'message': 'Non ci sono lead compatibili con i filtri scelti.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        date_field = self._followup_date_field()
+        batch_size = max(self.batch_size or 1, 1)
+        batch_gap_days = max(self.batch_gap_days or 1, 1)
+        Task = self.env['project.task']
+        for index, lead in enumerate(leads):
+            planned_date = self.start_date + timedelta(days=(index // batch_size) * batch_gap_days)
+            lead.write({date_field: planned_date})
+            if self.create_tasks:
+                project = getattr(lead, 'cf_project_id', False)
+                Task.create({
+                    'name': 'Follow-up post-fiera: %s' % (lead.name or lead.display_name),
+                    'project_id': project.id if project else False,
+                    'partner_id': lead.partner_id.id if lead.partner_id else False,
+                    'user_ids': [(6, 0, [lead.user_id.id or self.env.user.id])],
+                    'date_deadline': planned_date,
+                })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Follow-up pianificati',
+                'message': '%s lead aggiornati da %s.' % (len(leads), self.fair_id.name),
+                'type': 'success',
+                'sticky': False,
+            },
+            'reload': True,
+        }
+
+    def _candidate_leads(self):
+        self.ensure_one()
+        leads = self.fair_id.lead_ids.exists()
+        if self.only_without_plan:
+            date_field = self._followup_date_field()
+            leads = leads.filtered(lambda lead: not lead[date_field])
+        return leads.sorted(key=lambda lead: (lead.user_id.name or '', lead.create_date or fields.Datetime.now(), lead.id))
+
+    def _followup_date_field(self):
+        Lead = self.env['crm.lead']
+        return 'cf_date_next_followup' if 'cf_date_next_followup' in Lead._fields else 'date_deadline'
