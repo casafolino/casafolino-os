@@ -347,6 +347,33 @@ class CasaFolinoVoiceAIController(http.Controller):
             detail = exc.read().decode('utf-8')
             raise ValueError('OpenAI error %s: %s' % (exc.code, detail[:500])) from exc
 
+    def _openai_speech(self, text):
+        api_key = request.env['ir.config_parameter'].sudo().get_param('casafolino_voice_ai.openai_api_key')
+        if not api_key:
+            raise ValueError('OpenAI API key not configured')
+        payload = json.dumps({
+            'model': 'gpt-4o-mini-tts',
+            'voice': 'marin',
+            'input': text[:4000],
+            'response_format': 'mp3',
+            'instructions': 'Parla in italiano con tono naturale, professionale e caldo, come un centralinista CasaFolino. Frasi chiare, ritmo telefonico, non teatrale.',
+        }).encode('utf-8')
+        req = urllib.request.Request(
+            'https://api.openai.com/v1/audio/speech',
+            data=payload,
+            headers={
+                'Authorization': 'Bearer %s' % api_key,
+                'Content-Type': 'application/json',
+            },
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode('utf-8')
+            raise ValueError('OpenAI speech error %s: %s' % (exc.code, detail[:500])) from exc
+
     def _execute_voice_tool(self, tool_name, payload):
         partner = self._find_partner(payload)
 
@@ -611,7 +638,7 @@ class CasaFolinoVoiceAIController(http.Controller):
       </div>
       <div class="row">
         <button id="mic" class="mic" disabled>Parla</button>
-        <button id="speak_toggle" class="secondary" type="button">Audio agente: ON</button>
+        <button id="speak_toggle" class="secondary" type="button">Voce naturale: ON</button>
       </div>
       <div class="voice-status" id="voice_status">Avvia una chiamata, poi usa Parla. Il microfono richiede HTTPS.</div>
       <p class="hint">Le simulazioni vengono salvate in Chiamate AI. Se chiedi callback, lead o attivita, possono nascere record reali: usa dati TEST quando ti alleni.</p>
@@ -627,7 +654,7 @@ class CasaFolinoVoiceAIController(http.Controller):
   </main>
   <script>
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const state = { callId: null, trace: [], recognition: null, listening: false, speak: true };
+    const state = { callId: null, trace: [], recognition: null, listening: false, speak: true, audio: null };
     const messages = document.getElementById('messages');
     const trace = document.getElementById('trace');
     const voiceStatus = document.getElementById('voice_status');
@@ -644,14 +671,37 @@ class CasaFolinoVoiceAIController(http.Controller):
       messages.appendChild(node);
       messages.scrollTop = messages.scrollHeight;
     }
-    function speak(text) {
-      if (!state.speak || !('speechSynthesis' in window) || !text) return;
+    function fallbackSpeak(text) {
+      if (!('speechSynthesis' in window) || !text) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'it-IT';
-      utterance.rate = 1;
+      utterance.rate = 0.96;
       utterance.pitch = 1;
       window.speechSynthesis.speak(utterance);
+    }
+    async function speak(text) {
+      if (!state.speak || !text) return;
+      try {
+        if (state.audio) {
+          state.audio.pause();
+          state.audio = null;
+        }
+        setVoiceStatus('Genero voce naturale...');
+        const res = await fetch('/voice_ai/simulator/speech', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (!res.ok) throw new Error('speech HTTP ' + res.status);
+        const blob = await res.blob();
+        state.audio = new Audio(URL.createObjectURL(blob));
+        state.audio.onended = () => setVoiceStatus('Pronto. Premi Parla per continuare.');
+        await state.audio.play();
+      } catch (err) {
+        fallbackSpeak(text);
+        setVoiceStatus('Voce browser usata come fallback. Apri da HTTPS se l audio naturale non parte.');
+      }
     }
     async function post(url, body) {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
@@ -764,8 +814,9 @@ class CasaFolinoVoiceAIController(http.Controller):
     };
     speakToggle.onclick = () => {
       state.speak = !state.speak;
-      speakToggle.textContent = state.speak ? 'Audio agente: ON' : 'Audio agente: OFF';
+      speakToggle.textContent = state.speak ? 'Voce naturale: ON' : 'Voce naturale: OFF';
       if (!state.speak && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (!state.speak && state.audio) state.audio.pause();
     };
     document.getElementById('utterance').addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) document.getElementById('send').click();
@@ -887,6 +938,21 @@ class CasaFolinoVoiceAIController(http.Controller):
         })
         call.message_post(body='Simulazione Voice AI chiusa.', message_type='comment', subtype_xmlid='mail.mt_note')
         return request.make_json_response({'ok': True})
+
+    @http.route('/voice_ai/simulator/speech', type='http', auth='user', methods=['POST'], csrf=False)
+    def simulator_speech(self):
+        payload = self._json_body()
+        text = (payload.get('text') or '').strip()
+        if not text:
+            return request.make_json_response({'error': 'text required'}, status=400)
+        try:
+            audio = self._openai_speech(text)
+        except ValueError as exc:
+            return request.make_json_response({'error': str(exc)}, status=502)
+        return request.make_response(audio, headers=[
+            ('Content-Type', 'audio/mpeg'),
+            ('Cache-Control', 'no-store'),
+        ])
 
     @http.route('/voice_ai/outbound/enqueue', type='http', auth='public', methods=['POST'], csrf=False)
     def outbound_enqueue(self):
