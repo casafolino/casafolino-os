@@ -99,9 +99,26 @@
                     <div class="cf-pc-section-head">
                         <div>
                             <h2 t-out="state.data.post_fair.fair ? state.data.post_fair.fair.name : 'Nessuna fiera'"/>
-                            <p t-if="state.data.post_fair.fair" t-out="state.data.post_fair.fair.date"/>
+                            <p t-if="state.data.post_fair.fair">
+                                <span t-out="state.data.post_fair.fair.date"/>
+                                <span t-if="state.data.post_fair.fair.location"> - <t t-out="state.data.post_fair.fair.location"/></span>
+                                <span t-if="state.data.post_fair.fair.state"> - <t t-out="state.data.post_fair.fair.state"/></span>
+                            </p>
                         </div>
-                        <button class="btn btn-light" t-on-click="() => this.openModel('cf.export.fair', 'Fiere')">Apri fiere</button>
+                        <div class="cf-pc-section-tools">
+                            <select class="form-select form-select-sm cf-pc-select"
+                                    t-on-change="selectFair"
+                                    t-att-value="state.selectedFairId || ''">
+                                <t t-foreach="state.data.post_fair.fair_options" t-as="fairOption" t-key="fairOption.id">
+                                    <option t-att-value="fairOption.id"
+                                            t-att-selected="fairOption.id === state.selectedFairId">
+                                        <t t-out="fairOption.name"/>
+                                        <t t-if="fairOption.date"> - <t t-out="fairOption.date"/></t>
+                                    </option>
+                                </t>
+                            </select>
+                            <button class="btn btn-light" t-on-click="() => this.openModel('cf.export.fair', 'Fiere')">Apri fiere</button>
+                        </div>
                     </div>
                     <div class="cf-pc-kpis">
                         <t t-foreach="state.data.post_fair.kpis" t-as="kpi" t-key="kpi.label">
@@ -127,6 +144,51 @@
                             </section>
                         </t>
                     </div>
+                    <section class="cf-pc-panel cf-pc-timeline-panel">
+                        <header>
+                            <h2>Timeline lead fiera</h2>
+                            <span class="cf-pc-pill" t-out="state.data.post_fair.timeline.length"/>
+                        </header>
+                        <table class="cf-pc-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Stage</th>
+                                    <th>Ultimo contatto</th>
+                                    <th>Prossima azione</th>
+                                    <th>Email</th>
+                                    <th>Valore</th>
+                                    <th/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.data.post_fair.timeline" t-as="row" t-key="'fair-line-' + row.id">
+                                    <tr t-attf-class="#{row.is_overdue ? 'is-overdue' : ''}">
+                                        <td>
+                                            <strong t-out="row.title"/>
+                                            <small t-out="row.subtitle"/>
+                                        </td>
+                                        <td t-out="row.stage"/>
+                                        <td t-out="row.last_contact"/>
+                                        <td>
+                                            <span t-out="row.next_action || 'Da pianificare'"/>
+                                            <small t-if="row.owner" t-out="row.owner"/>
+                                        </td>
+                                        <td>
+                                            <span><t t-out="row.outbound"/> out</span>
+                                            <small><t t-out="row.inbound"/> in</small>
+                                        </td>
+                                        <td>
+                                            <span t-if="row.value">€ <t t-out="Math.round(row.value).toLocaleString('it-IT')"/></span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord(row)">Apri</button>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </section>
                 </t>
 
                 <t t-elif="state.activeView === 'inbox'">

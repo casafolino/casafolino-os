@@ -11,13 +11,13 @@ class CfPipelineControl(models.AbstractModel):
     _description = 'CasaFolino Pipeline Control data provider'
 
     @api.model
-    def get_dashboard_data(self):
+    def get_dashboard_data(self, fair_id=False):
         today = fields.Date.context_today(self)
         user = self.env.user
         return {
             'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
             'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
-            'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today), {'kpis': [], 'columns': []}),
+            'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
             'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
@@ -130,9 +130,10 @@ class CfPipelineControl(models.AbstractModel):
             },
         ]
 
-    def _get_post_fair_data(self, today):
+    def _get_post_fair_data(self, today, fair_id=False):
         Fair = self.env['cf.export.fair']
-        fair = Fair.search([('state', 'in', ['done', 'followup', 'active', 'confirmed'])], limit=1)
+        fair_options = self._get_fair_options()
+        fair = Fair.browse(int(fair_id)).exists() if fair_id else Fair
         if not fair:
             fair = Fair.search([], limit=1)
         if not fair:
@@ -140,15 +141,24 @@ class CfPipelineControl(models.AbstractModel):
                 'fair': False,
                 'kpis': [],
                 'columns': [],
+                'timeline': [],
+                'fair_options': fair_options,
             }
 
         leads = fair.lead_ids
-        first_followup = leads.filtered(lambda lead: bool(lead.cf_date_last_contact))
-        replied_ids = self._lead_ids_with_mail(leads.ids)
-        replied = leads.filtered(lambda lead: lead.id in replied_ids)
+        mail_stats = self._mail_stats_by_lead(leads.ids)
+        replied = leads.filtered(lambda lead: mail_stats.get(lead.id, {}).get('inbound', 0) > 0)
+        first_followup = leads.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) >= 1 or bool(lead.cf_date_last_contact))
+        second_followup = leads.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) >= 2)
+        third_followup = leads.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) >= 3)
         quoted = leads.filtered(lambda lead: lead.expected_revenue and lead.expected_revenue > 0)
         samples = self.env['cf.export.sample'].search([('lead_id', 'in', leads.ids)]) if leads else self.env['cf.export.sample']
         dossiers = leads.filtered(lambda lead: bool(lead.cf_project_id))
+        no_reply = leads.filtered(lambda lead: mail_stats.get(lead.id, {}).get('inbound', 0) == 0)
+        no_outbound = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) == 0 and not lead.cf_date_last_contact)
+        followup_1 = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) == 1 or (lead.cf_date_last_contact and mail_stats.get(lead.id, {}).get('outbound', 0) == 0))
+        followup_2 = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) == 2)
+        followup_3 = no_reply.filtered(lambda lead: mail_stats.get(lead.id, {}).get('outbound', 0) >= 3)
 
         def pct(part, total):
             return round((part / total) * 100) if total else 0
@@ -157,24 +167,80 @@ class CfPipelineControl(models.AbstractModel):
             'fair': {
                 'id': fair.id,
                 'name': fair.name,
-                'date': self._date_label(fair.date_end or fair.date_start),
+                'date': self._fair_date_range(fair),
+                'location': ', '.join(self._compact([fair.location, fair.country_id.name if fair.country_id else False])),
+                'state': dict(fair._fields['state'].selection).get(fair.state, fair.state) if fair.state else '',
             },
+            'fair_options': fair_options,
             'kpis': [
                 {'label': 'Lead raccolti', 'value': len(leads), 'hint': 'Trattative collegate'},
-                {'label': 'Follow-up inviati', 'value': len(first_followup), 'hint': '%s%% del totale' % pct(len(first_followup), len(leads))},
-                {'label': 'Response rate', 'value': '%s%%' % pct(len(replied), len(leads)), 'hint': 'Almeno una email collegata'},
+                {'label': 'Follow-up 1', 'value': len(first_followup), 'hint': '%s%% del totale' % pct(len(first_followup), len(leads))},
+                {'label': 'Follow-up 2', 'value': len(second_followup), 'hint': '%s%% del totale' % pct(len(second_followup), len(leads))},
+                {'label': 'Follow-up 3', 'value': len(third_followup), 'hint': '%s%% del totale' % pct(len(third_followup), len(leads))},
+                {'label': 'Response rate', 'value': '%s%%' % pct(len(replied), len(leads)), 'hint': '%s risposte su %s lead' % (len(replied), len(leads))},
                 {'label': 'Quotazioni', 'value': len(quoted), 'hint': 'Con valore atteso'},
                 {'label': 'Campionature', 'value': len(samples), 'hint': 'Standard/custom'},
                 {'label': 'Dossier', 'value': len(dossiers), 'hint': 'Lead promossi'},
             ],
             'columns': [
-                self._fair_column('Da contattare', leads.filtered(lambda lead: not lead.cf_date_last_contact), today),
-                self._fair_column('Follow-up inviato', first_followup, today),
+                self._fair_column('Da contattare', no_outbound, today, mail_stats),
+                self._fair_column('Follow-up 1', followup_1, today, mail_stats),
+                self._fair_column('Follow-up 2', followup_2, today, mail_stats),
+                self._fair_column('Follow-up 3+', followup_3, today, mail_stats),
                 self._fair_column('Ha risposto', replied, today),
-                self._fair_column('Quotazione', quoted, today),
-                self._fair_column('Dossier', dossiers, today),
             ],
+            'timeline': self._fair_timeline(leads, mail_stats, today),
         }
+
+    def _get_fair_options(self):
+        fairs = self.env['cf.export.fair'].search([], order='date_start desc, id desc', limit=20)
+        return [{
+            'id': fair.id,
+            'name': fair.name,
+            'date': self._fair_date_range(fair),
+            'state': dict(fair._fields['state'].selection).get(fair.state, fair.state) if fair.state else '',
+        } for fair in fairs]
+
+    def _mail_stats_by_lead(self, lead_ids):
+        stats = {lead_id: {'inbound': 0, 'outbound': 0, 'last_date': False} for lead_id in lead_ids}
+        if not lead_ids:
+            return stats
+        messages = self.env['casafolino.mail.message'].search([
+            ('lead_id', 'in', lead_ids),
+            ('is_deleted', '=', False),
+        ], order='email_date desc, id desc', limit=2000)
+        for msg in messages:
+            bucket = stats.setdefault(msg.lead_id.id, {'inbound': 0, 'outbound': 0, 'last_date': False})
+            direction = msg.direction_computed or msg.direction
+            if direction == 'inbound':
+                bucket['inbound'] += 1
+            elif direction == 'outbound':
+                bucket['outbound'] += 1
+            if not bucket['last_date'] and msg.email_date:
+                bucket['last_date'] = msg.email_date
+        return stats
+
+    def _fair_timeline(self, leads, mail_stats, today):
+        rows = []
+        for lead in leads:
+            stats = mail_stats.get(lead.id, {})
+            rows.append({
+                'id': lead.id,
+                'model': lead._name,
+                'res_id': lead.id,
+                'title': lead.partner_id.display_name if lead.partner_id else lead.name,
+                'subtitle': lead.name,
+                'stage': lead.stage_id.name if lead.stage_id else '',
+                'owner': lead.user_id.name if lead.user_id else '',
+                'last_contact': self._date_label(stats.get('last_date') or lead.cf_date_last_contact or lead.create_date),
+                'next_action': self._date_label(lead.cf_date_next_followup or lead.date_deadline),
+                'is_overdue': bool((lead.cf_date_next_followup or lead.date_deadline) and fields.Date.to_date(lead.cf_date_next_followup or lead.date_deadline) <= today),
+                'outbound': stats.get('outbound', 0),
+                'inbound': stats.get('inbound', 0),
+                'value': lead.expected_revenue or 0,
+            })
+        rows.sort(key=lambda row: (not row['is_overdue'], row['next_action'] or '9999-12-31', row['last_contact'] or ''), reverse=False)
+        return rows[:18]
 
     def _lead_ids_with_mail(self, lead_ids):
         if not lead_ids:
@@ -326,12 +392,28 @@ class CfPipelineControl(models.AbstractModel):
             domain = [('active', '=', True)]
         return domain
 
-    def _fair_column(self, title, leads, today):
+    def _fair_column(self, title, leads, today, mail_stats=None):
         return {
             'title': title,
             'count': len(leads),
-            'items': [self._format_lead_item(lead, today) for lead in leads[:6]],
+            'items': [self._format_fair_lead_item(lead, today, mail_stats or {}) for lead in leads[:8]],
         }
+
+    def _format_fair_lead_item(self, lead, today, mail_stats):
+        item = self._format_lead_item(lead, today)
+        stats = mail_stats.get(lead.id, {})
+        item['badges'] = self._compact(item.get('badges', []) + [
+            '%s out' % stats.get('outbound', 0) if stats.get('outbound') else False,
+            '%s in' % stats.get('inbound', 0) if stats.get('inbound') else False,
+        ])
+        return item
+
+    def _fair_date_range(self, fair):
+        start = self._date_label(fair.date_start)
+        end = self._date_label(fair.date_end)
+        if start and end and start != end:
+            return '%s - %s' % (start, end)
+        return end or start or ''
 
     def _format_mail_item(self, msg):
         partner = msg.partner_id

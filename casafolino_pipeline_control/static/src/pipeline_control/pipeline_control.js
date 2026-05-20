@@ -17,10 +17,11 @@ export class CFPipelineControl extends Component {
             loading: true,
             error: null,
             activeView: this.props.action?.context?.default_view || "control",
+            selectedFairId: false,
             data: {
                 kpis: [],
                 lanes: [],
-                post_fair: { kpis: [], columns: [] },
+                post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
                 inbox: { to_reply: [], waiting_customer: [] },
                 dossiers: [],
@@ -33,7 +34,10 @@ export class CFPipelineControl extends Component {
         this.state.loading = true;
         this.state.error = null;
         try {
-            this.state.data = await this.orm.call("cf.pipeline.control", "get_dashboard_data", []);
+            this.state.data = await this.orm.call("cf.pipeline.control", "get_dashboard_data", [this.state.selectedFairId || false]);
+            if (!this.state.selectedFairId && this.state.data.post_fair?.fair?.id) {
+                this.state.selectedFairId = this.state.data.post_fair.fair.id;
+            }
         } catch (error) {
             this.state.error = error.message || String(error);
         } finally {
@@ -43,6 +47,11 @@ export class CFPipelineControl extends Component {
 
     setView(view) {
         this.state.activeView = view;
+    }
+
+    async selectFair(ev) {
+        this.state.selectedFairId = parseInt(ev.target.value, 10) || false;
+        await this.loadData();
     }
 
     async openRecord(item) {
