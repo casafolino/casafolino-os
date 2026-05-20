@@ -24,7 +24,7 @@ export class CFPipelineControl extends Component {
                 followup: { kpis: [], columns: [], timeline: [] },
                 post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
-                inbox: { to_reply: [], waiting_customer: [] },
+                inbox: { kpis: [], to_reply: [], waiting_customer: [] },
                 dossiers: [],
             },
         });

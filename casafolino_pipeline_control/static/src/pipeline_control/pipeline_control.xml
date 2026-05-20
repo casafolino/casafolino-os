@@ -277,6 +277,15 @@
                 </t>
 
                 <t t-elif="state.activeView === 'inbox'">
+                    <div class="cf-pc-kpis">
+                        <t t-foreach="state.data.inbox.kpis" t-as="kpi" t-key="'inbox-kpi-' + kpi.label">
+                            <article class="cf-pc-kpi">
+                                <span t-out="kpi.label"/>
+                                <strong t-out="kpi.value"/>
+                                <small t-out="kpi.hint"/>
+                            </article>
+                        </t>
+                    </div>
                     <div class="cf-pc-grid-2">
                         <section class="cf-pc-panel">
                             <header>
@@ -289,7 +298,7 @@
                                         <th>Cliente</th>
                                         <th>Segnale</th>
                                         <th>Lead</th>
-                                        <th>Owner</th>
+                                        <th>Stato</th>
                                         <th/>
                                     </tr>
                                 </thead>
@@ -304,14 +313,24 @@
                                                 <span t-out="row.subtitle"/>
                                                 <small t-out="row.snippet"/>
                                             </td>
-                                            <td t-out="row.lead"/>
-                                            <td t-out="row.owner"/>
+                                            <td>
+                                                <span t-if="row.lead" t-out="row.lead"/>
+                                                <button t-else="" class="btn btn-sm btn-outline-primary" t-on-click="() => this.mailQuickAction(row, 'link_lead')">Collega</button>
+                                            </td>
+                                            <td>
+                                                <span t-out="row.suggested_action"/>
+                                                <small>
+                                                    <t t-if="row.urgency">Urgenza <t t-out="row.urgency"/></t>
+                                                    <t t-if="row.category"> · <t t-out="row.category"/></t>
+                                                    <t t-if="row.thread_count"> · <t t-out="row.thread_count"/> msg</t>
+                                                </small>
+                                            </td>
                                             <td>
                                                 <div class="cf-pc-row-actions">
                                                     <button class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(row, 'reply')" title="Rispondi">
                                                         <i class="fa fa-reply"/>
                                                     </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open')" title="Apri email">
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_thread')" title="Apri thread">
                                                         <i class="fa fa-envelope-open-o"/>
                                                     </button>
                                                     <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
@@ -319,6 +338,9 @@
                                                     </button>
                                                     <button t-else="" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
                                                         <i class="fa fa-plus"/>
+                                                    </button>
+                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'link_lead')" title="Cambia lead">
+                                                        <i class="fa fa-link"/>
                                                     </button>
                                                     <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                         <i class="fa fa-check-square-o"/>
@@ -354,16 +376,26 @@
                                         <tr>
                                             <td>
                                                 <strong t-out="row.title"/>
-                                                <small t-out="row.subtitle"/>
+                                                <small>
+                                                    <t t-out="row.subtitle"/>
+                                                    <t t-if="row.thread_count"> · <t t-out="row.thread_count"/> msg</t>
+                                                </small>
                                             </td>
-                                            <td t-out="row.meta"/>
+                                            <td>
+                                                <span t-out="row.meta"/>
+                                                <small t-if="row.lead" t-out="row.lead"/>
+                                                <button t-else="" class="btn btn-sm btn-outline-primary" t-on-click="() => this.mailQuickAction(row, 'link_lead')">Collega</button>
+                                            </td>
                                             <td>
                                                 <div class="cf-pc-row-actions">
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open')" title="Apri email">
+                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_thread')" title="Apri thread">
                                                         <i class="fa fa-envelope-open-o"/>
                                                     </button>
                                                     <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
                                                         <i class="fa fa-handshake-o"/>
+                                                    </button>
+                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'link_lead')" title="Cambia lead">
+                                                        <i class="fa fa-link"/>
                                                     </button>
                                                     <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                         <i class="fa fa-check-square-o"/>

@@ -29,6 +29,33 @@
         </field>
     </record>
 
+    <record id="view_cf_pipeline_link_lead_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.link.lead.wizard.form</field>
+        <field name="model">cf.pipeline.link.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Collega email a lead">
+                <sheet>
+                    <group>
+                        <field name="message_id"/>
+                        <field name="partner_id"/>
+                    </group>
+                    <group>
+                        <field name="lead_id" domain="[('type', '=', 'opportunity'), ('active', '=', True)]"/>
+                        <field name="apply_to_thread"/>
+                    </group>
+                    <group string="Follow-up">
+                        <field name="set_followup"/>
+                        <field name="next_followup_date" invisible="not set_followup"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_link" string="Collega lead" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="action_cf_pipeline_control" model="ir.actions.client">
         <field name="name">Sala Controllo</field>
         <field name="tag">casafolino_pipeline_control</field>

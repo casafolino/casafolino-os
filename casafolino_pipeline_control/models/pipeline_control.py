@@ -334,9 +334,18 @@ class CfPipelineControl(models.AbstractModel):
 
     def _get_inbox_data(self, user):
         inbox, waiting = self._get_latest_commercial_threads(user)
+        rows_to_reply = [self._format_mail_row(msg) for msg in inbox[:24]]
+        rows_waiting = [self._format_mail_row(msg) for msg in waiting[:24]]
+        all_rows = rows_to_reply + rows_waiting
         return {
-            'to_reply': [self._format_mail_row(msg) for msg in inbox[:24]],
-            'waiting_customer': [self._format_mail_row(msg) for msg in waiting[:24]],
+            'kpis': [
+                {'label': 'Tocca a noi', 'value': len(inbox), 'hint': 'Ultimo messaggio inbound o azione richiesta'},
+                {'label': 'Tocca al cliente', 'value': len(waiting), 'hint': 'Ultimo messaggio outbound'},
+                {'label': 'Senza lead', 'value': len([row for row in all_rows if not row.get('lead_id')]), 'hint': 'Da collegare alla pipeline CRM'},
+                {'label': 'Urgenti', 'value': len([row for row in all_rows if row.get('urgency') == 'high']), 'hint': 'AI urgenza alta'},
+            ],
+            'to_reply': rows_to_reply,
+            'waiting_customer': rows_waiting,
         }
 
     @api.model
@@ -347,6 +356,10 @@ class CfPipelineControl(models.AbstractModel):
 
         if quick_action == 'open':
             return self._open_record(msg, 'Email')
+        if quick_action == 'open_thread':
+            if msg.thread_id:
+                return self._open_record(msg.thread_id, 'Thread email')
+            return self._open_record(msg, 'Email')
         if quick_action == 'reply':
             return self._reply_from_message(msg)
         if quick_action == 'open_lead':
@@ -356,7 +369,14 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'create_lead':
             return msg.action_create_lead()
         if quick_action == 'link_lead':
-            return self._open_record(msg, 'Collega lead')
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Collega email a lead',
+                'res_model': 'cf.pipeline.link.lead.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_message_id': msg.id},
+            }
         if quick_action == 'task':
             return self._new_task_from_message(msg)
         if quick_action == 'quote':
@@ -543,8 +563,23 @@ class CfPipelineControl(models.AbstractModel):
             'owner': ', '.join(msg.assigned_user_ids.mapped('name')) or '',
             'snippet': msg.snippet or '',
             'can_sample': bool(msg.lead_id),
+            'account': msg.account_id.display_name if msg.account_id else '',
+            'direction': msg.direction_computed or msg.direction or '',
+            'urgency': msg.ai_urgency or '',
+            'category': msg.ai_category or '',
+            'language': msg.ai_language or '',
+            'needs_action': bool(msg.ai_action_required),
+            'thread_count': msg.thread_id.message_count if msg.thread_id else 1,
+            'suggested_action': self._mail_suggested_action(msg),
         })
         return item
+
+    def _mail_suggested_action(self, msg):
+        if not msg.lead_id:
+            return 'Collega lead'
+        if msg.direction_computed == 'inbound' or msg.ai_action_required:
+            return 'Rispondi'
+        return 'Attendi risposta'
 
     def _open_record(self, record, name):
         return {
@@ -900,3 +935,61 @@ class CfPipelinePromoteDossierWizard(models.TransientModel):
         if partner and lead.name:
             return '%s - %s' % (partner.name, lead.name)
         return lead.name or (partner.name if partner else 'Dossier commerciale')
+
+
+class CfPipelineLinkLeadWizard(models.TransientModel):
+    _name = 'cf.pipeline.link.lead.wizard'
+    _description = 'Collega email commerciale a lead'
+
+    message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
+    partner_id = fields.Many2one('res.partner', string='Cliente', readonly=True)
+    lead_id = fields.Many2one('crm.lead', string='Lead', required=True)
+    apply_to_thread = fields.Boolean(string='Collega tutto il thread', default=True)
+    set_followup = fields.Boolean(string='Pianifica follow-up', default=True)
+    next_followup_date = fields.Date(string='Data follow-up')
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        message = self.env['casafolino.mail.message'].browse(self.env.context.get('default_message_id')).exists()
+        if message:
+            res.update({
+                'message_id': message.id,
+                'partner_id': message.partner_id.id if message.partner_id else False,
+                'lead_id': message.lead_id.id if message.lead_id else self._guess_lead(message).id,
+                'next_followup_date': fields.Date.context_today(self) + timedelta(days=7),
+            })
+        return res
+
+    def action_link(self):
+        self.ensure_one()
+        messages = self.message_id
+        if self.apply_to_thread and self.message_id.thread_id:
+            messages = self.env['casafolino.mail.message'].search([
+                ('thread_id', '=', self.message_id.thread_id.id),
+                ('is_deleted', '=', False),
+            ])
+        messages.write({'lead_id': self.lead_id.id})
+        if self.partner_id and not self.lead_id.partner_id:
+            self.lead_id.partner_id = self.partner_id
+        if self.set_followup and self.next_followup_date:
+            date_field = 'cf_date_next_followup' if 'cf_date_next_followup' in self.lead_id._fields else 'date_deadline'
+            self.lead_id.write({date_field: self.next_followup_date})
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lead',
+            'res_model': 'crm.lead',
+            'res_id': self.lead_id.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
+    def _guess_lead(self, message):
+        if message.partner_id:
+            return self.env['crm.lead'].search([
+                ('partner_id', '=', message.partner_id.id),
+                ('type', '=', 'opportunity'),
+                ('active', '=', True),
+            ], order='write_date desc, id desc', limit=1)
+        return self.env['crm.lead']
