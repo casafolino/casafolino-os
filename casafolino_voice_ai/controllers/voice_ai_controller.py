@@ -580,10 +580,19 @@ class CasaFolinoVoiceAIController(http.Controller):
     @http.route('/voice_ai/simulator', type='http', auth='user', methods=['GET'], csrf=False)
     def simulator_page(self):
         agents = request.env['casafolino.voice.agent'].sudo().search([('active', '=', True)], order='direction, name')
+        priority = {
+            'commerciale': 0,
+            'centralino': 1,
+            'assistenza': 2,
+            'amministrazione': 3,
+            'follow-up': 4,
+        }
+        agents = agents.sorted(lambda agent: priority.get((agent.name or '').lower().split(' ')[0], 9))
         options = []
         for agent in agents:
             label = '%s - %s' % (agent.name, agent.direction)
-            options.append('<option value="%s">%s</option>' % (agent.id, html.escape(label)))
+            selected = ' selected' if 'commerciale' in (agent.name or '').lower() else ''
+            options.append('<option value="%s"%s>%s</option>' % (agent.id, selected, html.escape(label)))
         html_page = """<!doctype html>
 <html lang="it">
 <head>
@@ -628,6 +637,7 @@ class CasaFolinoVoiceAIController(http.Controller):
     <aside>
       <label>Agente</label>
       <select id="agent_id">__VOICE_AGENT_OPTIONS__</select>
+      <p class="hint">Per simulare richieste di catalogo, listini, private label o nuovi clienti usa Commerciale CasaFolino.</p>
       <label>Scenario formazione</label>
       <textarea id="scenario" placeholder="Esempio: cliente GDO chiede certificazioni, catalogo e private label al pistacchio"></textarea>
       <label>Telefono simulato</label>
