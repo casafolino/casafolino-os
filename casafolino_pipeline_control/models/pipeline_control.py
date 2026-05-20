@@ -971,6 +971,8 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _format_project_detail(self, project, today):
+        tasks = self.env['project.task'].search([('project_id', '=', project.id)], limit=80)
+        overdue_tasks = tasks.filtered(lambda task: self._is_overdue(task.date_deadline))
         return {
             'id': project.id,
             'model': project._name,
@@ -980,6 +982,8 @@ class CfPipelineControl(models.AbstractModel):
             'status': self._project_status(project),
             'blocker': self._project_blocker_label(project),
             'target_date': self._date_label(getattr(project, 'cf_target_date', False) or getattr(project, 'date', False)),
+            'task_count': len(tasks),
+            'overdue_count': len(overdue_tasks),
             'departments': self._project_departments(project),
         }
 

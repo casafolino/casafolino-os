@@ -501,12 +501,17 @@
                                         <p>
                                             <span t-out="dossier.partner"/>
                                             <span t-if="dossier.target_date"> - <t t-out="dossier.target_date"/></span>
+                                            <span t-if="dossier.task_count"> - <t t-out="dossier.task_count"/> task</span>
+                                            <span t-if="dossier.overdue_count"> - <t t-out="dossier.overdue_count"/> scadute</span>
                                         </p>
                                     </div>
                                     <div class="cf-pc-row-actions">
                                         <span class="cf-pc-pill tone-amber" t-out="dossier.blocker"/>
                                         <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'open')" title="Apri dossier">
                                             <i class="fa fa-folder-open-o"/>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'followup7')" title="Follow-up tra 7 giorni">
+                                            <i class="fa fa-calendar-plus-o"/>
                                         </button>
                                         <button class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(dossier, 'task')" title="Nuova task">
                                             <i class="fa fa-plus"/>
