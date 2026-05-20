@@ -108,6 +108,41 @@
         </field>
     </record>
 
+    <record id="view_crm_lead_form_pipeline_control" model="ir.ui.view">
+        <field name="name">crm.lead.form.pipeline.control</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="casafolino_crm_export.cf_crm_lead_view_form_premium"/>
+        <field name="priority">120</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Flusso operativo" name="cf_pipeline_control_flow">
+                    <div class="o_row mb-3">
+                        <button name="action_cf_pc_open_followup" type="object" string="Follow-up" class="btn btn-primary"/>
+                        <button name="action_cf_pc_open_inbox" type="object" string="Inbox" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_open_quotes" type="object" string="Quotazioni" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_new_task" type="object" string="Nuova task" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_promote_dossier" type="object" string="Promuovi a dossier" class="btn btn-secondary"/>
+                    </div>
+                    <group>
+                        <group string="Catena commerciale">
+                            <field name="partner_id"/>
+                            <field name="cf_fair_id"/>
+                            <field name="cf_date_last_contact"/>
+                            <field name="cf_date_next_followup"/>
+                            <field name="cf_project_id"/>
+                        </group>
+                        <group string="Segnali collegati">
+                            <field name="cf_pc_mail_count"/>
+                            <field name="cf_pc_quote_count"/>
+                            <field name="cf_sample_count"/>
+                            <field name="cf_pc_task_count"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_cf_pipeline_control" model="ir.actions.client">
         <field name="name">Sala Controllo</field>
         <field name="tag">casafolino_pipeline_control</field>

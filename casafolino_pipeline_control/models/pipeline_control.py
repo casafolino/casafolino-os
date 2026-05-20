@@ -6,6 +6,72 @@ from odoo import api, fields, models
 _logger = logging.getLogger(__name__)
 
 
+class CrmLeadPipelineControl(models.Model):
+    _inherit = 'crm.lead'
+
+    cf_pc_mail_count = fields.Integer(string='Email operative', compute='_compute_cf_pc_counts')
+    cf_pc_quote_count = fields.Integer(string='Quotazioni aperte', compute='_compute_cf_pc_counts')
+    cf_pc_task_count = fields.Integer(string='Task dossier', compute='_compute_cf_pc_counts')
+
+    def _compute_cf_pc_counts(self):
+        Mail = self.env['casafolino.mail.message']
+        Sale = self.env['sale.order']
+        Task = self.env['project.task']
+        has_opportunity = 'opportunity_id' in Sale._fields
+        for lead in self:
+            lead.cf_pc_mail_count = Mail.search_count([
+                ('lead_id', '=', lead.id),
+                ('is_deleted', '=', False),
+            ])
+            lead.cf_pc_quote_count = Sale.search_count([
+                ('opportunity_id', '=', lead.id),
+                ('state', 'in', ['draft', 'sent']),
+            ]) if has_opportunity else 0
+            project = getattr(lead, 'cf_project_id', False)
+            lead.cf_pc_task_count = Task.search_count([
+                ('project_id', '=', project.id),
+            ]) if project else 0
+
+    def action_cf_pc_open_followup(self):
+        return self._cf_pc_open_dashboard('followup')
+
+    def action_cf_pc_open_inbox(self):
+        return self._cf_pc_open_dashboard('inbox')
+
+    def action_cf_pc_promote_dossier(self):
+        self.ensure_one()
+        return self.env['cf.pipeline.control'].lead_quick_action(self.id, 'dossier')
+
+    def action_cf_pc_new_task(self):
+        self.ensure_one()
+        return self.env['cf.pipeline.control'].lead_quick_action(self.id, 'task')
+
+    def action_cf_pc_open_quotes(self):
+        self.ensure_one()
+        Sale = self.env['sale.order']
+        domain = [('opportunity_id', '=', self.id)] if 'opportunity_id' in Sale._fields else [('partner_id', '=', self.partner_id.id)]
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Quotazioni lead',
+            'res_model': 'sale.order',
+            'view_mode': 'list,form',
+            'domain': domain,
+            'context': {
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+                'default_opportunity_id': self.id,
+            },
+        }
+
+    def _cf_pc_open_dashboard(self, default_view):
+        return {
+            'type': 'ir.actions.client',
+            'name': 'Sala Controllo',
+            'tag': 'casafolino_pipeline_control',
+            'target': 'current',
+            'context': {'default_view': default_view},
+        }
+
+
 class CfPipelineControl(models.AbstractModel):
     _name = 'cf.pipeline.control'
     _description = 'CasaFolino Pipeline Control data provider'
