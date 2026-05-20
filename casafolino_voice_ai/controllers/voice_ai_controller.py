@@ -705,7 +705,7 @@ class CasaFolinoVoiceAIController(http.Controller):
       </select>
       <div class="row">
         <button id="start">Avvia chiamata</button>
-        <button id="start_realtime" class="realtime">Avvia realtime</button>
+        <button id="start_realtime" class="realtime" disabled>Realtime disattivato</button>
         <button id="finish" class="secondary" disabled>Chiudi</button>
       </div>
       <div class="row">
@@ -715,7 +715,7 @@ class CasaFolinoVoiceAIController(http.Controller):
         <button id="mic" class="mic" disabled>Parla</button>
         <button id="speak_toggle" class="secondary" type="button">Voce naturale: ON</button>
       </div>
-      <div class="voice-status" id="voice_status">Per una telefonata vera usa Avvia realtime da HTTPS. Avvia chiamata resta disponibile come fallback a turni.</div>
+      <div class="voice-status" id="voice_status">Realtime disattivato: questa versione non e abbastanza naturale ne affidabile. Usiamo il simulatore solo come laboratorio testuale finche non riscriviamo persona e bridge.</div>
       <p class="hint">Le simulazioni vengono salvate in Chiamate AI. Se chiedi callback, lead o attivita, possono nascere record reali: usa dati TEST quando ti alleni.</p>
       <div class="tools" id="trace">Tool trace vuoto.</div>
     </aside>
@@ -950,6 +950,8 @@ class CasaFolinoVoiceAIController(http.Controller):
       }
     };
     document.getElementById('start_realtime').onclick = async () => {
+      add('system', 'Realtime disattivato: questa versione non e valida come simulazione telefonica CasaFolino.');
+      return;
       try {
         messages.innerHTML = '';
         state.trace = [];
