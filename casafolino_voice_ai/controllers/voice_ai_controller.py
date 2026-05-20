@@ -597,7 +597,7 @@ class CasaFolinoVoiceAIController(http.Controller):
   <main>
     <aside>
       <label>Agente</label>
-      <select id="agent_id">%s</select>
+      <select id="agent_id">__VOICE_AGENT_OPTIONS__</select>
       <label>Scenario formazione</label>
       <textarea id="scenario" placeholder="Esempio: cliente GDO chiede certificazioni, catalogo e private label al pistacchio"></textarea>
       <label>Telefono simulato</label>
@@ -686,7 +686,7 @@ class CasaFolinoVoiceAIController(http.Controller):
     };
   </script>
 </body>
-</html>""" % ''.join(options)
+</html>""".replace('__VOICE_AGENT_OPTIONS__', ''.join(options))
         return request.make_response(html_page, headers=[('Content-Type', 'text/html; charset=utf-8')])
 
     @http.route('/voice_ai/simulator/start', type='http', auth='user', methods=['POST'], csrf=False)
