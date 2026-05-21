@@ -156,130 +156,129 @@
                 <field name="cf360_document_count" invisible="1"/>
                 <field name="cf_lead_count" invisible="1"/>
                 <div class="cf-dossier-workbench-360"
-                     style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin:16px 0 22px;padding:16px;border:1px solid #d8dee8;border-radius:8px;background:#eef2f7;">
-                    <div class="cf-dossier-workbench-main"
-                         style="min-width:0;border:1px solid #d8dee8;border-radius:8px;background:#ffffff;padding:16px;box-shadow:0 10px 25px rgba(15,23,42,.05);">
-                        <div class="cf-dossier-workbench-head"
-                             style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
-                            <div>
-                                <strong style="display:block;font-size:18px;color:#18212f;">Scrivania 360</strong>
-                                <span style="display:block;margin-top:3px;color:#667085;font-size:13px;">Attività rapide, composer, blocchi e prossime decisioni del dossier.</span>
+                     style="display:grid;grid-template-columns:minmax(760px,1fr) 360px;gap:18px;margin:18px 0 24px;color:#1f2723;">
+                    <div style="min-width:0;">
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:18px;margin-bottom:16px;">
+                            <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;">
+                                <div>
+                                    <h1 style="margin:0 0 5px;font-size:28px;line-height:1.1;color:#1f2723;">
+                                        <field name="name" readonly="1" nolabel="1"/>
+                                    </h1>
+                                    <div style="color:#6e786f;font-size:14px;font-weight:650;">
+                                        Scrivania operativa dossier · cliente export · continente <field name="cf360_continent" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#ffe8e5;color:#8f2e26;">Blocco da gestire</span>
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#fff0cf;color:#7c5312;">Avanzamento dossier</span>
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#e7f1fb;color:#244f7c;">Prossima azione: <field name="cf_next_action" readonly="1" nolabel="1"/></span>
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#f0f3ef;color:#435047;">Owner: <field name="user_id" readonly="1" nolabel="1"/></span>
+                                    </div>
+                                </div>
+                                <button name="action_open_lavagna_360"
+                                        type="object"
+                                        string="Aggiorna avanzamento"
+                                        style="height:40px;border:0;border-radius:8px;padding:0 14px;background:#694668;color:#ffffff;font-weight:850;font-size:14px;"/>
                             </div>
-                            <span class="cf-dossier-continent"
-                                  style="display:inline-flex;align-items:center;min-height:28px;padding:4px 10px;border-radius:999px;background:#eef6f4;color:#115e59;font-weight:750;white-space:nowrap;">
-                                Continente: <field name="cf360_continent" readonly="1" nolabel="1"/>
-                            </span>
-                        </div>
-                        <div class="cf-dossier-metrics"
-                             style="display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin-bottom:14px;">
-                            <button name="action_open_mails_360" type="object"
-                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
-                                <span style="display:block;color:#667085;font-size:12px;">Mail dossier</span>
-                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf360_mail_count" readonly="1" nolabel="1"/></strong>
-                            </button>
-                            <button name="action_open_tasks_360" type="object"
-                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
-                                <span style="display:block;color:#667085;font-size:12px;">Task aperte</span>
-                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf360_task_count" readonly="1" nolabel="1"/></strong>
-                            </button>
-                            <button name="action_open_dossier_leads" type="object"
-                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
-                                <span style="display:block;color:#667085;font-size:12px;">Opportunità</span>
-                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf_lead_count" readonly="1" nolabel="1"/></strong>
-                            </button>
-                            <button name="action_open_documents_360" type="object"
-                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
-                                <span style="display:block;color:#667085;font-size:12px;">Documenti</span>
-                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf360_document_count" readonly="1" nolabel="1"/></strong>
-                            </button>
-                        </div>
-                        <div class="cf-dossier-quick-actions"
-                             style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
-                            <button name="action_quick_task_360"
-                                    type="object"
-                                    string="Task reparto"
-                                    icon="fa-plus"
-                                    class="btn btn-secondary"/>
-                            <button name="action_compose_email_f8"
-                                    type="object"
-                                    string="Scrivi email"
-                                    icon="fa-envelope"
-                                    class="btn btn-primary"
-                                    invisible="not partner_id"/>
-                            <button name="action_reply_last_email_f8"
-                                    type="object"
-                                    string="Rispondi cliente"
-                                    icon="fa-reply"
-                                    class="btn btn-secondary"
-                                    invisible="not partner_id"/>
-                            <button name="action_upload_document_360"
-                                    type="object"
-                                    string="Allega documento"
-                                    icon="fa-paperclip"
-                                    class="btn btn-secondary"/>
-                            <button name="action_schedule_followup_360"
-                                    type="object"
-                                    string="Programma follow-up"
-                                    icon="fa-clock-o"
-                                    class="btn btn-secondary"/>
-                            <button name="action_open_lavagna_360"
-                                    type="object"
-                                    string="Apri Lavagna"
-                                    icon="fa-columns"
-                                    class="btn btn-secondary"/>
-                        </div>
-                        <div class="cf-dossier-lanes"
-                             style="display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;">
-                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
-                                <strong style="display:block;margin-bottom:6px;">Commerciale</strong>
-                                <span style="color:#667085;font-size:12px;">Cliente, listino, follow-up.</span>
+                            <div style="display:flex;gap:6px;margin-top:18px;border-bottom:1px solid #dfe5df;padding-bottom:0;">
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #20342a;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#20342a;color:#ffffff;font-weight:850;font-size:13px;">Vista 360</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Evoluzione</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Documenti</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Comunicazioni</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Storico</span>
                             </div>
-                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
-                                <strong style="display:block;margin-bottom:6px;">Back Office</strong>
-                                <span style="color:#667085;font-size:12px;">Anagrafica, codici, documenti.</span>
+                            <div style="display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px;margin-top:16px;">
+                                <button name="action_quick_task_360" type="object" string="+  Task reparto" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_compose_email_f8" type="object" string="✉  Scrivi email" invisible="not partner_id" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_reply_last_email_f8" type="object" string="↩  Rispondi cliente" invisible="not partner_id" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_upload_document_360" type="object" string="📎  Allega documento" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_open_lavagna_360" type="object" string="✓  Chiudi blocco" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_schedule_followup_360" type="object" string="⏱  Programma follow-up" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
                             </div>
-                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
-                                <strong style="display:block;margin-bottom:6px;">Produzione</strong>
-                                <span style="color:#667085;font-size:12px;">Fattibilità, campioni, tempi.</span>
+                        </section>
+
+                        <section style="display:grid;grid-template-columns:1.1fr .9fr;gap:16px;">
+                            <div style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                                <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Cliente e opportunità</h2>
+                                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Cliente</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="partner_id" readonly="1" nolabel="1"/></div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Mercato</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="cf360_continent" readonly="1" nolabel="1"/> · Export</div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Lead</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="cf_lead_count" readonly="1" nolabel="1"/> opportunità collegate</div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Priorità</div><div style="font-size:13px;font-weight:800;line-height:1.25;">Dossier operativo</div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Scadenza</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="cf_next_action_date" readonly="1" nolabel="1"/></div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Rischio</div><div style="font-size:13px;font-weight:800;line-height:1.25;">Blocchi reparto da chiudere</div></div>
+                                </div>
                             </div>
-                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
-                                <strong style="display:block;margin-bottom:6px;">Logistica</strong>
-                                <span style="color:#667085;font-size:12px;">Trasporto, resa, consegna.</span>
+                            <div style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                                <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Decisione da prendere</h2>
+                                <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #dfe5df;">
+                                    <span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#bd4b42;"></span>
+                                    <div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Cosa blocca il prossimo passo?</div><div style="color:#6e786f;font-size:12px;line-height:1.3;"><field name="cf_next_action" readonly="1" nolabel="1"/></div></div>
+                                    <button name="action_open_tasks_360" type="object" string="Apri" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/>
+                                </div>
+                                <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;">
+                                    <span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#efb44f;"></span>
+                                    <div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Trasporto o documenti da confermare</div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Logistica e Back Office completano il dossier prima del recap cliente.</div></div>
+                                    <button name="action_open_lavagna_360" type="object" string="Apri" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/>
+                                </div>
                             </div>
-                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fff7f6;">
-                                <strong style="display:block;margin-bottom:6px;">Qualità</strong>
-                                <span style="color:#667085;font-size:12px;">Certificati, schede, etichette.</span>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;margin-top:16px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Vista 360 per reparto</h2>
+                            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Commerciale</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:72%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Listino, recap cliente e follow-up commerciale.</div></div>
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Back Office</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:88%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Anagrafica, codici, allegati e dati cliente.</div></div>
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Produzione</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:64%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Fattibilità, campioni e tempi del primo ordine.</div></div>
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Logistica</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:46%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Indirizzo, resa, costo stimato e consegna.</div></div>
+                                <div style="border:1px solid #edb2ad;border-radius:8px;padding:11px;background:#fff7f6;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Qualità</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:28%;background:#bd4b42;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Schede, certificati, etichette e blocchi qualità.</div></div>
                             </div>
-                        </div>
+                        </section>
                     </div>
-                    <div class="cf-dossier-composer-box"
-                         style="display:flex;flex-direction:column;gap:12px;border:1px solid #d8c6df;border-radius:8px;background:#fdfaff;padding:16px;box-shadow:0 10px 25px rgba(15,23,42,.05);">
-                        <div>
-                            <strong style="display:block;font-size:17px;color:#18212f;">Composer email</strong>
-                            <span style="display:block;margin-top:4px;color:#667085;font-size:13px;line-height:1.35;">Scrivi o rispondi dal composer F8, già collegato a cliente e dossier.</span>
-                        </div>
-                        <div class="cf-dossier-composer-actions"
-                             style="display:grid;grid-template-columns:1fr;gap:8px;">
-                            <button name="action_compose_email_f8"
-                                    type="object"
-                                    string="Nuova email"
-                                    icon="fa-envelope"
-                                    class="btn btn-primary"
-                                    invisible="not partner_id"/>
-                            <button name="action_reply_last_email_f8"
-                                    type="object"
-                                    string="Rispondi ultima mail"
-                                    icon="fa-reply"
-                                    class="btn btn-secondary"
-                                    invisible="not partner_id"/>
-                        </div>
-                        <div style="margin-top:auto;padding:12px;border:1px solid #eadff0;border-radius:8px;background:#ffffff;">
-                            <strong style="display:block;font-size:13px;">Prossima azione</strong>
-                            <span style="display:block;margin-top:4px;color:#667085;font-size:13px;">
-                                <field name="cf_next_action" readonly="1" nolabel="1"/>
-                            </span>
-                        </div>
-                    </div>
+
+                    <aside style="display:grid;gap:14px;align-content:start;">
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Composer email</h2>
+                            <div style="display:grid;gap:9px;">
+                                <div style="height:36px;display:flex;align-items:center;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:0 10px;">Risposta cliente - recap dossier</div>
+                                <div style="height:36px;display:flex;align-items:center;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:0 10px;"><field name="partner_id" readonly="1" nolabel="1"/></div>
+                                <div style="height:36px;display:flex;align-items:center;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:0 10px;"><field name="name" readonly="1" nolabel="1"/> - documenti e prossimi passaggi</div>
+                                <div style="min-height:112px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:10px;line-height:1.35;">
+                                    Buongiorno,<br/><br/>
+                                    le confermo che stiamo completando il dossier.<br/><br/>
+                                    Appena chiudiamo i blocchi reparto, le inviamo il recap completo con condizioni e documenti allegati.<br/><br/>
+                                    Resto a disposizione.
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    <button name="action_reply_last_email_f8" type="object" string="Salva bozza" invisible="not partner_id" style="height:38px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#455149;font-weight:850;font-size:13px;"/>
+                                    <button name="action_compose_email_f8" type="object" string="Invia dal mio composer" invisible="not partner_id" style="height:38px;border:0;border-radius:8px;background:#694668;color:#ffffff;font-weight:850;font-size:13px;"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Prossime azioni</h2>
+                            <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #dfe5df;"><span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#bd4b42;"></span><div><div style="font-size:13px;font-weight:850;margin-bottom:3px;"><field name="cf_next_action" readonly="1" nolabel="1"/></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Reparto responsabile · blocca il dossier</div></div><button name="action_open_tasks_360" type="object" string="Fai" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/></div>
+                            <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #dfe5df;"><span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#3b6c9f;"></span><div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Preparare email recap</div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Commerciale · usa il composer F8</div></div><button name="action_compose_email_f8" type="object" string="Fai" invisible="not partner_id" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/></div>
+                            <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;"><span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#efb44f;"></span><div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Confermare resa logistica</div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Logistica · entro la prossima azione</div></div><button name="action_open_lavagna_360" type="object" string="Fai" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/></div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Documenti dossier</h2>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #dfe5df;font-size:13px;font-weight:800;"><span>Anagrafica cliente</span><span style="border-radius:999px;padding:6px 11px;background:#f0f3ef;color:#435047;font-size:12px;font-weight:850;">OK</span></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #dfe5df;font-size:13px;font-weight:800;"><span>Listino export</span><span style="border-radius:999px;padding:6px 11px;background:#f0f3ef;color:#435047;font-size:12px;font-weight:850;">OK</span></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #dfe5df;font-size:13px;font-weight:800;"><span>Scheda tecnica</span><span style="border-radius:999px;padding:6px 11px;background:#ffe8e5;color:#8f2e26;font-size:12px;font-weight:850;">Manca</span></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;font-size:13px;font-weight:800;"><span>Condizioni trasporto</span><span style="border-radius:999px;padding:6px 11px;background:#fff0cf;color:#7c5312;font-size:12px;font-weight:850;">Bozza</span></div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Evoluzione</h2>
+                            <div style="display:grid;gap:10px;">
+                                <div style="display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;color:#6e786f;"><span>Oggi</span><div><strong style="color:#1f2723;display:block;font-size:13px;margin-bottom:2px;">Reparto sblocca</strong>Task chiave completata e allegata al dossier.</div></div>
+                                <div style="display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;color:#6e786f;"><span>Domani</span><div><strong style="color:#1f2723;display:block;font-size:13px;margin-bottom:2px;">Commerciale invia</strong>Recap cliente dal composer collegato.</div></div>
+                                <div style="display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;color:#6e786f;"><span>+3 giorni</span><div><strong style="color:#1f2723;display:block;font-size:13px;margin-bottom:2px;">Produzione pianifica</strong>Campioni o primo ordine in base alla risposta cliente.</div></div>
+                            </div>
+                        </section>
+                    </aside>
                 </div>
             </xpath>
         </field>
