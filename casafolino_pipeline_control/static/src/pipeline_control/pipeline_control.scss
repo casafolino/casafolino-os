@@ -174,7 +174,8 @@
     }
 
     .cf-pc-select {
-        width: min(360px, 42vw);
+        width: 360px;
+        max-width: 42vw;
     }
 
     .cf-pc-kpis {
