@@ -497,14 +497,34 @@
                 </t>
 
                 <t t-elif="state.activeView === 'dossiers'">
+                    <div class="cf-pc-dossier-tools">
+                        <div class="cf-pc-search">
+                            <i class="fa fa-search"/>
+                            <input type="search"
+                                   placeholder="Cerca dossier, cliente, prossima azione"
+                                   t-att-value="state.dossierSearch"
+                                   t-on-input="setDossierSearch"/>
+                        </div>
+                        <select class="form-select form-select-sm cf-pc-continent-select"
+                                t-att-value="state.dossierContinent"
+                                t-on-change="setDossierContinent">
+                            <t t-foreach="dossierContinentOptions" t-as="option" t-key="option.id">
+                                <option t-att-value="option.id"
+                                        t-att-selected="option.id === state.dossierContinent">
+                                    <t t-out="option.label"/> (<t t-out="option.count"/>)
+                                </option>
+                            </t>
+                        </select>
+                    </div>
                     <div class="cf-pc-dossiers">
-                        <t t-foreach="state.data.dossiers" t-as="dossier" t-key="dossier.id">
+                        <t t-foreach="filteredDossiers" t-as="dossier" t-key="dossier.id">
                             <section class="cf-pc-panel">
                                 <header>
                                     <div>
                                         <h2 t-out="dossier.name"/>
                                         <p>
                                             <span t-out="dossier.partner"/>
+                                            <span t-if="dossier.continent_label"> - <t t-out="dossier.continent_label"/></span>
                                             <span t-if="dossier.target_date"> - <t t-out="dossier.target_date"/></span>
                                             <span t-if="dossier.task_count"> - <t t-out="dossier.task_count"/> task</span>
                                             <span t-if="dossier.overdue_count"> - <t t-out="dossier.overdue_count"/> scadute</span>
@@ -517,6 +537,12 @@
                                         </button>
                                         <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'followup7')" title="Follow-up tra 7 giorni">
                                             <i class="fa fa-calendar-plus-o"/>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'email')" title="Scrivi email dal composer">
+                                            <i class="fa fa-envelope-o"/>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'reply')" title="Rispondi ultima mail dal composer">
+                                            <i class="fa fa-reply"/>
                                         </button>
                                         <button class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(dossier, 'task')" title="Nuova task">
                                             <i class="fa fa-plus"/>
@@ -541,6 +567,9 @@
                                 </div>
                             </section>
                         </t>
+                        <div t-if="!filteredDossiers.length" class="cf-pc-empty cf-pc-empty-wide">
+                            Nessun dossier trovato con questi filtri.
+                        </div>
                     </div>
                 </t>
             </main>

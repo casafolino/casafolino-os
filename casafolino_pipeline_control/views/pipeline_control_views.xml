@@ -143,6 +143,83 @@
         </field>
     </record>
 
+    <record id="view_project_project_form_pipeline_control_360" model="ir.ui.view">
+        <field name="name">project.project.form.pipeline.control.360</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="casafolino_crm_export.project_project_form_casafolino"/>
+        <field name="priority">130</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <field name="cf360_continent" invisible="1"/>
+                <div class="cf-dossier-workbench-360">
+                    <div class="cf-dossier-workbench-main">
+                        <div class="cf-dossier-workbench-head">
+                            <div>
+                                <strong>Scrivania 360</strong>
+                                <span>Attività rapide, composer e blocchi del dossier.</span>
+                            </div>
+                            <span class="cf-dossier-continent">
+                                Continente: <field name="cf360_continent" readonly="1" nolabel="1"/>
+                            </span>
+                        </div>
+                        <div class="cf-dossier-quick-actions">
+                            <button name="action_quick_task_360"
+                                    type="object"
+                                    string="Task reparto"
+                                    icon="fa-plus"
+                                    class="btn btn-secondary"/>
+                            <button name="action_compose_email_f8"
+                                    type="object"
+                                    string="Scrivi email"
+                                    icon="fa-envelope"
+                                    class="btn btn-primary"
+                                    invisible="not partner_id"/>
+                            <button name="action_reply_last_email_f8"
+                                    type="object"
+                                    string="Rispondi cliente"
+                                    icon="fa-reply"
+                                    class="btn btn-secondary"
+                                    invisible="not partner_id"/>
+                            <button name="action_upload_document_360"
+                                    type="object"
+                                    string="Allega documento"
+                                    icon="fa-paperclip"
+                                    class="btn btn-secondary"/>
+                            <button name="action_schedule_followup_360"
+                                    type="object"
+                                    string="Programma follow-up"
+                                    icon="fa-clock-o"
+                                    class="btn btn-secondary"/>
+                            <button name="action_open_lavagna_360"
+                                    type="object"
+                                    string="Apri Lavagna"
+                                    icon="fa-columns"
+                                    class="btn btn-secondary"/>
+                        </div>
+                    </div>
+                    <div class="cf-dossier-composer-box">
+                        <strong>Composer email</strong>
+                        <span>Scrivi o rispondi dal composer F8, già collegato a cliente e dossier.</span>
+                        <div class="cf-dossier-composer-actions">
+                            <button name="action_compose_email_f8"
+                                    type="object"
+                                    string="Nuova email"
+                                    icon="fa-envelope"
+                                    class="btn btn-primary"
+                                    invisible="not partner_id"/>
+                            <button name="action_reply_last_email_f8"
+                                    type="object"
+                                    string="Rispondi ultima mail"
+                                    icon="fa-reply"
+                                    class="btn btn-secondary"
+                                    invisible="not partner_id"/>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_cf_pipeline_control" model="ir.actions.client">
         <field name="name">Sala Controllo</field>
         <field name="tag">casafolino_pipeline_control</field>

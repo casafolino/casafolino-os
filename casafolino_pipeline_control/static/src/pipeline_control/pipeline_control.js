@@ -19,6 +19,8 @@ export class CFPipelineControl extends Component {
             activeView: this.props.action?.context?.default_view || "control",
             selectedFairId: false,
             inboxFilter: "all",
+            dossierSearch: "",
+            dossierContinent: "all",
             data: {
                 kpis: [],
                 lanes: [],
@@ -58,6 +60,14 @@ export class CFPipelineControl extends Component {
 
     setInboxFilter(filter) {
         this.state.inboxFilter = filter;
+    }
+
+    setDossierSearch(ev) {
+        this.state.dossierSearch = (ev.target.value || "").toLowerCase();
+    }
+
+    setDossierContinent(ev) {
+        this.state.dossierContinent = ev.target.value || "all";
     }
 
     async openRecord(item) {
@@ -244,6 +254,55 @@ export class CFPipelineControl extends Component {
             ...(this.state.data.inbox?.to_reply || []),
             ...(this.state.data.inbox?.waiting_customer || []),
         ];
+    }
+
+    get dossierContinentOptions() {
+        const rows = this.state.data.dossiers || [];
+        const labels = {
+            europe: "Europa",
+            north_america: "Nord America",
+            south_america: "Sud America",
+            asia: "Asia",
+            africa: "Africa",
+            oceania: "Oceania",
+            other: "Altro",
+        };
+        const counts = rows.reduce((acc, row) => {
+            const key = row.continent || "other";
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+        }, {});
+        return [
+            { id: "all", label: _t("Tutti i continenti"), count: rows.length },
+            ...Object.entries(counts).map(([id, count]) => ({
+                id,
+                label: labels[id] || id,
+                count,
+            })),
+        ];
+    }
+
+    get filteredDossiers() {
+        const rows = this.state.data.dossiers || [];
+        const query = this.state.dossierSearch || "";
+        const continent = this.state.dossierContinent || "all";
+        return rows.filter((row) => {
+            const matchesContinent = continent === "all" || (row.continent || "other") === continent;
+            if (!matchesContinent) {
+                return false;
+            }
+            if (!query) {
+                return true;
+            }
+            return [
+                row.name,
+                row.partner,
+                row.status,
+                row.blocker,
+                row.next_action,
+                row.continent_label,
+            ].filter(Boolean).join(" ").toLowerCase().includes(query);
+        });
     }
 
     filterInboxRows(rows) {

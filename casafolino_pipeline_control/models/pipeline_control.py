@@ -94,6 +94,21 @@ class CrmLeadPipelineControl(models.Model):
 class ProjectProjectPipelineControl(models.Model):
     _inherit = 'project.project'
 
+    cf360_continent = fields.Selection(
+        [
+            ('europe', 'Europa'),
+            ('north_america', 'Nord America'),
+            ('south_america', 'Sud America'),
+            ('asia', 'Asia'),
+            ('africa', 'Africa'),
+            ('oceania', 'Oceania'),
+            ('other', 'Altro'),
+        ],
+        compute='_compute_cf360_continent',
+        store=True,
+        string='Continente',
+        index=True,
+    )
     cf360_sale_order_ids = fields.One2many(
         'sale.order',
         'cf_project_id',
@@ -117,6 +132,52 @@ class ProjectProjectPipelineControl(models.Model):
         compute='_compute_cf360_counts',
         string='Documenti',
     )
+
+    @api.depends('partner_id.country_id.code')
+    def _compute_cf360_continent(self):
+        europe = {
+            'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE',
+            'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS',
+            'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT', 'NL',
+            'NO', 'PL', 'PT', 'RO', 'RS', 'RU', 'SE', 'SI', 'SK', 'SM', 'UA',
+            'VA', 'XK',
+        }
+        north_america = {'CA', 'MX', 'US'}
+        south_america = {
+            'AR', 'BO', 'BR', 'CL', 'CO', 'EC', 'FK', 'GY', 'PE', 'PY', 'SR',
+            'UY', 'VE',
+        }
+        asia = {
+            'AE', 'AF', 'AM', 'AZ', 'BD', 'BH', 'BN', 'BT', 'CN', 'GE', 'HK',
+            'ID', 'IL', 'IN', 'IQ', 'IR', 'JO', 'JP', 'KG', 'KH', 'KP', 'KR',
+            'KW', 'KZ', 'LA', 'LB', 'LK', 'MM', 'MN', 'MO', 'MY', 'NP', 'OM',
+            'PH', 'PK', 'QA', 'SA', 'SG', 'SY', 'TH', 'TJ', 'TM', 'TR', 'TW',
+            'UZ', 'VN', 'YE',
+        }
+        africa = {
+            'AO', 'BF', 'BI', 'BJ', 'BW', 'CD', 'CF', 'CG', 'CI', 'CM', 'CV',
+            'DJ', 'DZ', 'EG', 'ER', 'ET', 'GA', 'GH', 'GM', 'GN', 'GQ', 'GW',
+            'KE', 'KM', 'LR', 'LS', 'LY', 'MA', 'MG', 'ML', 'MR', 'MU', 'MW',
+            'MZ', 'NA', 'NE', 'NG', 'RE', 'RW', 'SC', 'SD', 'SL', 'SN', 'SO',
+            'SS', 'ST', 'SZ', 'TD', 'TG', 'TN', 'TZ', 'UG', 'ZA', 'ZM', 'ZW',
+        }
+        oceania = {'AU', 'FJ', 'FM', 'NC', 'NZ', 'PG', 'SB', 'VU', 'WS'}
+        for project in self:
+            code = (project.partner_id.country_id.code or '').upper()
+            if code in europe:
+                project.cf360_continent = 'europe'
+            elif code in north_america:
+                project.cf360_continent = 'north_america'
+            elif code in south_america:
+                project.cf360_continent = 'south_america'
+            elif code in asia:
+                project.cf360_continent = 'asia'
+            elif code in africa:
+                project.cf360_continent = 'africa'
+            elif code in oceania:
+                project.cf360_continent = 'oceania'
+            else:
+                project.cf360_continent = 'other' if code else False
 
     @api.depends('task_ids', 'cf_dossier_attachment_ids')
     def _compute_cf360_counts(self):
@@ -194,6 +255,52 @@ class ProjectProjectPipelineControl(models.Model):
             'context': {'default_project_id': self.id},
         }
 
+    def action_quick_task_360(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova task dossier',
+            'res_model': 'project.task',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_project_id': self.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+                'default_name': self.cf_next_action or 'Nuova attività dossier',
+            },
+        }
+
+    def action_schedule_followup_360(self):
+        self.ensure_one()
+        return self.env['cf.pipeline.control'].record_quick_action(
+            'project.project', self.id, 'followup7')
+
+    def action_reply_last_email_f8(self):
+        self.ensure_one()
+        last_mail = self.cf360_mail_ids[:1]
+        partner = last_mail.partner_id if last_mail else self.partner_id
+        partner_email = ''
+        subject = '[%s] ' % (self.name or '')
+        if last_mail:
+            partner_email = last_mail.sender_email or (partner.email if partner else '')
+            raw_subject = last_mail.subject or self.name or ''
+            subject = raw_subject if raw_subject.lower().startswith('re:') else 'Re: %s' % raw_subject
+        elif partner:
+            partner_email = partner.email or ''
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_mail.compose_f8',
+            'context': {
+                'default_partner_email': partner_email,
+                'default_subject': subject,
+                'default_body': '<p>Buongiorno,</p><p>le rispondo in merito al dossier <strong>%s</strong>.</p><p></p>' % (self.name or ''),
+                'default_partner_id': partner.id if partner else False,
+                'default_thread_id': self.id,
+                'default_thread_model': 'project.project',
+                'default_project_id': self.id,
+            },
+        }
+
     def action_open_documents_360(self):
         self.ensure_one()
         partner_id = self.partner_id.id if self.partner_id else 0
@@ -208,6 +315,20 @@ class ProjectProjectPipelineControl(models.Model):
                 '&', ('res_model', '=', 'res.partner'), ('res_id', '=', partner_id),
             ],
             'context': {'default_res_model': 'project.project', 'default_res_id': self.id},
+        }
+
+    def action_upload_document_360(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Allega documento',
+            'res_model': 'ir.attachment',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_res_model': 'project.project',
+                'default_res_id': self.id,
+            },
         }
 
 
@@ -766,6 +887,10 @@ class CfPipelineControl(models.AbstractModel):
             return self._notify('%s non trovato' % allowed_models[model], 'Il record non e piu disponibile.', 'warning')
         if quick_action == 'open':
             return self._open_record(record, allowed_models[model])
+        if model == 'project.project' and quick_action == 'email' and hasattr(record, 'action_compose_email_f8'):
+            return record.action_compose_email_f8()
+        if model == 'project.project' and quick_action == 'reply' and hasattr(record, 'action_reply_last_email_f8'):
+            return record.action_reply_last_email_f8()
         if quick_action == 'task':
             return self._new_operational_task(record)
         if quick_action == 'followup7':
@@ -1232,6 +1357,9 @@ class CfPipelineControl(models.AbstractModel):
             'partner': self._project_partner_name(project),
             'status': self._project_status(project),
             'blocker': self._project_blocker_label(project),
+            'next_action': project.cf_next_action if 'cf_next_action' in project._fields else '',
+            'continent': project.cf360_continent if 'cf360_continent' in project._fields else '',
+            'continent_label': self._project_continent_label(project),
             'target_date': self._date_label(getattr(project, 'cf_target_date', False) or getattr(project, 'date', False)),
             'task_count': len(tasks),
             'overdue_count': len(overdue_tasks),
@@ -1275,6 +1403,12 @@ class CfPipelineControl(models.AbstractModel):
     def _project_partner_name(self, project):
         partner = getattr(project, 'partner_id', False) or getattr(project, 'cf_partner_id', False)
         return partner.display_name if partner else ''
+
+    def _project_continent_label(self, project):
+        if 'cf360_continent' not in project._fields or not project.cf360_continent:
+            return ''
+        return dict(project._fields['cf360_continent'].selection).get(
+            project.cf360_continent, project.cf360_continent)
 
     def _project_status(self, project):
         if 'cf_traffic_light' in project._fields and project.cf_traffic_light:
