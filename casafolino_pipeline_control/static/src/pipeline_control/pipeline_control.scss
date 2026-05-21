@@ -514,6 +514,14 @@
             align-items: center;
             justify-content: center;
         }
+
+        .cf-pc-open-360 {
+            width: auto;
+            min-width: 132px;
+            padding: 0 10px;
+            gap: 6px;
+            font-weight: 750;
+        }
     }
 
     .cf-pc-dossier-tools {

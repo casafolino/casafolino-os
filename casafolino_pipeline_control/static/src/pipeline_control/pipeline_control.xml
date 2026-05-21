@@ -532,8 +532,9 @@
                                     </div>
                                     <div class="cf-pc-row-actions">
                                         <span class="cf-pc-pill tone-amber" t-out="dossier.blocker"/>
-                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'open')" title="Apri dossier">
+                                        <button class="btn btn-sm btn-primary cf-pc-open-360" t-on-click="() => this.recordQuickAction(dossier, 'open')" title="Apri scrivania 360">
                                             <i class="fa fa-folder-open-o"/>
+                                            <span>Scrivania 360</span>
                                         </button>
                                         <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(dossier, 'followup7')" title="Follow-up tra 7 giorni">
                                             <i class="fa fa-calendar-plus-o"/>
