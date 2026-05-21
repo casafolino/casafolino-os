@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Client action: Dashboard 360 -->
+    <!-- Legacy XML id kept for callers; it now opens the unified Sala Controllo. -->
     <record id="action_project_dashboard_360" model="ir.actions.client">
-        <field name="name">Vista progetto 360</field>
-        <field name="tag">casafolino_crm_export.project_dashboard</field>
+        <field name="name">Dossier / Progetti</field>
+        <field name="tag">casafolino_pipeline_control</field>
         <field name="target">current</field>
+        <field name="context">{'default_view': 'dossiers'}</field>
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -27,15 +28,19 @@
                 <header>
                     <button name="action_open_project_dashboard_360"
                             type="object"
-                            string="Vista 360"
-                            icon="fa-compass"
-                            class="oe_highlight"/>
+                            string="Dossier"
+                            icon="fa-briefcase"
+                            class="btn-secondary"/>
                     <button name="action_compose_email_f8"
                             type="object"
                             string="Scrivi mail"
                             icon="fa-envelope"
                             class="oe_highlight"
                             invisible="not partner_id"/>
+                    <button name="action_sync_dossier_mail_history"
+                            type="object"
+                            string="Sync mail"
+                            icon="fa-refresh"/>
                     <field name="cf_status_dossier" widget="statusbar"
                            options="{'clickable': '1'}"
                            statusbar_visible="exploration,active,on_hold,closed"/>
@@ -85,6 +90,12 @@
                     <button class="oe_stat_button" icon="fa-envelope-o"
                             type="object" name="action_open_dossier_mails">
                         <field name="cf_mail_count" string="Mail dossier"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-bell-o"
+                            type="object" name="action_open_dossier_unread_mails"
+                            invisible="cf_unread_mail_count == 0">
+                        <field name="cf_unread_mail_count" string="Mail nuove"
                                widget="statinfo"/>
                     </button>
                     <button class="oe_stat_button" icon="fa-flask"
@@ -192,24 +203,63 @@
                                 <field name="role"/>
                                 <field name="is_external"
                                        widget="boolean_toggle"/>
+                                <field name="mail_sync_enabled"
+                                       widget="boolean_toggle"/>
+                                <field name="mail_message_count"
+                                       readonly="1"/>
+                                <field name="mail_last_sync"
+                                       readonly="1"
+                                       optional="hide"/>
                                 <field name="partner_id"
-                                       options="{'no_create_edit': True}"/>
+                                       options="{'no_create_edit': False}"/>
                                 <field name="note" optional="hide"/>
                             </list>
                         </field>
                     </page>
 
                     <page string="Mail" name="cf_mail_timeline">
-                        <div class="o_row mb-3">
+                        <div class="cf-dossier-mail-toolbar mb-3">
+                            <div class="cf-dossier-mail-title">
+                                <strong>Mail dossier</strong>
+                                <span>Thread collegati, follow-up e azioni rapide.</span>
+                            </div>
                             <button name="action_cf_compose_mail"
                                     type="object"
                                     string="Scrivi mail"
+                                    icon="fa-envelope"
                                     class="btn btn-primary"/>
+                            <button name="action_cf_schedule_call"
+                                    type="object"
+                                    string="Chiamata"
+                                    icon="fa-phone"
+                                    class="btn btn-secondary"/>
+                            <button name="action_cf_log_message"
+                                    type="object"
+                                    string="Messaggio"
+                                    icon="fa-comment"
+                                    class="btn btn-secondary"/>
+                            <button name="action_cf_schedule_todo"
+                                    type="object"
+                                    string="Todo"
+                                    icon="fa-check-square-o"
+                                    class="btn btn-secondary"/>
+                            <button name="action_cf_log_note"
+                                    type="object"
+                                    string="Nota"
+                                    icon="fa-sticky-note-o"
+                                    class="btn btn-secondary"/>
+                            <button name="action_sync_dossier_mail_history"
+                                    type="object"
+                                    string="Scarica storico referenti"
+                                    icon="fa-download"
+                                    class="btn btn-secondary"/>
                         </div>
                         <field name="cf_dossier_mail_ids" mode="list"
                                readonly="1">
-                            <list>
+                            <list limit="12" default_order="email_date desc">
                                 <field name="email_date" string="Data"/>
+                                <field name="direction" string="Dir" widget="badge"/>
+                                <field name="is_read" string="Letta"/>
                                 <field name="subject"/>
                                 <field name="sender_email" string="Da"/>
                                 <field name="partner_id"
@@ -417,11 +467,11 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════
-         ACTION: Progetti 360 (list/form)
+         ACTION: Dossier / Progetti (list/form)
          ══════════════════════════════════════════════════════════════ -->
 
     <record id="action_cf_project_dossier" model="ir.actions.act_window">
-        <field name="name">Progetti 360</field>
+        <field name="name">Dossier / Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('cf_status_dossier', '!=', False)]</field>

@@ -39,12 +39,34 @@ class CfProjectContact(models.Model):
 
     is_external = fields.Boolean(string='Esterno')
     is_primary = fields.Boolean(string='Primary')
+    mail_sync_enabled = fields.Boolean(string='Sincronizza mail', default=True)
+    mail_message_count = fields.Integer(
+        string='Mail',
+        compute='_compute_mail_message_count',
+    )
+    mail_last_sync = fields.Datetime(string='Ultima sync mail', readonly=True)
     note = fields.Char(string='Note')
 
     @api.depends('email')
     def _compute_email_norm(self):
         for c in self:
             c.email_normalized = (c.email or '').strip().lower()
+
+    @api.depends('email_normalized', 'project_id')
+    def _compute_mail_message_count(self):
+        Mail = self.env['casafolino.mail.message']
+        for contact in self:
+            email = contact.email_normalized
+            domain = [('cf_project_id', '=', contact.project_id.id)] if contact.project_id else []
+            if email:
+                email_domain = [
+                    '|', '|',
+                    ('sender_email', '=ilike', email),
+                    ('recipient_emails', 'ilike', email),
+                    ('cc_emails', 'ilike', email),
+                ]
+                domain = ['&'] + domain + email_domain if domain else email_domain
+            contact.mail_message_count = Mail.search_count(domain) if domain else 0
 
     @api.onchange('partner_id')
     def _onchange_partner(self):
@@ -78,3 +100,21 @@ class CfProjectContact(models.Model):
             ])
             if others:
                 others.write({'is_primary': False})
+
+    def _ensure_partner(self, parent_partner=False):
+        self.ensure_one()
+        if self.partner_id:
+            return self.partner_id
+        partner = self.env['res.partner'].search([
+            ('email', '=ilike', self.email or ''),
+        ], limit=1) if self.email else self.env['res.partner']
+        if not partner:
+            partner = self.env['res.partner'].create({
+                'name': self.name,
+                'email': self.email or False,
+                'phone': self.phone or False,
+                'parent_id': parent_partner.id if parent_partner else False,
+                'type': 'contact',
+            })
+        self.partner_id = partner.id
+        return partner

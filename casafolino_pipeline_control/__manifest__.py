@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Pipeline Control',
-    'version': '18.0.1.14.0',
+    'version': '18.0.1.15.0',
     'category': 'CasaFolino',
     'summary': 'Sala controllo export: follow-up, inbox commerciale, pipeline e dossier',
     'author': 'CasaFolino S.R.L.',
@@ -15,6 +15,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/legacy_cleanup.xml',
         'views/pipeline_control_views.xml',
     ],
     'assets': {
@@ -24,6 +25,7 @@
             'casafolino_pipeline_control/static/src/pipeline_control/pipeline_control.scss',
         ],
     },
+    'post_init_hook': 'post_init_hook',
     'installable': True,
     'application': True,
     'license': 'LGPL-3',

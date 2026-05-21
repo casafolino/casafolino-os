@@ -272,7 +272,15 @@ export class CFWorkspace extends Component {
     }
 
     async onOpenAnalytics() {
-        await this.onOpenProjects();
+        await this.onOpenControlRoom();
+    }
+
+    async onOpenControlRoom() {
+        try {
+            await this.action.doAction("casafolino_pipeline_control.action_cf_pipeline_control");
+        } catch {
+            await this.onOpenProjects();
+        }
     }
 
     async onOpenDossierExport() {

@@ -676,19 +676,17 @@ class CrmLead(models.Model):
         return project
 
     def action_open_project_360(self):
-        """Open the 360° project dashboard, creating a dossier if needed."""
+        """Legacy button name: open the operational dossier."""
         self.ensure_one()
         project = self._ensure_project_360()
         return {
-            "type": "ir.actions.client",
-            "tag": "casafolino_crm_export.project_dashboard",
-            "name": "Vista 360° — %s" % project.name,
-            "target": "main",
-            "context": {
-                "active_id": project.id,
-                "default_project_id": project.id,
-                "active_model": "project.project",
-            },
+            "type": "ir.actions.act_window",
+            "name": "Dossier",
+            "res_model": "project.project",
+            "res_id": project.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "current",
         }
 
     def action_mark_contacted(self):

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="cf_fair_mail_template_folder_fairs" model="cf.fair.mail.template.folder">
+        <field name="name">Fiere</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="cf_fair_mail_template_tuttofood_2026_it" model="cf.fair.mail.template">
+        <field name="name">TUTTOFOOD Milano 2026 - Follow-up</field>
+        <field name="folder_id" ref="cf_fair_mail_template_folder_fairs"/>
+        <field name="fair_id" ref="cf_export_fair_tuttofood_2026"/>
+        <field name="language">it_IT</field>
+        <field name="subject">A seguito del nostro incontro a {fair_name} - CasaFolino</field>
+        <field name="auto_send_on_card_scan" eval="True"/>
+        <field name="body_html" type="html">
+<p>Gentile {contact_name},</p>
+
+<p>È stato un piacere incontrarla a {fair_name} e confrontarci sulle possibili opportunità di collaborazione.</p>
+
+<p>CasaFolino è un'azienda alimentare italiana con sede in Calabria, specializzata nello sviluppo e nella produzione di referenze food per retail, foodservice e progetti private label.</p>
+
+<p>Lavoriamo su prodotti pensati per un mercato concreto: qualità percepita, continuità produttiva, stabilità in scaffale e posizionamento sostenibile nel tempo.</p>
+
+<p>Le nostre principali aree prodotto includono:<br/>
+- creme dolci e salate<br/>
+- mieli aromatizzati e specialità a base miele<br/>
+- risotti pronti da cucinare<br/>
+- condimenti e referenze gourmet accessibili</p>
+
+<p>Produciamo in Italia con standard certificati e possiamo supportare formati retail, horeca, foodservice e industriali.</p>
+
+<p>Resto a disposizione per organizzare una breve call operativa o per preparare una proposta mirata su prodotto, formato e posizionamento prezzo.</p>
+
+<p>Cordiali saluti,<br/>
+{user_name}<br/>
+CasaFolino S.r.l. Società Benefit</p>
+        </field>
+    </record>
+
+</odoo>
