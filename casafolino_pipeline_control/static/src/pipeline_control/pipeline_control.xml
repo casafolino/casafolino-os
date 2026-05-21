@@ -46,7 +46,7 @@
                         <h1 t-elif="state.activeView === 'inbox'">Inbox Commerciale</h1>
                         <h1 t-elif="state.activeView === 'pipeline'">Pipeline Export</h1>
                         <h1 t-elif="state.activeView === 'dossiers'">Dossier</h1>
-                        <p>Priorita, prossime azioni e blocchi in un'unica postazione.</p>
+                        <p>Priorità, prossime azioni e blocchi in un'unica postazione.</p>
                     </div>
                     <div class="cf-pc-actions">
                         <button class="btn btn-light" t-on-click="loadData" title="Aggiorna">

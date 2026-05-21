@@ -291,7 +291,7 @@ class CfPipelineControl(models.AbstractModel):
         Sample = self.env['cf.export.sample']
         Project = self.env['project.project']
 
-        to_reply_domain = self._mail_to_reply_domain(user)
+        inbox_threads, _waiting_threads = self._get_latest_commercial_threads(user)
         followup_domain = self._lead_followup_domain(today)
         hot_domain = self._hot_lead_domain()
         samples_domain = self._sample_feedback_overdue_domain(today)
@@ -300,9 +300,9 @@ class CfPipelineControl(models.AbstractModel):
         return [
             {
                 'key': 'to_reply',
-                'label': 'Da rispondere',
-                'value': Mail.search_count(to_reply_domain),
-                'hint': 'Email cliente con azione richiesta',
+                'label': 'Tocca a noi',
+                'value': len(inbox_threads),
+                'hint': 'Thread cliente con azione richiesta',
                 'tone': 'red',
             },
             {
@@ -316,7 +316,7 @@ class CfPipelineControl(models.AbstractModel):
                 'key': 'hot_leads',
                 'label': 'Clienti caldi',
                 'value': Lead.search_count(hot_domain),
-                'hint': 'Priorita alta o valore stimato',
+                'hint': 'Priorità alta o valore stimato',
                 'tone': 'green',
             },
             {
