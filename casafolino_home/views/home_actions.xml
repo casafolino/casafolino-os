@@ -18,8 +18,8 @@
 
     <!-- Root menu: single visible cockpit in apps grid -->
     <menuitem id="menu_cf_home_root"
-              name="Scrivania"
-              action="action_scrivania_commerciale"
+              name="Sala Controllo"
+              action="casafolino_pipeline_control.action_cf_pipeline_control"
               sequence="1"
               web_icon="casafolino_home,static/description/icon.png"/>
 </odoo>
