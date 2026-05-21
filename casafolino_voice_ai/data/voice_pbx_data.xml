@@ -47,8 +47,8 @@
 
     <record id="ivr_main" model="casafolino.voice.ivr.menu">
         <field name="name">IVR principale CasaFolino</field>
-        <field name="prompt">Benvenuto in CasaFolino. Premere 1 per commerciale, 2 per assistenza, 3 per amministrazione, oppure restare in linea per parlare con l'assistente AI.</field>
-        <field name="repeat_prompt">Non ho ricevuto una scelta valida. Premere 1 per commerciale, 2 per assistenza, 3 per amministrazione, oppure restare in linea.</field>
+        <field name="prompt">Buongiorno, CasaFolino. Mi dica pure: la aiuto a indirizzare la richiesta.</field>
+        <field name="repeat_prompt">Mi scusi, non ho capito bene. Mi dice in poche parole se riguarda commerciale, ordini, amministrazione o una persona specifica?</field>
         <field name="fallback_action">agent</field>
         <field name="fallback_agent_id" ref="agent_inbound_centralino"/>
     </record>
@@ -84,11 +84,11 @@
 
     <record id="routing_open_hours" model="casafolino.voice.routing.rule">
         <field name="sequence">10</field>
-        <field name="name">Aperto: IVR principale</field>
+        <field name="name">Aperto: centralino AI accoglienza</field>
         <field name="schedule_id" ref="schedule_business_hours"/>
         <field name="when">open</field>
-        <field name="action">ivr</field>
-        <field name="ivr_menu_id" ref="ivr_main"/>
+        <field name="action">agent</field>
+        <field name="agent_id" ref="agent_inbound_centralino"/>
     </record>
 
     <record id="routing_after_hours" model="casafolino.voice.routing.rule">

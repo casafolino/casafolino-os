@@ -62,6 +62,40 @@ class CasaFolinoVoiceAIController(http.Controller):
             domain = [('name', 'ilike', name)]
         return Partner.search(domain, limit=1) if domain else Partner.browse()
 
+    def _lookup_voice_knowledge(self, payload, limit=6):
+        Knowledge = request.env['casafolino.voice.knowledge'].sudo()
+        query = payload.get('query') or ''
+        category = payload.get('category')
+        base_domain = [('active', '=', True)]
+        if category:
+            base_domain.append(('category', '=', category))
+
+        items = Knowledge.browse()
+        tokens = [token.strip().lower() for token in query.replace(',', ' ').split() if len(token.strip()) >= 3]
+        for token in tokens[:8]:
+            token_items = Knowledge.search(base_domain + [
+                '|', '|',
+                ('title', 'ilike', token),
+                ('keywords', 'ilike', token),
+                ('content', 'ilike', token),
+            ], limit=limit)
+            items |= token_items
+            if len(items) >= limit:
+                break
+
+        if not items and query:
+            items = Knowledge.search(base_domain + [
+                '|', '|',
+                ('title', 'ilike', query),
+                ('keywords', 'ilike', query),
+                ('content', 'ilike', query),
+            ], limit=limit)
+
+        if not items and category:
+            items = Knowledge.search(base_domain, limit=limit)
+
+        return {'ok': True, 'results': items[:limit].build_payload()}
+
     @http.route('/voice_ai/tool/<string:tool_name>', type='http', auth='public', methods=['POST'], csrf=False)
     def tool_dispatch(self, tool_name):
         if not self._check_token():
@@ -103,27 +137,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             return request.make_json_response({'ok': True, 'partner_id': partner.id if partner else None})
 
         if tool_name == 'lookup_knowledge':
-            query = payload.get('query') or ''
-            category = payload.get('category')
-            domain = [('active', '=', True)]
-            if category:
-                domain.append(('category', '=', category))
-            if query:
-                domain += ['|', '|', ('title', 'ilike', query), ('keywords', 'ilike', query), ('content', 'ilike', query)]
-            items = request.env['casafolino.voice.knowledge'].sudo().search(domain, limit=6)
-            if not items and category:
-                items = request.env['casafolino.voice.knowledge'].sudo().search([
-                    ('active', '=', True),
-                    ('category', '=', category),
-                ], limit=6)
-            if not items and query:
-                tokens = [token for token in query.replace(',', ' ').split() if len(token) >= 4][:5]
-                token_domain = [('active', '=', True)]
-                for token in tokens:
-                    token_domain += ['|', '|', ('title', 'ilike', token), ('keywords', 'ilike', token), ('content', 'ilike', token)]
-                if len(token_domain) > 1:
-                    items = request.env['casafolino.voice.knowledge'].sudo().search(token_domain, limit=6)
-            return request.make_json_response({'ok': True, 'results': items.build_payload()})
+            return request.make_json_response(self._lookup_voice_knowledge(payload))
 
         if tool_name == 'lookup_order_status':
             SaleOrder = request.env['sale.order'].sudo()
@@ -444,27 +458,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             }
 
         if tool_name == 'lookup_knowledge':
-            query = payload.get('query') or ''
-            category = payload.get('category')
-            domain = [('active', '=', True)]
-            if category:
-                domain.append(('category', '=', category))
-            if query:
-                domain += ['|', '|', ('title', 'ilike', query), ('keywords', 'ilike', query), ('content', 'ilike', query)]
-            items = request.env['casafolino.voice.knowledge'].sudo().search(domain, limit=6)
-            if not items and category:
-                items = request.env['casafolino.voice.knowledge'].sudo().search([
-                    ('active', '=', True),
-                    ('category', '=', category),
-                ], limit=6)
-            if not items and query:
-                tokens = [token for token in query.replace(',', ' ').split() if len(token) >= 4][:5]
-                token_domain = [('active', '=', True)]
-                for token in tokens:
-                    token_domain += ['|', '|', ('title', 'ilike', token), ('keywords', 'ilike', token), ('content', 'ilike', token)]
-                if len(token_domain) > 1:
-                    items = request.env['casafolino.voice.knowledge'].sudo().search(token_domain, limit=6)
-            return {'ok': True, 'results': items.build_payload()}
+            return self._lookup_voice_knowledge(payload)
 
         if tool_name == 'lookup_order_status':
             SaleOrder = request.env['sale.order'].sudo()
