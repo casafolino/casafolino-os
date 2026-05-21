@@ -286,7 +286,6 @@ class CfPipelineControl(models.AbstractModel):
             return fallback
 
     def _get_kpis(self, today, user):
-        Mail = self.env['casafolino.mail.message']
         Lead = self.env['crm.lead']
         Sample = self.env['cf.export.sample']
         Project = self.env['project.project']
@@ -443,11 +442,14 @@ class CfPipelineControl(models.AbstractModel):
         return rows[:20]
 
     def _get_control_lanes(self, today, user):
-        Mail = self.env['casafolino.mail.message']
         Lead = self.env['crm.lead']
         Project = self.env['project.project']
 
-        to_reply = Mail.search(self._mail_to_reply_domain(user), limit=6)
+        inbox_threads, _waiting_threads = self._get_latest_commercial_threads(user)
+        to_reply = inbox_threads[:6]
+        followup_domain = self._lead_followup_domain(today)
+        hot_domain = self._hot_lead_domain()
+        blocked_domain = self._blocked_project_domain()
         followups = Lead.search(self._lead_followup_domain(today), order='cf_date_next_followup asc, date_deadline asc, id desc', limit=6)
         hot = Lead.search(self._hot_lead_domain(), order='expected_revenue desc, create_date desc', limit=6)
         blocked = Project.search(self._blocked_project_domain(), limit=6)
@@ -457,28 +459,28 @@ class CfPipelineControl(models.AbstractModel):
                 'key': 'to_reply',
                 'title': 'Tocca a noi',
                 'tone': 'red',
-                'count': len(to_reply),
+                'count': len(inbox_threads),
                 'items': [self._format_mail_item(msg) for msg in to_reply],
             },
             {
                 'key': 'followups',
                 'title': 'Follow-up oggi',
                 'tone': 'amber',
-                'count': len(followups),
+                'count': Lead.search_count(followup_domain),
                 'items': [self._format_lead_item(lead, today) for lead in followups],
             },
             {
                 'key': 'hot',
                 'title': 'Clienti caldi',
                 'tone': 'green',
-                'count': len(hot),
+                'count': Lead.search_count(hot_domain),
                 'items': [self._format_lead_item(lead, today) for lead in hot],
             },
             {
                 'key': 'blocked',
                 'title': 'Bloccati',
                 'tone': 'red',
-                'count': len(blocked),
+                'count': Project.search_count(blocked_domain),
                 'items': [self._format_project_item(project) for project in blocked],
             },
         ]

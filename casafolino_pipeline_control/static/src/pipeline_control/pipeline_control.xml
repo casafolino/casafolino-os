@@ -80,7 +80,12 @@
                         <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
                             <section class="cf-pc-lane">
                                 <header>
-                                    <h2 t-out="lane.title"/>
+                                    <div>
+                                        <h2 t-out="lane.title"/>
+                                        <p t-if="lane.count > lane.items.length">
+                                            Prime <t t-out="lane.items.length"/> visibili
+                                        </p>
+                                    </div>
                                     <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
                                 </header>
                                 <div class="cf-pc-lane-body">
