@@ -151,18 +151,50 @@
         <field name="arch" type="xml">
             <xpath expr="//div[hasclass('oe_title')]" position="after">
                 <field name="cf360_continent" invisible="1"/>
-                <div class="cf-dossier-workbench-360">
-                    <div class="cf-dossier-workbench-main">
-                        <div class="cf-dossier-workbench-head">
+                <field name="cf360_mail_count" invisible="1"/>
+                <field name="cf360_task_count" invisible="1"/>
+                <field name="cf360_document_count" invisible="1"/>
+                <field name="cf_lead_count" invisible="1"/>
+                <div class="cf-dossier-workbench-360"
+                     style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin:16px 0 22px;padding:16px;border:1px solid #d8dee8;border-radius:8px;background:#eef2f7;">
+                    <div class="cf-dossier-workbench-main"
+                         style="min-width:0;border:1px solid #d8dee8;border-radius:8px;background:#ffffff;padding:16px;box-shadow:0 10px 25px rgba(15,23,42,.05);">
+                        <div class="cf-dossier-workbench-head"
+                             style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
                             <div>
-                                <strong>Scrivania 360</strong>
-                                <span>Attività rapide, composer e blocchi del dossier.</span>
+                                <strong style="display:block;font-size:18px;color:#18212f;">Scrivania 360</strong>
+                                <span style="display:block;margin-top:3px;color:#667085;font-size:13px;">Attività rapide, composer, blocchi e prossime decisioni del dossier.</span>
                             </div>
-                            <span class="cf-dossier-continent">
+                            <span class="cf-dossier-continent"
+                                  style="display:inline-flex;align-items:center;min-height:28px;padding:4px 10px;border-radius:999px;background:#eef6f4;color:#115e59;font-weight:750;white-space:nowrap;">
                                 Continente: <field name="cf360_continent" readonly="1" nolabel="1"/>
                             </span>
                         </div>
-                        <div class="cf-dossier-quick-actions">
+                        <div class="cf-dossier-metrics"
+                             style="display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin-bottom:14px;">
+                            <button name="action_open_mails_360" type="object"
+                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
+                                <span style="display:block;color:#667085;font-size:12px;">Mail dossier</span>
+                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf360_mail_count" readonly="1" nolabel="1"/></strong>
+                            </button>
+                            <button name="action_open_tasks_360" type="object"
+                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
+                                <span style="display:block;color:#667085;font-size:12px;">Task aperte</span>
+                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf360_task_count" readonly="1" nolabel="1"/></strong>
+                            </button>
+                            <button name="action_open_dossier_leads" type="object"
+                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
+                                <span style="display:block;color:#667085;font-size:12px;">Opportunità</span>
+                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf_lead_count" readonly="1" nolabel="1"/></strong>
+                            </button>
+                            <button name="action_open_documents_360" type="object"
+                                    style="min-height:76px;text-align:left;padding:12px;border:1px solid #d8dee8;border-radius:8px;background:#fbfdff;">
+                                <span style="display:block;color:#667085;font-size:12px;">Documenti</span>
+                                <strong style="display:block;font-size:24px;color:#18212f;"><field name="cf360_document_count" readonly="1" nolabel="1"/></strong>
+                            </button>
+                        </div>
+                        <div class="cf-dossier-quick-actions"
+                             style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
                             <button name="action_quick_task_360"
                                     type="object"
                                     string="Task reparto"
@@ -196,11 +228,38 @@
                                     icon="fa-columns"
                                     class="btn btn-secondary"/>
                         </div>
+                        <div class="cf-dossier-lanes"
+                             style="display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;">
+                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
+                                <strong style="display:block;margin-bottom:6px;">Commerciale</strong>
+                                <span style="color:#667085;font-size:12px;">Cliente, listino, follow-up.</span>
+                            </div>
+                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
+                                <strong style="display:block;margin-bottom:6px;">Back Office</strong>
+                                <span style="color:#667085;font-size:12px;">Anagrafica, codici, documenti.</span>
+                            </div>
+                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
+                                <strong style="display:block;margin-bottom:6px;">Produzione</strong>
+                                <span style="color:#667085;font-size:12px;">Fattibilità, campioni, tempi.</span>
+                            </div>
+                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;">
+                                <strong style="display:block;margin-bottom:6px;">Logistica</strong>
+                                <span style="color:#667085;font-size:12px;">Trasporto, resa, consegna.</span>
+                            </div>
+                            <div style="min-height:82px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#fff7f6;">
+                                <strong style="display:block;margin-bottom:6px;">Qualità</strong>
+                                <span style="color:#667085;font-size:12px;">Certificati, schede, etichette.</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="cf-dossier-composer-box">
-                        <strong>Composer email</strong>
-                        <span>Scrivi o rispondi dal composer F8, già collegato a cliente e dossier.</span>
-                        <div class="cf-dossier-composer-actions">
+                    <div class="cf-dossier-composer-box"
+                         style="display:flex;flex-direction:column;gap:12px;border:1px solid #d8c6df;border-radius:8px;background:#fdfaff;padding:16px;box-shadow:0 10px 25px rgba(15,23,42,.05);">
+                        <div>
+                            <strong style="display:block;font-size:17px;color:#18212f;">Composer email</strong>
+                            <span style="display:block;margin-top:4px;color:#667085;font-size:13px;line-height:1.35;">Scrivi o rispondi dal composer F8, già collegato a cliente e dossier.</span>
+                        </div>
+                        <div class="cf-dossier-composer-actions"
+                             style="display:grid;grid-template-columns:1fr;gap:8px;">
                             <button name="action_compose_email_f8"
                                     type="object"
                                     string="Nuova email"
@@ -213,6 +272,12 @@
                                     icon="fa-reply"
                                     class="btn btn-secondary"
                                     invisible="not partner_id"/>
+                        </div>
+                        <div style="margin-top:auto;padding:12px;border:1px solid #eadff0;border-radius:8px;background:#ffffff;">
+                            <strong style="display:block;font-size:13px;">Prossima azione</strong>
+                            <span style="display:block;margin-top:4px;color:#667085;font-size:13px;">
+                                <field name="cf_next_action" readonly="1" nolabel="1"/>
+                            </span>
                         </div>
                     </div>
                 </div>
