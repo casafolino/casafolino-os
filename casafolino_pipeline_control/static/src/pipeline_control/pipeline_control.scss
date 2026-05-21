@@ -694,12 +694,16 @@
     }
 }
 
-.o_form_view[data-model="project.project"] {
+.o_form_view {
     .cf-dossier-workbench-360 {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 320px;
         gap: 12px;
         margin: 12px 0 18px;
+        padding: 14px;
+        border: 1px solid #d8dee8;
+        border-radius: 8px;
+        background: #eef2f7;
     }
 
     .cf-dossier-workbench-main,
@@ -775,7 +779,7 @@
 }
 
 @media (max-width: 1200px) {
-    .o_form_view[data-model="project.project"] {
+    .o_form_view {
         .cf-dossier-workbench-360 {
             grid-template-columns: 1fr;
         }
