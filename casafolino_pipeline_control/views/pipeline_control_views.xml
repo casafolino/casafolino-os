@@ -231,6 +231,10 @@
               action="action_cf_pipeline_dossiers"
               sequence="6"/>
 
+    <record id="menu_cf_pipeline_control_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
     <menuitem id="menu_cf_pipeline_control"
               name="Sala Controllo"
               parent="casafolino_crm_export.menu_cf_export_root"

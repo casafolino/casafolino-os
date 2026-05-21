@@ -235,6 +235,7 @@ class CfPipelineControl(models.AbstractModel):
         """Keep one visible operational cockpit and hide obsolete 360 entrypoints."""
         refs_to_disable = [
             'casafolino_crm_360.menu_crm360_root',
+            'casafolino_pipeline_control.menu_cf_pipeline_control_root',
             'casafolino_crm_export.menu_cf_projects_360',
             'casafolino_crm_360.crm_lead_form_crm360_button',
             'casafolino_crm_360.crm_lead_form_premium_crm360_button',
