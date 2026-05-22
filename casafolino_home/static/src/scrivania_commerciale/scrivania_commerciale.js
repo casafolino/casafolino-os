@@ -68,13 +68,24 @@ export class CFScrivaniaCommerciale extends Component {
     }
 
     async onNewLead() {
-        await this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "crm.lead",
-            views: [[false, "form"]],
-            target: "current",
-            context: { default_type: "lead", default_user_id: user.userId },
-        });
+        try {
+            await this.action.doAction({
+                type: "ir.actions.client",
+                tag: "casafolino_crm_export.open_wizard_new_lead",
+                target: "new",
+            });
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "crm.lead",
+                views: [[false, "form"]],
+                target: "current",
+                context: {
+                    default_type: "lead",
+                    default_user_id: user.userId,
+                },
+            });
+        }
     }
 
     async onNewContact() {
@@ -145,14 +156,25 @@ export class CFScrivaniaCommerciale extends Component {
 
     async onOpenLavagna() {
         try {
-            await this.action.doAction("casafolino_initiative_dashboard.action_lavagna_template");
+            await this.action.doAction("casafolino_initiative.action_cf_initiative");
         } catch {
             await this.action.doAction({
                 type: "ir.actions.act_window",
-                res_model: "project.project",
-                views: [[false, "kanban"], [false, "list"]],
+                name: "Lavagne",
+                res_model: "cf.initiative",
+                views: [[false, "kanban"], [false, "list"], [false, "form"]],
                 target: "current",
             });
+        }
+    }
+
+    async onNewLavagna() {
+        try {
+            await this.action.doAction(
+                "casafolino_initiative_dashboard.action_cf_initiative_dashboard_wizard"
+            );
+        } catch {
+            await this.onOpenLavagna();
         }
     }
 

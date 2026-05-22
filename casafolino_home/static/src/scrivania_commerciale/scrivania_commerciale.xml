@@ -47,14 +47,19 @@
         <!-- Pulsantiera Crea / Apri -->
         <p class="cf-section-label">Crea / Apri</p>
         <div class="cf-quick-actions">
-            <button t-on-click="onNewProject" class="cf-qa cf-qa-primary">
-                <i class="fa fa-folder-open"/>
-                <span class="cf-qa-label">Nuovo Progetto</span>
-                <span class="cf-qa-hint">il punto di partenza</span>
-            </button>
-            <button t-on-click="onNewLead" class="cf-qa">
+            <button t-on-click="onNewLead" class="cf-qa cf-qa-primary">
                 <i class="fa fa-bullseye"/>
                 <span class="cf-qa-label">Nuovo Lead</span>
+                <span class="cf-qa-hint">telefonata, listino, primo contatto</span>
+            </button>
+            <button t-on-click="onOpenPipeline" class="cf-qa">
+                <i class="fa fa-tasks"/>
+                <span class="cf-qa-label">Pipeline Lead</span>
+                <span class="cf-qa-hint">apri kanban</span>
+            </button>
+            <button t-on-click="onNewProject" class="cf-qa">
+                <i class="fa fa-folder-open"/>
+                <span class="cf-qa-label">Nuovo Dossier</span>
             </button>
             <button t-on-click="onNewContact" class="cf-qa">
                 <i class="fa fa-user-plus"/>
@@ -88,8 +93,13 @@
             </div>
             <div t-on-click="onOpenLavagna" class="cf-section-card">
                 <i class="fa fa-clipboard cf-section-icon" style="color: #173404;"/>
-                <p class="cf-section-title">Lavagna</p>
-                <p class="cf-section-subtitle">Iniziative trasversali</p>
+                <p class="cf-section-title">Lavagne operative</p>
+                <p class="cf-section-subtitle">apri iniziative e kanban</p>
+            </div>
+            <div t-on-click="onNewLavagna" class="cf-section-card">
+                <i class="fa fa-plus-square-o cf-section-icon" style="color: #087352;"/>
+                <p class="cf-section-title">Nuova Lavagna</p>
+                <p class="cf-section-subtitle">scenario operativo guidato</p>
             </div>
             <div t-on-click="onOpenAnalytics" class="cf-section-card">
                 <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
