@@ -4,6 +4,7 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 export class CFPipelineControl extends Component {
     static template = "casafolino_pipeline_control.CFPipelineControl";
@@ -13,6 +14,7 @@ export class CFPipelineControl extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+        this.dialog = useService("dialog");
         this.state = useState({
             loading: true,
             error: null,
@@ -105,6 +107,9 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "mail_quick_action", [row.id, quickAction]);
             if (result) {
+                if (this.openComposeDialogFromAction(result)) {
+                    return;
+                }
                 await this.action.doAction(result);
                 if (result.reload) {
                     await this.loadData();
@@ -123,6 +128,9 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "lead_quick_action", [item.id, quickAction]);
             if (result) {
+                if (this.openComposeDialogFromAction(result)) {
+                    return;
+                }
                 await this.action.doAction(result);
                 if (result.reload) {
                     await this.loadData();
@@ -147,6 +155,9 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "record_quick_action", [item.model, item.res_id, quickAction]);
             if (result) {
+                if (this.openComposeDialogFromAction(result)) {
+                    return;
+                }
                 await this.action.doAction(result);
                 if (result.reload) {
                     await this.loadData();
@@ -155,6 +166,22 @@ export class CFPipelineControl extends Component {
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }
+    }
+
+    openComposeDialogFromAction(result) {
+        if (!result || result.tag !== "casafolino_mail.compose_f8") {
+            return false;
+        }
+        const context = result.context || {};
+        this.dialog.add(ComposeWizardDialog, {
+            partnerEmail: context.default_partner_email || "",
+            defaultSubject: context.default_subject || "",
+            defaultBody: context.default_body || "",
+            partnerId: context.default_partner_id || false,
+            threadId: context.default_thread_id || false,
+            threadModel: context.default_thread_model || false,
+        });
+        return true;
     }
 
     async openModel(model, name) {

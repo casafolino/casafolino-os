@@ -954,6 +954,16 @@
             grid-template-columns: 1fr;
         }
 
+        .cf-pc-workbench,
+        .cf-pc-workbench-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .cf-pc-workbench-depts > div,
+        .cf-pc-workbench-quick {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .cf-pc-select {
             width: 100%;
         }
