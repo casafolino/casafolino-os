@@ -497,6 +497,134 @@
                 </t>
 
                 <t t-elif="state.activeView === 'dossiers'">
+                    <t t-if="activeDossier">
+                        <div class="cf-pc-workbench">
+                            <main>
+                                <section class="cf-pc-workbench-hero">
+                                    <div class="cf-pc-workbench-hero-top">
+                                        <div>
+                                            <button class="btn btn-sm btn-light cf-pc-back-btn" t-on-click="closeDossierWorkbench">
+                                                <i class="fa fa-arrow-left"/>
+                                                Dossier
+                                            </button>
+                                            <h1 t-out="activeDossier.name"/>
+                                            <div class="cf-pc-workbench-sub">
+                                                Scrivania operativa dossier · cliente export
+                                                <t t-if="activeDossier.continent_label"> · continente <t t-out="activeDossier.continent_label"/></t>
+                                            </div>
+                                            <div class="cf-pc-workbench-status">
+                                                <span class="red" t-out="activeDossier.blocker || 'Blocco da gestire'"/>
+                                                <span class="amber">Avanzamento dossier</span>
+                                                <span class="blue">Prossima azione: <t t-out="activeDossier.next_action || 'da definire'"/></span>
+                                                <span>Task: <t t-out="activeDossier.task_count || 0"/></span>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'open')">
+                                            Aggiorna avanzamento
+                                        </button>
+                                    </div>
+                                    <div class="cf-pc-workbench-tabs">
+                                        <span class="active">Vista 360</span>
+                                        <span>Evoluzione</span>
+                                        <span>Documenti</span>
+                                        <span>Comunicazioni</span>
+                                        <span>Storico</span>
+                                    </div>
+                                    <div class="cf-pc-workbench-quick">
+                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'task')"><strong>+</strong>Task reparto</button>
+                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'email')"><strong>✉</strong>Scrivi email</button>
+                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'reply')"><strong>↩</strong>Rispondi cliente</button>
+                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'open')"><strong>📎</strong>Allega documento</button>
+                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'open')"><strong>✓</strong>Chiudi blocco</button>
+                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'followup7')"><strong>⏱</strong>Programma follow-up</button>
+                                    </div>
+                                </section>
+
+                                <section class="cf-pc-workbench-grid">
+                                    <div class="cf-pc-workbench-card">
+                                        <h2>Cliente e opportunità</h2>
+                                        <div class="cf-pc-field-grid">
+                                            <div><span>Cliente</span><strong t-out="activeDossier.partner || '-'"/></div>
+                                            <div><span>Mercato</span><strong><t t-out="activeDossier.continent_label || '-'"/> · Export</strong></div>
+                                            <div><span>Lead</span><strong t-out="activeDossier.status || 'Dossier operativo'"/></div>
+                                            <div><span>Priorità</span><strong>Dossier operativo</strong></div>
+                                            <div><span>Scadenza</span><strong t-out="activeDossier.target_date || '-'"/></div>
+                                            <div><span>Rischio</span><strong>Blocchi reparto da chiudere</strong></div>
+                                        </div>
+                                    </div>
+                                    <div class="cf-pc-workbench-card">
+                                        <h2>Decisione da prendere</h2>
+                                        <div class="cf-pc-decision">
+                                            <span class="dot red"/>
+                                            <div>
+                                                <strong>Cosa blocca il prossimo passo?</strong>
+                                                <small t-out="activeDossier.next_action || 'Serve una prossima azione chiara sul dossier.'"/>
+                                            </div>
+                                            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'task')">Apri</button>
+                                        </div>
+                                        <div class="cf-pc-decision">
+                                            <span class="dot amber"/>
+                                            <div>
+                                                <strong>Trasporto o documenti da confermare</strong>
+                                                <small>Logistica e Back Office completano il dossier prima del recap cliente.</small>
+                                            </div>
+                                            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'open')">Apri</button>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="cf-pc-workbench-card cf-pc-workbench-depts">
+                                    <h2>Vista 360 per reparto</h2>
+                                    <div>
+                                        <t t-foreach="activeDossier.departments" t-as="dept" t-key="'workbench-' + dept.name">
+                                            <article t-attf-class="#{dept.name === 'Qualita' || dept.name === 'Qualità' ? 'blocked' : ''}">
+                                                <h3 t-out="dept.name"/>
+                                                <div class="bar"><span t-att-style="'width:' + (dept.tasks.length ? '72%' : '28%')"/></div>
+                                                <p t-if="dept.tasks.length" t-out="dept.tasks[0].name"/>
+                                                <p t-else="">Nessun task aperto. Reparto pronto o da pianificare.</p>
+                                            </article>
+                                        </t>
+                                    </div>
+                                </section>
+                            </main>
+
+                            <aside>
+                                <section class="cf-pc-workbench-card">
+                                    <h2>Composer email</h2>
+                                    <div class="cf-pc-composer-preview">
+                                        <div>Risposta cliente - recap dossier</div>
+                                        <div t-out="activeDossier.partner || '-'"/>
+                                        <div><t t-out="activeDossier.name"/> - documenti e prossimi passaggi</div>
+                                        <p>Buongiorno,<br/><br/>le confermo che stiamo completando il dossier.<br/><br/>Appena chiudiamo i blocchi reparto, le inviamo il recap completo con condizioni e documenti allegati.<br/><br/>Resto a disposizione.</p>
+                                        <div class="cf-pc-composer-actions">
+                                            <button class="btn btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'reply')">Salva bozza</button>
+                                            <button class="btn btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'email')">Invia dal mio composer</button>
+                                        </div>
+                                    </div>
+                                </section>
+                                <section class="cf-pc-workbench-card">
+                                    <h2>Prossime azioni</h2>
+                                    <div class="cf-pc-decision">
+                                        <span class="dot red"/>
+                                        <div>
+                                            <strong t-out="activeDossier.next_action || 'Definire prossima azione'"/>
+                                            <small>Reparto responsabile · blocca il dossier</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'task')">Fai</button>
+                                    </div>
+                                    <div class="cf-pc-decision">
+                                        <span class="dot blue"/>
+                                        <div>
+                                            <strong>Preparare email recap</strong>
+                                            <small>Commerciale · usa il composer F8</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'email')">Fai</button>
+                                    </div>
+                                </section>
+                            </aside>
+                        </div>
+                    </t>
+                    <t t-else="">
                     <div class="cf-pc-dossier-tools">
                         <div class="cf-pc-search">
                             <i class="fa fa-search"/>
@@ -532,7 +660,7 @@
                                     </div>
                                     <div class="cf-pc-row-actions">
                                         <span class="cf-pc-pill tone-amber" t-out="dossier.blocker"/>
-                                        <button class="btn btn-sm btn-primary cf-pc-open-360" t-on-click="() => this.recordQuickAction(dossier, 'open')" title="Apri scrivania 360">
+                                        <button class="btn btn-sm btn-primary cf-pc-open-360" t-on-click="() => this.openDossierWorkbench(dossier)" title="Apri scrivania 360">
                                             <i class="fa fa-folder-open-o"/>
                                             <span>Scrivania 360</span>
                                         </button>
@@ -572,6 +700,7 @@
                             Nessun dossier trovato con questi filtri.
                         </div>
                     </div>
+                    </t>
                 </t>
             </main>
         </div>

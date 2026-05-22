@@ -21,6 +21,7 @@ export class CFPipelineControl extends Component {
             inboxFilter: "all",
             dossierSearch: "",
             dossierContinent: "all",
+            activeDossierId: false,
             data: {
                 kpis: [],
                 lanes: [],
@@ -68,6 +69,18 @@ export class CFPipelineControl extends Component {
 
     setDossierContinent(ev) {
         this.state.dossierContinent = ev.target.value || "all";
+    }
+
+    openDossierWorkbench(dossier) {
+        if (!dossier || !dossier.id) {
+            this.notification.add(_t("Dossier non disponibile"), { type: "warning" });
+            return;
+        }
+        this.state.activeDossierId = dossier.id;
+    }
+
+    closeDossierWorkbench() {
+        this.state.activeDossierId = false;
     }
 
     async openRecord(item) {
@@ -303,6 +316,13 @@ export class CFPipelineControl extends Component {
                 row.continent_label,
             ].filter(Boolean).join(" ").toLowerCase().includes(query);
         });
+    }
+
+    get activeDossier() {
+        if (!this.state.activeDossierId) {
+            return false;
+        }
+        return (this.state.data.dossiers || []).find((row) => row.id === this.state.activeDossierId) || false;
     }
 
     filterInboxRows(rows) {
