@@ -170,14 +170,11 @@ export class CFProjectDashboard extends Component {
 
     get tabs() {
         return [
-            { id: "cockpit", label: "Cockpit", enabled: true },
-            { id: "timeline", label: "Timeline", enabled: true },
-            { id: "cliente", label: "Persone", enabled: true },
-            { id: "mail", label: "Mail", enabled: true },
-            { id: "commerciale", label: "Commerciale", enabled: true },
-            { id: "campionature", label: "Campionature", enabled: true },
+            { id: "cockpit", label: "Vista 360", enabled: true },
+            { id: "timeline", label: "Evoluzione", enabled: true },
             { id: "documenti", label: "Documenti", enabled: true },
-            { id: "note", label: "Note", enabled: true },
+            { id: "mail", label: "Comunicazioni", enabled: true },
+            { id: "storico", label: "Storico", enabled: true },
         ];
     }
 
@@ -193,6 +190,9 @@ export class CFProjectDashboard extends Component {
     // --- Handlers ---
 
     onTabChange(tabId) {
+        if (!this.tabs.some((tab) => tab.id === tabId && tab.enabled)) {
+            return;
+        }
         this.state.activeTab = tabId;
     }
 
@@ -234,8 +234,70 @@ export class CFProjectDashboard extends Component {
             res_model: "sale.order",
             views: [[false, "form"]],
             target: "current",
-            context: { default_partner_id: partnerId },
+            context: {
+                default_partner_id: partnerId,
+                default_cf_project_id: this.state.data?.project?.id || false,
+            },
         });
+    }
+
+    async onOpenSaleOrders() {
+        const partnerId = this.state.data?.partner?.id;
+        if (!partnerId) {
+            this.notification.add(_t("Nessun partner collegato"), { type: "warning" });
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Preventivi e ordini"),
+            res_model: "sale.order",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: [["partner_id", "=", partnerId]],
+            context: {
+                default_partner_id: partnerId,
+                default_cf_project_id: this.state.data?.project?.id || false,
+            },
+        });
+    }
+
+    async onOpenDocuments() {
+        const projectId = this.state.data?.project?.id;
+        const partnerId = this.state.data?.partner?.id;
+        const domain = [
+            "|",
+            "&", ["res_model", "=", "project.project"], ["res_id", "=", projectId || 0],
+            "&", ["res_model", "=", "res.partner"], ["res_id", "=", partnerId || 0],
+        ];
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Documenti dossier"),
+            res_model: "ir.attachment",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain,
+            context: {
+                default_res_model: "project.project",
+                default_res_id: projectId || false,
+            },
+        });
+    }
+
+    async onUploadDocument() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Carica documento"),
+            res_model: "ir.attachment",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_res_model: "project.project",
+                default_res_id: projectId,
+            },
+        });
+        await this.onRefresh();
     }
 
     async onQuickActionActivity() {
@@ -309,6 +371,18 @@ export class CFProjectDashboard extends Component {
             type: "ir.actions.act_window",
             res_model: "res.partner",
             res_id: partnerId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    async onOpenProjectForm() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "project.project",
+            res_id: projectId,
             views: [[false, "form"]],
             target: "current",
         });

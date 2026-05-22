@@ -47,6 +47,12 @@
                     <input placeholder="Cerca mail, contatto, campione, task..."/>
                 </label>
                 <div class="cf360-actions">
+                    <button class="cf360-btn" t-on-click="onOpenProjectForm">
+                        <i class="fa fa-pencil"/> Modifica dossier
+                    </button>
+                    <button class="cf360-btn" t-on-click="onOpenPartner">
+                        <i class="fa fa-address-card-o"/> Modifica cliente
+                    </button>
                     <button class="cf360-btn" t-on-click="onSyncDossierMail">
                         <i class="fa fa-refresh"/> Sync mail
                     </button>
@@ -65,6 +71,12 @@
                     </span>
                     <h1 t-out="state.data.project.name"/>
                     <div class="cf360-meta-row">
+                        <button class="cf360-link-btn" t-on-click="onOpenProjectForm">
+                            <i class="fa fa-pencil"/> Dossier
+                        </button>
+                        <button class="cf360-link-btn" t-if="state.data.partner" t-on-click="onOpenPartner">
+                            <i class="fa fa-user"/> Cliente
+                        </button>
                         <span t-if="brokerContact" class="cf360-pill violet">
                             Broker:
                             <t t-out="brokerContact.name"/>
@@ -96,7 +108,15 @@
                 </div>
             </section>
 
-            <section class="cf360-workspace">
+            <nav class="cf360-tabs" aria-label="Sezioni dossier">
+                <t t-foreach="tabs" t-as="tab" t-key="tab.id">
+                    <button t-attf-class="cf360-tab #{state.activeTab === tab.id ? 'active' : ''}"
+                            t-on-click="() => this.onTabChange(tab.id)"
+                            t-out="tab.label"/>
+                </t>
+            </nav>
+
+            <section class="cf360-workspace" t-if="state.activeTab === 'cockpit'">
                 <div class="cf360-left-stack">
                     <article class="cf360-panel">
                         <div class="cf360-panel-head">
@@ -343,6 +363,158 @@
                         </div>
                     </article>
                 </aside>
+            </section>
+
+            <section class="cf360-tab-page" t-if="state.activeTab === 'timeline'">
+                <article class="cf360-panel">
+                    <div class="cf360-panel-head">
+                        <h2>Evoluzione dossier</h2>
+                        <div class="cf360-segmented">
+                            <t t-foreach="timelineFilters" t-as="filter" t-key="filter.id">
+                                <button t-attf-class="#{state.timelineFilter === filter.id ? 'active' : ''}"
+                                        t-on-click="() => this.onTimelineFilter(filter.id)"
+                                        t-out="filter.label"/>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="cf360-panel-body cf360-activity">
+                        <t t-if="!filteredTimeline.length">
+                            <div class="cf360-empty">Nessuna evoluzione per questo filtro</div>
+                        </t>
+                        <t t-foreach="filteredTimeline" t-as="ev" t-key="ev_index">
+                            <div class="cf360-event">
+                                <span class="cf360-dot">
+                                    <i t-attf-class="fa #{ev.type === 'mail' ? 'fa-envelope' : ev.type === 'activity' ? 'fa-calendar' : ev.type === 'message' ? 'fa-comment' : 'fa-check'}"/>
+                                </span>
+                                <span class="cf360-event-copy">
+                                    <strong t-out="ev.title"/>
+                                    <small>
+                                        <t t-if="ev.author" t-out="ev.author + ' · '"/>
+                                        <t t-out="ev.date_label"/>
+                                    </small>
+                                </span>
+                            </div>
+                        </t>
+                    </div>
+                </article>
+            </section>
+
+            <section class="cf360-tab-page" t-if="state.activeTab === 'documenti'">
+                <article class="cf360-panel">
+                    <div class="cf360-panel-head">
+                        <h2>Documenti, listini e cataloghi</h2>
+                        <div class="cf360-actions">
+                            <button class="cf360-btn" t-on-click="onUploadDocument">
+                                <i class="fa fa-upload"/> Carica documento
+                            </button>
+                            <button class="cf360-btn cf360-btn-primary" t-on-click="onOpenDocuments">
+                                <i class="fa fa-folder-open"/> Apri archivio
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cf360-panel-body cf360-doc-list">
+                        <t t-if="!state.data.documenti || !state.data.documenti.attachments.length">
+                            <div class="cf360-empty">
+                                <i class="fa fa-folder-open-o"/>
+                                Nessun documento collegato al dossier o al cliente.
+                            </div>
+                        </t>
+                        <t t-foreach="state.data.documenti.attachments" t-as="doc" t-key="doc.id">
+                            <a class="cf360-doc-row" t-att-href="doc.url" target="_blank">
+                                <span class="cf360-iconbox">
+                                    <i t-attf-class="fa #{doc.icon_class || 'fa-file-o'}"/>
+                                </span>
+                                <span class="cf360-doc-copy">
+                                    <strong t-out="doc.name"/>
+                                    <small>
+                                        <t t-out="doc.source === 'project' ? 'Dossier' : 'Cliente'"/>
+                                        <t t-if="doc.size_label"> · <t t-out="doc.size_label"/></t>
+                                        <t t-if="doc.date_label"> · <t t-out="doc.date_label"/></t>
+                                    </small>
+                                </span>
+                                <span class="cf360-pill blue">scarica</span>
+                            </a>
+                        </t>
+                    </div>
+                </article>
+            </section>
+
+            <section class="cf360-tab-page" t-if="state.activeTab === 'mail'">
+                <article class="cf360-panel">
+                    <div class="cf360-panel-head">
+                        <h2>Comunicazioni</h2>
+                        <div class="cf360-actions">
+                            <button class="cf360-btn" t-on-click="onOpenDocuments">
+                                <i class="fa fa-paperclip"/> Allegati/listini
+                            </button>
+                            <button class="cf360-btn cf360-btn-primary" t-on-click="onQuickActionMail">
+                                <i class="fa fa-envelope"/> Scrivi email
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cf360-panel-body cf360-mail-list">
+                        <t t-if="!state.data.mail || !state.data.mail.length">
+                            <div class="cf360-empty">Nessuna comunicazione collegata</div>
+                        </t>
+                        <t t-foreach="state.data.mail" t-as="m" t-key="m.casafolino_id">
+                            <button t-attf-class="cf360-mail #{m.is_outbound ? 'outbound' : 'inbound'}"
+                                    t-on-click="() => this.onOpenMailThread(m)">
+                                <span t-attf-class="cf360-iconbox #{m.is_outbound ? 'out' : ''}">
+                                    <i t-attf-class="fa #{m.is_outbound ? 'fa-paper-plane' : 'fa-envelope'}"/>
+                                </span>
+                                <span class="cf360-mail-copy">
+                                    <span class="cf360-mail-subject">
+                                        <strong t-out="m.subject"/>
+                                        <span class="cf360-pill blue" t-out="m.partner_name || 'dossier'"/>
+                                    </span>
+                                    <p>
+                                        <t t-out="m.sender_name"/>
+                                        <t t-if="m.preview_text"> · <t t-out="m.preview_text"/></t>
+                                    </p>
+                                </span>
+                                <span class="cf360-mail-meta" t-out="m.date_label"/>
+                            </button>
+                        </t>
+                    </div>
+                </article>
+            </section>
+
+            <section class="cf360-tab-page" t-if="state.activeTab === 'storico'">
+                <article class="cf360-panel">
+                    <div class="cf360-panel-head">
+                        <h2>Storico commerciale</h2>
+                        <div class="cf360-actions">
+                            <button class="cf360-btn" t-on-click="onOpenSaleOrders">
+                                <i class="fa fa-list"/> Preventivi esistenti
+                            </button>
+                            <button class="cf360-btn cf360-btn-primary" t-on-click="onQuickActionOffer">
+                                <i class="fa fa-file-text-o"/> Crea preventivo
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cf360-panel-body cf360-doc-list">
+                        <t t-if="!state.data.commerciale || !state.data.commerciale.orders.length">
+                            <div class="cf360-empty">Nessun preventivo o ordine ancora collegato al cliente.</div>
+                        </t>
+                        <t t-foreach="state.data.commerciale.orders" t-as="order" t-key="order.id">
+                            <button class="cf360-doc-row" t-on-click="() => this.onOpenSaleOrder(order.id)">
+                                <span class="cf360-iconbox">
+                                    <i class="fa fa-file-text-o"/>
+                                </span>
+                                <span class="cf360-doc-copy">
+                                    <strong t-out="order.name"/>
+                                    <small>
+                                        <t t-out="order.state_label"/>
+                                        <t t-if="order.date_label"> · <t t-out="order.date_label"/></t>
+                                    </small>
+                                </span>
+                                <span class="cf360-pill green">
+                                    <t t-out="order.currency"/> <t t-out="Math.round(order.amount_total || 0)"/>
+                                </span>
+                            </button>
+                        </t>
+                    </div>
+                </article>
             </section>
         </main>
     </div>

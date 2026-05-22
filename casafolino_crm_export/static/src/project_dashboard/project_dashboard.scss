@@ -93,6 +93,7 @@
 
 .cf360-rail-btn,
 .cf360-btn,
+.cf360-link-btn,
 .cf360-person,
 .cf360-mail {
     appearance: none;
@@ -252,6 +253,25 @@
     }
 }
 
+.cf360-link-btn {
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    color: #253244;
+    background: #ffffff;
+    border: 1px solid var(--cf360-line);
+    font-size: 12px;
+    font-weight: 800;
+
+    &:hover {
+        background: #f8fafc;
+        border-color: #bdc8d7;
+    }
+}
+
 .cf360-hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
@@ -326,11 +346,45 @@
     }
 }
 
+.cf360-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 14px;
+    border-bottom: 1px solid var(--cf360-line);
+}
+
+.cf360-tab {
+    min-height: 42px;
+    padding: 9px 14px;
+    border: 1px solid var(--cf360-line);
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    color: #435142;
+    background: #ffffff;
+    font-weight: 850;
+
+    &.active {
+        color: #ffffff;
+        background: #173629;
+        border-color: #173629;
+    }
+
+    &:hover {
+        border-color: #b9c6d6;
+    }
+}
+
 .cf360-workspace {
     display: grid;
     grid-template-columns: minmax(250px, 23%) minmax(420px, 1fr) minmax(280px, 26%);
     gap: 14px;
     align-items: start;
+}
+
+.cf360-tab-page {
+    display: grid;
+    gap: 14px;
 }
 
 .cf360-left-stack,
@@ -670,6 +724,51 @@
     color: var(--cf360-muted);
     font-size: 12px;
     white-space: nowrap;
+}
+
+.cf360-doc-list {
+    display: grid;
+    gap: 8px;
+}
+
+.cf360-doc-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--cf360-line-soft);
+    border-radius: 8px;
+    color: inherit;
+    background: #ffffff;
+    text-align: left;
+    text-decoration: none;
+
+    &:hover {
+        background: #f8fafc;
+        border-color: #bdc8d7;
+        color: inherit;
+        text-decoration: none;
+    }
+}
+
+.cf360-doc-copy {
+    min-width: 0;
+
+    strong,
+    small {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    small {
+        margin-top: 3px;
+        color: var(--cf360-muted);
+        font-size: 12px;
+    }
 }
 
 .cf360-board {
