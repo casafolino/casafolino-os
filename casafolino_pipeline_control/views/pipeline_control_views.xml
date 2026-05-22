@@ -156,7 +156,32 @@
                 <field name="cf360_document_count" invisible="1"/>
                 <field name="cf_lead_count" invisible="1"/>
                 <div class="cf-dossier-workbench-360"
-                     style="display:grid;grid-template-columns:minmax(760px,1fr) 360px;gap:18px;margin:18px 0 24px;color:#1f2723;">
+                     style="display:grid;grid-template-columns:260px minmax(720px,1fr) 360px;gap:18px;margin:18px 0 24px;color:#1f2723;background:#f6f7f4;">
+                    <aside style="background:#20342a;color:#f2f5ef;border-radius:8px;padding:22px 16px;min-height:720px;">
+                        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Pipeline Export</div>
+                        <div style="color:#c7d2c8;font-size:14px;margin-bottom:24px;">Sala controllo operativa</div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Sala Controllo</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">260</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Follow-up</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">1</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Post-Fiera</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">54</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Inbox</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">129</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Pipeline</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">429</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;background:#41584a;outline:2px solid #75a7ff;color:#f2f5ef;font-weight:750;margin-bottom:8px;">
+                            <span>Dossier</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">16</span>
+                        </div>
+                        <div style="margin-top:34px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(255,255,255,.08);padding:13px 14px;color:#dce4dc;font-size:13px;line-height:1.35;font-weight:650;">
+                            Vista operativa per il lavoro commerciale di giornata.
+                        </div>
+                    </aside>
                     <div style="min-width:0;">
                         <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:18px;margin-bottom:16px;">
                             <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;">
