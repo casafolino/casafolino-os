@@ -3,6 +3,10 @@ from odoo import http
 from odoo.http import request
 
 
+B2B_HOSTS = {"b2b.casafolino.com", "www.b2b.casafolino.com"}
+ERP_HOSTS = {"erp.casafolino.com", "51.44.170.55"}
+
+
 class CasaFolinoB2BPortal(http.Controller):
     FALLBACK_IMAGES = [
         "/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png",
@@ -12,6 +16,32 @@ class CasaFolinoB2BPortal(http.Controller):
         "/casafolino_b2b_portal/static/src/img/products/spezia-puttanesca.png",
         "/casafolino_b2b_portal/static/src/img/products/mousse-gianduia.png",
     ]
+
+    def _request_hosts(self):
+        headers = request.httprequest.headers
+        return {
+            (request.httprequest.host or "").lower(),
+            (headers.get("Host") or "").lower(),
+            (headers.get("X-Forwarded-Host") or "").lower(),
+        }
+
+    def _request_hostnames(self):
+        return {host.split(":", 1)[0] for host in self._request_hosts() if host}
+
+    def _is_erp_host(self):
+        hosts = self._request_hosts()
+        hostnames = self._request_hostnames()
+        return bool(hostnames & ERP_HOSTS) or any(host.endswith(":4589") for host in hosts)
+
+    def _is_b2b_host(self):
+        return bool(self._request_hostnames() & B2B_HOSTS)
+
+    def _guard_b2b_site(self):
+        if self._is_erp_host():
+            return request.redirect("/web/login", code=302)
+        if not self._is_b2b_host():
+            return request.not_found()
+        return None
 
     def _current_partner(self):
         if request.env.user == request.website.user_id:
@@ -68,17 +98,20 @@ class CasaFolinoB2BPortal(http.Controller):
                 return pricelist._get_product_price(priced_product, qty or 1, partner)
         return product.list_price
 
-    def _catalog_products(self):
+    def _catalog_products(self, account_state=None):
+        account_state = account_state or self._account_state()
         Product = request.env["product.template"].sudo()
-        products = Product.search(self._product_domain(), order="sequence, name", limit=36)
+        products = Product.search(self._product_domain(), order="sequence, name", limit=32)
         result = []
         for index, product in enumerate(products):
             case_size = product.cf_b2b_case_size or 6
+            category = product.public_categ_ids[:1].name or product.categ_id.name or "Catalogo"
             result.append(
                 {
                     "record": product,
+                    "category": category,
                     "case_size": case_size,
-                    "price": self._product_price(product, case_size),
+                    "price": self._product_price(product, case_size) if account_state == "approved" else 0.0,
                     "image_url": (
                         f"/web/image/product.template/{product.id}/image_1024"
                         if product.image_1024
@@ -87,6 +120,17 @@ class CasaFolinoB2BPortal(http.Controller):
                 }
             )
         return result
+
+    def _catalog_sections(self, products):
+        sections = []
+        by_category = {}
+        for item in products:
+            items = by_category.setdefault(item["category"], [])
+            if len(items) < 8:
+                items.append(item)
+        for category in sorted(by_category):
+            sections.append({"name": category, "products": by_category[category]})
+        return sections
 
     def _cart_lines(self):
         products = request.env["product.template"].sudo().browse(self._cart().keys()).exists()
@@ -127,17 +171,27 @@ class CasaFolinoB2BPortal(http.Controller):
 
     @http.route(["/b2b", "/b2b/"], type="http", auth="public", website=True, sitemap=True)
     def b2b_catalog(self, **kwargs):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
+        account_state = self._account_state()
+        products = self._catalog_products(account_state)
         return request.render(
             "casafolino_b2b_portal.catalog",
             {
-                "account_state": self._account_state(),
-                "products": self._catalog_products(),
+                "account_state": account_state,
+                "products": products,
+                "best_sellers": products[:4],
+                "category_sections": self._catalog_sections(products),
                 "cart": self._cart_totals(),
             },
         )
 
     @http.route(["/b2b/register"], type="http", auth="public", website=True, sitemap=True, methods=["GET", "POST"], csrf=True)
     def b2b_register(self, **post):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
         if request.httprequest.method == "POST":
             if post.get("website_url"):
                 return request.redirect("/b2b/register?sent=1")
@@ -165,6 +219,9 @@ class CasaFolinoB2BPortal(http.Controller):
 
     @http.route(["/b2b/cart/add"], type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def b2b_cart_add(self, product_id=None, quantity=None, **kwargs):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
         product = request.env["product.template"].sudo().browse(int(product_id or 0)).exists()
         if not product or self._account_state() != "approved":
             return request.redirect("/b2b")
@@ -180,11 +237,17 @@ class CasaFolinoB2BPortal(http.Controller):
 
     @http.route(["/b2b/cart/clear"], type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def b2b_cart_clear(self, **kwargs):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
         self._save_cart({})
         return request.redirect("/b2b")
 
     @http.route(["/b2b/order/submit"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
     def b2b_order_submit(self, **kwargs):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
         partner = self._current_partner()
         cart = self._cart_totals()
         if not partner or not cart["can_checkout"]:

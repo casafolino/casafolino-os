@@ -10,6 +10,16 @@
     --cf-shadow: 0 16px 40px rgba(32, 31, 29, 0.08);
 }
 
+body:has(.cf-b2b-page) #wrapwrap > .bg-success.text-white.text-center,
+body:has(.cf-b2b-page) #wrapwrap > header#top,
+body:has(.cf-b2b-page) #wrapwrap > footer#bottom {
+    display: none !important;
+}
+
+body:has(.cf-b2b-page) .o_footer_copyright {
+    display: none !important;
+}
+
 .cf-b2b-page {
     min-height: 100vh;
     color: var(--cf-ink);
@@ -86,14 +96,16 @@
 }
 
 .cf-b2b-shell {
-    display: grid;
-    grid-template-columns: 270px minmax(0, 1fr) 330px;
-    gap: 20px;
+    display: block;
     padding: 22px;
 }
 
-.cf-b2b-sidebar,
-.cf-b2b-cart,
+.cf-b2b-catalog {
+    max-width: 1480px;
+    margin: 0 auto;
+}
+
+.cf-b2b-status-row,
 .cf-register-form,
 .cf-workflow,
 .cf-thanks {
@@ -101,20 +113,19 @@
     border: 1px solid var(--cf-line);
     border-radius: 8px;
     box-shadow: var(--cf-shadow);
-}
-
-.cf-b2b-sidebar,
-.cf-b2b-cart {
-    position: sticky;
-    top: 91px;
-    align-self: start;
     padding: 18px;
 }
 
-.cf-b2b-panel + .cf-b2b-panel {
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--cf-line);
+.cf-b2b-status-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.35fr) minmax(0, 0.65fr);
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.cf-b2b-status-row section + section {
+    border-left: 1px solid var(--cf-line);
+    padding-left: 18px;
 }
 
 .cf-label,
@@ -130,13 +141,12 @@
     text-transform: uppercase;
 }
 
-.cf-b2b-panel p {
+.cf-b2b-status-row p {
     margin: 8px 0 0;
     color: var(--cf-muted);
     line-height: 1.45;
 }
 
-.cf-rule,
 .cf-cart-total {
     display: flex;
     justify-content: space-between;
@@ -151,6 +161,28 @@
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 16px;
+}
+
+.cf-section-head {
+    display: grid;
+    gap: 4px;
+    margin: 0 0 14px;
+    border-top: 1px solid var(--cf-line);
+    padding-top: 22px;
+}
+
+.cf-section-head h2 {
+    margin: 0;
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.06;
+}
+
+.cf-category-section {
+    margin-top: 24px;
+}
+
+.cf-best-sellers {
+    margin-top: 8px;
 }
 
 .cf-b2b-heading h1,
@@ -199,7 +231,7 @@
 
 .cf-b2b-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
 }
 
@@ -252,9 +284,10 @@
     min-height: 52px;
 }
 
-.cf-product-title h2 {
+.cf-product-title h2,
+.cf-product-title h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: 19px;
     line-height: 1.14;
 }
 
@@ -323,6 +356,62 @@
     color: #888 !important;
     border-color: var(--cf-line);
     background: #e8e5db;
+}
+
+.cf-floating-cart {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 30;
+    width: min(360px, calc(100vw - 28px));
+    max-height: min(620px, calc(100vh - 44px));
+    overflow: auto;
+    background: #fff;
+    border: 1px solid var(--cf-line);
+    border-radius: 8px;
+    box-shadow: 0 22px 70px rgba(32, 31, 29, 0.2);
+    padding: 12px;
+}
+
+.cf-floating-cart summary {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+    color: #fff;
+    background: var(--cf-ink);
+    border-radius: 8px;
+    padding: 0 14px;
+    font-weight: 800;
+}
+
+.cf-floating-cart summary::-webkit-details-marker {
+    display: none;
+}
+
+.cf-floating-cart summary strong {
+    display: grid;
+    min-width: 28px;
+    min-height: 28px;
+    place-items: center;
+    color: #fff;
+    background: var(--cf-red);
+    border-radius: 50%;
+}
+
+.cf-floating-cart:not([open]) {
+    width: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.cf-floating-cart[open] summary {
+    margin-bottom: 12px;
 }
 
 .cf-cart-title {
@@ -451,13 +540,8 @@
 }
 
 @media (max-width: 1120px) {
-    .cf-b2b-shell {
-        grid-template-columns: 240px minmax(0, 1fr);
-    }
-
-    .cf-b2b-cart {
-        position: static;
-        grid-column: 1 / -1;
+    .cf-b2b-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -470,12 +554,24 @@
 
     .cf-b2b-shell,
     .cf-register-shell {
-        grid-template-columns: 1fr;
         padding: 14px;
     }
 
-    .cf-b2b-sidebar {
-        position: static;
+    .cf-b2b-status-row,
+    .cf-b2b-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cf-b2b-status-row section + section {
+        border-left: 0;
+        border-top: 1px solid var(--cf-line);
+        padding-left: 0;
+        padding-top: 14px;
+    }
+
+    .cf-floating-cart {
+        right: 14px;
+        bottom: 14px;
     }
 
     .cf-form-grid {
