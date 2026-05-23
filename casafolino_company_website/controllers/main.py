@@ -46,15 +46,15 @@ class CasaFolinoCompanyWebsite(http.Controller):
             ],
         )
 
-    @http.route("/", type="http", auth="public", website=True, sitemap=False)
+    @http.route("/", type="http", auth="public", website=False, sitemap=False)
     def company_root(self, **kwargs):
         return request.redirect("/en/", code=302)
 
-    @http.route(["/robots.txt"], type="http", auth="public", website=True, sitemap=False)
+    @http.route(["/robots.txt"], type="http", auth="public", website=False, sitemap=False)
     def company_robots(self, **kwargs):
         return self._serve_file("robots.txt", content_type="text/plain; charset=utf-8")
 
-    @http.route(["/sitemap.xml"], type="http", auth="public", website=True, sitemap=False)
+    @http.route(["/sitemap.xml"], type="http", auth="public", website=False, sitemap=False)
     def company_sitemap(self, **kwargs):
         return self._serve_file("sitemap.xml", content_type="application/xml; charset=utf-8")
 
@@ -68,7 +68,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
         ],
         type="http",
         auth="public",
-        website=True,
+        website=False,
         sitemap=False,
     )
     def company_asset(self, **kwargs):
@@ -120,7 +120,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
         ],
         type="http",
         auth="public",
-        website=True,
+        website=False,
         sitemap=False,
     )
     def company_page(self, **kwargs):
