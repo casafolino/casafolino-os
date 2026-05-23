@@ -61,8 +61,13 @@ class CasaFolinoCompanyWebsite(http.Controller):
 
     @http.route(["/robots.txt"], type="http", auth="public", website=False, sitemap=False)
     def company_robots(self, **kwargs):
-        host = (request.httprequest.host or "").split(":", 1)[0].lower()
-        if host == "erp.casafolino.com":
+        headers = request.httprequest.headers
+        hosts = {
+            (request.httprequest.host or "").split(":", 1)[0].lower(),
+            (headers.get("Host") or "").split(":", 1)[0].lower(),
+            (headers.get("X-Forwarded-Host") or "").split(":", 1)[0].lower(),
+        }
+        if "erp.casafolino.com" in hosts:
             return request.make_response(
                 "User-agent: *\nDisallow: /\n",
                 headers=[
