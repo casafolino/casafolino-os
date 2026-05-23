@@ -97,7 +97,7 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 
 .cf-b2b-shell {
     display: block;
-    padding: 22px;
+    padding: 28px 22px 44px;
 }
 
 .cf-b2b-catalog {
@@ -105,7 +105,6 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     margin: 0 auto;
 }
 
-.cf-b2b-status-row,
 .cf-register-form,
 .cf-workflow,
 .cf-thanks {
@@ -114,18 +113,6 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     border-radius: 8px;
     box-shadow: var(--cf-shadow);
     padding: 18px;
-}
-
-.cf-b2b-status-row {
-    display: grid;
-    grid-template-columns: minmax(220px, 0.35fr) minmax(0, 0.65fr);
-    gap: 18px;
-    margin-bottom: 26px;
-}
-
-.cf-b2b-status-row section + section {
-    border-left: 1px solid var(--cf-line);
-    padding-left: 18px;
 }
 
 .cf-label,
@@ -141,12 +128,6 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     text-transform: uppercase;
 }
 
-.cf-b2b-status-row p {
-    margin: 8px 0 0;
-    color: var(--cf-muted);
-    line-height: 1.45;
-}
-
 .cf-cart-total {
     display: flex;
     justify-content: space-between;
@@ -159,16 +140,32 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 24px;
+    margin-bottom: 8px;
+    padding: 18px 0 8px;
+}
+
+.cf-shop-intro {
+    max-width: 720px;
+    margin: 12px 0 0;
+    color: var(--cf-muted);
+    font-size: 18px;
+    line-height: 1.45;
+}
+
+.cf-shop-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 180px;
 }
 
 .cf-section-head {
     display: grid;
     gap: 4px;
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     border-top: 1px solid var(--cf-line);
-    padding-top: 22px;
+    padding-top: 24px;
 }
 
 .cf-section-head h2 {
@@ -182,7 +179,7 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 }
 
 .cf-best-sellers {
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
 .cf-b2b-heading h1,
@@ -232,7 +229,7 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 .cf-b2b-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 18px;
 }
 
 .cf-product {
@@ -245,10 +242,10 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 
 .cf-product-img {
     position: relative;
-    height: 250px;
+    height: 260px;
     background:
-        radial-gradient(circle at 50% 42%, rgba(239, 159, 0, 0.14) 0 82px, transparent 83px),
-        linear-gradient(180deg, #fffaf0 0%, #f2eadc 100%);
+        radial-gradient(circle at 50% 48%, rgba(239, 159, 0, 0.12) 0 88px, transparent 89px),
+        linear-gradient(180deg, #fffdf7 0%, #f2eadc 100%);
 }
 
 .cf-product-img img {
@@ -256,7 +253,12 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     height: 100%;
     display: block;
     object-fit: contain;
-    padding: 20px 18px 14px;
+    padding: 18px 18px 20px;
+    transition: transform 180ms ease;
+}
+
+.cf-product:hover .cf-product-img img {
+    transform: scale(1.035);
 }
 
 .cf-product-img span {
@@ -273,27 +275,45 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 
 .cf-product-body {
     display: grid;
-    gap: 12px;
-    padding: 15px;
+    gap: 11px;
+    padding: 16px;
 }
 
 .cf-product-title {
-    display: flex;
-    gap: 12px;
-    justify-content: space-between;
-    min-height: 52px;
+    display: grid;
+    gap: 5px;
+    min-height: 70px;
 }
 
 .cf-product-title h2,
 .cf-product-title h3 {
     margin: 0;
-    font-size: 19px;
-    line-height: 1.14;
+    font-size: 18px;
+    line-height: 1.18;
 }
 
 .cf-product-title small {
     color: var(--cf-muted);
     white-space: nowrap;
+}
+
+.cf-product-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cf-product-meta span {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 9px;
+    color: var(--cf-muted);
+    background: #f7f2e8;
+    border: 1px solid var(--cf-line);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
 }
 
 .cf-price-row {
@@ -307,7 +327,8 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 }
 
 .cf-price-row strong {
-    font-size: 22px;
+    color: var(--cf-red);
+    font-size: 23px;
     white-space: nowrap;
 }
 
@@ -557,16 +578,8 @@ body:has(.cf-b2b-page) .o_footer_copyright {
         padding: 14px;
     }
 
-    .cf-b2b-status-row,
     .cf-b2b-grid {
         grid-template-columns: 1fr;
-    }
-
-    .cf-b2b-status-row section + section {
-        border-left: 0;
-        border-top: 1px solid var(--cf-line);
-        padding-left: 0;
-        padding-top: 14px;
     }
 
     .cf-floating-cart {

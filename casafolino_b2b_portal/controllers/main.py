@@ -17,6 +17,28 @@ class CasaFolinoB2BPortal(http.Controller):
         "/casafolino_b2b_portal/static/src/img/products/mousse-gianduia.png",
     ]
 
+    MOCKUP_IMAGES = {
+        "pistachio": "/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png",
+        "pistacchio": "/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png",
+        "caramel": "/casafolino_b2b_portal/static/src/img/products/caramello-salato.png",
+        "caramello": "/casafolino_b2b_portal/static/src/img/products/caramello-salato.png",
+        "hazelnut": "/casafolino_b2b_portal/static/src/img/products/miedelizie-nocciole.png",
+        "nocciole": "/casafolino_b2b_portal/static/src/img/products/miedelizie-nocciole.png",
+        "truffle": "/casafolino_b2b_portal/static/src/img/products/risotto-tartufo.png",
+        "tartufo": "/casafolino_b2b_portal/static/src/img/products/risotto-tartufo.png",
+        "puttanesca": "/casafolino_b2b_portal/static/src/img/products/spezia-puttanesca.png",
+        "gianduia": "/casafolino_b2b_portal/static/src/img/products/mousse-gianduia.png",
+    }
+
+    CATEGORY_FALLBACKS = {
+        "Ready Risotto": "/casafolino_b2b_portal/static/src/img/products/risotto-tartufo.png",
+        "Italian Seasoning Mix": "/casafolino_b2b_portal/static/src/img/products/spezia-puttanesca.png",
+        "Spreadable Creams": "/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png",
+        "Honey Mousse & Crispy Chilli": "/casafolino_b2b_portal/static/src/img/products/mousse-gianduia.png",
+        "Flavored Honey": "/casafolino_b2b_portal/static/src/img/products/miedelizie-nocciole.png",
+        "Caramel Chocolate Bars": "/casafolino_b2b_portal/static/src/img/products/caramello-salato.png",
+    }
+
     def _request_hosts(self):
         headers = request.httprequest.headers
         return {
@@ -95,6 +117,15 @@ class CasaFolinoB2BPortal(http.Controller):
                 return pricelist._get_product_price(priced_product, qty or 1, partner)
         return product.list_price
 
+    def _product_image_url(self, product, category, index):
+        if product.image_1024:
+            return f"/web/image/product.template/{product.id}/image_1024"
+        searchable = f"{product.name or ''} {product.default_code or ''}".lower()
+        for keyword, image_url in self.MOCKUP_IMAGES.items():
+            if keyword in searchable:
+                return image_url
+        return self.CATEGORY_FALLBACKS.get(category) or self.FALLBACK_IMAGES[index % len(self.FALLBACK_IMAGES)]
+
     def _catalog_products(self, account_state=None):
         account_state = account_state or self._account_state()
         Product = request.env["product.template"].sudo()
@@ -109,11 +140,7 @@ class CasaFolinoB2BPortal(http.Controller):
                     "category": category,
                     "case_size": case_size,
                     "price": self._product_price(product, case_size) if account_state == "approved" else 0.0,
-                    "image_url": (
-                        f"/web/image/product.template/{product.id}/image_1024"
-                        if product.image_1024
-                        else self.FALLBACK_IMAGES[index % len(self.FALLBACK_IMAGES)]
-                    ),
+                    "image_url": self._product_image_url(product, category, index),
                 }
             )
         return result
