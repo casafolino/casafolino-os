@@ -18,16 +18,36 @@
 
                 <main class="cf-b2b-shell">
                     <section class="cf-b2b-catalog">
-                        <div class="cf-b2b-heading">
+                        <div class="cf-storefront-hero">
                             <div>
                                 <p class="cf-eyebrow">Catalogo B2B CasaFolino</p>
                                 <h1>Prodotti mediterranei pronti per il tuo scaffale</h1>
                                 <p class="cf-shop-intro">Creme spalmabili, risotti, miele, biscotti, spezie e cioccolato in colli professionali.</p>
                             </div>
-                            <div class="cf-shop-actions">
+                            <aside class="cf-hero-commerce">
+                                <span>Catalogo attivo</span>
+                                <strong><t t-out="len(products)"/> referenze</strong>
+                                <p>Colli professionali e listino riservato dopo approvazione.</p>
                                 <a class="cf-submit" href="/b2b/register" t-if="account_state != 'approved'">Richiedi listino</a>
                                 <a class="cf-submit" href="#cf-best-sellers" t-else="">Ordina ora</a>
+                            </aside>
+                        </div>
+
+                        <div class="cf-category-rail" t-if="category_sections">
+                            <a href="#cf-best-sellers" class="active">Best seller</a>
+                            <a t-foreach="category_sections" t-as="section" t-attf-href="#cf-cat-#{section_index}">
+                                <span t-out="section['name']"/>
+                                <strong t-out="len(section['products'])"/>
+                            </a>
+                        </div>
+
+                        <div class="cf-shop-toolbar" t-if="products">
+                            <div>
+                                <strong><t t-out="len(products)"/> prodotti B2B</strong>
+                                <span>ordinati per categoria</span>
                             </div>
+                            <a href="/b2b/register" t-if="account_state != 'approved'">Sblocca prezzi e ordini</a>
+                            <a href="#carrello" t-else="">Vai al carrello</a>
                         </div>
 
                         <t t-if="products">
@@ -36,7 +56,7 @@
                                     <p class="cf-eyebrow">Selezione CasaFolino</p>
                                     <h2>Best seller B2B</h2>
                                 </div>
-                                <div class="cf-b2b-grid">
+                                <div class="cf-b2b-grid cf-featured-grid">
                                     <t t-call="casafolino_b2b_portal.product_cards">
                                         <t t-set="items" t-value="best_sellers"/>
                                         <t t-set="account_state" t-value="account_state"/>
@@ -44,10 +64,11 @@
                                 </div>
                             </section>
 
-                            <section class="cf-category-section" t-foreach="category_sections" t-as="section">
+                            <section class="cf-category-section" t-foreach="category_sections" t-as="section" t-attf-id="cf-cat-#{section_index}">
                                 <div class="cf-section-head">
                                     <p class="cf-eyebrow">Categoria</p>
                                     <h2 t-out="section['name']"/>
+                                    <span class="cf-section-count"><t t-out="len(section['products'])"/> prodotti</span>
                                 </div>
                                 <div class="cf-b2b-grid">
                                     <t t-call="casafolino_b2b_portal.product_cards">
@@ -108,9 +129,9 @@
                 <img t-att-src="item['image_url']" t-att-alt="item['record'].name" onerror="this.src='/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png'; this.onerror=null;"/>
                 <span t-out="item['category']"/>
             </div>
-                <div class="cf-product-body">
-                    <div class="cf-product-title">
-                        <h3 t-out="item['record'].name"/>
+            <div class="cf-product-body">
+                <div class="cf-product-title">
+                    <h3 t-out="item['record'].name"/>
                     <small t-if="item['record'].weight"><t t-out="item['record'].weight"/> kg</small>
                 </div>
                 <div class="cf-product-meta">
@@ -130,7 +151,10 @@
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="product_id" t-att-value="item['record'].id"/>
                     <input class="cf-qty" type="number" name="quantity" t-att-value="item['case_size']" t-att-step="item['case_size']" t-att-min="item['case_size']"/>
-                    <button type="submit" t-att-disabled="account_state != 'approved'">Aggiungi</button>
+                    <button type="submit" t-att-disabled="account_state != 'approved'">
+                        <t t-if="account_state == 'approved'">Aggiungi</t>
+                        <t t-else="">Sblocca</t>
+                    </button>
                 </form>
             </div>
         </article>

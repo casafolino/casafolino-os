@@ -136,13 +136,17 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     border-top: 1px solid var(--cf-line);
 }
 
-.cf-b2b-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 8px;
-    padding: 18px 0 8px;
+.cf-storefront-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.28fr);
+    align-items: stretch;
+    gap: 22px;
+    margin: 18px 0 18px;
+    padding: 26px;
+    background: #fff;
+    border: 1px solid var(--cf-line);
+    border-radius: 8px;
+    box-shadow: var(--cf-shadow);
 }
 
 .cf-shop-intro {
@@ -153,19 +157,121 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     line-height: 1.45;
 }
 
-.cf-shop-actions {
+.cf-hero-commerce {
+    display: grid;
+    align-content: center;
+    gap: 10px;
+    padding: 18px;
+    background: #f8f2e6;
+    border: 1px solid var(--cf-line);
+    border-radius: 8px;
+}
+
+.cf-hero-commerce span,
+.cf-shop-toolbar span,
+.cf-section-count {
+    color: var(--cf-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.cf-hero-commerce strong {
+    font-size: 30px;
+    line-height: 1;
+}
+
+.cf-hero-commerce p {
+    margin: 0;
+    color: var(--cf-muted);
+    line-height: 1.4;
+}
+
+.cf-category-rail {
+    position: sticky;
+    top: 69px;
+    z-index: 9;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 0 12px;
+    background: rgba(248, 242, 230, 0.95);
+    border-bottom: 1px solid rgba(222, 215, 198, 0.72);
+    scrollbar-width: thin;
+}
+
+.cf-category-rail a {
+    flex: 0 0 auto;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    color: var(--cf-ink);
+    background: #fff;
+    border: 1px solid var(--cf-line);
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.cf-category-rail a.active,
+.cf-category-rail a:hover {
+    color: #fff;
+    background: var(--cf-ink);
+    border-color: var(--cf-ink);
+}
+
+.cf-category-rail strong {
+    min-width: 24px;
+    min-height: 24px;
+    display: grid;
+    place-items: center;
+    color: var(--cf-ink);
+    background: var(--cf-paper);
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+.cf-shop-toolbar {
+    min-height: 56px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    min-width: 180px;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 14px 0 4px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid var(--cf-line);
+    border-radius: 8px;
+}
+
+.cf-shop-toolbar div {
+    display: grid;
+    gap: 2px;
+}
+
+.cf-shop-toolbar a {
+    color: var(--cf-red);
+    font-weight: 800;
+    text-decoration: none;
 }
 
 .cf-section-head {
-    display: grid;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 4px;
     margin: 0 0 16px;
     border-top: 1px solid var(--cf-line);
     padding-top: 24px;
+}
+
+.cf-section-head .cf-eyebrow,
+.cf-section-head h2 {
+    flex: 1 0 100%;
 }
 
 .cf-section-head h2 {
@@ -182,7 +288,7 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     margin-top: 12px;
 }
 
-.cf-b2b-heading h1,
+.cf-storefront-hero h1,
 .cf-register-form h1,
 .cf-thanks h1 {
     max-width: 760px;
@@ -238,6 +344,13 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     border: 1px solid var(--cf-line);
     border-radius: 8px;
     box-shadow: var(--cf-shadow);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.cf-product:hover {
+    transform: translateY(-2px);
+    border-color: rgba(32, 31, 29, 0.22);
+    box-shadow: 0 20px 54px rgba(32, 31, 29, 0.12);
 }
 
 .cf-product-img {
@@ -364,8 +477,8 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     justify-content: center;
     padding: 0 18px;
     color: #fff !important;
-    background: var(--cf-ink);
-    border: 1px solid var(--cf-ink);
+    background: var(--cf-red);
+    border: 1px solid var(--cf-red);
     border-radius: 8px;
     font-weight: 800;
     text-decoration: none;
@@ -568,14 +681,27 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 
 @media (max-width: 780px) {
     .cf-b2b-top,
-    .cf-b2b-heading {
+    .cf-storefront-hero {
         align-items: flex-start;
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
 
     .cf-b2b-shell,
     .cf-register-shell {
         padding: 14px;
+    }
+
+    .cf-storefront-hero {
+        padding: 18px;
+    }
+
+    .cf-category-rail {
+        top: 111px;
+    }
+
+    .cf-shop-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .cf-b2b-grid {
