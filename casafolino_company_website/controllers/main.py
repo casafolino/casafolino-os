@@ -219,6 +219,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/en/certifications/",
             "/en/sustainability/",
             "/en/contact/",
+            "/en/fairs/",
+            "/en/communications/",
             "/en/privacy-policy/",
             "/en/cookie-policy/",
             "/it/",

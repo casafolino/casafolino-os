@@ -56,6 +56,16 @@
     <priority>0.75</priority>
   </url>
   <url>
+    <loc>https://company.casafolino.com/en/fairs/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/en/communications/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
     <loc>https://company.casafolino.com/en/privacy-policy/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
