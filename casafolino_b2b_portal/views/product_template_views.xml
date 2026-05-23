@@ -7,6 +7,7 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='sale_ok']" position="after">
+                <field name="cf_b2b_enabled"/>
                 <field name="cf_b2b_case_size"/>
             </xpath>
         </field>

@@ -82,10 +82,7 @@ class CasaFolinoB2BPortal(http.Controller):
         request.session["cf_b2b_cart"] = {str(product_id): int(qty) for product_id, qty in cart.items() if int(qty) > 0}
 
     def _product_domain(self):
-        domain = [("sale_ok", "=", True)]
-        if "website_published" in request.env["product.template"]._fields:
-            domain.append(("website_published", "=", True))
-        return domain
+        return [("sale_ok", "=", True), ("cf_b2b_enabled", "=", True)]
 
     def _product_price(self, product, qty=1):
         partner = self._current_partner()
@@ -101,7 +98,7 @@ class CasaFolinoB2BPortal(http.Controller):
     def _catalog_products(self, account_state=None):
         account_state = account_state or self._account_state()
         Product = request.env["product.template"].sudo()
-        products = Product.search(self._product_domain(), order="sequence, name", limit=32)
+        products = Product.search(self._product_domain(), order="sequence, name", limit=160)
         result = []
         for index, product in enumerate(products):
             case_size = product.cf_b2b_case_size or 6
@@ -125,9 +122,7 @@ class CasaFolinoB2BPortal(http.Controller):
         sections = []
         by_category = {}
         for item in products:
-            items = by_category.setdefault(item["category"], [])
-            if len(items) < 8:
-                items.append(item)
+            by_category.setdefault(item["category"], []).append(item)
         for category in sorted(by_category):
             sections.append({"name": category, "products": by_category[category]})
         return sections
@@ -181,7 +176,7 @@ class CasaFolinoB2BPortal(http.Controller):
             {
                 "account_state": account_state,
                 "products": products,
-                "best_sellers": products[:4],
+                "best_sellers": products[:8],
                 "category_sections": self._catalog_sections(products),
                 "cart": self._cart_totals(),
             },
@@ -214,8 +209,9 @@ class CasaFolinoB2BPortal(http.Controller):
                 }
             )
             partner.message_post(body="Richiesta accesso B2B ricevuta da b2b.casafolino.com.")
+            partner.action_cf_b2b_send_pending_notifications()
             return request.redirect("/b2b/register?sent=1")
-        return request.render("casafolino_b2b_portal.register", {"sent": kwargs.get("sent"), "missing": kwargs.get("missing")})
+        return request.render("casafolino_b2b_portal.register", {"sent": post.get("sent"), "missing": post.get("missing")})
 
     @http.route(["/b2b/cart/add"], type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def b2b_cart_add(self, product_id=None, quantity=None, **kwargs):

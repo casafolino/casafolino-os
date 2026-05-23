@@ -30,6 +30,29 @@ class ResPartner(models.Model):
     cf_b2b_vat_code = fields.Char(string="P.IVA B2B")
     cf_b2b_sdi_pec = fields.Char(string="SDI / PEC")
 
+    def _cf_b2b_send_template(self, xmlid, email_values=None):
+        template = self.env.ref(xmlid, raise_if_not_found=False)
+        if not template:
+            return False
+        for partner in self:
+            if not partner.email and not (email_values or {}).get("email_to"):
+                continue
+            template.sudo().send_mail(partner.id, force_send=True, email_values=email_values or {})
+        return True
+
+    def action_cf_b2b_send_pending_notifications(self):
+        notify_email = self.env["ir.config_parameter"].sudo().get_param(
+            "casafolino_b2b.notification_email",
+            "antonio@casafolino.com",
+        )
+        self._cf_b2b_send_template("casafolino_b2b_portal.mail_template_b2b_request_received")
+        if notify_email:
+            self._cf_b2b_send_template(
+                "casafolino_b2b_portal.mail_template_b2b_internal_pending",
+                email_values={"email_to": notify_email},
+            )
+        return True
+
     def action_cf_b2b_approve(self):
         portal_group = self.env.ref("base.group_portal")
         for partner in self:
@@ -50,6 +73,8 @@ class ResPartner(models.Model):
                 )
             elif portal_group not in user.groups_id:
                 user.sudo().write({"groups_id": [(4, portal_group.id)]})
+            partner.sudo().signup_prepare(signup_type="reset")
+            partner._cf_b2b_send_template("casafolino_b2b_portal.mail_template_b2b_approved")
             partner.message_post(body=_("Cliente B2B approvato. Accesso portale attivato per %s.") % email)
         return True
 
