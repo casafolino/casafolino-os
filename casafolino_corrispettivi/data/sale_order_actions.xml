@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sale_order_mark_corrispettivi_included" model="ir.actions.server">
+        <field name="name">Corrispettivi: segna come incluso</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_cf_mark_corrispettivi_included()</field>
+    </record>
+
+    <record id="action_sale_order_mark_invoice_required" model="ir.actions.server">
+        <field name="name">Corrispettivi: richiede fattura</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_cf_mark_invoice_required()</field>
+    </record>
+
+    <record id="action_sale_order_mark_corrispettivi_excluded" model="ir.actions.server">
+        <field name="name">Corrispettivi: escludi dalla procedura</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_cf_mark_corrispettivi_excluded()</field>
+    </record>
+
+    <record id="action_sale_order_reset_corrispettivi" model="ir.actions.server">
+        <field name="name">Corrispettivi: riporta da gestire</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_cf_reset_corrispettivi_status()</field>
+    </record>
+</odoo>
