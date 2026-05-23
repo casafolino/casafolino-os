@@ -33,11 +33,36 @@
     </section>
     <section class="facts"><div class="fact"><strong>1962</strong><span>Founded by Antonio and Guido Folino</span></div><div class="fact"><strong>60+</strong><span>Years of Mediterranean food experience</span></div><div class="fact"><strong>7</strong><span>International market areas served</span></div><div class="fact"><strong>BRC</strong><span>IFS, Organic, Kosher, Halal certified</span></div></section>
     
+    <section class="content-section contact-section">
+      <p class="kicker">Contact and information</p>
+      <h2>Send a business inquiry</h2>
+      <p class="section-lead">Request product information, catalogs, private label details or distribution opportunities. The request is sent directly to CasaFolino CRM.</p>
+      <div class="form-feedback" data-contact-status="sent">Request sent. CasaFolino will follow up from CRM.</div>
+      <div class="form-feedback error" data-contact-status="missing">Please complete name, email and message.</div>
+      <form class="contact-form" action="/company/contact/submit" method="post">
+        <input type="hidden" name="lang" value="en">
+        <input class="website-url" type="text" name="website_url" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="form-row">
+          <label>Name and surname<input type="text" name="name" required autocomplete="name"></label>
+          <label>Company<input type="text" name="company" autocomplete="organization"></label>
+        </div>
+        <div class="form-row">
+          <label>Email<input type="email" name="email" required autocomplete="email"></label>
+          <label>Phone<input type="tel" name="phone" autocomplete="tel"></label>
+        </div>
+        <div class="form-row">
+          <label>Country<input type="text" name="country" autocomplete="country-name"></label>
+          <label>Interest<select name="interest"><option>Product catalog</option><option>Private label</option><option>B2B supply</option><option>Distribution</option><option>Certifications</option><option>Other information</option></select></label>
+        </div>
+        <label>Message<textarea name="message" required rows="7"></textarea></label>
+        <button class="button primary" type="submit">Send request</button>
+      </form>
+    </section>
     <section class="content-section">
       <p class="kicker">Structured for search intent</p>
       <h2>Service pages for SEO</h2>
       <div class="service-grid">
-        <article><h3>Private label</h3><p>Mediterranean gourmet products with adaptable formats and documentation.</p><a href="/en/services/private-label/">Read more</a></article><article><h3>B2B supply</h3><p>Reliable supply for wholesalers, retail, horeca and e-commerce channels.</p><a href="/en/services/b2b-supply/">Read more</a></article><article><h3>Distribution</h3><p>International market development for qualified commercial partners.</p><a href="/en/services/distribution/">Read more</a></article>
+        <article><h3>Private label</h3><p>Mediterranean gourmet products with adaptable formats and documentation.</p><a href="/en/services/private-label/">Read more</a></article><article><h3>Custom recipes</h3><p>Tailor-made product development for distinctive Mediterranean food projects.</p><a href="/en/services/custom-recipes/">Read more</a></article><article><h3>B2B supply</h3><p>Reliable supply for wholesalers, retail, horeca and e-commerce channels.</p><a href="/en/services/b2b-supply/">Read more</a></article><article><h3>Distribution</h3><p>International market development for qualified commercial partners.</p><a href="/en/services/distribution/">Read more</a></article>
       </div>
     </section>
     <section class="content-section products">

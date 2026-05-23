@@ -5,7 +5,7 @@
     "category": "Website",
     "summary": "Sito istituzionale multilingua per company.casafolino.com",
     "author": "CasaFolino S.r.l.",
-    "depends": ["website"],
+    "depends": ["website", "crm"],
     "data": [
         "data/website.xml",
     ],
@@ -13,4 +13,3 @@
     "application": False,
     "license": "LGPL-3",
 }
-

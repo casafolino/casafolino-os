@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import mimetypes
 import os
+from urllib.parse import urlencode
 
 from odoo import http
 from odoo.http import request
@@ -46,6 +47,14 @@ class CasaFolinoCompanyWebsite(http.Controller):
             ],
         )
 
+    def _redirect_back(self, status):
+        referer = request.httprequest.referrer or "/en/contact/"
+        separator = "&" if "?" in referer else "?"
+        return request.redirect(f"{referer}{separator}{urlencode({'contact': status})}", code=303)
+
+    def _clean(self, value, limit=500):
+        return (value or "").strip()[:limit]
+
     @http.route("/", type="http", auth="public", website=False, sitemap=False)
     def company_root(self, **kwargs):
         return request.redirect("/en/", code=302)
@@ -88,6 +97,77 @@ class CasaFolinoCompanyWebsite(http.Controller):
         return self._serve_file("assets", "catalog", filename)
 
     @http.route(
+        ["/company/contact/submit"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+        methods=["POST"],
+        csrf=False,
+    )
+    def company_contact_submit(self, **post):
+        if self._clean(post.get("website_url"), 200):
+            return self._redirect_back("sent")
+
+        contact_name = self._clean(post.get("name"), 120)
+        company = self._clean(post.get("company"), 160)
+        email = self._clean(post.get("email"), 160)
+        phone = self._clean(post.get("phone"), 80)
+        country = self._clean(post.get("country"), 120)
+        interest = self._clean(post.get("interest"), 120)
+        message = self._clean(post.get("message"), 3000)
+        lang = self._clean(post.get("lang"), 12)
+        source_url = self._clean(request.httprequest.referrer, 300)
+
+        if not contact_name or not email or not message:
+            return self._redirect_back("missing")
+
+        description = "\n".join(
+            line
+            for line in [
+                "Lead generato dal form website CasaFolino Company.",
+                f"Nome: {contact_name}",
+                f"Azienda: {company}" if company else "",
+                f"Email: {email}",
+                f"Telefono: {phone}" if phone else "",
+                f"Paese: {country}" if country else "",
+                f"Interesse: {interest}" if interest else "",
+                f"Lingua: {lang}" if lang else "",
+                f"Pagina sorgente: {source_url}" if source_url else "",
+                "",
+                "Messaggio:",
+                message,
+            ]
+            if line
+        )
+
+        lead_vals = {
+            "name": f"Website inquiry - {company or contact_name}",
+            "type": "lead",
+            "contact_name": contact_name,
+            "partner_name": company,
+            "email_from": email,
+            "phone": phone,
+            "description": description,
+        }
+        Lead = request.env["crm.lead"].sudo()
+        if "team_id" in Lead._fields:
+            Team = request.env["crm.team"].sudo()
+            domain = [("use_leads", "=", True)] if "use_leads" in Team._fields else []
+            team = Team.search(domain, limit=1)
+            if team:
+                lead_vals["team_id"] = team.id
+        if "referred" in Lead._fields:
+            lead_vals["referred"] = "CasaFolino Company Website"
+        if "website" in Lead._fields and source_url:
+            lead_vals["website"] = source_url
+
+        lead = Lead.create(lead_vals)
+        if hasattr(lead, "message_post"):
+            lead.message_post(body="Lead creato automaticamente dal form contatti del sito Company CasaFolino.")
+        return self._redirect_back("sent")
+
+    @http.route(
         [
             "/en/",
             "/en/company-profile/",
@@ -104,6 +184,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/en/catalog/chocolate-chunks/",
             "/en/services/",
             "/en/services/private-label/",
+            "/en/services/custom-recipes/",
             "/en/services/b2b-supply/",
             "/en/services/distribution/",
             "/en/certifications/",
@@ -124,6 +205,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/it/catalogo/chunks-cioccolato/",
             "/it/servizi/",
             "/it/servizi/private-label/",
+            "/it/servizi/ricette-su-misura/",
             "/it/servizi/forniture-b2b/",
             "/it/servizi/distribuzione/",
             "/it/certificazioni/",
@@ -144,6 +226,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/es/catalogo/chunks-chocolate/",
             "/es/servicios/",
             "/es/servicios/marca-privada/",
+            "/es/servicios/recetas-a-medida/",
             "/es/servicios/suministro-b2b/",
             "/es/servicios/distribucion/",
             "/es/certificaciones/",
@@ -164,6 +247,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/fr/catalogue/morceaux-chocolat/",
             "/fr/services/",
             "/fr/services/marque-privee/",
+            "/fr/services/recettes-sur-mesure/",
             "/fr/services/approvisionnement-b2b/",
             "/fr/services/distribution/",
             "/fr/certifications/",

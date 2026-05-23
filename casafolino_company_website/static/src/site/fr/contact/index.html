@@ -33,11 +33,36 @@
     </section>
     <section class="facts"><div class="fact"><strong>1962</strong><span>Fondee par Antonio et Guido Folino</span></div><div class="fact"><strong>60+</strong><span>Ans d'experience dans l'alimentation mediterraneenne</span></div><div class="fact"><strong>7</strong><span>Zones de marche internationales desservies</span></div><div class="fact"><strong>BRC</strong><span>Certifications IFS, Bio, Kosher, Halal</span></div></section>
     
+    <section class="content-section contact-section">
+      <p class="kicker">Contact et informations</p>
+      <h2>Envoyer une demande commerciale</h2>
+      <p class="section-lead">Demandez des informations produits, catalogues, marque privee ou opportunites de distribution. La demande arrive directement dans le CRM CasaFolino.</p>
+      <div class="form-feedback" data-contact-status="sent">Demande envoyee. CasaFolino la traitera depuis le CRM.</div>
+      <div class="form-feedback error" data-contact-status="missing">Completez nom, email et message.</div>
+      <form class="contact-form" action="/company/contact/submit" method="post">
+        <input type="hidden" name="lang" value="fr">
+        <input class="website-url" type="text" name="website_url" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="form-row">
+          <label>Nom et prenom<input type="text" name="name" required autocomplete="name"></label>
+          <label>Entreprise<input type="text" name="company" autocomplete="organization"></label>
+        </div>
+        <div class="form-row">
+          <label>Email<input type="email" name="email" required autocomplete="email"></label>
+          <label>Telephone<input type="tel" name="phone" autocomplete="tel"></label>
+        </div>
+        <div class="form-row">
+          <label>Pays<input type="text" name="country" autocomplete="country-name"></label>
+          <label>Interet<select name="interest"><option>Catalogue produits</option><option>Marque privee</option><option>Approvisionnement B2B</option><option>Distribution</option><option>Certifications</option><option>Autres informations</option></select></label>
+        </div>
+        <label>Message<textarea name="message" required rows="7"></textarea></label>
+        <button class="button primary" type="submit">Envoyer la demande</button>
+      </form>
+    </section>
     <section class="content-section">
       <p class="kicker">Structure par intention de recherche</p>
       <h2>Pages services pour SEO</h2>
       <div class="service-grid">
-        <article><h3>Marque privee</h3><p>Produits gourmets mediterraneens avec formats adaptables et documentation.</p><a href="/fr/services/marque-privee/">En savoir plus</a></article><article><h3>Approvisionnement B2B</h3><p>Approvisionnement fiable pour grossistes, retail, horeca et e-commerce.</p><a href="/fr/services/approvisionnement-b2b/">En savoir plus</a></article><article><h3>Distribution</h3><p>Developpement international pour partenaires commerciaux qualifies.</p><a href="/fr/services/distribution/">En savoir plus</a></article>
+        <article><h3>Marque privee</h3><p>Produits gourmets mediterraneens avec formats adaptables et documentation.</p><a href="/fr/services/marque-privee/">En savoir plus</a></article><article><h3>Recettes sur mesure</h3><p>Developpement produit personnalise pour projets mediterraneens distinctifs.</p><a href="/fr/services/recettes-sur-mesure/">En savoir plus</a></article><article><h3>Approvisionnement B2B</h3><p>Approvisionnement fiable pour grossistes, retail, horeca et e-commerce.</p><a href="/fr/services/approvisionnement-b2b/">En savoir plus</a></article><article><h3>Distribution</h3><p>Developpement international pour partenaires commerciaux qualifies.</p><a href="/fr/services/distribution/">En savoir plus</a></article>
       </div>
     </section>
     <section class="content-section products">

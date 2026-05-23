@@ -33,11 +33,36 @@
     </section>
     <section class="facts"><div class="fact"><strong>1962</strong><span>Fondata da Antonio e Guido Folino</span></div><div class="fact"><strong>60+</strong><span>Anni di esperienza nel food mediterraneo</span></div><div class="fact"><strong>7</strong><span>Aree mercato internazionali servite</span></div><div class="fact"><strong>BRC</strong><span>Certificazioni IFS, Bio, Kosher, Halal</span></div></section>
     
+    <section class="content-section contact-section">
+      <p class="kicker">Contatto e informazioni</p>
+      <h2>Invia una richiesta commerciale</h2>
+      <p class="section-lead">Richiedi informazioni prodotto, cataloghi, dettagli private label o opportunita di distribuzione. La richiesta entra direttamente nel CRM CasaFolino.</p>
+      <div class="form-feedback" data-contact-status="sent">Richiesta inviata. CasaFolino la gestira dal CRM.</div>
+      <div class="form-feedback error" data-contact-status="missing">Completa nome, email e messaggio.</div>
+      <form class="contact-form" action="/company/contact/submit" method="post">
+        <input type="hidden" name="lang" value="it">
+        <input class="website-url" type="text" name="website_url" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="form-row">
+          <label>Nome e cognome<input type="text" name="name" required autocomplete="name"></label>
+          <label>Azienda<input type="text" name="company" autocomplete="organization"></label>
+        </div>
+        <div class="form-row">
+          <label>Email<input type="email" name="email" required autocomplete="email"></label>
+          <label>Telefono<input type="tel" name="phone" autocomplete="tel"></label>
+        </div>
+        <div class="form-row">
+          <label>Paese<input type="text" name="country" autocomplete="country-name"></label>
+          <label>Interesse<select name="interest"><option>Catalogo prodotti</option><option>Private label</option><option>Forniture B2B</option><option>Distribuzione</option><option>Certificazioni</option><option>Altre informazioni</option></select></label>
+        </div>
+        <label>Messaggio<textarea name="message" required rows="7"></textarea></label>
+        <button class="button primary" type="submit">Invia richiesta</button>
+      </form>
+    </section>
     <section class="content-section">
       <p class="kicker">Struttura per intento di ricerca</p>
       <h2>Pagine servizio per SEO</h2>
       <div class="service-grid">
-        <article><h3>Private label</h3><p>Prodotti gourmet mediterranei con formati adattabili e documentazione.</p><a href="/it/servizi/private-label/">Approfondisci</a></article><article><h3>Forniture B2B</h3><p>Forniture affidabili per grossisti, retail, horeca ed e-commerce.</p><a href="/it/servizi/forniture-b2b/">Approfondisci</a></article><article><h3>Distribuzione</h3><p>Sviluppo mercati internazionali per partner commerciali qualificati.</p><a href="/it/servizi/distribuzione/">Approfondisci</a></article>
+        <article><h3>Private label</h3><p>Prodotti gourmet mediterranei con formati adattabili e documentazione.</p><a href="/it/servizi/private-label/">Approfondisci</a></article><article><h3>Ricette su misura</h3><p>Sviluppo prodotto personalizzato per progetti food mediterranei distintivi.</p><a href="/it/servizi/ricette-su-misura/">Approfondisci</a></article><article><h3>Forniture B2B</h3><p>Forniture affidabili per grossisti, retail, horeca ed e-commerce.</p><a href="/it/servizi/forniture-b2b/">Approfondisci</a></article><article><h3>Distribuzione</h3><p>Sviluppo mercati internazionali per partner commerciali qualificati.</p><a href="/it/servizi/distribuzione/">Approfondisci</a></article>
       </div>
     </section>
     <section class="content-section products">
