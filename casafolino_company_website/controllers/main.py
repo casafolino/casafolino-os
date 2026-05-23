@@ -71,6 +71,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
         [
             "/assets/site.css",
             "/assets/catalog-cover.jpg",
+            "/assets/logo.svg",
+            "/assets/logo-thumb.svg",
             "/assets/creams.jpg",
             "/assets/honeys.jpg",
             "/assets/risottos.jpg",
