@@ -56,6 +56,16 @@
     <priority>0.75</priority>
   </url>
   <url>
+    <loc>https://company.casafolino.com/en/privacy-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/en/cookie-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
     <loc>https://company.casafolino.com/en/catalog/spreads/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
@@ -159,6 +169,16 @@
     <loc>https://company.casafolino.com/it/contatti/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/it/privacy-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/it/cookie-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
   </url>
   <url>
     <loc>https://company.casafolino.com/it/catalogo/creme-spalmabili/</loc>
@@ -266,6 +286,16 @@
     <priority>0.75</priority>
   </url>
   <url>
+    <loc>https://company.casafolino.com/es/privacy-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/es/cookie-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
     <loc>https://company.casafolino.com/es/catalogo/cremas-untables/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
@@ -369,6 +399,16 @@
     <loc>https://company.casafolino.com/fr/contact/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/fr/privacy-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://company.casafolino.com/fr/cookie-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
   </url>
   <url>
     <loc>https://company.casafolino.com/fr/catalogue/cremes-a-tartiner/</loc>

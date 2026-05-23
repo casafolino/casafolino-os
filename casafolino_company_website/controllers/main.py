@@ -136,7 +136,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
         lang = self._clean(post.get("lang"), 12)
         source_url = self._clean(request.httprequest.referrer, 300)
 
-        if not contact_name or not email or not message:
+        if not contact_name or not email or not message or post.get("privacy_consent") != "1":
             return self._redirect_back("missing")
 
         description = "\n".join(
@@ -207,6 +207,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/en/certifications/",
             "/en/sustainability/",
             "/en/contact/",
+            "/en/privacy-policy/",
+            "/en/cookie-policy/",
             "/it/",
             "/it/profilo-aziendale/",
             "/it/catalogo/",
@@ -228,6 +230,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/it/certificazioni/",
             "/it/sostenibilita/",
             "/it/contatti/",
+            "/it/privacy-policy/",
+            "/it/cookie-policy/",
             "/es/",
             "/es/empresa/",
             "/es/catalogo/",
@@ -249,6 +253,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/es/certificaciones/",
             "/es/sostenibilidad/",
             "/es/contacto/",
+            "/es/privacy-policy/",
+            "/es/cookie-policy/",
             "/fr/",
             "/fr/entreprise/",
             "/fr/catalogue/",
@@ -270,6 +276,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/fr/certifications/",
             "/fr/durabilite/",
             "/fr/contact/",
+            "/fr/privacy-policy/",
+            "/fr/cookie-policy/",
         ],
         type="http",
         auth="public",
