@@ -114,6 +114,18 @@ class CasaFolinoCompanyWebsite(http.Controller):
         return self._serve_file("assets", "catalog", filename)
 
     @http.route(
+        ["/assets/products/<path:filename>"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def company_product_asset(self, filename=None, **kwargs):
+        if not filename or "/" in filename or not filename.endswith(".jpg"):
+            return request.not_found()
+        return self._serve_file("assets", "products", filename)
+
+    @http.route(
         ["/company/contact/submit"],
         type="http",
         auth="public",
@@ -288,3 +300,14 @@ class CasaFolinoCompanyWebsite(http.Controller):
         parts = [part for part in request.httprequest.path.strip("/").split("/") if part]
         lang = parts[0] if parts else "en"
         return self._serve_page(lang, parts[1:])
+
+    @http.route(
+        ["/en/catalog/<path:catalog_path>/"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def company_en_catalog_page(self, catalog_path=None, **kwargs):
+        parts = ["catalog"] + [part for part in (catalog_path or "").split("/") if part]
+        return self._serve_page("en", parts)
