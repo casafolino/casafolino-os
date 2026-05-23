@@ -10,9 +10,65 @@ from odoo.modules.module import get_module_resource
 
 MODULE = "casafolino_company_website"
 SITE_ROOT = "static/src/site"
+COMPANY_HOSTS = {"company.casafolino.com", "www.company.casafolino.com"}
+B2B_HOSTS = {"b2b.casafolino.com", "www.b2b.casafolino.com"}
+ERP_HOSTS = {"erp.casafolino.com", "51.44.170.55"}
 
 
 class CasaFolinoCompanyWebsite(http.Controller):
+    COUNTRY_LANGUAGE = {
+        "IT": "it",
+        "SM": "it",
+        "VA": "it",
+        "ES": "es",
+        "MX": "es",
+        "AR": "es",
+        "CL": "es",
+        "CO": "es",
+        "PE": "es",
+        "UY": "es",
+        "FR": "fr",
+        "BE": "fr",
+        "LU": "fr",
+        "MC": "fr",
+        "CA": "fr",
+    }
+    SUPPORTED_LANGUAGES = {"en", "it", "es", "fr"}
+
+    def _request_hosts(self):
+        headers = request.httprequest.headers
+        return {
+            (request.httprequest.host or "").lower(),
+            (headers.get("Host") or "").lower(),
+            (headers.get("X-Forwarded-Host") or "").lower(),
+        }
+
+    def _request_hostnames(self):
+        return {host.split(":", 1)[0] for host in self._request_hosts() if host}
+
+    def _is_erp_host(self):
+        hosts = self._request_hosts()
+        hostnames = self._request_hostnames()
+        return bool(hostnames & ERP_HOSTS) or any(host.endswith(":4589") for host in hosts)
+
+    def _is_company_host(self):
+        return bool(self._request_hostnames() & COMPANY_HOSTS)
+
+    def _is_b2b_host(self):
+        return bool(self._request_hostnames() & B2B_HOSTS)
+
+    def _erp_login_redirect(self):
+        return request.redirect("/web/login", code=302)
+
+    def _guard_company_site(self):
+        if self._is_erp_host():
+            return self._erp_login_redirect()
+        if self._is_b2b_host():
+            return request.redirect("/b2b", code=302)
+        if not self._is_company_host():
+            return request.not_found()
+        return None
+
     def _read_site_file(self, *parts):
         path = get_module_resource(MODULE, SITE_ROOT, *parts)
         if not path or not os.path.isfile(path):
@@ -31,6 +87,26 @@ class CasaFolinoCompanyWebsite(http.Controller):
             ("Content-Type", response_type),
         ]
         return request.make_response(payload, headers=headers, status=status)
+
+    def _preferred_language(self):
+        headers = request.httprequest.headers
+        country = (
+            headers.get("CF-IPCountry")
+            or headers.get("CloudFront-Viewer-Country")
+            or headers.get("X-Vercel-IP-Country")
+            or headers.get("X-Country-Code")
+            or headers.get("X-Geo-Country")
+            or ""
+        ).upper()
+        if country in self.COUNTRY_LANGUAGE:
+            return self.COUNTRY_LANGUAGE[country]
+
+        accept_language = headers.get("Accept-Language", "")
+        for raw_part in accept_language.split(","):
+            code = raw_part.split(";", 1)[0].strip().lower().split("-", 1)[0]
+            if code in self.SUPPORTED_LANGUAGES:
+                return code
+        return "en"
 
     def _serve_page(self, lang, page_parts=None):
         page_parts = page_parts or []
@@ -57,17 +133,24 @@ class CasaFolinoCompanyWebsite(http.Controller):
 
     @http.route("/", type="http", auth="public", website=False, sitemap=False)
     def company_root(self, **kwargs):
-        return request.redirect("/en/", code=302)
+        guard = self._guard_company_site()
+        if guard:
+            return guard
+        return request.redirect(f"/{self._preferred_language()}/", code=302)
+
+    @http.route(
+        ["/en/web/login", "/it/web/login", "/es/web/login", "/fr/web/login"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=False,
+    )
+    def company_localized_backend_login(self, **kwargs):
+        return self._erp_login_redirect()
 
     @http.route(["/robots.txt"], type="http", auth="public", website=False, sitemap=False)
     def company_robots(self, **kwargs):
-        headers = request.httprequest.headers
-        hosts = {
-            (request.httprequest.host or "").split(":", 1)[0].lower(),
-            (headers.get("Host") or "").split(":", 1)[0].lower(),
-            (headers.get("X-Forwarded-Host") or "").split(":", 1)[0].lower(),
-        }
-        if "erp.casafolino.com" in hosts:
+        if self._is_erp_host():
             return request.make_response(
                 "User-agent: *\nDisallow: /\n",
                 headers=[
@@ -76,15 +159,21 @@ class CasaFolinoCompanyWebsite(http.Controller):
                     ("Content-Type", "text/plain; charset=utf-8"),
                 ],
             )
+        if not self._is_company_host():
+            return request.not_found()
         return self._serve_file("robots.txt", content_type="text/plain; charset=utf-8")
 
     @http.route(["/sitemap.xml"], type="http", auth="public", website=False, sitemap=False)
     def company_sitemap(self, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         return self._serve_file("sitemap.xml", content_type="application/xml; charset=utf-8")
 
     @http.route(
         [
             "/assets/site.css",
+            "/assets/language.js",
             "/assets/catalog-cover.jpg",
             "/assets/logo.svg",
             "/assets/logo-thumb.svg",
@@ -100,6 +189,9 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_asset(self, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         filename = request.httprequest.path.rsplit("/", 1)[-1]
         return self._serve_file("assets", filename)
 
@@ -111,6 +203,9 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_catalog_asset(self, filename=None, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         if not filename or "/" in filename or not filename.endswith(".jpg"):
             return request.not_found()
         return self._serve_file("assets", "catalog", filename)
@@ -123,6 +218,9 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_product_asset(self, filename=None, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         if not filename or "/" in filename or not filename.endswith(".jpg"):
             return request.not_found()
         return self._serve_file("assets", "products", filename)
@@ -135,6 +233,9 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_fair_asset(self, filename=None, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         if not filename or "/" in filename or not filename.endswith(".jpg"):
             return request.not_found()
         return self._serve_file("assets", "fairs", filename)
@@ -149,6 +250,10 @@ class CasaFolinoCompanyWebsite(http.Controller):
         csrf=False,
     )
     def company_contact_submit(self, **post):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
+
         if self._clean(post.get("website_url"), 200):
             return self._redirect_back("sent")
 
@@ -313,6 +418,9 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_page(self, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         parts = [part for part in request.httprequest.path.strip("/").split("/") if part]
         lang = parts[0] if parts else "en"
         return self._serve_page(lang, parts[1:])
@@ -325,5 +433,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_en_catalog_page(self, catalog_path=None, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
         parts = ["catalog"] + [part for part in (catalog_path or "").split("/") if part]
         return self._serve_page("en", parts)
