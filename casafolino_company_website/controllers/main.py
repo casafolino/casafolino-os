@@ -76,6 +76,18 @@ class CasaFolinoCompanyWebsite(http.Controller):
         return self._serve_file("assets", filename)
 
     @http.route(
+        ["/assets/catalog/<path:filename>"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def company_catalog_asset(self, filename=None, **kwargs):
+        if not filename or "/" in filename or not filename.endswith(".jpg"):
+            return request.not_found()
+        return self._serve_file("assets", "catalog", filename)
+
+    @http.route(
         [
             "/en/",
             "/en/company-profile/",
