@@ -88,6 +88,8 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/assets/catalog-cover.jpg",
             "/assets/logo.svg",
             "/assets/logo-thumb.svg",
+            "/assets/logo.png",
+            "/assets/logo-thumb.png",
             "/assets/creams.jpg",
             "/assets/honeys.jpg",
             "/assets/risottos.jpg",
@@ -124,6 +126,18 @@ class CasaFolinoCompanyWebsite(http.Controller):
         if not filename or "/" in filename or not filename.endswith(".jpg"):
             return request.not_found()
         return self._serve_file("assets", "products", filename)
+
+    @http.route(
+        ["/assets/fairs/<path:filename>"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def company_fair_asset(self, filename=None, **kwargs):
+        if not filename or "/" in filename or not filename.endswith(".jpg"):
+            return request.not_found()
+        return self._serve_file("assets", "fairs", filename)
 
     @http.route(
         ["/company/contact/submit"],
