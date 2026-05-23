@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="catalog" name="CasaFolino B2B Catalog">
+        <t t-call="website.layout">
+            <t t-set="title">CasaFolino B2B</t>
+            <div id="wrap" class="cf-b2b-page">
+                <header class="cf-b2b-top">
+                    <a class="cf-b2b-brand" href="/b2b">
+                        <img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino"/>
+                        <strong>B2B</strong>
+                    </a>
+                    <nav>
+                        <a class="active" href="/b2b">Catalogo</a>
+                        <a href="/b2b/register">Registrazione</a>
+                        <a href="/web#action=casafolino_b2b_portal.action_cf_b2b_pending_partners">Admin</a>
+                    </nav>
+                </header>
+
+                <main class="cf-b2b-shell">
+                    <aside class="cf-b2b-sidebar">
+                        <section class="cf-b2b-panel">
+                            <span class="cf-label">Account</span>
+                            <t t-if="account_state == 'approved'">
+                                <strong>Cliente approvato</strong>
+                                <p>Prezzi e carrello B2B attivi.</p>
+                            </t>
+                            <t t-elif="account_state == 'pending'">
+                                <strong>Account in attesa</strong>
+                                <p>La richiesta e in verifica commerciale.</p>
+                            </t>
+                            <t t-elif="account_state == 'suspended'">
+                                <strong>Account sospeso</strong>
+                                <p>Contatta CasaFolino per riattivare il listino.</p>
+                            </t>
+                            <t t-else="">
+                                <strong>Nuovo cliente</strong>
+                                <p>Registrati per richiedere il listino B2B.</p>
+                            </t>
+                        </section>
+
+                        <section class="cf-b2b-panel">
+                            <span class="cf-label">Regole ordine</span>
+                            <div class="cf-rule"><span>Minimo ordine</span><strong><t t-out="'€ %.0f' % cart['min_amount']"/></strong></div>
+                            <div class="cf-rule"><span>Minimo vasetti</span><strong><t t-out="cart['min_jars']"/></strong></div>
+                            <div class="cf-rule"><span>Quantita</span><strong>Multipli per collo</strong></div>
+                        </section>
+                    </aside>
+
+                    <section class="cf-b2b-catalog">
+                        <div class="cf-b2b-heading">
+                            <div>
+                                <p class="cf-eyebrow">b2b.casafolino.com</p>
+                                <h1>Ordini professionali CasaFolino</h1>
+                            </div>
+                            <a class="cf-cart-chip" href="#carrello">Carrello <strong><t t-out="cart['total_qty']"/></strong></a>
+                        </div>
+
+                        <div t-attf-class="cf-b2b-notice #{'locked' if account_state != 'approved' else ''}">
+                            <t t-if="account_state == 'approved'">Listino B2B attivo. Le quantita rispettano multipli e colli configurati in Odoo.</t>
+                            <t t-else="">Catalogo visibile, prezzi riservati ai clienti approvati CasaFolino.</t>
+                        </div>
+
+                        <div class="cf-b2b-grid" t-if="products">
+                            <article class="cf-product" t-foreach="products" t-as="item">
+                                <div class="cf-product-img">
+                                    <img t-att-src="item['image_url']" t-att-alt="item['record'].name"/>
+                                    <span t-if="item['record'].public_categ_ids" t-out="item['record'].public_categ_ids[:1].name"/>
+                                </div>
+                                <div class="cf-product-body">
+                                    <div class="cf-product-title">
+                                        <h2 t-out="item['record'].name"/>
+                                        <small t-if="item['record'].weight"><t t-out="item['record'].weight"/> kg</small>
+                                    </div>
+                                    <div class="cf-price-row">
+                                        <span t-out="item['record'].default_code or 'SKU Odoo'"/>
+                                        <t t-if="account_state == 'approved'">
+                                            <strong><t t-out="'€ %.2f' % item['price']"/></strong>
+                                        </t>
+                                        <t t-else="">
+                                            <strong class="cf-locked-price">Prezzo riservato</strong>
+                                        </t>
+                                    </div>
+                                    <form class="cf-add-row" action="/b2b/cart/add" method="post">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <input type="hidden" name="product_id" t-att-value="item['record'].id"/>
+                                        <input class="cf-qty" type="number" name="quantity" t-att-value="item['case_size']" t-att-step="item['case_size']" t-att-min="item['case_size']"/>
+                                        <button type="submit" t-att-disabled="account_state != 'approved'">Aggiungi</button>
+                                    </form>
+                                </div>
+                            </article>
+                        </div>
+                        <div class="cf-empty" t-else="">
+                            Nessun prodotto B2B pubblicato. Pubblica prodotti vendibili in Odoo per popolare il catalogo.
+                        </div>
+                    </section>
+
+                    <aside class="cf-b2b-cart" id="carrello">
+                        <div class="cf-cart-title">
+                            <strong>Ordine B2B</strong>
+                            <form action="/b2b/cart/clear" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" aria-label="Svuota carrello">x</button>
+                            </form>
+                        </div>
+                        <div class="cf-cart-lines">
+                            <t t-if="cart['lines']">
+                                <div class="cf-cart-line" t-foreach="cart['lines']" t-as="line">
+                                    <div><strong t-out="line['product'].name"/><span><t t-out="'€ %.2f' % line['subtotal']"/></span></div>
+                                    <small><t t-out="line['qty']"/> pezzi · collo da <t t-out="line['case_size']"/></small>
+                                </div>
+                            </t>
+                            <p t-else="">Nessun prodotto selezionato.</p>
+                        </div>
+                        <div class="cf-cart-total"><span>Vasetti</span><strong t-out="cart['total_qty']"/></div>
+                        <div class="cf-cart-total"><span>Totale</span><strong><t t-out="'€ %.2f' % cart['total_amount']"/></strong></div>
+                        <t t-set="missing_amount" t-value="max(cart['min_amount'] - cart['total_amount'], 0)"/>
+                        <t t-set="missing_jars" t-value="max(cart['min_jars'] - cart['total_qty'], 0)"/>
+                        <div class="cf-minimum">
+                            <span t-if="cart['can_checkout']">Minimi raggiunti</span>
+                            <span t-else="">Mancano <t t-out="'€ %.2f' % missing_amount"/> e <t t-out="missing_jars"/> pezzi</span>
+                            <i t-attf-style="width: #{min(cart['total_qty'] / cart['min_jars'], cart['total_amount'] / cart['min_amount'], 1) * 100}%"></i>
+                        </div>
+                        <form action="/b2b/order/submit" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button class="cf-submit" type="submit" t-att-disabled="not cart['can_checkout']">Invia ordine</button>
+                        </form>
+                    </aside>
+                </main>
+            </div>
+        </t>
+    </template>
+
+    <template id="register" name="CasaFolino B2B Registration">
+        <t t-call="website.layout">
+            <t t-set="title">Registrazione B2B CasaFolino</t>
+            <div id="wrap" class="cf-b2b-page cf-register-page">
+                <header class="cf-b2b-top">
+                    <a class="cf-b2b-brand" href="/b2b"><img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino"/><strong>B2B</strong></a>
+                    <nav><a href="/b2b">Catalogo</a><a class="active" href="/b2b/register">Registrazione</a></nav>
+                </header>
+                <main class="cf-register-shell">
+                    <form class="cf-register-form" action="/b2b/register" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input class="cf-hp" name="website_url" tabindex="-1" autocomplete="off"/>
+                        <p class="cf-eyebrow">Richiesta accesso</p>
+                        <h1>Registrazione cliente professionale</h1>
+                        <div class="cf-message ok" t-if="sent">Richiesta ricevuta. Ti contatteremo dopo la verifica commerciale.</div>
+                        <div class="cf-message locked" t-if="missing">Compila almeno ragione sociale, email e P.IVA.</div>
+                        <div class="cf-form-grid">
+                            <label>Ragione sociale<input name="name" required="required"/></label>
+                            <label>P.IVA<input name="vat" required="required"/></label>
+                            <label>Email ordini<input name="email" type="email" required="required"/></label>
+                            <label>Telefono<input name="phone"/></label>
+                            <label>SDI / PEC<input name="sdi_pec"/></label>
+                            <label>Categoria
+                                <select name="category">
+                                    <option value="restaurant">Ristorante</option>
+                                    <option value="grocery">Gastronomia / Retail</option>
+                                    <option value="hotel">Hotel</option>
+                                    <option value="distributor">Distributore</option>
+                                    <option value="other">Altro</option>
+                                </select>
+                            </label>
+                            <label class="wide">Indirizzo fatturazione<input name="street"/></label>
+                            <label class="wide">Note commerciali<textarea name="notes"></textarea></label>
+                        </div>
+                        <button class="cf-submit" type="submit">Invia richiesta</button>
+                    </form>
+                    <section class="cf-workflow">
+                        <h2>Flusso approvazione</h2>
+                        <ol>
+                            <li><strong>Registrazione ricevuta</strong><span>Il catalogo resta visibile senza prezzi.</span></li>
+                            <li><strong>Verifica CasaFolino</strong><span>Controllo canale, P.IVA e condizioni commerciali.</span></li>
+                            <li><strong>Account approvato</strong><span>Attivazione listino e ordine B2B.</span></li>
+                            <li><strong>Preventivo Odoo</strong><span>L'ordine entra nel flusso commerciale.</span></li>
+                        </ol>
+                    </section>
+                </main>
+            </div>
+        </t>
+    </template>
+
+    <template id="thank_you" name="CasaFolino B2B Order Thank You">
+        <t t-call="website.layout">
+            <t t-set="title">Ordine B2B ricevuto</t>
+            <div id="wrap" class="cf-b2b-page">
+                <main class="cf-thanks">
+                    <p class="cf-eyebrow">Ordine ricevuto</p>
+                    <h1>Grazie, abbiamo ricevuto la tua richiesta.</h1>
+                    <p>Il preventivo <strong t-out="order.name"/> e ora in gestione al team CasaFolino.</p>
+                    <a class="cf-submit" href="/b2b">Torna al catalogo</a>
+                </main>
+            </div>
+        </t>
+    </template>
+</odoo>
