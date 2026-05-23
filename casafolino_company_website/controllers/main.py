@@ -61,6 +61,16 @@ class CasaFolinoCompanyWebsite(http.Controller):
 
     @http.route(["/robots.txt"], type="http", auth="public", website=False, sitemap=False)
     def company_robots(self, **kwargs):
+        host = (request.httprequest.host or "").split(":", 1)[0].lower()
+        if host == "erp.casafolino.com":
+            return request.make_response(
+                "User-agent: *\nDisallow: /\n",
+                headers=[
+                    ("Cache-Control", "public, max-age=300"),
+                    ("X-Content-Type-Options", "nosniff"),
+                    ("Content-Type", "text/plain; charset=utf-8"),
+                ],
+            )
         return self._serve_file("robots.txt", content_type="text/plain; charset=utf-8")
 
     @http.route(["/sitemap.xml"], type="http", auth="public", website=False, sitemap=False)
