@@ -1,6 +1,6 @@
 {
     "name": "CasaFolino Corrispettivi",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Sales/Accounting",
     "summary": "Procedura operativa per gestire ordini sito e marketplace nei corrispettivi",
     "author": "CasaFolino Srl Societa' Benefit",

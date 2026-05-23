@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="action_sale_order_create_corrispettivi_receipt" model="ir.actions.server">
+        <field name="name">Corrispettivi: crea ricevuta nel registro CORR</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_cf_create_corrispettivi_receipt()</field>
+    </record>
+
     <record id="action_sale_order_mark_corrispettivi_included" model="ir.actions.server">
-        <field name="name">Corrispettivi: segna come incluso</field>
+        <field name="name">Corrispettivi: segna come gia registrato</field>
         <field name="model_id" ref="sale.model_sale_order"/>
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_type">action</field>

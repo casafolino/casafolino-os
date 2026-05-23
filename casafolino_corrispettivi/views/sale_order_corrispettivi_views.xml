@@ -4,7 +4,7 @@
         <field name="name">sale.order.corrispettivi.list</field>
         <field name="model">sale.order</field>
         <field name="arch" type="xml">
-            <list string="Procedura corrispettivi" decoration-success="cf_corrispettivi_status == 'included'" decoration-warning="cf_corrispettivi_status == 'invoice_required'" decoration-muted="cf_corrispettivi_status == 'excluded'">
+            <list string="Ordini da portare nei corrispettivi" decoration-success="cf_corrispettivi_status == 'included'" decoration-warning="cf_corrispettivi_status == 'invoice_required'" decoration-muted="cf_corrispettivi_status == 'excluded'">
                 <field name="name" string="Ordine"/>
                 <field name="date_order"/>
                 <field name="partner_id"/>
@@ -13,6 +13,7 @@
                 <field name="cf_corrispettivi_status"/>
                 <field name="cf_corrispettivi_channel"/>
                 <field name="cf_corrispettivi_date"/>
+                <field name="cf_corrispettivi_move_id"/>
                 <field name="cf_corrispettivi_user_id"/>
                 <field name="cf_corrispettivi_note" optional="hide"/>
             </list>
@@ -59,6 +60,7 @@
                             <field name="cf_corrispettivi_status"/>
                             <field name="cf_corrispettivi_channel"/>
                             <field name="cf_corrispettivi_date"/>
+                            <field name="cf_corrispettivi_move_id"/>
                         </group>
                         <group>
                             <field name="cf_corrispettivi_user_id"/>
@@ -66,7 +68,8 @@
                         </group>
                     </group>
                     <div class="o_row mb-3">
-                        <button name="action_cf_mark_corrispettivi_included" type="object" string="Segna nei corrispettivi" class="btn btn-primary"/>
+                        <button name="action_cf_create_corrispettivi_receipt" type="object" string="Crea corrispettivo CORR" class="btn btn-primary"/>
+                        <button name="action_cf_mark_corrispettivi_included" type="object" string="Segna come gia registrato" class="btn btn-secondary"/>
                         <button name="action_cf_mark_invoice_required" type="object" string="Richiede fattura" class="btn btn-secondary"/>
                         <button name="action_cf_mark_corrispettivi_excluded" type="object" string="Escludi" class="btn btn-secondary"/>
                     </div>
@@ -76,7 +79,7 @@
     </record>
 
     <record id="action_sale_order_corrispettivi_to_review" model="ir.actions.act_window">
-        <field name="name">Corrispettivi da gestire</field>
+        <field name="name">Ordini da portare nei corrispettivi</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,form,pivot</field>
         <field name="view_id" ref="view_sale_order_corrispettivi_list"/>
@@ -86,7 +89,7 @@
     </record>
 
     <record id="action_sale_order_corrispettivi_included" model="ir.actions.act_window">
-        <field name="name">Ordini nei corrispettivi</field>
+        <field name="name">Ordini con corrispettivo CORR</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,form,pivot</field>
         <field name="view_id" ref="view_sale_order_corrispettivi_list"/>
@@ -105,8 +108,8 @@
         <field name="context">{'search_default_orders_2026': 1, 'search_default_invoice_required': 1}</field>
     </record>
 
-    <menuitem id="menu_sale_corrispettivi_root" name="Corrispettivi" parent="sale.sale_menu_root" sequence="35"/>
-    <menuitem id="menu_sale_corrispettivi_to_review" name="Da gestire" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_to_review" sequence="10"/>
-    <menuitem id="menu_sale_corrispettivi_included" name="Nei corrispettivi" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_included" sequence="20"/>
+    <menuitem id="menu_sale_corrispettivi_root" name="Corrispettivi CORR" parent="sale.sale_menu_root" sequence="35"/>
+    <menuitem id="menu_sale_corrispettivi_to_review" name="Ordini da portare" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_to_review" sequence="10"/>
+    <menuitem id="menu_sale_corrispettivi_included" name="Gia registrati" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_included" sequence="20"/>
     <menuitem id="menu_sale_corrispettivi_invoice_required" name="Richiedono fattura" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_invoice_required" sequence="30"/>
 </odoo>
