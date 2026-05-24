@@ -638,6 +638,13 @@ body:has(.cf-b2b-page) .o_footer_copyright {
     font-weight: 800;
 }
 
+.cf-category-hint {
+    min-height: 18px;
+    color: var(--cf-terracotta);
+    font-size: 12px;
+    font-weight: 800;
+}
+
 .cf-form-grid textarea {
     min-height: 92px;
 }

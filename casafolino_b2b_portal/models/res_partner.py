@@ -30,14 +30,22 @@ class ResPartner(models.Model):
     cf_b2b_vat_code = fields.Char(string="P.IVA B2B")
     cf_b2b_sdi_pec = fields.Char(string="SDI / PEC")
 
+    def _cf_b2b_default_email_from(self):
+        return self.env["ir.config_parameter"].sudo().get_param(
+            "casafolino_b2b.email_from",
+            "CasaFolino B2B <antonio@casafolino.com>",
+        )
+
     def _cf_b2b_send_template(self, xmlid, email_values=None):
         template = self.env.ref(xmlid, raise_if_not_found=False)
         if not template:
             return False
+        values = dict(email_values or {})
+        values.setdefault("email_from", self._cf_b2b_default_email_from())
         for partner in self:
-            if not partner.email and not (email_values or {}).get("email_to"):
+            if not partner.email and not values.get("email_to"):
                 continue
-            template.sudo().send_mail(partner.id, force_send=True, email_values=email_values or {})
+            template.sudo().send_mail(partner.id, force_send=True, email_values=values)
         return True
 
     def action_cf_b2b_send_pending_notifications(self):

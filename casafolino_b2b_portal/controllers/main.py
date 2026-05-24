@@ -4,6 +4,7 @@ from odoo.http import request
 
 
 B2B_HOSTS = {"b2b.casafolino.com", "www.b2b.casafolino.com"}
+COMPANY_HOSTS = {"company.casafolino.com", "www.company.casafolino.com"}
 ERP_HOSTS = {"erp.casafolino.com", "51.44.170.55"}
 
 
@@ -58,10 +59,13 @@ class CasaFolinoB2BPortal(http.Controller):
     def _is_b2b_host(self):
         return bool(self._request_hostnames() & B2B_HOSTS)
 
+    def _is_company_host(self):
+        return bool(self._request_hostnames() & COMPANY_HOSTS)
+
     def _guard_b2b_site(self):
         if self._is_erp_host():
             return request.redirect("/web/login", code=302)
-        if not self._is_b2b_host():
+        if not (self._is_b2b_host() or self._is_company_host()):
             return request.not_found()
         return None
 
@@ -105,6 +109,11 @@ class CasaFolinoB2BPortal(http.Controller):
 
     def _product_domain(self):
         return [("sale_ok", "=", True), ("cf_b2b_enabled", "=", True)]
+
+    def _registration_tag(self):
+        tag_name = "b2b company" if self._is_company_host() else "b2b ecommerce"
+        Tag = request.env["res.partner.category"].sudo()
+        return Tag.search([("name", "=", tag_name)], limit=1) or Tag.create({"name": tag_name})
 
     def _product_price(self, product, qty=1):
         partner = self._current_partner()
@@ -234,6 +243,7 @@ class CasaFolinoB2BPortal(http.Controller):
                     "street": (post.get("street") or "").strip(),
                     "cf_b2b_status": "pending",
                     "comment": (post.get("notes") or "").strip(),
+                    "category_id": [(4, self._registration_tag().id)],
                 }
             )
             partner.message_post(body="Richiesta accesso B2B ricevuta da b2b.casafolino.com.")

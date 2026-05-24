@@ -177,13 +177,16 @@
                         <div class="cf-message ok" t-if="sent">Richiesta ricevuta. Ti contatteremo dopo la verifica commerciale.</div>
                         <div class="cf-message locked" t-if="missing">Compila almeno ragione sociale, email e P.IVA.</div>
                         <div class="cf-form-grid">
-                            <label>Ragione sociale<input name="name" required="required"/></label>
+                            <label>Ragione sociale
+                                <input name="name" required="required" data-cf-company-name="1" autocomplete="organization"/>
+                                <span class="cf-category-hint" data-cf-category-hint=""></span>
+                            </label>
                             <label>P.IVA<input name="vat" required="required"/></label>
                             <label>Email ordini<input name="email" type="email" required="required"/></label>
                             <label>Telefono<input name="phone"/></label>
                             <label>SDI / PEC<input name="sdi_pec"/></label>
-                            <label>Categoria
-                                <select name="category">
+                            <label>Attivita
+                                <select name="category" data-cf-category-select="1">
                                     <option value="restaurant">Ristorante</option>
                                     <option value="grocery">Gastronomia / Retail</option>
                                     <option value="hotel">Hotel</option>
