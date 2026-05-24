@@ -52,6 +52,27 @@ export class CFScrivaniaCommerciale extends Component {
         return String(Math.round(value));
     }
 
+    async _crmLeadFormViews() {
+        if (this.crmLeadFormViewId === undefined) {
+            try {
+                this.crmLeadFormViewId = await this.orm.call(
+                    "crm.lead",
+                    "casafolino_get_premium_form_view_id",
+                    []
+                );
+            } catch (err) {
+                console.warn("Premium lead form view lookup failed:", err);
+                this.crmLeadFormViewId = false;
+            }
+        }
+        return [[this.crmLeadFormViewId || false, "form"]];
+    }
+
+    async _crmLeadViewsWithPipeline() {
+        const formViews = await this._crmLeadFormViews();
+        return [[false, "kanban"], [false, "list"], formViews[0]];
+    }
+
     // === Quick actions ===
 
     async onNewProject() {
@@ -71,7 +92,7 @@ export class CFScrivaniaCommerciale extends Component {
         await this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "crm.lead",
-            views: [[false, "form"]],
+            views: await this._crmLeadFormViews(),
             target: "current",
             context: { default_type: "lead", default_user_id: user.userId },
         });
@@ -122,7 +143,7 @@ export class CFScrivaniaCommerciale extends Component {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                views: await this._crmLeadViewsWithPipeline(),
                 domain: [["type", "=", "lead"], ["active", "=", true]],
                 target: "current",
             });

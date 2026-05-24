@@ -191,7 +191,7 @@ export class CFWorkspace extends Component {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
-                views: [[false, "form"]],
+                views: await this._crmLeadFormViews(),
                 target: "current",
                 context: { default_type: "lead", default_user_id: user.userId },
             });
@@ -316,6 +316,27 @@ export class CFWorkspace extends Component {
         return action;
     }
 
+    async _crmLeadFormViews() {
+        if (this.crmLeadFormViewId === undefined) {
+            try {
+                this.crmLeadFormViewId = await this.orm.call(
+                    "crm.lead",
+                    "casafolino_get_premium_form_view_id",
+                    []
+                );
+            } catch (err) {
+                console.warn("Premium lead form view lookup failed:", err);
+                this.crmLeadFormViewId = false;
+            }
+        }
+        return [[this.crmLeadFormViewId || false, "form"]];
+    }
+
+    async _crmLeadViewsWithPipeline() {
+        const formViews = await this._crmLeadFormViews();
+        return [[false, "kanban"], [false, "list"], formViews[0]];
+    }
+
     async onOpenIdentityResult(row) {
         if (row.model === "project.project") {
             await this.onOpenDossier360({
@@ -324,11 +345,14 @@ export class CFWorkspace extends Component {
             });
             return;
         }
+        const views = row.model === "crm.lead"
+            ? await this._crmLeadFormViews()
+            : [[false, "form"]];
         await this.action.doAction({
             type: "ir.actions.act_window",
             res_model: row.model,
             res_id: row.id,
-            views: [[false, "form"]],
+            views,
             target: "current",
         });
     }
@@ -406,7 +430,7 @@ export class CFWorkspace extends Component {
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
                 res_id: mail.lead_id[0],
-                views: [[false, "form"]],
+                views: await this._crmLeadFormViews(),
                 target: "current",
             });
             return;
@@ -416,7 +440,11 @@ export class CFWorkspace extends Component {
             "action_create_lead",
             [[mail.id]]
         );
-        await this.action.doAction(this._normalizeWindowAction(action));
+        const normalizedAction = this._normalizeWindowAction(action);
+        if (normalizedAction?.res_model === "crm.lead") {
+            normalizedAction.views = await this._crmLeadFormViews();
+        }
+        await this.action.doAction(normalizedAction);
     }
 
     async onOpenPipeline() {
@@ -426,7 +454,7 @@ export class CFWorkspace extends Component {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                views: await this._crmLeadViewsWithPipeline(),
                 domain: [["type", "in", ["lead", "opportunity"]], ["active", "=", true]],
                 target: "current",
             });

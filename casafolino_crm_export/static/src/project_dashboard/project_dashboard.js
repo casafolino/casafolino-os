@@ -150,6 +150,27 @@ export class CFProjectDashboard extends Component {
         return (this.state.data?.timeline || []).slice(0, 6);
     }
 
+    async _crmLeadFormViews() {
+        if (this.crmLeadFormViewId === undefined) {
+            try {
+                this.crmLeadFormViewId = await this.orm.call(
+                    "crm.lead",
+                    "casafolino_get_premium_form_view_id",
+                    []
+                );
+            } catch (err) {
+                console.warn("Premium lead form view lookup failed:", err);
+                this.crmLeadFormViewId = false;
+            }
+        }
+        return [[this.crmLeadFormViewId || false, "form"]];
+    }
+
+    async _crmLeadViewsWithPipeline() {
+        const formViews = await this._crmLeadFormViews();
+        return [[false, "kanban"], [false, "list"], formViews[0]];
+    }
+
     get inboundMailCount() {
         return (this.state.data?.mail || []).filter((mail) => !mail.is_outbound).length;
     }
@@ -297,7 +318,7 @@ export class CFProjectDashboard extends Component {
             type: "ir.actions.act_window",
             res_model: "crm.lead",
             res_id: leadId,
-            views: [[false, "form"]],
+            views: await this._crmLeadFormViews(),
             target: "current",
         });
     }
@@ -314,11 +335,11 @@ export class CFProjectDashboard extends Component {
         });
     }
 
-    onGoBack() {
+    async onGoBack() {
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "crm.lead",
-            views: [[false, "kanban"], [false, "list"], [false, "form"]],
+            views: await this._crmLeadViewsWithPipeline(),
             target: "current",
             domain: [["type", "=", "opportunity"]],
         });

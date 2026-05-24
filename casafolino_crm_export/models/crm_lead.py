@@ -654,6 +654,15 @@ class CrmLead(models.Model):
     # Actions
     # ------------------------------------------------------------------
 
+    @api.model
+    def casafolino_get_premium_form_view_id(self):
+        """Return the CasaFolino premium lead form view for JS actions."""
+        view = self.env.ref(
+            'casafolino_crm_export.cf_crm_lead_view_form_premium',
+            raise_if_not_found=False,
+        )
+        return view.id if view else False
+
     def _ensure_project_360(self):
         """Return a linked dossier project, creating one when missing."""
         self.ensure_one()
