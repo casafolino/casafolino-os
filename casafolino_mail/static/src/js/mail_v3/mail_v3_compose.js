@@ -1,7 +1,6 @@
 /** @odoo-module **/
 import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
-import { CFComposeAIPanel } from "@casafolino_mail/compose_ai_panel/compose_ai_panel";
 
 // ── Constants (before class so static refs work) ────────
 
@@ -81,7 +80,6 @@ const COLOR_PALETTE = [
  */
 export class ComposeWizard extends Component {
     static template = "casafolino_mail.ComposeWizard";
-    static components = { CFComposeAIPanel };
     static props = ["*"];
     static FONT_SIZES = FONT_SIZES;
     static COLOR_PALETTE = COLOR_PALETTE;
@@ -719,28 +717,5 @@ export class ComposeWizard extends Component {
 
     discard() {
         if (this.props.onClose) this.props.onClose();
-    }
-
-    // Brief #6.4 — AI assist panel callbacks
-    get aiPanelPartnerId() {
-        return this.props.prefilled?.partner_id || null;
-    }
-    get aiPanelThreadId() {
-        return this.props.prefilled?.thread_id || null;
-    }
-    getBodyForAI() {
-        return this.state.body || '';
-    }
-    applyAIBody(text) {
-        this.state.body = text;
-        if (this.editorRef.el) {
-            this.editorRef.el.innerHTML = text;
-        }
-    }
-    appendAIBody(text) {
-        this.state.body = (this.state.body || '') + text;
-        if (this.editorRef.el) {
-            this.editorRef.el.innerHTML = this.state.body;
-        }
     }
 }

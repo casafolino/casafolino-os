@@ -288,14 +288,6 @@
             </div>
           </div>
 
-          <!-- Brief #6.4 — AI Assist Panel (right side) -->
-          <CFComposeAIPanel
-              partnerId="aiPanelPartnerId"
-              threadId="aiPanelThreadId"
-              getBody="() => this.getBodyForAI()"
-              onApplyBody="(text) => this.applyAIBody(text)"
-              onAppendBody="(text) => this.appendAIBody(text)"/>
-
           <!-- Footer -->
           <div class="mv3-compose__footer">
             <div class="mv3-compose__footer-left">
