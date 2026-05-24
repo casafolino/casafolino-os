@@ -117,7 +117,11 @@ class ResPartner(models.Model):
                         "groups_id": [(6, 0, [portal_group.id])],
                     }
                 )
+            elif user.partner_id != partner:
+                user.sudo().write({"partner_id": partner.id, "name": partner.name, "email": email})
             elif portal_group not in user.groups_id:
+                user.sudo().write({"groups_id": [(4, portal_group.id)]})
+            if portal_group not in user.groups_id:
                 user.sudo().write({"groups_id": [(4, portal_group.id)]})
             partner.sudo().signup_prepare(signup_type="reset")
             partner.cf_b2b_approved_at = fields.Datetime.now()

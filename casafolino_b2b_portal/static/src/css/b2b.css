@@ -10,13 +10,11 @@
     --cf-shadow: 0 16px 40px rgba(32, 31, 29, 0.08);
 }
 
-body:has(.cf-b2b-page) #wrapwrap > .bg-success.text-white.text-center,
-body:has(.cf-b2b-page) #wrapwrap > header#top,
-body:has(.cf-b2b-page) #wrapwrap > footer#bottom {
+body:has(.cf-b2b-page) #wrapwrap > .bg-success.text-white.text-center {
     display: none !important;
 }
 
-body:has(.cf-b2b-page) .o_footer_copyright {
+body:has(.cf-b2b-page) #wrapwrap > header#top {
     display: none !important;
 }
 
@@ -284,7 +282,7 @@ body:has(.cf-b2b-page) .o_footer_copyright {
 
 .cf-category-rail {
     position: sticky;
-    top: 69px;
+    top: 88px;
     z-index: 9;
     display: flex;
     gap: 8px;

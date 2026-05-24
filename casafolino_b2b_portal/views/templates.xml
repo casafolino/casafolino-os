@@ -1,21 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <template id="b2b_header" name="CasaFolino B2B Header">
+        <header class="cf-b2b-top">
+            <a class="cf-b2b-brand" href="/b2b" aria-label="CasaFolino B2B">
+                <img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino"/>
+                <strong>B2B</strong>
+            </a>
+            <nav aria-label="Menu CasaFolino B2B">
+                <a class="active" href="/b2b">Catalogo</a>
+                <a href="/shop/cart">Carrello</a>
+                <t t-if="request.env.user._is_public()">
+                    <a href="/b2b/register">Registrazione</a>
+                    <a href="/web/login">Accedi</a>
+                </t>
+                <t t-else="">
+                    <a href="/my/orders">Ordini</a>
+                    <a href="/my">
+                        <t t-out="request.env.user.partner_id.commercial_partner_id.name or request.env.user.name"/>
+                    </a>
+                    <a href="/web/session/logout?redirect=/b2b">Esci</a>
+                </t>
+            </nav>
+        </header>
+    </template>
+
     <template id="catalog" name="CasaFolino B2B Catalog">
         <t t-call="website.layout">
             <t t-set="title">CasaFolino B2B</t>
             <div id="wrap" class="cf-b2b-page">
-                <header class="cf-b2b-top">
-                    <a class="cf-b2b-brand" href="/b2b">
-                        <img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino" onerror="this.src='/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.png'; this.onerror=null;"/>
-                        <strong>B2B</strong>
-                    </a>
-                    <nav>
-                        <a class="active" href="/b2b">Catalogo</a>
-                        <a href="/b2b/register">Registrazione</a>
-                        <a href="/web/login">Accedi</a>
-                    </nav>
-                </header>
-
+                <t t-call="casafolino_b2b_portal.b2b_header"/>
                 <main class="cf-b2b-shell">
                     <section class="cf-b2b-catalog">
                         <section class="cf-buyer-strip">
@@ -201,17 +214,7 @@
         <t t-call="website.layout">
             <t t-set="title"><t t-out="item['record'].name"/> | CasaFolino B2B</t>
             <div id="wrap" class="cf-b2b-page">
-                <header class="cf-b2b-top">
-                    <a class="cf-b2b-brand" href="/b2b">
-                        <img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino" onerror="this.src='/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.png'; this.onerror=null;"/>
-                        <strong>B2B</strong>
-                    </a>
-                    <nav>
-                        <a href="/b2b">Catalogo</a>
-                        <a href="/b2b/register">Registrazione</a>
-                        <a href="/web/login">Accedi</a>
-                    </nav>
-                </header>
+                <t t-call="casafolino_b2b_portal.b2b_header"/>
                 <main class="cf-product-detail-shell">
                     <a class="cf-back-link" href="/b2b">Torna al catalogo</a>
                     <section class="cf-product-detail">
@@ -296,10 +299,7 @@
         <t t-call="website.layout">
             <t t-set="title">Registrazione B2B CasaFolino</t>
             <div id="wrap" class="cf-b2b-page cf-register-page">
-                <header class="cf-b2b-top">
-                    <a class="cf-b2b-brand" href="/b2b"><img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino" onerror="this.src='/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.png'; this.onerror=null;"/><strong>B2B</strong></a>
-                    <nav><a href="/b2b">Catalogo</a><a class="active" href="/b2b/register">Registrazione</a></nav>
-                </header>
+                <t t-call="casafolino_b2b_portal.b2b_header"/>
                 <main class="cf-register-shell">
                     <form class="cf-register-form" action="/b2b/register" method="post">
                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -360,6 +360,7 @@
         <t t-call="website.layout">
             <t t-set="title">Ordine B2B ricevuto</t>
             <div id="wrap" class="cf-b2b-page">
+                <t t-call="casafolino_b2b_portal.b2b_header"/>
                 <main class="cf-thanks">
                     <p class="cf-eyebrow">Ordine ricevuto</p>
                     <h1>Grazie, abbiamo ricevuto la tua richiesta.</h1>
