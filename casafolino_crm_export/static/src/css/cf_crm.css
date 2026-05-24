@@ -330,17 +330,20 @@
 }
 
 .cf-lead-inline-metrics {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, .9fr);
+    display: flex;
+    align-items: stretch;
     gap: 12px;
     margin: 0 0 18px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
 }
 
 .cf-lead-inline-group {
-    display: grid;
-    grid-template-columns: auto repeat(4, minmax(110px, 1fr));
+    display: flex;
     align-items: center;
     gap: 12px;
+    flex: 0 0 auto;
     min-height: 72px;
     padding: 12px 14px;
     border: 1px solid var(--cf-pipe-line);
@@ -349,7 +352,7 @@
 }
 
 .cf-lead-inline-group.scoring {
-    grid-template-columns: auto repeat(3, minmax(100px, 1fr));
+    flex: 0 0 auto;
 }
 
 .cf-lead-inline-title {
@@ -361,9 +364,11 @@
 }
 
 .cf-lead-inline-item {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 3px;
-    min-width: 0;
+    min-width: 92px;
+    white-space: nowrap;
 }
 
 .cf-lead-inline-item span {
@@ -378,14 +383,17 @@
     font-weight: 800;
     line-height: 1.25;
     min-width: 0;
+    white-space: nowrap;
 }
 
 .cf-lead-inline-item .o_field_widget {
     display: inline;
+    white-space: nowrap;
 }
 
 .cf-lead-inline-item .o_progressbar {
-    min-width: 90px;
+    width: 110px;
+    min-width: 110px;
 }
 
 .cf-lead-eyebrow,
@@ -421,10 +429,7 @@
 
 @media (max-width: 1180px) {
     .cf-premium-form .cf-layout,
-    .cf-lead-cockpit,
-    .cf-lead-inline-metrics,
-    .cf-lead-inline-group,
-    .cf-lead-inline-group.scoring {
+    .cf-lead-cockpit {
         grid-template-columns: 1fr;
     }
 }
