@@ -47,7 +47,7 @@ class CasaFolinoB2BPortal(http.Controller):
     PRIORITY_CATEGORIES = [
         {
             "label": "Creme spalmabili",
-            "match": ("crema", "creme", "spalmabil", "spread", "pistacchio", "gianduia", "nocciola", "hazelnut"),
+            "match": ("crema", "creme", "spalmabil", "spread", "spreadable"),
             "summary": "Referenze dolci e premium per scaffale gourmet, gelaterie, horeca e confezioni regalo.",
         },
         {
