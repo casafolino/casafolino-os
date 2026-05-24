@@ -2,10 +2,7 @@
 <odoo>
 
     <!-- Legacy Mail Hub lead tab referenced cf_mail_history_ids, a removed field.
-         Disable by search so fresh databases do not try to recreate the view. -->
-    <function model="ir.ui.view" name="write">
-        <value model="ir.ui.view" search="[('name', '=', 'crm.lead.form.cf.premium.mail.hub')]"/>
-        <value eval="{'active': False}"/>
-    </function>
+         Delete it before the premium CRM form is revalidated. -->
+    <delete model="ir.ui.view" search="[('name', '=', 'crm.lead.form.cf.premium.mail.hub')]"/>
 
 </odoo>
