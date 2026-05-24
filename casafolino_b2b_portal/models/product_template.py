@@ -12,6 +12,6 @@ class ProductTemplate(models.Model):
     )
     cf_b2b_case_size = fields.Integer(
         string="B2B pezzi per collo",
-        default=6,
+        default=12,
         help="Quantita minima e multiplo usato dal portale B2B CasaFolino.",
     )

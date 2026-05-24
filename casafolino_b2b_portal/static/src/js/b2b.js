@@ -15,6 +15,18 @@ document.addEventListener("change", (event) => {
     input.value = value;
 });
 
+document.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-cf-product-search]");
+    if (!input) {
+        return;
+    }
+    const query = input.value.trim().toLowerCase();
+    document.querySelectorAll("[data-cf-search]").forEach((card) => {
+        const text = (card.dataset.cfSearch || "").toLowerCase();
+        card.classList.toggle("is-hidden", query && !text.includes(query));
+    });
+});
+
 const categoryRules = [
     {
         value: "restaurant",

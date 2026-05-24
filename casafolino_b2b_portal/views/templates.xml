@@ -18,23 +18,22 @@
 
                 <main class="cf-b2b-shell">
                     <section class="cf-b2b-catalog">
-                        <div class="cf-storefront-hero">
+                        <section class="cf-buyer-strip">
                             <div>
-                                <p class="cf-eyebrow">Catalogo B2B CasaFolino</p>
-                                <h1>Prodotti mediterranei pronti per il tuo scaffale</h1>
-                                <p class="cf-shop-intro">Creme spalmabili, risotti, miele, biscotti, spezie e cioccolato in colli professionali.</p>
+                                <p class="cf-eyebrow">Per buyer professionali</p>
+                                <h2>Assortimento pronto per grossisti, importatori e retail gourmet.</h2>
                             </div>
-                            <aside class="cf-hero-commerce">
-                                <span>Catalogo attivo</span>
-                                <strong><t t-out="len(products)"/> referenze</strong>
-                                <p>Colli professionali e listino riservato dopo approvazione.</p>
-                                <a class="cf-submit" href="/b2b/register" t-if="account_state != 'approved'">Richiedi listino</a>
-                                <a class="cf-submit" href="#cf-best-sellers" t-else="">Ordina ora</a>
-                            </aside>
-                        </div>
+                            <ul>
+                                <li>Distributori food service</li>
+                                <li>Negozi gourmet e delicatessen</li>
+                                <li>Hotel, ristoranti e catering</li>
+                                <li>Importatori e private label</li>
+                            </ul>
+                        </section>
 
                         <div class="cf-category-rail" t-if="category_sections">
                             <a href="#cf-best-sellers" class="active">Best seller</a>
+                            <a href="#cf-priority-lines">Linee focus</a>
                             <a t-foreach="category_sections" t-as="section" t-attf-href="#cf-cat-#{section_index}">
                                 <span t-out="section['name']"/>
                                 <strong t-out="len(section['products'])"/>
@@ -44,8 +43,12 @@
                         <div class="cf-shop-toolbar" t-if="products">
                             <div>
                                 <strong><t t-out="len(products)"/> prodotti B2B</strong>
-                                <span>ordinati per categoria</span>
+                                <span>ricerca, categorie e ordine a cartone</span>
                             </div>
+                            <label class="cf-catalog-search">
+                                <span>Cerca</span>
+                                <input type="search" placeholder="SKU, prodotto, linea..." data-cf-product-search="1"/>
+                            </label>
                             <a href="/b2b/register" t-if="account_state != 'approved'">Sblocca prezzi e ordini</a>
                             <a href="#carrello" t-else="">Vai al carrello</a>
                         </div>
@@ -59,6 +62,38 @@
                                 <div class="cf-b2b-grid cf-featured-grid">
                                     <t t-call="casafolino_b2b_portal.product_cards">
                                         <t t-set="items" t-value="best_sellers"/>
+                                        <t t-set="account_state" t-value="account_state"/>
+                                    </t>
+                                </div>
+                            </section>
+
+                            <section class="cf-category-section cf-priority-lines" id="cf-priority-lines" t-if="priority_sections">
+                                <div class="cf-section-head">
+                                    <p class="cf-eyebrow">Priorita assortimento</p>
+                                    <h2>Linee da spingere ora</h2>
+                                    <span class="cf-section-count">focus wholesaler</span>
+                                </div>
+                                <div class="cf-line-grid">
+                                    <article t-foreach="priority_sections" t-as="section" class="cf-line-card">
+                                        <div>
+                                            <span class="cf-line-number">0<t t-out="section_index + 1"/></span>
+                                            <h3 t-out="section['name']"/>
+                                            <p t-out="section['summary']"/>
+                                        </div>
+                                        <a t-attf-href="#cf-focus-#{section_index}"><t t-out="len(section['products'])"/> referenze</a>
+                                    </article>
+                                </div>
+                            </section>
+
+                            <section class="cf-category-section cf-focus-section" t-foreach="priority_sections" t-as="section" t-attf-id="cf-focus-#{section_index}">
+                                <div class="cf-section-head">
+                                    <p class="cf-eyebrow">Linea focus</p>
+                                    <h2 t-out="section['name']"/>
+                                    <span class="cf-section-count"><t t-out="len(section['products'])"/> referenze</span>
+                                </div>
+                                <div class="cf-b2b-grid">
+                                    <t t-call="casafolino_b2b_portal.product_cards">
+                                        <t t-set="items" t-value="section['products']"/>
                                         <t t-set="account_state" t-value="account_state"/>
                                     </t>
                                 </div>
@@ -124,19 +159,20 @@
     </template>
 
     <template id="product_cards" name="CasaFolino B2B Product Cards">
-        <article class="cf-product" t-foreach="items" t-as="item">
-            <div class="cf-product-img">
+        <article class="cf-product" t-foreach="items" t-as="item" t-attf-data-cf-search="#{item['record'].name} #{item['category']} #{item['record'].default_code or ''} #{item['blurb']}">
+            <a class="cf-product-img" t-att-href="item['detail_url']">
                 <img t-att-src="item['image_url']" t-att-alt="item['record'].name" onerror="this.src='/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png'; this.onerror=null;"/>
                 <span t-out="item['category']"/>
-            </div>
+            </a>
             <div class="cf-product-body">
                 <div class="cf-product-title">
-                    <h3 t-out="item['record'].name"/>
+                    <h3><a t-att-href="item['detail_url']" t-out="item['record'].name"/></h3>
                     <small t-if="item['record'].weight"><t t-out="item['record'].weight"/> kg</small>
                 </div>
+                <p class="cf-product-blurb" t-out="item['blurb']"/>
                 <div class="cf-product-meta">
                     <span>SKU <t t-out="item['record'].default_code or '-'"/></span>
-                    <span>Collo <t t-out="item['case_size']"/> pz</span>
+                    <span>Cartone <t t-out="item['case_size']"/> pz</span>
                 </div>
                 <div class="cf-price-row">
                     <span>Disponibile B2B</span>
@@ -147,17 +183,113 @@
                         <strong class="cf-locked-price">Prezzo riservato</strong>
                     </t>
                 </div>
+                <a class="cf-detail-link" t-att-href="item['detail_url']">Apri scheda prodotto</a>
                 <form class="cf-add-row" action="/b2b/cart/add" method="post">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="product_id" t-att-value="item['record'].id"/>
                     <input class="cf-qty" type="number" name="quantity" t-att-value="item['case_size']" t-att-step="item['case_size']" t-att-min="item['case_size']"/>
                     <button type="submit" t-att-disabled="account_state != 'approved'">
-                        <t t-if="account_state == 'approved'">Aggiungi</t>
+                        <t t-if="account_state == 'approved'">Aggiungi cartone</t>
                         <t t-else="">Sblocca</t>
                     </button>
                 </form>
             </div>
         </article>
+    </template>
+
+    <template id="product_detail" name="CasaFolino B2B Product Detail">
+        <t t-call="website.layout">
+            <t t-set="title"><t t-out="item['record'].name"/> | CasaFolino B2B</t>
+            <div id="wrap" class="cf-b2b-page">
+                <header class="cf-b2b-top">
+                    <a class="cf-b2b-brand" href="/b2b">
+                        <img src="/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.svg" alt="CasaFolino" onerror="this.src='/casafolino_b2b_portal/static/src/img/brand/casafolino-logo.png'; this.onerror=null;"/>
+                        <strong>B2B</strong>
+                    </a>
+                    <nav>
+                        <a href="/b2b">Catalogo</a>
+                        <a href="/b2b/register">Registrazione</a>
+                        <a href="/web/login">Accedi</a>
+                    </nav>
+                </header>
+                <main class="cf-product-detail-shell">
+                    <a class="cf-back-link" href="/b2b">Torna al catalogo</a>
+                    <section class="cf-product-detail">
+                        <div class="cf-detail-media">
+                            <img t-att-src="item['image_url']" t-att-alt="item['record'].name" onerror="this.src='/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png'; this.onerror=null;"/>
+                        </div>
+                        <div class="cf-detail-info">
+                            <p class="cf-eyebrow" t-out="item['priority_label']"/>
+                            <h1 t-out="item['record'].name"/>
+                            <p class="cf-detail-lead" t-out="description"/>
+                            <dl class="cf-detail-specs">
+                                <div><dt>Categoria</dt><dd t-out="item['category']"/></div>
+                                <div><dt>SKU</dt><dd t-out="item['record'].default_code or '-'"/></div>
+                                <div><dt>Cartone</dt><dd><t t-out="item['case_size']"/> pezzi</dd></div>
+                                <div t-if="item['record'].weight"><dt>Peso</dt><dd><t t-out="item['record'].weight"/> kg</dd></div>
+                            </dl>
+                            <div class="cf-price-row cf-detail-price">
+                                <span>Prezzo B2B per pezzo</span>
+                                <t t-if="account_state == 'approved'">
+                                    <strong><t t-out="'€ %.2f' % item['price']"/></strong>
+                                </t>
+                                <t t-else="">
+                                    <strong class="cf-locked-price">Riservato</strong>
+                                </t>
+                            </div>
+                            <form class="cf-detail-order" action="/b2b/cart/add" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="product_id" t-att-value="item['record'].id"/>
+                                <label>Quantita in pezzi
+                                    <input class="cf-qty" type="number" name="quantity" t-att-value="item['case_size']" t-att-step="item['case_size']" t-att-min="item['case_size']"/>
+                                </label>
+                                <button class="cf-submit" type="submit" t-att-disabled="account_state != 'approved'">
+                                    <t t-if="account_state == 'approved'">Aggiungi al carrello</t>
+                                    <t t-else="">Accedi al listino</t>
+                                </button>
+                                <small>La quantita viene arrotondata automaticamente al multiplo del cartone.</small>
+                            </form>
+                        </div>
+                    </section>
+                    <section class="cf-category-section" t-if="related_products">
+                        <div class="cf-section-head">
+                            <p class="cf-eyebrow">Completa assortimento</p>
+                            <h2>Altre referenze B2B</h2>
+                        </div>
+                        <div class="cf-b2b-grid">
+                            <t t-call="casafolino_b2b_portal.product_cards">
+                                <t t-set="items" t-value="related_products"/>
+                                <t t-set="account_state" t-value="account_state"/>
+                            </t>
+                        </div>
+                    </section>
+                </main>
+                <details class="cf-floating-cart" id="carrello" t-if="account_state == 'approved'">
+                    <summary>
+                        <span>Carrello</span>
+                        <strong><t t-out="cart['total_qty']"/></strong>
+                    </summary>
+                    <div class="cf-cart-title">
+                        <strong>Ordine B2B</strong>
+                        <form action="/b2b/cart/clear" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" aria-label="Svuota carrello">x</button>
+                        </form>
+                    </div>
+                    <div class="cf-cart-lines">
+                        <t t-if="cart['lines']">
+                            <div class="cf-cart-line" t-foreach="cart['lines']" t-as="line">
+                                <div><strong t-out="line['product'].name"/><span><t t-out="'€ %.2f' % line['subtotal']"/></span></div>
+                                <small><t t-out="line['qty']"/> pezzi · cartone da <t t-out="line['case_size']"/></small>
+                            </div>
+                        </t>
+                        <p t-else="">Nessun prodotto selezionato.</p>
+                    </div>
+                    <div class="cf-cart-total"><span>Vasetti</span><strong t-out="cart['total_qty']"/></div>
+                    <div class="cf-cart-total"><span>Totale</span><strong><t t-out="'€ %.2f' % cart['total_amount']"/></strong></div>
+                </details>
+            </div>
+        </t>
     </template>
 
     <template id="register" name="CasaFolino B2B Registration">

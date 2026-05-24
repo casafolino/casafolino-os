@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import re
 from urllib.parse import quote
 
+from odoo.tools import html2plaintext
 from odoo import http
 from odoo.http import request
 
@@ -41,6 +43,29 @@ class CasaFolinoB2BPortal(http.Controller):
         "Flavored Honey": "/casafolino_b2b_portal/static/src/img/products/miedelizie-nocciole.png",
         "Caramel Chocolate Bars": "/casafolino_b2b_portal/static/src/img/products/caramello-salato.png",
     }
+
+    PRIORITY_CATEGORIES = [
+        {
+            "label": "Creme spalmabili",
+            "match": ("crema", "creme", "spalmabil", "spread", "pistacchio", "gianduia", "nocciola", "hazelnut"),
+            "summary": "Referenze dolci e premium per scaffale gourmet, gelaterie, horeca e confezioni regalo.",
+        },
+        {
+            "label": "Miele",
+            "match": ("miele", "honey", "miedelizie"),
+            "summary": "Mieli e mieli arricchiti per retail, degustazioni, breakfast e gift box.",
+        },
+        {
+            "label": "Crispy",
+            "match": ("crispy", "chilli", "chili", "crunchy", "croccante"),
+            "summary": "Condimenti croccanti ad alta rotazione per cucina, gastronomia e street food.",
+        },
+        {
+            "label": "Mousse",
+            "match": ("mousse", "paté", "pate", "gastronomic"),
+            "summary": "Mousse gastronomiche pronte per formaggi, taglieri, aperitivi e banco gastronomia.",
+        },
+    ]
 
     def _request_hosts(self):
         headers = request.httprequest.headers
@@ -150,32 +175,79 @@ class CasaFolinoB2BPortal(http.Controller):
                 return image_url
         return self.CATEGORY_FALLBACKS.get(category) or self.FALLBACK_IMAGES[index % len(self.FALLBACK_IMAGES)]
 
+    def _case_size(self, product):
+        case_size = product.cf_b2b_case_size or 12
+        return case_size if case_size >= 12 else 12
+
+    def _product_text(self, product):
+        raw = product.website_description or product.description_sale or product.description or ""
+        text = html2plaintext(raw).strip()
+        text = re.sub(r"\s+", " ", text)
+        return text
+
+    def _product_blurb(self, product, category):
+        text = self._product_text(product)
+        if text:
+            return text[:170] + ("..." if len(text) > 170 else "")
+        if self._priority_rank(f"{product.name} {category}") < 4:
+            return "Referenza CasaFolino selezionata per assortimenti B2B, scaffale gourmet e ordini a cartone."
+        return "Prodotto CasaFolino disponibile per fornitura professionale con listino riservato e colli B2B."
+
+    def _priority_rank(self, value):
+        normalized = (value or "").lower()
+        for index, rule in enumerate(self.PRIORITY_CATEGORIES):
+            if any(token in normalized for token in rule["match"]):
+                return index
+        return len(self.PRIORITY_CATEGORIES)
+
+    def _product_priority_rank(self, product, category):
+        product_rank = self._priority_rank(f"{product.name} {product.default_code or ''}")
+        if product_rank < len(self.PRIORITY_CATEGORIES):
+            return product_rank
+        return self._priority_rank(category)
+
+    def _product_detail_url(self, product):
+        return f"/b2b/product/{product.id}"
+
+    def _product_payload(self, product, index=0, account_state=None):
+        account_state = account_state or self._account_state()
+        category = product.public_categ_ids[:1].name or product.categ_id.name or "Catalogo"
+        case_size = self._case_size(product)
+        rank = self._product_priority_rank(product, category)
+        return {
+            "record": product,
+            "category": category,
+            "case_size": case_size,
+            "price": self._product_price(product, case_size) if account_state == "approved" else 0.0,
+            "image_url": self._product_image_url(product, category, index),
+            "blurb": self._product_blurb(product, category),
+            "detail_url": self._product_detail_url(product),
+            "priority_rank": rank,
+            "priority_label": self.PRIORITY_CATEGORIES[rank]["label"] if rank < len(self.PRIORITY_CATEGORIES) else category,
+        }
+
     def _catalog_products(self, account_state=None):
         account_state = account_state or self._account_state()
         Product = request.env["product.template"].sudo()
         products = Product.search(self._product_domain(), order="sequence, name", limit=160)
-        result = []
-        for index, product in enumerate(products):
-            case_size = product.cf_b2b_case_size or 6
-            category = product.public_categ_ids[:1].name or product.categ_id.name or "Catalogo"
-            result.append(
-                {
-                    "record": product,
-                    "category": category,
-                    "case_size": case_size,
-                    "price": self._product_price(product, case_size) if account_state == "approved" else 0.0,
-                    "image_url": self._product_image_url(product, category, index),
-                }
-            )
-        return result
+        result = [self._product_payload(product, index, account_state) for index, product in enumerate(products)]
+        return sorted(result, key=lambda item: (item["priority_rank"], item["category"], item["record"].sequence, item["record"].name))
 
     def _catalog_sections(self, products):
         sections = []
         by_category = {}
         for item in products:
             by_category.setdefault(item["category"], []).append(item)
-        for category in sorted(by_category):
+        for category in sorted(by_category, key=lambda name: (self._priority_rank(name), name)):
             sections.append({"name": category, "products": by_category[category]})
+        return sections
+
+    def _priority_sections(self, products):
+        sections = []
+        for index, rule in enumerate(self.PRIORITY_CATEGORIES):
+            section_products = [item for item in products if item["priority_rank"] == index]
+            if section_products:
+                sections.append({"name": rule["label"], "summary": rule["summary"], "products": section_products})
         return sections
 
     def _cart_lines(self):
@@ -191,7 +263,7 @@ class CasaFolinoB2BPortal(http.Controller):
                 {
                     "product": product,
                     "qty": qty,
-                    "case_size": product.cf_b2b_case_size or 6,
+                    "case_size": self._case_size(product),
                     "price_unit": price_unit,
                     "subtotal": qty * price_unit,
                 }
@@ -228,7 +300,30 @@ class CasaFolinoB2BPortal(http.Controller):
                 "account_state": account_state,
                 "products": products,
                 "best_sellers": products[:8],
+                "priority_sections": self._priority_sections(products),
                 "category_sections": self._catalog_sections(products),
+                "cart": self._cart_totals(),
+            },
+        )
+
+    @http.route(["/b2b/product/<int:product_id>"], type="http", auth="public", website=True, sitemap=True)
+    def b2b_product(self, product_id, **kwargs):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
+        product = request.env["product.template"].sudo().browse(product_id).exists()
+        if not product or not product.sale_ok or not product.cf_b2b_enabled:
+            return request.not_found()
+        account_state = self._account_state()
+        item = self._product_payload(product, 0, account_state)
+        related = [candidate for candidate in self._catalog_products(account_state) if candidate["record"].id != product.id]
+        return request.render(
+            "casafolino_b2b_portal.product_detail",
+            {
+                "account_state": account_state,
+                "item": item,
+                "description": self._product_text(product) or item["blurb"],
+                "related_products": related[:4],
                 "cart": self._cart_totals(),
             },
         )
@@ -283,7 +378,7 @@ class CasaFolinoB2BPortal(http.Controller):
         product = request.env["product.template"].sudo().browse(int(product_id or 0)).exists()
         if not product or self._account_state() != "approved":
             return request.redirect("/b2b")
-        case_size = product.cf_b2b_case_size or 6
+        case_size = self._case_size(product)
         qty = int(quantity or case_size)
         qty = max(case_size, qty)
         if qty % case_size:
