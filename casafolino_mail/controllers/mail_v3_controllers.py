@@ -513,6 +513,33 @@ class MailV3Controller(http.Controller):
             return {'success': False, 'error': 'Draft not found'}
         return draft.action_send()
 
+    @http.route('/cf/mail/v3/documents/search', type='json', auth='user')
+    def documents_search(self, **kw):
+        """Return Odoo Documents that can be attached to the active draft."""
+        if 'documents.document' not in request.env.registry:
+            return {'documents': []}
+
+        query = (kw.get('query') or '').strip()
+        limit = min(int(kw.get('limit') or 30), 80)
+        domain = [('attachment_id', '!=', False)]
+        if query:
+            domain.append(('name', 'ilike', query))
+
+        docs = request.env['documents.document'].search(
+            domain, order='write_date desc, id desc', limit=limit)
+        result = []
+        for doc in docs:
+            att = doc.attachment_id
+            result.append({
+                'id': doc.id,
+                'name': doc.name or att.name or 'Documento',
+                'attachment_id': att.id,
+                'size': att.file_size or 0,
+                'mimetype': att.mimetype or '',
+                'folder': doc.folder_id.name if 'folder_id' in doc._fields and doc.folder_id else '',
+            })
+        return {'documents': result}
+
     # ── Sidebar 360 ──────────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/partner/<int:partner_id>/sidebar_360', type='json', auth='user')

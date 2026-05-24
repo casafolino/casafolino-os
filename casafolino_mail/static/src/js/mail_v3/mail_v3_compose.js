@@ -128,11 +128,17 @@ export class ComposeWizard extends Component {
             // Schedule send
             showScheduleModal: false,
             scheduledDateTime: '',
+            // Odoo documents picker
+            showDocumentPicker: false,
+            documentSearch: '',
+            documentResults: [],
+            documentLoading: false,
         });
 
         this._autosaveTimer = null;
         this._autosaveDebounce = null;
         this._snippetDebounce = null;
+        this._documentSearchDebounce = null;
 
         onMounted(() => {
             // Snippet slash-command listener
@@ -154,6 +160,7 @@ export class ComposeWizard extends Component {
         onWillUnmount(() => {
             if (this._autosaveTimer) clearInterval(this._autosaveTimer);
             if (this._autosaveDebounce) clearTimeout(this._autosaveDebounce);
+            if (this._documentSearchDebounce) clearTimeout(this._documentSearchDebounce);
         });
     }
 
@@ -304,6 +311,7 @@ export class ComposeWizard extends Component {
                     name: file.name,
                     size: file.size,
                 });
+                this._triggerAutosaveDebounce();
             }
         } catch (e) {
             console.error('[mail v3] upload error:', e);
@@ -333,12 +341,66 @@ export class ComposeWizard extends Component {
 
     removeAttachment(index) {
         this.state.attachments.splice(index, 1);
+        this._triggerAutosaveDebounce();
     }
 
     formatFileSize(bytes) {
+        bytes = Number(bytes || 0);
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ── Odoo Documents picker ──────────────────────────────
+
+    async openDocumentPicker() {
+        this.state.showDocumentPicker = true;
+        await this.loadOdooDocuments();
+    }
+
+    closeDocumentPicker() {
+        this.state.showDocumentPicker = false;
+        this.state.documentSearch = '';
+        this.state.documentResults = [];
+        this.state.documentLoading = false;
+    }
+
+    onDocumentSearchInput(ev) {
+        this.state.documentSearch = ev.target.value;
+        if (this._documentSearchDebounce) clearTimeout(this._documentSearchDebounce);
+        this._documentSearchDebounce = setTimeout(() => this.loadOdooDocuments(), 250);
+    }
+
+    async loadOdooDocuments() {
+        this.state.documentLoading = true;
+        try {
+            const res = await rpc('/cf/mail/v3/documents/search', {
+                query: this.state.documentSearch || '',
+                limit: 30,
+            });
+            this.state.documentResults = res.documents || [];
+        } catch (e) {
+            console.error('[mail v3] document search error:', e);
+            this.state.documentResults = [];
+        }
+        this.state.documentLoading = false;
+    }
+
+    async attachOdooDocument(doc) {
+        if (!doc?.attachment_id) return;
+        if (this.isOdooDocumentAttached(doc)) {
+            return;
+        }
+        this.state.attachments.push({
+            id: doc.attachment_id,
+            name: doc.name,
+            size: doc.size || 0,
+        });
+        this._triggerAutosaveDebounce();
+    }
+
+    isOdooDocumentAttached(doc) {
+        return this.state.attachments.some(att => att.id === doc?.attachment_id);
     }
 
     // ── Emoji Picker ────────────────────────────────────────

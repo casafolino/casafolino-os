@@ -262,12 +262,20 @@
 
             <!-- Drag & drop zone for non-image files -->
             <div t-att-class="'mv3-dropzone' + (state.dragOver ? ' mv3-dropzone--active' : '')">
-              <i class="fa fa-cloud-upload"/> Trascina file qui o
-              <label class="btn btn-sm btn-link" style="cursor:pointer; padding:0; margin:0;">
-                sfoglia
-                <input type="file" multiple="multiple" style="display:none"
-                       t-on-change="onFileSelect"/>
-              </label>
+              <div class="mv3-dropzone__hint">
+                <i class="fa fa-cloud-upload"/> Trascina file qui
+              </div>
+              <div class="mv3-attachment-actions">
+                <label class="btn btn-sm btn-outline-secondary">
+                  <i class="fa fa-folder-open-o"/> Dal PC
+                  <input type="file" multiple="multiple" style="display:none"
+                         t-on-change="onFileSelect"/>
+                </label>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        t-on-click="openDocumentPicker">
+                  <i class="fa fa-file-text-o"/> Documenti Odoo
+                </button>
+              </div>
             </div>
 
             <!-- Attachment previews -->
@@ -364,6 +372,55 @@
           </div>
           <div class="mv3-preview-modal__footer">
             <button class="btn btn-sm btn-secondary" t-on-click="closePreviewModal">Chiudi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Odoo Documents Picker -->
+      <div t-if="state.showDocumentPicker" class="mv3-modal-overlay" t-on-click="closeDocumentPicker">
+        <div class="mv3-preview-modal mv3-document-picker" t-on-click.stop="">
+          <div class="mv3-preview-modal__header">
+            <h5><i class="fa fa-file-text-o me-1"/> Documenti Odoo</h5>
+            <button class="btn btn-sm btn-link" t-on-click="closeDocumentPicker">
+              <i class="fa fa-times"/>
+            </button>
+          </div>
+          <div class="mv3-preview-modal__body">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Cerca nome, cartella, tag..."
+                   t-att-value="state.documentSearch"
+                   t-on-input="onDocumentSearchInput"/>
+            <div class="mv3-document-picker__list">
+              <div t-if="state.documentLoading" class="mv3-document-picker__empty">
+                <i class="fa fa-spinner fa-spin"/> Caricamento...
+              </div>
+              <t t-foreach="state.documentResults" t-as="doc" t-key="doc.id">
+                <div class="mv3-document-picker__item">
+                  <div class="mv3-document-picker__main">
+                    <i class="fa fa-file-o"/>
+                    <div>
+                      <strong t-out="doc.name"/>
+                      <span t-if="doc.folder" class="text-muted" t-out="doc.folder"/>
+                    </div>
+                  </div>
+                  <div class="mv3-document-picker__actions">
+                    <span t-out="this.formatFileSize(doc.size)"/>
+                    <button type="button" class="btn btn-sm btn-primary"
+                            t-on-click="() => this.attachOdooDocument(doc)"
+                            t-att-disabled="this.isOdooDocumentAttached(doc)">
+                      <i class="fa fa-paperclip"/> Allega
+                    </button>
+                  </div>
+                </div>
+              </t>
+              <div t-if="!state.documentLoading &amp;&amp; state.documentResults.length === 0"
+                   class="mv3-document-picker__empty">
+                Nessun documento trovato
+              </div>
+            </div>
+          </div>
+          <div class="mv3-preview-modal__footer">
+            <button class="btn btn-sm btn-secondary" t-on-click="closeDocumentPicker">Chiudi</button>
           </div>
         </div>
       </div>
