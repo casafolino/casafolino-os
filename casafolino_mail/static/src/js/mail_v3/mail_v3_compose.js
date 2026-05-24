@@ -106,7 +106,7 @@ export class ComposeWizard extends Component {
             showEmojiPicker: false,
             emojiSearch: '',
             // Template panel
-            showTemplatePanel: this.props.mode === 'new',
+            showTemplatePanel: false,
             templates: [],
             templateSearch: '',
             templateLangFilter: '',
@@ -149,8 +149,6 @@ export class ComposeWizard extends Component {
                 this._appendSignature(this.state.signatureHtml);
             }
             this._autosaveTimer = setInterval(() => this.autosave(), 15000);
-            this._loadTemplates();
-            this._detectPartnerLanguage();
         });
 
         onWillUnmount(() => {

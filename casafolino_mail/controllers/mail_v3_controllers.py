@@ -33,6 +33,36 @@ def _hotness_emoji(tier):
     }.get(tier, '')
 
 
+CASAFOLINO_DEFAULT_SIGNATURE_HTML = """
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;color:#2b2b2b;margin-top:14px;border-top:1px solid #d9c7a8;padding-top:12px;">
+  <tr>
+    <td style="padding-right:14px;vertical-align:top;">
+      <img src="https://casafolino.com/cdn/shop/files/Livello_1_fc5cd960-25a5-4e21-96e2-43dc9dca7824.png?v=1740215775" alt="CasaFolino" width="116" style="display:block;border:0;max-width:116px;height:auto;"/>
+    </td>
+    <td style="vertical-align:top;border-left:2px solid #8a6b3f;padding-left:14px;">
+      <div style="font-size:15px;font-weight:700;color:#1f1f1f;">Antonio Folino</div>
+      <div style="color:#6b5a3d;margin-bottom:8px;">CEO - CasaFolino Srl Societa Benefit</div>
+      <div><a href="mailto:antonio@casafolino.com" style="color:#6b4a1e;text-decoration:none;">antonio@casafolino.com</a></div>
+      <div><a href="https://casafolino.com" style="color:#6b4a1e;text-decoration:none;">casafolino.com</a></div>
+      <div style="color:#666;margin-top:8px;">Lamezia Terme (CZ) - Artigiani del gusto dal 1962</div>
+    </td>
+  </tr>
+</table>
+""".strip()
+
+
+def _signature_needs_branded_default(signature_html):
+    signature_html = signature_html or ''
+    return (
+        not signature_html
+        or (
+            'Antonio Folino' in signature_html
+            and 'Artigiani del gusto dal 1962' in signature_html
+            and 'Livello_1_fc5cd960' not in signature_html
+        )
+    )
+
+
 class MailV3Controller(http.Controller):
 
     def _get_user_account_ids(self):
@@ -1011,6 +1041,8 @@ class MailV3Controller(http.Controller):
                 ], limit=1)
             if sig:
                 prefilled['signature_html'] = sig.body_html or ''
+        if _signature_needs_branded_default(prefilled.get('signature_html')):
+            prefilled['signature_html'] = CASAFOLINO_DEFAULT_SIGNATURE_HTML
 
         if reply_to_id and mode in ('reply', 'reply_all', 'forward'):
             orig = request.env['casafolino.mail.message'].browse(reply_to_id)

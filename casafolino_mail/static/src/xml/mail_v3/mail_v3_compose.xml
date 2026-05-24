@@ -4,65 +4,10 @@
     <div class="mv3-compose-overlay">
       <div class="mv3-compose-container">
 
-        <!-- Template Panel (left sidebar) -->
-        <div t-if="state.showTemplatePanel" class="mv3-template-panel">
-          <div class="mv3-template-panel__header">
-            <strong>Template</strong>
-            <button class="btn btn-sm btn-link" t-on-click="toggleTemplatePanel">
-              <i class="fa fa-chevron-left"/>
-            </button>
-          </div>
-          <div class="mv3-template-panel__search">
-            <input type="text" class="form-control form-control-sm"
-                   placeholder="Cerca template..."
-                   t-att-value="state.templateSearch"
-                   t-on-input="onTemplateSearchInput"/>
-            <select class="form-select form-select-sm mt-1"
-                    t-on-change="onTemplateLangFilter">
-              <option value="">Tutte le lingue</option>
-              <option value="it_IT">Italiano</option>
-              <option value="en_US">English</option>
-              <option value="de_DE">Deutsch</option>
-              <option value="es_ES">Espanol</option>
-              <option value="fr_FR">Francais</option>
-            </select>
-          </div>
-          <div class="mv3-template-panel__list">
-            <t t-foreach="filteredTemplates" t-as="tpl" t-key="tpl.id">
-              <div class="mv3-template-panel__item"
-                   t-on-click="() => this.applyTemplate(tpl)"
-                   t-on-mouseenter="() => this.onTemplateHover(tpl)"
-                   t-on-mouseleave="onTemplateLeave">
-                <div class="mv3-template-panel__item-header">
-                  <span class="mv3-template-panel__lang-badge" t-out="this.getLangBadge(tpl.language)"/>
-                  <span class="mv3-template-panel__name" t-out="tpl.name"/>
-                </div>
-                <div class="mv3-template-panel__item-meta">
-                  <span class="badge bg-secondary me-1" t-out="this.getCategoryLabel(tpl.category)"/>
-                  <span t-if="this.isTemplateDetectedLang(tpl)"
-                        class="badge bg-success">Suggerito</span>
-                </div>
-                <!-- Hover preview tooltip -->
-                <div t-if="state.hoveredTemplate === tpl.id"
-                     class="mv3-template-panel__preview">
-                  <div t-out="state.hoveredPreviewHtml" class="mv3-template-panel__preview-body"/>
-                </div>
-              </div>
-            </t>
-            <div t-if="filteredTemplates.length === 0" class="mv3-template-panel__empty">
-              Nessun template trovato
-            </div>
-          </div>
-        </div>
-
         <!-- Main composer -->
         <div class="mv3-compose">
           <div class="mv3-compose__header">
             <div class="mv3-compose__header-left">
-              <button t-if="!state.showTemplatePanel" class="btn btn-sm btn-outline-secondary me-2"
-                      t-on-click="toggleTemplatePanel" title="Template">
-                <i class="fa fa-file-text-o"/>
-              </button>
               <h4>
                 <t t-if="props.mode === 'reply'">Rispondi</t>
                 <t t-elif="props.mode === 'reply_all'">Rispondi a tutti</t>
