@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import requests
+from datetime import timezone
 from email.utils import parseaddr, parsedate_to_datetime
 
 from odoo import models, fields, api
@@ -354,6 +355,8 @@ class ResPartnerMailExt(models.Model):
                         subject = account._decode_header_value(msg.get('Subject', ''))
                         try:
                             email_date = parsedate_to_datetime(msg.get('Date', ''))
+                            if email_date and email_date.tzinfo:
+                                email_date = email_date.astimezone(timezone.utc).replace(tzinfo=None)
                         except Exception:
                             email_date = fields.Datetime.now()
 
@@ -381,7 +384,7 @@ class ResPartnerMailExt(models.Model):
                             })
 
                             # Parsa body direttamente dal raw già disponibile
-                            new_msg._parse_and_save_body(msg)
+                            new_msg.with_context(cf_skip_mail_attachments=True)._parse_and_save_body(msg)
                             new_msg._create_partner_mail_message()
 
                             self.env.cr.commit()

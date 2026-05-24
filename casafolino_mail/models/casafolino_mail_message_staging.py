@@ -1175,6 +1175,7 @@ class CasafolinoMailMessage(models.Model):
         body_html = ''
         body_text = ''
         attachments = []
+        capture_attachments = not self.env.context.get('cf_skip_mail_attachments')
 
         if msg.is_multipart():
             for part in msg.walk():
@@ -1376,13 +1377,14 @@ class CasafolinoMailMessage(models.Model):
         body_html = ''
         body_text = ''
         attachments = []
+        capture_attachments = not self.env.context.get('cf_skip_mail_attachments')
 
         if msg_obj.is_multipart():
             for part in msg_obj.walk():
                 content_type = part.get_content_type()
                 disposition = str(part.get('Content-Disposition', ''))
 
-                if 'attachment' in disposition or part.get_filename():
+                if capture_attachments and ('attachment' in disposition or part.get_filename()):
                     filename = part.get_filename()
                     if filename:
                         filename = self.env['casafolino.mail.account']._decode_header_value(filename)

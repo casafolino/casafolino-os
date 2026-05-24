@@ -47,8 +47,8 @@
     <menuitem id="menu_cf_josefina" name="Josefina"
         parent="menu_cf_export_root" action="action_crm_lead_josefina" sequence="20"/>
 
-    <!-- Progetti 360° -->
-    <menuitem id="menu_cf_projects_360" name="Progetti 360°"
+    <!-- Dossier commerciali -->
+    <menuitem id="menu_cf_projects_360" name="Dossier / Progetti"
         parent="menu_cf_export_root" action="action_cf_project_dossier" sequence="25"/>
 
     <!-- Operativo -->

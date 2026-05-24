@@ -880,15 +880,13 @@ class ProjectProject(models.Model):
     def action_open_project_dashboard_360(self):
         self.ensure_one()
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_crm_export.project_dashboard',
-            'name': 'Vista 360° — %s' % self.name,
-            'context': {
-                'default_project_id': self.id,
-                'active_id': self.id,
-                'active_model': 'project.project',
-            },
-            'target': 'main',
+            'type': 'ir.actions.act_window',
+            'name': 'Dossier',
+            'res_model': 'project.project',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
         }
 
     @api.depends('partner_id')
@@ -937,11 +935,11 @@ class ProjectProject(models.Model):
             project.cf_open_issues_count = issue_counts.get(project.id, 0)
 
     # ------------------------------------------------------------------
-    # Dashboard 360° aggregator — Brief #5.0
+    # Legacy dashboard payload kept for compatibility with old callers.
     # ------------------------------------------------------------------
 
     def cf_get_dashboard_data(self):
-        """Single aggregator for the 360° OWL dashboard.
+        """Return the former dossier dashboard payload.
         Returns a JSON-serializable dict with all data the frontend needs."""
         self.ensure_one()
 
