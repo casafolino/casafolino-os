@@ -119,7 +119,8 @@ class CasaFolinoB2BPortal(http.Controller):
 
     def _product_image_url(self, product, category, index):
         if product.image_1024:
-            return f"/web/image/product.template/{product.id}/image_1024"
+            unique = product.write_date.strftime("%Y%m%d%H%M%S") if product.write_date else product.id
+            return f"/web/image/product.template/{product.id}/image_1024?unique={unique}"
         searchable = f"{product.name or ''} {product.default_code or ''}".lower()
         for keyword, image_url in self.MOCKUP_IMAGES.items():
             if keyword in searchable:
