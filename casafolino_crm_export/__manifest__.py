@@ -8,6 +8,7 @@
     'data': [
         'security/ir.model.access.csv',
         'data/cleanup_inherit.xml',
+        'data/legacy_view_cleanup.xml',
         'data/cf_sample_stages.xml',
         'data/cf_sequence_data.xml',
         'data/cf_export_cron.xml',
