@@ -626,7 +626,16 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='emails']" position="replace">
                 <page string="Email" name="emails">
-                    <field name="lead_message_ids" nolabel="1">
+                    <div class="o_row mb-3">
+                        <button name="action_import_email_history" type="object"
+                            string="Aggiorna storico email" class="btn btn-primary btn-sm"
+                            invisible="not partner_id"
+                            confirm="Scaricare lo storico email mirato per il contatto di questo lead?"/>
+                        <button name="action_send_email" type="object"
+                            string="Scrivi Email" class="btn btn-secondary btn-sm"
+                            invisible="not partner_id"/>
+                    </div>
+                    <field name="cf_mail_history_ids" nolabel="1">
                         <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
                             <field name="email_date"/>
                             <field name="direction" widget="badge"/>
