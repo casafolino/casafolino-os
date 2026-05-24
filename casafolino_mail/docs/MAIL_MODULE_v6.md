@@ -43,7 +43,6 @@
 | casafolino.mail.folder.rule | casafolino_mail_folder_rule.py | Auto-sort rules |
 | casafolino.mail.snippet | snippet.py | Reply snippets |
 | cf.mail.position.feedback | cf_mail_position_feedback.py | AI match/mismatch history |
-| cf.mail.compose.ai | cf_mail_compose_ai.py | AI endpoints for F8 composer |
 | casafolino.mail.sla.partner | sla_partner.py | SLA dashboard |
 | casafolino.mail.orphan.partner | orphan_partner.py | Orphan dashboard |
 | casafolino.mail.lead.score | lead_score.py | Lead scoring |
@@ -53,7 +52,6 @@
 | Component | Path | Purpose |
 |-----------|------|---------|
 | F8 ComposeWizard | js/mail_v3/mail_v3_compose.js | Outlook-style composer |
-| CFComposeAIPanel | compose_ai_panel/ | AI assist panel (tone/lang/sig/replies) |
 | CFInboxSelector | inbox_selector/ | "View as" pill for supervisor |
 | Posizionatore list | posizionatore_views.xml | Mail positioning with AI confidence |
 
@@ -69,16 +67,11 @@
 
 *Create via UI: Settings → Technical → Scheduled Actions
 
-## AI Endpoints (cf.mail.compose.ai)
+## Composer AI
 
-| Endpoint | Returns |
-|----------|---------|
-| cf_suggest_tone | {suggested_tone, reasoning, rewrite_hint} |
-| cf_detect_language | {detected_lang, partner_lang, mismatch} |
-| cf_translate | {translated} |
-| cf_get_signature | {signature_html, reason} |
-| cf_suggest_quick_replies | {replies: [{short_label, text, tone}]} |
-| cf_score_snippets | {scored_ids: [{id, score, why}]} |
+The F8 AI Assist panel was removed on 2026-05-24. The composer currently has no active AI panel or `cf.mail.compose.ai` endpoints.
+
+AI should be reintroduced only after a new spec defines concrete CRM actions and a useful review flow.
 
 ## Permission model
 
@@ -106,7 +99,7 @@
 | #6.1 | Ingestion rerouting (mail_tracked, fetch+match, body lazy) | Done |
 | #6.2 | Posizionatore UI (3 AI confidence dynamics) | Done |
 | #6.3 | AI feedback loop (accuracy score, dynamic threshold) | Done |
-| #6.4 | F8 AI assist panel (tone/lang/sig/replies) | Done |
+| #6.4 | F8 AI assist panel (tone/lang/sig/replies) | Removed 2026-05-24 |
 | #6.5 | Inbox selector ("view as" for supervisor) | Done |
 | #6.6 | Test prod + migration (backfill, cleanup, perf, E2E) | Done |
 

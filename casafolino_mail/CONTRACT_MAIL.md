@@ -13,7 +13,7 @@
 - **Backfill storico** (Brief #6.1): async one-shot cron on mail_tracked activation
 - **Posizionatore mail** (Brief #6.2): AI-assisted positioning to project dossiers
 - **AI feedback loop** (Brief #6.3): feedback history, context injection, dynamic threshold
-- **F8 AI assist panel** (Brief #6.4): tone/language/signature/quick-replies in composer
+- **F8 AI assist panel** (Brief #6.4): removed 2026-05-24; to redesign before reintroducing AI in composer
 - **Inbox selector** (Brief #6.5): "vedo come" pill for supervisor, ephemeral state
 - AI classifier Groq (model: llama-3.3-70b-versatile, param: casafolino.groq_api_key)
 - F8 Outlook-style composer (compose_wizard_dialog.js, mail_v3_compose.js)
@@ -97,29 +97,11 @@ Global state: `cfInboxSelectorState` (subscribe/notify pattern, ephemeral).
 - Antonio: pill visible, dropdown with self + Josefina + Martina
 - Josefina/Martina: pill hidden, experience unchanged
 
-### Brief #6.4 — F8 AI assist panel (deployed 2026-05-07)
+### Brief #6.4 — F8 AI assist panel (removed 2026-05-24)
 
-#### AbstractModel: cf.mail.compose.ai (6 endpoints)
-| Endpoint | Returns |
-|---|---|
-| cf_suggest_tone | {suggested_tone, reasoning, rewrite_hint} |
-| cf_detect_language | {detected_lang, partner_lang, mismatch} |
-| cf_translate | {translated} |
-| cf_get_signature | {signature_html, reason} |
-| cf_suggest_quick_replies | {replies: [{short_label, text, tone}]} |
-| cf_score_snippets | {scored_ids: [{id, score, why}]} |
+The first AI Assist implementation was removed from the composer because it was not operationally useful. No `CFComposeAIPanel`, `cf.mail.compose.ai` model, or compose AI asset is active now.
 
-#### Component: CFComposeAIPanel
-Path: `static/src/compose_ai_panel/`
-Tabs: Tono / Lingua / Firma / Risposte
-Debounce: 800ms on lang detection
-Responsive: collapse under 1200px
-
-#### F8 integration (non-invasive)
-- ComposeWizard.static.components = { CFComposeAIPanel }
-- Callbacks: applyAIBody, appendAIBody, getBodyForAI
-- Props: partnerId, threadId from prefilled
-- Signature: contextual (new partner → extended, fidelized → short, intl → multilang)
+Reintroduce AI only with a new spec that defines concrete actions, review states, user control, and measurable value in the CRM workflow.
 
 ### Brief #6.3 — AI feedback loop (deployed 2026-05-07)
 

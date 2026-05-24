@@ -1,5 +1,7 @@
 # Brief #6.4 — F8 AI Assist Scoping
 
+Status 2026-05-24: superseded. The first implementation was removed because it did not provide enough operational value in the composer. Use this brief only as historical context; a new AI composer spec is required before rebuilding the feature.
+
 **Data:** 2026-05-07
 
 ## F8 Composer Files
