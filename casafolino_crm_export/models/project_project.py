@@ -761,7 +761,12 @@ class ProjectProject(models.Model):
         }
 
     def action_sync_dossier_mail_history(self):
-        """Backfill email history for all dossier contacts and position it here."""
+        """Backfill email history for dossier contacts and link it here.
+
+        The default path is intentionally lightweight: imported mail is stored in
+        casafolino.mail.message and linked to the dossier/lead, while chatter
+        creation is opt-in via context to keep large backfills safe.
+        """
         self.ensure_one()
         contacts = self.cf_contact_ids.filtered(
             lambda c: c.mail_sync_enabled and c.email)
@@ -770,9 +775,10 @@ class ProjectProject(models.Model):
 
         parent_partner = self.partner_id.commercial_partner_id or self.partner_id
         partners = self.env['res.partner']
-        if self.partner_id and self.partner_id.email:
+        include_company = self.env.context.get('cf_include_company_mail_history') or not contacts
+        if include_company and self.partner_id and self.partner_id.email:
             partners |= self.partner_id
-        if self.cf_buyer_id and self.cf_buyer_id.email:
+        if include_company and self.cf_buyer_id and self.cf_buyer_id.email:
             partners |= self.cf_buyer_id
 
         for contact in contacts:
@@ -780,16 +786,23 @@ class ProjectProject(models.Model):
             partners |= partner
 
         synced = 0
+        batch_limit = int(self.env.context.get('cf_history_limit') or 80)
         for partner in partners:
             if not partner.email:
                 continue
-            partner.sudo().action_sync_full_email_history()
+            partner.sudo().with_context(
+                cf_history_limit=batch_limit,
+                cf_skip_mail_attachments=True,
+                cf_skip_thread_upsert=True,
+                cf_skip_partner_chatter=True,
+            ).action_sync_full_email_history()
             synced += 1
 
         lead = self._cf_dossier_lead()
         MailMsg = self.env['casafolino.mail.message'].sudo()
         messages = MailMsg.search(self._cf_mail_domain() or [('id', '=', 0)])
         positioned = 0
+        create_chatter = self.env.context.get('cf_create_project_chatter', False)
         for msg in messages:
             vals = {
                 'cf_project_id': self.id,
@@ -809,7 +822,7 @@ class ProjectProject(models.Model):
                     vals['partner_id'] = partner.id
                     vals['match_type'] = 'exact'
             msg.write(vals)
-            if not msg.mail_message_id:
+            if create_chatter and not msg.mail_message_id:
                 try:
                     msg.action_position_to_project(self.id)
                 except Exception as exc:
@@ -819,6 +832,7 @@ class ProjectProject(models.Model):
             positioned += 1
 
         contacts.write({'mail_last_sync': fields.Datetime.now()})
+        self.env.cr.commit()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',

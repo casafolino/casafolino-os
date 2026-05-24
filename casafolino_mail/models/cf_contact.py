@@ -293,11 +293,26 @@ class ResPartnerMailExt(models.Model):
         if not self.email:
             raise UserError("Il contatto non ha un indirizzo email.")
 
+        ICP = self.env['ir.config_parameter'].sudo()
+        batch_limit = int(
+            self.env.context.get('cf_history_limit')
+            or ICP.get_param('casafolino_mail.history_sync_batch_size', 80)
+            or 80
+        )
+        skip_attachments = self.env.context.get('cf_skip_mail_attachments', True)
+        skip_threads = self.env.context.get('cf_skip_thread_upsert', True)
+        skip_partner_chatter = self.env.context.get('cf_skip_partner_chatter', True)
+
         accounts = self.env['casafolino.mail.account'].search([('state', '=', 'connected')])
         email_lower = self.email.lower().strip()
         Message = self.env['casafolino.mail.message']
+        imported = 0
+        skipped = 0
+        errors = 0
 
         for account in accounts:
+            if batch_limit and imported >= batch_limit:
+                break
             imap = account._get_imap_connection()
             try:
                 folders = []
@@ -321,7 +336,9 @@ class ResPartnerMailExt(models.Model):
                     uid_list = msg_ids[0].split()
                     _logger.info("Storico %s in %s: %d email", email_lower, folder_name, len(uid_list))
 
-                    for uid in uid_list:
+                    for uid in reversed(uid_list):
+                        if batch_limit and imported >= batch_limit:
+                            break
                         uid_str = uid.decode()
 
                         # Scarica completo (header + body)
@@ -345,6 +362,7 @@ class ResPartnerMailExt(models.Model):
 
                         # Skip se già esiste
                         if Message.search([('message_id_rfc', '=', message_id), ('account_id', '=', account.id)], limit=1):
+                            skipped += 1
                             continue
 
                         # Parsa header
@@ -364,31 +382,40 @@ class ResPartnerMailExt(models.Model):
 
                         # Crea record staging con state=keep e body
                         try:
-                            new_msg = Message.create({
-                                'account_id': account.id,
-                                'message_id_rfc': message_id,
-                                'imap_uid': uid_str,
-                                'imap_folder': folder_name,
-                                'direction': actual_direction,
-                                'sender_email': sender_email_addr,
-                                'sender_name': sender_name,
-                                'recipient_emails': account._extract_emails(msg.get('To', '')),
-                                'cc_emails': account._extract_emails(msg.get('Cc', '')),
-                                'subject': subject,
-                                'email_date': email_date,
-                                'state': 'keep',
-                                'partner_id': self.id,
-                                'match_type': 'exact',
-                                'triage_user_id': self.env.user.id,
-                                'triage_date': fields.Datetime.now(),
-                            })
+                            with self.env.cr.savepoint():
+                                new_msg = Message.with_context(
+                                    skip_thread_upsert=skip_threads
+                                ).create({
+                                    'account_id': account.id,
+                                    'message_id_rfc': message_id,
+                                    'imap_uid': uid_str,
+                                    'imap_folder': folder_name,
+                                    'direction': actual_direction,
+                                    'sender_email': sender_email_addr,
+                                    'sender_name': sender_name,
+                                    'recipient_emails': account._extract_emails(msg.get('To', '')),
+                                    'cc_emails': account._extract_emails(msg.get('Cc', '')),
+                                    'subject': subject,
+                                    'email_date': email_date,
+                                    'state': 'keep',
+                                    'partner_id': self.id,
+                                    'match_type': 'exact',
+                                    'triage_user_id': self.env.user.id,
+                                    'triage_date': fields.Datetime.now(),
+                                })
 
-                            # Parsa body direttamente dal raw già disponibile
-                            new_msg.with_context(cf_skip_mail_attachments=True)._parse_and_save_body(msg)
-                            new_msg._create_partner_mail_message()
+                                # Parsa body direttamente dal raw già disponibile.
+                                new_msg.with_context(
+                                    cf_skip_mail_attachments=skip_attachments
+                                )._parse_and_save_body(msg)
+                                if not skip_partner_chatter:
+                                    new_msg._create_partner_mail_message()
 
+                            imported += 1
                             self.env.cr.commit()
                         except Exception as e:
+                            errors += 1
+                            self.env.cr.rollback()
                             _logger.warning("History sync error for %s uid %s: %s", email_lower, uid_str, e)
                             continue
 
@@ -403,16 +430,34 @@ class ResPartnerMailExt(models.Model):
             'mail_first_sync_done': True,
             'mail_last_sync': fields.Datetime.now(),
         })
+        self.env.cr.commit()
 
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Sync completato',
-                'message': 'Storico email scaricato per %s' % self.email,
+                'message': '%s: %d importate, %d gia presenti, %d errori.' % (
+                    self.email, imported, skipped, errors),
                 'type': 'success',
             },
         }
+
+    @api.model
+    def _cron_sync_tracked_contact_history(self, limit_contacts=5, limit_messages=80):
+        """Importa storico mail dei contatti tracciati a piccoli batch riprendibili."""
+        contacts = self.search([
+            ('mail_tracked', '=', True),
+            ('email', '!=', False),
+        ], order='mail_last_sync asc NULLS FIRST, id', limit=limit_contacts)
+        for contact in contacts:
+            contact.with_context(
+                cf_history_limit=limit_messages,
+                cf_skip_mail_attachments=True,
+                cf_skip_thread_upsert=True,
+                cf_skip_partner_chatter=True,
+            ).action_sync_full_email_history()
+        return True
 
     @api.depends('partner_message_ids', 'partner_message_ids.email_date')
     def _compute_last_contact(self):
