@@ -10,6 +10,11 @@
         <field name="value">CasaFolino B2B &lt;antonio@casafolino.com&gt;</field>
     </record>
 
+    <record id="ir_config_parameter_b2b_portal_base_url" model="ir.config_parameter">
+        <field name="key">casafolino_b2b.portal_base_url</field>
+        <field name="value">https://b2b.casafolino.com</field>
+    </record>
+
     <record id="mail_template_b2b_request_received" model="mail.template">
         <field name="name">CasaFolino B2B - Richiesta ricevuta</field>
         <field name="model_id" ref="base.model_res_partner"/>
@@ -68,7 +73,7 @@
                 <p>il tuo account B2B CasaFolino e stato approvato.</p>
                 <p>Il tuo username e <strong><t t-out="object.email or ''"/></strong>. Clicca sul pulsante qui sotto per scegliere la password e accedere al listino riservato.</p>
                 <p style="margin:24px 0;">
-                    <a t-att-href="object._get_signup_url()" style="background:#822b20;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;">Scegli la password</a>
+                    <a t-att-href="object._cf_b2b_signup_url()" style="background:#822b20;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;">Scegli la password</a>
                 </p>
                 <p>Dopo il primo accesso potrai vedere i prezzi B2B e creare ordini secondo i minimi configurati.</p>
                 <p>Benvenuto nel portale,<br/>CasaFolino</p>

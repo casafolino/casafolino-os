@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from urllib.parse import urlsplit, urlunsplit
+
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
@@ -50,6 +52,24 @@ class ResPartner(models.Model):
             "CasaFolino B2B <antonio@casafolino.com>",
         )
 
+    def _cf_b2b_base_url(self):
+        return self.env["ir.config_parameter"].sudo().get_param(
+            "casafolino_b2b.portal_base_url",
+            "https://b2b.casafolino.com",
+        ).rstrip("/")
+
+    def _cf_b2b_signup_url(self):
+        self.ensure_one()
+        url = self._get_signup_url()
+        base_url = self._cf_b2b_base_url()
+        if not url:
+            return base_url
+        if url.startswith("/"):
+            return f"{base_url}{url}"
+        base = urlsplit(base_url)
+        parsed = urlsplit(url)
+        return urlunsplit((base.scheme, base.netloc, parsed.path, parsed.query, parsed.fragment))
+
     def _cf_b2b_send_template(self, xmlid, email_values=None):
         template = self.env.ref(xmlid, raise_if_not_found=False)
         if not template:
@@ -84,7 +104,11 @@ class ResPartner(models.Model):
             partner.cf_b2b_status = "approved"
             user = self.env["res.users"].sudo().search([("login", "=", email)], limit=1)
             if not user:
-                user = self.env["res.users"].sudo().create(
+                user = self.env["res.users"].sudo().with_context(
+                    no_reset_password=True,
+                    mail_create_nosubscribe=True,
+                    mail_create_nolog=True,
+                ).create(
                     {
                         "name": partner.name,
                         "login": email,
