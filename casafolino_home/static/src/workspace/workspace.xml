@@ -45,7 +45,7 @@
                 </div>
                 <div class="cf-ws-tip">
                     <i class="fa fa-bullseye"/>
-                    <span>Parti dai lead caldi, crea il dossier quando il progetto prende forma, poi governa attività, preventivi e campionature dalla Vista 360.</span>
+                    <span>Parti dai lead caldi, crea il dossier quando il progetto prende forma, poi governa attività, preventivi e campionature dalla Sala Controllo.</span>
                 </div>
             </div>
         </section>
@@ -194,10 +194,10 @@
                     <p class="cf-section-title">Biglietti scansionati</p>
                     <p class="cf-section-subtitle">Da biglietto a lead</p>
                 </div>
-                <div t-on-click="onOpenAnalytics" class="cf-section-card">
+                <div t-on-click="onOpenControlRoom" class="cf-section-card">
                     <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
-                    <p class="cf-section-title">Vista 360</p>
-                    <p class="cf-section-subtitle">Apri da un dossier</p>
+                    <p class="cf-section-title">Sala Controllo</p>
+                    <p class="cf-section-subtitle">Inbox, follow-up e dossier</p>
                 </div>
                 <div t-on-click="onOpenInternalProjects" class="cf-section-card">
                     <i class="fa fa-check-square-o cf-section-icon" style="color: #3F8A4F;"/>

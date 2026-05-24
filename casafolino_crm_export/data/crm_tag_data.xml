@@ -4,4 +4,9 @@
         <field name="name">SIAL_MONTREAL_2026</field>
         <field name="color">3</field>
     </record>
+
+    <record id="crm_tag_tuttofood_2026" model="crm.tag">
+        <field name="name">TUTTOFOOD_2026</field>
+        <field name="color">4</field>
+    </record>
 </odoo>

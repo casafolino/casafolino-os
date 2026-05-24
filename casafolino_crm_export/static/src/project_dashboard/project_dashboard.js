@@ -61,7 +61,7 @@ export class CFProjectDashboard extends Component {
         this.state = useState({
             isLoading: true,
             data: null,
-            activeTab: "timeline",
+            activeTab: "cockpit",
             timelineFilter: "all",
             error: null,
         });
@@ -136,15 +136,48 @@ export class CFProjectDashboard extends Component {
         return tl.filter((ev) => ev.type === this.state.timelineFilter);
     }
 
+    get brokerContact() {
+        return (this.state.data?.contacts || []).find(
+            (contact) => contact.role === "broker" || contact.is_external
+        ) || null;
+    }
+
+    get displayedMail() {
+        return (this.state.data?.mail || []).slice(0, 6);
+    }
+
+    get displayedTimeline() {
+        return (this.state.data?.timeline || []).slice(0, 6);
+    }
+
+    get inboundMailCount() {
+        return (this.state.data?.mail || []).filter((mail) => !mail.is_outbound).length;
+    }
+
+    get outboundMailCount() {
+        return (this.state.data?.mail || []).filter((mail) => mail.is_outbound).length;
+    }
+
+    contactInitials(contact) {
+        return (contact?.name || "?")
+            .split(" ")
+            .filter(Boolean)
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+    }
+
     get tabs() {
         return [
+            { id: "cockpit", label: "Cockpit", enabled: true },
             { id: "timeline", label: "Timeline", enabled: true },
-            { id: "cliente", label: "Cliente", enabled: true },
+            { id: "cliente", label: "Persone", enabled: true },
+            { id: "mail", label: "Mail", enabled: true },
             { id: "commerciale", label: "Commerciale", enabled: true },
             { id: "campionature", label: "Campionature", enabled: true },
             { id: "documenti", label: "Documenti", enabled: true },
             { id: "note", label: "Note", enabled: true },
-            { id: "mail", label: "Mail", enabled: true },
         ];
     }
 
@@ -297,6 +330,18 @@ export class CFProjectDashboard extends Component {
         await this._loadData();
     }
 
+    async onSyncDossierMail() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.orm.call(
+            "project.project",
+            "action_sync_dossier_mail_history",
+            [[projectId]]
+        );
+        this.notification.add(_t("Storico mail aggiornato"), { type: "success" });
+        await this.onRefresh();
+    }
+
     onContactClick(contactId) {
         if (!contactId) return;
         this.action.doAction({
@@ -306,6 +351,22 @@ export class CFProjectDashboard extends Component {
             views: [[false, "form"]],
             target: "current",
         });
+    }
+
+    async onAddContact() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "cf.project.contact",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_project_id: projectId,
+                default_mail_sync_enabled: true,
+            },
+        });
+        await this.onRefresh();
     }
 
     // Brief #B6 — Mail tab handlers

@@ -11,6 +11,9 @@ class CardScannerWidget extends Component {
     setup() {
         this.state = useState({
             step: "capture",
+            fairs: [],
+            fairId: null,
+            fairName: "",
             imageData: null,
             imagePreview: null,
             formData: {
@@ -27,7 +30,7 @@ class CardScannerWidget extends Component {
                 website: "",
                 country_code: "",
             },
-            language: "en_US",
+            language: "it_IT",
             error: null,
             leadId: null,
             leadName: null,
@@ -36,9 +39,34 @@ class CardScannerWidget extends Component {
         this.fileInputRef = useRef("fileInput");
         this.notification = useService("notification");
         this.action = useService("action");
+        this.loadScannerInit();
+    }
+
+    async loadScannerInit() {
+        try {
+            const result = await rpc("/casafolino/crm/card-scanner/init", {});
+            this.state.fairs = result.fairs || [];
+            this.state.fairId = result.default_fair_id || (this.state.fairs[0]?.id || null);
+            this._syncFairName();
+        } catch (err) {
+            this.state.error = "Impossibile caricare le fiere configurate.";
+        }
+    }
+
+    _syncFairName() {
+        const fair = this.state.fairs.find((item) => item.id === this.state.fairId);
+        this.state.fairName = fair?.name || "";
+    }
+
+    onFairChange(ev) {
+        this.state.fairId = Number(ev.target.value) || null;
+        this._syncFairName();
     }
 
     onCaptureClick() {
+        if (!this.state.fairId) {
+            this.notification.add("Fiera non caricata: userò la fiera predefinita.", { type: "info" });
+        }
         this.fileInputRef.el.click();
     }
 
@@ -110,6 +138,7 @@ class CardScannerWidget extends Component {
                 image_data: this.state.imageData,
                 language: this.state.language,
                 send_email: sendEmail,
+                fair_id: this.state.fairId,
             });
             if (result.success) {
                 this.state.leadId = result.lead_id;
@@ -148,10 +177,11 @@ class CardScannerWidget extends Component {
         this.state.leadId = null;
         this.state.leadName = null;
         this.state.emailSent = false;
+        this._syncFairName();
         Object.keys(this.state.formData).forEach((key) => {
             this.state.formData[key] = "";
         });
-        this.state.language = "en_US";
+        this.state.language = "it_IT";
         if (this.fileInputRef.el) {
             this.fileInputRef.el.value = "";
         }

@@ -149,6 +149,42 @@
 
     /* ── List views inside notebook ───────────────────────────── */
 
+    .cf-dossier-mail-toolbar {
+        align-items: center;
+        background: var(--cfw-card-bg);
+        border: 1px solid rgba(107, 74, 30, 0.12);
+        border-radius: var(--cfw-radius-card);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+
+        .cf-dossier-mail-title {
+            display: flex;
+            flex: 1 1 240px;
+            flex-direction: column;
+            gap: 2px;
+            margin-right: 8px;
+
+            strong {
+                color: var(--cfw-brown-dark);
+                font-size: 14px;
+                font-weight: 700;
+            }
+
+            span {
+                color: var(--cfw-text-muted);
+                font-size: 12px;
+            }
+        }
+
+        .btn {
+            border-radius: var(--cfw-radius-pill);
+            font-weight: 600;
+            min-height: 34px;
+        }
+    }
+
     .o_list_view {
         .o_list_table {
             thead th {

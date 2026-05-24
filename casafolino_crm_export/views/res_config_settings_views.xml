@@ -7,7 +7,7 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app string="CRM Export" data-string="CRM Export" name="casafolino_crm_export">
+                <app data-string="CRM Export" string="CRM Export">
                     <block title="Fair Follow-up Settings" name="fair_followup_settings">
                         <setting string="Catalogue (EN)" help="Select the Catalogue document to attach to fair follow-up emails">
                             <field name="fair_attachment_catalog"/>

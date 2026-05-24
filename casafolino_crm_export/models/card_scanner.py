@@ -5,8 +5,11 @@ from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
-SIAL_TAG_NAME = 'SIAL_MONTREAL_2026'
-SIAL_SOURCE_NAME = 'Fiera SIAL Canada 2026'
+FAIR_TAG_NAME = 'TUTTOFOOD_2026'
+FAIR_SOURCE_NAME = 'Fiera TUTTOFOOD Milano 2026'
+FAIR_LEAD_PREFIX = 'Lead Fiera TUTTOFOOD Milano 2026'
+FAIR_XMLID = 'casafolino_crm_export.cf_export_fair_tuttofood_2026'
+LANG_FALLBACK = 'en_US'
 
 
 class CrmLeadCardScanner(models.Model):
@@ -17,14 +20,20 @@ class CrmLeadCardScanner(models.Model):
     ai_extracted_data = fields.Text('AI Extracted Data')
 
     @api.model
-    def create_from_card_scan(self, form_data, image_data, language='en_US', send_email=True):
+    def create_from_card_scan(self, form_data, image_data, language='en_US', send_email=True, fair_id=None):
         """Create partner + lead from card scan data, optionally send follow-up email."""
+        fair = self._get_card_scan_fair(fair_id)
+        fair_name = fair.name if fair else 'Fiera'
+        fair_tag_name = self._fair_tag_name(fair) if fair else FAIR_TAG_NAME
+        fair_source_name = 'Fiera %s' % fair_name if fair else FAIR_SOURCE_NAME
+        lead_prefix = 'Lead %s' % fair_name if fair else FAIR_LEAD_PREFIX
+
         # --- Partner ---
         partner_vals = {
             'name': ' '.join(filter(None, [
                 form_data.get('first_name', ''),
                 form_data.get('last_name', ''),
-            ])).strip() or 'Contact SIAL',
+            ])).strip() or 'Contatto %s' % fair_name,
             'email': form_data.get('email') or False,
             'phone': form_data.get('phone') or False,
             'mobile': form_data.get('mobile') or False,
@@ -60,7 +69,7 @@ class CrmLeadCardScanner(models.Model):
 
         # Partner category tag
         category = self.env['res.partner.category'].search(
-            [('name', '=', SIAL_TAG_NAME)], limit=1,
+            [('name', '=', fair_tag_name)], limit=1,
         )
         if category:
             partner_vals['category_id'] = [(4, category.id)]
@@ -80,14 +89,15 @@ class CrmLeadCardScanner(models.Model):
 
         # --- Lead ---
         crm_tag = self.env['crm.tag'].search(
-            [('name', '=', SIAL_TAG_NAME)], limit=1,
+            [('name', '=', fair_tag_name)], limit=1,
         )
         utm_source = self.env['utm.source'].search(
-            [('name', '=', SIAL_SOURCE_NAME)], limit=1,
+            [('name', '=', fair_source_name)], limit=1,
         )
+        stage = self._get_first_pipeline_stage()
 
         lead_vals = {
-            'name': f'Lead Fiera SIAL Canada 2026 — {company_name or partner.name}',
+            'name': f'{lead_prefix} - {company_name or partner.name}',
             'partner_id': partner.id,
             'contact_name': partner.name,
             'partner_name': company_name or '',
@@ -101,6 +111,10 @@ class CrmLeadCardScanner(models.Model):
             lead_vals['tag_ids'] = [(4, crm_tag.id)]
         if utm_source:
             lead_vals['source_id'] = utm_source.id
+        if fair:
+            lead_vals['cf_fair_id'] = fair.id
+        if stage:
+            lead_vals['stage_id'] = stage.id
 
         lead = self.create(lead_vals)
 
@@ -120,16 +134,24 @@ class CrmLeadCardScanner(models.Model):
         # --- Send email ---
         email_sent = False
         if send_email and partner.email:
-            email_sent = self._send_sial_followup(lead, partner, language, card_attachment)
+            email_sent = self._send_fair_followup(lead, partner, language, card_attachment, fair)
 
         # --- Chatter log ---
+        lang_label = {
+            'it_IT': 'Italiano',
+            'fr_FR': 'Français',
+            'en_US': 'English',
+            'es_ES': 'Español',
+            'de_DE': 'Deutsch',
+        }.get(language, language or '-')
         body = _(
-            '<p><strong>Lead creato da Card Scanner SIAL Montreal 2026</strong></p>'
+            '<p><strong>Lead creato da Card Scanner %(fair)s</strong></p>'
             '<p>Contatto: %(name)s<br/>Azienda: %(company)s<br/>'
             'Lingua email: %(lang)s<br/>Email inviata: %(sent)s</p>',
+            fair=fair_name,
             name=partner.name,
             company=company_name or '-',
-            lang='Français' if language == 'fr_FR' else 'English',
+            lang=lang_label,
             sent='Sì' if email_sent else 'No',
         )
         lead.message_post(body=body, message_type='comment', subtype_xmlid='mail.mt_note')
@@ -142,14 +164,70 @@ class CrmLeadCardScanner(models.Model):
             'email_sent': email_sent,
         }
 
-    def _send_sial_followup(self, lead, partner, language, card_attachment):
-        """Send SIAL follow-up email with fair attachments."""
+    def _send_fair_followup(self, lead, partner, language, card_attachment, fair=None):
+        """Send TUTTOFOOD follow-up email with fair attachments."""
+        template = self._get_fair_mail_template(fair, language)
+        if template:
+            return self._send_configured_fair_template(
+                lead, partner, language, card_attachment, template,
+            )
+        return self._send_legacy_tuttofood_followup(lead, partner, language, card_attachment)
+
+    def _send_configured_fair_template(self, lead, partner, language, card_attachment, template):
         ICP = self.env['ir.config_parameter'].sudo()
-        template_xmlid = (
-            'casafolino_crm_export.email_template_sial_montreal_fr'
-            if language == 'fr_FR'
-            else 'casafolino_crm_export.email_template_sial_montreal_en'
-        )
+        try:
+            subject, body_html = template.render_for_lead(lead, partner)
+            mail_vals = {
+                'subject': subject,
+                'body_html': body_html,
+                'email_to': partner.email,
+                'recipient_ids': [(4, partner.id)],
+                'model': 'crm.lead',
+                'res_id': lead.id,
+                'auto_delete': False,
+            }
+            if self.env.user.email_formatted:
+                mail_vals['email_from'] = self.env.user.email_formatted
+            cc_email = ICP.get_param('casafolino.crm_export.fair_cc_email', '')
+            if cc_email:
+                mail_vals['email_cc'] = cc_email
+
+            mail = self.env['mail.mail'].create(mail_vals)
+            self._make_outgoing_mail_visible_in_chatter(mail)
+            if partner:
+                mail.mail_message_id.partner_ids = [(4, partner.id)]
+            attachment_ids = template.attachment_ids.ids + self._get_fair_attachment_ids()
+            if card_attachment:
+                attachment_ids.append(card_attachment.id)
+            if attachment_ids:
+                mail.attachment_ids = [(4, aid) for aid in attachment_ids]
+            mail.send()
+            self._post_sent_email_note(
+                lead,
+                subject,
+                partner.email,
+                cc_email,
+                body_html,
+                _('Email automatica inviata con template "%(template)s" (%(lang)s).',
+                  template=template.name,
+                  lang=language),
+            )
+            return True
+        except Exception as e:
+            _logger.warning('Fair template email send failed for lead %s: %s', lead.id, e)
+            self._schedule_failed_email_activity(lead, e)
+            return False
+
+    def _send_legacy_tuttofood_followup(self, lead, partner, language, card_attachment):
+        """Legacy fallback for the original TUTTOFOOD mail.template records."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        template_by_language = {
+            'it_IT': 'casafolino_crm_export.email_template_tuttofood_2026_it',
+            'fr_FR': 'casafolino_crm_export.email_template_tuttofood_2026_fr',
+            'en_US': 'casafolino_crm_export.email_template_tuttofood_2026_en',
+        }
+        template_xmlid = template_by_language.get(
+            language, 'casafolino_crm_export.email_template_tuttofood_2026_en')
         template = self.env.ref(template_xmlid, raise_if_not_found=False)
         if not template:
             _logger.warning('Mail template %s not found', template_xmlid)
@@ -158,6 +236,9 @@ class CrmLeadCardScanner(models.Model):
         try:
             mail_id = template.send_mail(lead.id, force_send=False)
             mail = self.env['mail.mail'].browse(mail_id)
+            self._make_outgoing_mail_visible_in_chatter(mail)
+            if partner:
+                mail.mail_message_id.partner_ids = [(4, partner.id)]
 
             # CC
             cc_email = ICP.get_param('casafolino.crm_export.fair_cc_email', '')
@@ -176,18 +257,101 @@ class CrmLeadCardScanner(models.Model):
                 mail.attachment_ids = [(4, aid) for aid in attachment_ids]
 
             mail.send()
+            self._post_sent_email_note(
+                lead,
+                mail.subject or template.subject or '',
+                mail.email_to or partner.email,
+                mail.email_cc or '',
+                mail.body_html or '',
+                _('Email automatica inviata.'),
+            )
             return True
         except Exception as e:
-            _logger.warning('SIAL email send failed for lead %s: %s', lead.id, e)
-            try:
-                lead.activity_schedule(
-                    'mail.mail_activity_data_todo',
-                    summary='Email follow-up da reinviare',
-                    note=f'Invio automatico fallito: {e}',
-                )
-            except Exception:
-                pass
+            _logger.warning('TUTTOFOOD email send failed for lead %s: %s', lead.id, e)
+            self._schedule_failed_email_activity(lead, e)
             return False
+
+    def _post_sent_email_note(self, lead, subject, email_to, email_cc, body_html, intro):
+        """Add a readable copy of the sent email to the lead chatter."""
+        lead.message_post(
+            body=(
+                '<p><strong>%s</strong></p>'
+                '<p><strong>A:</strong> %s<br/>'
+                '<strong>CC:</strong> %s<br/>'
+                '<strong>Oggetto:</strong> %s</p>'
+                '<hr/>%s'
+            ) % (
+                intro,
+                email_to or '',
+                email_cc or '',
+                subject or '',
+                body_html or '',
+            ),
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+
+    def _make_outgoing_mail_visible_in_chatter(self, mail):
+        """Mark direct mail.mail messages so the lead chatter shows the sent email."""
+        subtype = self.env.ref('mail.mt_comment', raise_if_not_found=False)
+        if not mail.mail_message_id:
+            return
+        vals = {}
+        if subtype and not mail.mail_message_id.subtype_id:
+            vals['subtype_id'] = subtype.id
+        if mail.body_html and not mail.mail_message_id.body:
+            vals['body'] = mail.body_html
+        if vals:
+            mail.mail_message_id.write(vals)
+
+    def _get_card_scan_fair(self, fair_id=None):
+        if fair_id:
+            fair = self.env['cf.export.fair'].browse(int(fair_id))
+            if fair.exists():
+                return fair
+        fair = self.env.ref(FAIR_XMLID, raise_if_not_found=False)
+        if fair:
+            return fair
+        return self.env['cf.export.fair'].search([
+            ('state', 'in', ['active', 'followup', 'confirmed']),
+        ], order='date_start desc, id desc', limit=1)
+
+    def _get_fair_mail_template(self, fair, language):
+        if not fair:
+            return False
+        Template = self.env['cf.fair.mail.template']
+        languages = [language, LANG_FALLBACK]
+        if language == 'it_IT':
+            languages.append('it_IT')
+        for lang in [l for i, l in enumerate(languages) if l and l not in languages[:i]]:
+            template = Template.search([
+                ('fair_id', '=', fair.id),
+                ('language', '=', lang),
+                ('auto_send_on_card_scan', '=', True),
+                ('active', '=', True),
+            ], limit=1)
+            if template:
+                return template
+        return False
+
+    def _get_first_pipeline_stage(self):
+        return self.env['crm.stage'].search([], order='sequence, id', limit=1)
+
+    def _fair_tag_name(self, fair):
+        if not fair:
+            return FAIR_TAG_NAME
+        base = (fair.name or '').upper()
+        return ''.join(ch if ch.isalnum() else '_' for ch in base).strip('_')[:60]
+
+    def _schedule_failed_email_activity(self, lead, error):
+        try:
+            lead.activity_schedule(
+                'mail.mail_activity_data_todo',
+                summary='Email follow-up da reinviare',
+                note=f'Invio automatico fallito: {error}',
+            )
+        except Exception:
+            pass
 
     @api.model
     def _get_fair_attachment_ids(self):

@@ -2,7 +2,8 @@ import logging
 from datetime import datetime
 
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
+from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
@@ -190,6 +191,9 @@ class ProjectProject(models.Model):
     cf_mail_count = fields.Integer(
         compute='_compute_cf_mail_count', string='Mail',
     )
+    cf_unread_mail_count = fields.Integer(
+        compute='_compute_cf_unread_mail_count', string='Mail nuove',
+    )
     cf_sample_count = fields.Integer(
         compute='_compute_cf_sample_count', string='Campionature',
     )
@@ -248,6 +252,20 @@ class ProjectProject(models.Model):
                     rec.cf_mail_count = 0
             except Exception:
                 rec.cf_mail_count = 0
+
+    @api.depends('partner_id')
+    def _compute_cf_unread_mail_count(self):
+        MailMsg = self.env.get('casafolino.mail.message')
+        for rec in self:
+            if not MailMsg or not rec.id:
+                rec.cf_unread_mail_count = 0
+                continue
+            rec.cf_unread_mail_count = MailMsg.search_count([
+                ('cf_project_id', '=', rec.id),
+                ('direction', '=', 'inbound'),
+                ('is_read', '=', False),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ])
 
     @api.depends('partner_id')
     def _compute_cf_sample_count(self):
@@ -543,32 +561,108 @@ class ProjectProject(models.Model):
 
     def _cf_mail_domain(self):
         """Build search domain for casafolino.mail.message matching
-        partner_id OR any contact email."""
+        positioned dossier mail OR partner/contact email as sender/recipient/cc."""
         self.ensure_one()
         emails = list(filter(
             None, self.cf_contact_ids.mapped('email_normalized')))
+        if self.partner_id and self.partner_id.email:
+            emails.append(self.partner_id.email.strip().lower())
+        if self.cf_buyer_id and self.cf_buyer_id.email:
+            emails.append(self.cf_buyer_id.email.strip().lower())
+        emails = sorted(set(emails))
+
         partner_ids = []
         if self.partner_id:
             partner_ids.append(self.partner_id.id)
+        if self.cf_buyer_id:
+            partner_ids.append(self.cf_buyer_id.id)
         partner_ids += self.cf_contact_ids.mapped('partner_id').ids
         partner_ids = list(set(filter(None, partner_ids)))
 
-        if not emails and not partner_ids:
-            return None
-
-        parts = []
+        domains = [[('cf_project_id', '=', self.id)]]
         if partner_ids:
-            parts.append(('partner_id', 'in', partner_ids))
-        if emails:
-            parts.append(('sender_email', 'in', emails))
+            domains.append([('partner_id', 'in', partner_ids)])
+        for email in emails:
+            domains.append([
+                '|', '|',
+                ('sender_email', '=ilike', email),
+                ('recipient_emails', 'ilike', email),
+                ('cc_emails', 'ilike', email),
+            ])
 
-        if len(parts) == 2:
-            return ['|'] + parts
-        return parts
+        if not domains:
+            return None
+        return expression.OR(domains)
+
+    def _cf_dossier_lead(self):
+        self.ensure_one()
+        return self.env['crm.lead'].search([
+            ('cf_project_id', '=', self.id),
+            ('active', '=', True),
+        ], order='create_date desc', limit=1)
 
     def action_cf_compose_mail(self):
         """Redirect to F8 ComposeWizardDialog."""
         return self.action_compose_email_f8()
+
+    def _cf_activity_action(self, activity_xmlid, summary):
+        """Open the standard activity wizard pre-filled for this dossier."""
+        self.ensure_one()
+        activity_type = self.env.ref(activity_xmlid, raise_if_not_found=False)
+        model_id = self.env['ir.model']._get_id('project.project')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': summary,
+            'res_model': 'mail.activity',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_res_model_id': model_id,
+                'default_res_id': self.id,
+                'default_activity_type_id': activity_type.id if activity_type else False,
+                'default_summary': summary,
+                'default_user_id': self.env.user.id,
+            },
+        }
+
+    def action_cf_schedule_call(self):
+        return self._cf_activity_action(
+            'mail.mail_activity_data_call',
+            _('Chiamata dossier'),
+        )
+
+    def action_cf_schedule_todo(self):
+        return self._cf_activity_action(
+            'mail.mail_activity_data_todo',
+            _('Todo dossier'),
+        )
+
+    def _cf_compose_message_action(self, subtype_xmlid=False):
+        self.ensure_one()
+        context = {
+            'default_model': 'project.project',
+            'default_res_ids': [self.id],
+            'default_composition_mode': 'comment',
+            'default_subject': self.name or _('Dossier'),
+        }
+        if subtype_xmlid:
+            subtype = self.env.ref(subtype_xmlid, raise_if_not_found=False)
+            if subtype:
+                context['default_subtype_id'] = subtype.id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Messaggio dossier'),
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': context,
+        }
+
+    def action_cf_log_message(self):
+        return self._cf_compose_message_action()
+
+    def action_cf_log_note(self):
+        return self._cf_compose_message_action('mail.mt_note')
 
     def action_compose_email_f8(self):
         """Open F8 Outlook-style composer via client action."""
@@ -585,6 +679,7 @@ class ProjectProject(models.Model):
                 'default_partner_id': partner.id if partner else False,
                 'default_thread_id': self.id,
                 'default_thread_model': 'project.project',
+                'default_project_id': self.id,
             },
         }
 
@@ -651,16 +746,100 @@ class ProjectProject(models.Model):
 
     def action_open_dossier_mails(self):
         self.ensure_one()
+        domain = self._cf_mail_domain() or [('id', '=', 0)]
+        domain = expression.AND([
+            domain,
+            [('state', 'in', ['keep', 'auto_keep', 'auto_attached'])],
+        ])
         return {
             'type': 'ir.actions.act_window',
             'name': 'Mail — %s' % self.name,
             'res_model': 'casafolino.mail.message',
             'view_mode': 'list,form',
-            'domain': [
-                ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
-                ('state', 'in', ('keep', 'auto_keep')),
-            ],
+            'domain': domain,
+            'context': {'default_cf_project_id': self.id},
         }
+
+    def action_sync_dossier_mail_history(self):
+        """Backfill email history for all dossier contacts and position it here."""
+        self.ensure_one()
+        contacts = self.cf_contact_ids.filtered(
+            lambda c: c.mail_sync_enabled and c.email)
+        if not contacts and not (self.partner_id and self.partner_id.email):
+            raise UserError(_("Aggiungi almeno un referente con email."))
+
+        parent_partner = self.partner_id.commercial_partner_id or self.partner_id
+        partners = self.env['res.partner']
+        if self.partner_id and self.partner_id.email:
+            partners |= self.partner_id
+        if self.cf_buyer_id and self.cf_buyer_id.email:
+            partners |= self.cf_buyer_id
+
+        for contact in contacts:
+            partner = contact._ensure_partner(parent_partner=parent_partner)
+            partners |= partner
+
+        synced = 0
+        for partner in partners:
+            if not partner.email:
+                continue
+            partner.sudo().action_sync_full_email_history()
+            synced += 1
+
+        lead = self._cf_dossier_lead()
+        MailMsg = self.env['casafolino.mail.message'].sudo()
+        messages = MailMsg.search(self._cf_mail_domain() or [('id', '=', 0)])
+        positioned = 0
+        for msg in messages:
+            vals = {
+                'cf_project_id': self.id,
+                'state': 'keep',
+            }
+            if lead:
+                vals['lead_id'] = lead.id
+            if not msg.partner_id:
+                partner = partners.filtered(
+                    lambda p: p.email and (
+                        (msg.sender_email or '').lower() == p.email.lower()
+                        or p.email.lower() in (msg.recipient_emails or '').lower()
+                        or p.email.lower() in (msg.cc_emails or '').lower()
+                    )
+                )[:1]
+                if partner:
+                    vals['partner_id'] = partner.id
+                    vals['match_type'] = 'exact'
+            msg.write(vals)
+            if not msg.mail_message_id:
+                try:
+                    msg.action_position_to_project(self.id)
+                except Exception as exc:
+                    _logger.warning(
+                        "Dossier mail positioning failed project=%s msg=%s: %s",
+                        self.id, msg.id, exc)
+            positioned += 1
+
+        contacts.write({'mail_last_sync': fields.Datetime.now()})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Storico mail sincronizzato'),
+                'message': _('%d contatti sincronizzati, %d mail nel dossier.') % (
+                    synced, positioned),
+                'type': 'success',
+            },
+        }
+
+    def action_open_dossier_unread_mails(self):
+        self.ensure_one()
+        action = self.action_open_dossier_mails()
+        action["name"] = "Mail nuove - %s" % self.name
+        action["domain"] = action["domain"] + [
+            ("direction", "=", "inbound"),
+            ("is_read", "=", False),
+        ]
+        action["context"] = dict(action.get("context", {}), search_default_unread=1)
+        return action
 
     def action_open_dossier_samples(self):
         self.ensure_one()
@@ -781,7 +960,7 @@ class ProjectProject(models.Model):
             'partner': self._cf_serialize_partner(partner) if partner else None,
             'kpi': self._cf_compute_kpi(leads, partner),
             'timeline': self._cf_get_timeline(limit=20),
-            'contacts': self._cf_get_contacts(partner) if partner else [],
+            'contacts': self._cf_get_contacts(partner),
             'owner': self._cf_serialize_owner(),
             # Brief #B6
             'mail': self._cf_get_mail_timeline(limit=20),
@@ -799,6 +978,14 @@ class ProjectProject(models.Model):
             'name': self.name or '',
             'status_dossier': self.cf_status_dossier or 'exploration',
             'dossier_priority': self.cf_dossier_priority or 'medium',
+            'next_action': self.cf_next_action or '',
+            'next_action_date': fields.Date.to_string(self.cf_next_action_date)
+                if self.cf_next_action_date else '',
+            'mail_count': self._cf_get_mail_count(),
+            'contact_count': len(self.cf_contact_ids),
+            'lead_count': self.cf_lead_count,
+            'sample_count': self.cf_sample_count,
+            'owner_name': self.user_id.name or '',
             'create_date': fields.Datetime.to_string(self.create_date) if self.create_date else '',
         }
 
@@ -1002,13 +1189,30 @@ class ProjectProject(models.Model):
         return '%d sett fa' % (minutes // 10080)
 
     def _cf_get_contacts(self, partner):
+        contacts = []
+        role_labels = dict(self.env['cf.project.contact']._fields['role'].selection)
+        for c in self.cf_contact_ids.sorted(lambda rec: (rec.sequence, rec.id)):
+            contacts.append({
+                'id': c.partner_id.id if c.partner_id else None,
+                'project_contact_id': c.id,
+                'name': c.name or '',
+                'email': c.email or '',
+                'phone': c.phone or '',
+                'function': role_labels.get(c.role, c.role or ''),
+                'role': c.role or '',
+                'role_label': role_labels.get(c.role, c.role or ''),
+                'is_primary': c.is_primary,
+                'is_external': c.is_external,
+                'mail_count': self._cf_count_contact_mail(c.email),
+                'mail_last_sync': fields.Datetime.to_string(c.mail_last_sync)
+                    if c.mail_last_sync else '',
+            })
+
+        if contacts:
+            return contacts[:20]
         if not partner:
             return []
-        # Company + child contacts
-        contacts = []
-        # Primary partner first
         contacts.append(self._cf_contact_dict(partner, is_primary=True))
-
         children = self.env['res.partner'].search([
             ('parent_id', '=', partner.id),
             ('active', '=', True),
@@ -1029,6 +1233,23 @@ class ProjectProject(models.Model):
         }
 
     # ── Brief #FINAL — Commerciale ────────────────────────────────
+
+    def _cf_count_contact_mail(self, email):
+        if not email:
+            return 0
+        try:
+            self.env['casafolino.mail.message']
+        except KeyError:
+            return 0
+        email = email.strip().lower()
+        self.env.cr.execute("""
+            SELECT COUNT(*)
+              FROM casafolino_mail_message
+             WHERE lower(coalesce(sender_email, '')) = %s
+                OR lower(coalesce(recipient_emails, '')) LIKE %s
+                OR lower(coalesce(cc_emails, '')) LIKE %s
+        """, (email, '%%' + email + '%%', '%%' + email + '%%'))
+        return self.env.cr.fetchone()[0] or 0
 
     def _cf_get_commerciale(self, partner):
         """Sale orders del partner + pricelist + MOQ notes."""

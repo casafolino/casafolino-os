@@ -3,4 +3,8 @@
     <record id="utm_source_sial_canada_2026" model="utm.source">
         <field name="name">Fiera SIAL Canada 2026</field>
     </record>
+
+    <record id="utm_source_tuttofood_2026" model="utm.source">
+        <field name="name">Fiera TUTTOFOOD Milano 2026</field>
+    </record>
 </odoo>

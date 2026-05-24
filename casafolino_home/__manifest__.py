@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Scrivania CasaFolino",
-    "version": "18.0.2.2.0",
+    "version": "18.0.2.3.0",
     "category": "Productivity",
     "summary": "Scrivania CasaFolino — cockpit aziendale con CRM, Produzione, HACCP e Tesoreria",
     "author": "CasaFolino Srls",
     "depends": [
-        "base", "web",
+        "base", "web", "website",
         "casafolino_commercial",
         "casafolino_crm_export",
         "casafolino_haccp",
@@ -15,6 +15,7 @@
         "casafolino_labels",
         "casafolino_mail",
         "casafolino_operations",
+        "casafolino_pipeline_control",
         "casafolino_product",
         "casafolino_project",
         "casafolino_supplier_qual",
@@ -25,6 +26,7 @@
         "security/ir.model.access.csv",
         "views/home_actions.xml",
         "views/menu_workspace.xml",
+        "views/erp_login.xml",
         "data/menu_remap.xml",
     ],
     "assets": {
@@ -32,6 +34,9 @@
             "casafolino_home/static/src/workspace/workspace.scss",
             "casafolino_home/static/src/workspace/workspace.xml",
             "casafolino_home/static/src/workspace/workspace.js",
+        ],
+        "web.assets_frontend": [
+            "casafolino_home/static/src/login/erp_login.scss",
         ],
     },
     "installable": True,

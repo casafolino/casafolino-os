@@ -94,7 +94,7 @@
             <div t-on-click="onOpenAnalytics" class="cf-section-card">
                 <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
                 <p class="cf-section-title">Analytics</p>
-                <p class="cf-section-subtitle">Dashboard 360°</p>
+                <p class="cf-section-subtitle">Sala Controllo</p>
             </div>
         </div>
 

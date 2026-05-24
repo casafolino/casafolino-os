@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_config_parameter_b2b_notification_email" model="ir.config_parameter">
+        <field name="key">casafolino_b2b.notification_email</field>
+        <field name="value">antonio@casafolino.com</field>
+    </record>
+
+    <record id="ir_config_parameter_b2b_email_from" model="ir.config_parameter">
+        <field name="key">casafolino_b2b.email_from</field>
+        <field name="value">CasaFolino B2B &lt;antonio@casafolino.com&gt;</field>
+    </record>
+
+    <record id="ir_config_parameter_b2b_portal_base_url" model="ir.config_parameter">
+        <field name="key">casafolino_b2b.portal_base_url</field>
+        <field name="value">https://b2b.casafolino.com</field>
+    </record>
+
+    <record id="mail_template_b2b_request_received" model="mail.template">
+        <field name="name">CasaFolino B2B - Richiesta ricevuta</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">CasaFolino B2B: richiesta ricevuta</field>
+        <field name="email_from">{{ object.env['ir.config_parameter'].sudo().get_param('casafolino_b2b.email_from', 'CasaFolino B2B &lt;antonio@casafolino.com&gt;') }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family:Arial,sans-serif;font-size:14px;color:#241f1a;line-height:1.55;">
+                <p>Ciao <t t-out="object.name or ''"/>,</p>
+                <p>abbiamo ricevuto la tua richiesta di accesso al portale B2B CasaFolino.</p>
+                <p>Il nostro team commerciale sta verificando i dati aziendali. Nel frattempo puoi consultare il catalogo, mentre prezzi e ordini resteranno riservati fino all'approvazione.</p>
+                <p style="margin:24px 0;">
+                    <a href="https://b2b.casafolino.com/b2b" style="background:#822b20;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;">Vai al portale B2B</a>
+                </p>
+                <p>Grazie,<br/>CasaFolino</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+
+    <record id="mail_template_b2b_internal_pending" model="mail.template">
+        <field name="name">CasaFolino B2B - Nuova richiesta interna</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">APPROVAZIONE B2B richiesta: {{ object.name }}</field>
+        <field name="email_from">{{ object.env['ir.config_parameter'].sudo().get_param('casafolino_b2b.email_from', 'CasaFolino B2B &lt;antonio@casafolino.com&gt;') }}</field>
+        <field name="email_to">{{ object.env.context.get('b2b_notify_email') or '' }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family:Arial,sans-serif;font-size:14px;color:#241f1a;line-height:1.55;">
+                <p>Nuova richiesta B2B in attesa di approvazione.</p>
+                <ul>
+                    <li><strong>Azienda:</strong> <t t-out="object.name or ''"/></li>
+                    <li><strong>Email:</strong> <t t-out="object.email or ''"/></li>
+                    <li><strong>Telefono:</strong> <t t-out="object.phone or ''"/></li>
+                    <li><strong>P.IVA:</strong> <t t-out="object.cf_b2b_vat_code or object.vat or ''"/></li>
+                    <li><strong>SDI / PEC:</strong> <t t-out="object.cf_b2b_sdi_pec or ''"/></li>
+                    <li><strong>Origine:</strong> <t t-out="dict(object._fields['cf_b2b_source'].selection).get(object.cf_b2b_source, '')"/></li>
+                    <li><strong>Categoria:</strong> <t t-out="dict(object._fields['cf_b2b_category'].selection).get(object.cf_b2b_category, '')"/></li>
+                </ul>
+                <p style="margin:24px 0;">
+                    <a t-att-href="'https://erp.casafolino.com/odoo/contacts/%s' % object.id" style="background:#822b20;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;">Apri cliente in Odoo</a>
+                </p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+
+    <record id="mail_template_b2b_approved" model="mail.template">
+        <field name="name">CasaFolino B2B - Account approvato</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">CasaFolino B2B: account approvato</field>
+        <field name="email_from">{{ object.env['ir.config_parameter'].sudo().get_param('casafolino_b2b.email_from', 'CasaFolino B2B &lt;antonio@casafolino.com&gt;') }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family:Arial,sans-serif;font-size:14px;color:#241f1a;line-height:1.55;">
+                <p>Ciao <t t-out="object.name or ''"/>,</p>
+                <p>il tuo account B2B CasaFolino e stato approvato.</p>
+                <p>Il tuo username e <strong><t t-out="object.email or ''"/></strong>. Clicca sul pulsante qui sotto per scegliere la password e accedere al listino riservato.</p>
+                <p style="margin:24px 0;">
+                    <a t-att-href="object._cf_b2b_signup_url()" style="background:#822b20;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;">Scegli la password</a>
+                </p>
+                <p>Dopo il primo accesso potrai vedere i prezzi B2B e creare ordini secondo i minimi configurati.</p>
+                <p>Benvenuto nel portale,<br/>CasaFolino</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+</odoo>

@@ -33,12 +33,18 @@ class CfProjectContact(models.Model):
         ('logistics', 'Logistica'),
         ('quality', 'Qualità'),
         ('management', 'Direzione'),
+        ('broker', 'Broker'),
+        ('internal', 'Team interno'),
         ('external', 'Esterno'),
         ('other', 'Altro'),
     ], string='Qualifica', required=True, default='commercial')
 
     is_external = fields.Boolean(string='Esterno')
     is_primary = fields.Boolean(string='Primary')
+    mail_sync_enabled = fields.Boolean(string='Sync mail', default=True)
+    mail_last_sync = fields.Datetime(string='Ultimo sync mail', readonly=True)
+    mail_message_count = fields.Integer(
+        string='Mail', compute='_compute_mail_message_count')
     note = fields.Char(string='Note')
 
     @api.depends('email')
@@ -46,12 +52,44 @@ class CfProjectContact(models.Model):
         for c in self:
             c.email_normalized = (c.email or '').strip().lower()
 
+    @api.depends('email_normalized')
+    def _compute_mail_message_count(self):
+        try:
+            MailMsg = self.env['casafolino.mail.message'].sudo()
+        except KeyError:
+            MailMsg = False
+        for contact in self:
+            if MailMsg is False or not contact.email_normalized:
+                contact.mail_message_count = 0
+                continue
+            contact.mail_message_count = MailMsg.search_count([
+                '|', '|',
+                ('sender_email', '=ilike', contact.email_normalized),
+                ('recipient_emails', 'ilike', contact.email_normalized),
+                ('cc_emails', 'ilike', contact.email_normalized),
+            ])
+
     @api.onchange('partner_id')
     def _onchange_partner(self):
         if self.partner_id:
             self.name = self.partner_id.name
             self.email = self.partner_id.email
             self.phone = self.partner_id.phone or self.partner_id.mobile
+
+    def _ensure_partner(self, parent_partner=False):
+        self.ensure_one()
+        if self.partner_id:
+            return self.partner_id
+        vals = {
+            'name': self.name,
+            'email': self.email or False,
+            'phone': self.phone or False,
+            'company_type': 'person',
+            'parent_id': parent_partner.id if parent_partner else False,
+        }
+        partner = self.env['res.partner'].sudo().create(vals)
+        self.partner_id = partner.id
+        return partner
 
     @api.model_create_multi
     def create(self, vals_list):

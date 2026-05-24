@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="cf_erp_login_layout" inherit_id="web.login_layout" priority="99">
+        <xpath expr="//t[@t-call='website.layout']" position="replace">
+            <t t-call="web.frontend_layout">
+                <t t-set="cf_lang_code" t-value="request.env.lang or 'en_US'"/>
+                <t t-set="cf_lang" t-value="'it' if cf_lang_code == 'it_IT' else 'fr' if cf_lang_code == 'fr_FR' else 'es' if cf_lang_code == 'es_ES' else 'de' if cf_lang_code == 'de_DE' else 'en'"/>
+                <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
+                <t t-set="body_classname" t-value="'cf-erp-login-body'"/>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+
+                <main class="cf-erp-login">
+                    <section class="cf-erp-login__brand">
+                        <div class="cf-erp-login__mark">
+                            <img src="/casafolino_home/static/description/icon.png" alt="CasaFolino B2B"/>
+                        </div>
+                        <p class="cf-erp-login__eyebrow">CasaFolino B2B</p>
+                        <h1>
+                            <t t-if="cf_lang == 'it'">Acquisti all'ingrosso CasaFolino</t>
+                            <t t-elif="cf_lang == 'fr'">Achats en gros CasaFolino</t>
+                            <t t-elif="cf_lang == 'es'">Compras al por mayor CasaFolino</t>
+                            <t t-elif="cf_lang == 'de'">CasaFolino Grosshandel</t>
+                            <t t-else="">CasaFolino wholesale purchasing</t>
+                        </h1>
+                        <p class="cf-erp-login__copy">
+                            <t t-if="cf_lang == 'it'">Accesso riservato a rivenditori, distributori, hotel, ristoranti e operatori professionali per ordinare prodotti CasaFolino all'ingrosso.</t>
+                            <t t-elif="cf_lang == 'fr'">Acces reserve aux detaillants, distributeurs, hotels, restaurants et acheteurs professionnels pour commander les produits CasaFolino en gros.</t>
+                            <t t-elif="cf_lang == 'es'">Acceso reservado a minoristas, distribuidores, hoteles, restaurantes y compradores profesionales para pedir productos CasaFolino al por mayor.</t>
+                            <t t-elif="cf_lang == 'de'">Zugang fur Handler, Distributoren, Hotels, Restaurants und gewerbliche Einkaufer, die CasaFolino Produkte im Grosshandel bestellen.</t>
+                            <t t-else="">Reserved access for retailers, distributors, hotels, restaurants and professional buyers ordering CasaFolino products wholesale.</t>
+                        </p>
+                        <div class="cf-erp-login__signals" aria-label="Wholesale channels">
+                            <span>Retail</span>
+                            <span>Ho.Re.Ca.</span>
+                            <span>Distributor</span>
+                            <span>Private label</span>
+                        </div>
+                    </section>
+
+                    <section class="cf-erp-login__panel" aria-label="CasaFolino B2B access">
+                        <div class="cf-erp-login__panel-header">
+                            <p>
+                                <t t-if="cf_lang == 'it'">Listino ingrosso riservato</t>
+                                <t t-elif="cf_lang == 'fr'">Tarif grossiste reserve</t>
+                                <t t-elif="cf_lang == 'es'">Tarifa mayorista reservada</t>
+                                <t t-elif="cf_lang == 'de'">Reservierte Grosshandelspreise</t>
+                                <t t-else="">Reserved wholesale pricing</t>
+                            </p>
+                            <h2>
+                                <t t-if="cf_lang == 'it'">Imposta l'accesso B2B</t>
+                                <t t-elif="cf_lang == 'fr'">Configurez votre acces B2B</t>
+                                <t t-elif="cf_lang == 'es'">Configura tu acceso B2B</t>
+                                <t t-elif="cf_lang == 'de'">B2B Zugang einrichten</t>
+                                <t t-else="">Set up your B2B access</t>
+                            </h2>
+                        </div>
+                        <div class="cf-erp-login__form">
+                            <t t-out="0"/>
+                        </div>
+                    </section>
+                </main>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="cf_erp_login_form" inherit_id="web.login" priority="99">
+        <xpath expr="//form[@role='form']" position="before">
+            <div class="cf-erp-login__notice">
+                Accesso riservato ai clienti B2B approvati.
+            </div>
+        </xpath>
+        <xpath expr="//button[@type='submit' and contains(@class, 'btn-primary')]" position="replace">
+            <button type="submit" class="btn btn-primary cf-erp-login__submit">Accedi al listino ingrosso</button>
+        </xpath>
+    </template>
+</odoo>

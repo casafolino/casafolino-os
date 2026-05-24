@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cf_pipeline_promote_dossier_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.promote.dossier.wizard.form</field>
+        <field name="model">cf.pipeline.promote.dossier.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Promuovi a dossier">
+                <sheet>
+                    <group>
+                        <field name="lead_id"/>
+                        <field name="partner_id"/>
+                    </group>
+                    <group>
+                        <field name="project_name"/>
+                        <field name="target_date"/>
+                    </group>
+                    <group string="Prossima azione">
+                        <field name="next_action"/>
+                        <field name="next_action_date"/>
+                        <field name="create_next_task"/>
+                        <field name="create_department_tasks"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_promote" string="Promuovi a dossier" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_pipeline_link_lead_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.link.lead.wizard.form</field>
+        <field name="model">cf.pipeline.link.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Collega email a lead">
+                <sheet>
+                    <group>
+                        <field name="message_id"/>
+                        <field name="partner_id"/>
+                    </group>
+                    <group>
+                        <field name="lead_id" domain="[('type', '=', 'opportunity'), ('active', '=', True)]"/>
+                        <field name="apply_to_thread"/>
+                    </group>
+                    <group string="Follow-up">
+                        <field name="set_followup"/>
+                        <field name="next_followup_date" invisible="not set_followup"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_link" string="Collega lead" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_pipeline_snooze_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.snooze.wizard.form</field>
+        <field name="model">cf.pipeline.snooze.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Posticipa thread">
+                <sheet>
+                    <group>
+                        <field name="message_id"/>
+                        <field name="thread_id"/>
+                    </group>
+                    <group>
+                        <field name="wake_at"/>
+                        <field name="note"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_snooze" string="Posticipa" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cf_pipeline_plan_fair_followup_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.plan.fair.followup.wizard.form</field>
+        <field name="model">cf.pipeline.plan.fair.followup.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pianifica follow-up fiera">
+                <sheet>
+                    <group>
+                        <field name="fair_id"/>
+                        <field name="affected_count"/>
+                    </group>
+                    <group string="Pianificazione">
+                        <field name="start_date"/>
+                        <field name="batch_size"/>
+                        <field name="batch_gap_days"/>
+                        <field name="only_without_plan"/>
+                    </group>
+                    <group string="Task">
+                        <field name="create_tasks"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_plan" string="Pianifica follow-up" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_form_pipeline_control" model="ir.ui.view">
+        <field name="name">crm.lead.form.pipeline.control</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="casafolino_crm_export.cf_crm_lead_view_form_premium"/>
+        <field name="priority">120</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Flusso operativo" name="cf_pipeline_control_flow">
+                    <div class="o_row mb-3">
+                        <button name="action_cf_pc_open_followup" type="object" string="Follow-up" class="btn btn-primary"/>
+                        <button name="action_cf_pc_open_inbox" type="object" string="Inbox" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_open_quotes" type="object" string="Quotazioni" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_new_task" type="object" string="Nuova task" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_promote_dossier" type="object" string="Promuovi a dossier" class="btn btn-secondary"/>
+                    </div>
+                    <group>
+                        <group string="Catena commerciale">
+                            <field name="partner_id"/>
+                            <field name="cf_fair_id"/>
+                            <field name="cf_date_last_contact"/>
+                            <field name="cf_date_next_followup"/>
+                            <field name="cf_project_id"/>
+                        </group>
+                        <group string="Segnali collegati">
+                            <field name="cf_pc_mail_count"/>
+                            <field name="cf_pc_quote_count"/>
+                            <field name="cf_sample_count"/>
+                            <field name="cf_pc_task_count"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_project_form_pipeline_control_360" model="ir.ui.view">
+        <field name="name">project.project.form.pipeline.control.360</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="casafolino_crm_export.project_project_form_casafolino"/>
+        <field name="priority">130</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <field name="cf360_continent" invisible="1"/>
+                <field name="cf360_mail_count" invisible="1"/>
+                <field name="cf360_task_count" invisible="1"/>
+                <field name="cf360_document_count" invisible="1"/>
+                <field name="cf_lead_count" invisible="1"/>
+                <div class="cf-dossier-workbench-360"
+                     style="display:grid;grid-template-columns:260px minmax(720px,1fr) 360px;gap:18px;margin:18px 0 24px;color:#1f2723;background:#f6f7f4;">
+                    <aside style="background:#20342a;color:#f2f5ef;border-radius:8px;padding:22px 16px;min-height:720px;">
+                        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Pipeline Export</div>
+                        <div style="color:#c7d2c8;font-size:14px;margin-bottom:24px;">Sala controllo operativa</div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Sala Controllo</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">260</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Follow-up</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">1</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Post-Fiera</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">54</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Inbox</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">129</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;color:#dce4dc;font-weight:650;margin-bottom:8px;">
+                            <span>Pipeline</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">429</span>
+                        </div>
+                        <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-radius:7px;background:#41584a;outline:2px solid #75a7ff;color:#f2f5ef;font-weight:750;margin-bottom:8px;">
+                            <span>Dossier</span><span style="min-width:34px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);font-size:13px;">16</span>
+                        </div>
+                        <div style="margin-top:34px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(255,255,255,.08);padding:13px 14px;color:#dce4dc;font-size:13px;line-height:1.35;font-weight:650;">
+                            Vista operativa per il lavoro commerciale di giornata.
+                        </div>
+                    </aside>
+                    <div style="min-width:0;">
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:18px;margin-bottom:16px;">
+                            <div style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;">
+                                <div>
+                                    <h1 style="margin:0 0 5px;font-size:28px;line-height:1.1;color:#1f2723;">
+                                        <field name="name" readonly="1" nolabel="1"/>
+                                    </h1>
+                                    <div style="color:#6e786f;font-size:14px;font-weight:650;">
+                                        Scrivania operativa dossier · cliente export · continente <field name="cf360_continent" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#ffe8e5;color:#8f2e26;">Blocco da gestire</span>
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#fff0cf;color:#7c5312;">Avanzamento dossier</span>
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#e7f1fb;color:#244f7c;">Prossima azione: <field name="cf_next_action" readonly="1" nolabel="1"/></span>
+                                        <span style="min-height:30px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850;background:#f0f3ef;color:#435047;">Owner: <field name="user_id" readonly="1" nolabel="1"/></span>
+                                    </div>
+                                </div>
+                                <button name="action_open_lavagna_360"
+                                        type="object"
+                                        string="Aggiorna avanzamento"
+                                        style="height:40px;border:0;border-radius:8px;padding:0 14px;background:#694668;color:#ffffff;font-weight:850;font-size:14px;"/>
+                            </div>
+                            <div style="display:flex;gap:6px;margin-top:18px;border-bottom:1px solid #dfe5df;padding-bottom:0;">
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #20342a;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#20342a;color:#ffffff;font-weight:850;font-size:13px;">Vista 360</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Evoluzione</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Documenti</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Comunicazioni</span>
+                                <span style="height:38px;display:inline-flex;align-items:center;border:1px solid #dfe5df;border-bottom:0;border-radius:8px 8px 0 0;padding:0 13px;background:#fbfcfa;color:#536057;font-weight:850;font-size:13px;">Storico</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px;margin-top:16px;">
+                                <button name="action_quick_task_360" type="object" string="+  Task reparto" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_compose_email_f8" type="object" string="✉  Scrivi email" invisible="not partner_id" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_reply_last_email_f8" type="object" string="↩  Rispondi cliente" invisible="not partner_id" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_upload_document_360" type="object" string="📎  Allega documento" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_open_lavagna_360" type="object" string="✓  Chiudi blocco" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                                <button name="action_schedule_followup_360" type="object" string="⏱  Programma follow-up" style="min-height:58px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#3c473f;font-weight:850;font-size:12px;text-align:left;padding:9px 10px;"/>
+                            </div>
+                        </section>
+
+                        <section style="display:grid;grid-template-columns:1.1fr .9fr;gap:16px;">
+                            <div style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                                <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Cliente e opportunità</h2>
+                                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Cliente</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="partner_id" readonly="1" nolabel="1"/></div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Mercato</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="cf360_continent" readonly="1" nolabel="1"/> · Export</div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Lead</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="cf_lead_count" readonly="1" nolabel="1"/> opportunità collegate</div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Priorità</div><div style="font-size:13px;font-weight:800;line-height:1.25;">Dossier operativo</div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Scadenza</div><div style="font-size:13px;font-weight:800;line-height:1.25;"><field name="cf_next_action_date" readonly="1" nolabel="1"/></div></div>
+                                    <div style="border:1px solid #dfe5df;border-radius:7px;padding:10px;background:#fbfcfa;min-height:70px;"><div style="color:#6e786f;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:900;margin-bottom:5px;">Rischio</div><div style="font-size:13px;font-weight:800;line-height:1.25;">Blocchi reparto da chiudere</div></div>
+                                </div>
+                            </div>
+                            <div style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                                <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Decisione da prendere</h2>
+                                <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #dfe5df;">
+                                    <span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#bd4b42;"></span>
+                                    <div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Cosa blocca il prossimo passo?</div><div style="color:#6e786f;font-size:12px;line-height:1.3;"><field name="cf_next_action" readonly="1" nolabel="1"/></div></div>
+                                    <button name="action_open_tasks_360" type="object" string="Apri" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/>
+                                </div>
+                                <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;">
+                                    <span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#efb44f;"></span>
+                                    <div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Trasporto o documenti da confermare</div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Logistica e Back Office completano il dossier prima del recap cliente.</div></div>
+                                    <button name="action_open_lavagna_360" type="object" string="Apri" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;margin-top:16px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Vista 360 per reparto</h2>
+                            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Commerciale</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:72%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Listino, recap cliente e follow-up commerciale.</div></div>
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Back Office</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:88%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Anagrafica, codici, allegati e dati cliente.</div></div>
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Produzione</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:64%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Fattibilità, campioni e tempi del primo ordine.</div></div>
+                                <div style="border:1px solid #dfe5df;border-radius:8px;padding:11px;background:#fbfcfa;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Logistica</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:46%;background:#694668;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Indirizzo, resa, costo stimato e consegna.</div></div>
+                                <div style="border:1px solid #edb2ad;border-radius:8px;padding:11px;background:#fff7f6;min-height:138px;"><h3 style="margin:0 0 9px;font-size:13px;">Qualità</h3><div style="height:8px;border-radius:999px;background:#e6ebe6;overflow:hidden;margin-bottom:9px;"><span style="display:block;height:100%;width:28%;background:#bd4b42;border-radius:inherit;"></span></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Schede, certificati, etichette e blocchi qualità.</div></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <aside style="display:grid;gap:14px;align-content:start;">
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Composer email</h2>
+                            <div style="display:grid;gap:9px;">
+                                <div style="height:36px;display:flex;align-items:center;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:0 10px;">Risposta cliente - recap dossier</div>
+                                <div style="height:36px;display:flex;align-items:center;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:0 10px;"><field name="partner_id" readonly="1" nolabel="1"/></div>
+                                <div style="height:36px;display:flex;align-items:center;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:0 10px;"><field name="name" readonly="1" nolabel="1"/> - documenti e prossimi passaggi</div>
+                                <div style="min-height:112px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;color:#1f2723;font-size:13px;padding:10px;line-height:1.35;">
+                                    Buongiorno,<br/><br/>
+                                    le confermo che stiamo completando il dossier.<br/><br/>
+                                    Appena chiudiamo i blocchi reparto, le inviamo il recap completo con condizioni e documenti allegati.<br/><br/>
+                                    Resto a disposizione.
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    <button name="action_reply_last_email_f8" type="object" string="Salva bozza" invisible="not partner_id" style="height:38px;border:1px solid #dfe5df;border-radius:8px;background:#fbfcfa;color:#455149;font-weight:850;font-size:13px;"/>
+                                    <button name="action_compose_email_f8" type="object" string="Invia dal mio composer" invisible="not partner_id" style="height:38px;border:0;border-radius:8px;background:#694668;color:#ffffff;font-weight:850;font-size:13px;"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Prossime azioni</h2>
+                            <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #dfe5df;"><span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#bd4b42;"></span><div><div style="font-size:13px;font-weight:850;margin-bottom:3px;"><field name="cf_next_action" readonly="1" nolabel="1"/></div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Reparto responsabile · blocca il dossier</div></div><button name="action_open_tasks_360" type="object" string="Fai" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/></div>
+                            <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #dfe5df;"><span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#3b6c9f;"></span><div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Preparare email recap</div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Commerciale · usa il composer F8</div></div><button name="action_compose_email_f8" type="object" string="Fai" invisible="not partner_id" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/></div>
+                            <div style="display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:11px 0;"><span style="width:10px;height:10px;border-radius:999px;margin-top:5px;background:#efb44f;"></span><div><div style="font-size:13px;font-weight:850;margin-bottom:3px;">Confermare resa logistica</div><div style="color:#6e786f;font-size:12px;line-height:1.3;">Logistica · entro la prossima azione</div></div><button name="action_open_lavagna_360" type="object" string="Fai" style="height:30px;border:1px solid #dfe5df;border-radius:7px;background:#ffffff;font-weight:850;color:#4c564e;"/></div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Documenti dossier</h2>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #dfe5df;font-size:13px;font-weight:800;"><span>Anagrafica cliente</span><span style="border-radius:999px;padding:6px 11px;background:#f0f3ef;color:#435047;font-size:12px;font-weight:850;">OK</span></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #dfe5df;font-size:13px;font-weight:800;"><span>Listino export</span><span style="border-radius:999px;padding:6px 11px;background:#f0f3ef;color:#435047;font-size:12px;font-weight:850;">OK</span></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #dfe5df;font-size:13px;font-weight:800;"><span>Scheda tecnica</span><span style="border-radius:999px;padding:6px 11px;background:#ffe8e5;color:#8f2e26;font-size:12px;font-weight:850;">Manca</span></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;font-size:13px;font-weight:800;"><span>Condizioni trasporto</span><span style="border-radius:999px;padding:6px 11px;background:#fff0cf;color:#7c5312;font-size:12px;font-weight:850;">Bozza</span></div>
+                        </section>
+
+                        <section style="background:#ffffff;border:1px solid #dfe5df;border-radius:8px;padding:15px;">
+                            <h2 style="margin:0 0 12px;font-size:17px;color:#1f2723;">Evoluzione</h2>
+                            <div style="display:grid;gap:10px;">
+                                <div style="display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;color:#6e786f;"><span>Oggi</span><div><strong style="color:#1f2723;display:block;font-size:13px;margin-bottom:2px;">Reparto sblocca</strong>Task chiave completata e allegata al dossier.</div></div>
+                                <div style="display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;color:#6e786f;"><span>Domani</span><div><strong style="color:#1f2723;display:block;font-size:13px;margin-bottom:2px;">Commerciale invia</strong>Recap cliente dal composer collegato.</div></div>
+                                <div style="display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;color:#6e786f;"><span>+3 giorni</span><div><strong style="color:#1f2723;display:block;font-size:13px;margin-bottom:2px;">Produzione pianifica</strong>Campioni o primo ordine in base alla risposta cliente.</div></div>
+                            </div>
+                        </section>
+                    </aside>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_cf_pipeline_control" model="ir.actions.client">
+        <field name="name">Sala Controllo</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'dossiers'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_inbox" model="ir.actions.client">
+        <field name="name">Inbox Commerciale</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'inbox'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_followup" model="ir.actions.client">
+        <field name="name">Follow-up Clienti</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'followup'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_post_fair" model="ir.actions.client">
+        <field name="name">Post-Fiera</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'fair'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_pipeline" model="ir.actions.client">
+        <field name="name">Pipeline Export</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'pipeline'}</field>
+    </record>
+
+    <record id="action_cf_pipeline_dossiers" model="ir.actions.client">
+        <field name="name">Dossier / Progetti</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'dossiers'}</field>
+    </record>
+
+    <record id="casafolino_crm_export.action_project_dashboard_360" model="ir.actions.client">
+        <field name="name">Dossier / Progetti</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="target">current</field>
+        <field name="context">{'default_view': 'dossiers'}</field>
+    </record>
+
+    <record id="casafolino_crm_export.menu_cf_projects_360" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <menuitem id="menu_cf_pipeline_control_root"
+              name="Sala Controllo"
+              action="action_cf_pipeline_control"
+              sequence="24"
+              web_icon="casafolino_crm_export,static/description/icon.png"/>
+
+    <menuitem id="menu_cf_pipeline_root_control"
+              name="Sala Controllo"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_control"
+              sequence="1"/>
+
+    <menuitem id="menu_cf_pipeline_root_inbox"
+              name="Inbox Commerciale"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_inbox"
+              sequence="2"/>
+
+    <menuitem id="menu_cf_pipeline_root_followup"
+              name="Follow-up Clienti"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_followup"
+              sequence="3"/>
+
+    <menuitem id="menu_cf_pipeline_root_post_fair"
+              name="Post-Fiera"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_post_fair"
+              sequence="4"/>
+
+    <menuitem id="menu_cf_pipeline_root_pipeline"
+              name="Pipeline Export"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_pipeline"
+              sequence="5"/>
+
+    <menuitem id="menu_cf_pipeline_root_dossiers"
+              name="Dossier / Progetti"
+              parent="menu_cf_pipeline_control_root"
+              action="action_cf_pipeline_dossiers"
+              sequence="6"/>
+
+    <record id="menu_cf_pipeline_control_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <menuitem id="menu_cf_pipeline_control"
+              name="Sala Controllo"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_control"
+              sequence="1"/>
+
+    <menuitem id="menu_cf_pipeline_inbox"
+              name="Inbox Commerciale"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_inbox"
+              sequence="2"/>
+
+    <menuitem id="menu_cf_pipeline_followup"
+              name="Follow-up Clienti"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_followup"
+              sequence="3"/>
+
+    <menuitem id="menu_cf_pipeline_post_fair"
+              name="Post-Fiera"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_post_fair"
+              sequence="4"/>
+
+    <menuitem id="menu_cf_pipeline_pipeline"
+              name="Pipeline Export"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_pipeline"
+              sequence="5"/>
+
+    <menuitem id="menu_cf_pipeline_dossiers"
+              name="Dossier / Progetti"
+              parent="casafolino_crm_export.menu_cf_export_root"
+              action="action_cf_pipeline_dossiers"
+              sequence="6"/>
+
+</odoo>

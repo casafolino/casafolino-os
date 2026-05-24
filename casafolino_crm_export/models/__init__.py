@@ -9,6 +9,7 @@ from . import cf_mail_activity
 from . import card_scanner
 from . import cf_export_sample
 from . import cf_export_fair
+from . import cf_fair_mail_template
 from . import cf_export_sequence
 from . import res_config_settings
 from . import cf_dossier_template

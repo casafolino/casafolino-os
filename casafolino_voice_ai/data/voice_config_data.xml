@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_voice_ai_public_base_url" model="ir.config_parameter">
+        <field name="key">casafolino_voice_ai.public_base_url</field>
+        <field name="value">https://erp.casafolino.com</field>
+    </record>
+    <record id="param_voice_ai_realtime_model" model="ir.config_parameter">
+        <field name="key">casafolino_voice_ai.openai_realtime_model</field>
+        <field name="value">gpt-realtime-2</field>
+    </record>
+    <record id="param_voice_ai_voice" model="ir.config_parameter">
+        <field name="key">casafolino_voice_ai.openai_voice</field>
+        <field name="value">marin</field>
+    </record>
+    <record id="param_voice_ai_allow_outbound" model="ir.config_parameter">
+        <field name="key">casafolino_voice_ai.allow_outbound</field>
+        <field name="value">False</field>
+    </record>
+    <record id="param_voice_ai_require_token" model="ir.config_parameter">
+        <field name="key">casafolino_voice_ai.require_token</field>
+        <field name="value">False</field>
+    </record>
+</odoo>
+

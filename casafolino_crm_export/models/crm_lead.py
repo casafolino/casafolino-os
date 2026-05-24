@@ -710,6 +710,9 @@ class CrmLead(models.Model):
             'res_model': 'mail.message',
             'view_mode': 'list,form',
             'domain': [
+                '|',
+                '&', ('model', '=', 'crm.lead'), ('res_id', '=', self.id),
+                '&',
                 ('partner_ids', 'in', self.partner_id.id),
                 ('message_type', 'in', ['email', 'email_outgoing']),
             ],

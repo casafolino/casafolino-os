@@ -3,7 +3,7 @@
 
     <!-- Card Scanner client action -->
     <record id="action_card_scanner" model="ir.actions.client">
-        <field name="name">Card Scanner SIAL</field>
+        <field name="name">Card Scanner Fiere</field>
         <field name="tag">casafolino_card_scanner</field>
     </record>
 
@@ -70,7 +70,11 @@
         parent="menu_cf_config" action="action_cf_cert" sequence="2"/>
     <menuitem id="menu_cf_templates" name="Template Dossier"
         parent="menu_cf_config" action="action_cf_dossier_template" sequence="3"/>
+    <menuitem id="menu_cf_fair_mail_templates" name="Template Mail Fiera"
+        parent="menu_cf_config" action="action_cf_fair_mail_template" sequence="4"/>
+    <menuitem id="menu_cf_fair_mail_template_folders" name="Cartelle Template Mail"
+        parent="menu_cf_config" action="action_cf_fair_mail_template_folder" sequence="5"/>
     <menuitem id="menu_cf_settings" name="Fair Follow-up Settings"
-        parent="menu_cf_config" action="action_crm_export_config" sequence="4"/>
+        parent="menu_cf_config" action="action_crm_export_config" sequence="6"/>
 
 </odoo>

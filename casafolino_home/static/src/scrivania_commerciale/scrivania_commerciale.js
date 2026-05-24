@@ -158,9 +158,9 @@ export class CFScrivaniaCommerciale extends Component {
 
     async onOpenAnalytics() {
         try {
-            await this.action.doAction("casafolino_crm_export.action_project_dashboard_360");
+            await this.action.doAction("casafolino_pipeline_control.action_cf_pipeline_control");
         } catch {
-            console.warn("Analytics action not available");
+            await this.onOpenProjects();
         }
     }
 

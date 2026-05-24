@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <function model="cf.pipeline.control" name="cleanup_legacy_entrypoints"/>
+</odoo>
