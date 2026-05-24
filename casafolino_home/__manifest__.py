@@ -6,7 +6,7 @@
     "summary": "Scrivania CasaFolino — cockpit aziendale con CRM, Produzione, HACCP e Tesoreria",
     "author": "CasaFolino Srls",
     "depends": [
-        "base", "web",
+        "base", "web", "website",
         "casafolino_commercial",
         "casafolino_crm_export",
         "casafolino_haccp",
@@ -26,6 +26,7 @@
         "security/ir.model.access.csv",
         "views/home_actions.xml",
         "views/menu_workspace.xml",
+        "views/erp_login.xml",
         "data/menu_remap.xml",
     ],
     "assets": {
@@ -33,6 +34,9 @@
             "casafolino_home/static/src/workspace/workspace.scss",
             "casafolino_home/static/src/workspace/workspace.xml",
             "casafolino_home/static/src/workspace/workspace.js",
+        ],
+        "web.assets_frontend": [
+            "casafolino_home/static/src/login/erp_login.scss",
         ],
     },
     "installable": True,

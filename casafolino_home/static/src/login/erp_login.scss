@@ -1,0 +1,203 @@
+.cf-erp-login-body {
+    min-height: 100%;
+    background: #f5f7f4;
+    color: #182231;
+}
+
+.cf-erp-login-body #wrapwrap {
+    min-height: 100vh;
+    background:
+        linear-gradient(120deg, rgba(18, 113, 91, .10), transparent 42%),
+        linear-gradient(300deg, rgba(177, 142, 72, .16), transparent 38%),
+        #f5f7f4;
+}
+
+.cf-erp-login-body #wrapwrap > .bg-success.text-white.text-center {
+    display: none;
+}
+
+.cf-erp-login {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 480px);
+    align-items: center;
+    gap: 48px;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 28px;
+}
+
+.cf-erp-login__brand,
+.cf-erp-login__panel {
+    border: 1px solid rgba(24, 34, 49, .12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .9);
+    box-shadow: 0 22px 70px rgba(24, 34, 49, .12);
+}
+
+.cf-erp-login__brand {
+    min-height: 520px;
+    padding: 42px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.cf-erp-login__mark {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 28px;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(24, 34, 49, .16);
+}
+
+.cf-erp-login__mark img {
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+    border-radius: 7px;
+}
+
+.cf-erp-login__eyebrow {
+    margin: 0 0 10px;
+    color: #12715b;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.cf-erp-login h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 46px;
+    line-height: 1.08;
+    font-weight: 750;
+}
+
+.cf-erp-login__copy {
+    max-width: 600px;
+    margin: 18px 0 0;
+    color: #536173;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.cf-erp-login__signals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 34px;
+}
+
+.cf-erp-login__signals span {
+    border: 1px solid rgba(18, 113, 91, .18);
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: #eef7f4;
+    color: #0f5d4b;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.cf-erp-login__panel {
+    padding: 34px;
+}
+
+.cf-erp-login__panel-header {
+    margin-bottom: 20px;
+}
+
+.cf-erp-login__panel-header p,
+.cf-erp-login__notice {
+    margin: 0 0 8px;
+    color: #9b7635;
+    font-size: 12px;
+    font-weight: 750;
+    text-transform: uppercase;
+}
+
+.cf-erp-login__panel-header h2 {
+    margin: 0;
+    color: #182231;
+    font-size: 25px;
+    line-height: 1.2;
+    font-weight: 750;
+}
+
+.cf-erp-login__form .oe_login_form {
+    display: block;
+}
+
+.cf-erp-login__form .oe_login_form.d-none {
+    display: block !important;
+}
+
+.cf-erp-login__form .form-label,
+.cf-erp-login__form .col-form-label {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cf-erp-login__form .form-control {
+    min-height: 46px;
+    border: 1px solid #d6dde7;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #111827;
+    box-shadow: none;
+}
+
+.cf-erp-login__form .form-control:focus {
+    border-color: #12715b;
+    box-shadow: 0 0 0 3px rgba(18, 113, 91, .14);
+}
+
+.cf-erp-login__submit,
+.cf-erp-login__form .btn-primary {
+    min-height: 46px;
+    border: 0;
+    border-radius: 7px;
+    background: #12715b;
+    color: #ffffff;
+    font-weight: 750;
+}
+
+.cf-erp-login__submit:hover,
+.cf-erp-login__submit:focus,
+.cf-erp-login__form .btn-primary:hover,
+.cf-erp-login__form .btn-primary:focus {
+    background: #0f5d4b;
+    color: #ffffff;
+}
+
+.cf-erp-login__form .o_login_auth,
+.cf-erp-login__form .text-center.small,
+.cf-erp-login__form .oe_login_form > .mt-2.text-center {
+    display: none;
+}
+
+@media (max-width: 860px) {
+    .cf-erp-login {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        padding: 22px;
+    }
+
+    .cf-erp-login__brand {
+        min-height: auto;
+        padding: 28px;
+    }
+
+    .cf-erp-login h1 {
+        font-size: 34px;
+    }
+
+    .cf-erp-login__copy {
+        font-size: 15px;
+    }
+}
