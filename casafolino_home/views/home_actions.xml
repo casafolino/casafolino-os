@@ -3,7 +3,8 @@
     <!-- Client action kept on legacy tags, rendered by the unified Scrivania cockpit. -->
     <record id="action_scrivania_commerciale" model="ir.actions.client">
         <field name="name">Scrivania</field>
-        <field name="tag">cf_scrivania_commerciale</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'control'}</field>
     </record>
 
     <record id="action_scrivania_operativa" model="ir.actions.client">
