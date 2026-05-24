@@ -27,6 +27,7 @@ export class CFPipelineControl extends Component {
             data: {
                 kpis: [],
                 lanes: [],
+                b2b_registrations: { kpis: [], rows: [] },
                 followup: { kpis: [], columns: [], routes: [], timeline: [] },
                 post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
@@ -246,6 +247,45 @@ export class CFPipelineControl extends Component {
                     await this.loadData();
                 }
             }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async openB2BRegistrations() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Iscrizioni B2B"),
+            res_model: "res.partner",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: [["cf_b2b_status", "!=", "none"]],
+            context: { search_default_pending: 1 },
+        });
+    }
+
+    async openB2BRegistration(row) {
+        if (!row?.id) {
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Iscrizione B2B"),
+            res_model: "res.partner",
+            res_id: row.id,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    async approveB2BRegistration(row) {
+        if (!row?.id) {
+            return;
+        }
+        try {
+            await this.orm.call("res.partner", "action_cf_b2b_approve", [[row.id]]);
+            this.notification.add(_t("Cliente B2B approvato"), { type: "success" });
+            await this.loadData();
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }

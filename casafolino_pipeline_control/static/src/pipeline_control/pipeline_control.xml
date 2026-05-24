@@ -99,6 +99,80 @@
                             </section>
                         </t>
                     </div>
+
+                    <section class="cf-pc-panel cf-pc-b2b-panel">
+                        <header>
+                            <div>
+                                <h2>Registrazioni B2B</h2>
+                                <p>Vista rapida di richieste, approvazioni e prossimi account da sbloccare.</p>
+                            </div>
+                            <button class="btn btn-sm btn-light" t-on-click="openB2BRegistrations">
+                                <i class="fa fa-external-link"/>
+                                Apri elenco
+                            </button>
+                        </header>
+                        <div class="cf-pc-b2b-body">
+                            <div class="cf-pc-b2b-kpis">
+                                <t t-foreach="state.data.b2b_registrations.kpis" t-as="kpi" t-key="'b2b-kpi-' + kpi.key">
+                                    <div t-attf-class="cf-pc-b2b-kpi tone-#{kpi.tone}">
+                                        <span t-out="kpi.label"/>
+                                        <strong t-out="kpi.value"/>
+                                        <small t-out="kpi.hint"/>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="cf-pc-b2b-table-wrap">
+                                <table class="cf-pc-table cf-pc-b2b-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Richiesta</th>
+                                            <th>Azienda</th>
+                                            <th>Origine</th>
+                                            <th>Attività</th>
+                                            <th>Stato</th>
+                                            <th>Commerciale</th>
+                                            <th/>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="state.data.b2b_registrations.rows.length">
+                                            <t t-foreach="state.data.b2b_registrations.rows" t-as="row" t-key="'b2b-row-' + row.id">
+                                                <tr>
+                                                    <td t-out="row.requested_at"/>
+                                                    <td>
+                                                        <strong t-out="row.name"/>
+                                                        <small>
+                                                            <t t-out="row.email"/>
+                                                            <t t-if="row.vat"> · P.IVA <t t-out="row.vat"/></t>
+                                                        </small>
+                                                    </td>
+                                                    <td t-out="row.source_label"/>
+                                                    <td t-out="row.category_label"/>
+                                                    <td>
+                                                        <span t-attf-class="cf-pc-status-badge state-#{row.status}" t-out="row.status_label"/>
+                                                    </td>
+                                                    <td t-out="row.salesperson || 'Da assegnare'"/>
+                                                    <td>
+                                                        <div class="cf-pc-row-actions">
+                                                            <button class="btn btn-sm btn-light" t-on-click="() => this.openB2BRegistration(row)" title="Apri iscrizione">
+                                                                <i class="fa fa-folder-open-o"/>
+                                                            </button>
+                                                            <button t-if="row.status === 'pending'" class="btn btn-sm btn-primary" t-on-click="() => this.approveB2BRegistration(row)" title="Approva B2B">
+                                                                <i class="fa fa-check"/>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                        <tr t-else="">
+                                            <td colspan="7" class="cf-pc-empty">Nessuna registrazione B2B</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
                 </t>
 
                 <t t-elif="state.activeView === 'followup'">

@@ -373,6 +373,91 @@
         margin-top: 12px;
     }
 
+    .cf-pc-b2b-panel {
+        margin-top: 14px;
+
+        > header {
+            align-items: flex-start;
+
+            .btn {
+                white-space: nowrap;
+            }
+        }
+    }
+
+    .cf-pc-b2b-body {
+        padding: 10px;
+    }
+
+    .cf-pc-b2b-kpis {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(130px, 1fr));
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .cf-pc-b2b-kpi {
+        min-height: 72px;
+        padding: 10px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+
+        span,
+        small {
+            display: block;
+            color: #667061;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        strong {
+            display: block;
+            margin: 6px 0 5px;
+            color: #20251f;
+            font-size: 24px;
+            line-height: 1;
+        }
+    }
+
+    .cf-pc-b2b-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .cf-pc-b2b-table {
+        min-width: 920px;
+    }
+
+    .cf-pc-status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #edf0ea;
+        color: #4b5548;
+        font-size: 11px;
+        font-weight: 750;
+        line-height: 1.2;
+
+        &.state-pending {
+            background: #f7ead8;
+            color: #7c4b0c;
+        }
+
+        &.state-approved {
+            background: #e5f2ea;
+            color: #256245;
+        }
+
+        &.state-suspended {
+            background: #f6e2df;
+            color: #8c2c24;
+        }
+    }
+
     .cf-pc-route-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(220px, 1fr));

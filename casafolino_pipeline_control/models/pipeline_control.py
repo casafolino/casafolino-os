@@ -344,6 +344,7 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
             'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
+            'b2b_registrations': self._safe_section('b2b_registrations', lambda: self._get_b2b_registration_data(today), {'kpis': [], 'rows': []}),
             'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []}),
             'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
@@ -606,6 +607,97 @@ class CfPipelineControl(models.AbstractModel):
                 'items': [self._format_project_item(project) for project in blocked],
             },
         ]
+
+    def _get_b2b_registration_data(self, today):
+        Partner = self.env['res.partner'].sudo()
+        if 'cf_b2b_status' not in Partner._fields:
+            return {'kpis': [], 'rows': []}
+
+        base_domain = [('cf_b2b_status', '!=', 'none')]
+        pending_domain = [('cf_b2b_status', '=', 'pending')]
+        approved_domain = [('cf_b2b_status', '=', 'approved')]
+        suspended_domain = [('cf_b2b_status', '=', 'suspended')]
+        requested_field = 'cf_b2b_requested_at' if 'cf_b2b_requested_at' in Partner._fields else 'create_date'
+        rows = Partner.search(base_domain, order='%s desc, id desc' % requested_field, limit=12)
+
+        today_start = fields.Datetime.to_datetime(today)
+        today_domain = base_domain + [(requested_field, '>=', today_start)]
+        approved_today_domain = approved_domain
+        if 'cf_b2b_approved_at' in Partner._fields:
+            approved_today_domain = approved_domain + [('cf_b2b_approved_at', '>=', today_start)]
+
+        return {
+            'kpis': [
+                {
+                    'key': 'pending',
+                    'label': 'Da approvare',
+                    'value': Partner.search_count(pending_domain),
+                    'hint': 'Registrazioni in attesa',
+                    'tone': 'amber',
+                },
+                {
+                    'key': 'today',
+                    'label': 'Registrazioni oggi',
+                    'value': Partner.search_count(today_domain),
+                    'hint': 'Nuove richieste B2B',
+                    'tone': 'blue',
+                },
+                {
+                    'key': 'approved',
+                    'label': 'Approvati',
+                    'value': Partner.search_count(approved_domain),
+                    'hint': 'Account B2B attivi',
+                    'tone': 'green',
+                },
+                {
+                    'key': 'approved_today',
+                    'label': 'Approvati oggi',
+                    'value': Partner.search_count(approved_today_domain),
+                    'hint': 'Conversioni odierne',
+                    'tone': 'green',
+                },
+                {
+                    'key': 'suspended',
+                    'label': 'Sospesi',
+                    'value': Partner.search_count(suspended_domain),
+                    'hint': 'Accessi bloccati',
+                    'tone': 'red',
+                },
+            ],
+            'rows': [self._format_b2b_registration_row(partner) for partner in rows],
+        }
+
+    def _format_b2b_registration_row(self, partner):
+        source_labels = dict(partner._fields['cf_b2b_source'].selection) if 'cf_b2b_source' in partner._fields else {}
+        category_labels = dict(partner._fields['cf_b2b_category'].selection) if 'cf_b2b_category' in partner._fields else {}
+        status_labels = dict(partner._fields['cf_b2b_status'].selection)
+        requested_at = partner.cf_b2b_requested_at if 'cf_b2b_requested_at' in partner._fields else partner.create_date
+        approved_at = partner.cf_b2b_approved_at if 'cf_b2b_approved_at' in partner._fields else False
+        return {
+            'id': partner.id,
+            'model': 'res.partner',
+            'res_id': partner.id,
+            'name': partner.display_name,
+            'email': partner.email or '',
+            'phone': partner.phone or partner.mobile or '',
+            'vat': partner.cf_b2b_vat_code or partner.vat or '',
+            'status': partner.cf_b2b_status or '',
+            'status_label': status_labels.get(partner.cf_b2b_status, partner.cf_b2b_status or ''),
+            'source_label': source_labels.get(partner.cf_b2b_source, partner.cf_b2b_source or '') if 'cf_b2b_source' in partner._fields else '',
+            'category_label': category_labels.get(partner.cf_b2b_category, partner.cf_b2b_category or '') if 'cf_b2b_category' in partner._fields else '',
+            'requested_at': self._format_datetime_short(requested_at),
+            'approved_at': self._format_datetime_short(approved_at),
+            'salesperson': partner.user_id.name if partner.user_id else '',
+        }
+
+    def _format_datetime_short(self, value):
+        if not value:
+            return ''
+        dt_value = fields.Datetime.to_datetime(value)
+        if not dt_value:
+            return ''
+        localized = fields.Datetime.context_timestamp(self, dt_value)
+        return localized.strftime('%d/%m %H:%M')
 
     def _get_post_fair_data(self, today, fair_id=False):
         Fair = self.env['cf.export.fair']
