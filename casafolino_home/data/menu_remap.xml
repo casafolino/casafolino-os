@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Reparent all custom root menus under the Scrivania clusters.
-        After this, only "Scrivania" remains in the apps grid.
+        Reparent all custom root menus under the 4 Workspace clusters.
+        After this, only "Workspace CasaFolino" remains in the apps grid.
     -->
 
     <!-- ============================================================
@@ -44,7 +44,6 @@
     <record id="casafolino_project.menu_cf_project_root" model="ir.ui.menu">
         <field name="parent_id" ref="casafolino_home.menu_ws_crm"/>
         <field name="sequence">80</field>
-        <field name="active" eval="False"/>
     </record>
 
     <record id="casafolino_commercial.menu_cf_doc_footer_root" model="ir.ui.menu">
@@ -103,11 +102,76 @@
     </record>
 
     <!-- ============================================================
-         Legacy: Scrivania (casafolino_workspace) — absorbed by the unified cockpit
+         Legacy: Scrivania (casafolino_workspace) — reparent under Workspace, bottom
          ============================================================ -->
+    <record id="casafolino_workspace.action_cf_workspace_main" model="ir.actions.client">
+        <field name="name">Sala Controllo</field>
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+
     <record id="casafolino_workspace.menu_cf_workspace_root" model="ir.ui.menu">
         <field name="parent_id" ref="casafolino_home.menu_cf_home_root"/>
         <field name="sequence">99</field>
-        <field name="active" eval="False"/>
+        <field name="active">False</field>
+    </record>
+
+    <!-- Legacy Pipeline Control: keep data/action reachable, but remove duplicate workspace entries. -->
+    <record id="casafolino_pipeline_control.action_cf_pipeline_control" model="ir.actions.client">
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+    <record id="casafolino_pipeline_control.action_cf_pipeline_inbox" model="ir.actions.client">
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+    <record id="casafolino_pipeline_control.action_cf_pipeline_followup" model="ir.actions.client">
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+    <record id="casafolino_pipeline_control.action_cf_pipeline_post_fair" model="ir.actions.client">
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+    <record id="casafolino_pipeline_control.action_cf_pipeline_pipeline" model="ir.actions.client">
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+    <record id="casafolino_pipeline_control.action_cf_pipeline_dossiers" model="ir.actions.client">
+        <field name="tag">cf_scrivania_commerciale</field>
+    </record>
+
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_control" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_control_root" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_inbox" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_followup" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_post_fair" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_pipeline" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_dossiers" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_root_control" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_root_inbox" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_root_followup" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_root_post_fair" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_root_pipeline" model="ir.ui.menu">
+        <field name="active">False</field>
+    </record>
+    <record id="casafolino_pipeline_control.menu_cf_pipeline_root_dossiers" model="ir.ui.menu">
+        <field name="active">False</field>
     </record>
 </odoo>

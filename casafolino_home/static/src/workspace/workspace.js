@@ -6,14 +6,6 @@ import { user } from "@web/core/user";
 import { registry } from "@web/core/registry";
 
 const CLUSTERS = ["crm", "produzione", "haccp", "tesoreria"];
-const QUICK_LINKS = [
-    { id: "home", label: "Home", action: "onSwitchCRM" },
-    { id: "pipeline", label: "Pipeline", action: "onOpenPipeline" },
-    { id: "projects", label: "Dossier", action: "onOpenProjects" },
-    { id: "fairs", label: "Fiere", action: "onOpenFairs" },
-    { id: "samples", label: "Campionature", action: "onOpenSamples" },
-    { id: "cards", label: "Biglietti", action: "onOpenCardScanner" },
-];
 
 export class CFWorkspace extends Component {
     static template = "casafolino_home.CFWorkspace";
@@ -59,83 +51,6 @@ export class CFWorkspace extends Component {
         } finally {
             this.state.isLoading = false;
         }
-    }
-
-    get cockpitCards() {
-        const crm = this.state.kpi.crm || {};
-        const produzione = this.state.kpi.produzione || {};
-        const haccp = this.state.kpi.haccp || {};
-        const tesoreria = this.state.kpi.tesoreria || {};
-        return [
-            {
-                id: "crm",
-                label: "Commerciale",
-                value: this.formatKpi(crm.progetti_attivi),
-                detail: `${this.formatKpi(crm.lead_aperti)} lead aperti`,
-                icon: "fa-briefcase",
-                tone: "crm",
-                action: () => this.onOpenProjects(),
-            },
-            {
-                id: "pipeline",
-                label: "Pipeline",
-                value: this.formatKpi(crm.lead_aperti),
-                detail: "lead e opportunità",
-                icon: "fa-tasks",
-                tone: "pipeline",
-                action: () => this.onOpenPipeline(),
-            },
-            {
-                id: "fairs",
-                label: "Fiere",
-                value: "\u2192",
-                detail: "eventi e contatti",
-                icon: "fa-globe",
-                tone: "fairs",
-                action: () => this.onOpenFairs(),
-            },
-            {
-                id: "samples",
-                label: "Campionature",
-                value: "\u2192",
-                detail: "invii e follow-up",
-                icon: "fa-flask",
-                tone: "samples",
-                action: () => this.onOpenSamples(),
-            },
-            {
-                id: "quality",
-                label: "Qualità",
-                value: this.formatKpi(haccp.nc_aperte),
-                detail: `${this.formatKpi(haccp.haccp_scadenze)} scadenze HACCP`,
-                icon: "fa-shield",
-                tone: haccp.nc_aperte || haccp.haccp_scadenze ? "alert" : "haccp",
-                action: () => this.onSwitchHACCP(),
-            },
-            {
-                id: "cash",
-                label: "Tesoreria",
-                value: this.formatKpi(tesoreria.fatture_aperte),
-                detail: "fatture aperte",
-                icon: "fa-university",
-                tone: tesoreria.fatture_aperte ? "alert" : "tesoreria",
-                action: () => this.onSwitchTesoreria(),
-            },
-        ];
-    }
-
-    get quickLinks() {
-        return QUICK_LINKS.map((link) => ({
-            ...link,
-            action: () => this[link.action](),
-        }));
-    }
-
-    get dailyProgress() {
-        const crm = this.state.kpi.crm || {};
-        const total = Number(crm.progetti_attivi || 0) + Number(crm.lead_aperti || 0);
-        const resolved = Math.max(0, total - Number(crm.sla_scadenza || 0));
-        return total ? Math.round((resolved / total) * 100) : 62;
     }
 
     get activeCluster() {
@@ -194,6 +109,33 @@ export class CFWorkspace extends Component {
         });
     }
 
+    async onOpenPosizionatore() {
+        try {
+            await this.action.doAction("casafolino_mail.action_cf_mail_posizionatore");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "casafolino.mail.message",
+                views: [[false, "list"], [false, "form"]],
+                domain: [["cf_project_id", "=", false], ["partner_id", "!=", false]],
+                target: "current",
+            });
+        }
+    }
+
+    async onOpenMiaCasella() {
+        try {
+            await this.action.doAction("casafolino_mail.action_casafolino_mail_my_mailbox");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "casafolino.mail.message",
+                views: [[false, "list"], [false, "form"]],
+                target: "current",
+            });
+        }
+    }
+
     async onOpenPipeline() {
         try {
             await this.action.doAction("casafolino_crm_export.action_cf_crm_all");
@@ -202,7 +144,7 @@ export class CFWorkspace extends Component {
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
                 views: [[false, "kanban"], [false, "list"], [false, "form"]],
-                domain: [["type", "=", "lead"], ["active", "=", true]],
+                domain: [["type", "in", ["lead", "opportunity"]], ["active", "=", true]],
                 target: "current",
             });
         }
@@ -224,81 +166,27 @@ export class CFWorkspace extends Component {
 
     async onOpenLavagna() {
         try {
-            await this.action.doAction("casafolino_initiative.action_cf_initiative");
+            await this.action.doAction("casafolino_initiative_dashboard.action_lavagna_template");
         } catch {
             await this.action.doAction({
                 type: "ir.actions.act_window",
-                res_model: "cf.initiative",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                res_model: "project.project",
+                views: [[false, "kanban"], [false, "list"]],
                 target: "current",
             });
-        }
-    }
-
-    async onOpenFairs() {
-        try {
-            await this.action.doAction("casafolino_crm_export.action_cf_fair");
-        } catch {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "cf.export.fair",
-                views: [[false, "list"], [false, "form"]],
-                target: "current",
-                name: "Fiere",
-            });
-        }
-    }
-
-    async onOpenSamples() {
-        try {
-            await this.action.doAction("casafolino_crm_export.action_cf_sample");
-        } catch {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "cf.export.sample",
-                views: [[false, "list"], [false, "form"]],
-                target: "current",
-                name: "Campionature",
-            });
-        }
-    }
-
-    async onOpenCardScanner() {
-        try {
-            await this.action.doAction("casafolino_crm_export.action_card_scanner");
-        } catch {
-            console.warn("Card scanner action not available");
         }
     }
 
     async onOpenAnalytics() {
-        await this.onOpenControlRoom();
-    }
-
-    async onOpenControlRoom() {
         try {
-            await this.action.doAction("casafolino_pipeline_control.action_cf_pipeline_control");
+            await this.action.doAction("casafolino_crm_export.action_project_dashboard_360");
         } catch {
-            await this.onOpenProjects();
+            console.warn("Analytics action not available");
         }
     }
 
     async onOpenDossierExport() {
         await this.action.doAction("casafolino_crm_export.action_cf_project_dossier");
-    }
-
-    async onOpenInternalProjects() {
-        try {
-            await this.action.doAction("casafolino_project.action_cf_project_all");
-        } catch {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "project.project",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
-                target: "current",
-                name: "Progetti interni",
-            });
-        }
     }
 
     // ======== Produzione actions ========
@@ -433,14 +321,13 @@ export class CFWorkspace extends Component {
 
     // ======== Tesoreria actions ========
 
-    async onNewQuotation() {
+    async onNewInvoice() {
         await this.action.doAction({
             type: "ir.actions.act_window",
-            res_model: "sale.order",
+            res_model: "account.move",
             views: [[false, "form"]],
             target: "current",
-            context: { default_user_id: user.userId },
-            name: "Nuovo preventivo",
+            context: { default_move_type: "out_invoice" },
         });
     }
 
@@ -503,12 +390,23 @@ export class CFWorkspace extends Component {
     }
 
     async onOpenGDO() {
-        await this.onOpenFairs();
+        try {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                res_model: "cf.export.fair",
+                views: [[false, "list"], [false, "form"]],
+                target: "current",
+                name: "Fiere & GDO",
+            });
+        } catch {
+            console.warn("GDO/Fair action not available");
+        }
     }
 }
 
-// Register for all action tags (backward compat + new)
-registry.category("actions").add("cf_scrivania_commerciale", CFWorkspace);
-registry.category("actions").add("cf_scrivania_operativa", CFWorkspace);
-registry.category("actions").add("cf_scrivania_admin", CFWorkspace);
-registry.category("actions").add("cf_workspace_haccp", CFWorkspace);
+// Register with force so the unified workspace wins over legacy desks.
+registry.category("actions").add("cf_scrivania_commerciale", CFWorkspace, { force: true });
+registry.category("actions").add("cf_workspace_main", CFWorkspace, { force: true });
+registry.category("actions").add("cf_scrivania_operativa", CFWorkspace, { force: true });
+registry.category("actions").add("cf_scrivania_admin", CFWorkspace, { force: true });
+registry.category("actions").add("cf_workspace_haccp", CFWorkspace, { force: true });
