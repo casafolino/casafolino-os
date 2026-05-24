@@ -15,17 +15,92 @@
                     <group>
                         <group>
                             <field name="cf_b2b_status"/>
+                            <field name="cf_b2b_source"/>
                             <field name="cf_b2b_category"/>
                             <field name="cf_b2b_vat_code"/>
+                            <field name="cf_b2b_google_place_id"/>
                         </group>
                         <group>
                             <field name="cf_b2b_sdi_pec"/>
+                            <field name="cf_b2b_google_place_types"/>
+                            <field name="cf_b2b_requested_at"/>
+                            <field name="cf_b2b_approved_at"/>
                             <field name="property_product_pricelist"/>
                         </group>
                     </group>
                 </page>
             </xpath>
         </field>
+    </record>
+
+    <record id="view_partner_cf_b2b_control_list" model="ir.ui.view">
+        <field name="name">res.partner.list.cf.b2b.control</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Iscrizioni B2B"
+                  decoration-warning="cf_b2b_status == 'pending'"
+                  decoration-success="cf_b2b_status == 'approved'"
+                  decoration-muted="cf_b2b_status == 'suspended'">
+                <field name="cf_b2b_requested_at"/>
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="cf_b2b_vat_code"/>
+                <field name="cf_b2b_source"/>
+                <field name="cf_b2b_category"/>
+                <field name="cf_b2b_google_place_id"/>
+                <field name="cf_b2b_status"/>
+                <field name="cf_b2b_approved_at"/>
+                <field name="user_id" string="Commerciale"/>
+                <button name="action_cf_b2b_approve" string="Approva" type="object" class="btn-primary" invisible="cf_b2b_status == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_partner_cf_b2b_control_search" model="ir.ui.view">
+        <field name="name">res.partner.search.cf.b2b.control</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search string="Cerca iscrizioni B2B">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="cf_b2b_vat_code"/>
+                <filter name="pending" string="Da approvare" domain="[('cf_b2b_status','=','pending')]"/>
+                <filter name="approved" string="Approvati" domain="[('cf_b2b_status','=','approved')]"/>
+                <filter name="suspended" string="Sospesi" domain="[('cf_b2b_status','=','suspended')]"/>
+                <separator/>
+                <filter name="source_ecommerce" string="B2B Ecommerce" domain="[('cf_b2b_source','=','ecommerce')]"/>
+                <filter name="source_company" string="B2B Company" domain="[('cf_b2b_source','=','company')]"/>
+                <separator/>
+                <filter name="group_status" string="Stato" context="{'group_by':'cf_b2b_status'}"/>
+                <filter name="group_source" string="Origine" context="{'group_by':'cf_b2b_source'}"/>
+                <filter name="group_category" string="Attivita" context="{'group_by':'cf_b2b_category'}"/>
+                <filter name="group_salesperson" string="Commerciale" context="{'group_by':'user_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_cf_b2b_control_room" model="ir.actions.act_window">
+        <field name="name">Iscrizioni B2B</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('cf_b2b_status','!=','none')]</field>
+        <field name="search_view_id" ref="view_partner_cf_b2b_control_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+    <record id="action_cf_b2b_control_room_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_partner_cf_b2b_control_list"/>
+        <field name="act_window_id" ref="action_cf_b2b_control_room"/>
+    </record>
+
+    <record id="action_cf_b2b_control_room_view_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="base.view_partner_form"/>
+        <field name="act_window_id" ref="action_cf_b2b_control_room"/>
     </record>
 
     <record id="action_cf_b2b_pending_partners" model="ir.actions.act_window">
@@ -41,4 +116,10 @@
         parent="contacts.menu_contacts"
         action="action_cf_b2b_pending_partners"
         sequence="35"/>
+
+    <menuitem id="menu_cf_b2b_control_room"
+        name="Iscrizioni B2B"
+        parent="casafolino_pipeline_control.menu_cf_pipeline_control_root"
+        action="action_cf_b2b_control_room"
+        sequence="42"/>
 </odoo>

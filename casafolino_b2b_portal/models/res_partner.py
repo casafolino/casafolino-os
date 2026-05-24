@@ -29,6 +29,20 @@ class ResPartner(models.Model):
     )
     cf_b2b_vat_code = fields.Char(string="P.IVA B2B")
     cf_b2b_sdi_pec = fields.Char(string="SDI / PEC")
+    cf_b2b_google_place_id = fields.Char(string="Google Place ID")
+    cf_b2b_google_place_types = fields.Char(string="Google Place types")
+    cf_b2b_source = fields.Selection(
+        [
+            ("ecommerce", "B2B Ecommerce"),
+            ("company", "B2B Company"),
+            ("manual", "Manuale"),
+        ],
+        string="Origine B2B",
+        default="manual",
+        tracking=True,
+    )
+    cf_b2b_requested_at = fields.Datetime(string="Richiesta B2B", default=fields.Datetime.now, tracking=True)
+    cf_b2b_approved_at = fields.Datetime(string="Approvazione B2B", tracking=True)
 
     def _cf_b2b_default_email_from(self):
         return self.env["ir.config_parameter"].sudo().get_param(
@@ -82,6 +96,7 @@ class ResPartner(models.Model):
             elif portal_group not in user.groups_id:
                 user.sudo().write({"groups_id": [(4, portal_group.id)]})
             partner.sudo().signup_prepare(signup_type="reset")
+            partner.cf_b2b_approved_at = fields.Datetime.now()
             partner._cf_b2b_send_template("casafolino_b2b_portal.mail_template_b2b_approved")
             partner.message_post(body=_("Cliente B2B approvato. Accesso portale attivato per %s.") % email)
         return True

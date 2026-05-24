@@ -33,7 +33,7 @@
     <record id="mail_template_b2b_internal_pending" model="mail.template">
         <field name="name">CasaFolino B2B - Nuova richiesta interna</field>
         <field name="model_id" ref="base.model_res_partner"/>
-        <field name="subject">Nuova richiesta B2B da approvare: {{ object.name }}</field>
+        <field name="subject">APPROVAZIONE B2B richiesta: {{ object.name }}</field>
         <field name="email_from">{{ object.env['ir.config_parameter'].sudo().get_param('casafolino_b2b.email_from', 'CasaFolino B2B &lt;antonio@casafolino.com&gt;') }}</field>
         <field name="email_to">{{ object.env.context.get('b2b_notify_email') or '' }}</field>
         <field name="body_html" type="html">
@@ -45,6 +45,7 @@
                     <li><strong>Telefono:</strong> <t t-out="object.phone or ''"/></li>
                     <li><strong>P.IVA:</strong> <t t-out="object.cf_b2b_vat_code or object.vat or ''"/></li>
                     <li><strong>SDI / PEC:</strong> <t t-out="object.cf_b2b_sdi_pec or ''"/></li>
+                    <li><strong>Origine:</strong> <t t-out="dict(object._fields['cf_b2b_source'].selection).get(object.cf_b2b_source, '')"/></li>
                     <li><strong>Categoria:</strong> <t t-out="dict(object._fields['cf_b2b_category'].selection).get(object.cf_b2b_category, '')"/></li>
                 </ul>
                 <p style="margin:24px 0;">

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from urllib.parse import quote
+
 from odoo import http
 from odoo.http import request
 
@@ -114,6 +116,18 @@ class CasaFolinoB2BPortal(http.Controller):
         tag_name = "b2b company" if self._is_company_host() else "b2b ecommerce"
         Tag = request.env["res.partner.category"].sudo()
         return Tag.search([("name", "=", tag_name)], limit=1) or Tag.create({"name": tag_name})
+
+    def _registration_source(self):
+        return "company" if self._is_company_host() else "ecommerce"
+
+    def _google_places_src(self):
+        key = request.env["ir.config_parameter"].sudo().get_param("casafolino_b2b.google_places_api_key")
+        if not key:
+            return False
+        return (
+            "https://maps.googleapis.com/maps/api/js"
+            f"?key={quote(key)}&libraries=places&callback=cfB2BInitPlaces&loading=async&language=it"
+        )
 
     def _product_price(self, product, qty=1):
         partner = self._current_partner()
@@ -240,6 +254,9 @@ class CasaFolinoB2BPortal(http.Controller):
                     "cf_b2b_vat_code": (post.get("vat") or "").strip(),
                     "cf_b2b_sdi_pec": (post.get("sdi_pec") or "").strip(),
                     "cf_b2b_category": post.get("category") or "other",
+                    "cf_b2b_google_place_id": (post.get("google_place_id") or "").strip(),
+                    "cf_b2b_google_place_types": (post.get("google_place_types") or "").strip(),
+                    "cf_b2b_source": self._registration_source(),
                     "street": (post.get("street") or "").strip(),
                     "cf_b2b_status": "pending",
                     "comment": (post.get("notes") or "").strip(),
@@ -249,7 +266,14 @@ class CasaFolinoB2BPortal(http.Controller):
             partner.message_post(body="Richiesta accesso B2B ricevuta da b2b.casafolino.com.")
             partner.action_cf_b2b_send_pending_notifications()
             return request.redirect("/b2b/register?sent=1")
-        return request.render("casafolino_b2b_portal.register", {"sent": post.get("sent"), "missing": post.get("missing")})
+        return request.render(
+            "casafolino_b2b_portal.register",
+            {
+                "sent": post.get("sent"),
+                "missing": post.get("missing"),
+                "google_places_src": self._google_places_src(),
+            },
+        )
 
     @http.route(["/b2b/cart/add"], type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def b2b_cart_add(self, product_id=None, quantity=None, **kwargs):

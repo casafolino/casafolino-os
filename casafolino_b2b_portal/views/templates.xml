@@ -171,6 +171,8 @@
                 <main class="cf-register-shell">
                     <form class="cf-register-form" action="/b2b/register" method="post">
                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="google_place_id" data-cf-google-place-id="1"/>
+                        <input type="hidden" name="google_place_types" data-cf-google-place-types="1"/>
                         <input class="cf-hp" name="website_url" tabindex="-1" autocomplete="off"/>
                         <p class="cf-eyebrow">Richiesta accesso</p>
                         <h1>Registrazione cliente professionale</h1>
@@ -209,6 +211,15 @@
                         </ol>
                     </section>
                 </main>
+                <t t-if="google_places_src">
+                    <script>
+                        window.cfB2BInitPlaces = window.cfB2BInitPlaces || function () {
+                            window.cfB2BPlacesReady = true;
+                            document.dispatchEvent(new Event("cf-b2b-places-ready"));
+                        };
+                    </script>
+                    <script async="async" defer="defer" t-att-src="google_places_src"></script>
+                </t>
             </div>
         </t>
     </template>
