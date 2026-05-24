@@ -312,7 +312,7 @@
     <record id="action_cf_pipeline_control" model="ir.actions.client">
         <field name="name">Sala Controllo</field>
         <field name="tag">casafolino_pipeline_control</field>
-        <field name="context">{'default_view': 'dossiers'}</field>
+        <field name="context">{'default_view': 'control'}</field>
     </record>
 
     <record id="action_cf_pipeline_inbox" model="ir.actions.client">
@@ -349,7 +349,7 @@
         <field name="name">Dossier / Progetti</field>
         <field name="tag">casafolino_pipeline_control</field>
         <field name="target">current</field>
-        <field name="context">{'default_view': 'dossiers'}</field>
+        <field name="context">{'default_view': 'control'}</field>
     </record>
 
     <record id="casafolino_crm_export.menu_cf_projects_360" model="ir.ui.menu">

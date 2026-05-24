@@ -385,6 +385,261 @@
         }
     }
 
+    .cf-pc-control-room {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .cf-pc-control-pipeline,
+    .cf-pc-control-mail {
+        min-width: 0;
+    }
+
+    .cf-pc-control-head {
+        min-height: 44px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+
+        h2 {
+            margin: 0;
+            color: #20251f;
+            font-size: 18px;
+            font-weight: 850;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 3px 0 0;
+            color: #667061;
+            font-size: 13px;
+        }
+
+        .btn {
+            white-space: nowrap;
+        }
+    }
+
+    .cf-pc-control-board {
+        .cf-pc-lane {
+            min-width: 210px;
+        }
+
+        .cf-pc-lane-body {
+            min-height: 380px;
+        }
+    }
+
+    .cf-pc-control-card {
+        width: 100%;
+        display: block;
+        border: 1px solid #dfe3da;
+        border-left: 4px solid #3b6c9f;
+        border-radius: 8px;
+        background: #fff;
+        color: #20251f;
+        padding: 10px;
+        text-align: left;
+        transition: all .15s ease;
+
+        &:hover,
+        &.active {
+            border-color: #3b6c9f;
+            box-shadow: 0 8px 18px rgba(32, 37, 31, .08);
+            transform: translateY(-1px);
+        }
+
+        strong,
+        small,
+        .cf-pc-control-meta {
+            display: block;
+        }
+
+        strong {
+            font-size: 14px;
+            line-height: 1.25;
+        }
+
+        small {
+            min-height: 34px;
+            margin-top: 4px;
+            color: #667061;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .cf-pc-control-meta {
+            margin-top: 7px;
+            color: #4b5548;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .cf-pc-badges {
+            margin-top: 8px;
+        }
+    }
+
+    .cf-pc-control-mail {
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fbfcfa;
+        padding: 12px;
+    }
+
+    .cf-pc-mail-flow {
+        display: grid;
+        grid-template-columns: 1fr 24px 1fr 24px 1fr;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 10px;
+
+        span {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dfe3da;
+            border-radius: 8px;
+            background: #fff;
+            color: #4b5548;
+            font-size: 12px;
+            font-weight: 850;
+        }
+
+        i {
+            color: #3b6c9f;
+            text-align: center;
+        }
+    }
+
+    .cf-pc-control-mail-list {
+        display: grid;
+        gap: 8px;
+    }
+
+    .cf-pc-control-mail-row {
+        border: 1px solid #dfe3da;
+        border-left: 4px solid #694668;
+        border-radius: 8px;
+        background: #fff;
+        padding: 9px;
+
+        > button {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #20251f;
+            padding: 0;
+            text-align: left;
+        }
+
+        strong,
+        small {
+            display: block;
+        }
+
+        strong {
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        small {
+            margin-top: 3px;
+            color: #667061;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .cf-pc-row-actions {
+            justify-content: flex-start;
+            min-width: 0;
+            margin-top: 8px;
+        }
+    }
+
+    .cf-pc-control-focus {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, .8fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .cf-pc-control-next {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 12px;
+
+        > div {
+            min-height: 70px;
+            border: 1px solid #dfe3da;
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px;
+        }
+
+        span,
+        strong {
+            display: block;
+        }
+
+        span {
+            margin-bottom: 5px;
+            color: #667061;
+            font-size: 11px;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        strong {
+            color: #20251f;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+    }
+
+    .cf-pc-control-dossier {
+        padding: 12px;
+
+        > strong,
+        > small {
+            display: block;
+        }
+
+        > strong {
+            color: #20251f;
+            font-size: 15px;
+            line-height: 1.25;
+        }
+
+        > small {
+            margin-top: 4px;
+            color: #667061;
+            font-size: 12px;
+        }
+
+        .cf-pc-control-next {
+            padding: 12px 0 0;
+        }
+    }
+
+    .cf-pc-control-b2b {
+        margin-top: 12px;
+    }
+
+    .cf-pc-control-b2b-kpis {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(130px, 1fr));
+        gap: 8px;
+        padding: 10px;
+        overflow-x: auto;
+    }
+
     .cf-pc-b2b-body {
         padding: 10px;
     }
@@ -1039,6 +1294,11 @@
             grid-template-columns: 1fr;
         }
 
+        .cf-pc-control-room,
+        .cf-pc-control-focus {
+            grid-template-columns: 1fr;
+        }
+
         .cf-pc-workbench,
         .cf-pc-workbench-grid {
             grid-template-columns: 1fr;
@@ -1087,6 +1347,10 @@
         .cf-pc-board.cf-pc-board-wide,
         .cf-pc-route-grid {
             grid-template-columns: repeat(2, minmax(220px, 1fr));
+        }
+
+        .cf-pc-control-next {
+            grid-template-columns: 1fr;
         }
     }
 }

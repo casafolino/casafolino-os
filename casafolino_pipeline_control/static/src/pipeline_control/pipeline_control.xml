@@ -76,101 +76,189 @@
                         </t>
                     </div>
 
-                    <div class="cf-pc-board">
-                        <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
-                            <section class="cf-pc-lane">
-                                <header>
-                                    <div>
-                                        <h2 t-out="lane.title"/>
-                                        <p t-if="lane.count > lane.items.length">
-                                            Prime <t t-out="lane.items.length"/> visibili
-                                        </p>
-                                    </div>
-                                    <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
-                                </header>
-                                <div class="cf-pc-lane-body">
-                                    <t t-if="lane.items.length">
-                                        <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
-                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
-                                        </t>
-                                    </t>
-                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                    <div class="cf-pc-control-room">
+                        <section class="cf-pc-control-pipeline">
+                            <div class="cf-pc-control-head">
+                                <div>
+                                    <h2>Pipeline</h2>
+                                    <p>Stato cliente, rischio, mail aperte e prossima azione.</p>
                                 </div>
-                            </section>
-                        </t>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('pipeline')">
+                                    <i class="fa fa-columns"/>
+                                    Vista completa
+                                </button>
+                            </div>
+                            <div class="cf-pc-board cf-pc-board-wide cf-pc-control-board">
+                                <t t-foreach="state.data.pipeline" t-as="column" t-key="'control-pipeline-' + column.id">
+                                    <section class="cf-pc-lane">
+                                        <header>
+                                            <h2 t-out="column.title"/>
+                                            <span class="cf-pc-pill" t-out="column.count"/>
+                                        </header>
+                                        <div class="cf-pc-lane-body">
+                                            <t t-if="column.items.length">
+                                                <t t-foreach="column.items" t-as="item" t-key="'control-item-' + item.model + '-' + item.id">
+                                                    <button t-attf-class="cf-pc-control-card #{activePipelineItem &amp;&amp; activePipelineItem.model === item.model &amp;&amp; activePipelineItem.id === item.id ? 'active' : ''}"
+                                                            t-on-click="() => this.selectPipelineItem(item)">
+                                                        <strong t-out="item.title"/>
+                                                        <small t-out="item.subtitle"/>
+                                                        <span class="cf-pc-control-meta" t-out="item.meta"/>
+                                                        <span class="cf-pc-badges">
+                                                            <t t-foreach="item.badges" t-as="badge" t-key="'control-badge-' + item.id + '-' + badge_index">
+                                                                <em t-attf-class="cf-pc-badge tone-#{item.tone}" t-out="badge"/>
+                                                            </t>
+                                                        </span>
+                                                    </button>
+                                                </t>
+                                            </t>
+                                            <div t-else="" class="cf-pc-empty">Nessun cliente</div>
+                                        </div>
+                                    </section>
+                                </t>
+                            </div>
+                        </section>
+
+                        <aside class="cf-pc-control-mail">
+                            <div class="cf-pc-control-head">
+                                <div>
+                                    <h2>Mail trasversali</h2>
+                                    <p>Ogni mail deve diventare task o aggiornamento pipeline.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('inbox')">
+                                    <i class="fa fa-envelope-open-o"/>
+                                    Inbox
+                                </button>
+                            </div>
+                            <div class="cf-pc-mail-flow">
+                                <span>Mail</span>
+                                <i class="fa fa-angle-right"/>
+                                <span>Task</span>
+                                <i class="fa fa-angle-right"/>
+                                <span>Pipeline</span>
+                            </div>
+                            <div class="cf-pc-control-mail-list">
+                                <t t-if="controlMailRows.length">
+                                    <t t-foreach="controlMailRows" t-as="row" t-key="'control-mail-' + row.id">
+                                        <article class="cf-pc-control-mail-row">
+                                            <button t-on-click="() => this.mailQuickAction(row, 'open_thread')">
+                                                <strong t-out="row.title"/>
+                                                <small>
+                                                    <t t-out="row.subtitle"/>
+                                                    <t t-if="row.lead"> · <t t-out="row.lead"/></t>
+                                                </small>
+                                            </button>
+                                            <div class="cf-pc-row-actions">
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(row, 'reply')" title="Rispondi">
+                                                    <i class="fa fa-reply"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
+                                                    <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
+                                                    <i class="fa fa-handshake-o"/>
+                                                </button>
+                                                <button t-else="" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'link_lead')" title="Collega lead">
+                                                    <i class="fa fa-link"/>
+                                                </button>
+                                            </div>
+                                        </article>
+                                    </t>
+                                </t>
+                                <div t-else="" class="cf-pc-empty">Nessuna mail operativa</div>
+                            </div>
+                        </aside>
                     </div>
 
-                    <section class="cf-pc-panel cf-pc-b2b-panel">
+                    <div class="cf-pc-control-focus">
+                        <section class="cf-pc-panel">
+                            <header>
+                                <div>
+                                    <h2 t-out="activePipelineItem ? activePipelineItem.title : 'Nessun cliente in pipeline'"/>
+                                    <p t-if="activePipelineItem">
+                                        <t t-out="activePipelineItem.subtitle"/>
+                                        <t t-if="activePipelineItem.value"> · € <t t-out="Math.round(activePipelineItem.value).toLocaleString('it-IT')"/></t>
+                                    </p>
+                                </div>
+                                <div class="cf-pc-row-actions" t-if="activePipelineItem">
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(activePipelineItem, 'open')" title="Apri lead">
+                                        <i class="fa fa-folder-open-o"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(activePipelineItem, 'email')" title="Scrivi email">
+                                        <i class="fa fa-envelope-o"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(activePipelineItem, 'task')" title="Crea task">
+                                        <i class="fa fa-check-square-o"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(activePipelineItem, 'dossier')" title="Dossier">
+                                        <i class="fa fa-briefcase"/>
+                                    </button>
+                                </div>
+                            </header>
+                            <div class="cf-pc-control-next" t-if="activePipelineItem">
+                                <div>
+                                    <span>Prossima azione</span>
+                                    <strong t-out="activePipelineItem.meta || 'Da pianificare'"/>
+                                </div>
+                                <div>
+                                    <span>Segnali</span>
+                                    <strong>
+                                        <t t-if="activePipelineItem.badges.length" t-out="activePipelineItem.badges.join(' · ')"/>
+                                        <t t-else="">Nessun segnale</t>
+                                    </strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel">
+                            <header>
+                                <div>
+                                    <h2>Dossier in profondità</h2>
+                                    <p>Lavora su fatto, da fare, decisioni, materiali e storia cliente.</p>
+                                </div>
+                                <button t-if="controlPrimaryDossier" class="btn btn-sm btn-primary" t-on-click="() => this.openDossierWorkbench(controlPrimaryDossier)">
+                                    Apri dossier
+                                </button>
+                            </header>
+                            <div class="cf-pc-control-dossier" t-if="controlPrimaryDossier">
+                                <strong t-out="controlPrimaryDossier.name"/>
+                                <small>
+                                    <t t-out="controlPrimaryDossier.partner || '-'"/>
+                                    <t t-if="controlPrimaryDossier.blocker"> · <t t-out="controlPrimaryDossier.blocker"/></t>
+                                </small>
+                                <div class="cf-pc-control-next">
+                                    <div>
+                                        <span>Da fare</span>
+                                        <strong t-out="controlPrimaryDossier.next_action || 'Prossima azione da definire'"/>
+                                    </div>
+                                    <div>
+                                        <span>Task</span>
+                                        <strong><t t-out="controlPrimaryDossier.task_count || 0"/> aperti</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div t-else="" class="cf-pc-empty">Nessun dossier attivo</div>
+                        </section>
+                    </div>
+
+                    <section class="cf-pc-panel cf-pc-control-b2b">
                         <header>
                             <div>
                                 <h2>Registrazioni B2B</h2>
-                                <p>Vista rapida di richieste, approvazioni e prossimi account da sbloccare.</p>
+                                <p>Richieste account da approvare senza uscire dalla sala controllo.</p>
                             </div>
                             <button class="btn btn-sm btn-light" t-on-click="openB2BRegistrations">
                                 <i class="fa fa-external-link"/>
                                 Apri elenco
                             </button>
                         </header>
-                        <div class="cf-pc-b2b-body">
-                            <div class="cf-pc-b2b-kpis">
-                                <t t-foreach="state.data.b2b_registrations.kpis" t-as="kpi" t-key="'b2b-kpi-' + kpi.key">
-                                    <div t-attf-class="cf-pc-b2b-kpi tone-#{kpi.tone}">
-                                        <span t-out="kpi.label"/>
-                                        <strong t-out="kpi.value"/>
-                                        <small t-out="kpi.hint"/>
-                                    </div>
-                                </t>
-                            </div>
-                            <div class="cf-pc-b2b-table-wrap">
-                                <table class="cf-pc-table cf-pc-b2b-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Richiesta</th>
-                                            <th>Azienda</th>
-                                            <th>Origine</th>
-                                            <th>Attività</th>
-                                            <th>Stato</th>
-                                            <th>Commerciale</th>
-                                            <th/>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <t t-if="state.data.b2b_registrations.rows.length">
-                                            <t t-foreach="state.data.b2b_registrations.rows" t-as="row" t-key="'b2b-row-' + row.id">
-                                                <tr>
-                                                    <td t-out="row.requested_at"/>
-                                                    <td>
-                                                        <strong t-out="row.name"/>
-                                                        <small>
-                                                            <t t-out="row.email"/>
-                                                            <t t-if="row.vat"> · P.IVA <t t-out="row.vat"/></t>
-                                                        </small>
-                                                    </td>
-                                                    <td t-out="row.source_label"/>
-                                                    <td t-out="row.category_label"/>
-                                                    <td>
-                                                        <span t-attf-class="cf-pc-status-badge state-#{row.status}" t-out="row.status_label"/>
-                                                    </td>
-                                                    <td t-out="row.salesperson || 'Da assegnare'"/>
-                                                    <td>
-                                                        <div class="cf-pc-row-actions">
-                                                            <button class="btn btn-sm btn-light" t-on-click="() => this.openB2BRegistration(row)" title="Apri iscrizione">
-                                                                <i class="fa fa-folder-open-o"/>
-                                                            </button>
-                                                            <button t-if="row.status === 'pending'" class="btn btn-sm btn-primary" t-on-click="() => this.approveB2BRegistration(row)" title="Approva B2B">
-                                                                <i class="fa fa-check"/>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </t>
-                                        </t>
-                                        <tr t-else="">
-                                            <td colspan="7" class="cf-pc-empty">Nessuna registrazione B2B</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="cf-pc-control-b2b-kpis">
+                            <t t-foreach="state.data.b2b_registrations.kpis" t-as="kpi" t-key="'control-b2b-kpi-' + kpi.key">
+                                <div t-attf-class="cf-pc-b2b-kpi tone-#{kpi.tone}">
+                                    <span t-out="kpi.label"/>
+                                    <strong t-out="kpi.value"/>
+                                    <small t-out="kpi.hint"/>
+                                </div>
+                            </t>
                         </div>
                     </section>
                 </t>

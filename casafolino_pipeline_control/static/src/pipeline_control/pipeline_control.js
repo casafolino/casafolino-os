@@ -18,12 +18,13 @@ export class CFPipelineControl extends Component {
         this.state = useState({
             loading: true,
             error: null,
-            activeView: this.props.action?.context?.default_view || "dossiers",
+            activeView: this.props.action?.context?.default_view || "control",
             selectedFairId: false,
             inboxFilter: "all",
             dossierSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
+            activePipelineKey: false,
             data: {
                 kpis: [],
                 lanes: [],
@@ -55,6 +56,13 @@ export class CFPipelineControl extends Component {
 
     setView(view) {
         this.state.activeView = view;
+    }
+
+    selectPipelineItem(item) {
+        if (!item) {
+            return;
+        }
+        this.state.activePipelineKey = `${item.model}-${item.id}`;
     }
 
     async selectFair(ev) {
@@ -308,6 +316,32 @@ export class CFPipelineControl extends Component {
 
     get pipelineCount() {
         return (this.state.data.pipeline || []).reduce((sum, column) => sum + (column.count || 0), 0);
+    }
+
+    get pipelineItems() {
+        return (this.state.data.pipeline || []).flatMap((column) => column.items || []);
+    }
+
+    get activePipelineItem() {
+        const rows = this.pipelineItems;
+        if (!rows.length) {
+            return false;
+        }
+        if (!this.state.activePipelineKey) {
+            return rows[0];
+        }
+        return rows.find((row) => `${row.model}-${row.id}` === this.state.activePipelineKey) || rows[0];
+    }
+
+    get controlMailRows() {
+        return [
+            ...(this.state.data.inbox?.to_reply || []),
+            ...(this.state.data.inbox?.waiting_customer || []),
+        ].slice(0, 8);
+    }
+
+    get controlPrimaryDossier() {
+        return (this.state.data.dossiers || [])[0] || false;
     }
 
     get inboxFilterOptions() {

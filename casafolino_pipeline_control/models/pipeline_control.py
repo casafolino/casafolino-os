@@ -378,7 +378,7 @@ class CfPipelineControl(models.AbstractModel):
                 'name': 'Dossier / Progetti',
                 'tag': 'casafolino_pipeline_control',
                 'target': 'current',
-                'context': "{'default_view': 'dossiers'}",
+                'context': "{'default_view': 'control'}",
             })
 
         old_action = self.env.ref('casafolino_crm_360.action_crm360_dossiers', raise_if_not_found=False)
