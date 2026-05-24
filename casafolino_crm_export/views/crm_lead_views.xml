@@ -280,6 +280,44 @@
                             <notebook>
                                 <!-- Tab: Attività -->
                                 <page string="Attività" name="activities">
+                                    <div class="cf-lead-cockpit">
+                                        <div class="cf-lead-action-card primary">
+                                            <div>
+                                                <span class="cf-lead-eyebrow">Prossima mossa</span>
+                                                <strong>
+                                                    <field name="cf_next_activity_summary" readonly="1"/>
+                                                </strong>
+                                                <p>Ogni lead deve dire subito cosa fare: richiamare, inviare listino, collegare mail o aprire dossier.</p>
+                                            </div>
+                                            <button name="action_schedule_followup" type="object"
+                                                string="Pianifica follow-up"
+                                                class="btn btn-primary"/>
+                                        </div>
+                                        <div class="cf-lead-action-card">
+                                            <span class="cf-lead-eyebrow">Mail</span>
+                                            <strong><field name="cf_email_count" readonly="1"/> collegate</strong>
+                                            <p>Thread commerciale, risposte e allegati collegati al lead.</p>
+                                            <button name="action_view_partner_emails" type="object"
+                                                string="Apri mail" class="btn btn-secondary"/>
+                                        </div>
+                                        <div class="cf-lead-action-card">
+                                            <span class="cf-lead-eyebrow">Dossier</span>
+                                            <strong>
+                                                <field name="cf_project_id" readonly="1"/>
+                                            </strong>
+                                            <p>Apri la Vista 360 quando il funnel diventa profondo.</p>
+                                            <button name="action_open_project_360" type="object"
+                                                string="Vista 360" class="btn btn-secondary"/>
+                                        </div>
+                                        <div class="cf-lead-action-card">
+                                            <span class="cf-lead-eyebrow">Contatto</span>
+                                            <strong><field name="partner_id" readonly="1"/></strong>
+                                            <p><field name="email_from" widget="email" readonly="1"/> · <field name="phone" widget="phone" readonly="1"/></p>
+                                            <button name="action_mark_contacted" type="object"
+                                                string="Segna contattato" class="btn btn-secondary"/>
+                                        </div>
+                                    </div>
+                                    <div class="cf-lead-section-title">Attività aperte</div>
                                     <field name="activity_ids"/>
                                 </page>
 
@@ -344,6 +382,44 @@
 
                         <!-- RIGHT: SIDEBAR -->
                         <div class="col-lg-4 cf-sidebar-col">
+                            <!-- Conversione dossier -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Checklist dossier</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Contatto collegato</span>
+                                    <span class="cf-prop-value">
+                                        <field name="partner_id" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Interesse / prodotti</span>
+                                    <span class="cf-prop-value">
+                                        <field name="tag_ids" widget="many2many_tags" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Prossima azione</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_next_activity_summary" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Valore / forecast</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_forecast_value" widget="monetary" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Dossier collegato</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_project_id" readonly="1"/>
+                                    </span>
+                                </div>
+                                <button name="action_open_project_360" type="object"
+                                        string="Crea / apri dossier 360"
+                                        class="btn btn-primary w-100 mt-2"/>
+                            </div>
+
                             <!-- Deal Info -->
                             <div class="cf-prop-card">
                                 <div class="cf-prop-title">Informazioni Deal</div>
