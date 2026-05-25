@@ -22,9 +22,12 @@ export class CFPipelineControl extends Component {
             selectedFairId: false,
             inboxFilter: "all",
             dossierSearch: "",
+            globalSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
             activePipelineKey: false,
+            externalLeadItem: false,
+            leadWorkbenchOpen: false,
             data: {
                 kpis: [],
                 lanes: [],
@@ -63,6 +66,45 @@ export class CFPipelineControl extends Component {
             return;
         }
         this.state.activePipelineKey = `${item.model}-${item.id}`;
+        this.state.leadWorkbenchOpen = false;
+    }
+
+    openLeadWorkbench(item) {
+        if (!item || !item.id) {
+            this.notification.add(_t("Lead non disponibile"), { type: "warning" });
+            return;
+        }
+        this.state.externalLeadItem = false;
+        this.state.activePipelineKey = `${item.model || "crm.lead"}-${item.id}`;
+        this.state.leadWorkbenchOpen = true;
+        this.state.activeView = "control";
+    }
+
+    openLeadFromMail(row) {
+        if (!row?.lead_id) {
+            return this.mailQuickAction(row, "link_lead");
+        }
+        const existing = this.pipelineItems.find((item) => item.model === "crm.lead" && item.id === row.lead_id);
+        const item = existing || {
+            id: row.lead_id,
+            model: "crm.lead",
+            res_id: row.lead_id,
+            title: row.lead || row.title || _t("Lead"),
+            subtitle: row.title || row.subtitle || "",
+            meta: row.suggested_action || _t("Da aggiornare"),
+            value: 0,
+            tone: "blue",
+            badges: ["mail", row.direction || "", row.category || ""].filter(Boolean),
+            partner_id: row.partner_id || false,
+        };
+        this.state.externalLeadItem = existing ? false : item;
+        this.state.activePipelineKey = `crm.lead-${row.lead_id}`;
+        this.state.leadWorkbenchOpen = true;
+        this.state.activeView = "control";
+    }
+
+    closeLeadWorkbench() {
+        this.state.leadWorkbenchOpen = false;
     }
 
     async selectFair(ev) {
@@ -76,6 +118,14 @@ export class CFPipelineControl extends Component {
 
     setDossierSearch(ev) {
         this.state.dossierSearch = (ev.target.value || "").toLowerCase();
+    }
+
+    setGlobalSearch(ev) {
+        this.state.globalSearch = (ev.target.value || "").toLowerCase();
+    }
+
+    clearGlobalSearch() {
+        this.state.globalSearch = "";
     }
 
     setDossierContinent(ev) {
@@ -113,6 +163,9 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Email non disponibile"), { type: "warning" });
             return;
         }
+        if (quickAction === "open_lead") {
+            return this.openLeadFromMail(row);
+        }
         try {
             const result = await this.orm.call("cf.pipeline.control", "mail_quick_action", [row.id, quickAction]);
             if (result) {
@@ -132,6 +185,10 @@ export class CFPipelineControl extends Component {
     async leadQuickAction(item, quickAction) {
         if (!item || !item.id) {
             this.notification.add(_t("Lead non disponibile"), { type: "warning" });
+            return;
+        }
+        if (quickAction === "open") {
+            this.openLeadWorkbench(item);
             return;
         }
         try {
@@ -213,6 +270,18 @@ export class CFPipelineControl extends Component {
             context: {
                 default_type: "opportunity",
             },
+        });
+    }
+
+    newComposer() {
+        const lead = this.activePipelineItem;
+        this.dialog.add(ComposeWizardDialog, {
+            partnerEmail: lead?.email || "",
+            defaultSubject: lead?.title ? `Re: ${lead.title}` : "",
+            defaultBody: "",
+            partnerId: lead?.partner_id || false,
+            threadId: lead?.id || false,
+            threadModel: lead?.model || false,
         });
     }
 
@@ -322,7 +391,18 @@ export class CFPipelineControl extends Component {
         return (this.state.data.pipeline || []).flatMap((column) => column.items || []);
     }
 
+    get controlPipelineColumns() {
+        const query = this.state.globalSearch || "";
+        return (this.state.data.pipeline || []).map((column) => {
+            const items = query ? (column.items || []).filter((item) => this.matchesGlobalSearch(item, query)) : (column.items || []);
+            return { ...column, items, count: items.length };
+        });
+    }
+
     get activePipelineItem() {
+        if (this.state.externalLeadItem && this.state.activePipelineKey === `${this.state.externalLeadItem.model}-${this.state.externalLeadItem.id}`) {
+            return this.state.externalLeadItem;
+        }
         const rows = this.pipelineItems;
         if (!rows.length) {
             return false;
@@ -334,10 +414,12 @@ export class CFPipelineControl extends Component {
     }
 
     get controlMailRows() {
-        return [
+        const rows = [
             ...(this.state.data.inbox?.to_reply || []),
             ...(this.state.data.inbox?.waiting_customer || []),
-        ].slice(0, 8);
+        ];
+        const query = this.state.globalSearch || "";
+        return (query ? rows.filter((row) => this.matchesGlobalSearch(row, query)) : rows).slice(0, 8);
     }
 
     get controlPrimaryDossier() {
@@ -405,17 +487,19 @@ export class CFPipelineControl extends Component {
             if (!matchesContinent) {
                 return false;
             }
-            if (!query) {
+            const globalQuery = this.state.globalSearch || "";
+            if (!query && !globalQuery) {
                 return true;
             }
-            return [
+            const haystack = [
                 row.name,
                 row.partner,
                 row.status,
                 row.blocker,
                 row.next_action,
                 row.continent_label,
-            ].filter(Boolean).join(" ").toLowerCase().includes(query);
+            ].filter(Boolean).join(" ").toLowerCase();
+            return (!query || haystack.includes(query)) && (!globalQuery || haystack.includes(globalQuery));
         });
     }
 
@@ -441,6 +525,23 @@ export class CFPipelineControl extends Component {
             return rows.filter((row) => row.needs_action);
         }
         return rows;
+    }
+
+    matchesGlobalSearch(row, query) {
+        if (!query) {
+            return true;
+        }
+        return [
+            row.title,
+            row.subtitle,
+            row.meta,
+            row.lead,
+            row.stage,
+            row.owner,
+            row.origin,
+            row.next_action,
+            ...(row.badges || []),
+        ].filter(Boolean).join(" ").toLowerCase().includes(query);
     }
 }
 

@@ -1347,6 +1347,14 @@ class CfPipelineControl(models.AbstractModel):
             'value': lead.expected_revenue or 0,
             'tone': 'red' if overdue else 'green' if lead.expected_revenue else 'blue',
             'badges': self._compact(badges),
+            'stage': lead.stage_id.name if lead.stage_id else '',
+            'owner': lead.user_id.name if lead.user_id else '',
+            'email': lead.email_from or (partner.email if partner else ''),
+            'phone': lead.phone or lead.mobile or (partner.phone if partner else ''),
+            'partner_id': partner.id if partner else False,
+            'mail_count': lead.cf_pc_mail_count if 'cf_pc_mail_count' in lead._fields else 0,
+            'task_count': lead.cf_pc_task_count if 'cf_pc_task_count' in lead._fields else 0,
+            'quote_count': lead.cf_pc_quote_count if 'cf_pc_quote_count' in lead._fields else 0,
             'res_id': lead.id,
         }
 

@@ -48,9 +48,23 @@
                         <h1 t-elif="state.activeView === 'dossiers'">Dossier</h1>
                         <p>Priorità, prossime azioni e blocchi in un'unica postazione.</p>
                     </div>
+                    <div class="cf-pc-global-search">
+                        <i class="fa fa-search"/>
+                        <input type="search"
+                               placeholder="Cerca telefono, nome, email, lead, dossier, prodotto o testo mail"
+                               t-att-value="state.globalSearch"
+                               t-on-input="setGlobalSearch"/>
+                        <button t-if="state.globalSearch" class="btn btn-sm btn-light" t-on-click="clearGlobalSearch" title="Pulisci ricerca">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </div>
                     <div class="cf-pc-actions">
                         <button class="btn btn-light" t-on-click="loadData" title="Aggiorna">
                             <i class="fa fa-refresh"/>
+                        </button>
+                        <button class="btn btn-light" t-on-click="newComposer" title="Scrivi email">
+                            <i class="fa fa-envelope-o"/>
+                            Composer
                         </button>
                         <button class="btn btn-light" t-on-click="newLead">
                             <i class="fa fa-plus"/>
@@ -89,7 +103,7 @@
                                 </button>
                             </div>
                             <div class="cf-pc-board cf-pc-board-wide cf-pc-control-board">
-                                <t t-foreach="state.data.pipeline" t-as="column" t-key="'control-pipeline-' + column.id">
+                                <t t-foreach="controlPipelineColumns" t-as="column" t-key="'control-pipeline-' + column.id">
                                     <section class="cf-pc-lane">
                                         <header>
                                             <h2 t-out="column.title"/>
@@ -111,7 +125,7 @@
                                                     </button>
                                                 </t>
                                             </t>
-                                            <div t-else="" class="cf-pc-empty">Nessun cliente</div>
+                                            <div t-else="" class="cf-pc-empty">Nessun cliente per questa ricerca</div>
                                         </div>
                                     </section>
                                 </t>
@@ -170,7 +184,7 @@
                     </div>
 
                     <div class="cf-pc-control-focus">
-                        <section class="cf-pc-panel">
+                        <section t-if="!state.leadWorkbenchOpen" class="cf-pc-panel">
                             <header>
                                 <div>
                                     <h2 t-out="activePipelineItem ? activePipelineItem.title : 'Nessun cliente in pipeline'"/>
@@ -205,6 +219,82 @@
                                         <t t-if="activePipelineItem.badges.length" t-out="activePipelineItem.badges.join(' · ')"/>
                                         <t t-else="">Nessun segnale</t>
                                     </strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section t-else="" class="cf-pc-panel cf-pc-lead-workbench">
+                            <header>
+                                <div>
+                                    <h2 t-out="activePipelineItem ? activePipelineItem.title : 'Lead operativo'"/>
+                                    <p t-if="activePipelineItem">
+                                        <t t-out="activePipelineItem.subtitle"/>
+                                        <t t-if="activePipelineItem.value"> · € <t t-out="Math.round(activePipelineItem.value).toLocaleString('it-IT')"/></t>
+                                    </p>
+                                </div>
+                                <div class="cf-pc-row-actions" t-if="activePipelineItem">
+                                    <button class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(activePipelineItem, 'email')" title="Scrivi email dal composer">
+                                        <i class="fa fa-envelope-o"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(activePipelineItem, 'task')" title="Crea task">
+                                        <i class="fa fa-check-square-o"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(activePipelineItem, 'today')" title="Metti a oggi">
+                                        <i class="fa fa-calendar-check-o"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(activePipelineItem, 'dossier')" title="Promuovi a dossier">
+                                        <i class="fa fa-briefcase"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord(activePipelineItem)" title="Form tecnica Odoo">
+                                        <i class="fa fa-external-link"/>
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="closeLeadWorkbench" title="Chiudi">
+                                        <i class="fa fa-times"/>
+                                    </button>
+                                </div>
+                            </header>
+                            <div class="cf-pc-lead-grid" t-if="activePipelineItem">
+                                <div>
+                                    <span>Stato pipeline</span>
+                                    <strong t-out="activePipelineItem.stage || (activePipelineItem.badges.length ? activePipelineItem.badges[0] : 'Da qualificare')"/>
+                                </div>
+                                <div>
+                                    <span>Prossima azione</span>
+                                    <strong t-out="activePipelineItem.meta || 'Da pianificare'"/>
+                                </div>
+                                <div>
+                                    <span>Owner</span>
+                                    <strong t-out="activePipelineItem.owner || 'Commerciale'"/>
+                                </div>
+                                <div>
+                                    <span>Valore</span>
+                                    <strong>
+                                        <t t-if="activePipelineItem.value">€ <t t-out="Math.round(activePipelineItem.value).toLocaleString('it-IT')"/></t>
+                                        <t t-else="">Da stimare</t>
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="cf-pc-lead-composer" t-if="activePipelineItem">
+                                <div>
+                                    <strong>Composer collegato</strong>
+                                    <small>Scrivi, rispondi o prepara follow-up senza uscire dalla sala controllo.</small>
+                                </div>
+                                <button class="btn btn-primary" t-on-click="() => this.leadQuickAction(activePipelineItem, 'email')">
+                                    <i class="fa fa-envelope-o"/>
+                                    Apri composer
+                                </button>
+                            </div>
+                            <div class="cf-pc-control-next" t-if="activePipelineItem">
+                                <div>
+                                    <span>Segnali</span>
+                                    <strong>
+                                        <t t-if="activePipelineItem.badges.length" t-out="activePipelineItem.badges.join(' · ')"/>
+                                        <t t-else="">Nessun segnale</t>
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span>Decisione</span>
+                                    <strong>Qualificare, inviare materiale, pianificare follow-up o promuovere a dossier.</strong>
                                 </div>
                             </div>
                         </section>
