@@ -200,6 +200,15 @@ class ProjectProject(models.Model):
     cf_order_count = fields.Integer(
         compute='_compute_cf_order_count', string='Ordini',
     )
+    cf_child_project_count = fields.Integer(
+        compute='_compute_cf_child_project_count', string='Sotto-progetti',
+    )
+    cf_linked_order_count = fields.Integer(
+        compute='_compute_cf_linked_document_counts', string='Ordini collegati',
+    )
+    cf_linked_invoice_count = fields.Integer(
+        compute='_compute_cf_linked_document_counts', string='Fatture collegate',
+    )
 
     # ------------------------------------------------------------------
     # Client-aware: storico partner (ordini, fatture, DDT, lead, mail)
@@ -295,6 +304,31 @@ class ProjectProject(models.Model):
                     rec.cf_order_count = 0
             except Exception:
                 rec.cf_order_count = 0
+
+    @api.depends('cf_child_project_ids')
+    def _compute_cf_child_project_count(self):
+        for rec in self:
+            rec.cf_child_project_count = len(rec.cf_child_project_ids)
+
+    @api.depends('cf_child_project_ids')
+    def _compute_cf_linked_document_counts(self):
+        SaleOrder = self.env['sale.order']
+        AccountMove = self.env['account.move']
+        for rec in self:
+            project_ids = rec._cf_project_scope_ids()
+            rec.cf_linked_order_count = SaleOrder.search_count([
+                ('cf_project_id', 'in', project_ids),
+                ('state', '!=', 'cancel'),
+            ])
+            rec.cf_linked_invoice_count = AccountMove.search_count([
+                ('cf_project_id', 'in', project_ids),
+                ('move_type', 'in', ['out_invoice', 'out_refund']),
+                ('state', '!=', 'cancel'),
+            ])
+
+    def _cf_project_scope_ids(self):
+        self.ensure_one()
+        return (self | self.cf_child_project_ids).ids
 
     # ------------------------------------------------------------------
     # Client-aware compute methods
@@ -563,6 +597,10 @@ class ProjectProject(models.Model):
         """Build search domain for casafolino.mail.message matching
         positioned dossier mail OR partner/contact email as sender/recipient/cc."""
         self.ensure_one()
+        if self.cf_parent_project_id:
+            return [('cf_project_id', '=', self.id)]
+
+        project_ids = self._cf_project_scope_ids()
         emails = list(filter(
             None, self.cf_contact_ids.mapped('email_normalized')))
         if self.partner_id and self.partner_id.email:
@@ -579,7 +617,7 @@ class ProjectProject(models.Model):
         partner_ids += self.cf_contact_ids.mapped('partner_id').ids
         partner_ids = list(set(filter(None, partner_ids)))
 
-        domains = [[('cf_project_id', '=', self.id)]]
+        domains = [[('cf_project_id', 'in', project_ids)]]
         if partner_ids:
             domains.append([('partner_id', 'in', partner_ids)])
         for email in emails:
@@ -878,6 +916,49 @@ class ProjectProject(models.Model):
                 ('partner_id', '=', self.partner_id.id if self.partner_id else 0),
                 ('state', 'not in', ('draft', 'cancel')),
             ],
+        }
+
+    def action_open_child_projects(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Sotto-progetti — %s' % self.name,
+            'res_model': 'project.project',
+            'view_mode': 'list,form',
+            'domain': [('cf_parent_project_id', '=', self.id)],
+            'context': {
+                'default_cf_parent_project_id': self.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+                'default_cf_partner_id': self.cf_partner_id.id if self.cf_partner_id else False,
+            },
+        }
+
+    def action_open_linked_orders(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Ordini collegati — %s' % self.name,
+            'res_model': 'sale.order',
+            'view_mode': 'list,form',
+            'domain': [('cf_project_id', 'in', self._cf_project_scope_ids())],
+            'context': {'default_cf_project_id': self.id},
+        }
+
+    def action_open_linked_invoices(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Fatture collegate — %s' % self.name,
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [
+                ('cf_project_id', 'in', self._cf_project_scope_ids()),
+                ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ],
+            'context': {
+                'default_cf_project_id': self.id,
+                'default_move_type': 'out_invoice',
+            },
         }
 
     def action_open_dossier_actors(self):

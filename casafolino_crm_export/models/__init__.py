@@ -4,6 +4,7 @@ from . import crm_tag
 from . import res_partner
 from . import project_project
 from . import sale_order
+from . import account_move
 from . import cf_crm_stage
 from . import cf_mail_activity
 from . import card_scanner

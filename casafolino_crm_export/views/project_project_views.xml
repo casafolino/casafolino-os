@@ -87,6 +87,24 @@
                         <field name="cf_sibling_dossiers_count" string="Altri dossier"
                                widget="statinfo"/>
                     </button>
+                    <button class="oe_stat_button" icon="fa-sitemap"
+                            type="object" name="action_open_child_projects"
+                            invisible="cf_child_project_count == 0">
+                        <field name="cf_child_project_count" string="Sotto-progetti"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-link"
+                            type="object" name="action_open_linked_orders"
+                            invisible="cf_linked_order_count == 0">
+                        <field name="cf_linked_order_count" string="Ordini dossier"
+                               widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-file-pdf-o"
+                            type="object" name="action_open_linked_invoices"
+                            invisible="cf_linked_invoice_count == 0">
+                        <field name="cf_linked_invoice_count" string="Fatture dossier"
+                               widget="statinfo"/>
+                    </button>
                     <button class="oe_stat_button" icon="fa-envelope-o"
                             type="object" name="action_open_dossier_mails">
                         <field name="cf_mail_count" string="Mail dossier"
@@ -291,6 +309,54 @@
                                 <field name="create_date"/>
                             </list>
                         </field>
+                    </page>
+
+                    <page string="Sotto-progetti" name="cf_child_projects"
+                          invisible="cf_child_project_count == 0">
+                        <field name="cf_child_project_ids" mode="list"
+                               readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="cf_status_dossier"/>
+                                <field name="cf_is_won"
+                                       widget="boolean_toggle"/>
+                                <field name="cf_next_action"/>
+                                <field name="cf_next_action_date"/>
+                                <field name="cf_linked_order_count"/>
+                                <field name="cf_linked_invoice_count"/>
+                                <field name="cf_mail_count"/>
+                                <field name="user_id"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <page string="Ordini e fatture" name="cf_linked_documents"
+                          invisible="cf_linked_order_count == 0 and cf_linked_invoice_count == 0">
+                        <group>
+                            <group string="Collegamenti dossier">
+                                <field name="cf_parent_project_id"
+                                       string="Dossier padre"
+                                       readonly="1"/>
+                                <field name="cf_linked_order_count"
+                                       string="Ordini collegati"
+                                       readonly="1"/>
+                                <field name="cf_linked_invoice_count"
+                                       string="Fatture collegate"
+                                       readonly="1"/>
+                            </group>
+                        </group>
+                        <div class="o_row mb-3">
+                            <button name="action_open_linked_orders"
+                                    type="object"
+                                    string="Apri ordini"
+                                    icon="fa-shopping-cart"
+                                    class="btn btn-secondary"/>
+                            <button name="action_open_linked_invoices"
+                                    type="object"
+                                    string="Apri fatture"
+                                    icon="fa-file-pdf-o"
+                                    class="btn btn-secondary"/>
+                        </div>
                     </page>
 
                     <page string="Campionature" name="cf_samples">
