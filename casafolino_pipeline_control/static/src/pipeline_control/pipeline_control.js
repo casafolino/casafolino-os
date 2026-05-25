@@ -30,6 +30,7 @@ export class CFPipelineControl extends Component {
             activeDossierId: false,
             activePipelineKey: false,
             externalLeadItem: false,
+            externalDossierItem: false,
             leadWorkbenchOpen: false,
             data: {
                 kpis: [],
@@ -182,11 +183,40 @@ export class CFPipelineControl extends Component {
             this.state.activeView = "dossiers";
             return;
         }
-        await this.openRecord(row);
+        if (row.model === "res.partner") {
+            this.openPartnerWorkbench(row);
+        }
     }
 
     setDossierContinent(ev) {
         this.state.dossierContinent = ev.target.value || "all";
+    }
+
+    openPartnerWorkbench(row) {
+        if (!row || !row.id) {
+            this.notification.add(_t("Cliente non disponibile"), { type: "warning" });
+            return;
+        }
+        const item = {
+            id: row.id,
+            model: "res.partner",
+            res_id: row.res_id || row.id,
+            title: row.title || row.name || _t("Cliente"),
+            subtitle: row.subtitle || row.email || row.phone || "",
+            meta: row.meta || _t("Anagrafica cliente"),
+            value: 0,
+            tone: row.tone || "green",
+            badges: row.badges || [],
+            stage: _t("Cliente"),
+            owner: row.owner || _t("Commerciale"),
+            email: row.email || "",
+            phone: row.phone || "",
+            partner_id: row.res_id || row.id,
+        };
+        this.state.externalLeadItem = item;
+        this.state.activePipelineKey = `${item.model}-${item.id}`;
+        this.state.leadWorkbenchOpen = true;
+        this.state.activeView = "control";
     }
 
     openDossierWorkbench(dossier) {
@@ -194,6 +224,7 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Dossier non disponibile"), { type: "warning" });
             return;
         }
+        this.state.externalDossierItem = dossier;
         this.state.activeDossierId = dossier.id;
     }
 
@@ -244,6 +275,9 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Lead non disponibile"), { type: "warning" });
             return;
         }
+        if (item.model === "res.partner") {
+            return this.partnerQuickAction(item, quickAction);
+        }
         if (quickAction === "open") {
             this.openLeadWorkbench(item);
             return;
@@ -262,6 +296,25 @@ export class CFPipelineControl extends Component {
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }
+    }
+
+    partnerQuickAction(item, quickAction) {
+        if (quickAction === "open") {
+            this.openPartnerWorkbench(item);
+            return;
+        }
+        if (quickAction === "email") {
+            this.dialog.add(ComposeWizardDialog, {
+                partnerEmail: item.email || "",
+                defaultSubject: item.title ? `Re: ${item.title}` : "",
+                defaultBody: "",
+                partnerId: item.partner_id || item.res_id || item.id,
+                threadId: item.partner_id || item.res_id || item.id,
+                threadModel: "res.partner",
+            });
+            return;
+        }
+        this.notification.add(_t("Azione cliente: parti dal composer o collega un lead."), { type: "warning" });
     }
 
     async recordQuickAction(item, quickAction) {
@@ -564,6 +617,9 @@ export class CFPipelineControl extends Component {
     get activeDossier() {
         if (!this.state.activeDossierId) {
             return false;
+        }
+        if (this.state.externalDossierItem && this.state.externalDossierItem.id === this.state.activeDossierId) {
+            return this.state.externalDossierItem;
         }
         return (this.state.data.dossiers || []).find((row) => row.id === this.state.activeDossierId) || false;
     }

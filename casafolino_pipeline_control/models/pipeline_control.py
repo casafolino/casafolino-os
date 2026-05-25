@@ -1178,6 +1178,10 @@ class CfPipelineControl(models.AbstractModel):
             'meta': partner.country_id.name if partner.country_id else 'Anagrafica cliente',
             'tone': 'green',
             'badges': self._compact([partner.country_id.code if partner.country_id else False]),
+            'email': partner.email or '',
+            'phone': partner.phone or partner.mobile or '',
+            'owner': partner.user_id.name if partner.user_id else '',
+            'partner_id': partner.id,
         }
 
     def _format_project_search_result(self, project, today):
