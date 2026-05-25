@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino POS Guard",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Point of Sale",
     "summary": "Protegge l'apertura del POS da errori temporanei della stampante fiscale",
     "author": "CasaFolino Srls",
     "depends": ["point_of_sale", "l10n_it_pos"],
+    "data": [
+        "data/pos_payment_methods.xml",
+    ],
     "post_init_hook": "_post_init_hook",
     "assets": {
         "point_of_sale._assets_pos": [
