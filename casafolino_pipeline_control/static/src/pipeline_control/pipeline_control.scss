@@ -160,7 +160,7 @@
         max-width: 740px;
         height: 42px;
         display: grid;
-        grid-template-columns: 38px minmax(0, 1fr) auto;
+        grid-template-columns: 38px minmax(0, 1fr) auto auto;
         align-items: center;
         border: 1px solid #cfd8cc;
         border-radius: 8px;
@@ -194,6 +194,106 @@
             margin-right: 5px;
             padding: 0;
         }
+
+        .cf-pc-search-submit {
+            width: auto;
+            min-width: 78px;
+            padding: 0 12px;
+            gap: 6px;
+            font-weight: 850;
+        }
+    }
+
+    .cf-pc-search-results {
+        margin: -6px 0 16px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+
+        > header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #dfe3da;
+            background: #f8faf6;
+
+            h2 {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 850;
+            }
+
+            p {
+                margin: 3px 0 0;
+                color: #667061;
+                font-size: 12px;
+            }
+        }
+    }
+
+    .cf-pc-search-result-list {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .cf-pc-search-result {
+        min-height: 96px;
+        border: 1px solid #dfe3da;
+        border-left: 4px solid #3b6c9f;
+        border-radius: 8px;
+        background: #fff;
+        color: #20251f;
+        padding: 10px;
+        text-align: left;
+
+        &:hover {
+            border-color: #3b6c9f;
+            box-shadow: 0 8px 18px rgba(32, 37, 31, .08);
+        }
+
+        strong,
+        small,
+        em {
+            display: block;
+        }
+
+        strong {
+            margin-top: 7px;
+            font-size: 14px;
+            line-height: 1.25;
+        }
+
+        small {
+            margin-top: 4px;
+            color: #667061;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        em {
+            margin-top: 7px;
+            color: #4b5548;
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 750;
+        }
+    }
+
+    .cf-pc-search-type {
+        display: inline-flex;
+        align-items: center;
+        min-height: 20px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #edf0ea;
+        color: #4b5548;
+        font-size: 11px;
+        font-weight: 850;
     }
 
     .cf-pc-actions {

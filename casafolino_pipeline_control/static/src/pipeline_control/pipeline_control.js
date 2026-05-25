@@ -23,6 +23,9 @@ export class CFPipelineControl extends Component {
             inboxFilter: "all",
             dossierSearch: "",
             globalSearch: "",
+            globalSearchLoading: false,
+            globalSearchResults: [],
+            globalSearchRan: false,
             dossierContinent: "all",
             activeDossierId: false,
             activePipelineKey: false,
@@ -121,11 +124,65 @@ export class CFPipelineControl extends Component {
     }
 
     setGlobalSearch(ev) {
-        this.state.globalSearch = (ev.target.value || "").toLowerCase();
+        this.state.globalSearch = ev.target.value || "";
+        this.state.globalSearchRan = false;
+        if (!this.state.globalSearch.trim()) {
+            this.state.globalSearchResults = [];
+        }
     }
 
     clearGlobalSearch() {
         this.state.globalSearch = "";
+        this.state.globalSearchResults = [];
+        this.state.globalSearchRan = false;
+    }
+
+    async runGlobalSearch() {
+        const query = (this.state.globalSearch || "").trim();
+        if (query.length < 2) {
+            this.notification.add(_t("Scrivi almeno 2 caratteri"), { type: "warning" });
+            return;
+        }
+        this.state.globalSearchLoading = true;
+        this.state.globalSearchRan = true;
+        try {
+            this.state.globalSearchResults = await this.orm.call("cf.pipeline.control", "global_search", [query]);
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+            this.state.globalSearchResults = [];
+        } finally {
+            this.state.globalSearchLoading = false;
+        }
+    }
+
+    async onGlobalSearchKeydown(ev) {
+        if (ev.key === "Enter") {
+            ev.preventDefault();
+            await this.runGlobalSearch();
+        }
+        if (ev.key === "Escape") {
+            this.clearGlobalSearch();
+        }
+    }
+
+    async openSearchResult(row) {
+        if (!row) {
+            return;
+        }
+        if (row.model === "crm.lead") {
+            this.openLeadWorkbench(row);
+            return;
+        }
+        if (row.model === "casafolino.mail.message") {
+            await this.mailQuickAction(row, "open_thread");
+            return;
+        }
+        if (row.model === "project.project") {
+            this.openDossierWorkbench(row);
+            this.state.activeView = "dossiers";
+            return;
+        }
+        await this.openRecord(row);
     }
 
     setDossierContinent(ev) {
@@ -392,7 +449,7 @@ export class CFPipelineControl extends Component {
     }
 
     get controlPipelineColumns() {
-        const query = this.state.globalSearch || "";
+        const query = (this.state.globalSearch || "").toLowerCase();
         return (this.state.data.pipeline || []).map((column) => {
             const items = query ? (column.items || []).filter((item) => this.matchesGlobalSearch(item, query)) : (column.items || []);
             return { ...column, items, count: items.length };
@@ -419,7 +476,8 @@ export class CFPipelineControl extends Component {
             ...(this.state.data.inbox?.waiting_customer || []),
         ];
         const query = this.state.globalSearch || "";
-        return (query ? rows.filter((row) => this.matchesGlobalSearch(row, query)) : rows).slice(0, 8);
+        const normalizedQuery = query.toLowerCase();
+        return (query ? rows.filter((row) => this.matchesGlobalSearch(row, normalizedQuery)) : rows).slice(0, 8);
     }
 
     get controlPrimaryDossier() {
@@ -487,7 +545,7 @@ export class CFPipelineControl extends Component {
             if (!matchesContinent) {
                 return false;
             }
-            const globalQuery = this.state.globalSearch || "";
+            const globalQuery = (this.state.globalSearch || "").toLowerCase();
             if (!query && !globalQuery) {
                 return true;
             }

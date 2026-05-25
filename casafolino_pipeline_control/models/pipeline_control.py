@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
+from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
@@ -351,6 +352,45 @@ class CfPipelineControl(models.AbstractModel):
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
             'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
         }
+
+    @api.model
+    def global_search(self, query, limit=24):
+        query = (query or '').strip()
+        if len(query) < 2:
+            return []
+        limit = min(int(limit or 24), 40)
+        today = fields.Date.context_today(self)
+        results = []
+
+        Lead = self.env['crm.lead']
+        lead_domain = [('active', '=', True)] + self._ilike_domain(Lead, [
+            'name', 'partner_name', 'contact_name', 'email_from', 'phone', 'mobile', 'description',
+        ], query)
+        leads = Lead.search(lead_domain, order='write_date desc, id desc', limit=8)
+        results.extend(self._format_lead_search_result(lead, today) for lead in leads)
+
+        Partner = self.env['res.partner']
+        partner_domain = [('active', '=', True)] + self._ilike_domain(Partner, [
+            'name', 'email', 'phone', 'mobile', 'vat', 'city',
+        ], query)
+        partners = Partner.search(partner_domain, order='write_date desc, id desc', limit=6)
+        results.extend(self._format_partner_search_result(partner) for partner in partners)
+
+        Project = self.env['project.project']
+        project_domain = self._active_project_domain() + self._ilike_domain(Project, [
+            'name', 'cf_next_action', 'description',
+        ], query)
+        projects = Project.search(project_domain, order='write_date desc, id desc', limit=6)
+        results.extend(self._format_project_search_result(project, today) for project in projects)
+
+        Mail = self.env['casafolino.mail.message']
+        mail_domain = [('is_deleted', '=', False)] + self._ilike_domain(Mail, [
+            'subject', 'sender_name', 'sender_email', 'snippet', 'body_text', 'body_html',
+        ], query)
+        mails = Mail.search(mail_domain, order='email_date desc, id desc', limit=8)
+        results.extend(self._format_mail_search_result(mail) for mail in mails)
+
+        return results[:limit]
 
     @api.model
     def cleanup_legacy_entrypoints(self):
@@ -1114,6 +1154,54 @@ class CfPipelineControl(models.AbstractModel):
             '%s in' % stats.get('inbound', 0) if stats.get('inbound') else False,
         ])
         return item
+
+    def _ilike_domain(self, model, field_names, query):
+        clauses = [[(field_name, 'ilike', query)] for field_name in field_names if field_name in model._fields]
+        return expression.OR(clauses) if clauses else [('id', '=', 0)]
+
+    def _format_lead_search_result(self, lead, today):
+        item = self._format_lead_item(lead, today)
+        item.update({
+            'type': 'Lead',
+            'meta': '%s · %s' % (item.get('stage') or 'Pipeline', item.get('meta') or 'Da pianificare'),
+        })
+        return item
+
+    def _format_partner_search_result(self, partner):
+        return {
+            'id': partner.id,
+            'model': partner._name,
+            'res_id': partner.id,
+            'type': 'Cliente',
+            'title': partner.display_name,
+            'subtitle': partner.email or partner.phone or partner.mobile or '',
+            'meta': partner.country_id.name if partner.country_id else 'Anagrafica cliente',
+            'tone': 'green',
+            'badges': self._compact([partner.country_id.code if partner.country_id else False]),
+        }
+
+    def _format_project_search_result(self, project, today):
+        detail = self._format_project_detail(project, today)
+        return {
+            **detail,
+            'id': project.id,
+            'model': project._name,
+            'res_id': project.id,
+            'type': 'Dossier',
+            'title': project.name,
+            'subtitle': detail.get('partner') or '',
+            'meta': detail.get('next_action') or detail.get('blocker') or 'Dossier operativo',
+            'tone': 'amber',
+            'badges': self._compact([detail.get('status'), detail.get('continent_label')]),
+        }
+
+    def _format_mail_search_result(self, msg):
+        row = self._format_mail_row(msg)
+        row.update({
+            'type': 'Mail',
+            'meta': '%s · %s' % (row.get('meta') or 'Email', row.get('suggested_action') or 'Apri thread'),
+        })
+        return row
 
     def _fair_date_range(self, fair):
         start = self._date_label(fair.date_start)

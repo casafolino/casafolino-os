@@ -53,9 +53,16 @@
                         <input type="search"
                                placeholder="Cerca telefono, nome, email, lead, dossier, prodotto o testo mail"
                                t-att-value="state.globalSearch"
-                               t-on-input="setGlobalSearch"/>
+                               t-on-input="setGlobalSearch"
+                               t-on-keydown="onGlobalSearchKeydown"/>
                         <button t-if="state.globalSearch" class="btn btn-sm btn-light" t-on-click="clearGlobalSearch" title="Pulisci ricerca">
                             <i class="fa fa-times"/>
+                        </button>
+                        <button class="btn btn-primary cf-pc-search-submit"
+                                t-att-disabled="state.globalSearchLoading"
+                                t-on-click="runGlobalSearch">
+                            <i t-attf-class="fa #{state.globalSearchLoading ? 'fa-spinner fa-spin' : 'fa-search'}"/>
+                            Cerca
                         </button>
                     </div>
                     <div class="cf-pc-actions">
@@ -76,6 +83,34 @@
                         </button>
                     </div>
                 </div>
+
+                <section t-if="state.globalSearchRan || state.globalSearchResults.length" class="cf-pc-search-results">
+                    <header>
+                        <div>
+                            <h2>Risultati ricerca</h2>
+                            <p>
+                                <t t-if="state.globalSearchLoading">Ricerca in corso...</t>
+                                <t t-else=""><t t-out="state.globalSearchResults.length"/> risultati per "<t t-out="state.globalSearch"/>"</t>
+                            </p>
+                        </div>
+                        <button class="btn btn-sm btn-light" t-on-click="clearGlobalSearch" title="Chiudi risultati">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </header>
+                    <div class="cf-pc-search-result-list" t-if="state.globalSearchResults.length">
+                        <t t-foreach="state.globalSearchResults" t-as="row" t-key="'search-' + row.model + '-' + row.id">
+                            <button class="cf-pc-search-result" t-on-click="() => this.openSearchResult(row)">
+                                <span t-attf-class="cf-pc-search-type tone-#{row.tone}" t-out="row.type"/>
+                                <strong t-out="row.title"/>
+                                <small t-out="row.subtitle"/>
+                                <em t-out="row.meta"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div t-elif="!state.globalSearchLoading" class="cf-pc-empty">
+                        Nessun risultato. Prova con telefono, email, nome cliente o testo della mail.
+                    </div>
+                </section>
 
                 <t t-if="state.activeView === 'control'">
                     <div class="cf-pc-kpis">
