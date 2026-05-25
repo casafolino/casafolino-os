@@ -127,6 +127,21 @@ class CasaFolinoB2BPortal(http.Controller):
         except (TypeError, ValueError):
             return 48
 
+    def _shipping_amount(self):
+        value = request.env["ir.config_parameter"].sudo().get_param("casafolino_b2b.shipping_amount", "0")
+        try:
+            return max(float(value), 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _shipping_product(self):
+        template = request.env.ref("casafolino_b2b_portal.product_b2b_shipping_template", raise_if_not_found=False)
+        if template and template.exists():
+            product = template.product_variant_id
+            if product:
+                return product
+        return request.env["product.product"].sudo().search([("default_code", "=", "CF-B2B-SHIPPING")], limit=1)
+
     def _cart(self):
         cart = request.session.setdefault("cf_b2b_cart", {})
         return {int(product_id): int(qty) for product_id, qty in cart.items() if int(qty) > 0}
@@ -176,8 +191,8 @@ class CasaFolinoB2BPortal(http.Controller):
         return self.CATEGORY_FALLBACKS.get(category) or self.FALLBACK_IMAGES[index % len(self.FALLBACK_IMAGES)]
 
     def _case_size(self, product):
-        case_size = product.cf_b2b_case_size or 12
-        return case_size if case_size >= 12 else 12
+        case_size = product.cf_b2b_case_size or 6
+        return case_size if case_size >= 6 else 6
 
     def _product_text(self, product):
         raw = product.website_description or product.description_sale or product.description or ""
@@ -274,10 +289,14 @@ class CasaFolinoB2BPortal(http.Controller):
         lines = self._cart_lines()
         total_qty = sum(line["qty"] for line in lines)
         total_amount = sum(line["subtotal"] for line in lines)
+        shipping_amount = self._shipping_amount() if lines else 0.0
+        grand_total = total_amount + shipping_amount
         return {
             "lines": lines,
             "total_qty": total_qty,
             "total_amount": total_amount,
+            "shipping_amount": shipping_amount,
+            "grand_total": grand_total,
             "min_amount": self._min_amount(),
             "min_jars": self._min_jars(),
             "can_checkout": (
@@ -425,5 +444,19 @@ class CasaFolinoB2BPortal(http.Controller):
                 ],
             }
         )
+        if cart["shipping_amount"]:
+            shipping_product = self._shipping_product()
+            if shipping_product:
+                request.env["sale.order.line"].sudo().create(
+                    {
+                        "order_id": order.id,
+                        "product_id": shipping_product.id,
+                        "name": "Spese di spedizione",
+                        "product_uom_qty": 1,
+                        "price_unit": cart["shipping_amount"],
+                    }
+                )
+            else:
+                order.note = f"{order.note or ''}\nSpese di spedizione: € {cart['shipping_amount']:.2f}"
         self._save_cart({})
         return request.render("casafolino_b2b_portal.thank_you", {"order": order})

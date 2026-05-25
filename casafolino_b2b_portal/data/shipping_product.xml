@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="product_b2b_shipping_template" model="product.template">
+        <field name="name">Spese di spedizione B2B</field>
+        <field name="default_code">CF-B2B-SHIPPING</field>
+        <field name="type">service</field>
+        <field name="sale_ok">True</field>
+        <field name="purchase_ok">False</field>
+        <field name="list_price">0.0</field>
+    </record>
+
+    <record id="config_shipping_amount" model="ir.config_parameter">
+        <field name="key">casafolino_b2b.shipping_amount</field>
+        <field name="value">0</field>
+    </record>
+</odoo>
