@@ -17,8 +17,14 @@
 
 /* ─── FORM CONTAINER ─── */
 .cf-premium-form .o_form_sheet {
-    max-width: 1400px !important;
+    max-width: none !important;
+    width: calc(100% - 32px) !important;
     background: #fff !important;
+    border: 1px solid #d8e1ea !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    margin: 18px auto !important;
+    padding: 20px !important;
 }
 
 /* ─── KPI BANNER ─── */
@@ -29,9 +35,10 @@
     background: #f5f8fa;
     border: 1px solid #cbd6e2;
     border-radius: 8px;
-    padding: 16px 24px;
-    margin: 0 0 20px 0;
+    padding: 14px 22px;
+    margin: 0 0 22px 0;
     gap: 12px;
+    min-height: 86px;
 }
 .cf-kpi-item {
     text-align: center;
@@ -43,7 +50,7 @@
     border-right: none;
 }
 .cf-kpi-value {
-    font-size: 28px;
+    font-size: 18px;
     font-weight: 700;
     color: #2d3e50;
     line-height: 1.2;
@@ -70,7 +77,7 @@
 }
 .cf-kpi-banner .o_field_monetary .o_input,
 .cf-kpi-banner .o_field_integer .o_input {
-    font-size: 28px !important;
+    font-size: 18px !important;
     font-weight: 700 !important;
     color: #2d3e50 !important;
     text-align: center !important;
@@ -177,10 +184,15 @@
 
 /* ─── MAIN LAYOUT ─── */
 .cf-layout {
-    margin-top: 0;
+    margin-top: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 18px;
 }
 .cf-main-col {
-    padding-right: 24px !important;
+    padding: 0 !important;
+    width: auto !important;
+    max-width: none !important;
 }
 
 /* Tab styling — HubSpot underline tabs */
@@ -211,10 +223,12 @@
 
 /* ─── SIDEBAR ─── */
 .cf-sidebar-col {
-    background: #f5f8fa;
-    border-left: 1px solid #eaf0f6;
-    padding: 20px !important;
-    border-radius: 0 8px 8px 0;
+    background: #f7fafc;
+    border-left: 0;
+    padding: 16px !important;
+    border-radius: 0;
+    width: auto !important;
+    max-width: none !important;
 }
 
 /* Property cards */
@@ -259,6 +273,7 @@
     text-align: right;
     flex: 1;
     margin-left: 8px;
+    min-width: 0;
 }
 
 /* Lead operating cockpit */
@@ -270,8 +285,8 @@
 }
 
 .cf-premium-form .cf-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 360px;
     gap: 18px;
     margin: 0;
 }
@@ -285,10 +300,11 @@
 }
 
 .cf-premium-form .cf-sidebar-col {
-    background: transparent;
+    background: #f7fafc;
     border-left: 0;
     display: grid;
     gap: 12px;
+    align-content: start;
 }
 
 .cf-lead-cockpit {
@@ -428,10 +444,23 @@
 }
 
 @media (max-width: 1180px) {
+    .cf-layout,
     .cf-premium-form .cf-layout,
     .cf-lead-cockpit {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
+}
+
+.cf-premium-form .o_notebook {
+    margin-top: 0;
+}
+
+.cf-premium-form .o_notebook .tab-content {
+    padding-top: 0;
+}
+
+.cf-premium-form .o_field_x2many_activity {
+    min-height: 220px;
 }
 
 /* Compact field rendering inside prop rows */

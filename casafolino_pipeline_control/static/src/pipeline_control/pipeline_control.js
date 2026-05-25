@@ -127,7 +127,7 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "lead_quick_action", [id, "open"]);
             if (result) {
-                await this.action.doAction(result);
+                await this.action.doAction(result, { clearBreadcrumbs: true });
                 return;
             }
         } catch (error) {
@@ -140,7 +140,7 @@ export class CFPipelineControl extends Component {
             res_id: id,
             views: await this._crmLeadFormViews(),
             target: "current",
-        });
+        }, { clearBreadcrumbs: true });
     }
 
     async openCard(item) {

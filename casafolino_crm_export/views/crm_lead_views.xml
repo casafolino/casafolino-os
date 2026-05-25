@@ -280,84 +280,6 @@
                             <notebook>
                                 <!-- Tab: Attività -->
                                 <page string="Attività" name="activities">
-                                    <div class="cf-lead-cockpit">
-                                        <div class="cf-lead-action-card primary">
-                                            <div>
-                                                <span class="cf-lead-eyebrow">Prossima mossa</span>
-                                                <strong>
-                                                    <field name="cf_next_activity_summary" readonly="1"/>
-                                                </strong>
-                                                <p>Ogni lead deve dire subito cosa fare: richiamare, inviare listino, collegare mail o aprire dossier.</p>
-                                            </div>
-                                            <button name="action_schedule_followup" type="object"
-                                                string="Pianifica follow-up"
-                                                class="btn btn-primary"/>
-                                        </div>
-                                        <div class="cf-lead-action-card">
-                                            <span class="cf-lead-eyebrow">Mail</span>
-                                            <strong><field name="cf_email_count" readonly="1"/> collegate</strong>
-                                            <p>Thread commerciale, risposte e allegati collegati al lead.</p>
-                                            <button name="action_view_partner_emails" type="object"
-                                                string="Apri mail" class="btn btn-secondary"/>
-                                        </div>
-                                        <div class="cf-lead-action-card">
-                                            <span class="cf-lead-eyebrow">Dossier</span>
-                                            <strong>
-                                                <field name="cf_project_id" readonly="1"/>
-                                            </strong>
-                                            <p>Apri la Vista 360 quando il funnel diventa profondo.</p>
-                                            <button name="action_open_project_360" type="object"
-                                                string="Vista 360" class="btn btn-secondary"/>
-                                        </div>
-                                        <div class="cf-lead-action-card">
-                                            <span class="cf-lead-eyebrow">Contatto</span>
-                                            <strong><field name="partner_id" readonly="1"/></strong>
-                                            <p><field name="email_from" widget="email" readonly="1"/> · <field name="phone" widget="phone" readonly="1"/></p>
-                                            <button name="action_mark_contacted" type="object"
-                                                string="Segna contattato" class="btn btn-secondary"/>
-                                        </div>
-                                    </div>
-                                    <div class="cf-lead-inline-metrics">
-                                        <div class="cf-lead-inline-group">
-                                            <span class="cf-lead-inline-title">Informazioni deal</span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Ricavi</span>
-                                                <strong><field name="expected_revenue" readonly="1"/></strong>
-                                            </span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Probabilità</span>
-                                                <strong><field name="probability" readonly="1"/>%</strong>
-                                            </span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Forecast</span>
-                                                <strong><field name="cf_forecast_value" widget="monetary" readonly="1"/></strong>
-                                            </span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Chiusura</span>
-                                                <strong><field name="date_deadline" readonly="1"/></strong>
-                                            </span>
-                                        </div>
-                                        <div class="cf-lead-inline-group scoring">
-                                            <span class="cf-lead-inline-title">Scoring</span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Lead score</span>
-                                                <strong><field name="cf_lead_score" widget="progressbar" readonly="1"/></strong>
-                                            </span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Stato</span>
-                                                <strong><field name="cf_rotting_state" widget="badge"
-                                                    readonly="1"
-                                                    decoration-success="cf_rotting_state == 'ok'"
-                                                    decoration-warning="cf_rotting_state == 'warning'"
-                                                    decoration-danger="cf_rotting_state in ('danger','dead')"/></strong>
-                                            </span>
-                                            <span class="cf-lead-inline-item">
-                                                <span>Aggiornamento</span>
-                                                <strong><field name="cf_rotting_days_display" readonly="1"/></strong>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="cf-lead-section-title">Attività aperte</div>
                                     <field name="activity_ids"/>
                                 </page>
 
@@ -422,45 +344,58 @@
 
                         <!-- RIGHT: SIDEBAR -->
                         <div class="col-lg-4 cf-sidebar-col">
-                            <!-- Conversione dossier -->
                             <div class="cf-prop-card">
-                                <div class="cf-prop-title">Checklist dossier</div>
+                                <div class="cf-prop-title">Informazioni deal</div>
                                 <div class="cf-prop-row">
-                                    <span class="cf-prop-label">Contatto collegato</span>
+                                    <span class="cf-prop-label">Ricavi previsti</span>
                                     <span class="cf-prop-value">
-                                        <field name="partner_id" readonly="1"/>
+                                        <field name="expected_revenue" readonly="1"/>
                                     </span>
                                 </div>
                                 <div class="cf-prop-row">
-                                    <span class="cf-prop-label">Interesse / prodotti</span>
+                                    <span class="cf-prop-label">Probabilità</span>
                                     <span class="cf-prop-value">
-                                        <field name="tag_ids" widget="many2many_tags" readonly="1"/>
+                                        <field name="probability" readonly="1"/> %
                                     </span>
                                 </div>
                                 <div class="cf-prop-row">
-                                    <span class="cf-prop-label">Prossima azione</span>
-                                    <span class="cf-prop-value">
-                                        <field name="cf_next_activity_summary" readonly="1"/>
-                                    </span>
-                                </div>
-                                <div class="cf-prop-row">
-                                    <span class="cf-prop-label">Valore / forecast</span>
+                                    <span class="cf-prop-label">Forecast</span>
                                     <span class="cf-prop-value">
                                         <field name="cf_forecast_value" widget="monetary" readonly="1"/>
                                     </span>
                                 </div>
                                 <div class="cf-prop-row">
-                                    <span class="cf-prop-label">Dossier collegato</span>
+                                    <span class="cf-prop-label">Chiusura prevista</span>
                                     <span class="cf-prop-value">
-                                        <field name="cf_project_id" readonly="1"/>
+                                        <field name="date_deadline" readonly="1"/>
                                     </span>
                                 </div>
-                                <button name="action_open_project_360" type="object"
-                                        string="Crea / apri dossier 360"
-                                        class="btn btn-primary w-100 mt-2"/>
                             </div>
 
-                            <!-- Follow-up -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Scoring</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Lead Score</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_lead_score" widget="progressbar" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Stato</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_rotting_state" widget="badge"
+                                            readonly="1"
+                                            decoration-success="cf_rotting_state == 'ok'"
+                                            decoration-warning="cf_rotting_state == 'warning'"
+                                            decoration-danger="cf_rotting_state in ('danger','dead')"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Ultimo aggiornamento</span>
+                                    <span class="cf-prop-value"><field name="cf_rotting_days_display" readonly="1"/></span>
+                                </div>
+                            </div>
+
                             <div class="cf-prop-card">
                                 <div class="cf-prop-title">Follow-up</div>
                                 <div class="cf-prop-row">
@@ -477,7 +412,6 @@
                                 </div>
                             </div>
 
-                            <!-- Contatto -->
                             <div class="cf-prop-card">
                                 <div class="cf-prop-title">Contatto</div>
                                 <div class="cf-prop-row">
@@ -496,6 +430,17 @@
                                     <span class="cf-prop-label">Lingua</span>
                                     <span class="cf-prop-value"><field name="cf_language"/></span>
                                 </div>
+                            </div>
+
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Dossier</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Collegato</span>
+                                    <span class="cf-prop-value"><field name="cf_project_id" readonly="1"/></span>
+                                </div>
+                                <button name="action_open_project_360" type="object"
+                                        string="Apri dossier"
+                                        class="btn btn-primary w-100 mt-2"/>
                             </div>
                         </div>
                     </div>
