@@ -826,7 +826,7 @@ class CfPipelineControl(models.AbstractModel):
             return self._notify('Lead non trovato', 'La trattativa non e piu disponibile.', 'warning')
 
         if quick_action == 'open':
-            return self._open_record(lead, 'Lead')
+            return self._open_lead_record(lead)
         if quick_action == 'email' and hasattr(lead, 'action_compose_email_f8'):
             return lead.action_compose_email_f8()
         if quick_action == 'followup7':
@@ -1087,6 +1087,23 @@ class CfPipelineControl(models.AbstractModel):
             'views': [(False, 'form')],
             'target': 'current',
         }
+
+    def _open_lead_record(self, lead):
+        action = self.env.ref('casafolino_crm_export.action_cf_crm_all', raise_if_not_found=False)
+        premium_view = self.env.ref('casafolino_crm_export.cf_crm_lead_view_form_premium', raise_if_not_found=False)
+        if not action:
+            return self._open_record(lead, 'Lead')
+        result = action.sudo().read()[0]
+        result.update({
+            'name': lead.display_name or 'Lead',
+            'res_id': lead.id,
+            'view_mode': 'form',
+            'views': [(premium_view.id if premium_view else False, 'form')],
+            'target': 'current',
+            'domain': [('type', '=', 'opportunity')],
+            'context': {'default_type': 'opportunity'},
+        })
+        return result
 
     def _reply_from_message(self, msg):
         partner = msg.partner_id

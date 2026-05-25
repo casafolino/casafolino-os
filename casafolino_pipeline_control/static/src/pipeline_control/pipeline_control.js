@@ -124,6 +124,15 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Lead non disponibile"), { type: "warning" });
             return;
         }
+        try {
+            const result = await this.orm.call("cf.pipeline.control", "lead_quick_action", [id, "open"]);
+            if (result) {
+                await this.action.doAction(result);
+                return;
+            }
+        } catch (error) {
+            console.warn("Pipeline lead action lookup failed:", error);
+        }
         await this.action.doAction({
             type: "ir.actions.act_window",
             name: _t("Lead"),
