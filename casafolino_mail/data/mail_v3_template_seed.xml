@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="0">
+    <record id="mail_template_catalog_it" model="casafolino.mail.template">
+      <field name="name">Invio cataloghi CasaFolino</field>
+      <field name="sequence">10</field>
+      <field name="description">Invio cataloghi e presentazione aziendale in italiano</field>
+      <field name="subject">Cataloghi CasaFolino</field>
+      <field name="language">it_IT</field>
+      <field name="category">generic</field>
+      <field name="body_html" type="html"><![CDATA[
+<p>Gentile {{partner_name}},</p>
+<p>le invio in allegato i cataloghi CasaFolino, con una panoramica delle nostre linee e delle principali referenze disponibili.</p>
+<p>CasaFolino produce e seleziona specialita alimentari italiane pensate per retail, food service e progetti private label.</p>
+<p>Resto a disposizione per approfondire i prodotti di maggiore interesse e valutare insieme le opportunita piu adatte al vostro mercato.</p>
+<p>Cordiali saluti,</p>
+      ]]></field>
+    </record>
+
+    <record id="mail_template_catalog_en" model="casafolino.mail.template">
+      <field name="name">CasaFolino catalogue shipment</field>
+      <field name="sequence">11</field>
+      <field name="description">Catalogue and company presentation in English</field>
+      <field name="subject">CasaFolino catalogues</field>
+      <field name="language">en_US</field>
+      <field name="category">generic</field>
+      <field name="body_html" type="html"><![CDATA[
+<p>Dear {{partner_name}},</p>
+<p>I am pleased to share the CasaFolino catalogues, with an overview of our product lines and main references.</p>
+<p>CasaFolino produces and selects Italian food specialties for retail, food service and private label projects.</p>
+<p>I remain available to discuss the products that may be most relevant for your market and to evaluate possible opportunities together.</p>
+<p>Best regards,</p>
+      ]]></field>
+    </record>
+
+    <record id="mail_template_price_list_it" model="casafolino.mail.template">
+      <field name="name">Invio listino prodotti</field>
+      <field name="sequence">20</field>
+      <field name="description">Invio listino commerciale in italiano</field>
+      <field name="subject">Listino prodotti CasaFolino</field>
+      <field name="language">it_IT</field>
+      <field name="category">quote</field>
+      <field name="body_html" type="html"><![CDATA[
+<p>Gentile {{partner_name}},</p>
+<p>le invio in allegato il listino prodotti CasaFolino aggiornato.</p>
+<p>Il listino include le principali referenze disponibili e puo essere adattato in base a volumi, mercato di destinazione e condizioni logistiche.</p>
+<p>Se desidera, possiamo selezionare insieme i prodotti piu adatti al vostro canale e preparare una proposta mirata.</p>
+<p>Cordiali saluti,</p>
+      ]]></field>
+    </record>
+
+    <record id="mail_template_price_list_en" model="casafolino.mail.template">
+      <field name="name">Price list shipment</field>
+      <field name="sequence">21</field>
+      <field name="description">Commercial price list in English</field>
+      <field name="subject">CasaFolino product price list</field>
+      <field name="language">en_US</field>
+      <field name="category">quote</field>
+      <field name="body_html" type="html"><![CDATA[
+<p>Dear {{partner_name}},</p>
+<p>I am sending you the updated CasaFolino product price list attached.</p>
+<p>The price list includes our main available references and can be adapted according to volumes, target market and logistics conditions.</p>
+<p>If useful, we can select the most suitable products for your channel and prepare a targeted proposal.</p>
+<p>Best regards,</p>
+      ]]></field>
+    </record>
+  </data>
+</odoo>

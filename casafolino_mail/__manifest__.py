@@ -23,6 +23,7 @@
         'views/posizionatore_views.xml',
         'data/mail_v3_client_action.xml',
         'views/menus.xml',
+        'data/mail_v3_template_seed.xml',
         'data/snippet_seed.xml',
         'data/cf_mail_cron.xml',
         'data/cf_mail_config.xml',
