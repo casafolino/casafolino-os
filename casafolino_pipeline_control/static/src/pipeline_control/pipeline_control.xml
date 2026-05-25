@@ -708,7 +708,11 @@
 </t>
 
 <t t-name="casafolino_pipeline_control.ControlCard">
-    <article class="cf-pc-card">
+    <article class="cf-pc-card cf-pc-card-clickable"
+             role="button"
+             tabindex="0"
+             t-on-click="() => this.openCard(item)"
+             t-on-keydown="(ev) => this.onCardKeydown(ev, item)">
         <div class="cf-pc-card-title">
             <div>
                 <strong t-out="item.title"/>
@@ -724,8 +728,8 @@
                 <span t-attf-class="cf-pc-badge tone-#{item.tone}" t-out="badge"/>
             </t>
         </div>
-        <div class="cf-pc-card-actions">
-            <button class="btn btn-sm btn-light" t-on-click="() => item.model === 'crm.lead' ? this.leadQuickAction(item, 'open') : this.openRecord(item)" title="Apri">
+        <div class="cf-pc-card-actions" t-on-click.stop="() => {}">
+            <button class="btn btn-sm btn-light" t-on-click="() => this.openCard(item)" title="Apri">
                 <i class="fa fa-folder-open-o"/>
             </button>
             <button t-if="item.model === 'crm.lead'" class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(item, 'email')" title="Scrivi email">

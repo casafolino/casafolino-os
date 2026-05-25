@@ -90,6 +90,9 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Record non disponibile"), { type: "warning" });
             return;
         }
+        if (item.model === "crm.lead") {
+            return this.openLeadRecord(item.res_id);
+        }
         await this.action.doAction({
             type: "ir.actions.act_window",
             res_model: item.model,
@@ -97,6 +100,56 @@ export class CFPipelineControl extends Component {
             views: [[false, "form"]],
             target: "current",
         });
+    }
+
+    async _crmLeadFormViews() {
+        if (this.crmLeadFormViewId === undefined) {
+            try {
+                this.crmLeadFormViewId = await this.orm.call(
+                    "crm.lead",
+                    "casafolino_get_premium_form_view_id",
+                    []
+                );
+            } catch (err) {
+                console.warn("Premium lead form view lookup failed:", err);
+                this.crmLeadFormViewId = false;
+            }
+        }
+        return [[this.crmLeadFormViewId || false, "form"]];
+    }
+
+    async openLeadRecord(leadId) {
+        const id = parseInt(leadId, 10);
+        if (!id) {
+            this.notification.add(_t("Lead non disponibile"), { type: "warning" });
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Lead"),
+            res_model: "crm.lead",
+            res_id: id,
+            views: await this._crmLeadFormViews(),
+            target: "current",
+        });
+    }
+
+    async openCard(item) {
+        if (!item) {
+            return;
+        }
+        if (item.model === "crm.lead") {
+            return this.openLeadRecord(item.res_id || item.id);
+        }
+        return this.openRecord(item);
+    }
+
+    async onCardKeydown(ev, item) {
+        if (ev.key !== "Enter" && ev.key !== " ") {
+            return;
+        }
+        ev.preventDefault();
+        await this.openCard(item);
     }
 
     async mailQuickAction(row, quickAction) {
@@ -126,6 +179,9 @@ export class CFPipelineControl extends Component {
             return;
         }
         try {
+            if (quickAction === "open") {
+                return this.openLeadRecord(item.res_id || item.id);
+            }
             const result = await this.orm.call("cf.pipeline.control", "lead_quick_action", [item.id, quickAction]);
             if (result) {
                 if (this.openComposeDialogFromAction(result)) {

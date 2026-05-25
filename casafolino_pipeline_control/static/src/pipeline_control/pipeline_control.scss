@@ -276,6 +276,20 @@
         border-radius: 8px;
     }
 
+    .cf-pc-card-clickable {
+        cursor: pointer;
+
+        &:hover {
+            border-color: #8ba7d9;
+            box-shadow: 0 5px 14px rgba(38, 75, 125, 0.12);
+        }
+
+        &:focus-visible {
+            outline: 2px solid #6f8fc4;
+            outline-offset: 2px;
+        }
+    }
+
     .cf-pc-card-title {
         display: flex;
         justify-content: space-between;
