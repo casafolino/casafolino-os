@@ -155,42 +155,60 @@ class CasaFolinoB2BPortal(http.Controller):
             f"?key={quote(key)}&libraries=places&callback=cfB2BInitPlaces&loading=async&language=it"
         )
 
+    def _send_b2b_newsletter_welcome(self, contact):
+        template = request.env.ref(
+            "casafolino_b2b_portal.mail_template_b2b_newsletter_welcome",
+            raise_if_not_found=False,
+        )
+        if contact and template:
+            template.sudo().send_mail(contact.id, force_send=True)
+
     def _subscribe_b2b_newsletter_email(self, name, email):
         email = (email or "").strip()
         if not email:
-            return False
+            return False, False
         mailing_list = request.env.ref(
             "casafolino_b2b_portal.mailing_list_b2b_newsletter",
             raise_if_not_found=False,
         )
         if not mailing_list:
-            return False
+            return False, False
         Contact = request.env["mailing.contact"].sudo()
         normalized_email = email_normalize(email) or email.lower()
         domain = [("email", "=", email)]
         if "email_normalized" in Contact._fields:
             domain = ["|", ("email", "=", email), ("email_normalized", "=", normalized_email)]
         contact = Contact.search(domain, limit=1)
+        should_send_welcome = False
         if contact:
             contact.write({"name": contact.name or name, "email": email})
         else:
             contact = Contact.create({"name": name or email, "email": email})
+            should_send_welcome = True
         if "list_ids" in Contact._fields:
+            should_send_welcome = should_send_welcome or mailing_list not in contact.list_ids
             contact.write({"list_ids": [(4, mailing_list.id)]})
-            return True
+            if should_send_welcome:
+                self._send_b2b_newsletter_welcome(contact)
+            return True, should_send_welcome
         Subscription = request.env["mailing.subscription"].sudo()
         subscription = Subscription.search(
             [("contact_id", "=", contact.id), ("list_id", "=", mailing_list.id)],
             limit=1,
         )
         if subscription:
+            should_send_welcome = should_send_welcome or subscription.opt_out
             subscription.write({"opt_out": False})
         else:
             Subscription.create({"contact_id": contact.id, "list_id": mailing_list.id, "opt_out": False})
-        return True
+            should_send_welcome = True
+        if should_send_welcome:
+            self._send_b2b_newsletter_welcome(contact)
+        return True, should_send_welcome
 
     def _subscribe_b2b_newsletter(self, partner):
-        return self._subscribe_b2b_newsletter_email(partner.name, partner.email)
+        success, _sent = self._subscribe_b2b_newsletter_email(partner.name, partner.email)
+        return success
 
     def _newsletter_response(self, success, redirect_url="/b2b/newsletter"):
         if request.httprequest.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -472,7 +490,8 @@ class CasaFolinoB2BPortal(http.Controller):
             email = (post.get("email") or "").strip()
             if not email:
                 return self._newsletter_response(False)
-            return self._newsletter_response(self._subscribe_b2b_newsletter_email(name, email))
+            success, _sent = self._subscribe_b2b_newsletter_email(name, email)
+            return self._newsletter_response(success)
         return request.render(
             "casafolino_b2b_portal.newsletter",
             {
