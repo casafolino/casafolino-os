@@ -347,6 +347,7 @@ class CfPipelineControl(models.AbstractModel):
             'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []}),
             'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
+            'personal_pipelines': self._safe_section('personal_pipelines', self._get_personal_pipelines, []),
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
             'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
         }
@@ -803,6 +804,25 @@ class CfPipelineControl(models.AbstractModel):
                 'items': [self._format_lead_item(lead, today) for lead in leads],
             })
         return columns
+
+    def _get_personal_pipelines(self):
+        groups = self.env['crm.lead'].read_group(
+            [('type', '=', 'opportunity'), ('active', '=', True), ('user_id', '!=', False)],
+            ['user_id'],
+            ['user_id'],
+            orderby='user_id',
+        )
+        rows = []
+        for group in groups:
+            user = group.get('user_id')
+            if not user:
+                continue
+            rows.append({
+                'id': user[0],
+                'name': user[1],
+                'count': group.get('user_id_count', 0),
+            })
+        return sorted(rows, key=lambda row: row['name'].lower())
 
     def _get_inbox_data(self, user):
         inbox, waiting = self._get_latest_commercial_threads(user)

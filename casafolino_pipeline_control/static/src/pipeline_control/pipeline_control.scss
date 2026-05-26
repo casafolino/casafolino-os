@@ -533,6 +533,75 @@
         }
     }
 
+    .cf-pc-personal-pipelines {
+        margin: -2px 0 14px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+
+        header {
+            min-height: 54px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #edf0eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            background: #f8faf6;
+
+            h2 {
+                margin: 0;
+                color: #20251f;
+                font-size: 14px;
+                line-height: 1.2;
+            }
+
+            p {
+                margin: 3px 0 0;
+                color: #667061;
+                font-size: 12px;
+            }
+        }
+    }
+
+    .cf-pc-personal-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .cf-pc-personal-btn {
+        min-height: 34px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fbfcfa;
+        color: #20251f;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        font-size: 13px;
+        font-weight: 750;
+
+        &:hover {
+            border-color: #8ba7d9;
+            background: #f5f8fd;
+        }
+
+        em {
+            min-width: 22px;
+            border-radius: 999px;
+            background: #e8eee6;
+            color: #52604f;
+            font-size: 11px;
+            font-style: normal;
+            font-weight: 700;
+            text-align: center;
+        }
+    }
+
     .cf-pc-continent-select {
         height: 40px;
         border-radius: 8px;

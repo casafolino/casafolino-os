@@ -35,6 +35,7 @@ export class CFPipelineControl extends Component {
                 followup: { kpis: [], columns: [], routes: [], timeline: [] },
                 post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
+                personal_pipelines: [],
                 inbox: { kpis: [], to_reply: [], waiting_customer: [] },
                 dossiers: [],
             },
@@ -217,6 +218,23 @@ export class CFPipelineControl extends Component {
             res_model: item.model,
             res_id: item.res_id,
             views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    async openPersonalPipeline(person) {
+        if (!person || !person.id) {
+            this.notification.add(_t("Pipeline personale non disponibile"), { type: "warning" });
+            return;
+        }
+        const formViews = await this._crmLeadFormViews();
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Pipeline - %s").replace("%s", person.name),
+            res_model: "crm.lead",
+            views: [[false, "kanban"], [false, "list"], formViews[0]],
+            domain: [["type", "=", "opportunity"], ["active", "=", true], ["user_id", "=", person.id]],
+            context: { default_type: "opportunity", default_user_id: person.id },
             target: "current",
         });
     }

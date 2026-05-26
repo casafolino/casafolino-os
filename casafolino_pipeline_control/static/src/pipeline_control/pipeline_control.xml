@@ -525,6 +525,28 @@
                                    t-on-input="setPipelineSearch"/>
                         </div>
                     </div>
+                    <section class="cf-pc-personal-pipelines">
+                        <header>
+                            <div>
+                                <h2>Pipeline personali</h2>
+                                <p>La pipeline principale resta globale: qui entri nelle viste per responsabile.</p>
+                            </div>
+                            <span class="cf-pc-pill" t-out="state.data.personal_pipelines.length"/>
+                        </header>
+                        <div class="cf-pc-personal-list">
+                            <button t-foreach="state.data.personal_pipelines"
+                                    t-as="person"
+                                    t-key="'personal-pipeline-' + person.id"
+                                    class="cf-pc-personal-btn"
+                                    t-on-click="() => this.openPersonalPipeline(person)">
+                                <span t-out="person.name"/>
+                                <em t-out="person.count"/>
+                            </button>
+                            <div t-if="!state.data.personal_pipelines.length" class="cf-pc-empty">
+                                Nessuna pipeline personale con opportunita' aperte.
+                            </div>
+                        </div>
+                    </section>
                     <div class="cf-pc-board cf-pc-board-wide">
                         <t t-foreach="filteredPipeline" t-as="column" t-key="column.id">
                             <section class="cf-pc-lane">
