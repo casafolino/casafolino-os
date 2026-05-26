@@ -344,10 +344,20 @@ class ResPartnerMailExt(models.Model):
             search_terms += sorted(domains)
 
         Message = self.env['casafolino.mail.message']
+        failed_accounts = []
+        synced_accounts = 0
 
         for account in accounts:
-            imap = account._get_imap_connection()
             try:
+                imap = account._get_imap_connection()
+            except UserError as exc:
+                failed_accounts.append('%s: %s' % (account.email_address, exc))
+                _logger.warning(
+                    "History sync skipped account %s for %s: %s",
+                    account.email_address, self.display_name, exc)
+                continue
+            try:
+                synced_accounts += 1
                 folders = []
                 if account.fetch_inbox:
                     folders.append(('INBOX', 'inbound'))
@@ -457,6 +467,9 @@ class ResPartnerMailExt(models.Model):
                     imap.logout()
                 except Exception:
                     pass
+
+        if not synced_accounts and failed_accounts:
+            raise UserError("Sync IMAP non disponibile: %s" % '; '.join(failed_accounts[:3]))
 
         self.write({
             'mail_tracked': True,
