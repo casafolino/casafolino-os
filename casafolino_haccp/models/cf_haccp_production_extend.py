@@ -2,7 +2,9 @@
 import hashlib
 import json
 
-from odoo import models, fields, api
+from markupsafe import Markup
+
+from odoo import models, fields, api, _
 
 
 class MrpProductionHaccpExtend(models.Model):
@@ -76,6 +78,18 @@ class MrpProductionHaccpExtend(models.Model):
     )
     haccp_data_firma = fields.Datetime("Data Firma", readonly=True)
     haccp_data_approvazione = fields.Datetime("Data Approvazione", readonly=True)
+    cf_skip_quality_checks_retroactive = fields.Boolean(
+        "Salta controlli qualita retroattivi",
+        tracking=True,
+        help=(
+            "Da usare solo per registrare produzioni gia eseguite nel passato, "
+            "quando i controlli qualita sono stati gestiti fuori dalla linea di produzione."
+        ),
+    )
+    cf_skip_quality_checks_note = fields.Text(
+        "Motivo salto controlli qualita",
+        tracking=True,
+    )
 
     @api.depends("haccp_esito")
     def _compute_haccp_state(self):
@@ -121,6 +135,48 @@ class MrpProductionHaccpExtend(models.Model):
             "casafolino_haccp.report_haccp_produzione"
         ).report_action(self)
 
+    def _cf_quality_skip_note(self):
+        self.ensure_one()
+        return (
+            self.cf_skip_quality_checks_note
+            or _("Produzione retroattiva: controlli qualita saltati su richiesta.")
+        )
+
+    def _cf_mark_quality_checks_skipped(self):
+        for rec in self:
+            if not rec.cf_skip_quality_checks_retroactive:
+                continue
+            pending_checks = rec.check_ids.filtered(lambda check: check.quality_state == "none")
+            if not pending_checks:
+                continue
+
+            note = rec._cf_quality_skip_note()
+            for check in pending_checks:
+                check.do_pass()
+                if "additional_note" in check._fields:
+                    check.additional_note = note
+                elif "note" in check._fields:
+                    check.note = note
+
+            rec.message_post(
+                body=Markup(
+                    "<p><strong>%s</strong></p><p>%s</p>"
+                ) % (
+                    _("Controlli qualita saltati per registrazione retroattiva."),
+                    note,
+                )
+            )
+        return True
+
+    def pre_button_mark_done(self):
+        self._cf_mark_quality_checks_skipped()
+        return super().pre_button_mark_done()
+
+    def _check_qc_status(self):
+        if self and all(rec.cf_skip_quality_checks_retroactive for rec in self):
+            return True
+        return super()._check_qc_status()
+
 
 class CfHaccpCcpLine(models.Model):
     _name = "cf.haccp.ccp.line"
@@ -147,3 +203,51 @@ class CfHaccpCcpLine(models.Model):
     ora_misura = fields.Datetime("Ora Misurazione", default=fields.Datetime.now)
     ccp_ok = fields.Boolean("Nei Limiti")
     azione_correttiva = fields.Text("Azione Correttiva")
+
+
+class MrpWorkorderQualitySkip(models.Model):
+    _inherit = "mrp.workorder"
+
+    def _cf_workorders_to_skip_quality_checks(self):
+        return self.filtered(
+            lambda wo: wo.production_id.cf_skip_quality_checks_retroactive
+        )
+
+    def _cf_mark_workorder_quality_checks_skipped(self):
+        for workorder in self._cf_workorders_to_skip_quality_checks():
+            workorder.production_id._cf_mark_quality_checks_skipped()
+            pending_checks = workorder.check_ids.filtered(
+                lambda check: check.quality_state == "none"
+            )
+            if not pending_checks:
+                continue
+
+            note = workorder.production_id._cf_quality_skip_note()
+            for check in pending_checks:
+                check.do_pass()
+                if "additional_note" in check._fields:
+                    check.additional_note = note
+                elif "note" in check._fields:
+                    check.note = note
+        return True
+
+    def verify_quality_checks(self):
+        skipped = self._cf_workorders_to_skip_quality_checks()
+        skipped._cf_mark_workorder_quality_checks_skipped()
+        remaining = self - skipped
+        if remaining:
+            return super(MrpWorkorderQualitySkip, remaining).verify_quality_checks()
+        return True
+
+    def pre_record_production(self):
+        skipped = self._cf_workorders_to_skip_quality_checks()
+        skipped._cf_mark_workorder_quality_checks_skipped()
+        remaining = self - skipped
+        if remaining:
+            return super(MrpWorkorderQualitySkip, remaining).pre_record_production()
+        return True
+
+    def get_summary_data(self):
+        if self._cf_workorders_to_skip_quality_checks():
+            self._cf_mark_workorder_quality_checks_skipped()
+        return super().get_summary_data()

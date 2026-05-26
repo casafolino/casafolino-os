@@ -82,6 +82,13 @@
                         </group>
                     </group>
 
+                    <group string="Registrazione retroattiva">
+                        <field name="cf_skip_quality_checks_retroactive" widget="boolean_toggle"/>
+                        <field name="cf_skip_quality_checks_note"
+                               placeholder="Motivo, es. produzione registrata a posteriori con controlli gia verificati fuori dalla linea..."
+                               invisible="not cf_skip_quality_checks_retroactive"/>
+                    </group>
+
                     <!-- PULSANTI -->
                     <div class="o_row mb-3">
                         <button name="action_haccp_firma_operatore" type="object"
@@ -189,6 +196,21 @@
                         </group>
                     </group>
                 </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="cf_haccp_mrp_quality_skip_form" model="ir.ui.view">
+        <field name="name">mrp.production.quality.skip.retroactive.form</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp_workorder.mrp_production_form_view"/>
+        <field name="priority">70</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='miscellaneous']//field[@name='company_id']" position="after">
+                <field name="cf_skip_quality_checks_retroactive" widget="boolean_toggle"/>
+                <field name="cf_skip_quality_checks_note"
+                       placeholder="Motivo, es. produzione registrata a posteriori con controlli gia verificati fuori dalla linea..."
+                       invisible="not cf_skip_quality_checks_retroactive"/>
             </xpath>
         </field>
     </record>

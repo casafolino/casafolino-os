@@ -5,7 +5,7 @@
     "category": "Manufacturing",
     "summary": "HACCP Manager nativo Odoo 18",
     "author": "CasaFolino Srls",
-    "depends": ["base", "mail", "mrp", "stock", "purchase", "product"],
+    "depends": ["base", "mail", "mrp", "mrp_workorder", "quality_mrp", "stock", "purchase", "product"],
     "data": [
         "security/cf_haccp_security.xml",
         "security/ir.model.access.csv",
