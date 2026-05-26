@@ -15,6 +15,12 @@
                 <field name="cf_waiting_for"/>
                 <separator/>
                 <filter name="my_tasks" string="Le mie task" domain="[('user_ids', 'in', uid)]"/>
+                <filter name="open_tasks" string="Aperte"
+                        domain="['|', ('stage_id.fold', '=', False), ('stage_id', '=', False)]"/>
+                <filter name="completed_tasks" string="Completate"
+                        domain="[('stage_id.fold', '=', True)]"/>
+                <filter name="archived_tasks" string="Archiviate"
+                        domain="[('active', '=', False)]"/>
                 <filter name="overdue" string="Scadute"
                         domain="[('date_deadline', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter name="blocked" string="Bloccate"

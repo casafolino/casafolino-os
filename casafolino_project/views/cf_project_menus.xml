@@ -10,7 +10,7 @@
         <field name="name">Dashboard Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="context">{'quick_create': False}</field>
+        <field name="context">{'quick_create': False, 'active_test': False}</field>
     </record>
     <record id="action_cf_project_dashboard_view_kanban" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
@@ -30,6 +30,7 @@
         <field name="name">Tutti i Progetti</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">list,form,kanban</field>
+        <field name="context">{'active_test': False}</field>
     </record>
     <record id="action_cf_project_all_view_list" model="ir.actions.act_window.view">
         <field name="sequence">1</field>
@@ -49,7 +50,7 @@
         <field name="name">Le Mie Task</field>
         <field name="res_model">project.task</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_my_tasks': 1, 'search_default_group_project': 1}</field>
+        <field name="context">{'active_test': False, 'search_default_my_tasks': 1, 'search_default_group_project': 1}</field>
         <field name="search_view_id" ref="cf_task_search_view"/>
     </record>
     <record id="action_cf_my_tasks_view_list" model="ir.actions.act_window.view">
