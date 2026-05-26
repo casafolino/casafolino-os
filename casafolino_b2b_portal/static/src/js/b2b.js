@@ -27,6 +27,64 @@ document.addEventListener("input", (event) => {
     });
 });
 
+document.addEventListener("click", (event) => {
+    const opener = event.target.closest("[data-cf-newsletter-open]");
+    if (opener) {
+        const modal = document.querySelector("[data-cf-newsletter-modal]");
+        if (modal?.showModal) {
+            event.preventDefault();
+            modal.showModal();
+        }
+        return;
+    }
+    if (event.target.closest("[data-cf-newsletter-close]")) {
+        event.preventDefault();
+        event.target.closest("[data-cf-newsletter-modal]")?.close();
+    }
+});
+
+document.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-cf-newsletter-form]");
+    if (!form || !window.fetch) {
+        return;
+    }
+    event.preventDefault();
+    const status = form.querySelector("[data-cf-newsletter-status]");
+    const submit = form.querySelector("button[type='submit']");
+    if (status) {
+        status.textContent = "Iscrizione in corso...";
+        status.className = "cf-newsletter-status";
+    }
+    if (submit) {
+        submit.disabled = true;
+    }
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: {"X-Requested-With": "XMLHttpRequest"},
+        });
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error("missing_email");
+        }
+        form.reset();
+        if (status) {
+            status.textContent = "Iscrizione completata. Sei nella lista newsletter B2B.";
+            status.classList.add("is-ok");
+        }
+    } catch (error) {
+        if (status) {
+            status.textContent = "Non sono riuscito a completare l'iscrizione. Controlla l'email e riprova.";
+            status.classList.add("is-error");
+        }
+    } finally {
+        if (submit) {
+            submit.disabled = false;
+        }
+    }
+});
+
 const categoryRules = [
     {
         value: "restaurant",

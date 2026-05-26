@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import re
 from urllib.parse import quote
 
@@ -154,8 +155,8 @@ class CasaFolinoB2BPortal(http.Controller):
             f"?key={quote(key)}&libraries=places&callback=cfB2BInitPlaces&loading=async&language=it"
         )
 
-    def _subscribe_b2b_newsletter(self, partner):
-        email = (partner.email or "").strip()
+    def _subscribe_b2b_newsletter_email(self, name, email):
+        email = (email or "").strip()
         if not email:
             return False
         mailing_list = request.env.ref(
@@ -171,9 +172,9 @@ class CasaFolinoB2BPortal(http.Controller):
             domain = ["|", ("email", "=", email), ("email_normalized", "=", normalized_email)]
         contact = Contact.search(domain, limit=1)
         if contact:
-            contact.write({"name": contact.name or partner.name, "email": email})
+            contact.write({"name": contact.name or name, "email": email})
         else:
-            contact = Contact.create({"name": partner.name, "email": email})
+            contact = Contact.create({"name": name or email, "email": email})
         if "list_ids" in Contact._fields:
             contact.write({"list_ids": [(4, mailing_list.id)]})
             return True
@@ -187,6 +188,19 @@ class CasaFolinoB2BPortal(http.Controller):
         else:
             Subscription.create({"contact_id": contact.id, "list_id": mailing_list.id, "opt_out": False})
         return True
+
+    def _subscribe_b2b_newsletter(self, partner):
+        return self._subscribe_b2b_newsletter_email(partner.name, partner.email)
+
+    def _newsletter_response(self, success, redirect_url="/b2b/newsletter"):
+        if request.httprequest.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return request.make_response(
+                json.dumps({"success": bool(success)}),
+                headers=[("Content-Type", "application/json")],
+            )
+        suffix = "subscribed=1" if success else "missing=1"
+        separator = "&" if "?" in redirect_url else "?"
+        return request.redirect(f"{redirect_url}{separator}{suffix}")
 
     def _product_price(self, product, qty=1):
         partner = self._current_partner()
@@ -443,6 +457,27 @@ class CasaFolinoB2BPortal(http.Controller):
                 "sent": post.get("sent"),
                 "missing": post.get("missing"),
                 "google_places_src": self._google_places_src(),
+            },
+        )
+
+    @http.route(["/b2b/newsletter"], type="http", auth="public", website=True, sitemap=True, methods=["GET", "POST"], csrf=True)
+    def b2b_newsletter(self, **post):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
+        if request.httprequest.method == "POST":
+            if post.get("website_url"):
+                return self._newsletter_response(True)
+            name = (post.get("name") or "").strip()
+            email = (post.get("email") or "").strip()
+            if not email:
+                return self._newsletter_response(False)
+            return self._newsletter_response(self._subscribe_b2b_newsletter_email(name, email))
+        return request.render(
+            "casafolino_b2b_portal.newsletter",
+            {
+                "subscribed": post.get("subscribed"),
+                "missing": post.get("missing"),
             },
         )
 

@@ -8,6 +8,7 @@
             </a>
             <nav aria-label="Menu CasaFolino B2B">
                 <a class="active" href="/b2b">Catalogo</a>
+                <a href="/b2b/newsletter" data-cf-newsletter-open="1">Newsletter</a>
                 <a href="/shop/cart">Carrello</a>
                 <t t-if="request.env.user._is_public()">
                     <a href="/b2b/register">Registrazione</a>
@@ -22,6 +23,35 @@
                 </t>
             </nav>
         </header>
+        <dialog class="cf-newsletter-modal" data-cf-newsletter-modal="">
+            <button class="cf-newsletter-close" type="button" data-cf-newsletter-close="1" aria-label="Chiudi">x</button>
+            <t t-call="casafolino_b2b_portal.newsletter_signup_block">
+                <t t-set="compact" t-value="True"/>
+            </t>
+        </dialog>
+    </template>
+
+    <template id="newsletter_signup_block" name="CasaFolino B2B Newsletter Signup Block">
+        <section t-attf-class="cf-newsletter-panel #{'is-compact' if compact else ''}">
+            <div class="cf-newsletter-visual" aria-hidden="true">
+                <span>Novita B2B</span>
+                <strong>Listini, promo e lanci prodotto</strong>
+            </div>
+            <div class="cf-newsletter-copy">
+                <p class="cf-eyebrow">Newsletter CasaFolino</p>
+                <h1 t-if="not compact">Ricevi subito aggiornamenti B2B.</h1>
+                <h2 t-if="compact">Iscriviti alla newsletter B2B</h2>
+                <p>Offerte commerciali, novita prodotto e comunicazioni utili per buyer, horeca e retail gourmet.</p>
+                <form class="cf-newsletter-form" action="/b2b/newsletter" method="post" data-cf-newsletter-form="1">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input class="cf-hp" name="website_url" tabindex="-1" autocomplete="off"/>
+                    <label>Nome o azienda<input name="name" autocomplete="organization"/></label>
+                    <label>Email<input name="email" type="email" required="required" autocomplete="email"/></label>
+                    <button class="cf-submit" type="submit">Iscrivimi ora</button>
+                    <p class="cf-newsletter-status" data-cf-newsletter-status=""></p>
+                </form>
+            </div>
+        </section>
     </template>
 
     <template id="catalog" name="CasaFolino B2B Catalog">
@@ -43,6 +73,10 @@
                                 <li>Importatori e private label</li>
                             </ul>
                         </section>
+
+                        <t t-call="casafolino_b2b_portal.newsletter_signup_block">
+                            <t t-set="compact" t-value="False"/>
+                        </t>
 
                         <div class="cf-category-rail" t-if="category_sections">
                             <a href="#cf-priority-lines" class="active" t-if="priority_sections">Linee focus</a>
@@ -347,6 +381,22 @@
                     </script>
                     <script async="async" defer="defer" t-att-src="google_places_src"></script>
                 </t>
+            </div>
+        </t>
+    </template>
+
+    <template id="newsletter" name="CasaFolino B2B Newsletter">
+        <t t-call="website.layout">
+            <t t-set="title">Newsletter B2B CasaFolino</t>
+            <div id="wrap" class="cf-b2b-page cf-newsletter-page">
+                <t t-call="casafolino_b2b_portal.b2b_header"/>
+                <main class="cf-newsletter-shell">
+                    <div class="cf-message ok" t-if="subscribed">Iscrizione completata. Ti abbiamo aggiunto alla lista CasaFolino B2B Newsletter.</div>
+                    <div class="cf-message locked" t-if="missing">Inserisci una email valida per iscriverti.</div>
+                    <t t-call="casafolino_b2b_portal.newsletter_signup_block">
+                        <t t-set="compact" t-value="False"/>
+                    </t>
+                </main>
             </div>
         </t>
     </template>

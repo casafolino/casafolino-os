@@ -249,6 +249,154 @@ body:has(.cf-b2b-page) #wrapwrap > header#top {
     border-radius: 8px;
 }
 
+.cf-newsletter-shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 22px 56px;
+}
+
+.cf-newsletter-panel {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: stretch;
+    margin: 22px 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--cf-line);
+    border-radius: 8px;
+    box-shadow: var(--cf-shadow);
+}
+
+.cf-newsletter-panel.is-compact {
+    grid-template-columns: 0.78fr 1fr;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+
+.cf-newsletter-visual {
+    min-height: 300px;
+    display: grid;
+    align-content: end;
+    gap: 12px;
+    padding: 28px;
+    color: #fff;
+    background:
+        linear-gradient(135deg, rgba(54, 32, 22, 0.88), rgba(130, 43, 32, 0.78)),
+        url("/casafolino_b2b_portal/static/src/img/products/crema-pistacchio.png") center / contain no-repeat,
+        #6e2c24;
+}
+
+.cf-newsletter-visual span {
+    width: max-content;
+    padding: 7px 10px;
+    color: var(--cf-ink);
+    background: var(--cf-gold);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.cf-newsletter-visual strong {
+    max-width: 320px;
+    font-size: 38px;
+    line-height: 1;
+}
+
+.cf-newsletter-copy {
+    display: grid;
+    align-content: center;
+    gap: 14px;
+    padding: 28px;
+}
+
+.cf-newsletter-copy h1,
+.cf-newsletter-copy h2 {
+    margin: 0;
+    color: var(--cf-ink);
+    font-size: 40px;
+    line-height: 1.03;
+}
+
+.cf-newsletter-copy p {
+    margin: 0;
+    color: var(--cf-muted);
+    line-height: 1.55;
+}
+
+.cf-newsletter-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.cf-newsletter-form label {
+    display: grid;
+    gap: 7px;
+    color: var(--cf-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.cf-newsletter-form input {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--cf-line);
+    border-radius: 8px;
+    color: var(--cf-ink);
+    background: #fff;
+    padding: 10px 12px;
+}
+
+.cf-newsletter-form .cf-submit,
+.cf-newsletter-status {
+    grid-column: 1 / -1;
+}
+
+.cf-newsletter-status {
+    min-height: 22px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.cf-newsletter-status.is-ok {
+    color: #17442f;
+}
+
+.cf-newsletter-status.is-error {
+    color: #822b20;
+}
+
+.cf-newsletter-modal {
+    width: min(920px, calc(100vw - 32px));
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 30px 90px rgba(30, 22, 16, 0.35);
+}
+
+.cf-newsletter-modal::backdrop {
+    background: rgba(24, 18, 14, 0.58);
+}
+
+.cf-newsletter-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.42);
+    border: 0;
+    border-radius: 50%;
+    font-weight: 900;
+}
+
 .cf-buyer-strip h2 {
     max-width: 720px;
     margin: 5px 0 0;
@@ -1117,5 +1265,20 @@ body:has(.cf-b2b-page) #wrapwrap > header#top {
 
     .cf-form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .cf-newsletter-panel,
+    .cf-newsletter-panel.is-compact,
+    .cf-newsletter-form {
+        grid-template-columns: 1fr;
+    }
+
+    .cf-newsletter-visual {
+        min-height: 220px;
+    }
+
+    .cf-newsletter-copy h1,
+    .cf-newsletter-copy h2 {
+        font-size: 30px;
     }
 }
