@@ -352,6 +352,58 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     @api.model
+    def global_search(self, query):
+        query = (query or '').strip()
+        if len(query) < 2:
+            return []
+        today = fields.Date.context_today(self)
+        Lead = self.env['crm.lead']
+        Partner = self.env['res.partner']
+        Project = self.env['project.project']
+        Mail = self.env['casafolino.mail.message']
+
+        leads = Lead.search([
+            ('active', '=', True),
+            '|', '|', '|', '|', '|',
+            ('name', 'ilike', query),
+            ('partner_id.name', 'ilike', query),
+            ('email_from', 'ilike', query),
+            ('contact_name', 'ilike', query),
+            ('phone', 'ilike', query),
+            ('mobile', 'ilike', query),
+        ], order='write_date desc, id desc', limit=10)
+        partners = Partner.search([
+            ('active', '=', True),
+            '|', '|', '|', '|',
+            ('name', 'ilike', query),
+            ('email', 'ilike', query),
+            ('phone', 'ilike', query),
+            ('mobile', 'ilike', query),
+            ('vat', 'ilike', query),
+        ], order='write_date desc, id desc', limit=8)
+        projects = Project.search([
+            '|', '|',
+            ('name', 'ilike', query),
+            ('partner_id.name', 'ilike', query),
+            ('cf_next_action', 'ilike', query),
+        ], order='write_date desc, id desc', limit=8)
+        mails = Mail.search([
+            ('is_deleted', '=', False),
+            '|', '|', '|',
+            ('subject', 'ilike', query),
+            ('sender_email', 'ilike', query),
+            ('sender_name', 'ilike', query),
+            ('snippet', 'ilike', query),
+        ], order='email_date desc, id desc', limit=8)
+
+        return [
+            {'key': 'leads', 'title': 'Lead / Pipeline', 'items': [self._format_lead_item(lead, today) for lead in leads]},
+            {'key': 'partners', 'title': 'Contatti', 'items': [self._format_partner_item(partner) for partner in partners]},
+            {'key': 'projects', 'title': 'Dossier', 'items': [self._format_project_item(project) for project in projects]},
+            {'key': 'mails', 'title': 'Mail', 'items': [self._format_mail_item(mail) for mail in mails]},
+        ]
+
+    @api.model
     def cleanup_legacy_entrypoints(self):
         """Keep one visible operational cockpit and hide obsolete 360 entrypoints."""
         refs_to_disable = [
@@ -1280,6 +1332,22 @@ class CfPipelineControl(models.AbstractModel):
             'tone': 'red' if overdue else 'green' if lead.expected_revenue else 'blue',
             'badges': self._compact(badges),
             'res_id': lead.id,
+        }
+
+    def _format_partner_item(self, partner):
+        return {
+            'id': partner.id,
+            'model': partner._name,
+            'title': partner.display_name,
+            'subtitle': partner.email or partner.phone or partner.mobile or '',
+            'meta': 'Azienda' if partner.is_company else 'Contatto',
+            'tone': 'blue',
+            'badges': self._compact([
+                partner.country_id.code if partner.country_id else False,
+                'cliente' if partner.customer_rank else False,
+                'fornitore' if partner.supplier_rank else False,
+            ]),
+            'res_id': partner.id,
         }
 
     def _format_followup_lead_item(self, lead, today):

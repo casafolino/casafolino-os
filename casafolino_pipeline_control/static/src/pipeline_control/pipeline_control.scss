@@ -173,6 +173,97 @@
         }
     }
 
+    .cf-pc-global-results {
+        margin: -4px 0 16px;
+        border: 1px solid #d7ded4;
+        border-radius: 8px;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .cf-pc-global-empty {
+        min-height: 54px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #667061;
+        font-size: 13px;
+    }
+
+    .cf-pc-global-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+    }
+
+    .cf-pc-global-section {
+        min-width: 0;
+        border-right: 1px solid #edf0eb;
+
+        &:last-child {
+            border-right: 0;
+        }
+
+        header {
+            min-height: 38px;
+            padding: 9px 11px;
+            background: #f7f9f6;
+            border-bottom: 1px solid #edf0eb;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
+            color: #20251f;
+        }
+
+        header span {
+            min-width: 22px;
+            border-radius: 999px;
+            background: #e8eee6;
+            color: #52604f;
+            font-size: 11px;
+            text-align: center;
+        }
+    }
+
+    .cf-pc-global-row {
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid #edf0eb;
+        background: #ffffff;
+        padding: 10px 11px;
+        text-align: left;
+        display: grid;
+        gap: 3px;
+
+        &:hover {
+            background: #f7f9f6;
+        }
+
+        strong,
+        span,
+        em {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        span,
+        em {
+            color: #667061;
+            font-size: 12px;
+            font-style: normal;
+        }
+    }
+
+    .cf-pc-global-none {
+        padding: 12px 11px;
+        color: #8b9487;
+        font-size: 12px;
+    }
+
     .cf-pc-actions {
         display: flex;
         gap: 8px;

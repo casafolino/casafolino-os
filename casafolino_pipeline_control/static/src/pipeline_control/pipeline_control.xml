@@ -72,6 +72,33 @@
                         </button>
                     </div>
                 </div>
+                <div t-if="hasGlobalSearch" class="cf-pc-global-results">
+                    <div t-if="state.globalSearchLoading" class="cf-pc-global-empty">
+                        <i class="fa fa-spinner fa-spin"/>
+                        <span>Ricerca in corso...</span>
+                    </div>
+                    <div t-elif="!hasGlobalSearchResults" class="cf-pc-global-empty">
+                        Nessun risultato per "<t t-out="state.globalSearch"/>"
+                    </div>
+                    <div t-else="" class="cf-pc-global-grid">
+                        <section t-foreach="state.globalSearchResults" t-as="section" t-key="section.key" class="cf-pc-global-section">
+                            <header>
+                                <strong t-out="section.title"/>
+                                <span t-out="section.items.length"/>
+                            </header>
+                            <t t-if="section.items.length">
+                                <button t-foreach="section.items" t-as="item" t-key="section.key + '-' + item.model + '-' + item.res_id"
+                                        class="cf-pc-global-row"
+                                        t-on-click="() => this.openGlobalSearchResult(item)">
+                                    <strong t-out="item.title"/>
+                                    <span t-out="item.subtitle || item.meta"/>
+                                    <em t-if="item.badges &amp;&amp; item.badges.length" t-out="item.badges.join(' · ')"/>
+                                </button>
+                            </t>
+                            <div t-else="" class="cf-pc-global-none">Nessun risultato</div>
+                        </section>
+                    </div>
+                </div>
 
                 <t t-if="state.activeView === 'control'">
                     <div class="cf-pc-kpis">

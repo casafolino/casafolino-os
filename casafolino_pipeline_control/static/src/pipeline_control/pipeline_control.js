@@ -22,6 +22,8 @@ export class CFPipelineControl extends Component {
             selectedFairId: false,
             inboxFilter: "all",
             globalSearch: "",
+            globalSearchLoading: false,
+            globalSearchResults: [],
             pipelineSearch: "",
             dossierSearch: "",
             dossierContinent: "all",
@@ -37,6 +39,7 @@ export class CFPipelineControl extends Component {
                 dossiers: [],
             },
         });
+        this.globalSearchTimer = null;
         onWillStart(this.loadData.bind(this));
     }
 
@@ -70,10 +73,36 @@ export class CFPipelineControl extends Component {
 
     setGlobalSearch(ev) {
         this.state.globalSearch = (ev.target.value || "").toLowerCase();
+        clearTimeout(this.globalSearchTimer);
+        this.globalSearchTimer = setTimeout(() => this.loadGlobalSearch(), 250);
     }
 
     clearGlobalSearch() {
         this.state.globalSearch = "";
+        this.state.globalSearchResults = [];
+        this.state.globalSearchLoading = false;
+    }
+
+    async loadGlobalSearch() {
+        const query = (this.state.globalSearch || "").trim();
+        if (query.length < 2) {
+            this.state.globalSearchResults = [];
+            this.state.globalSearchLoading = false;
+            return;
+        }
+        this.state.globalSearchLoading = true;
+        try {
+            this.state.globalSearchResults = await this.orm.call(
+                "cf.pipeline.control",
+                "global_search",
+                [query]
+            );
+        } catch (error) {
+            console.warn("Pipeline global search failed:", error);
+            this.state.globalSearchResults = [];
+        } finally {
+            this.state.globalSearchLoading = false;
+        }
     }
 
     setPipelineSearch(ev) {
@@ -172,6 +201,24 @@ export class CFPipelineControl extends Component {
             return this.openLeadRecord(item.res_id || item.id);
         }
         return this.openRecord(item);
+    }
+
+    async openGlobalSearchResult(item) {
+        if (!item || !item.model || !item.res_id) {
+            this.notification.add(_t("Risultato non disponibile"), { type: "warning" });
+            return;
+        }
+        if (item.model === "crm.lead") {
+            return this.openLeadRecord(item.res_id);
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: item.title || _t("Risultato"),
+            res_model: item.model,
+            res_id: item.res_id,
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 
     async onCardKeydown(ev, item) {
@@ -384,6 +431,10 @@ export class CFPipelineControl extends Component {
 
     get hasGlobalSearch() {
         return Boolean((this.state.globalSearch || "").trim());
+    }
+
+    get hasGlobalSearchResults() {
+        return (this.state.globalSearchResults || []).some((section) => (section.items || []).length);
     }
 
     get filteredControlLanes() {
