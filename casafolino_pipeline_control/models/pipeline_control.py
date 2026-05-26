@@ -931,7 +931,14 @@ class CfPipelineControl(models.AbstractModel):
 
     def _get_dossier_data(self, today):
         Project = self.env['project.project']
-        projects = Project.search(self._active_project_domain(), order='write_date desc, id desc', limit=16)
+        domain = self._active_project_domain()
+        linked_projects = self.env['crm.lead'].search([
+            ('cf_project_id', '!=', False),
+            ('active', '=', True),
+        ], limit=300).mapped('cf_project_id')
+        if linked_projects:
+            domain = ['|', ('id', 'in', linked_projects.ids)] + domain
+        projects = Project.search(domain, order='write_date desc, id desc', limit=80)
         return [self._format_project_detail(project, today) for project in projects]
 
     def _mail_to_reply_domain(self, user):
@@ -1366,6 +1373,17 @@ class CfPipelineControl(models.AbstractModel):
     def _format_project_detail(self, project, today):
         tasks = self.env['project.task'].search([('project_id', '=', project.id)], limit=80)
         overdue_tasks = tasks.filtered(lambda task: self._is_overdue(task.date_deadline))
+        leads = self.env['crm.lead'].search([('cf_project_id', '=', project.id), ('active', '=', True)], limit=20)
+        search_text = ' '.join(self._compact([
+            project.name,
+            self._project_partner_name(project),
+            project.partner_id.email if project.partner_id else False,
+            project.partner_id.phone if project.partner_id else False,
+            *leads.mapped('name'),
+            *leads.mapped('partner_id.display_name'),
+            *leads.mapped('email_from'),
+            *leads.mapped('phone'),
+        ]))
         return {
             'id': project.id,
             'model': project._name,
@@ -1381,6 +1399,7 @@ class CfPipelineControl(models.AbstractModel):
             'task_count': len(tasks),
             'overdue_count': len(overdue_tasks),
             'departments': self._project_departments(project),
+            'search_text': search_text,
         }
 
     def _project_departments(self, project):

@@ -524,11 +524,11 @@
                                         </button>
                                     </div>
                                     <div class="cf-pc-workbench-tabs">
-                                        <span class="active">Vista 360</span>
-                                        <span>Evoluzione</span>
-                                        <span>Documenti</span>
-                                        <span>Comunicazioni</span>
-                                        <span>Storico</span>
+                                        <button type="button" t-att-class="state.activeDossierTab === 'overview' ? 'active' : ''" t-on-click="() => this.setDossierTab('overview')">Vista 360</button>
+                                        <button type="button" t-att-class="state.activeDossierTab === 'evolution' ? 'active' : ''" t-on-click="() => this.setDossierTab('evolution')">Evoluzione</button>
+                                        <button type="button" t-att-class="state.activeDossierTab === 'documents' ? 'active' : ''" t-on-click="() => this.setDossierTab('documents')">Documenti</button>
+                                        <button type="button" t-att-class="state.activeDossierTab === 'communications' ? 'active' : ''" t-on-click="() => this.setDossierTab('communications')">Comunicazioni</button>
+                                        <button type="button" t-att-class="state.activeDossierTab === 'history' ? 'active' : ''" t-on-click="() => this.setDossierTab('history')">Storico</button>
                                     </div>
                                     <div class="cf-pc-workbench-quick">
                                         <button t-on-click="() => this.recordQuickAction(activeDossier, 'task')"><strong>+</strong>Task reparto</button>
@@ -540,6 +540,7 @@
                                     </div>
                                 </section>
 
+                                <t t-if="state.activeDossierTab === 'overview'">
                                 <section class="cf-pc-workbench-grid">
                                     <div class="cf-pc-workbench-card">
                                         <h2>Cliente e opportunità</h2>
@@ -586,9 +587,54 @@
                                         </t>
                                     </div>
                                 </section>
+                                </t>
+
+                                <section t-if="state.activeDossierTab === 'evolution'" class="cf-pc-workbench-card cf-pc-tab-panel">
+                                    <h2>Evoluzione dossier</h2>
+                                    <div class="cf-pc-metric-row">
+                                        <div><span>Stato</span><strong t-out="activeDossier.status || 'Dossier operativo'"/></div>
+                                        <div><span>Avanzamento</span><strong>In lavorazione</strong></div>
+                                        <div><span>Task aperte</span><strong t-out="activeDossier.task_count || 0"/></div>
+                                        <div><span>Scadute</span><strong t-out="activeDossier.overdue_count || 0"/></div>
+                                    </div>
+                                    <div class="cf-pc-timeline-line">
+                                        <div><strong>Creato / aggiornato</strong><span>Dossier caricato nella sala controllo.</span></div>
+                                        <div><strong>Prossimo passo</strong><span t-out="activeDossier.next_action || 'Definire una prossima azione.'"/></div>
+                                        <div><strong>Blocco operativo</strong><span t-out="activeDossier.blocker || 'Nessun blocco dichiarato.'"/></div>
+                                    </div>
+                                </section>
+
+                                <section t-if="state.activeDossierTab === 'documents'" class="cf-pc-workbench-card cf-pc-tab-panel">
+                                    <h2>Documenti</h2>
+                                    <p>Apri il dossier per allegati, offerte, schede tecniche e documenti collegati.</p>
+                                    <button class="btn btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'open')">Apri documenti dossier</button>
+                                </section>
+
+                                <section t-if="state.activeDossierTab === 'communications'" class="cf-pc-workbench-card cf-pc-tab-panel">
+                                    <h2>Comunicazioni</h2>
+                                    <div class="cf-pc-composer-preview">
+                                        <div>Risposta cliente - recap dossier</div>
+                                        <div t-out="activeDossier.partner || '-'"/>
+                                        <div><t t-out="activeDossier.name"/> - documenti e prossimi passaggi</div>
+                                        <p>Buongiorno,<br/><br/>le confermo che stiamo completando il dossier.<br/><br/>Appena chiudiamo i blocchi reparto, le inviamo il recap completo con condizioni e documenti allegati.<br/><br/>Resto a disposizione.</p>
+                                        <div class="cf-pc-composer-actions">
+                                            <button class="btn btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'reply')">Salva bozza</button>
+                                            <button class="btn btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'email')">Invia dal mio composer</button>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section t-if="state.activeDossierTab === 'history'" class="cf-pc-workbench-card cf-pc-tab-panel">
+                                    <h2>Storico</h2>
+                                    <div class="cf-pc-timeline-line">
+                                        <div><strong>Ultimo aggiornamento</strong><span>Il dossier e le sue attività sono sincronizzati con Odoo.</span></div>
+                                        <div><strong>Cliente</strong><span t-out="activeDossier.partner || '-'"/></div>
+                                        <div><strong>Mercato</strong><span t-out="activeDossier.continent_label || '-'"/></div>
+                                    </div>
+                                </section>
                             </main>
 
-                            <aside>
+                            <aside t-if="state.activeDossierTab === 'overview'">
                                 <section class="cf-pc-workbench-card">
                                     <h2>Composer email</h2>
                                     <div class="cf-pc-composer-preview">

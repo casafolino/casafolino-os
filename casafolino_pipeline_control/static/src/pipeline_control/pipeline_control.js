@@ -24,6 +24,7 @@ export class CFPipelineControl extends Component {
             dossierSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
+            activeDossierTab: "overview",
             data: {
                 kpis: [],
                 lanes: [],
@@ -79,10 +80,16 @@ export class CFPipelineControl extends Component {
             return;
         }
         this.state.activeDossierId = dossier.id;
+        this.state.activeDossierTab = "overview";
     }
 
     closeDossierWorkbench() {
         this.state.activeDossierId = false;
+        this.state.activeDossierTab = "overview";
+    }
+
+    setDossierTab(tab) {
+        this.state.activeDossierTab = tab || "overview";
     }
 
     async openRecord(item) {
@@ -406,6 +413,7 @@ export class CFPipelineControl extends Component {
                 row.blocker,
                 row.next_action,
                 row.continent_label,
+                row.search_text,
             ].filter(Boolean).join(" ").toLowerCase().includes(query);
         });
     }

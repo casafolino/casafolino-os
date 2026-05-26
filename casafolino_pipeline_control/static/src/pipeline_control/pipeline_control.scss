@@ -506,7 +506,7 @@
         margin-top: 18px;
         border-bottom: 1px solid #dfe5df;
 
-        span {
+        button {
             height: 38px;
             display: inline-flex;
             align-items: center;
@@ -518,12 +518,89 @@
             color: #536057;
             font-size: 13px;
             font-weight: 850;
+            cursor: pointer;
 
             &.active {
                 border-color: #20342a;
                 background: #20342a;
                 color: #fff;
             }
+        }
+    }
+
+    .cf-pc-tab-panel {
+        min-height: 240px;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+
+        > p {
+            margin: 0;
+            color: #6e786f;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+    }
+
+    .cf-pc-metric-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
+        gap: 10px;
+
+        > div {
+            border: 1px solid #dfe5df;
+            border-radius: 8px;
+            background: #fbfcfa;
+            padding: 12px;
+        }
+
+        span,
+        strong {
+            display: block;
+        }
+
+        span {
+            color: #6e786f;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        strong {
+            color: #1f2723;
+            font-size: 14px;
+            font-weight: 850;
+        }
+    }
+
+    .cf-pc-timeline-line {
+        display: grid;
+        gap: 10px;
+
+        > div {
+            border-left: 3px solid #694668;
+            background: #fbfcfa;
+            padding: 10px 12px;
+        }
+
+        strong,
+        span {
+            display: block;
+        }
+
+        strong {
+            color: #1f2723;
+            font-size: 13px;
+            font-weight: 850;
+            margin-bottom: 2px;
+        }
+
+        span {
+            color: #6e786f;
+            font-size: 12px;
+            line-height: 1.35;
         }
     }
 
