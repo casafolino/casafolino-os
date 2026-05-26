@@ -146,7 +146,7 @@ class MrpProductionHaccpExtend(models.Model):
         for rec in self:
             if not rec.cf_skip_quality_checks_retroactive:
                 continue
-            pending_checks = rec.check_ids.filtered(lambda check: check.quality_state == "none")
+            pending_checks = rec._cf_pending_quality_checks()
             if not pending_checks:
                 continue
 
@@ -168,9 +168,43 @@ class MrpProductionHaccpExtend(models.Model):
             )
         return True
 
+    def _cf_pending_quality_checks(self):
+        self.ensure_one()
+        checks = self.check_ids | self.workorder_ids.check_ids
+        return checks.filtered(lambda check: check.quality_state == "none")
+
+    def _cf_action_skip_quality_checks_wizard(self, workorder=False):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Saltare controlli qualita?"),
+            "res_model": "cf.skip.quality.checks.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_production_id": self.id,
+                "default_workorder_id": workorder.id if workorder else False,
+                "default_note": self._cf_quality_skip_note(),
+            },
+        }
+
     def pre_button_mark_done(self):
+        if (
+            not self.env.context.get("cf_skip_quality_confirmed")
+            and any(
+                rec._cf_pending_quality_checks()
+                and not rec.cf_skip_quality_checks_retroactive
+                for rec in self
+            )
+        ):
+            return self[:1]._cf_action_skip_quality_checks_wizard()
         self._cf_mark_quality_checks_skipped()
         return super().pre_button_mark_done()
+
+    def button_mark_done(self):
+        if self.env.context.get("cf_skip_quality_confirmed"):
+            self._cf_mark_quality_checks_skipped()
+        return super().button_mark_done()
 
     def _check_qc_status(self):
         if self and all(rec.cf_skip_quality_checks_retroactive for rec in self):
@@ -238,6 +272,27 @@ class MrpWorkorderQualitySkip(models.Model):
         if remaining:
             return super(MrpWorkorderQualitySkip, remaining).verify_quality_checks()
         return True
+
+    def button_finish(self):
+        if not self.env.context.get("cf_skip_quality_confirmed"):
+            for workorder in self:
+                needs_quality = workorder.check_ids.filtered(
+                    lambda check: check.quality_state == "none"
+                    and check.test_type not in [
+                        "register_consumed_materials",
+                        "register_byproducts",
+                        "instructions",
+                    ]
+                )
+                if (
+                    needs_quality
+                    and not workorder.production_id.cf_skip_quality_checks_retroactive
+                ):
+                    return workorder.production_id._cf_action_skip_quality_checks_wizard(
+                        workorder=workorder
+                    )
+        self._cf_mark_workorder_quality_checks_skipped()
+        return super().button_finish()
 
     def pre_record_production(self):
         skipped = self._cf_workorders_to_skip_quality_checks()

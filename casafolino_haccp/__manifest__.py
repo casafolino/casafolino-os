@@ -12,6 +12,7 @@
         "data/cf_haccp_sequences.xml",
         "data/cf_haccp_reminder_cron.xml",
         "report/cf_haccp_report.xml",
+        "wizard/cf_skip_quality_checks_wizard_views.xml",
         "views/cf_haccp_receipt_views.xml",
         "views/cf_haccp_sp_views.xml",
         "views/cf_haccp_nc_views.xml",
