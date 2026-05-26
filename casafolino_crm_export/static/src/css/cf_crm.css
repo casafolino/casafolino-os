@@ -482,7 +482,12 @@
 }
 
 .cf-premium-form .o_field_x2many_activity {
-    min-height: 340px;
+    min-height: 118px;
+}
+
+.cf-premium-form .o_field_x2many_activity .o_list_renderer,
+.cf-premium-form .o_field_x2many_activity .o_list_table {
+    min-height: 0 !important;
 }
 
 .cf-premium-form .o_notebook .o_list_renderer {
