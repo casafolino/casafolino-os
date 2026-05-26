@@ -849,6 +849,25 @@ body:has(.cf-b2b-page) #wrapwrap > header#top {
     grid-column: 1 / -1;
 }
 
+.cf-newsletter-consent {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    margin: 4px 0 18px;
+    color: var(--cf-muted);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.cf-newsletter-consent input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: var(--cf-red);
+}
+
 .cf-hp {
     position: absolute;
     left: -9999px;

@@ -331,6 +331,10 @@
                             <label class="wide">Indirizzo fatturazione<input name="street"/></label>
                             <label class="wide">Note commerciali<textarea name="notes"></textarea></label>
                         </div>
+                        <label class="cf-newsletter-consent">
+                            <input type="checkbox" name="newsletter_opt_in" value="1"/>
+                            <span>Desidero ricevere aggiornamenti CasaFolino B2B, offerte commerciali e newsletter prodotto.</span>
+                        </label>
                         <button class="cf-submit" type="submit">Invia richiesta</button>
                     </form>
                     <section class="cf-workflow">

@@ -2,9 +2,9 @@
 import re
 from urllib.parse import quote
 
-from odoo.tools import html2plaintext
 from odoo import http
 from odoo.http import request
+from odoo.tools import email_normalize, html2plaintext
 
 
 B2B_HOSTS = {"b2b.casafolino.com", "www.b2b.casafolino.com"}
@@ -153,6 +153,40 @@ class CasaFolinoB2BPortal(http.Controller):
             "https://maps.googleapis.com/maps/api/js"
             f"?key={quote(key)}&libraries=places&callback=cfB2BInitPlaces&loading=async&language=it"
         )
+
+    def _subscribe_b2b_newsletter(self, partner):
+        email = (partner.email or "").strip()
+        if not email:
+            return False
+        mailing_list = request.env.ref(
+            "casafolino_b2b_portal.mailing_list_b2b_newsletter",
+            raise_if_not_found=False,
+        )
+        if not mailing_list:
+            return False
+        Contact = request.env["mailing.contact"].sudo()
+        normalized_email = email_normalize(email) or email.lower()
+        domain = [("email", "=", email)]
+        if "email_normalized" in Contact._fields:
+            domain = ["|", ("email", "=", email), ("email_normalized", "=", normalized_email)]
+        contact = Contact.search(domain, limit=1)
+        if contact:
+            contact.write({"name": contact.name or partner.name, "email": email})
+        else:
+            contact = Contact.create({"name": partner.name, "email": email})
+        if "list_ids" in Contact._fields:
+            contact.write({"list_ids": [(4, mailing_list.id)]})
+            return True
+        Subscription = request.env["mailing.subscription"].sudo()
+        subscription = Subscription.search(
+            [("contact_id", "=", contact.id), ("list_id", "=", mailing_list.id)],
+            limit=1,
+        )
+        if subscription:
+            subscription.write({"opt_out": False})
+        else:
+            Subscription.create({"contact_id": contact.id, "list_id": mailing_list.id, "opt_out": False})
+        return True
 
     def _product_price(self, product, qty=1):
         partner = self._current_partner()
@@ -359,6 +393,8 @@ class CasaFolinoB2BPortal(http.Controller):
                 }
             )
             partner.message_post(body="Richiesta accesso B2B ricevuta da b2b.casafolino.com.")
+            if post.get("newsletter_opt_in"):
+                self._subscribe_b2b_newsletter(partner)
             partner.action_cf_b2b_send_pending_notifications()
             return request.redirect("/b2b/register?sent=1")
         return request.render(

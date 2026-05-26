@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mailing_list_b2b_newsletter" model="mailing.list">
+        <field name="name">CasaFolino B2B Newsletter</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
