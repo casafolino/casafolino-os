@@ -422,8 +422,8 @@
 
     .cf-pc-workbench {
         display: grid;
-        grid-template-columns: minmax(760px, 1fr) 360px;
-        gap: 18px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
 
         h1 {
             margin: 6px 0 5px;
@@ -441,8 +441,9 @@
 
         aside {
             display: grid;
-            align-content: start;
-            gap: 14px;
+            grid-template-columns: minmax(360px, 1.25fr) minmax(320px, .75fr);
+            align-items: stretch;
+            gap: 16px;
         }
     }
 
@@ -555,7 +556,7 @@
 
     .cf-pc-workbench-grid {
         display: grid;
-        grid-template-columns: 1.1fr .9fr;
+        grid-template-columns: minmax(420px, 1.1fr) minmax(360px, .9fr);
         gap: 16px;
         margin-bottom: 16px;
     }
@@ -810,7 +811,8 @@
         }
 
         .cf-pc-workbench,
-        .cf-pc-workbench-grid {
+        .cf-pc-workbench-grid,
+        .cf-pc-workbench aside {
             grid-template-columns: 1fr;
         }
 
