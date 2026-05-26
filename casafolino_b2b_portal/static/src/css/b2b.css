@@ -376,14 +376,18 @@ body:has(.cf-b2b-page) #wrapwrap > header#top {
     align-items: end;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 12px;
     margin: 0 0 16px;
     border-top: 1px solid var(--cf-line);
     padding-top: 24px;
 }
 
-.cf-section-head .cf-eyebrow,
-.cf-section-head h2 {
+.cf-section-head > div:first-child {
+    flex: 1 1 auto;
+}
+
+.cf-section-head > .cf-eyebrow,
+.cf-section-head > h2 {
     flex: 1 0 100%;
 }
 
@@ -391,6 +395,31 @@ body:has(.cf-b2b-page) #wrapwrap > header#top {
     margin: 0;
     font-size: clamp(26px, 3vw, 38px);
     line-height: 1.06;
+}
+
+.cf-section-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.cf-see-all {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    color: #fff;
+    background: var(--cf-ink);
+    border-radius: 8px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.cf-see-all:hover {
+    color: #fff;
+    background: var(--cf-red);
 }
 
 .cf-category-section {
