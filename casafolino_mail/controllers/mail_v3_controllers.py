@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import re
@@ -475,6 +476,41 @@ class MailV3Controller(http.Controller):
         vals['auto_saved_at'] = request.env['casafolino.mail.draft']._fields['auto_saved_at'].now()
         draft.write(vals)
         return {'success': True}
+
+    @http.route('/cf/mail/v3/draft/<int:draft_id>/attachment/upload', type='http', auth='user', methods=['POST'])
+    def draft_attachment_upload(self, draft_id, **kw):
+        draft = request.env['casafolino.mail.draft'].browse(draft_id)
+        if not draft.exists():
+            return request.make_json_response({'success': False, 'error': 'Draft not found'}, status=404)
+        if draft.user_id and draft.user_id.id != request.env.uid:
+            return request.make_json_response({'success': False, 'error': 'Draft non autorizzato'}, status=403)
+
+        files = request.httprequest.files.getlist('ufile')
+        if not files:
+            return request.make_json_response({'success': False, 'error': 'Nessun file ricevuto'}, status=400)
+
+        attachments = []
+        Attachment = request.env['ir.attachment'].sudo()
+        for uploaded in files:
+            raw = uploaded.read()
+            name = uploaded.filename or 'allegato'
+            attachment = Attachment.create({
+                'name': name,
+                'datas': base64.b64encode(raw).decode('ascii'),
+                'mimetype': uploaded.content_type,
+                'res_model': 'casafolino.mail.draft',
+                'res_id': draft.id,
+                'type': 'binary',
+            })
+            draft.sudo().write({'attachment_ids': [(4, attachment.id)]})
+            attachments.append({
+                'id': attachment.id,
+                'name': attachment.name,
+                'size': len(raw),
+                'mimetype': attachment.mimetype or '',
+            })
+
+        return request.make_json_response({'success': True, 'attachments': attachments})
 
     @http.route('/cf/mail/v3/draft/<int:draft_id>/send', type='json', auth='user')
     def draft_send(self, draft_id, **kw):

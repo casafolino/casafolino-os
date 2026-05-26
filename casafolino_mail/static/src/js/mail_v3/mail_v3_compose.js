@@ -99,6 +99,7 @@ export class ComposeWizard extends Component {
             error: '',
             attachments: [],
             dragOver: false,
+            uploadStatus: '',
             // Autosave
             lastSaveTime: null,
             saveStatus: '', // '' | 'saving' | 'saved' | 'error'
@@ -292,45 +293,47 @@ export class ComposeWizard extends Component {
 
     async _uploadFile(file) {
         try {
-            const formData = new FormData();
-            formData.append('ufile', file);
-            formData.append('csrf_token', odoo.csrf_token);
-            const res = await fetch('/web/binary/upload_attachment', {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await res.json();
-            if (data && data[0] && data[0].id) {
-                this.state.attachments.push({
-                    id: data[0].id,
-                    name: file.name,
-                    size: file.size,
-                });
-            }
+            const attachment = await this._uploadDraftAttachment(file);
+            this.state.attachments.push(attachment);
+            this._triggerAutosaveDebounce();
         } catch (e) {
             console.error('[mail v3] upload error:', e);
+            this.state.uploadStatus = 'Errore caricamento allegato: ' + (e.message || e);
+            this.state.error = this.state.uploadStatus;
         }
     }
 
     async _uploadInlineImage(file) {
         try {
-            const formData = new FormData();
-            formData.append('ufile', file);
-            formData.append('csrf_token', odoo.csrf_token);
-            const res = await fetch('/web/binary/upload_attachment', {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await res.json();
-            if (data && data[0] && data[0].id) {
-                const attId = data[0].id;
-                const imgUrl = '/web/image/' + attId;
-                this._execCommand('insertHTML',
-                    '<img src="' + imgUrl + '" style="max-width: 100%; height: auto;" class="mv3-inline-image"/>');
-            }
+            const attachment = await this._uploadDraftAttachment(file);
+            const imgUrl = '/web/image/' + attachment.id;
+            this._execCommand('insertHTML',
+                '<img src="' + imgUrl + '" style="max-width: 100%; height: auto;" class="mv3-inline-image"/>');
         } catch (e) {
             console.error('[mail v3] inline image upload error:', e);
+            this.state.uploadStatus = 'Errore caricamento immagine: ' + (e.message || e);
+            this.state.error = this.state.uploadStatus;
         }
+    }
+
+    async _uploadDraftAttachment(file) {
+        if (!this.props.draftId) {
+            throw new Error('bozza non pronta');
+        }
+        this.state.uploadStatus = 'Caricamento allegato...';
+        const formData = new FormData();
+        formData.append('ufile', file);
+        formData.append('csrf_token', odoo.csrf_token);
+        const res = await fetch('/cf/mail/v3/draft/' + this.props.draftId + '/attachment/upload', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success || !data.attachments?.length) {
+            throw new Error(data.error || 'upload non riuscito');
+        }
+        this.state.uploadStatus = '';
+        return data.attachments[0];
     }
 
     removeAttachment(index) {

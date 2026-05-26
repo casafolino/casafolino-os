@@ -261,7 +261,10 @@
             </div>
 
             <!-- Drag & drop zone for non-image files -->
-            <div t-att-class="'mv3-dropzone' + (state.dragOver ? ' mv3-dropzone--active' : '')">
+            <div t-att-class="'mv3-dropzone' + (state.dragOver ? ' mv3-dropzone--active' : '')"
+                 t-on-dragover="onDragOver"
+                 t-on-dragleave="onDragLeave"
+                 t-on-drop="onDrop">
               <i class="fa fa-cloud-upload"/> Trascina file qui o
               <label class="btn btn-sm btn-link" style="cursor:pointer; padding:0; margin:0;">
                 sfoglia
@@ -269,6 +272,7 @@
                        t-on-change="onFileSelect"/>
               </label>
             </div>
+            <div t-if="state.uploadStatus" class="text-danger small mt-1" t-out="state.uploadStatus"/>
 
             <!-- Attachment previews -->
             <div t-if="state.attachments.length > 0" class="mv3-attachment-preview">
