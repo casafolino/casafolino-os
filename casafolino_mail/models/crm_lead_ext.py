@@ -80,8 +80,26 @@ class CrmLeadMailHub(models.Model):
         self.ensure_one()
         if not self.partner_id:
             raise UserError("Questo lead non ha un contatto associato.")
-        self.partner_id.action_sync_full_email_history()
+        sync_warning = False
+        try:
+            self.partner_id.action_sync_full_email_history()
+        except UserError as exc:
+            sync_warning = str(exc)
         linked = self._casafolino_link_history_to_lead()
+        if sync_warning:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Storico email non sincronizzato da Gmail',
+                    'message': (
+                        '%d email gia disponibili su questo lead. '
+                        'Sync IMAP saltato: %s'
+                    ) % (linked, sync_warning),
+                    'type': 'warning',
+                    'sticky': True,
+                },
+            }
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
