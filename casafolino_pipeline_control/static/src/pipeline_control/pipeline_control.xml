@@ -48,6 +48,16 @@
                         <h1 t-elif="state.activeView === 'dossiers'">Dossier</h1>
                         <p>Priorità, prossime azioni e blocchi in un'unica postazione.</p>
                     </div>
+                    <div class="cf-pc-global-search">
+                        <i class="fa fa-search"/>
+                        <input type="search"
+                               placeholder="Cerca cliente, mail, telefono, fase, dossier, note..."
+                               t-att-value="state.globalSearch"
+                               t-on-input="setGlobalSearch"/>
+                        <button t-if="hasGlobalSearch" type="button" t-on-click="clearGlobalSearch" title="Svuota ricerca">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </div>
                     <div class="cf-pc-actions">
                         <button class="btn btn-light" t-on-click="loadData" title="Aggiorna">
                             <i class="fa fa-refresh"/>
@@ -77,7 +87,7 @@
                     </div>
 
                     <div class="cf-pc-board">
-                        <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
+                        <t t-foreach="filteredControlLanes" t-as="lane" t-key="lane.key">
                             <section class="cf-pc-lane">
                                 <header>
                                     <div>
@@ -113,7 +123,7 @@
                     </div>
 
                     <div class="cf-pc-board">
-                        <t t-foreach="state.data.followup.columns" t-as="column" t-key="column.title">
+                        <t t-foreach="filteredFollowupColumns" t-as="column" t-key="column.title">
                             <section class="cf-pc-lane">
                                 <header>
                                     <h2 t-out="column.title"/>
@@ -134,10 +144,10 @@
                     <section class="cf-pc-panel cf-pc-route-panel">
                         <header>
                             <h2>Strade operative</h2>
-                            <span class="cf-pc-pill" t-out="state.data.followup.routes.length"/>
+                            <span class="cf-pc-pill" t-out="filteredFollowupRoutes.length"/>
                         </header>
                         <div class="cf-pc-route-grid">
-                            <t t-foreach="state.data.followup.routes" t-as="route" t-key="'route-' + route.title">
+                            <t t-foreach="filteredFollowupRoutes" t-as="route" t-key="'route-' + route.title">
                                 <section class="cf-pc-route">
                                     <header>
                                         <h3 t-out="route.title"/>
@@ -159,7 +169,7 @@
                     <section class="cf-pc-panel cf-pc-timeline-panel">
                         <header>
                             <h2>Agenda follow-up</h2>
-                            <span class="cf-pc-pill" t-out="state.data.followup.timeline.length"/>
+                            <span class="cf-pc-pill" t-out="filteredFollowupTimeline.length"/>
                         </header>
                         <table class="cf-pc-table">
                             <thead>
@@ -174,7 +184,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="state.data.followup.timeline" t-as="row" t-key="'followup-line-' + row.id">
+                                <t t-foreach="filteredFollowupTimeline" t-as="row" t-key="'followup-line-' + row.id">
                                     <tr t-attf-class="#{row.is_overdue ? 'is-overdue' : ''}">
                                         <td>
                                             <strong t-out="row.title"/>
@@ -246,7 +256,7 @@
                         </t>
                     </div>
                     <div class="cf-pc-board">
-                        <t t-foreach="state.data.post_fair.columns" t-as="column" t-key="column.title">
+                        <t t-foreach="filteredFairColumns" t-as="column" t-key="column.title">
                             <section class="cf-pc-lane">
                                 <header>
                                     <h2 t-out="column.title"/>
@@ -263,7 +273,7 @@
                     <section class="cf-pc-panel cf-pc-timeline-panel">
                         <header>
                             <h2>Timeline lead fiera</h2>
-                            <span class="cf-pc-pill" t-out="state.data.post_fair.timeline.length"/>
+                            <span class="cf-pc-pill" t-out="filteredFairTimeline.length"/>
                         </header>
                         <table class="cf-pc-table">
                             <thead>
@@ -278,7 +288,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="state.data.post_fair.timeline" t-as="row" t-key="'fair-line-' + row.id">
+                                <t t-foreach="filteredFairTimeline" t-as="row" t-key="'fair-line-' + row.id">
                                     <tr t-attf-class="#{row.is_overdue ? 'is-overdue' : ''}">
                                         <td>
                                             <strong t-out="row.title"/>
@@ -315,7 +325,7 @@
                                         </td>
                                     </tr>
                                 </t>
-                                <tr t-if="!state.data.post_fair.timeline.length">
+                                <tr t-if="!filteredFairTimeline.length">
                                     <td colspan="7" class="cf-pc-empty">Nessun lead per questa fiera</td>
                                 </tr>
                             </tbody>

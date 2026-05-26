@@ -160,6 +160,7 @@ class CasafolinoMailLeadRule(models.Model):
 
                 lead_vals = {
                     'name': lead_name,
+                    'type': 'opportunity',
                     'partner_id': partner.id,
                     'description': description,
                     'source_id': source.id,
@@ -174,6 +175,21 @@ class CasafolinoMailLeadRule(models.Model):
                     lead_vals['user_id'] = self.user_id.id
                 if self.stage_id:
                     lead_vals['stage_id'] = self.stage_id.id
+                else:
+                    stage_domain = [('is_won', '=', False), ('fold', '=', False)]
+                    if self.sales_team_id:
+                        stage_domain = [
+                            '|',
+                            ('team_id', '=', False),
+                            ('team_id', '=', self.sales_team_id.id),
+                        ] + stage_domain
+                    stage = self.env['crm.stage'].search(
+                        stage_domain,
+                        order='sequence, id',
+                        limit=1,
+                    )
+                    if stage:
+                        lead_vals['stage_id'] = stage.id
                 if self.tag_ids:
                     lead_vals['tag_ids'] = [(6, 0, self.tag_ids.ids)]
 

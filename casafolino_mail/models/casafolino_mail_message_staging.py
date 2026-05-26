@@ -983,6 +983,19 @@ class CasafolinoMailMessage(models.Model):
 
         # Owner = account responsible user
         owner_id = self.account_id.responsible_user_id.id if self.account_id.responsible_user_id else self.env.ref('base.user_admin').id
+        team = self.env['crm.team'].sudo().search([
+            '|', ('name', 'ilike', 'Vendite Estero'), ('name', 'ilike', 'Export')
+        ], limit=1)
+        stage_domain = [('is_won', '=', False), ('fold', '=', False)]
+        if team:
+            stage_domain = ['|', ('team_id', '=', False), ('team_id', '=', team.id)] + stage_domain
+        stage = self.env['crm.stage'].sudo().search(
+            stage_domain + [('name', 'ilike', 'Nuova')],
+            order='sequence, id',
+            limit=1,
+        )
+        if not stage:
+            stage = self.env['crm.stage'].sudo().search(stage_domain, order='sequence, id', limit=1)
 
         # utm.source
         Source = self.env['utm.source'].sudo()
@@ -1002,6 +1015,7 @@ class CasafolinoMailMessage(models.Model):
         lead_name = (self.subject or 'Email commerciale')[:80]
         lead_vals = {
             'name': lead_name,
+            'type': 'opportunity',
             'email_from': sender,
             'partner_name': self.sender_name or sender.split('@')[0],
             'description': '<p>Lead auto-creato da classificazione AI (commerciale)</p>'
@@ -1010,6 +1024,8 @@ class CasafolinoMailMessage(models.Model):
                                self.subject or '', (self.snippet or '')[:300]),
             'source_id': source.id,
             'user_id': owner_id,
+            'team_id': team.id if team else False,
+            'stage_id': stage.id if stage else False,
             'cf_auto_created': True,
             'tag_ids': [(6, 0, tags.ids)],
         }
@@ -1066,6 +1082,7 @@ class CasafolinoMailMessage(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Crea Lead da Email',
             'res_model': 'casafolino.mail.create.lead.wizard',
+            'views': [(False, 'form')],
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_message_id': self.id},
@@ -1132,10 +1149,16 @@ class CasafolinoMailMessage(models.Model):
         self.ensure_one()
         if not self.lead_id:
             return
+        view = self.env.ref(
+            'casafolino_crm_export.cf_crm_lead_view_form_premium',
+            raise_if_not_found=False,
+        )
+        views = [(view.id, 'form')] if view else [(False, 'form')]
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'crm.lead',
             'res_id': self.lead_id.id,
+            'views': views,
             'view_mode': 'form',
             'target': 'current',
         }
@@ -2729,6 +2752,14 @@ class CasafolinoMailMessage(models.Model):
         expected_revenue = kw.get('expected_revenue') or 0
         description = kw.get('description') or ''
         try:
+            stage = self.env['crm.stage']
+            if stage_id:
+                stage = stage.browse(int(stage_id))
+            if not stage:
+                stage = self.env['crm.stage'].search([
+                    ('is_won', '=', False),
+                    ('fold', '=', False),
+                ], order='sequence, id', limit=1)
             vals = {
                 'name': name,
                 'type': 'opportunity',
@@ -2737,7 +2768,7 @@ class CasafolinoMailMessage(models.Model):
                 'function': kw.get('function') or '',
                 'email_from': kw.get('email_from') or '',
                 'phone': kw.get('phone') or '',
-                'stage_id': int(stage_id) if stage_id else False,
+                'stage_id': stage.id if stage else False,
                 'expected_revenue': float(expected_revenue) if expected_revenue else 0,
                 'description': description,
                 'source_id': int(kw.get('source')) if kw.get('source') else False,

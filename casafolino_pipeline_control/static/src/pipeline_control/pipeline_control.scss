@@ -138,6 +138,41 @@
         }
     }
 
+    .cf-pc-global-search {
+        flex: 1 1 420px;
+        min-width: 260px;
+        max-width: 560px;
+        min-height: 42px;
+        border: 1px solid #d7ded4;
+        border-radius: 8px;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 0 10px;
+        color: #667061;
+
+        input {
+            width: 100%;
+            min-width: 0;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: #20251f;
+            font: inherit;
+            font-size: 14px;
+        }
+
+        button {
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 7px;
+            background: #eef2ec;
+            color: #4f5a4d;
+        }
+    }
+
     .cf-pc-actions {
         display: flex;
         gap: 8px;

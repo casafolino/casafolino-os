@@ -15,7 +15,8 @@ class CasafolinoMailCreateLead(models.TransientModel):
     partner_id = fields.Many2one('res.partner', string='Contatto')
     user_id = fields.Many2one('res.users', string='Owner', default=lambda self: self.env.uid)
     stage_id = fields.Many2one(
-        'crm.stage', string='Stage', domain="[('team_id', '=', team_id)]")
+        'crm.stage', string='Fase pipeline', required=True,
+        domain="['|', ('team_id', '=', False), ('team_id', '=', team_id)]")
     team_id = fields.Many2one('crm.team', string='Pipeline')
     expected_revenue = fields.Monetary('Ricavo atteso', currency_field='currency_id')
     currency_id = fields.Many2one(
@@ -36,35 +37,43 @@ class CasafolinoMailCreateLead(models.TransientModel):
                 res['name'] = msg.subject or 'Email da %s' % msg.sender_email
                 res['partner_id'] = msg.partner_id.id if msg.partner_id else False
                 res['description'] = (msg.body_plain or msg.snippet or '')[:3000]
-                # Find Export CRM team and its "New" stage
                 team = self.env['crm.team'].search([
-                    ('name', 'ilike', 'Export')], limit=1)
+                    '|', ('name', 'ilike', 'Vendite Estero'), ('name', 'ilike', 'Export')
+                ], limit=1)
                 if team:
                     res['team_id'] = team.id
-                    stage = self.env['crm.stage'].search([
-                        ('team_id', '=', team.id),
-                        ('name', 'ilike', 'New'),
-                    ], limit=1)
-                    if not stage:
-                        stage = self.env['crm.stage'].search([
-                            ('team_id', '=', team.id),
-                        ], order='sequence', limit=1)
-                    if stage:
-                        res['stage_id'] = stage.id
+                stage = self._default_pipeline_stage(team)
+                if stage:
+                    res['stage_id'] = stage.id
         return res
+
+    def _default_pipeline_stage(self, team=False):
+        domain = [('is_won', '=', False), ('fold', '=', False)]
+        if team:
+            domain = ['|', ('team_id', '=', False), ('team_id', '=', team.id)] + domain
+        stage = self.env['crm.stage'].search(
+            domain + [('name', 'ilike', 'Nuova')],
+            order='sequence, id',
+            limit=1,
+        )
+        if not stage:
+            stage = self.env['crm.stage'].search(domain, order='sequence, id', limit=1)
+        return stage
 
     def action_create_lead(self):
         """Crea crm.lead e collega all'email."""
         self.ensure_one()
         msg = self.message_id
+        stage = self.stage_id or self._default_pipeline_stage(self.team_id)
 
         lead_vals = {
             'name': self.name,
+            'type': 'opportunity',
             'partner_id': self.partner_id.id if self.partner_id else False,
             'email_from': msg.sender_email,
             'user_id': self.user_id.id if self.user_id else False,
             'team_id': self.team_id.id if self.team_id else False,
-            'stage_id': self.stage_id.id if self.stage_id else False,
+            'stage_id': stage.id if stage else False,
             'expected_revenue': self.expected_revenue,
             'priority': self.priority,
             'tag_ids': [(6, 0, self.tag_ids.ids)] if self.tag_ids else False,
@@ -93,7 +102,8 @@ class CasafolinoMailCreateLead(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': 'Lead creato',
-                'message': 'Lead "%s" creato con successo' % self.name,
+                'message': 'Lead "%s" creato in pipeline, fase "%s".' % (
+                    self.name, stage.name if stage else 'Senza fase'),
                 'type': 'success',
                 'next': {'type': 'ir.actions.act_window_close'},
             },

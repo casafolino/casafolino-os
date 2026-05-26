@@ -21,6 +21,7 @@ export class CFPipelineControl extends Component {
             activeView: this.props.action?.context?.default_view || "dossiers",
             selectedFairId: false,
             inboxFilter: "all",
+            globalSearch: "",
             pipelineSearch: "",
             dossierSearch: "",
             dossierContinent: "all",
@@ -65,6 +66,14 @@ export class CFPipelineControl extends Component {
 
     setInboxFilter(filter) {
         this.state.inboxFilter = filter;
+    }
+
+    setGlobalSearch(ev) {
+        this.state.globalSearch = (ev.target.value || "").toLowerCase();
+    }
+
+    clearGlobalSearch() {
+        this.state.globalSearch = "";
     }
 
     setPipelineSearch(ev) {
@@ -373,6 +382,34 @@ export class CFPipelineControl extends Component {
         ];
     }
 
+    get hasGlobalSearch() {
+        return Boolean((this.state.globalSearch || "").trim());
+    }
+
+    get filteredControlLanes() {
+        return this.filterColumns(this.state.data.lanes || []);
+    }
+
+    get filteredFollowupColumns() {
+        return this.filterColumns(this.state.data.followup?.columns || []);
+    }
+
+    get filteredFollowupRoutes() {
+        return this.filterColumns(this.state.data.followup?.routes || []);
+    }
+
+    get filteredFollowupTimeline() {
+        return this.filterRows(this.state.data.followup?.timeline || []);
+    }
+
+    get filteredFairColumns() {
+        return this.filterColumns(this.state.data.post_fair?.columns || []);
+    }
+
+    get filteredFairTimeline() {
+        return this.filterRows(this.state.data.post_fair?.timeline || []);
+    }
+
     get dossierContinentOptions() {
         const rows = this.state.data.dossiers || [];
         const labels = {
@@ -401,7 +438,7 @@ export class CFPipelineControl extends Component {
 
     get filteredDossiers() {
         const rows = this.state.data.dossiers || [];
-        const query = this.state.dossierSearch || "";
+        const query = this.state.dossierSearch || this.state.globalSearch || "";
         const continent = this.state.dossierContinent || "all";
         return rows.filter((row) => {
             const matchesContinent = continent === "all" || (row.continent || "other") === continent;
@@ -425,7 +462,7 @@ export class CFPipelineControl extends Component {
 
     get filteredPipeline() {
         const columns = this.state.data.pipeline || [];
-        const query = this.state.pipelineSearch || "";
+        const query = this.state.pipelineSearch || this.state.globalSearch || "";
         if (!query) {
             return columns;
         }
@@ -456,6 +493,7 @@ export class CFPipelineControl extends Component {
 
     filterInboxRows(rows) {
         const filter = this.state.inboxFilter;
+        rows = this.filterRows(rows);
         if (filter === "urgent") {
             return rows.filter((row) => row.urgency === "high");
         }
@@ -469,6 +507,49 @@ export class CFPipelineControl extends Component {
             return rows.filter((row) => row.needs_action);
         }
         return rows;
+    }
+
+    filterColumns(columns) {
+        const query = this.state.globalSearch || "";
+        if (!query) {
+            return columns;
+        }
+        return columns.map((column) => ({
+            ...column,
+            items: this.filterRows(column.items || []),
+        }));
+    }
+
+    filterRows(rows) {
+        const query = this.state.globalSearch || "";
+        if (!query) {
+            return rows;
+        }
+        return rows.filter((row) => this.rowMatches(row, query));
+    }
+
+    rowMatches(row, query) {
+        return [
+            row.title,
+            row.subtitle,
+            row.partner,
+            row.company,
+            row.meta,
+            row.snippet,
+            row.stage,
+            row.status,
+            row.category,
+            row.urgency,
+            row.owner,
+            row.origin,
+            row.lead,
+            row.next_action,
+            row.suggested_action,
+            row.country_code,
+            row.source,
+            row.priority,
+            row.search_text,
+        ].filter(Boolean).join(" ").toLowerCase().includes(query);
     }
 }
 
