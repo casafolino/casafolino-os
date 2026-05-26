@@ -479,17 +479,29 @@
                 </t>
 
                 <t t-elif="state.activeView === 'pipeline'">
+                    <div class="cf-pc-toolbar">
+                        <div class="cf-pc-search">
+                            <i class="fa fa-search"/>
+                            <input type="search"
+                                   placeholder="Cerca pipeline, cliente, lead, paese, prossima azione"
+                                   t-att-value="state.pipelineSearch"
+                                   t-on-input="setPipelineSearch"/>
+                        </div>
+                    </div>
                     <div class="cf-pc-board cf-pc-board-wide">
-                        <t t-foreach="state.data.pipeline" t-as="column" t-key="column.id">
+                        <t t-foreach="filteredPipeline" t-as="column" t-key="column.id">
                             <section class="cf-pc-lane">
                                 <header>
                                     <h2 t-out="column.title"/>
                                     <span class="cf-pc-pill" t-out="column.count"/>
                                 </header>
                                 <div class="cf-pc-lane-body">
-                                    <t t-foreach="column.items" t-as="item" t-key="item.model + '-' + item.id">
-                                        <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                    <t t-if="column.items.length">
+                                        <t t-foreach="column.items" t-as="item" t-key="item.model + '-' + item.id">
+                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                        </t>
                                     </t>
+                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
                                 </div>
                             </section>
                         </t>

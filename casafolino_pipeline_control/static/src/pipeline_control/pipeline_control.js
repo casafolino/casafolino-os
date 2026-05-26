@@ -21,6 +21,7 @@ export class CFPipelineControl extends Component {
             activeView: this.props.action?.context?.default_view || "dossiers",
             selectedFairId: false,
             inboxFilter: "all",
+            pipelineSearch: "",
             dossierSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
@@ -64,6 +65,10 @@ export class CFPipelineControl extends Component {
 
     setInboxFilter(filter) {
         this.state.inboxFilter = filter;
+    }
+
+    setPipelineSearch(ev) {
+        this.state.pipelineSearch = (ev.target.value || "").toLowerCase();
     }
 
     setDossierSearch(ev) {
@@ -416,6 +421,30 @@ export class CFPipelineControl extends Component {
                 row.search_text,
             ].filter(Boolean).join(" ").toLowerCase().includes(query);
         });
+    }
+
+    get filteredPipeline() {
+        const columns = this.state.data.pipeline || [];
+        const query = this.state.pipelineSearch || "";
+        if (!query) {
+            return columns;
+        }
+        return columns.map((column) => ({
+            ...column,
+            items: (column.items || []).filter((item) => [
+                item.title,
+                item.subtitle,
+                item.partner,
+                item.company,
+                item.stage,
+                item.next_action,
+                item.country_code,
+                item.status,
+                item.source,
+                item.priority,
+                item.search_text,
+            ].filter(Boolean).join(" ").toLowerCase().includes(query)),
+        }));
     }
 
     get activeDossier() {
