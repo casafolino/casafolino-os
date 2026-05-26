@@ -528,16 +528,22 @@
                     <section class="cf-pc-personal-pipelines">
                         <header>
                             <div>
-                                <h2>Pipeline personali</h2>
-                                <p>La pipeline principale resta globale: qui entri nelle viste per responsabile.</p>
+                                <h2 t-if="!state.selectedPipelineUserId">Pipeline personali</h2>
+                                <h2 t-else="">Pipeline personale: <t t-out="state.selectedPipelineUserName"/></h2>
+                                <p>Resti nella Sala Controllo: scegli un responsabile o torna alla vista globale.</p>
                             </div>
                             <span class="cf-pc-pill" t-out="state.data.personal_pipelines.length"/>
                         </header>
                         <div class="cf-pc-personal-list">
+                            <button t-attf-class="cf-pc-personal-btn #{!state.selectedPipelineUserId ? 'active' : ''}"
+                                    t-on-click="clearPersonalPipeline">
+                                <span>Tutti</span>
+                                <em>all</em>
+                            </button>
                             <button t-foreach="state.data.personal_pipelines"
                                     t-as="person"
                                     t-key="'personal-pipeline-' + person.id"
-                                    class="cf-pc-personal-btn"
+                                    t-attf-class="cf-pc-personal-btn #{state.selectedPipelineUserId === person.id ? 'active' : ''}"
                                     t-on-click="() => this.openPersonalPipeline(person)">
                                 <span t-out="person.name"/>
                                 <em t-out="person.count"/>
@@ -547,6 +553,10 @@
                             </div>
                         </div>
                     </section>
+                    <div t-if="state.personalPipelineLoading" class="cf-pc-global-empty">
+                        <i class="fa fa-spinner fa-spin"/>
+                        <span>Caricamento pipeline personale...</span>
+                    </div>
                     <div class="cf-pc-board cf-pc-board-wide">
                         <t t-foreach="filteredPipeline" t-as="column" t-key="column.id">
                             <section class="cf-pc-lane">

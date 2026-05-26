@@ -25,6 +25,10 @@ export class CFPipelineControl extends Component {
             globalSearchLoading: false,
             globalSearchResults: [],
             pipelineSearch: "",
+            selectedPipelineUserId: false,
+            selectedPipelineUserName: "",
+            personalPipelineLoading: false,
+            personalPipeline: [],
             dossierSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
@@ -61,6 +65,13 @@ export class CFPipelineControl extends Component {
 
     setView(view) {
         this.state.activeView = view;
+    }
+
+    clearPersonalPipeline() {
+        this.state.selectedPipelineUserId = false;
+        this.state.selectedPipelineUserName = "";
+        this.state.personalPipeline = [];
+        this.state.personalPipelineLoading = false;
     }
 
     async selectFair(ev) {
@@ -227,16 +238,21 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Pipeline personale non disponibile"), { type: "warning" });
             return;
         }
-        const formViews = await this._crmLeadFormViews();
-        await this.action.doAction({
-            type: "ir.actions.act_window",
-            name: _t("Pipeline - %s").replace("%s", person.name),
-            res_model: "crm.lead",
-            views: [[false, "kanban"], [false, "list"], formViews[0]],
-            domain: [["type", "=", "opportunity"], ["active", "=", true], ["user_id", "=", person.id]],
-            context: { default_type: "opportunity", default_user_id: person.id },
-            target: "current",
-        });
+        this.state.activeView = "pipeline";
+        this.state.selectedPipelineUserId = person.id;
+        this.state.selectedPipelineUserName = person.name;
+        this.state.personalPipelineLoading = true;
+        try {
+            const result = await this.orm.call("cf.pipeline.control", "get_personal_pipeline_data", [person.id]);
+            this.state.personalPipeline = result.pipeline || [];
+            this.state.selectedPipelineUserName = result.user?.name || person.name;
+        } catch (error) {
+            console.warn("Personal pipeline lookup failed:", error);
+            this.state.personalPipeline = [];
+            this.notification.add(_t("Impossibile caricare la pipeline personale"), { type: "danger" });
+        } finally {
+            this.state.personalPipelineLoading = false;
+        }
     }
 
     async onCardKeydown(ev, item) {
@@ -530,7 +546,7 @@ export class CFPipelineControl extends Component {
     }
 
     get filteredPipeline() {
-        const columns = this.state.data.pipeline || [];
+        const columns = this.state.selectedPipelineUserId ? this.state.personalPipeline : this.state.data.pipeline || [];
         const query = this.state.pipelineSearch || this.state.globalSearch || "";
         if (!query) {
             return columns;

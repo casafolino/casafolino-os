@@ -590,6 +590,17 @@
             background: #f5f8fd;
         }
 
+        &.active {
+            border-color: #26342c;
+            background: #26342c;
+            color: #fff;
+
+            em {
+                background: rgba(255, 255, 255, .18);
+                color: #fff;
+            }
+        }
+
         em {
             min-width: 22px;
             border-radius: 999px;

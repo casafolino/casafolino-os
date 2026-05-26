@@ -405,6 +405,17 @@ class CfPipelineControl(models.AbstractModel):
         ]
 
     @api.model
+    def get_personal_pipeline_data(self, user_id):
+        today = fields.Date.context_today(self)
+        user = self.env['res.users'].browse(int(user_id or 0)).exists()
+        if not user:
+            return {'user': False, 'pipeline': []}
+        return {
+            'user': {'id': user.id, 'name': user.name},
+            'pipeline': self._get_pipeline_data(today, user.id),
+        }
+
+    @api.model
     def cleanup_legacy_entrypoints(self):
         """Keep one visible operational cockpit and hide obsolete 360 entrypoints."""
         refs_to_disable = [
@@ -791,16 +802,20 @@ class CfPipelineControl(models.AbstractModel):
         )
         return {group['lead_id'][0] for group in groups if group.get('lead_id')}
 
-    def _get_pipeline_data(self, today):
+    def _get_pipeline_data(self, today, user_id=False):
         Lead = self.env['crm.lead']
         stages = self.env['crm.stage'].search([], order='sequence asc, id asc', limit=8)
         columns = []
+        base_domain = [('type', '=', 'opportunity'), ('active', '=', True)]
+        if user_id:
+            base_domain.append(('user_id', '=', user_id))
         for stage in stages:
-            leads = Lead.search([('stage_id', '=', stage.id)], order='expected_revenue desc, create_date desc', limit=5)
+            domain = base_domain + [('stage_id', '=', stage.id)]
+            leads = Lead.search(domain, order='expected_revenue desc, create_date desc', limit=40 if user_id else 5)
             columns.append({
                 'id': stage.id,
                 'title': stage.name,
-                'count': Lead.search_count([('stage_id', '=', stage.id)]),
+                'count': Lead.search_count(domain),
                 'items': [self._format_lead_item(lead, today) for lead in leads],
             })
         return columns
