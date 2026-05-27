@@ -242,8 +242,8 @@ class CasaFolinoB2BPortal(http.Controller):
         return self.CATEGORY_FALLBACKS.get(category) or self.FALLBACK_IMAGES[index % len(self.FALLBACK_IMAGES)]
 
     def _case_size(self, product):
-        case_size = product.cf_b2b_case_size or 12
-        return case_size if case_size >= 12 else 12
+        case_size = product.cf_b2b_case_size or 6
+        return case_size if case_size >= 6 else 6
 
     def _product_text(self, product):
         raw = product.website_description or product.description_sale or product.description or ""
