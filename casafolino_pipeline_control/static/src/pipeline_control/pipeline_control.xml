@@ -113,6 +113,30 @@
                         </t>
                     </div>
 
+                    <div class="cf-pc-board cf-pc-control-board">
+                        <t t-foreach="filteredControlLanes" t-as="lane" t-key="lane.key">
+                            <section class="cf-pc-lane">
+                                <header>
+                                    <div>
+                                        <h2 t-out="lane.title"/>
+                                        <p t-if="lane.count > lane.items.length">
+                                            Prime <t t-out="lane.items.length"/> visibili
+                                        </p>
+                                    </div>
+                                    <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
+                                </header>
+                                <div class="cf-pc-lane-body">
+                                    <t t-if="lane.items.length">
+                                        <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
+                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                        </t>
+                                    </t>
+                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                                </div>
+                            </section>
+                        </t>
+                    </div>
+
                     <section class="cf-pc-control-pipeline">
                         <header>
                             <div>
@@ -164,30 +188,6 @@
                             </div>
                         </div>
                     </section>
-
-                    <div class="cf-pc-board cf-pc-control-board">
-                        <t t-foreach="filteredControlLanes" t-as="lane" t-key="lane.key">
-                            <section class="cf-pc-lane">
-                                <header>
-                                    <div>
-                                        <h2 t-out="lane.title"/>
-                                        <p t-if="lane.count > lane.items.length">
-                                            Prime <t t-out="lane.items.length"/> visibili
-                                        </p>
-                                    </div>
-                                    <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
-                                </header>
-                                <div class="cf-pc-lane-body">
-                                    <t t-if="lane.items.length">
-                                        <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
-                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
-                                        </t>
-                                    </t>
-                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
-                                </div>
-                            </section>
-                        </t>
-                    </div>
                 </t>
 
                 <t t-elif="state.activeView === 'followup'">
