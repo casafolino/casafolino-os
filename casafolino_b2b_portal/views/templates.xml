@@ -1,5 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <template id="b2b_tracking_pixels" inherit_id="website.layout" name="CasaFolino B2B Tracking Pixels" priority="99">
+        <xpath expr="//head" position="inside">
+            <t t-set="cf_b2b_tracking_host" t-value="(request.httprequest.host or '').split(':')[0].lower()"/>
+            <t t-if="cf_b2b_tracking_host in ('b2b.casafolino.com', 'www.b2b.casafolino.com')">
+                <t t-set="cf_ga_id" t-value="request.env['ir.config_parameter'].sudo().get_param('casafolino_b2b.google_analytics_id')"/>
+                <t t-set="cf_fb_pixel_id" t-value="request.env['ir.config_parameter'].sudo().get_param('casafolino_b2b.facebook_pixel_id')"/>
+
+                <t t-if="cf_ga_id">
+                    <script async="async" t-att-src="'https://www.googletagmanager.com/gtag/js?id=%s' % cf_ga_id"></script>
+                    <script type="text/javascript">
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+                        gtag('config', '<t t-out="cf_ga_id"/>');
+                    </script>
+                </t>
+
+                <t t-if="cf_fb_pixel_id">
+                    <script type="text/javascript">
+                        !function(f,b,e,v,n,t,s)
+                        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                        n.queue=[];t=b.createElement(e);t.async=!0;
+                        t.src=v;s=b.getElementsByTagName(e)[0];
+                        s.parentNode.insertBefore(t,s)}(window, document,'script',
+                        'https://connect.facebook.net/en_US/fbevents.js');
+                        fbq('init', '<t t-out="cf_fb_pixel_id"/>');
+                        fbq('track', 'PageView');
+                    </script>
+                    <noscript>
+                        <img height="1" width="1" style="display:none" t-att-src="'https://www.facebook.com/tr?id=%s&amp;ev=PageView&amp;noscript=1' % cf_fb_pixel_id"/>
+                    </noscript>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
     <template id="b2b_header" name="CasaFolino B2B Header">
         <header class="cf-b2b-top">
             <a class="cf-b2b-brand" href="/b2b" aria-label="CasaFolino B2B">
