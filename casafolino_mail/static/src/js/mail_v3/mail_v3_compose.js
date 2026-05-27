@@ -500,9 +500,27 @@ export class ComposeWizard extends Component {
                 }
                 this._syncBody();
             }
+            this._appendTemplateAttachments(res.attachments || []);
             this.state.showTemplatePanel = false;
         } catch (e) {
             console.error('[mail v3] template apply error:', e);
+        }
+    }
+
+    _appendTemplateAttachments(attachments) {
+        for (const att of attachments) {
+            if (!att?.id) continue;
+            const alreadyAttached = this.state.attachments.some(existing => existing.id === att.id);
+            if (!alreadyAttached) {
+                this.state.attachments.push({
+                    id: att.id,
+                    name: att.name || 'Allegato',
+                    size: att.size || 0,
+                });
+            }
+        }
+        if (attachments.length) {
+            this._triggerAutosaveDebounce();
         }
     }
 

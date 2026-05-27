@@ -1705,6 +1705,7 @@ class MailV3Controller(http.Controller):
                 'subject': t.subject or '',
                 'language': t.language or '',
                 'category': t.category or '',
+                'default_attachment_policy': t.default_attachment_policy or 'none',
                 'usage_count': t.usage_count,
                 'sequence': t.sequence,
             })
@@ -1728,11 +1729,80 @@ class MailV3Controller(http.Controller):
             return {
                 'subject': rendered.get('subject', ''),
                 'body_html': rendered.get('body_html', ''),
+                'attachments': self._get_template_default_attachments(template),
             }
         return {
             'subject': template.subject or '',
             'body_html': template.body_html or '',
+            'attachments': self._get_template_default_attachments(template),
         }
+
+    def _get_template_default_attachments(self, template):
+        policy = template.default_attachment_policy or 'none'
+        if policy == 'none':
+            return []
+
+        lang = template.language or ''
+        groups = [('catalog', self._attachment_terms('catalog', lang))]
+        if policy == 'catalog_price_list':
+            groups.append(('price_list', self._attachment_terms('price_list', lang)))
+
+        attachments = []
+        seen = set()
+        for _kind, terms in groups:
+            att = self._find_first_attachment(terms)
+            if att and att.id not in seen:
+                seen.add(att.id)
+                attachments.append({
+                    'id': att.id,
+                    'name': att.name or '',
+                    'size': att.file_size or 0,
+                })
+        return attachments
+
+    @staticmethod
+    def _attachment_terms(kind, lang):
+        if kind == 'catalog':
+            base = ['catalogo', 'catalogue', 'catalog']
+        else:
+            base = ['listino', 'prezzi', 'price list', 'pricelist']
+
+        if lang == 'it_IT':
+            return base + [' it ', '_it', '-it', 'italiano', 'italian']
+        if lang == 'en_US':
+            return base + [' en ', '_en', '-en', 'english', 'inglese']
+        return base
+
+    def _find_first_attachment(self, terms):
+        Attachment = request.env['ir.attachment'].sudo()
+
+        # Prefer Documents records when available because commercial PDFs are
+        # normally managed there; fall back to ir.attachment for older setups.
+        if 'documents.document' in request.env.registry:
+            Document = request.env['documents.document'].sudo()
+            for term in terms:
+                docs = Document.search([('name', 'ilike', term)], limit=8, order='write_date desc')
+                for doc in docs:
+                    att = doc.attachment_id
+                    if att and self._attachment_looks_sendable(att):
+                        return att
+
+        for term in terms:
+            atts = Attachment.search([('name', 'ilike', term)], limit=8, order='write_date desc')
+            for att in atts:
+                if self._attachment_looks_sendable(att):
+                    return att
+        return False
+
+    @staticmethod
+    def _attachment_looks_sendable(att):
+        name = (att.name or '').lower()
+        mimetype = (att.mimetype or '').lower()
+        if not att.exists() or not name:
+            return False
+        if 'pdf' in mimetype or name.endswith('.pdf'):
+            return True
+        return any(name.endswith(ext) for ext in ('.xlsx', '.xls', '.csv'))
 
     # ── V12.8: Snippet Endpoints ────────────────────────────────────
 

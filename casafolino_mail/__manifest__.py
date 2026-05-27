@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.18.0.0',
+    'version': '18.0.19.0.0',
     'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions + Multi-utente per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
