@@ -196,6 +196,18 @@ export class CFPipelineControl extends Component {
     }
 
     async newLead() {
+        try {
+            await this.action.doAction({
+                type: "ir.actions.client",
+                tag: "casafolino_crm_export.open_wizard_new_lead",
+            });
+        } catch (error) {
+            console.warn("CasaFolino new lead wizard unavailable, falling back to standard CRM form", error);
+            await this.openLegacyLeadForm();
+        }
+    }
+
+    async openLegacyLeadForm() {
         await this.action.doAction({
             type: "ir.actions.act_window",
             name: _t("Nuova richiesta veloce"),
