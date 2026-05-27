@@ -528,17 +528,17 @@
                     <section class="cf-pc-personal-pipelines">
                         <header>
                             <div>
-                                <h2 t-if="!state.selectedPipelineUserId">Pipeline personali</h2>
+                                <h2 t-if="!state.selectedPipelineUserId">Pipeline corporate</h2>
                                 <h2 t-else="">Pipeline personale: <t t-out="state.selectedPipelineUserName"/></h2>
-                                <p>Resti nella Sala Controllo: scegli un responsabile o torna alla vista globale.</p>
+                                <p>Vista aziendale con tutte le opportunita'. Scegli un responsabile solo quando vuoi filtrare.</p>
                             </div>
                             <span class="cf-pc-pill" t-out="state.data.personal_pipelines.length"/>
                         </header>
                         <div class="cf-pc-personal-list">
                             <button t-attf-class="cf-pc-personal-btn #{!state.selectedPipelineUserId ? 'active' : ''}"
                                     t-on-click="clearPersonalPipeline">
-                                <span>Tutti</span>
-                                <em>all</em>
+                                <span>Corporate</span>
+                                <em t-out="corporatePipelineCount"/>
                             </button>
                             <button t-foreach="state.data.personal_pipelines"
                                     t-as="person"

@@ -811,7 +811,7 @@ class CfPipelineControl(models.AbstractModel):
             base_domain.append(('user_id', '=', user_id))
         for stage in stages:
             domain = base_domain + [('stage_id', '=', stage.id)]
-            leads = Lead.search(domain, order='expected_revenue desc, create_date desc', limit=40 if user_id else 5)
+            leads = Lead.search(domain, order='expected_revenue desc, create_date desc', limit=40 if user_id else None)
             columns.append({
                 'id': stage.id,
                 'title': stage.name,
@@ -1351,6 +1351,7 @@ class CfPipelineControl(models.AbstractModel):
         badges = [
             lead.stage_id.name if lead.stage_id else False,
             self._lead_origin_label(lead),
+            lead.user_id.name if lead.user_id else False,
             partner.country_id.code if partner and partner.country_id else False,
             'follow-up oggi' if overdue else False,
             'dossier' if getattr(lead, 'cf_project_id', False) else False,
@@ -1366,6 +1367,16 @@ class CfPipelineControl(models.AbstractModel):
             'value': lead.expected_revenue or 0,
             'tone': 'red' if overdue else 'green' if lead.expected_revenue else 'blue',
             'badges': self._compact(badges),
+            'owner': lead.user_id.name if lead.user_id else '',
+            'search_text': ' '.join(self._compact([
+                lead.name,
+                partner.display_name if partner else False,
+                lead.email_from,
+                lead.contact_name,
+                lead.user_id.name if lead.user_id else False,
+                lead.stage_id.name if lead.stage_id else False,
+                partner.country_id.code if partner and partner.country_id else False,
+            ])),
             'res_id': lead.id,
         }
 

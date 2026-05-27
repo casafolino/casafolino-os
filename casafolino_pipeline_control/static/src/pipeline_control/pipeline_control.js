@@ -564,9 +564,14 @@ export class CFPipelineControl extends Component {
                 item.status,
                 item.source,
                 item.priority,
+                item.owner,
                 item.search_text,
             ].filter(Boolean).join(" ").toLowerCase().includes(query)),
         }));
+    }
+
+    get corporatePipelineCount() {
+        return (this.state.data.pipeline || []).reduce((sum, column) => sum + (column.count || 0), 0);
     }
 
     get activeDossier() {
