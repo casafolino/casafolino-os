@@ -216,13 +216,15 @@
                             <p t-else="">Nessun prodotto selezionato.</p>
                         </div>
                         <div class="cf-cart-total"><span>Vasetti</span><strong t-out="cart['total_qty']"/></div>
+                        <div class="cf-cart-total"><span>Prodotti</span><strong><t t-out="'€ %.2f' % cart['product_amount']"/></strong></div>
+                        <div class="cf-cart-total" t-if="cart['shipping_amount']"><span t-out="cart['shipping_label']"/><strong><t t-out="'€ %.2f' % cart['shipping_amount']"/></strong></div>
                         <div class="cf-cart-total"><span>Totale</span><strong><t t-out="'€ %.2f' % cart['total_amount']"/></strong></div>
-                        <t t-set="missing_amount" t-value="max(cart['min_amount'] - cart['total_amount'], 0)"/>
+                        <t t-set="missing_amount" t-value="max(cart['min_amount'] - cart['product_amount'], 0)"/>
                         <t t-set="missing_jars" t-value="max(cart['min_jars'] - cart['total_qty'], 0)"/>
                         <div class="cf-minimum">
                             <span t-if="cart['can_checkout']">Minimi raggiunti</span>
                             <span t-else="">Mancano <t t-out="'€ %.2f' % missing_amount"/> e <t t-out="missing_jars"/> pezzi</span>
-                            <i t-attf-style="width: #{min(cart['total_qty'] / cart['min_jars'], cart['total_amount'] / cart['min_amount'], 1) * 100}%"></i>
+                            <i t-attf-style="width: #{min(cart['total_qty'] / cart['min_jars'], cart['product_amount'] / cart['min_amount'], 1) * 100}%"></i>
                         </div>
                         <form action="/b2b/checkout" method="post">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -352,6 +354,8 @@
                         <p t-else="">Nessun prodotto selezionato.</p>
                     </div>
                     <div class="cf-cart-total"><span>Vasetti</span><strong t-out="cart['total_qty']"/></div>
+                    <div class="cf-cart-total"><span>Prodotti</span><strong><t t-out="'€ %.2f' % cart['product_amount']"/></strong></div>
+                    <div class="cf-cart-total" t-if="cart['shipping_amount']"><span t-out="cart['shipping_label']"/><strong><t t-out="'€ %.2f' % cart['shipping_amount']"/></strong></div>
                     <div class="cf-cart-total"><span>Totale</span><strong><t t-out="'€ %.2f' % cart['total_amount']"/></strong></div>
                 </details>
             </div>

@@ -128,6 +128,42 @@ class CasaFolinoB2BPortal(http.Controller):
         except (TypeError, ValueError):
             return 48
 
+    def _shipping_country_code(self):
+        partner = self._current_partner()
+        country = partner.country_id if partner else request.env["res.country"]
+        return (country.code or "").upper()
+
+    def _shipping_amount(self, lines):
+        if not lines:
+            return 0.0
+        return 30.0 if self._shipping_country_code() == "IT" else 50.0
+
+    def _shipping_label(self):
+        if self._shipping_country_code() == "IT":
+            return "Spese di spedizione Italia"
+        return "Spese di spedizione estero"
+
+    def _shipping_product(self):
+        ProductTemplate = request.env["product.template"].sudo()
+        product = ProductTemplate.search([("default_code", "=", "CF-B2B-SHIPPING")], limit=1)
+        if not product:
+            values = {
+                "name": "Spese di spedizione B2B",
+                "default_code": "CF-B2B-SHIPPING",
+                "sale_ok": True,
+                "purchase_ok": False,
+            }
+            if "type" in ProductTemplate._fields:
+                values["type"] = "service"
+            product = ProductTemplate.create(values)
+        return product.product_variant_id
+
+    def _b2b_shipping_lines(self, order):
+        return order.order_line.filtered(
+            lambda line: line.product_id.default_code == "CF-B2B-SHIPPING"
+            or (line.name or "").startswith("Spese di spedizione ")
+        )
+
     def _cart(self):
         cart = request.session.setdefault("cf_b2b_cart", {})
         return {int(product_id): int(qty) for product_id, qty in cart.items() if int(qty) > 0}
@@ -357,16 +393,21 @@ class CasaFolinoB2BPortal(http.Controller):
     def _cart_totals(self):
         lines = self._cart_lines()
         total_qty = sum(line["qty"] for line in lines)
-        total_amount = sum(line["subtotal"] for line in lines)
+        product_amount = sum(line["subtotal"] for line in lines)
+        shipping_amount = self._shipping_amount(lines)
+        total_amount = product_amount + shipping_amount
         return {
             "lines": lines,
             "total_qty": total_qty,
+            "product_amount": product_amount,
+            "shipping_amount": shipping_amount,
+            "shipping_label": self._shipping_label() if shipping_amount else "",
             "total_amount": total_amount,
             "min_amount": self._min_amount(),
             "min_jars": self._min_jars(),
             "can_checkout": (
                 self._account_state() == "approved"
-                and total_amount >= self._min_amount()
+                and product_amount >= self._min_amount()
                 and total_qty >= self._min_jars()
             ),
         }
@@ -527,6 +568,7 @@ class CasaFolinoB2BPortal(http.Controller):
         self._save_cart({})
         order = request.website.sale_get_order()
         if order:
+            self._b2b_shipping_lines(order.sudo()).unlink()
             order.sudo().order_line.filtered(lambda line: not line.is_delivery).unlink()
             request.session["website_sale_cart_quantity"] = 0
         return request.redirect("/b2b")
@@ -546,6 +588,7 @@ class CasaFolinoB2BPortal(http.Controller):
         fiscal_position = request.env["account.fiscal.position"].sudo().with_company(order.company_id)._get_fiscal_position(partner, partner)
         partner_values["fiscal_position_id"] = fiscal_position.id if fiscal_position else False
         order.write(partner_values)
+        self._b2b_shipping_lines(order).unlink()
         order.order_line.filtered(lambda line: not line.is_delivery).unlink()
         for line in cart["lines"]:
             variant = line["product"].product_variant_id
@@ -560,6 +603,17 @@ class CasaFolinoB2BPortal(http.Controller):
                 }
             )
         order._recompute_prices()
+        if cart["shipping_amount"]:
+            shipping_line_values = {
+                "order_id": order.id,
+                "product_id": self._shipping_product().id,
+                "name": cart["shipping_label"],
+                "product_uom_qty": 1.0,
+                "price_unit": cart["shipping_amount"],
+            }
+            if "is_delivery" in request.env["sale.order.line"]._fields:
+                shipping_line_values["is_delivery"] = True
+            request.env["sale.order.line"].sudo().create(shipping_line_values)
         order._recompute_taxes()
         request.session["sale_order_id"] = order.id
         request.session["website_sale_cart_quantity"] = order.cart_quantity
