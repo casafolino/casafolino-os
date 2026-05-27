@@ -7,6 +7,17 @@ class ResPartner(models.Model):
     cf_dossiers_count = fields.Integer(
         compute='_compute_cf_dossiers_count', string='Dossier',
     )
+    cf_sample_count = fields.Integer(
+        compute='_compute_cf_sample_metrics', string='Campionature',
+    )
+    cf_open_sample_count = fields.Integer(
+        compute='_compute_cf_sample_metrics', string='Campionature aperte',
+    )
+    cf_sample_ids = fields.Many2many(
+        'cf.export.sample',
+        compute='_compute_cf_sample_ids',
+        string='Campionature cliente',
+    )
 
     cf_partner_role = fields.Selection(
         selection=[
@@ -84,6 +95,30 @@ class ResPartner(models.Model):
                 ('partner_id.commercial_partner_id', '=', commercial.id),
             ])
 
+    def _compute_cf_sample_metrics(self):
+        Sample = self.env['cf.export.sample']
+        for p in self:
+            commercial = p.commercial_partner_id or p
+            domain = [
+                '|',
+                ('partner_id', '=', commercial.id),
+                ('partner_id.commercial_partner_id', '=', commercial.id),
+            ]
+            p.cf_sample_count = Sample.search_count(domain)
+            p.cf_open_sample_count = Sample.search_count(domain + [
+                ('state', 'not in', ['feedback_ok', 'feedback_ko', 'no_feedback']),
+            ])
+
+    def _compute_cf_sample_ids(self):
+        Sample = self.env['cf.export.sample']
+        for p in self:
+            commercial = p.commercial_partner_id or p
+            p.cf_sample_ids = Sample.search([
+                '|',
+                ('partner_id', '=', commercial.id),
+                ('partner_id.commercial_partner_id', '=', commercial.id),
+            ], order='create_date desc', limit=50)
+
     def action_view_cf_dossiers(self):
         self.ensure_one()
         commercial = self.commercial_partner_id or self
@@ -97,6 +132,36 @@ class ResPartner(models.Model):
                 ('partner_id', '=', commercial.id),
                 ('partner_id.commercial_partner_id', '=', commercial.id),
             ],
+        }
+
+    def action_view_cf_samples(self):
+        self.ensure_one()
+        commercial = self.commercial_partner_id or self
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Campionature %s') % self.name,
+            'res_model': 'cf.export.sample',
+            'view_mode': 'kanban,list,form',
+            'domain': [
+                '|',
+                ('partner_id', '=', commercial.id),
+                ('partner_id.commercial_partner_id', '=', commercial.id),
+            ],
+            'context': {
+                'default_partner_id': self.id,
+                'search_default_open': 1,
+            },
+        }
+
+    def action_create_cf_sample(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Nuova campionatura cliente'),
+            'res_model': 'cf.export.sample',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {'default_partner_id': self.id},
         }
 
     def action_compose_email_f8(self):

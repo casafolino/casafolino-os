@@ -1,5 +1,6 @@
 id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
 access_cf_sample,cf.export.sample,model_cf_export_sample,base.group_user,1,1,1,1
+access_cf_sample_line,cf.export.sample.line,model_cf_export_sample_line,base.group_user,1,1,1,1
 access_cf_sample_stage,cf.export.sample.stage,model_cf_export_sample_stage,base.group_user,1,1,1,0
 access_cf_fair,cf.export.fair,model_cf_export_fair,base.group_user,1,1,1,1
 access_cf_fair_mail_template_folder,cf.fair.mail.template.folder,model_cf_fair_mail_template_folder,base.group_user,1,1,1,1

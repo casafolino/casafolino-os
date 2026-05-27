@@ -325,10 +325,15 @@
                                     <field name="cf_sample_ids">
                                         <list editable="bottom">
                                             <field name="reference" readonly="1"/>
-                                            <field name="product_ids" widget="many2many_tags"/>
+                                            <field name="product_summary" readonly="1"/>
+                                            <field name="user_id"/>
+                                            <field name="sale_order_id" readonly="1"/>
+                                            <field name="picking_count" readonly="1"/>
                                             <field name="stage_id"/>
                                             <field name="state" widget="badge"/>
+                                            <field name="promised_date"/>
                                             <field name="date_sent"/>
+                                            <field name="date_feedback_expected"/>
                                             <field name="tracking_number"/>
                                             <field name="feedback_score"/>
                                         </list>
@@ -578,8 +583,13 @@
                             <field name="reference"/>
                             <field name="stage_id"/>
                             <field name="state"/>
-                            <field name="product_ids" widget="many2many_tags"/>
+                            <field name="product_summary" readonly="1"/>
+                            <field name="user_id"/>
+                            <field name="sale_order_id" readonly="1"/>
+                            <field name="picking_count" readonly="1"/>
+                            <field name="promised_date"/>
                             <field name="date_sent"/>
+                            <field name="date_feedback_expected"/>
                             <field name="tracking_number"/>
                             <field name="feedback_score"/>
                         </list>

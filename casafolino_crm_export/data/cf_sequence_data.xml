@@ -1,2 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo></odoo>
+<odoo>
+    <record id="seq_cf_export_sample" model="ir.sequence">
+        <field name="name">Campionatura Export</field>
+        <field name="code">cf.export.sample</field>
+        <field name="prefix">CAMP/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

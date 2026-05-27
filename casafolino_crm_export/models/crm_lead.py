@@ -726,7 +726,11 @@ class CrmLead(models.Model):
             'res_model': 'cf.export.sample',
             'view_mode': 'kanban,list,form',
             'domain': [('lead_id', '=', self.id)],
-            'context': {'default_lead_id': self.id},
+            'context': {
+                'default_lead_id': self.id,
+                'default_partner_id': self.partner_id.id,
+                'default_project_id': self.cf_project_id.id if self.cf_project_id else False,
+            },
         }
 
     def action_create_sample(self):
@@ -737,7 +741,11 @@ class CrmLead(models.Model):
             'res_model': 'cf.export.sample',
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_lead_id': self.id},
+            'context': {
+                'default_lead_id': self.id,
+                'default_partner_id': self.partner_id.id,
+                'default_project_id': self.cf_project_id.id if self.cf_project_id else False,
+            },
         }
 
     # ------------------------------------------------------------------

@@ -6,6 +6,7 @@
         <field name="name">Campionature</field>
         <field name="res_model">cf.export.sample</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'search_default_open': 1}</field>
     </record>
 
     <!-- ============================================================
@@ -20,25 +21,39 @@
                 <field name="reference"/>
                 <field name="partner_id"/>
                 <field name="state"/>
+                <field name="priority"/>
+                <field name="user_id"/>
+                <field name="promised_date"/>
                 <field name="date_sent"/>
+                <field name="date_feedback_expected"/>
                 <field name="tracking_number"/>
                 <field name="stage_id"/>
+                <field name="product_summary"/>
+                <field name="sale_order_id"/>
+                <field name="picking_count"/>
                 <templates>
                     <t t-name="card">
                         <div class="cf-sample-card">
                             <strong><field name="reference"/></strong>
                             <div><field name="partner_id"/></div>
-                            <div><field name="product_ids" widget="many2many_tags"/></div>
+                            <div><field name="product_summary"/></div>
                             <div class="cf-sample-meta">
-                                <span><field name="date_sent"/></span>
+                                <span><field name="user_id"/></span>
                                 <field name="state" widget="badge"
                                        decoration-success="state in ('feedback_ok','received')"
                                        decoration-warning="state == 'sent'"
                                        decoration-danger="state == 'feedback_ko'"
                                        decoration-info="state in ('draft','prepared')"/>
                             </div>
+                            <div class="cf-sample-meta">
+                                <span>Promessa: <field name="promised_date"/></span>
+                                <span>Feedback: <field name="date_feedback_expected"/></span>
+                            </div>
+                            <t t-if="record.sale_order_id.raw_value">
+                                <div class="cf-sample-tracking">Ordine: <field name="sale_order_id"/></div>
+                            </t>
                             <t t-if="record.tracking_number.raw_value">
-                                <div class="cf-sample-tracking">📦 <field name="tracking_number"/></div>
+                                <div class="cf-sample-tracking"><field name="tracking_number"/></div>
                             </t>
                         </div>
                     </t>
@@ -57,17 +72,24 @@
         <field name="arch" type="xml">
             <list>
                 <field name="reference"/>
-                <field name="lead_id"/>
                 <field name="partner_id"/>
+                <field name="lead_id" optional="show"/>
+                <field name="project_id" optional="hide"/>
+                <field name="user_id"/>
+                <field name="priority" widget="priority"/>
                 <field name="stage_id"/>
                 <field name="state" widget="badge"
                        decoration-success="state in ('feedback_ok','received')"
                        decoration-warning="state == 'sent'"
                        decoration-danger="state == 'feedback_ko'"/>
-                <field name="product_ids" widget="many2many_tags"/>
-                <field name="date_sent"/>
+                <field name="product_summary"/>
+                <field name="sale_order_id"/>
+                <field name="picking_count" optional="show"/>
+                <field name="promised_date"/>
+                <field name="date_sent" optional="show"/>
+                <field name="date_feedback_expected"/>
                 <field name="tracking_number"/>
-                <field name="feedback_score"/>
+                <field name="feedback_score" optional="show"/>
             </list>
         </field>
     </record>
@@ -82,39 +104,149 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="action_prepare" type="object" string="Preparata"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_create_sample_order" type="object"
+                            string="Crea ordine campionatura"
+                            class="btn-secondary" invisible="sale_order_id"/>
+                    <button name="action_send_to_warehouse" type="object"
+                            string="Invia a magazzino"
+                            class="btn-primary" invisible="state not in ['draft','prepared']"/>
+                    <button name="action_send" type="object" string="Spedita"
+                            class="btn-primary" invisible="state not in ['draft','prepared']"/>
+                    <button name="action_mark_delivered" type="object" string="Consegnata"
+                            class="btn-secondary" invisible="state != 'sent'"/>
+                    <button name="action_schedule_feedback_activity" type="object"
+                            string="Pianifica feedback" class="btn-secondary"
+                            invisible="state not in ['sent','received']"/>
+                    <button name="action_feedback_ok" type="object" string="Feedback positivo"
+                            class="btn-primary" invisible="state not in ['sent','received']"/>
+                    <button name="action_feedback_ko" type="object" string="Feedback negativo"
+                            class="btn-secondary" invisible="state not in ['sent','received']"/>
+                    <button name="action_no_feedback" type="object" string="Nessun feedback"
+                            class="btn-secondary" invisible="state not in ['sent','received']"/>
+                    <button name="action_reset_draft" type="object" string="Riapri"
+                            class="btn-secondary" invisible="state in ['draft','prepared','sent','received']"/>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="draft,prepared,sent,received,feedback_ok"/>
+                           statusbar_visible="draft,prepared,sent,received,feedback_ok,feedback_ko,no_feedback"/>
                 </header>
                 <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_view_sale_order" type="object"
+                                class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="not sale_order_id">
+                            <span class="o_stat_text">Ordine</span>
+                        </button>
+                        <button name="action_view_pickings" type="object"
+                                class="oe_stat_button" icon="fa-truck"
+                                invisible="picking_count == 0">
+                            <field name="picking_count" widget="statinfo"
+                                   string="Delivery"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
+                        <label for="reference"/>
                         <h1><field name="reference"/></h1>
                     </div>
                     <group>
                         <group>
-                            <field name="lead_id"/>
                             <field name="partner_id"/>
+                            <field name="lead_id"/>
+                            <field name="project_id"/>
+                            <field name="user_id"/>
+                            <field name="priority" widget="priority"/>
                             <field name="stage_id"/>
+                            <field name="sale_order_id" readonly="1"/>
+                            <field name="sale_order_state" readonly="1"/>
                         </group>
                         <group>
-                            <field name="date_sent"/>
-                            <field name="date_feedback_expected"/>
-                            <field name="tracking_number"/>
+                            <field name="commercial_goal"/>
+                            <field name="requested_by"/>
+                            <field name="request_date"/>
+                            <field name="promised_date"/>
+                            <field name="preparation_deadline"/>
                         </group>
                     </group>
-                    <group string="Prodotti">
-                        <field name="product_ids" widget="many2many_tags" nolabel="1"/>
-                    </group>
-                    <group string="Feedback">
+                    <notebook>
+                        <page string="Richiesta" name="request">
+                            <group>
+                                <field name="customer_requirements"
+                                       placeholder="Esigenze cliente, mercato, formato richiesto, vincoli shelf-life o certificazioni..."/>
+                            </group>
+                        </page>
+                        <page string="Prodotti" name="products">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_tmpl_id"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id"/>
+                                    <field name="format_note"/>
+                                    <field name="lot_note"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                            <group string="Prodotti legacy">
+                                <field name="product_ids" widget="many2many_tags" nolabel="1"/>
+                            </group>
+                        </page>
+                        <page string="Preparazione e spedizione" name="shipping">
+                            <group>
+                                <group>
+                                    <field name="prepared_by_id"/>
+                                    <field name="prepared_date"/>
+                                    <field name="preparation_notes"/>
+                                </group>
+                                <group>
+                                    <field name="carrier_name"/>
+                                    <field name="date_sent"/>
+                                    <field name="date_delivered"/>
+                                    <field name="date_feedback_expected"/>
+                                    <field name="tracking_number"/>
+                                    <field name="shipping_cost"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Feedback" name="feedback">
+                            <group>
+                                <group>
+                                    <field name="feedback_score"/>
+                                </group>
+                                <group>
+                                    <field name="feedback_notes"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                    <group string="Sintesi" invisible="not product_summary">
                         <group>
-                            <field name="feedback_score"/>
+                            <field name="line_count" readonly="1"/>
+                            <field name="total_quantity" readonly="1"/>
                         </group>
                         <group>
-                            <field name="feedback_notes"/>
+                            <field name="product_summary" readonly="1"/>
                         </group>
                     </group>
                 </sheet>
                 <chatter/>
             </form>
+        </field>
+    </record>
+
+    <record id="cf_sample_line_view_list" model="ir.ui.view">
+        <field name="name">cf.export.sample.line.list</field>
+        <field name="model">cf.export.sample.line</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sample_id"/>
+                <field name="product_tmpl_id"/>
+                <field name="quantity"/>
+                <field name="uom_id"/>
+                <field name="format_note"/>
+                <field name="lot_note"/>
+            </list>
         </field>
     </record>
 
@@ -130,7 +262,11 @@
                 <field name="reference"/>
                 <field name="lead_id"/>
                 <field name="partner_id"/>
+                <field name="user_id"/>
                 <separator/>
+                <filter string="Aperte" name="open"
+                        domain="[('state','not in',['feedback_ok','feedback_ko','no_feedback'])]"/>
+                <filter string="Urgenti" name="urgent" domain="[('priority','=','2')]"/>
                 <filter string="Da Preparare" name="draft" domain="[('state','=','draft')]"/>
                 <filter string="Spedite" name="sent" domain="[('state','=','sent')]"/>
                 <filter string="Feedback Positivo" name="feedback_ok" domain="[('state','=','feedback_ok')]"/>
@@ -138,6 +274,8 @@
                 <group expand="0" string="Raggruppa per">
                     <filter string="Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
                     <filter string="Stato" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Cliente" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Responsabile" name="group_user" context="{'group_by': 'user_id'}"/>
                 </group>
             </search>
         </field>

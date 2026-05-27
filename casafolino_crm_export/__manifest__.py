@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Export CRM',
-    'version': '18.0.12.2.0',
+    'version': '18.0.12.3.0',
     'category': 'Sales/CRM',
     'summary': 'CRM Export B2B operatore-centrico con scoring, rotting, campionature, fiere e card scanner AI',
     'author': 'CasaFolino S.R.L.',
@@ -35,6 +35,7 @@
         'views/crm_lead_views.xml',
         'views/crm_lead_list_enriched_view.xml',
         'views/res_partner_views.xml',
+        'views/sale_order_views.xml',
         'views/project_project_views.xml',
         'views/cf_sample_views.xml',
         'views/cf_fair_mail_template_views.xml',

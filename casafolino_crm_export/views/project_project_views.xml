@@ -300,7 +300,12 @@
                                 <field name="reference"/>
                                 <field name="state" widget="badge"/>
                                 <field name="partner_id"/>
-                                <field name="create_date"/>
+                                <field name="user_id"/>
+                                <field name="product_summary" readonly="1"/>
+                                <field name="sale_order_id" readonly="1"/>
+                                <field name="picking_count" readonly="1"/>
+                                <field name="promised_date"/>
+                                <field name="date_feedback_expected"/>
                             </list>
                         </field>
                     </page>
