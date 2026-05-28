@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import api, models, fields, _
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -144,3 +144,19 @@ class AccountMoveExt(models.Model):
             'context': {'default_active': True},
             'target': 'current',
         }
+
+
+class AccountMoveLineExt(models.Model):
+    _inherit = 'account.move.line'
+
+    cf_price_subtotal_six_decimals = fields.Float(
+        string='Imponibile',
+        compute='_compute_cf_price_subtotal_six_decimals',
+        digits=(16, 6),
+        readonly=True,
+    )
+
+    @api.depends('price_subtotal')
+    def _compute_cf_price_subtotal_six_decimals(self):
+        for line in self:
+            line.cf_price_subtotal_six_decimals = line.price_subtotal

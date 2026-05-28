@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_vendor_bill_line_subtotal_precision" model="ir.ui.view">
+        <field name="name">account.move.form.vendor.bill.line.subtotal.precision</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_subtotal']" position="after">
+                <field name="cf_price_subtotal_six_decimals"
+                       string="Imponibile"
+                       optional="show"
+                       column_invisible="parent.move_type != 'in_invoice'"/>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_subtotal']" position="attributes">
+                <attribute name="column_invisible">parent.move_type == 'in_invoice'</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
