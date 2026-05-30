@@ -133,6 +133,64 @@ class ProjectProjectPipelineControl(models.Model):
         string='Documenti',
     )
 
+    def _cf_pc_activity_action(self, activity_xmlid, summary):
+        self.ensure_one()
+        activity_type = self.env.ref(activity_xmlid, raise_if_not_found=False)
+        model_id = self.env['ir.model']._get_id('project.project')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': summary,
+            'res_model': 'mail.activity',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_res_model_id': model_id,
+                'default_res_id': self.id,
+                'default_activity_type_id': activity_type.id if activity_type else False,
+                'default_summary': summary,
+                'default_user_id': self.env.user.id,
+            },
+        }
+
+    def action_cf_schedule_call(self):
+        return self._cf_pc_activity_action(
+            'mail.mail_activity_data_call',
+            _('Chiamata dossier'),
+        )
+
+    def action_cf_schedule_todo(self):
+        return self._cf_pc_activity_action(
+            'mail.mail_activity_data_todo',
+            _('Todo dossier'),
+        )
+
+    def _cf_pc_compose_message_action(self, subtype_xmlid=False):
+        self.ensure_one()
+        context = {
+            'default_model': 'project.project',
+            'default_res_ids': [self.id],
+            'default_composition_mode': 'comment',
+            'default_subject': self.name or _('Dossier'),
+        }
+        if subtype_xmlid:
+            subtype = self.env.ref(subtype_xmlid, raise_if_not_found=False)
+            if subtype:
+                context['default_subtype_id'] = subtype.id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Messaggio dossier'),
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': context,
+        }
+
+    def action_cf_log_message(self):
+        return self._cf_pc_compose_message_action()
+
+    def action_cf_log_note(self):
+        return self._cf_pc_compose_message_action('mail.mt_note')
+
     @api.depends('partner_id.country_id.code')
     def _compute_cf360_continent(self):
         europe = {
@@ -909,6 +967,9 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'archive':
             msg.action_archive()
             return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla sala controllo.', reload=True)
+        if quick_action == 'delete':
+            msg.action_delete_soft()
+            return self._notify('Email cancellata', 'La mail e stata spostata nel cestino.', reload=True)
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     @api.model

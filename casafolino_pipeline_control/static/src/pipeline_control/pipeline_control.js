@@ -105,6 +105,9 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Email non disponibile"), { type: "warning" });
             return;
         }
+        if (quickAction === "delete" && !window.confirm(_t("Spostare questa email nel cestino?"))) {
+            return;
+        }
         try {
             const result = await this.orm.call("cf.pipeline.control", "mail_quick_action", [row.id, quickAction]);
             if (result) {

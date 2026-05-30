@@ -487,6 +487,9 @@
                                                     <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'archive')" title="Archivia">
                                                         <i class="fa fa-archive"/>
                                                     </button>
+                                                    <button class="btn btn-sm btn-light text-danger" t-on-click="() => this.mailQuickAction(row, 'delete')" title="Cancella email">
+                                                        <i class="fa fa-trash-o"/>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -538,6 +541,9 @@
                                                     </button>
                                                     <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'archive')" title="Archivia">
                                                         <i class="fa fa-archive"/>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-light text-danger" t-on-click="() => this.mailQuickAction(row, 'delete')" title="Cancella email">
+                                                        <i class="fa fa-trash-o"/>
                                                     </button>
                                                 </div>
                                             </td>
@@ -852,6 +858,9 @@
             </button>
             <button t-if="item.model === 'casafolino.mail.message'" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(item, 'link_lead')" title="Collega lead">
                 <i class="fa fa-link"/>
+            </button>
+            <button t-if="item.model === 'casafolino.mail.message'" class="btn btn-sm btn-light text-danger" t-on-click="() => this.mailQuickAction(item, 'delete')" title="Cancella email">
+                <i class="fa fa-trash-o"/>
             </button>
             <button t-if="['sale.order', 'cf.export.sample', 'project.project'].includes(item.model)" class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(item, 'today')" title="Follow-up oggi">
                 <i class="fa fa-calendar-check-o"/>
