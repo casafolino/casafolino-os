@@ -1382,6 +1382,23 @@
         padding: 16px 18px;
         overflow-y: auto;
 
+        .cf-pc-sidebar-card {
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            &:hover {
+                transform: translateY(-2px);
+                border-color: #2ec4b6 !important;
+                box-shadow: 0 6px 16px rgba(46, 196, 182, 0.08);
+                background: #ffffff !important;
+            }
+        }
+
+        .cf-pc-partner-name-clickable {
+            transition: color 0.15s ease;
+            &:hover {
+                color: #2ec4b6 !important;
+            }
+        }
+
         .cf-pc-sidebar-section {
             h4 {
                 margin: 0 0 10px;

@@ -595,64 +595,166 @@
                         
                         <!-- COLUMN 3: PARTNER SIDEBAR CONTEXT -->
                         <aside class="cf-pc-inbox-sidebar">
-                            <t t-if="selectedMessage &amp;&amp; selectedMessage.partner_id">
-                                <div class="cf-pc-sidebar-section cf-pc-sidebar-partner">
-                                    <h4>Profilo Cliente</h4>
-                                    <div class="cf-pc-partner-name" t-out="selectedMessage.title"/>
-                                    <div class="cf-pc-partner-email" t-out="selectedMessage.sender_email"/>
-                                    
-                                    <!-- Premium circular Lead Score Gauge -->
-                                    <div class="cf-pc-gauge-wrap">
-                                        <div class="cf-pc-gauge-title">Lead Score / Priorità</div>
-                                        <div class="cf-pc-gauge-circle">
-                                            <svg viewBox="0 0 36 36" class="cf-pc-circular-chart">
-                                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                                <path class="circle" stroke-dasharray="88, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                                <text x="18" y="20.35" class="percentage">88</text>
-                                            </svg>
-                                            <div class="cf-pc-gauge-label">HOT 🔥</div>
+                            <t t-if="state.messageContext">
+                                <t t-if="state.messageContext.has_partner">
+                                    <div class="cf-pc-sidebar-section cf-pc-sidebar-partner">
+                                        <h4>Profilo Cliente</h4>
+                                        <div class="cf-pc-partner-name-clickable" t-on-click="() => this.openRecord({model: 'res.partner', res_id: state.messageContext.partner.id})" title="Apri anagrafica partner" style="cursor: pointer; text-decoration: underline; color: #1f2723; font-weight: 800; font-size: 15px;">
+                                            <i class="fa fa-user-circle-o" style="margin-right: 5px;"/>
+                                            <span t-out="state.messageContext.partner.name"/>
+                                        </div>
+                                        <div class="cf-pc-partner-email" t-out="state.messageContext.partner.email"/>
+                                        <div t-if="state.messageContext.partner.phone" class="cf-pc-partner-phone" style="font-size: 11px; color: #667061; margin-top: 2px;">
+                                            <i class="fa fa-phone" style="margin-right: 4px;"/> <span t-out="state.messageContext.partner.phone"/>
+                                        </div>
+                                        <div t-if="state.messageContext.partner.mobile" class="cf-pc-partner-mobile" style="font-size: 11px; color: #667061; margin-top: 2px;">
+                                            <i class="fa fa-mobile" style="margin-right: 6px;"/> <span t-out="state.messageContext.partner.mobile"/>
+                                        </div>
+                                        
+                                        <!-- Premium circular Lead Score Gauge -->
+                                        <div class="cf-pc-gauge-wrap">
+                                            <div class="cf-pc-gauge-title">Lead Score / Priorità</div>
+                                            <div class="cf-pc-gauge-circle">
+                                                <svg viewBox="0 0 36 36" class="cf-pc-circular-chart">
+                                                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                    <path class="circle" t-att-stroke-dasharray="state.messageContext.partner.score + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                    <text x="18" y="20.35" class="percentage" t-out="state.messageContext.partner.score"/>
+                                                </svg>
+                                                <div class="cf-pc-gauge-label">
+                                                    <t t-if="state.messageContext.partner.score >= 80">HOT 🔥</t>
+                                                    <t t-elif="state.messageContext.partner.score >= 50">WARM ☀️</t>
+                                                    <t t-elif="state.messageContext.partner.score >= 20">COLD ❄️</t>
+                                                    <t t-else="">FROZEN 🧊</t>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- CRM Leads -->
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5>Lead CRM Attivi</h5>
+                                            <t t-if="state.messageContext.leads.length">
+                                                <div t-foreach="state.messageContext.leads" t-as="lead" t-key="lead.id" class="cf-pc-sidebar-card" style="background: #fafbf9; border: 1px solid #f0f3ee; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;" t-on-click="() => this.openRecord({model: 'crm.lead', res_id: lead.id})">
+                                                    <div style="font-weight: 750; font-size: 12.5px; color: #20251f; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                                        <span t-out="lead.name"/>
+                                                        <span t-if="lead.score" class="badge rounded-pill bg-danger" style="font-size: 9px; font-weight: 800; padding: 2px 6px;" t-out="lead.score + ' pts'"/>
+                                                    </div>
+                                                    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: #667061;">
+                                                        <span class="cf-pc-mini-badge tone-blue" style="text-transform: uppercase;" t-out="lead.stage_name"/>
+                                                        <strong style="color: #20251f;" t-out="'€ ' + lead.expected_revenue.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                            <p t-else="" style="font-size: 11.5px; color: #889283; font-style: italic; margin: 4px 0;">Nessun lead CRM attivo per questo contatto.</p>
+                                        </div>
+
+                                        <!-- Dossiers -->
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5>Dossier / Progetti</h5>
+                                            <t t-if="state.messageContext.dossiers.length">
+                                                <div t-foreach="state.messageContext.dossiers" t-as="dossier" t-key="dossier.id" class="cf-pc-sidebar-card" style="background: #fafbf9; border: 1px solid #f0f3ee; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer;" t-on-click="() => this.openRecord({model: 'project.project', res_id: dossier.id})">
+                                                    <div style="font-weight: 750; font-size: 12.5px; color: #20251f;" t-out="dossier.name"/>
+                                                    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: #667061;">
+                                                        <span t-attf-class="cf-pc-mini-badge #{dossier.status === 'exploration' ? 'tone-amber' : dossier.status === 'active' ? 'tone-green' : 'tone-blue'}" style="text-transform: uppercase;" t-out="dossier.status"/>
+                                                        <span t-out="dossier.target_date"/>
+                                                    </div>
+                                                    <div style="font-size: 11px; margin-top: 4px; color: #bd4b42; font-weight: 650;" t-if="dossier.blocker">
+                                                        <i class="fa fa-exclamation-triangle" style="margin-right: 3px;"/> <span t-out="dossier.blocker"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                            <p t-else="" style="font-size: 11.5px; color: #889283; font-style: italic; margin: 4px 0;">Nessun dossier attivo per questo contatto.</p>
+                                        </div>
+
+                                        <!-- Quotes -->
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5>Quotazioni Attive</h5>
+                                            <t t-if="state.messageContext.quotes.length">
+                                                <div t-foreach="state.messageContext.quotes" t-as="quote" t-key="quote.id" class="cf-pc-sidebar-card" style="background: #fafbf9; border: 1px solid #f0f3ee; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer;" t-on-click="() => this.openRecord({model: 'sale.order', res_id: quote.id})">
+                                                    <div style="font-weight: 750; font-size: 12.5px; color: #20251f; display: flex; justify-content: space-between;">
+                                                        <span t-out="quote.name"/>
+                                                        <strong style="color: #2ec4b6;" t-out="'€ ' + quote.amount_total.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})"/>
+                                                    </div>
+                                                    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: #667061;">
+                                                        <span class="cf-pc-mini-badge tone-blue" style="text-transform: uppercase;" t-out="quote.state_label"/>
+                                                        <span t-out="quote.date_order"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                            <p t-else="" style="font-size: 11.5px; color: #889283; font-style: italic; margin: 4px 0;">Nessuna quotazione attiva.</p>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Quotes -->
-                                    <div class="cf-pc-sidebar-sub">
-                                        <h5>Quotazioni Attive</h5>
-                                        <div class="cf-pc-stat-row">
-                                            <span>Valore preventivo</span>
-                                            <strong>€ 250.000,00</strong>
+                                </t>
+                                <t t-else="">
+                                    <div class="cf-pc-sidebar-section cf-pc-sidebar-fallback" style="padding: 4px 2px;">
+                                        <div style="background: #fff8f7; border: 1px solid #fce8e6; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 20px;">
+                                            <i class="fa fa-address-card-o" style="font-size: 32px; color: #e05c50; margin-bottom: 10px; display: block;"/>
+                                            <h4 style="color: #bd4b42; font-size: 13.5px; font-weight: 850; margin-bottom: 6px;">Nessun Contatto Associato</h4>
+                                            <p style="font-size: 11.5px; color: #7a8277; line-height: 1.4; margin-bottom: 12px;">Il mittente di questa email non è registrato in anagrafica.</p>
+                                            <button class="btn btn-danger btn-sm" style="font-weight: 800; border-radius: 8px; width: 100%; box-shadow: 0 2px 4px rgba(224, 92, 80, 0.2);" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                                <i class="fa fa-plus-circle" style="margin-right: 4px;"/> Crea Anagrafica Rapida
+                                            </button>
                                         </div>
-                                        <div class="cf-pc-stat-row">
-                                            <span>Stato</span>
-                                            <span class="cf-pc-mini-badge tone-blue">INVIATA</span>
+
+                                        <!-- Domain Suggestions -->
+                                        <div class="cf-pc-sidebar-sub" t-if="state.messageContext.suggested_partners &amp;&amp; state.messageContext.suggested_partners.length" style="border-top: none; padding-top: 0; margin-top: 0;">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 8px; text-transform: uppercase;">Contatti Suggeriti (Stesso Dominio)</h5>
+                                            <div t-foreach="state.messageContext.suggested_partners" t-as="sp" t-key="sp.id" style="background: #f7faf5; border: 1px solid #eaf0e6; border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+                                                <div style="font-weight: 750; font-size: 12px; color: #20251f;" t-out="sp.name"/>
+                                                <div style="font-size: 10.5px; color: #667061;" t-out="sp.email"/>
+                                                <button class="btn btn-outline-success btn-sm mt-1" style="font-weight: 700; border-radius: 6px; font-size: 10.5px; padding: 2px 8px; width: fit-content;" t-on-click="() => this.linkPartnerToMessage(sp.id)">
+                                                    <i class="fa fa-link" style="margin-right: 3px;"/> Associa
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Global Lead Suggestions to link to -->
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 8px; text-transform: uppercase;">Associa a Lead Esistente</h5>
+                                            <t t-if="state.messageContext.leads.length">
+                                                <div t-foreach="state.messageContext.leads" t-as="lead" t-key="lead.id" style="background: #fafbf9; border: 1px solid #f0f3ee; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                                                    <div style="font-weight: 750; font-size: 12px; color: #20251f; display: flex; justify-content: space-between; align-items: flex-start;">
+                                                        <span t-out="lead.name"/>
+                                                        <button class="btn btn-light btn-sm" style="font-weight: 700; border-radius: 6px; font-size: 10px; padding: 1px 6px;" t-on-click.stop="() => this.linkLeadToMessage(lead.id)">
+                                                            Collega
+                                                        </button>
+                                                    </div>
+                                                    <div style="font-size: 10.5px; color: #667061; margin-top: 4px; display: flex; justify-content: space-between;">
+                                                        <span t-out="lead.stage_name"/>
+                                                        <strong t-out="'€ ' + lead.expected_revenue.toLocaleString('it-IT')"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                            <p t-else="" style="font-size: 11.5px; color: #889283; font-style: italic; margin: 4px 0;">Nessun lead disponibile.</p>
+                                        </div>
+
+                                        <!-- Global Dossier Suggestions to link to -->
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 8px; text-transform: uppercase;">Associa a Dossier Esistente</h5>
+                                            <t t-if="state.messageContext.dossiers.length">
+                                                <div t-foreach="state.messageContext.dossiers" t-as="dossier" t-key="dossier.id" style="background: #fafbf9; border: 1px solid #f0f3ee; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                                                    <div style="font-weight: 750; font-size: 12px; color: #20251f; display: flex; justify-content: space-between; align-items: flex-start;">
+                                                        <span t-out="dossier.name"/>
+                                                        <button class="btn btn-light btn-sm" style="font-weight: 700; border-radius: 6px; font-size: 10px; padding: 1px 6px;" t-on-click.stop="() => this.linkDossierToMessage(dossier.id)">
+                                                            Collega
+                                                        </button>
+                                                    </div>
+                                                    <div style="font-size: 10.5px; color: #667061; margin-top: 4px; display: flex; justify-content: space-between;">
+                                                        <span t-out="dossier.partner_name || 'Nessun partner'"/>
+                                                        <span t-out="dossier.status"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                            <p t-else="" style="font-size: 11.5px; color: #889283; font-style: italic; margin: 4px 0;">Nessun dossier disponibile.</p>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Department Progress -->
-                                    <div class="cf-pc-sidebar-sub">
-                                        <h5>Avanzamento Reparti</h5>
-                                        <div class="cf-pc-progress-item">
-                                            <div class="cf-pc-progress-label"><span>Produzione</span><span>100%</span></div>
-                                            <div class="cf-pc-progress-bar"><span style="width: 100%; background: #2ec4b6;"/></div>
-                                        </div>
-                                        <div class="cf-pc-progress-item">
-                                            <div class="cf-pc-progress-label"><span>Logistica</span><span>100%</span></div>
-                                            <div class="cf-pc-progress-bar"><span style="width: 100%; background: #2ec4b6;"/></div>
-                                        </div>
-                                        <div class="cf-pc-progress-item">
-                                            <div class="cf-pc-progress-label"><span>Qualità</span><span>70%</span></div>
-                                            <div class="cf-pc-progress-bar"><span style="width: 70%; background: #ff9f1c;"/></div>
-                                        </div>
-                                        <div class="cf-pc-progress-item">
-                                            <div class="cf-pc-progress-label"><span>Dossier / Progetti</span><span>100%</span></div>
-                                            <div class="cf-pc-progress-bar"><span style="width: 100%; background: #2ec4b6;"/></div>
-                                        </div>
-                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-pc-sidebar-empty" style="padding: 50px 10px;">
+                                    <i class="fa fa-spinner fa-spin" style="font-size: 32px; color: #2ec4b6; margin-bottom: 10px;"/>
+                                    <p>Caricamento informazioni contestuali...</p>
                                 </div>
                             </t>
-                            <div class="cf-pc-sidebar-empty" t-else="">
-                                <i class="fa fa-address-card-o"/>
-                                <p>Nessun profilo cliente associato per questo mittente.</p>
-                            </div>
                         </aside>
                     </div>
                 </t>

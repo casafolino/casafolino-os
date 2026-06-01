@@ -385,6 +385,153 @@ class CfPipelineControl(models.AbstractModel):
         return True
 
     @api.model
+    def get_message_context_info(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return {
+                'has_partner': False,
+                'partner': None,
+                'suggested_partners': [],
+                'leads': [],
+                'dossiers': [],
+                'quotes': []
+            }
+
+        partner = msg.partner_id
+        partner_details = None
+        suggested_partners = []
+
+        if partner:
+            score_rec = self.env['casafolino.mail.lead.score'].search([('partner_id', '=', partner.id)], limit=1)
+            score = score_rec.score if score_rec else 0
+            tier = score_rec.tier if score_rec else 'frozen'
+            partner_details = {
+                'id': partner.id,
+                'name': partner.name,
+                'email': partner.email,
+                'phone': partner.phone or '',
+                'mobile': partner.mobile or '',
+                'score': score,
+                'tier': tier.upper(),
+            }
+        else:
+            if msg.sender_domain:
+                generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 'libero.it', 'virgilio.it', 'tiscali.it', 'alice.it'}
+                if msg.sender_domain not in generic_domains:
+                    domain_partners = self.env['res.partner'].search([
+                        ('email', '=ilike', '%%@' + msg.sender_domain),
+                    ], limit=5)
+                    for dp in domain_partners:
+                        suggested_partners.append({
+                            'id': dp.id,
+                            'name': dp.name,
+                            'email': dp.email or '',
+                        })
+
+        # Fetch CRM Leads
+        Lead = self.env['crm.lead']
+        lead_domain = [('active', '=', True), ('type', '=', 'opportunity')]
+        if partner:
+            lead_domain.append(('partner_id', '=', partner.id))
+        leads_recs = Lead.search(lead_domain, order='create_date desc, id desc', limit=5)
+        leads_list = []
+        for l in leads_recs:
+            score = 0
+            if 'cf_lead_score' in Lead._fields:
+                score = l.cf_lead_score
+            elif 'lead_score' in Lead._fields:
+                score = l.lead_score
+            leads_list.append({
+                'id': l.id,
+                'name': l.name,
+                'stage_name': l.stage_id.name if l.stage_id else '',
+                'expected_revenue': l.expected_revenue or 0.0,
+                'create_date': self._date_label(l.create_date),
+                'score': score,
+            })
+
+        # Fetch Projects/Dossiers
+        Project = self.env['project.project']
+        project_domain = self._active_project_domain()
+        if partner:
+            project_domain = ['|', ('partner_id', '=', partner.id), ('cf_lead_ids.partner_id', '=', partner.id)] + project_domain
+        project_recs = Project.search(project_domain, order='write_date desc, id desc', limit=5)
+        projects_list = []
+        for p in project_recs:
+            tasks = self.env['project.task'].search([('project_id', '=', p.id)], limit=80)
+            overdue_tasks = tasks.filtered(lambda task: self._is_overdue(task.date_deadline))
+            projects_list.append({
+                'id': p.id,
+                'name': p.name,
+                'status': self._project_status(p),
+                'blocker': self._project_blocker_label(p),
+                'task_count': len(tasks),
+                'overdue_count': len(overdue_tasks),
+                'target_date': self._date_label(getattr(p, 'cf_target_date', False) or getattr(p, 'date', False)),
+                'partner_name': self._project_partner_name(p),
+                'departments': self._project_departments(p),
+            })
+
+        # Fetch Active Quotes/Sale Orders
+        Sale = self.env['sale.order']
+        sale_domain = [('state', 'in', ['draft', 'sent'])]
+        if partner:
+            sale_domain.append(('partner_id', '=', partner.id))
+        sale_recs = Sale.search(sale_domain, order='write_date desc, id desc', limit=5)
+        sales_list = []
+        for s in sale_recs:
+            sales_list.append({
+                'id': s.id,
+                'name': s.name,
+                'amount_total': s.amount_total or 0.0,
+                'state_label': dict(Sale._fields['state'].selection).get(s.state, s.state) if s.state else '',
+                'date_order': self._date_label(s.date_order),
+                'validity_date': self._date_label(s.validity_date) if 'validity_date' in Sale._fields else '',
+            })
+
+        return {
+            'has_partner': bool(partner),
+            'partner': partner_details,
+            'suggested_partners': suggested_partners,
+            'leads': leads_list,
+            'dossiers': projects_list,
+            'quotes': sales_list,
+        }
+
+    @api.model
+    def link_partner_to_message(self, message_id, partner_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        partner = self.env['res.partner'].browse(int(partner_id)).exists()
+        if msg and partner:
+            msg.write({'partner_id': partner.id, 'match_type': 'manual'})
+            if msg.lead_id and not msg.lead_id.partner_id:
+                msg.lead_id.write({'partner_id': partner.id})
+            return True
+        return False
+
+    @api.model
+    def link_lead_to_message(self, message_id, lead_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        lead = self.env['crm.lead'].browse(int(lead_id)).exists()
+        if msg and lead:
+            msg.write({'lead_id': lead.id})
+            if lead.partner_id and not msg.partner_id:
+                msg.write({'partner_id': lead.partner_id.id, 'match_type': 'manual'})
+            elif msg.partner_id and not lead.partner_id:
+                lead.write({'partner_id': msg.partner_id.id})
+            return True
+        return False
+
+    @api.model
+    def link_dossier_to_message(self, message_id, project_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        project = self.env['project.project'].browse(int(project_id)).exists()
+        if msg and project:
+            msg.action_position_to_project(project.id)
+            return True
+        return False
+
+    @api.model
     def generate_ai_draft(self, message_id, instruction=''):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:

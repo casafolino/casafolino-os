@@ -27,6 +27,7 @@ export class CFPipelineControl extends Component {
             selectedMessageId: null,
             selectedMessageBody: "",
             selectedMessageIds: {},
+            messageContext: null,
             aiDraftBody: "",
             aiDraftLoading: false,
             aiInstruction: "",
@@ -70,6 +71,7 @@ export class CFPipelineControl extends Component {
         this.state.aiDraftBody = "";
         this.state.aiInstruction = "";
         this.state.selectedMessageBody = _t("Caricamento email...");
+        this.state.messageContext = null;
         
         try {
             const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
@@ -78,6 +80,9 @@ export class CFPipelineControl extends Component {
             } else {
                 this.state.selectedMessageBody = _t("Impossibile caricare il corpo del messaggio.");
             }
+            
+            // Fetch sidebar context database info
+            this.state.messageContext = await this.orm.call("cf.pipeline.control", "get_message_context_info", [messageId]);
         } catch (error) {
             this.state.selectedMessageBody = _t("Errore caricamento corpo email: ") + (error.message || String(error));
         }
@@ -166,6 +171,54 @@ export class CFPipelineControl extends Component {
             this.notification.add(error.message || String(error), { type: "danger" });
         } finally {
             this.state.aiDraftLoading = false;
+        }
+    }
+
+    async linkPartnerToMessage(partnerId) {
+        if (!this.state.selectedMessageId) return;
+        try {
+            const success = await this.orm.call("cf.pipeline.control", "link_partner_to_message", [this.state.selectedMessageId, partnerId]);
+            if (success) {
+                this.notification.add(_t("Mittente associato al partner con successo"), { type: "success" });
+                await this.loadData();
+                await this.selectMessage(this.state.selectedMessageId);
+            } else {
+                this.notification.add(_t("Associazione fallita"), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async linkLeadToMessage(leadId) {
+        if (!this.state.selectedMessageId) return;
+        try {
+            const success = await this.orm.call("cf.pipeline.control", "link_lead_to_message", [this.state.selectedMessageId, leadId]);
+            if (success) {
+                this.notification.add(_t("Email associata al lead con successo"), { type: "success" });
+                await this.loadData();
+                await this.selectMessage(this.state.selectedMessageId);
+            } else {
+                this.notification.add(_t("Associazione fallita"), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async linkDossierToMessage(projectId) {
+        if (!this.state.selectedMessageId) return;
+        try {
+            const success = await this.orm.call("cf.pipeline.control", "link_dossier_to_message", [this.state.selectedMessageId, projectId]);
+            if (success) {
+                this.notification.add(_t("Email associata al dossier con successo"), { type: "success" });
+                await this.loadData();
+                await this.selectMessage(this.state.selectedMessageId);
+            } else {
+                this.notification.add(_t("Associazione fallita"), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
         }
     }
 
