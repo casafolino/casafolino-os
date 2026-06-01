@@ -18,7 +18,6 @@
     </record>
     <record id="param_voice_ai_require_token" model="ir.config_parameter">
         <field name="key">casafolino_voice_ai.require_token</field>
-        <field name="value">False</field>
+        <field name="value">True</field>
     </record>
 </odoo>
-

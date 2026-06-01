@@ -31,3 +31,29 @@ def post_init_hook(env):
             'active': True,
         })
 
+    # Recap Cron setup
+    recap_model = env['ir.model']._get('casafolino.voice.call')
+    recap_server_action = env['ir.actions.server'].search([
+        ('name', '=', 'CasaFolino Voice AI: Send Daily Recap'),
+        ('model_id', '=', recap_model.id),
+    ], limit=1)
+    if not recap_server_action:
+        recap_server_action = env['ir.actions.server'].create({
+            'name': 'CasaFolino Voice AI: Send Daily Recap',
+            'model_id': recap_model.id,
+            'state': 'code',
+            'code': "model.cron_send_daily_recap()",
+        })
+
+    recap_cron = env['ir.cron'].search([
+        ('cron_name', '=', 'CasaFolino Voice AI: Daily Recap'),
+    ], limit=1)
+    if not recap_cron:
+        env['ir.cron'].create({
+            'cron_name': 'CasaFolino Voice AI: Daily Recap',
+            'ir_actions_server_id': recap_server_action.id,
+            'interval_number': 1,
+            'interval_type': 'days',
+            'active': True,
+        })
+

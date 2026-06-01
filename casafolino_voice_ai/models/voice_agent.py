@@ -159,6 +159,26 @@ VOICE_AI_TOOL_SCHEMAS = [
     },
     {
         'type': 'function',
+        'name': 'create_ticket',
+        'description': 'Crea una segnalazione di assistenza o ticket di supporto per problemi con ordini, spedizioni, prodotti o fatturazione.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'subject': {'type': 'string'},
+                'description': {'type': 'string'},
+                'partner_id': {'type': 'integer'},
+                'customer_name': {'type': 'string'},
+                'phone': {'type': 'string'},
+                'email': {'type': 'string'},
+                'urgency': {'type': 'string', 'enum': ['low', 'normal', 'high']},
+                'category': {'type': 'string', 'enum': ['order', 'delivery', 'product', 'billing', 'other']},
+            },
+            'required': ['subject', 'description'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
         'name': 'transfer_to_human',
         'description': 'Richiede trasferimento o presa in carico umana.',
         'parameters': {
@@ -188,7 +208,7 @@ class CasaFolinoVoiceAgent(models.Model):
         ('outbound', 'Outbound'),
     ], required=True, default='inbound', tracking=True)
     model = fields.Char(default='gpt-realtime-2', required=True)
-    voice = fields.Char(default='marin', required=True)
+    voice = fields.Char(default='shimmer', required=True)
     language = fields.Char(default='it-IT', required=True)
     persona = fields.Text()
     first_message = fields.Char()

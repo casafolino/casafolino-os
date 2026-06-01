@@ -83,3 +83,60 @@ class CasaFolinoVoiceCall(models.Model):
                 summary='Richiamare cliente da chiamata AI',
                 note=call.summary or call.next_action or 'Richiamata richiesta dal centralino AI.',
             )
+
+    @api.model
+    def cron_send_daily_recap(self):
+        from datetime import datetime, time
+        today_start = datetime.combine(fields.Date.context_today(self), time.min)
+        calls = self.search([('started_at', '>=', today_start)])
+        
+        if not calls:
+            subject = "Recap Giornaliero Centralino AI CasaFolino - Nessuna Chiamata"
+            body = "<p>Ciao Antonio,<br><br>Oggi non ci sono state chiamate registrate nel centralino vocale AI.</p>"
+        else:
+            subject = "Recap Giornaliero Centralino AI CasaFolino - %s Chiamate" % len(calls)
+            body = """
+            <h2>Recap Giornaliero Centralino Vocale AI Viola</h2>
+            <p>Ciao Antonio, ecco il riepilogo delle chiamate gestite oggi da Viola:</p>
+            <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%;">
+                <tr style="background-color: #f2f2f2;">
+                    <th>Codice Chiamata</th>
+                    <th>Ora Inizio</th>
+                    <th>Cliente / Telefono</th>
+                    <th>Direzione</th>
+                    <th>Esito</th>
+                    <th>Riepilogo / Prossima Azione</th>
+                </tr>
+            """
+            for call in calls:
+                customer = call.partner_id.display_name if call.partner_id else call.phone or 'Sconosciuto'
+                dir_label = "Entrata (Inbound)" if call.direction == 'inbound' else "Uscita (Outbound)"
+                outcome_label = dict(call._fields['outcome'].selection).get(call.outcome, 'Altro') if call.outcome else 'Nessuno'
+                body += """
+                <tr>
+                    <td><b>%s</b></td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td><span style="padding: 4px; background-color: %s; color: white; border-radius: 4px;">%s</span></td>
+                    <td>%s<br><small style="color: #666;">Prossima azione: %s</small></td>
+                </tr>
+                """ % (
+                    call.name,
+                    fields.Datetime.context_timestamp(self, call.started_at).strftime('%H:%M:%S'),
+                    customer,
+                    dir_label,
+                    "#28a745" if call.outcome == 'resolved' else "#ffc107" if call.outcome == 'callback_requested' else "#17a2b8" if call.outcome == 'transferred' else "#6c757d",
+                    outcome_label,
+                    call.summary or 'Nessun riepilogo',
+                    call.next_action or 'Nessuna'
+                )
+            body += "</table><br><p>I dettagli completi sono disponibili nel pannello Odoo Voice AI.</p>"
+            
+        mail_values = {
+            'subject': subject,
+            'body_html': body,
+            'email_to': 'antonio@casafolino.com',
+        }
+        self.env['mail.mail'].sudo().create(mail_values).send()
+        return True

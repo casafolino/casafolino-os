@@ -1,5 +1,6 @@
 import json
 import html
+import hmac
 import urllib.error
 import urllib.request
 
@@ -10,14 +11,14 @@ from odoo.http import request
 class CasaFolinoVoiceAIController(http.Controller):
     def _check_token(self):
         params = request.env['ir.config_parameter'].sudo()
-        require_token = params.get_param('casafolino_voice_ai.require_token', 'False') == 'True'
         expected = params.get_param('casafolino_voice_ai.webhook_token')
-        if not require_token:
-            return True
         if not expected:
             return False
         auth = request.httprequest.headers.get('Authorization', '')
-        return auth == 'Bearer %s' % expected
+        if not auth.startswith('Bearer '):
+            return False
+        supplied = auth[7:].strip()
+        return hmac.compare_digest(supplied, expected)
 
     def _json_body(self):
         raw = request.httprequest.get_data() or b'{}'
@@ -40,7 +41,7 @@ class CasaFolinoVoiceAIController(http.Controller):
             'human_transfer_uri': params.get_param('casafolino_voice_ai.human_transfer_uri'),
             'allow_outbound': params.get_param('casafolino_voice_ai.allow_outbound', 'False') == 'True',
             'has_openai_key': bool(params.get_param('casafolino_voice_ai.openai_api_key')),
-            'requires_token': params.get_param('casafolino_voice_ai.require_token', 'False') == 'True',
+            'requires_token': params.get_param('casafolino_voice_ai.require_token', 'True') == 'True',
         })
 
     def _find_partner(self, payload):
@@ -200,6 +201,7 @@ class CasaFolinoVoiceAIController(http.Controller):
                 ),
                 'type': 'opportunity',
             })
+            self._send_notification_email('create_crm_lead', payload)
             return request.make_json_response({'ok': True, 'lead_id': lead.id, 'lead_name': lead.name})
 
         if tool_name == 'create_email_activity':
@@ -254,6 +256,58 @@ class CasaFolinoVoiceAIController(http.Controller):
                 })
             return request.make_json_response({'ok': True, 'partner_id': partner.id if partner else None})
 
+        if tool_name == 'create_ticket':
+            partner = partner or self._find_partner(payload)
+            subject = payload.get('subject') or payload.get('title') or 'Segnalazione da chiamata AI'
+            description = payload.get('description') or 'Nessun dettaglio fornito.'
+            urgency = payload.get('urgency') or 'normal'
+            category = payload.get('category') or 'general'
+            
+            HelpdeskTicket = request.env.get('helpdesk.ticket')
+            if HelpdeskTicket is not None:
+                ticket = HelpdeskTicket.sudo().create({
+                    'name': subject,
+                    'partner_id': partner.id if partner else False,
+                    'partner_phone': payload.get('phone') or (partner.phone if partner else False),
+                    'partner_email': payload.get('email') or (partner.email if partner else False),
+                    'description': description,
+                    'priority': '1' if urgency == 'high' else '0',
+                })
+                call_id = payload.get('call_id')
+                if call_id:
+                    call = request.env['casafolino.voice.call'].sudo().browse(call_id)
+                    if call.exists():
+                        ticket.message_post(body='Ticket creato da chiamata vocale AI. Riferimento chiamata: %s' % call.name)
+                self._send_notification_email('create_ticket', payload)
+                return request.make_json_response({
+                    'ok': True,
+                    'ticket_id': ticket.id,
+                    'ticket_name': ticket.name,
+                    'type': 'helpdesk.ticket'
+                })
+            else:
+                lead = request.env['crm.lead'].sudo().create({
+                    'name': '[Segnalazione] %s' % subject,
+                    'partner_id': partner.id if partner else False,
+                    'contact_name': payload.get('contact_name') or payload.get('customer_name') or (partner.name if partner else False),
+                    'phone': payload.get('phone') or (partner.phone if partner else False),
+                    'email_from': payload.get('email') or (partner.email if partner else False),
+                    'description': '%s\n\nCategoria: %s\nUrgenza: %s' % (description, category, urgency),
+                    'type': 'lead',
+                })
+                call_id = payload.get('call_id')
+                if call_id:
+                    call = request.env['casafolino.voice.call'].sudo().browse(call_id)
+                    if call.exists():
+                        lead.message_post(body='Segnalazione creata da chiamata vocale AI. Riferimento chiamata: %s' % call.name)
+                self._send_notification_email('create_ticket', payload)
+                return request.make_json_response({
+                    'ok': True,
+                    'lead_id': lead.id,
+                    'lead_name': lead.name,
+                    'type': 'crm.lead'
+                })
+
         if tool_name == 'transfer_to_human':
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
             if call.exists():
@@ -271,6 +325,59 @@ class CasaFolinoVoiceAIController(http.Controller):
             })
 
         return request.make_json_response({'error': 'unknown tool'}, status=404)
+
+    def _send_notification_email(self, tool_name, payload):
+        try:
+            subject_text = "Notifica Voice AI: Nuovo Lead creato" if tool_name == 'create_crm_lead' else "Notifica Voice AI: Nuova Segnalazione creata"
+            body_html = "<p>Ciao Antonio,<br><br>L'assistente vocale Viola ha gestito una richiesta e ha creato un record in Odoo:</p>"
+            if tool_name == 'create_crm_lead':
+                body_html += """
+                <ul>
+                    <li><b>Tipo:</b> Opportunità Commerciale / Lead</li>
+                    <li><b>Nome Richiesta:</b> %s</li>
+                    <li><b>Cliente/Referente:</b> %s</li>
+                    <li><b>Azienda:</b> %s</li>
+                    <li><b>Telefono:</b> %s</li>
+                    <li><b>Email:</b> %s</li>
+                    <li><b>Dettaglio/Interesse:</b> %s</li>
+                </ul>
+                """ % (
+                    payload.get('name') or 'N/D',
+                    payload.get('contact_name') or payload.get('customer_name') or 'N/D',
+                    payload.get('company_name') or 'N/D',
+                    payload.get('phone') or 'N/D',
+                    payload.get('email') or 'N/D',
+                    payload.get('description') or payload.get('interest') or 'N/D'
+                )
+            else:
+                body_html += """
+                <ul>
+                    <li><b>Tipo:</b> Segnalazione di Assistenza / Ticket</li>
+                    <li><b>Oggetto:</b> %s</li>
+                    <li><b>Categoria:</b> %s</li>
+                    <li><b>Urgenza:</b> %s</li>
+                    <li><b>Telefono:</b> %s</li>
+                    <li><b>Email:</b> %s</li>
+                    <li><b>Dettaglio Reclamo:</b> %s</li>
+                </ul>
+                """ % (
+                    payload.get('subject') or 'N/D',
+                    payload.get('category') or 'N/D',
+                    payload.get('urgency') or 'N/D',
+                    payload.get('phone') or 'N/D',
+                    payload.get('email') or 'N/D',
+                    payload.get('description') or 'N/D'
+                )
+            body_html += "<br><p>Puoi consultare e gestire questo record direttamente all'interno di Odoo.</p>"
+            
+            mail_values = {
+                'subject': subject_text,
+                'body_html': body_html,
+                'email_to': 'antonio@casafolino.com',
+            }
+            request.env['mail.mail'].sudo().create(mail_values).send()
+        except Exception as e:
+            pass
 
     @http.route('/voice_ai/openai/webhook', type='http', auth='public', methods=['POST'], csrf=False)
     def openai_webhook(self):
@@ -519,6 +626,7 @@ class CasaFolinoVoiceAIController(http.Controller):
                 ),
                 'type': 'opportunity',
             })
+            self._send_notification_email('create_crm_lead', payload)
             return {'ok': True, 'lead_id': lead.id, 'lead_name': lead.name}
 
         if tool_name == 'create_call_note':
@@ -566,6 +674,58 @@ class CasaFolinoVoiceAIController(http.Controller):
                 'ended_at': fields.Datetime.now(),
             })
             return {'ok': True}
+
+        if tool_name == 'create_ticket':
+            partner = partner or self._find_partner(payload)
+            subject = payload.get('subject') or payload.get('title') or 'Segnalazione da chiamata AI'
+            description = payload.get('description') or 'Nessun dettaglio fornito.'
+            urgency = payload.get('urgency') or 'normal'
+            category = payload.get('category') or 'general'
+            
+            HelpdeskTicket = request.env.get('helpdesk.ticket')
+            if HelpdeskTicket is not None:
+                ticket = HelpdeskTicket.sudo().create({
+                    'name': subject,
+                    'partner_id': partner.id if partner else False,
+                    'partner_phone': payload.get('phone') or (partner.phone if partner else False),
+                    'partner_email': payload.get('email') or (partner.email if partner else False),
+                    'description': description,
+                    'priority': '1' if urgency == 'high' else '0',
+                })
+                call_id = payload.get('call_id')
+                if call_id:
+                    call = request.env['casafolino.voice.call'].sudo().browse(call_id)
+                    if call.exists():
+                        ticket.message_post(body='Ticket creato da chiamata vocale AI. Riferimento chiamata: %s' % call.name)
+                self._send_notification_email('create_ticket', payload)
+                return {
+                    'ok': True,
+                    'ticket_id': ticket.id,
+                    'ticket_name': ticket.name,
+                    'type': 'helpdesk.ticket'
+                }
+            else:
+                lead = request.env['crm.lead'].sudo().create({
+                    'name': '[Segnalazione] %s' % subject,
+                    'partner_id': partner.id if partner else False,
+                    'contact_name': payload.get('contact_name') or payload.get('customer_name') or (partner.name if partner else False),
+                    'phone': payload.get('phone') or (partner.phone if partner else False),
+                    'email_from': payload.get('email') or (partner.email if partner else False),
+                    'description': '%s\n\nCategoria: %s\nUrgenza: %s' % (description, category, urgency),
+                    'type': 'lead',
+                })
+                call_id = payload.get('call_id')
+                if call_id:
+                    call = request.env['casafolino.voice.call'].sudo().browse(call_id)
+                    if call.exists():
+                        lead.message_post(body='Segnalazione creata da chiamata vocale AI. Riferimento chiamata: %s' % call.name)
+                self._send_notification_email('create_ticket', payload)
+                return {
+                    'ok': True,
+                    'lead_id': lead.id,
+                    'lead_name': lead.name,
+                    'type': 'crm.lead'
+                }
 
         if tool_name == 'transfer_to_human':
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))

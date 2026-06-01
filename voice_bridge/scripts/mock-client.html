@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CasaFolino AI Voice Switchboard - Mock Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #5A6E3A;
+      --primary-glow: rgba(90, 110, 58, 0.4);
+      --bg: #0C0F0A;
+      --panel: rgba(25, 30, 20, 0.6);
+      --border: rgba(90, 110, 58, 0.25);
+      --text: #F4F6F0;
+      --text-muted: #A3A899;
+      --accent: #A9C27D;
+      --danger: #E05A47;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(90, 110, 58, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(169, 194, 125, 0.05) 0%, transparent 40%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 30px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.05);
+      text-align: center;
+      position: relative;
+    }
+
+    .logo-container {
+      margin-bottom: 25px;
+    }
+
+    .logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--text) 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .visualizer-wrapper {
+      width: 180px;
+      height: 180px;
+      margin: 30px auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pulsing-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary) 0%, rgba(90, 110, 58, 0.8) 100%);
+      box-shadow: 0 0 0 0 var(--primary-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 2;
+      border: 2px solid var(--accent);
+    }
+
+    .pulsing-circle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px var(--primary-glow);
+    }
+
+    .pulsing-circle.active {
+      animation: pulse 2s infinite;
+      background: radial-gradient(circle, var(--accent) 0%, var(--primary) 100%);
+      border-color: #FFF;
+    }
+
+    .phone-icon {
+      width: 50px;
+      height: 50px;
+      fill: var(--text);
+      transition: all 0.3s ease;
+    }
+
+    .pulsing-circle.active .phone-icon {
+      transform: rotate(135deg);
+      fill: var(--bg);
+    }
+
+    .wave {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1px solid var(--accent);
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.5s ease;
+      pointer-events: none;
+    }
+
+    .pulsing-circle.active ~ .wave-1 {
+      animation: ripple 3s infinite linear;
+    }
+    .pulsing-circle.active ~ .wave-2 {
+      animation: ripple 3s infinite linear 1s;
+    }
+    .pulsing-circle.active ~ .wave-3 {
+      animation: ripple 3s infinite linear 2s;
+    }
+
+    .status-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 25px;
+      min-height: 22px;
+      transition: all 0.3s ease;
+    }
+
+    .status-text.connected {
+      color: var(--accent);
+    }
+
+    .status-text.talking {
+      color: #FFF;
+      text-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .info-box {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 15px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      text-align: left;
+      margin-top: 10px;
+    }
+
+    .info-box strong {
+      color: var(--text);
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(169, 194, 125, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 20px rgba(169, 194, 125, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(169, 194, 125, 0);
+      }
+    }
+
+    @keyframes ripple {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+      100% {
+        transform: scale(1.4);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="logo-container">
+      <div class="logo-text">CasaFolino AI</div>
+      <div class="logo-tag">Centralino Assistente Vocale</div>
+    </div>
+
+    <div class="status-text" id="statusLabel">Pronto per iniziare</div>
+
+    <div class="visualizer-wrapper">
+      <div class="pulsing-circle" id="callBtn">
+        <svg class="phone-icon" viewBox="0 0 24 24">
+          <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/>
+        </svg>
+      </div>
+      <div class="wave wave-1"></div>
+      <div class="wave wave-2"></div>
+      <div class="wave wave-3"></div>
+    </div>
+
+    <div class="info-box">
+      <strong>Parla direttamente con Giorgio!</strong><br>
+      Clicca sul pulsante sopra per avviare una chiamata mock locale. Verrà attivato il tuo microfono e le tue cuffie/casse. Parlagli come se fossi un cliente di CasaFolino!
+    </div>
+  </div>
+
+  <script>
+    // ----------------------------------------------------
+    // Global Diagnostic Logger to Server
+    // ----------------------------------------------------
+    async function sendRemoteLog(level, message, details = {}) {
+      try {
+        await fetch('/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ level, message, details, time: new Date().toISOString() })
+        });
+      } catch (e) {}
+    }
+
+    // Intercept uncaught errors
+    window.onerror = function(message, source, lineno, colno, error) {
+      sendRemoteLog('error', 'UNCAUGHT_EXCEPTION', {
+        message,
+        source,
+        lineno,
+        colno,
+        stack: error ? error.stack : null
+      });
+      return false;
+    };
+
+    window.onunhandledrejection = function(event) {
+      sendRemoteLog('error', 'UNHANDLED_PROMISE_REJECTION', {
+        reason: event.reason ? (event.reason.stack || event.reason.message || event.reason) : null
+      });
+    };
+
+    // Override console methods to report back
+    const origLog = console.log;
+    const origError = console.error;
+    const origWarn = console.warn;
+
+    console.log = function(...args) {
+      origLog.apply(console, args);
+      sendRemoteLog('info', args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
+    };
+    console.error = function(...args) {
+      origError.apply(console, args);
+      sendRemoteLog('error', args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
+    };
+    console.warn = function(...args) {
+      origWarn.apply(console, args);
+      sendRemoteLog('warn', args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
+    };
+
+    // ----------------------------------------------------
+    // G.711 u-law Compression & Decompression Utilities
+    // ----------------------------------------------------
+    // 100% verified standard G.711 mu-law formulas (CCITT compliant)
+    function linearToMuLaw(sample) {
+      const sign = (sample < 0) ? 0x80 : 0x00;
+      if (sample < 0) sample = -sample;
+      if (sample > 32635) sample = 32635;
+      sample += 132;
+      
+      let exponent = 7;
+      for (let mask = 0x4000; (sample & mask) === 0; mask >>= 1) {
+        exponent--;
+      }
+      const mantissa = (sample >> (exponent + 3)) & 0x0F;
+      return ~(sign | (exponent << 4) | mantissa) & 0xFF;
+    }
+
+    function muLawToLinear(muLaw) {
+      muLaw = ~muLaw & 0xFF;
+      const sign = muLaw & 0x80;
+      const exponent = (muLaw >> 4) & 0x07;
+      const mantissa = muLaw & 0x0F;
+      let sample = ((mantissa << 3) + 132) << exponent;
+      sample -= 132;
+      return sign ? -sample : sample;
+    }
+
+    // Convert Float32 PCM to 8-bit Mu-Law Array
+    function float32ToMuLaw(float32Array) {
+      const muLawArray = new Uint8Array(float32Array.length);
+      for (let i = 0; i < float32Array.length; i++) {
+        // Clamp to [-1.0, 1.0] and scale to 16-bit signed integer range
+        let s = Math.max(-1, Math.min(1, float32Array[i]));
+        let sample = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        muLawArray[i] = linearToMuLaw(sample);
+      }
+      return muLawArray;
+    }
+
+    // Convert 8-bit Mu-Law Array to Float32 PCM Array
+    function muLawToFloat32(uint8Array) {
+      const float32Array = new Float32Array(uint8Array.length);
+      for (let i = 0; i < uint8Array.length; i++) {
+        let linear = muLawToLinear(uint8Array[i]);
+        float32Array[i] = linear / 32768.0;
+      }
+      return float32Array;
+    }
+
+    // Base64 Helpers
+    function base64ToBytes(base64) {
+      const binString = atob(base64);
+      const len = binString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binString.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    // ----------------------------------------------------
+    // Application Logic & Web Audio API
+    // ----------------------------------------------------
+    let ws = null;
+    let audioContext = null;
+    let mediaStream = null;
+    let audioInputProcessor = null;
+    let micSource = null;
+    let isCallActive = false;
+    
+    // Playback Buffer Queue Variables
+    let nextPlayTime = 0;
+    const BUFFER_SIZE = 1024;
+    const SAMPLE_RATE = 8000;
+
+    const callBtn = document.getElementById('callBtn');
+    const statusLabel = document.getElementById('statusLabel');
+
+    callBtn.addEventListener('click', toggleCall);
+
+    function toggleCall() {
+      if (isCallActive) {
+        endCall();
+      } else {
+        startCall();
+      }
+    }
+
+    async function startCall() {
+      isCallActive = true;
+      callBtn.classList.add('active');
+      statusLabel.textContent = 'Connessione in corso...';
+      statusLabel.className = 'status-text connected';
+
+      // 1. Initialize WebSocket to the local bridge
+      const wsUrl = `ws://localhost:8088/media-stream`;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = async () => {
+        console.log('WebSocket Open');
+        statusLabel.textContent = 'Connesso! Avvio audio...';
+        
+        // Send Twilio start event simulation
+        ws.send(JSON.stringify({
+          event: 'start',
+          start: {
+            streamSid: 'mock_gui_stream_' + Date.now(),
+            callSid: 'mock_gui_call_' + Date.now(),
+            customParameters: {
+              from: '+393351665306',
+              to: '+3909681660200'
+            }
+          }
+        }));
+
+        // 2. Initialize Microphone and Audio Context
+        try {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          await audioContext.resume();
+          nextPlayTime = audioContext.currentTime;
+          
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          micSource = audioContext.createMediaStreamSource(mediaStream);
+          
+          // Create Audio processor node to capture mic at native rate
+          audioInputProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+          
+          audioInputProcessor.onaudioprocess = (e) => {
+            if (!isCallActive) return;
+            const inputData = e.inputBuffer.getChannelData(0);
+            
+            // Downsample dynamically to 8kHz (standard telecom rate)
+            const ratio = audioContext.sampleRate / 8000;
+            const downsampledLength = Math.round(inputData.length / ratio);
+            const downsampledData = new Float32Array(downsampledLength);
+            for (let i = 0; i < downsampledLength; i++) {
+              downsampledData[i] = inputData[Math.round(i * ratio)];
+            }
+            
+            // Encode Float32 PCM to 8-bit Mu-Law
+            const muLawData = float32ToMuLaw(downsampledData);
+            const base64Payload = bytesToBase64(muLawData);
+            
+            // Send payload to local bridge
+            ws.send(JSON.stringify({
+              event: 'media',
+              media: {
+                payload: base64Payload
+              }
+            }));
+          };
+
+          micSource.connect(audioInputProcessor);
+          audioInputProcessor.connect(audioContext.destination);
+
+          statusLabel.textContent = 'Conversazione attiva!';
+          statusLabel.className = 'status-text talking';
+        } catch (err) {
+          console.error('Error starting audio:', err);
+          statusLabel.textContent = 'Errore microfono: consenti accesso';
+          statusLabel.className = 'status-text';
+          endCall();
+        }
+      };
+
+      ws.onmessage = (event) => {
+        if (!isCallActive) return;
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.event === 'media' && msg.media?.payload) {
+            playIncomingAudio(msg.media.payload);
+          }
+        } catch (err) {
+          console.error('WS Error:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WS Closed');
+        endCall();
+      };
+
+      ws.onerror = (err) => {
+        console.error('WS Error:', err);
+        endCall();
+      };
+    }
+
+    async function playIncomingAudio(base64Payload) {
+      if (!audioContext) return;
+      if (audioContext.state === 'suspended') {
+        try { await audioContext.resume(); } catch (e) {}
+      }
+      
+      try {
+        const muLawBytes = base64ToBytes(base64Payload);
+        const float32Samples = muLawToFloat32(muLawBytes);
+        
+        // Upsample dynamically to the native AudioContext sample rate
+        const nativeRate = audioContext.sampleRate;
+        const ratio = nativeRate / 8000;
+        const upsampledLength = Math.round(float32Samples.length * ratio);
+        const upsampledSamples = new Float32Array(upsampledLength);
+        
+        for (let i = 0; i < upsampledLength; i++) {
+          upsampledSamples[i] = float32Samples[Math.floor(i / ratio)];
+        }
+        
+        const audioBuffer = audioContext.createBuffer(1, upsampledLength, nativeRate);
+        audioBuffer.getChannelData(0).set(upsampledSamples);
+        
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        
+        const playTime = Math.max(nextPlayTime, audioContext.currentTime);
+        source.start(playTime);
+        nextPlayTime = playTime + audioBuffer.duration;
+
+        // Visual feedback that Giorgio is speaking
+        statusLabel.textContent = 'Giorgio sta parlando...';
+        statusLabel.className = 'status-text talking';
+        callBtn.classList.add('active');
+        
+        clearTimeout(window.giorgioTalkTimeout);
+        window.giorgioTalkTimeout = setTimeout(() => {
+          if (isCallActive && statusLabel.textContent === 'Giorgio sta parlando...') {
+            statusLabel.textContent = 'Conversazione attiva (In ascolto)';
+            statusLabel.className = 'status-text connected';
+          }
+        }, (nextPlayTime - audioContext.currentTime) * 1000);
+      } catch (err) {
+        console.error('Error playing incoming audio:', err);
+      }
+    }
+
+    function endCall() {
+      if (!isCallActive) return;
+      isCallActive = false;
+      
+      callBtn.classList.remove('active');
+      statusLabel.textContent = 'Chiamata terminata';
+      statusLabel.className = 'status-text';
+
+      // Cleanup Web Audio
+      if (audioInputProcessor) {
+        audioInputProcessor.disconnect();
+        audioInputProcessor = null;
+      }
+      if (micSource) {
+        micSource.disconnect();
+        micSource = null;
+      }
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+
+      // Cleanup WebSocket
+      if (ws) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ event: 'stop' }));
+          ws.close();
+        }
+        ws = null;
+      }
+    }
+  </script>
+</body>
+</html>
