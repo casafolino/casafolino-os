@@ -440,7 +440,7 @@
                                 </div>
                                 <t t-foreach="filteredToReplyRows" t-as="row" t-key="'to-reply-' + row.id">
                                     <div t-attf-class="cf-pc-inbox-thread-card #{state.selectedMessageId === row.id ? 'active' : ''} #{row.urgency === 'high' ? 'urgent' : ''}" t-on-click="() => this.selectMessage(row.id)">
-                                        <div class="cf-pc-thread-check" t-on-click:stop="() => this.toggleMessageCheck(row.id)">
+                                        <div class="cf-pc-thread-check" t-on-click.stop="() => this.toggleMessageCheck(row.id)">
                                             <input type="checkbox" t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : ''"/>
                                         </div>
                                         <div class="cf-pc-thread-info">
@@ -472,7 +472,7 @@
                                 </div>
                                 <t t-foreach="filteredWaitingRows" t-as="row" t-key="'waiting-' + row.id">
                                     <div t-attf-class="cf-pc-inbox-thread-card waiting #{state.selectedMessageId === row.id ? 'active' : ''}" t-on-click="() => this.selectMessage(row.id)">
-                                        <div class="cf-pc-thread-check" t-on-click:stop="() => this.toggleMessageCheck(row.id)">
+                                        <div class="cf-pc-thread-check" t-on-click.stop="() => this.toggleMessageCheck(row.id)">
                                             <input type="checkbox" t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : ''"/>
                                         </div>
                                         <div class="cf-pc-thread-info">
