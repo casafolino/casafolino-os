@@ -9,17 +9,23 @@ CONTAINER="odoo-app"
 
 MODULES=(
     casafolino_mail
+    casafolino_mail_stats
+    casafolino_mail_templates
+    casafolino_followup_tuttofood
+    casafolino_project
+    casafolino_initiative
+    casafolino_initiative_dashboard
     casafolino_crm_export
-    casafolino_supplier_qual
-    casafolino_gdo
-    casafolino_allergen
+    casafolino_commercial
+    casafolino_product
+    casafolino_operations
     casafolino_haccp
     casafolino_kpi
-    casafolino_nutrition
-    casafolino_private_label
-    casafolino_production
-    casafolino_recall
-    casafolino_treasury
+    casafolino_supplier_qual
+    casafolino_home
+    casafolino_workspace
+    casafolino_fair_report
+    casafolino_labels
 )
 
 if [ -n "$1" ]; then
