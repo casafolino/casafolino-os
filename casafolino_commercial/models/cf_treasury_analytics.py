@@ -29,6 +29,193 @@ class CfTreasuryAnalytics(models.Model):
         )
         return (groups[0]["amount_untaxed"] or 0.0) if groups else 0.0
 
+    @staticmethod
+    def _period_for_year(year, same_day=None):
+        start = date(year, 1, 1)
+        if same_day:
+            try:
+                end = date(year, same_day.month, same_day.day)
+            except ValueError:
+                end = date(year, same_day.month, 28)
+        else:
+            end = date(year, 12, 31)
+        return start, end
+
+    @staticmethod
+    def _cost_center_for_account(account):
+        text = "%s %s" % (account.code or "", account.name or "")
+        text = text.lower()
+        buckets = [
+            ("merci", "Merci", (
+                "merci", "merce", "acquisti", "materie", "semilavorati",
+                "prodotti", "imball", "packaging", "rimanenze",
+            )),
+            ("servizi", "Servizi", (
+                "servizi", "consul", "uten", "energia", "elettric",
+                "trasport", "spedizion", "logistic", "lavorazioni",
+                "manutenz", "pubblic", "marketing", "software", "telefon",
+                "assicur", "profession",
+            )),
+            ("personale", "Personale", (
+                "personale", "salari", "stipendi", "contribut", "inail",
+                "tfr", "dipendent", "collabor",
+            )),
+            ("affitti", "Affitti e noleggi", (
+                "affitt", "nolegg", "leasing", "locaz", "canoni",
+            )),
+            ("imposte", "Imposte e tasse", (
+                "imposte", "tasse", "tribut", "diritti camerali", "bollo",
+            )),
+            ("finanziari", "Oneri finanziari", (
+                "interess", "banca", "bancari", "commissioni banc",
+                "finanziar", "mutuo",
+            )),
+            ("ammortamenti", "Ammortamenti", (
+                "ammort", "svalutaz",
+            )),
+        ]
+        for key, label, needles in buckets:
+            if any(needle in text for needle in needles):
+                return key, label
+        return "altro", "Altro"
+
+    @api.model
+    def _account_amounts_by_type(self, account_types, d_from, d_to, sign):
+        groups = self.env["account.move.line"].read_group(
+            domain=[
+                ("parent_state", "=", "posted"),
+                ("date", ">=", str(d_from)),
+                ("date", "<=", str(d_to)),
+                ("account_id.account_type", "in", account_types),
+            ],
+            fields=["account_id", "debit:sum", "credit:sum"],
+            groupby=["account_id"],
+            orderby="debit:sum desc",
+        )
+        result = {}
+        for group in groups:
+            if not group.get("account_id"):
+                continue
+            account_id = group["account_id"][0]
+            debit = group.get("debit") or 0.0
+            credit = group.get("credit") or 0.0
+            amount = credit - debit if sign == "credit" else debit - credit
+            result[account_id] = result.get(account_id, 0.0) + amount
+        return result
+
+    @api.model
+    def _total_for_types(self, account_types, d_from, d_to, sign):
+        amounts = self._account_amounts_by_type(account_types, d_from, d_to, sign)
+        return round(sum(amounts.values()), 2)
+
+    @api.model
+    def get_cost_revenue_dashboard(self):
+        """Costi principali per centro e ricavi 2025 vs 2026."""
+        today = date.today()
+        current_year = today.year
+        previous_year = current_year - 1
+        prev_start, prev_end = self._period_for_year(previous_year)
+        prev_ytd_start, prev_ytd_end = self._period_for_year(previous_year, today)
+        curr_start, curr_end = self._period_for_year(current_year, today)
+
+        revenue_types = ["income", "income_other"]
+        expense_types = ["expense", "expense_direct_cost", "expense_depreciation"]
+
+        revenue_previous = self._total_for_types(revenue_types, prev_start, prev_end, "credit")
+        revenue_previous_ytd = self._total_for_types(revenue_types, prev_ytd_start, prev_ytd_end, "credit")
+        revenue_current_ytd = self._total_for_types(revenue_types, curr_start, curr_end, "credit")
+
+        cost_previous_ytd = self._account_amounts_by_type(
+            expense_types, prev_ytd_start, prev_ytd_end, "debit"
+        )
+        cost_current_ytd = self._account_amounts_by_type(
+            expense_types, curr_start, curr_end, "debit"
+        )
+        account_ids = set(cost_previous_ytd) | set(cost_current_ytd)
+        accounts = {acc.id: acc for acc in self.env["account.account"].browse(list(account_ids))}
+
+        centers = {}
+        for account_id in account_ids:
+            account = accounts.get(account_id)
+            if not account:
+                continue
+            key, label = self._cost_center_for_account(account)
+            center = centers.setdefault(key, {
+                "id": key,
+                "name": label,
+                "amount_2025_ytd": 0.0,
+                "amount_2026_ytd": 0.0,
+                "accounts": [],
+            })
+            prev_amount = cost_previous_ytd.get(account_id, 0.0)
+            curr_amount = cost_current_ytd.get(account_id, 0.0)
+            center["amount_2025_ytd"] += prev_amount
+            center["amount_2026_ytd"] += curr_amount
+            if curr_amount or prev_amount:
+                center["accounts"].append({
+                    "id": account_id,
+                    "code": account.code or "",
+                    "name": account.name or "",
+                    "amount_2025_ytd": round(prev_amount, 2),
+                    "amount_2026_ytd": round(curr_amount, 2),
+                    "delta": round(curr_amount - prev_amount, 2),
+                })
+
+        total_cost_current = sum(c["amount_2026_ytd"] for c in centers.values())
+        cost_centers = []
+        for center in centers.values():
+            curr = center["amount_2026_ytd"]
+            prev = center["amount_2025_ytd"]
+            center["amount_2025_ytd"] = round(prev, 2)
+            center["amount_2026_ytd"] = round(curr, 2)
+            center["delta"] = round(curr - prev, 2)
+            center["delta_pct"] = round((curr - prev) / abs(prev) * 100, 1) if prev else 0.0
+            center["share_pct"] = round(curr / total_cost_current * 100, 1) if total_cost_current else 0.0
+            center["accounts"] = sorted(
+                center["accounts"],
+                key=lambda item: abs(item["amount_2026_ytd"]),
+                reverse=True,
+            )[:8]
+            cost_centers.append(center)
+
+        cost_centers = sorted(
+            cost_centers,
+            key=lambda item: abs(item["amount_2026_ytd"]),
+            reverse=True,
+        )
+        revenue_delta = revenue_current_ytd - revenue_previous_ytd
+        total_cost_previous = sum(c["amount_2025_ytd"] for c in cost_centers)
+        total_cost_current = sum(c["amount_2026_ytd"] for c in cost_centers)
+
+        return {
+            "years": {"previous": previous_year, "current": current_year},
+            "period": {
+                "previous_full_from": str(prev_start),
+                "previous_full_to": str(prev_end),
+                "previous_ytd_from": str(prev_ytd_start),
+                "previous_ytd_to": str(prev_ytd_end),
+                "current_ytd_from": str(curr_start),
+                "current_ytd_to": str(curr_end),
+            },
+            "revenue": {
+                "previous_full": revenue_previous,
+                "previous_ytd": revenue_previous_ytd,
+                "current_ytd": revenue_current_ytd,
+                "delta_ytd": round(revenue_delta, 2),
+                "delta_ytd_pct": round(revenue_delta / abs(revenue_previous_ytd) * 100, 1)
+                if revenue_previous_ytd else 0.0,
+            },
+            "costs": {
+                "previous_ytd": round(total_cost_previous, 2),
+                "current_ytd": round(total_cost_current, 2),
+                "delta_ytd": round(total_cost_current - total_cost_previous, 2),
+                "delta_ytd_pct": round(
+                    (total_cost_current - total_cost_previous) / abs(total_cost_previous) * 100, 1
+                ) if total_cost_previous else 0.0,
+                "centers": cost_centers,
+            },
+        }
+
     # ------------------------------------------------------------------
     # 1. Confronto YoY / MoM / QoQ
     # ------------------------------------------------------------------

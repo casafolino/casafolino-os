@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_treasury.CfTreasuryCostsRevenue">
+<div class="cf-costs-revenue o_action" style="background:#f0f2f5;min-height:100vh;font-family:system-ui,sans-serif;">
+
+    <div class="d-flex align-items-center justify-content-between px-4 py-3"
+         style="background:#1a1f2e;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);">
+        <div class="d-flex align-items-center gap-3">
+            <span style="font-size:20px;">&#128202;</span>
+            <h4 class="mb-0 fw-bold" style="font-size:17px;">Costi e Ricavi</h4>
+        </div>
+        <button class="btn btn-sm" style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                t-on-click="onRefresh">&#8635; Aggiorna</button>
+    </div>
+
+    <t t-if="state.loading">
+        <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+            <div class="spinner-border" style="color:#5A6E3A;"/>
+        </div>
+    </t>
+    <t t-elif="state.error">
+        <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+    </t>
+    <t t-elif="state.data">
+    <div class="px-4 py-4">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #3b82f6;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;">Ricavi <t t-esc="state.data.years.previous"/></div>
+                    <div style="font-size:22px;font-weight:800;color:#1a1f2e;"><t t-esc="formatAmount(state.data.revenue.previous_full)"/></div>
+                    <div style="font-size:11px;color:#9ca3af;">anno completo</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #5A6E3A;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;">Ricavi <t t-esc="state.data.years.current"/> YTD</div>
+                    <div style="font-size:22px;font-weight:800;color:#5A6E3A;"><t t-esc="formatAmount(state.data.revenue.current_ytd)"/></div>
+                    <div t-attf-class="small #{deltaClass(state.data.revenue.delta_ytd_pct)}">
+                        <t t-esc="deltaText(state.data.revenue.delta_ytd_pct)"/> vs stesso periodo <t t-esc="state.data.years.previous"/>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #ef4444;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;">Costi <t t-esc="state.data.years.current"/> YTD</div>
+                    <div style="font-size:22px;font-weight:800;color:#ef4444;"><t t-esc="formatAmount(state.data.costs.current_ytd)"/></div>
+                    <div t-attf-class="small #{deltaClass(state.data.costs.delta_ytd_pct, true)}">
+                        <t t-esc="deltaText(state.data.costs.delta_ytd_pct)"/> vs stesso periodo <t t-esc="state.data.years.previous"/>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #f59e0b;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;">Margine operativo YTD</div>
+                    <div style="font-size:22px;font-weight:800;color:#1a1f2e;">
+                        <t t-esc="formatAmount(state.data.revenue.current_ytd - state.data.costs.current_ytd)"/>
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;">
+                        ricavi meno costi classificati
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+                <div style="background:#fff;border-radius:8px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Ricavi 2025 vs 2026</div>
+                    <div style="position:relative;height:260px;"><canvas t-ref="revenueChart"/></div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div style="background:#fff;border-radius:8px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Spese per centro di costo <t t-esc="state.data.years.current"/> YTD</div>
+                    <div style="position:relative;height:260px;"><canvas t-ref="costChart"/></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:#fff;border-radius:8px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div style="font-size:13px;font-weight:700;color:#374151;">Centri di costo principali</div>
+                <div style="font-size:12px;color:#9ca3af;">
+                    Periodo: <t t-esc="state.data.period.current_ytd_from"/> - <t t-esc="state.data.period.current_ytd_to"/>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+            <table class="table table-sm table-hover mb-0" style="font-size:13px;min-width:840px;">
+                <thead style="color:#9ca3af;">
+                    <tr>
+                        <th>Centro</th>
+                        <th class="text-end"><t t-esc="state.data.years.previous"/> YTD</th>
+                        <th class="text-end"><t t-esc="state.data.years.current"/> YTD</th>
+                        <th class="text-end">Quota</th>
+                        <th class="text-end">Delta</th>
+                        <th class="text-end">Delta %</th>
+                        <th>Conti principali</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="state.data.costs.centers" t-as="center" t-key="center.id">
+                    <tr>
+                        <td class="fw-bold"><t t-esc="center.name"/></td>
+                        <td class="text-end"><t t-esc="formatAmount(center.amount_2025_ytd)"/></td>
+                        <td class="text-end fw-bold" style="color:#ef4444;"><t t-esc="formatAmount(center.amount_2026_ytd)"/></td>
+                        <td class="text-end"><t t-esc="center.share_pct"/>%</td>
+                        <td t-attf-class="text-end fw-bold #{deltaClass(center.delta, true)}"><t t-esc="formatAmount(center.delta)"/></td>
+                        <td t-attf-class="text-end #{deltaClass(center.delta_pct, true)}"><t t-esc="deltaText(center.delta_pct)"/></td>
+                        <td style="font-size:11px;color:#6b7280;">
+                            <t t-foreach="center.accounts.slice(0, 3)" t-as="acc" t-key="acc.id">
+                                <span><t t-esc="acc.code"/> <t t-esc="acc.name"/></span><br/>
+                            </t>
+                        </td>
+                    </tr>
+                    </t>
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+    </t>
+</div>
+</t>
+</templates>

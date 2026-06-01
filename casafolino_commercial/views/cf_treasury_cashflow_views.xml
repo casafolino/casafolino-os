@@ -119,4 +119,9 @@
         <field name="name">Analisi per Categoria</field>
         <field name="tag">cf_treasury_categories</field>
     </record>
+
+    <record id="action_cf_treasury_costs_revenue" model="ir.actions.client">
+        <field name="name">Costi e Ricavi</field>
+        <field name="tag">cf_treasury_costs_revenue</field>
+    </record>
 </odoo>
