@@ -18,7 +18,7 @@ export class CFPipelineControl extends Component {
         this.state = useState({
             loading: true,
             error: null,
-            activeView: this.props.action?.context?.default_view || "dossiers",
+            activeView: this.props.action?.context?.default_view || "control",
             selectedFairId: false,
             inboxFilter: "all",
             dossierSearch: "",
