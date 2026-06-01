@@ -30,6 +30,41 @@
         </field>
     </record>
 
+    <record id="view_cf_pipeline_create_dossier_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.create.dossier.wizard.form</field>
+        <field name="model">cf.pipeline.create.dossier.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Crea dossier da email">
+                <sheet>
+                    <group string="Origine ed Email">
+                        <field name="message_id"/>
+                        <field name="partner_id" placeholder="Seleziona un cliente se esistente"/>
+                    </group>
+                    <group string="Nuovo Cliente (se non esistente)" invisible="partner_id">
+                        <field name="partner_name" required="not partner_id"/>
+                        <field name="partner_email"/>
+                    </group>
+                    <group string="Dettagli Dossier">
+                        <field name="project_name"/>
+                        <field name="expected_revenue"/>
+                        <field name="user_id"/>
+                        <field name="target_date"/>
+                    </group>
+                    <group string="Prossima azione">
+                        <field name="next_action"/>
+                        <field name="next_action_date"/>
+                        <field name="create_next_task"/>
+                        <field name="create_department_tasks"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_create_dossier" string="Crea dossier" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="view_cf_pipeline_link_lead_wizard" model="ir.ui.view">
         <field name="name">cf.pipeline.link.lead.wizard.form</field>
         <field name="model">cf.pipeline.link.lead.wizard</field>

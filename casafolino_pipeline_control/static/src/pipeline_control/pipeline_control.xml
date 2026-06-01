@@ -416,139 +416,244 @@
                             </button>
                         </t>
                     </div>
-                    <div class="cf-pc-grid-2">
-                        <section class="cf-pc-panel">
-                            <header>
-                                <h2>Tocca a noi</h2>
-                                <span class="cf-pc-pill tone-red" t-out="filteredToReplyRows.length"/>
+                    
+                    <div class="cf-pc-inbox-three-col">
+                        <!-- COLUMN 1: THREAD LIST -->
+                        <aside class="cf-pc-inbox-list">
+                            <header class="cf-pc-list-header">
+                                <h2>Thread Email</h2>
+                                <div class="cf-pc-inbox-bulk-bar" t-if="Object.values(state.selectedMessageIds).some(v => v)">
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('archive')" title="Archivia selezionati">
+                                        <i class="fa fa-archive"/> Archivia
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('link_lead')" title="Collega selezionati a lead attivo">
+                                        <i class="fa fa-link"/> Collega
+                                    </button>
+                                </div>
                             </header>
-                            <table class="cf-pc-table">
-                                <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Segnale</th>
-                                        <th>Lead</th>
-                                        <th>Stato</th>
-                                        <th/>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="filteredToReplyRows" t-as="row" t-key="'reply-' + row.id">
-                                        <tr>
-                                            <td>
+                            
+                            <div class="cf-pc-inbox-threads-scroller">
+                                <!-- TO REPLY SECTION -->
+                                <div class="cf-pc-thread-group-title" t-if="filteredToReplyRows.length">
+                                    <span>Tocca a noi</span>
+                                    <span class="cf-pc-pill tone-red" t-out="filteredToReplyRows.length"/>
+                                </div>
+                                <t t-foreach="filteredToReplyRows" t-as="row" t-key="'to-reply-' + row.id">
+                                    <div t-attf-class="cf-pc-inbox-thread-card #{state.selectedMessageId === row.id ? 'active' : ''} #{row.urgency === 'high' ? 'urgent' : ''}" t-on-click="() => this.selectMessage(row.id)">
+                                        <div class="cf-pc-thread-check" t-on-click:stop="() => this.toggleMessageCheck(row.id)">
+                                            <input type="checkbox" t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : ''"/>
+                                        </div>
+                                        <div class="cf-pc-thread-info">
+                                            <div class="cf-pc-thread-header">
                                                 <strong t-out="row.title"/>
-                                                <small t-out="row.meta"/>
-                                            </td>
-                                            <td>
-                                                <span t-out="row.subtitle"/>
-                                                <small t-out="row.snippet"/>
-                                            </td>
-                                            <td>
-                                                <span t-if="row.lead" t-out="row.lead"/>
-                                                <button t-else="" class="btn btn-sm btn-outline-primary" t-on-click="() => this.mailQuickAction(row, 'link_lead')">Collega</button>
-                                            </td>
-                                            <td>
-                                                <span t-out="row.suggested_action"/>
-                                                <small>
-                                                    <t t-if="row.urgency">Urgenza <t t-out="row.urgency"/></t>
-                                                    <t t-if="row.category"> · <t t-out="row.category"/></t>
-                                                    <t t-if="row.thread_count"> · <t t-out="row.thread_count"/> msg</t>
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <div class="cf-pc-row-actions">
-                                                    <button class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(row, 'reply')" title="Rispondi">
-                                                        <i class="fa fa-reply"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_thread')" title="Apri thread">
-                                                        <i class="fa fa-envelope-open-o"/>
-                                                    </button>
-                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
-                                                        <i class="fa fa-handshake-o"/>
-                                                    </button>
-                                                    <button t-else="" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
-                                                        <i class="fa fa-plus"/>
-                                                    </button>
-                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'link_lead')" title="Cambia lead">
-                                                        <i class="fa fa-link"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
-                                                        <i class="fa fa-check-square-o"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'quote')" title="Crea quotazione">
-                                                        <i class="fa fa-file-text-o"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'sample')" title="Crea campionatura">
-                                                        <i class="fa fa-flask"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'snooze')" title="Posticipa">
-                                                        <i class="fa fa-clock-o"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'archive')" title="Archivia">
-                                                        <i class="fa fa-archive"/>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                    <tr t-if="!filteredToReplyRows.length">
-                                        <td colspan="5" class="cf-pc-empty">Nessun thread per questo filtro</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </section>
-
-                        <section class="cf-pc-panel">
-                            <header>
-                                <h2>Tocca al cliente</h2>
-                                <span class="cf-pc-pill tone-amber" t-out="filteredWaitingRows.length"/>
-                            </header>
-                            <table class="cf-pc-table">
-                                <tbody>
-                                    <t t-foreach="filteredWaitingRows" t-as="row" t-key="'wait-' + row.id">
-                                        <tr>
-                                            <td>
+                                                <span class="cf-pc-thread-time" t-out="row.meta"/>
+                                            </div>
+                                            <div class="cf-pc-thread-subj" t-out="row.subtitle"/>
+                                            <div class="cf-pc-thread-snippet" t-out="row.snippet"/>
+                                            <div class="cf-pc-thread-badges">
+                                                <span t-if="row.urgency" t-attf-class="cf-pc-badge urgency-#{row.urgency}">
+                                                    <t t-out="row.urgency === 'high' ? 'URGENTE' : 'Priorità media'"/>
+                                                </span>
+                                                <span t-if="row.lead" class="cf-pc-badge lead-badge">
+                                                    <i class="fa fa-handshake-o"/> <t t-out="row.lead"/>
+                                                </span>
+                                                <span t-else="" class="cf-pc-badge no-lead-badge">
+                                                    Senza Lead
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                
+                                <!-- WAITING SECTION -->
+                                <div class="cf-pc-thread-group-title" t-if="filteredWaitingRows.length">
+                                    <span>In attesa cliente</span>
+                                    <span class="cf-pc-pill tone-amber" t-out="filteredWaitingRows.length"/>
+                                </div>
+                                <t t-foreach="filteredWaitingRows" t-as="row" t-key="'waiting-' + row.id">
+                                    <div t-attf-class="cf-pc-inbox-thread-card waiting #{state.selectedMessageId === row.id ? 'active' : ''}" t-on-click="() => this.selectMessage(row.id)">
+                                        <div class="cf-pc-thread-check" t-on-click:stop="() => this.toggleMessageCheck(row.id)">
+                                            <input type="checkbox" t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : ''"/>
+                                        </div>
+                                        <div class="cf-pc-thread-info">
+                                            <div class="cf-pc-thread-header">
                                                 <strong t-out="row.title"/>
-                                                <small>
-                                                    <t t-out="row.subtitle"/>
-                                                    <t t-if="row.thread_count"> · <t t-out="row.thread_count"/> msg</t>
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <span t-out="row.meta"/>
-                                                <small t-if="row.lead" t-out="row.lead"/>
-                                                <button t-else="" class="btn btn-sm btn-outline-primary" t-on-click="() => this.mailQuickAction(row, 'link_lead')">Collega</button>
-                                            </td>
-                                            <td>
-                                                <div class="cf-pc-row-actions">
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_thread')" title="Apri thread">
-                                                        <i class="fa fa-envelope-open-o"/>
-                                                    </button>
-                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
-                                                        <i class="fa fa-handshake-o"/>
-                                                    </button>
-                                                    <button t-if="row.lead_id" class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'link_lead')" title="Cambia lead">
-                                                        <i class="fa fa-link"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'task')" title="Crea task">
-                                                        <i class="fa fa-check-square-o"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'snooze')" title="Posticipa">
-                                                        <i class="fa fa-clock-o"/>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(row, 'archive')" title="Archivia">
-                                                        <i class="fa fa-archive"/>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                    <tr t-if="!filteredWaitingRows.length">
-                                        <td colspan="3" class="cf-pc-empty">Nessun thread per questo filtro</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </section>
+                                                <span class="cf-pc-thread-time" t-out="row.meta"/>
+                                            </div>
+                                            <div class="cf-pc-thread-subj" t-out="row.subtitle"/>
+                                            <div class="cf-pc-thread-snippet" t-out="row.snippet"/>
+                                            <div class="cf-pc-thread-badges">
+                                                <span class="cf-pc-badge waiting-badge">In attesa cliente</span>
+                                                <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                
+                                <div class="cf-pc-empty" t-if="!filteredToReplyRows.length &amp;&amp; !filteredWaitingRows.length">
+                                    Nessun thread email corrispondente.
+                                </div>
+                            </div>
+                        </aside>
+                        
+                        <!-- COLUMN 2: EMAIL READING PANE -->
+                        <main class="cf-pc-inbox-reader">
+                            <t t-if="selectedMessage">
+                                <div class="cf-pc-reader-header">
+                                    <div class="cf-pc-reader-meta">
+                                        <h3 t-out="selectedMessage.subtitle"/>
+                                        <div class="cf-pc-sender">
+                                            <strong>Da: </strong> <t t-out="selectedMessage.title"/> &lt;<t t-out="selectedMessage.sender_email"/>&gt;
+                                        </div>
+                                        <div class="cf-pc-date" t-out="selectedMessage.meta"/>
+                                    </div>
+                                    
+                                    <!-- A myriad of quick actions directly inside the mail reader! -->
+                                    <div class="cf-pc-reader-actions">
+                                        <button class="btn btn-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')" title="Rispondi">
+                                            <i class="fa fa-reply"/> Rispondi
+                                        </button>
+                                        <button class="btn btn-success btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_dossier')" title="Crea Dossier">
+                                            <i class="fa fa-briefcase"/> Crea Dossier
+                                        </button>
+                                        
+                                        <t t-if="!selectedMessage.partner_id">
+                                            <button class="btn btn-warning btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)" title="Registra Contatto">
+                                                <i class="fa fa-user-plus"/> Registra Contatto
+                                            </button>
+                                        </t>
+                                        
+                                        <t t-if="!selectedMessage.lead_id">
+                                            <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')" title="Crea Lead">
+                                                <i class="fa fa-plus"/> Crea Lead
+                                            </button>
+                                            <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'link_lead')" title="Collega Lead">
+                                                <i class="fa fa-link"/> Collega Lead
+                                            </button>
+                                        </t>
+                                        <t t-else="">
+                                            <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'open_lead')" title="Apri Lead">
+                                                <i class="fa fa-handshake-o"/> Apri Lead
+                                            </button>
+                                            <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'link_lead')" title="Cambia Lead">
+                                                <i class="fa fa-exchange"/> Cambia Lead
+                                            </button>
+                                        </t>
+                                        
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'task')" title="Crea Task Dossier">
+                                            <i class="fa fa-check-square-o"/> Task
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'quote')" title="Crea Preventivo">
+                                            <i class="fa fa-file-text-o"/> Preventivo
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'sample')" title="Crea Campionatura">
+                                            <i class="fa fa-flask"/> Campione
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'snooze')" title="Posticipa">
+                                            <i class="fa fa-clock-o"/> Posticipa
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'archive')" title="Archivia">
+                                            <i class="fa fa-archive"/>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="cf-pc-reader-body">
+                                    <iframe t-att-srcdoc="state.selectedMessageBody" class="cf-pc-email-iframe" sandbox="allow-same-origin"/>
+                                </div>
+                                
+                                <!-- Gemini AI Reply Assistant -->
+                                <div class="cf-pc-ai-widget">
+                                    <div class="cf-pc-ai-widget-header">
+                                        <span class="cf-pc-ai-title"><i class="fa fa-magic"/> Assistente Risposta AI Gemini</span>
+                                        <div class="cf-pc-ai-instruction-bar">
+                                            <input type="text" placeholder="Istruzioni per Gemini (es: Sposta appuntamento a venerdì)..." t-model="state.aiInstruction" t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; this.generateAIDraft()"/>
+                                            <button class="btn btn-primary btn-sm" t-on-click="generateAIDraft" t-att-disabled="state.aiDraftLoading ? 'disabled' : ''">
+                                                <t t-if="state.aiDraftLoading"><i class="fa fa-spinner fa-spin"/> Scrittura...</t>
+                                                <t t-else="">Genera Bozza</t>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="cf-pc-ai-widget-body" t-if="state.aiDraftBody">
+                                        <textarea t-model="state.aiDraftBody" rows="6" class="form-control cf-pc-ai-textarea"/>
+                                        <div class="cf-pc-ai-widget-footer">
+                                            <button class="btn btn-success btn-sm" t-on-click="sendAIDraft" t-att-disabled="state.aiDraftLoading ? 'disabled' : ''">
+                                                <i class="fa fa-paper-plane"/> Invia Email
+                                            </button>
+                                            <button class="btn btn-light btn-sm" t-on-click="() => { this.state.aiDraftBody = ''; }">
+                                                Annulla bozza
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                            <div class="cf-pc-reader-empty" t-else="">
+                                <i class="fa fa-envelope-o"/>
+                                <p>Seleziona un'email per leggerla e avviare le operazioni commerciali.</p>
+                            </div>
+                        </main>
+                        
+                        <!-- COLUMN 3: PARTNER SIDEBAR CONTEXT -->
+                        <aside class="cf-pc-inbox-sidebar">
+                            <t t-if="selectedMessage &amp;&amp; selectedMessage.partner_id">
+                                <div class="cf-pc-sidebar-section cf-pc-sidebar-partner">
+                                    <h4>Profilo Cliente</h4>
+                                    <div class="cf-pc-partner-name" t-out="selectedMessage.title"/>
+                                    <div class="cf-pc-partner-email" t-out="selectedMessage.sender_email"/>
+                                    
+                                    <!-- Premium circular Lead Score Gauge -->
+                                    <div class="cf-pc-gauge-wrap">
+                                        <div class="cf-pc-gauge-title">Lead Score / Priorità</div>
+                                        <div class="cf-pc-gauge-circle">
+                                            <svg viewBox="0 0 36 36" class="cf-pc-circular-chart">
+                                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                <path class="circle" stroke-dasharray="88, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                <text x="18" y="20.35" class="percentage">88</text>
+                                            </svg>
+                                            <div class="cf-pc-gauge-label">HOT 🔥</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Quotes -->
+                                    <div class="cf-pc-sidebar-sub">
+                                        <h5>Quotazioni Attive</h5>
+                                        <div class="cf-pc-stat-row">
+                                            <span>Valore preventivo</span>
+                                            <strong>€ 250.000,00</strong>
+                                        </div>
+                                        <div class="cf-pc-stat-row">
+                                            <span>Stato</span>
+                                            <span class="cf-pc-mini-badge tone-blue">INVIATA</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Department Progress -->
+                                    <div class="cf-pc-sidebar-sub">
+                                        <h5>Avanzamento Reparti</h5>
+                                        <div class="cf-pc-progress-item">
+                                            <div class="cf-pc-progress-label"><span>Produzione</span><span>100%</span></div>
+                                            <div class="cf-pc-progress-bar"><span style="width: 100%; background: #2ec4b6;"/></div>
+                                        </div>
+                                        <div class="cf-pc-progress-item">
+                                            <div class="cf-pc-progress-label"><span>Logistica</span><span>100%</span></div>
+                                            <div class="cf-pc-progress-bar"><span style="width: 100%; background: #2ec4b6;"/></div>
+                                        </div>
+                                        <div class="cf-pc-progress-item">
+                                            <div class="cf-pc-progress-label"><span>Qualità</span><span>70%</span></div>
+                                            <div class="cf-pc-progress-bar"><span style="width: 70%; background: #ff9f1c;"/></div>
+                                        </div>
+                                        <div class="cf-pc-progress-item">
+                                            <div class="cf-pc-progress-label"><span>Dossier / Progetti</span><span>100%</span></div>
+                                            <div class="cf-pc-progress-bar"><span style="width: 100%; background: #2ec4b6;"/></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                            <div class="cf-pc-sidebar-empty" t-else="">
+                                <i class="fa fa-address-card-o"/>
+                                <p>Nessun profilo cliente associato per questo mittente.</p>
+                            </div>
+                        </aside>
                     </div>
                 </t>
 

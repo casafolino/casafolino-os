@@ -24,6 +24,12 @@ export class CFPipelineControl extends Component {
             dossierSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
+            selectedMessageId: null,
+            selectedMessageBody: "",
+            selectedMessageIds: {},
+            aiDraftBody: "",
+            aiDraftLoading: false,
+            aiInstruction: "",
             data: {
                 kpis: [],
                 lanes: [],
@@ -46,10 +52,120 @@ export class CFPipelineControl extends Component {
             if (!this.state.selectedFairId && this.state.data.post_fair?.fair?.id) {
                 this.state.selectedFairId = this.state.data.post_fair.fair.id;
             }
+            
+            // Auto-select first message in Inbox if not set or not in current list
+            const allInbox = this.allInboxRows;
+            if (allInbox.length && (!this.state.selectedMessageId || !allInbox.find(m => m.id === this.state.selectedMessageId))) {
+                await this.selectMessage(allInbox[0].id);
+            }
         } catch (error) {
             this.state.error = error.message || String(error);
         } finally {
             this.state.loading = false;
+        }
+    }
+
+    async selectMessage(messageId) {
+        this.state.selectedMessageId = messageId;
+        this.state.aiDraftBody = "";
+        this.state.aiInstruction = "";
+        this.state.selectedMessageBody = _t("Caricamento email...");
+        
+        try {
+            const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
+            if (records && records.length) {
+                this.state.selectedMessageBody = records[0].body_html || `<pre>${records[0].body_plain || ''}</pre>` || _t("Nessun contenuto.");
+            } else {
+                this.state.selectedMessageBody = _t("Impossibile caricare il corpo del messaggio.");
+            }
+        } catch (error) {
+            this.state.selectedMessageBody = _t("Errore caricamento corpo email: ") + (error.message || String(error));
+        }
+    }
+
+    toggleMessageCheck(messageId) {
+        this.state.selectedMessageIds[messageId] = !this.state.selectedMessageIds[messageId];
+    }
+
+    async triggerBulkAction(actionType) {
+        const ids = Object.keys(this.state.selectedMessageIds).filter(id => this.state.selectedMessageIds[id]).map(Number);
+        if (!ids.length) {
+            this.notification.add(_t("Nessun messaggio selezionato"), { type: "warning" });
+            return;
+        }
+        try {
+            if (actionType === 'archive') {
+                await this.orm.call("cf.pipeline.control", "mass_archive", [ids]);
+                this.notification.add(_t("Messaggi archiviati con successo"), { type: "success" });
+            } else if (actionType === 'link_lead') {
+                if (this.selectedMessage && this.selectedMessage.lead_id) {
+                    await this.orm.call("cf.pipeline.control", "mass_link_lead", [ids, this.selectedMessage.lead_id]);
+                    this.notification.add(_t("Messaggi collegati al lead con successo"), { type: "success" });
+                } else {
+                    this.notification.add(_t("Seleziona prima una mail collegata ad un lead di destinazione"), { type: "warning" });
+                    return;
+                }
+            }
+            this.state.selectedMessageIds = {};
+            await this.loadData();
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async quickCreatePartner(row) {
+        if (!row || !row.id) return;
+        try {
+            const success = await this.orm.call("cf.pipeline.control", "quick_create_partner", [row.id]);
+            if (success) {
+                this.notification.add(_t("Contatto registrato e collegato con successo!"), { type: "success" });
+                await this.loadData();
+                if (this.state.selectedMessageId === row.id) {
+                    await this.selectMessage(row.id);
+                }
+            } else {
+                this.notification.add(_t("Registrazione contatto fallita."), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async generateAIDraft() {
+        if (!this.state.selectedMessageId) return;
+        this.state.aiDraftLoading = true;
+        try {
+            const res = await this.orm.call("cf.pipeline.control", "generate_ai_draft", [this.state.selectedMessageId, this.state.aiInstruction]);
+            if (res.success) {
+                this.state.aiDraftBody = res.draft;
+                this.notification.add(_t("Bozza AI generata con successo"), { type: "success" });
+            } else {
+                this.notification.add(res.error || _t("Errore nella generazione bozza"), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        } finally {
+            this.state.aiDraftLoading = false;
+        }
+    }
+
+    async sendAIDraft() {
+        if (!this.state.selectedMessageId || !this.state.aiDraftBody) return;
+        this.state.aiDraftLoading = true;
+        try {
+            const res = await this.orm.call("cf.pipeline.control", "send_ai_reply", [this.state.selectedMessageId, this.state.aiDraftBody]);
+            if (res.success) {
+                this.state.aiDraftBody = "";
+                this.state.aiInstruction = "";
+                this.notification.add(_t("Email di risposta inviata con successo!"), { type: "success" });
+                await this.loadData();
+            } else {
+                this.notification.add(res.error || _t("Errore nell'invio email"), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        } finally {
+            this.state.aiDraftLoading = false;
         }
     }
 
@@ -301,6 +417,11 @@ export class CFPipelineControl extends Component {
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }
+    }
+
+    get selectedMessage() {
+        if (!this.state.selectedMessageId) return null;
+        return this.allInboxRows.find(m => m.id === this.state.selectedMessageId) || null;
     }
 
     get navItems() {

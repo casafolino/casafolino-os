@@ -353,6 +353,112 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     @api.model
+    def mass_archive(self, message_ids):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        if msgs:
+            msgs.action_archive()
+        return True
+
+    @api.model
+    def mass_link_lead(self, message_ids, lead_id):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        lead = self.env['crm.lead'].browse(int(lead_id)).exists()
+        if msgs and lead:
+            msgs.write({'lead_id': lead.id})
+            for msg in msgs:
+                if msg.partner_id and not lead.partner_id:
+                    lead.partner_id = msg.partner_id
+        return True
+
+    @api.model
+    def quick_create_partner(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return False
+        if msg.partner_id:
+            return True
+        partner = self.env['res.partner'].create({
+            'name': msg.sender_name or msg.sender_email.split('@')[0],
+            'email': msg.sender_email,
+        })
+        msg.write({'partner_id': partner.id})
+        return True
+
+    @api.model
+    def generate_ai_draft(self, message_id, instruction=''):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return {'success': False, 'error': 'Email non trovata'}
+
+        original_body = msg.body_plain or msg.snippet or ''
+        
+        system_instruction = (
+            "You are an expert sales assistant for CasaFolino, an Italian artisan gourmet food company.\n"
+            "Your task is to write a highly professional, polite, and helpful email reply to the customer's email.\n"
+            "Write the reply in the same language as the customer's email (typically Italian or English).\n"
+            "Do NOT include any email subject or headers. Output ONLY the email body text in HTML format. Keep paragraphs clean using <p> tags. Do not put markdown placeholders. Keep it elegant."
+        )
+
+        user_prompt = (
+            f"Customer email sender: {msg.sender_name or 'Customer'} <{msg.sender_email or ''}>\n"
+            f"Customer email subject: {msg.subject or '(no subject)'}\n"
+            f"Customer email body:\n\"\"\"\n{original_body[:3000]}\n\"\"\"\n\n"
+        )
+        
+        if instruction:
+            user_prompt += f"USER INSTRUCTIONS for the reply: {instruction}\n\n"
+        else:
+            user_prompt += "Write a friendly, professional response acknowledging receipt and addressing any questions in the email.\n\n"
+
+        user_prompt += "Draft Response (HTML):"
+
+        try:
+            draft = self.env['cf.gemini.client']._call_gemini_raw(system_instruction, user_prompt)
+            if not draft:
+                return {'success': False, 'error': 'Gemini ha restituito una bozza vuota'}
+            
+            if '```' in draft:
+                import re
+                draft = re.sub(r'^```\w*\n?', '', draft)
+                draft = re.sub(r'\n?```$', '', draft)
+                draft = draft.strip()
+
+            return {
+                'success': True,
+                'draft': draft,
+                'sender_email': msg.sender_email,
+                'subject': f"Re: {msg.subject}" if msg.subject and not msg.subject.startswith('Re:') else msg.subject or 'Re: Email'
+            }
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @api.model
+    def send_ai_reply(self, message_id, body, to_address=False, subject=False):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return {'success': False, 'error': 'Email non trovata'}
+
+        to_addr = to_address or msg.sender_email
+        sub = subject or (f"Re: {msg.subject}" if msg.subject and not msg.subject.startswith('Re:') else msg.subject or 'Re: Email')
+
+        try:
+            res = msg.send_reply(
+                message_id=msg.id,
+                to_address=to_addr,
+                subject=sub,
+                body=body,
+                account_id=msg.account_id.id if msg.account_id else False
+            )
+            if isinstance(res, dict) and not res.get('success', True):
+                return {'success': False, 'error': res.get('error', 'Invio fallito')}
+            
+            msg.write({'is_read': True, 'state': 'keep'})
+            return {'success': True}
+        except Exception as e:
+            _logger.exception("SMTP Send Error: %s", e)
+            return {'success': False, 'error': str(e)}
+
+    @api.model
     def cleanup_legacy_entrypoints(self):
         """Keep one visible operational cockpit and hide obsolete 360 entrypoints."""
         refs_to_disable = [
@@ -880,6 +986,16 @@ class CfPipelineControl(models.AbstractModel):
             return msg.action_create_lead()
         if quick_action == 'create_lead':
             return msg.action_create_lead()
+        if quick_action == 'create_dossier':
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Crea dossier da email',
+                'res_model': 'cf.pipeline.create.dossier.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_message_id': msg.id},
+                'reload': True,
+            }
         if quick_action == 'link_lead':
             return {
                 'type': 'ir.actions.act_window',
@@ -1638,6 +1754,141 @@ class CfPipelinePromoteDossierWizard(models.TransientModel):
             if user_id:
                 vals['user_ids'] = [(6, 0, [user_id])]
             Task.create(vals)
+
+
+class CfPipelineCreateDossierWizard(models.TransientModel):
+    _name = 'cf.pipeline.create.dossier.wizard'
+    _description = 'Crea dossier direttamente da email'
+
+    message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
+    partner_id = fields.Many2one('res.partner', string='Cliente')
+    partner_name = fields.Char(string='Nome cliente (Nuovo)')
+    partner_email = fields.Char(string='Email cliente')
+    project_name = fields.Char(string='Nome dossier', required=True)
+    expected_revenue = fields.Monetary(string='Valore stimato (Ricavo atteso)', currency_field='currency_id')
+    currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
+    user_id = fields.Many2one('res.users', string='Owner', default=lambda self: self.env.uid)
+    next_action = fields.Char(string='Prossima azione')
+    next_action_date = fields.Date(string='Data prossima azione')
+    target_date = fields.Date(string='Data obiettivo')
+    create_next_task = fields.Boolean(string='Crea task prossima azione', default=True)
+    create_department_tasks = fields.Boolean(string='Crea task reparti', default=True)
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        msg_id = self.env.context.get('default_message_id')
+        if msg_id:
+            msg = self.env['casafolino.mail.message'].browse(msg_id).exists()
+            if msg:
+                res.update({
+                    'message_id': msg.id,
+                    'partner_id': msg.partner_id.id if msg.partner_id else False,
+                    'partner_name': msg.sender_name or (msg.sender_email.split('@')[0] if msg.sender_email else ''),
+                    'partner_email': msg.sender_email or '',
+                    'project_name': msg.subject or 'Dossier da email',
+                    'next_action': 'Risposta commerciale e listino',
+                    'next_action_date': fields.Date.context_today(self) + timedelta(days=7),
+                })
+        return res
+
+    def action_create_dossier(self):
+        self.ensure_one()
+        msg = self.message_id
+
+        # 1. Partner
+        partner = self.partner_id
+        if not partner:
+            if self.partner_email:
+                partner = self.env['res.partner'].search([('email', '=ilike', self.partner_email.strip())], limit=1)
+            if not partner and self.partner_name:
+                partner = self.env['res.partner'].create({
+                    'name': self.partner_name,
+                    'email': self.partner_email,
+                })
+            elif not partner:
+                raise UserError('Specificare un cliente esistente o inserire i dati per crearne uno nuovo.')
+
+        # 2. Lead CRM
+        lead_vals = {
+            'name': self.project_name or msg.subject or 'Richiesta commerciale',
+            'partner_id': partner.id,
+            'email_from': msg.sender_email or self.partner_email,
+            'user_id': self.user_id.id or self.env.user.id,
+            'expected_revenue': self.expected_revenue,
+            'source_email_id': msg.id,
+            'description': msg.snippet or '',
+        }
+        # Find Export team & "New" stage
+        team = self.env['crm.team'].search([('name', 'ilike', 'Export')], limit=1)
+        if team:
+            lead_vals['team_id'] = team.id
+            stage = self.env['crm.stage'].search([('team_id', '=', team.id), ('name', 'ilike', 'New')], limit=1)
+            if not stage:
+                stage = self.env['crm.stage'].search([('team_id', '=', team.id)], order='sequence', limit=1)
+            if stage:
+                lead_vals['stage_id'] = stage.id
+        
+        lead = self.env['crm.lead'].create(lead_vals)
+
+        # 3. Project / Dossier
+        project_vals = {
+            'name': self.project_name,
+            'partner_id': partner.id,
+            'user_id': self.user_id.id or self.env.user.id,
+        }
+        Project = self.env['project.project']
+        if 'cf_status_dossier' in Project._fields:
+            project_vals['cf_status_dossier'] = 'exploration'
+        if 'cf_dossier_priority' in Project._fields:
+            project_vals['cf_dossier_priority'] = 'medium'
+        if 'cf_next_action' in Project._fields:
+            project_vals['cf_next_action'] = self.next_action or False
+        if 'cf_next_action_date' in Project._fields:
+            project_vals['cf_next_action_date'] = self.next_action_date or False
+        if 'date' in Project._fields:
+            project_vals['date'] = self.target_date or self.next_action_date or False
+
+        project = Project.create(project_vals)
+        
+        # Link project to lead
+        if 'cf_project_id' in lead._fields:
+            lead.cf_project_id = project.id
+
+        # 4. Create tasks
+        if self.create_next_task and self.next_action:
+            self.env['project.task'].create({
+                'name': self.next_action,
+                'project_id': project.id,
+                'partner_id': partner.id,
+                'user_ids': [(6, 0, [self.user_id.id or self.env.user.id])],
+                'date_deadline': self.next_action_date or False,
+            })
+        
+        if self.create_department_tasks:
+            # We can invoke the department task helper from CfPipelinePromoteDossierWizard
+            promote_wizard = self.env['cf.pipeline.promote.dossier.wizard']
+            promote_wizard._ensure_department_tasks(project, lead)
+
+        # 5. Write back to message
+        msg.write({
+            'lead_id': lead.id,
+            'cf_project_id': project.id if 'cf_project_id' in msg._fields else False,
+            'partner_id': partner.id if not msg.partner_id else msg.partner_id.id,
+            'state': 'keep',
+            'triage_user_id': self.env.user.id,
+            'triage_date': fields.Datetime.now(),
+        })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Dossier',
+            'res_model': 'project.project',
+            'res_id': project.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
 
 
 class CfPipelineLinkLeadWizard(models.TransientModel):
