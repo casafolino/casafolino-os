@@ -786,109 +786,105 @@ Per "note_agente" scrivi un breve riassunto (2-3 frasi) utile per il team commer
             enrich_from = 'nome_azienda'
             if company:
                 enrich_from = 'nome_azienda'
-                elif email:
-                    enrich_from = 'email'
-                elif partner.vat:
-                    enrich_from = 'piva'
-                else:
-                    enrich_from = 'nome_persona'
+            elif email:
+                enrich_from = 'email'
+            elif partner.vat:
+                enrich_from = 'piva'
+            else:
+                enrich_from = 'nome_persona'
 
-                vals = {
-                    'cf_007_enriched': True,
-                    'cf_007_enriched_date': fields.Datetime.now(),
-                    'cf_007_enriched_from': enrich_from,
-                }
+            vals = {
+                'cf_007_enriched': True,
+                'cf_007_enriched_date': fields.Datetime.now(),
+                'cf_007_enriched_from': enrich_from,
+            }
 
-                field_map = {
-                    'ragione_sociale': 'cf_007_ragione_sociale',
-                    'piva': 'cf_007_piva',
-                    'pec': 'cf_007_pec',
-                    'settore': 'cf_007_settore',
-                    'fatturato': 'cf_007_fatturato',
-                    'fatturato_anno': 'cf_007_fatturato_anno',
-                    'trend_ricavi': 'cf_007_trend_ricavi',
-                    'dipendenti': 'cf_007_dipendenti',
-                    'mercati': 'cf_007_mercati',
-                    'certificazioni': 'cf_007_certificazioni',
-                    'marchi': 'cf_007_marchi',
-                    'sito_web': 'cf_007_sito_web',
-                    'telefono': 'cf_007_telefono',
-                    'indirizzo': 'cf_007_indirizzo',
-                    'cap': 'cf_007_cap',
-                    'citta': 'cf_007_citta',
-                    'potenziale': 'cf_007_potenziale',
-                    'ruolo_commerciale': 'cf_007_ruolo_commerciale',
-                    'note_agente': 'cf_007_note_agente',
-                    'codice_fiscale': 'cf_007_codice_fiscale',
-                    'rea': 'cf_007_rea',
-                    'forma_giuridica': 'cf_007_forma_giuridica',
-                    'ateco': 'cf_007_ateco',
-                    'ateco_desc': 'cf_007_ateco_desc',
-                    'capitale_sociale': 'cf_007_capitale_sociale',
-                    'data_costituzione': 'cf_007_data_costituzione',
-                    'anzianita': 'cf_007_anzianita',
-                    'stato_attivita': 'cf_007_stato_attivita',
-                    'dimensione': 'cf_007_dimensione',
-                    'canali_vendita': 'cf_007_canali_vendita',
-                    'prodotti_interesse': 'cf_007_prodotti_interesse',
-                    'linkedin_company': 'cf_007_linkedin_company',
-                    'paese': 'cf_007_paese',
-                    'provincia': 'cf_007_provincia',
-                    'utile': 'cf_007_utile',
-                }
+            field_map = {
+                'ragione_sociale': 'cf_007_ragione_sociale',
+                'piva': 'cf_007_piva',
+                'pec': 'cf_007_pec',
+                'settore': 'cf_007_settore',
+                'fatturato': 'cf_007_fatturato',
+                'fatturato_anno': 'cf_007_fatturato_anno',
+                'trend_ricavi': 'cf_007_trend_ricavi',
+                'dipendenti': 'cf_007_dipendenti',
+                'mercati': 'cf_007_mercati',
+                'certificazioni': 'cf_007_certificazioni',
+                'marchi': 'cf_007_marchi',
+                'sito_web': 'cf_007_sito_web',
+                'telefono': 'cf_007_telefono',
+                'indirizzo': 'cf_007_indirizzo',
+                'cap': 'cf_007_cap',
+                'citta': 'cf_007_citta',
+                'potenziale': 'cf_007_potenziale',
+                'ruolo_commerciale': 'cf_007_ruolo_commerciale',
+                'note_agente': 'cf_007_note_agente',
+                'codice_fiscale': 'cf_007_codice_fiscale',
+                'rea': 'cf_007_rea',
+                'forma_giuridica': 'cf_007_forma_giuridica',
+                'ateco': 'cf_007_ateco',
+                'ateco_desc': 'cf_007_ateco_desc',
+                'capitale_sociale': 'cf_007_capitale_sociale',
+                'data_costituzione': 'cf_007_data_costituzione',
+                'anzianita': 'cf_007_anzianita',
+                'stato_attivita': 'cf_007_stato_attivita',
+                'dimensione': 'cf_007_dimensione',
+                'canali_vendita': 'cf_007_canali_vendita',
+                'prodotti_interesse': 'cf_007_prodotti_interesse',
+                'linkedin_company': 'cf_007_linkedin_company',
+                'paese': 'cf_007_paese',
+                'provincia': 'cf_007_provincia',
+                'utile': 'cf_007_utile',
+            }
 
-                selection_valid = {
-                    'cf_007_potenziale': ('alto', 'medio', 'basso'),
-                    'cf_007_ruolo_commerciale': ('produttore', 'distributore', 'importatore', 'retailer', 'grossista', 'agente', 'ecommerce', 'horeca', 'altro'),
-                    'cf_007_stato_attivita': ('attiva', 'inattiva', 'liquidazione', 'fallita', 'sconosciuto'),
-                    'cf_007_dimensione': ('micro', 'piccola', 'media', 'grande', 'sconosciuto'),
-                }
+            selection_valid = {
+                'cf_007_potenziale': ('alto', 'medio', 'basso'),
+                'cf_007_ruolo_commerciale': ('produttore', 'distributore', 'importatore', 'retailer', 'grossista', 'agente', 'ecommerce', 'horeca', 'altro'),
+                'cf_007_stato_attivita': ('attiva', 'inattiva', 'liquidazione', 'fallita', 'sconosciuto'),
+                'cf_007_dimensione': ('micro', 'piccola', 'media', 'grande', 'sconosciuto'),
+            }
 
-                for json_key, odoo_field in field_map.items():
-                    val = data.get(json_key)
-                    if val:
-                        str_val = str(val)
-                        if odoo_field in selection_valid and str_val not in selection_valid[odoo_field]:
-                            continue
-                        if odoo_field == 'cf_007_note_agente' and partner.cf_007_note_agente:
-                            vals[odoo_field] = partner.cf_007_note_agente + '\n---\n' + str_val
-                        else:
-                            vals[odoo_field] = str_val
-
-                # Populate standard Odoo fields if currently empty
-                odoo_standard_map = {
-                    'odoo_vat': 'vat',
-                    'odoo_website': 'website',
-                    'odoo_phone': 'phone',
-                    'odoo_street': 'street',
-                    'odoo_zip': 'zip',
-                    'odoo_city': 'city',
-                }
-                for json_key, odoo_field in odoo_standard_map.items():
-                    val = data.get(json_key)
-                    if val and not getattr(partner, odoo_field):
-                        vals[odoo_field] = str(val)
-
-                # Also update comment (append, don't overwrite)
-                agent_note = data.get('note_agente')
-                if agent_note:
-                    existing_comment = partner.comment or ''
-                    if existing_comment:
-                        vals['comment'] = existing_comment + '\n\n--- Agente 007 ---\n' + str(agent_note)
+            for json_key, odoo_field in field_map.items():
+                val = data.get(json_key)
+                if val:
+                    str_val = str(val)
+                    if odoo_field in selection_valid and str_val not in selection_valid[odoo_field]:
+                        continue
+                    if odoo_field == 'cf_007_note_agente' and partner.cf_007_note_agente:
+                        vals[odoo_field] = partner.cf_007_note_agente + '\n---\n' + str_val
                     else:
-                        vals['comment'] = '--- Agente 007 ---\n' + str(agent_note)
+                        vals[odoo_field] = str_val
 
-                # Update ragione_sociale as name if company record and name is empty-ish
-                ragione = data.get('ragione_sociale')
-                if ragione and partner.is_company and not partner.name:
-                    vals['name'] = str(ragione)
+            # Populate standard Odoo fields if currently empty
+            odoo_standard_map = {
+                'odoo_vat': 'vat',
+                'odoo_website': 'website',
+                'odoo_phone': 'phone',
+                'odoo_street': 'street',
+                'odoo_zip': 'zip',
+                'odoo_city': 'city',
+            }
+            for json_key, odoo_field in odoo_standard_map.items():
+                val = data.get(json_key)
+                if val and not getattr(partner, odoo_field):
+                    vals[odoo_field] = str(val)
 
-                partner.write(vals)
-                _logger.info("007: enriched partner %s (%s)", partner.id, partner.name)
+            # Also update comment (append, don't overwrite)
+            agent_note = data.get('note_agente')
+            if agent_note:
+                existing_comment = partner.comment or ''
+                if existing_comment:
+                    vals['comment'] = existing_comment + '\n\n--- Agente 007 ---\n' + str(agent_note)
+                else:
+                    vals['comment'] = '--- Agente 007 ---\n' + str(agent_note)
 
-            except Exception as e:
-                _logger.error("007: error enriching partner %s: %s", partner.id, e)
-                raise
+            # Update ragione_sociale as name if company record and name is empty-ish
+            ragione = data.get('ragione_sociale')
+            if ragione and partner.is_company and not partner.name:
+                vals['name'] = str(ragione)
+
+            partner.write(vals)
+            _logger.info("007: enriched partner %s (%s)", partner.id, partner.name)
 
         return True
 
