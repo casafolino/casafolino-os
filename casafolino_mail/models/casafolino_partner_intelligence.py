@@ -626,7 +626,51 @@ class CasafolinoPartnerIntelligence(models.Model):
         }
 
     def _nba_llm_fallback(self, rec, partner, data):
-        """LLM fallback when no rule matches. Uses Groq API."""
+        """LLM fallback when no rule matches. Uses Gemini primarily, falls back to Groq."""
+        # 1. Prova prima Gemini se configurato
+        gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
+        if gemini_key:
+            prompt = (
+                "Sei un assistente commerciale per CasaFolino (food B2B export italiano). "
+                "Dato il contesto del partner, suggerisci la prossima azione commerciale. "
+                "Rispondi con JSON: {\"text\": \"...\", \"urgency\": \"medium|low|info\"}\n\n"
+                "Partner: %s\n"
+                "Email totali: %d\n"
+                "Ultimo contatto: %dg fa\n"
+                "Fatturato YTD: €%.0f\n"
+                "Lead aperto: %s (stage: %s)\n"
+                "Tier: %s\n"
+                "Sentiment trend: %s\n"
+            ) % (
+                partner.name or '?',
+                data['total_emails'],
+                data['days_since_last_email'],
+                data['ytd_revenue'],
+                'Si' if data['has_open_lead'] else 'No',
+                data['lead_stage'] or '-',
+                data['hotness_tier'],
+                data['sentiment_trend'],
+            )
+            try:
+                system_instruction = "Sei un assistente CRM commerciale per CasaFolino. Rispondi SOLO in formato JSON."
+                result = self.env['cf.gemini.client']._call_gemini_json(system_instruction, prompt)
+                if result:
+                    text = (result.get('text') or '')[:200]
+                    urgency = result.get('urgency', 'info')
+                    if urgency not in ('critical', 'high', 'medium', 'low', 'info'):
+                        urgency = 'info'
+                    rec.write({
+                        'nba_text': text,
+                        'nba_urgency': urgency,
+                        'nba_rule_id': 0,
+                        'nba_from_llm': True,
+                        'nba_computed_at': fields.Datetime.now(),
+                    })
+                    return
+            except Exception as e:
+                _logger.warning("NBA Gemini fallback fallito: %s. Procedo con fallback Groq.", e)
+
+        # 2. Fallback Groq (originale)
         api_key = self.env['ir.config_parameter'].sudo().get_param(
             'casafolino.groq_api_key', '')
         if not api_key:

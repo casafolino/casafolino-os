@@ -529,7 +529,7 @@ class CasafolinoMailMessage(models.Model):
         return '\n'.join(lines)
 
     def _do_ai_suggestion(self):
-        """Call Groq with structured prompt → JSON with candidate dossiers."""
+        """Call Gemini/Groq with structured prompt → JSON with candidate dossiers."""
         self.ensure_one()
         if not self.partner_id:
             self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
@@ -577,11 +577,37 @@ class CasafolinoMailMessage(models.Model):
             context_section,
         )
 
+        # 1. Prova prima Gemini se configurato
+        gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
+        if gemini_key:
+            try:
+                system_instruction = "You are a CRM email router. Respond with JSON only."
+                data = self.env['cf.gemini.client']._call_gemini_json(system_instruction, prompt)
+                if data:
+                    suggestions = data.get('suggestions', [])
+                    reasoning = data.get('main_reasoning', '')
+
+                    valid_ids = candidates.ids
+                    sugg_ids = [s['project_id'] for s in suggestions[:3]
+                                if s.get('project_id') in valid_ids]
+                    top_conf = suggestions[0].get('confidence', 0.0) if suggestions else 0.0
+
+                    self.write({
+                        'cf_ai_suggestion_ids': [(6, 0, sugg_ids)],
+                        'cf_ai_confidence': float(top_conf),
+                        'cf_ai_reasoning': reasoning,
+                        'cf_ai_processed': True,
+                    })
+                    return
+            except Exception as e:
+                _logger.warning("Posizionatore Gemini suggestion fallito: %s. Procedo con fallback Groq.", e)
+
+        # 2. Fallback Groq (originale)
         api_key = self.env['ir.config_parameter'].sudo().get_param(
             'casafolino.groq_api_key', '')
         if not api_key:
             self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
-                        'cf_ai_reasoning': 'Groq API key non configurata.'})
+                        'cf_ai_reasoning': 'API key non configurata.'})
             return
 
         try:
@@ -929,6 +955,172 @@ class CasafolinoMailMessage(models.Model):
 
         # Se arriviamo qui: 2 tentativi falliti (403 retry)
         self.write({'ai_error': 'Cloudflare 403 after retry'})
+
+    def _classify_with_gemini(self):
+        """Classifica questa email con Google Gemini API. Non solleva mai eccezioni."""
+        self.ensure_one()
+
+        # Check abilitazione
+        enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino_mail.ai_classifier_enabled', '0')
+        if enabled != '1':
+            return
+
+        # Skip se già classificato
+        if self.ai_classified_at:
+            return
+
+        # Estrai testo
+        body_text = self._get_body_text_for_ai()
+        if not body_text and not self.subject:
+            self.write({'ai_error': 'No body content'})
+            return
+
+        system_prompt = (
+            "You are an email classifier for CasaFolino, an Italian artisan gourmet food company "
+            "(B2B export, GDO retail, private label). Classify each email with JSON output only, no prose."
+        )
+        user_prompt = (
+            "Classify this email:\n"
+            "Subject: %s\n"
+            "Body (first 2000 chars): %s\n\n"
+            "Return ONLY valid JSON in this exact format:\n"
+            '{"category": "commerciale|admin|fornitore|newsletter|interno|personale|spam", '
+            '"sentiment": "positive|neutral|negative", '
+            '"language": "it|en|de|fr|es|other", '
+            '"urgency": "high|medium|low", '
+            '"action_required": true|false,\n'
+            '"summary": "concise 1-2 sentence Italian summary of the email"}\n\n'
+            "Rules:\n"
+            '- "commerciale" = buyer, distributor, retailer, customer requests, trade fairs\n'
+            '- "admin" = invoices, bank, tax, legal, HR, logistics docs\n'
+            '- "fornitore" = suppliers, raw materials, packaging, ingredients\n'
+            '- "newsletter" = marketing, promotional, mass mailing\n'
+            '- "interno" = internal @casafolino.com addresses\n'
+            '- "personale" = personal matters\n'
+            '- "spam" = unsolicited promotional, phishing\n'
+            '- urgency="high" when: explicit deadlines <7 days, complaints, legal matters, payments overdue\n'
+            '- action_required=true when recipient must reply or take action'
+        ) % (self.subject or '(no subject)', body_text or '(empty)')
+
+        try:
+            data = self.env['cf.gemini.client']._call_gemini_json(system_prompt, user_prompt)
+            if not data:
+                self.write({'ai_error': 'Gemini returned empty or invalid JSON'})
+                return
+
+            vals = {
+                'ai_classified_at': fields.Datetime.now(),
+                'ai_raw_response': json.dumps(data),
+                'ai_error': False,
+            }
+
+            cat = (data.get('category') or '').lower().strip()
+            if cat in self._GROQ_VALID_CATEGORIES:
+                vals['ai_category'] = cat
+
+            sent = (data.get('sentiment') or '').lower().strip()
+            if sent in self._GROQ_VALID_SENTIMENTS:
+                vals['ai_sentiment'] = sent
+
+            lang = (data.get('language') or '').lower().strip()
+            if lang in self._GROQ_VALID_LANGUAGES:
+                vals['ai_language'] = lang
+
+            urg = (data.get('urgency') or '').lower().strip()
+            if urg in self._GROQ_VALID_URGENCIES:
+                vals['ai_urgency'] = urg
+
+            if isinstance(data.get('action_required'), bool):
+                vals['ai_action_required'] = data['action_required']
+
+            # Aggiorna snippet con il riassunto intelligente generato da Gemini se presente
+            if data.get('summary'):
+                vals['snippet'] = data['summary']
+
+            self.write(vals)
+
+            # Invia la notifica Telegram se la mail è "rilevante"
+            # Definiamo "rilevante": categoria in ('commerciale', 'admin') o urgenza 'high'
+            if cat in ('commerciale', 'admin') or urg == 'high':
+                try:
+                    self.action_send_telegram_notification()
+                except Exception as tg_e:
+                    _logger.warning("Telegram notification failed for message %s: %s", self.id, tg_e)
+
+            return
+
+        except Exception as e:
+            self.write({'ai_error': str(e)[:200]})
+            _logger.exception("Gemini classify error for message %s: %s", self.id, e)
+            return
+
+    def action_send_telegram_notification(self):
+        """Invia notifica Telegram per email rilevante usando parametri ICP."""
+        self.ensure_one()
+        ICP = self.env['ir.config_parameter'].sudo()
+
+        enabled = ICP.get_param('casafolino.telegram_enabled', '0')
+        if enabled != '1':
+            return False
+
+        token = ICP.get_param('casafolino.telegram_bot_token', '')
+        chat_id = ICP.get_param('casafolino.telegram_chat_id', '')
+
+        if not token or not chat_id:
+            _logger.warning("Telegram notifica saltata: token o chat_id non configurati.")
+            return False
+
+        # Get summary from Gemini response, fallback to subject/snippet
+        summary = ""
+        if self.ai_raw_response:
+            try:
+                data = json.loads(self.ai_raw_response)
+                summary = data.get('summary', '')
+            except Exception:
+                pass
+        
+        if not summary:
+            summary = self.snippet or "Nessuna anteprima disponibile."
+
+        # Format message in simple Markdown
+        message = (
+            "📧 *Nuova Email Rilevante!*\n\n"
+            f"*Da:* {self.sender_name or 'Sconosciuto'} <{self.sender_email or ''}>\n"
+            f"*Oggetto:* {self.subject or '(Nessun Oggetto)'}\n"
+            f"*Categoria:* {self.ai_category or 'N/A'}\n"
+            f"*Urgenza:* {self.ai_urgency or 'low'}\n\n"
+            f"*Sintesi:* {summary}\n"
+        )
+
+        # Inline Keyboard
+        reply_markup = {
+            "inline_keyboard": [
+                [
+                    {"text": "📝 Bozza Risposta", "callback_data": f"draft:{self.id}"},
+                    {"text": "✅ Segna Letto", "callback_data": f"read:{self.id}"},
+                    {"text": "❌ Ignora", "callback_data": f"ignore:{self.id}"}
+                ]
+            ]
+        }
+
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": message,
+            "parse_mode": "Markdown",
+            "reply_markup": reply_markup
+        }
+
+        try:
+            resp = req.post(url, json=payload, timeout=10)
+            if not resp.ok:
+                _logger.warning("Telegram notifica fallita: %s", resp.text)
+                return False
+            return True
+        except Exception as e:
+            _logger.exception("Errore nell'invio della notifica Telegram: %s", e)
+            return False
 
     def _maybe_auto_create_lead(self):
         """Auto-crea crm.lead se email classificata 'commerciale' e nessun lead esistente per mittente."""
@@ -1632,9 +1824,15 @@ class CasafolinoMailMessage(models.Model):
 
         _logger.info("AI classify cron: %d messaggi da classificare", len(pending))
         classified = 0
+        # Check standard AI engine based on config or key presence
+        use_gemini = bool(self.env['cf.gemini.client']._get_api_key())
+
         for idx, msg in enumerate(pending):
             try:
-                msg._classify_with_groq()
+                if use_gemini:
+                    msg._classify_with_gemini()
+                else:
+                    msg._classify_with_groq()
                 if msg.ai_classified_at:
                     classified += 1
                     # [Brief #6.0] _apply_sender_policy call removed

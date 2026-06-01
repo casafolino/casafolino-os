@@ -738,38 +738,54 @@ Per ogni campo usa null se non trovi il dato. Per "potenziale" usa: "alto", "med
 Per "note_agente" scrivi un breve riassunto (2-3 frasi) utile per il team commerciale.
 """
 
-            try:
-                response = requests.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "llama-3.3-70b-versatile",
-                        "max_tokens": 4096,
-                        "messages": [{"role": "user", "content": prompt}],
-                    },
-                    timeout=120,
-                )
-                if not response.ok:
-                    raise ValueError(f"API Error {response.status_code}: {response.text}")
-                response.raise_for_status()
-                _logger.info("007 raw response: %s", response.text[:2000])
-                result = response.json()
+            data = {}
+            gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
+            if gemini_key:
+                try:
+                    system_instruction = "Sei un agente di business intelligence. Rispondi solo in formato JSON."
+                    # Use gemini-1.5-pro for complex structured extraction to ensure 100% correct JSON
+                    res_json = self.env['cf.gemini.client']._call_gemini_json(system_instruction, prompt, model="gemini-1.5-pro")
+                    if res_json:
+                        data = res_json
+                except Exception as e:
+                    _logger.warning("007 Gemini enrichment fallito: %s. Procedo con fallback Groq.", e)
 
-                full_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
-                json_match = re.search(r'\{[\s\S]*\}', full_text)
-                if not json_match:
-                    _logger.warning("007: no JSON found in response for partner %s", partner.id)
+            if not data:
+                try:
+                    response = requests.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": "llama-3.3-70b-versatile",
+                            "max_tokens": 4096,
+                            "messages": [{"role": "user", "content": prompt}],
+                        },
+                        timeout=120,
+                    )
+                    if not response.ok:
+                        raise ValueError(f"API Error {response.status_code}: {response.text}")
+                    response.raise_for_status()
+                    _logger.info("007 raw response: %s", response.text[:2000])
+                    result = response.json()
+
+                    full_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    json_match = re.search(r'\{[\s\S]*\}', full_text)
+                    if not json_match:
+                        _logger.warning("007: no JSON found in response for partner %s", partner.id)
+                        continue
+
+                    data = json.loads(json_match.group())
+                except Exception as e:
+                    _logger.error("007 Groq fallback fallito per partner %s: %s", partner.id, e)
                     continue
 
-                data = json.loads(json_match.group())
-
-                # Determine enrichment source
+            # Determine enrichment source
+            enrich_from = 'nome_azienda'
+            if company:
                 enrich_from = 'nome_azienda'
-                if company:
-                    enrich_from = 'nome_azienda'
                 elif email:
                     enrich_from = 'email'
                 elif partner.vat:

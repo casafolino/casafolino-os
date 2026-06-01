@@ -146,6 +146,17 @@ class CFMailComposeAI(models.AbstractModel):
     # === Helpers ===
 
     def _call_groq_json(self, prompt, max_tokens=600):
+        # Prova prima Gemini se configurato
+        gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
+        if gemini_key:
+            try:
+                system_instruction = "You are a CRM email assistant. Return JSON when asked."
+                res = self.env['cf.gemini.client']._call_gemini_json(system_instruction, prompt)
+                if res:
+                    return res
+            except Exception as e:
+                _logger.warning("Gemini JSON fallito in composer AI: %s. Procedo con fallback Groq.", e)
+
         raw = self._call_groq_raw(prompt, max_tokens=max_tokens)
         import re
         match = re.search(r'\{[\s\S]*\}', raw)
@@ -154,6 +165,17 @@ class CFMailComposeAI(models.AbstractModel):
         return json.loads(match.group())
 
     def _call_groq_raw(self, prompt, max_tokens=600):
+        # Prova prima Gemini se configurato
+        gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
+        if gemini_key:
+            try:
+                system_instruction = "You are a CRM email assistant."
+                res = self.env['cf.gemini.client']._call_gemini_raw(system_instruction, prompt)
+                if res:
+                    return res
+            except Exception as e:
+                _logger.warning("Gemini RAW fallito in composer AI: %s. Procedo con fallback Groq.", e)
+
         api_key = self.env['ir.config_parameter'].sudo().get_param(
             'casafolino.groq_api_key', '')
         if not api_key:
