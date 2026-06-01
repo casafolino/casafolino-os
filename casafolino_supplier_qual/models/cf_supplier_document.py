@@ -76,12 +76,17 @@ class CfSupplierDocument(models.Model):
         if not expiring:
             return
 
+        # Look for Supplier Quality manager (RAQ group)
         quality = self.env['res.users'].search([
-            ('email', 'ilike', 'mirabelli')
+            ('groups_id', 'in', self.env.ref('casafolino_supplier_qual.group_cf_supplier_raq').id),
+            ('active', '=', True)
         ], limit=1)
         if not quality:
-            quality = self.env['res.users'].search(
-                [('login', '=', 'antonio@casafolino.com')], limit=1)
+            # Fallback to system administrators
+            quality = self.env['res.users'].search([
+                ('groups_id', 'in', self.env.ref('base.group_system').id),
+                ('active', '=', True)
+            ], limit=1)
 
         if quality and quality.email:
             body = "<p>Certificati fornitori in scadenza entro 60 giorni:</p><ul>"

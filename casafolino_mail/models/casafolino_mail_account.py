@@ -23,7 +23,7 @@ class CasafolinoMailAccount(models.Model):
                                           default=lambda self: self.env.uid)
     imap_host = fields.Char('IMAP Host', default='imap.gmail.com')
     imap_port = fields.Integer('IMAP Port', default=993)
-    imap_password = fields.Char('App Password')
+    imap_password = fields.Char('App Password', groups="base.group_system")
     imap_use_ssl = fields.Boolean('SSL', default=True)
     sent_folder = fields.Char('Cartella Sent', help='Auto-detected o manuale. Es. [Gmail]/Posta inviata')
     sync_start_date = fields.Date('Importa dal', default='2025-01-01')
