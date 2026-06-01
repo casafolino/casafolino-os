@@ -233,13 +233,31 @@ class CasaFolinoB2BPortal(http.Controller):
         result = [self._product_payload(product, index, account_state) for index, product in enumerate(products)]
         return sorted(result, key=lambda item: (item["priority_rank"], item["category"], item["record"].sequence, item["record"].name))
 
-    def _catalog_sections(self, products):
+    def _category_slug(self, category):
+        slug = re.sub(r"[^a-z0-9]+", "-", (category or "").lower()).strip("-")
+        return slug or "categoria"
+
+    def _category_url(self, category):
+        return "/b2b/category/%s" % quote(self._category_slug(category))
+
+    def _catalog_sections(self, products, limit=None):
         sections = []
         by_category = {}
         for item in products:
             by_category.setdefault(item["category"], []).append(item)
         for category in sorted(by_category, key=lambda name: (self._priority_rank(name), name)):
-            sections.append({"name": category, "products": by_category[category]})
+            category_products = by_category[category]
+            visible_products = category_products[:limit] if limit else category_products
+            sections.append(
+                {
+                    "name": category,
+                    "slug": self._category_slug(category),
+                    "url": self._category_url(category),
+                    "products": visible_products,
+                    "total_count": len(category_products),
+                    "has_more": bool(limit and len(category_products) > limit),
+                }
+            )
         return sections
 
     def _priority_sections(self, products):
@@ -299,9 +317,31 @@ class CasaFolinoB2BPortal(http.Controller):
             {
                 "account_state": account_state,
                 "products": products,
-                "best_sellers": products[:8],
                 "priority_sections": self._priority_sections(products),
-                "category_sections": self._catalog_sections(products),
+                "category_sections": self._catalog_sections(products, limit=4),
+                "cart": self._cart_totals(),
+            },
+        )
+
+    @http.route(["/b2b/category/<path:category_slug>"], type="http", auth="public", website=True, sitemap=True)
+    def b2b_category(self, category_slug, **kwargs):
+        guard = self._guard_b2b_site()
+        if guard:
+            return guard
+        account_state = self._account_state()
+        products = self._catalog_products(account_state)
+        sections = self._catalog_sections(products)
+        section = next((item for item in sections if item["slug"] == category_slug), None)
+        if not section:
+            return request.not_found()
+        return request.render(
+            "casafolino_b2b_portal.catalog",
+            {
+                "account_state": account_state,
+                "products": section["products"],
+                "priority_sections": [],
+                "category_sections": [section],
+                "category_page": section,
                 "cart": self._cart_totals(),
             },
         )
@@ -386,6 +426,7 @@ class CasaFolinoB2BPortal(http.Controller):
         cart = self._cart()
         cart[product.id] = cart.get(product.id, 0) + qty
         self._save_cart(cart)
+        self._sync_website_sale_cart(self._current_partner(), self._cart_totals())
         return request.redirect("/b2b")
 
     @http.route(["/b2b/cart/clear"], type="http", auth="public", website=True, methods=["POST"], csrf=True)
@@ -394,10 +435,46 @@ class CasaFolinoB2BPortal(http.Controller):
         if guard:
             return guard
         self._save_cart({})
+        order = request.website.sale_get_order()
+        if order:
+            order.sudo().order_line.filtered(lambda line: not line.is_delivery).unlink()
+            request.session["website_sale_cart_quantity"] = 0
         return request.redirect("/b2b")
 
-    @http.route(["/b2b/order/submit"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
-    def b2b_order_submit(self, **kwargs):
+    def _sync_website_sale_cart(self, partner, cart):
+        order = request.website.sale_get_order(force_create=True)
+        order = order.sudo()
+        partner_values = {
+            "partner_id": partner.id,
+            "partner_invoice_id": partner.id,
+            "partner_shipping_id": partner.id,
+            "origin": "b2b.casafolino.com",
+            "note": "Ordine ricevuto e pagato dal portale B2B CasaFolino.",
+        }
+        if partner.property_product_pricelist:
+            partner_values["pricelist_id"] = partner.property_product_pricelist.id
+        fiscal_position = request.env["account.fiscal.position"].sudo().with_company(order.company_id)._get_fiscal_position(partner, partner)
+        partner_values["fiscal_position_id"] = fiscal_position.id if fiscal_position else False
+        order.write(partner_values)
+        order.order_line.filtered(lambda line: not line.is_delivery).unlink()
+        for line in cart["lines"]:
+            variant = line["product"].product_variant_id
+            if not variant:
+                continue
+            request.env["sale.order.line"].sudo().create({
+                "order_id": order.id,
+                "product_id": variant.id,
+                "product_uom_qty": line["qty"],
+                "price_unit": line["price_unit"],
+            })
+        order._recompute_prices()
+        order._recompute_taxes()
+        request.session["sale_order_id"] = order.id
+        request.session["website_sale_cart_quantity"] = order.cart_quantity
+        return order
+
+    @http.route(["/b2b/checkout"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def b2b_checkout(self, **kwargs):
         guard = self._guard_b2b_site()
         if guard:
             return guard
@@ -405,25 +482,10 @@ class CasaFolinoB2BPortal(http.Controller):
         cart = self._cart_totals()
         if not partner or not cart["can_checkout"]:
             return request.redirect("/b2b?checkout=blocked")
-        order = request.env["sale.order"].sudo().create(
-            {
-                "partner_id": partner.id,
-                "origin": "b2b.casafolino.com",
-                "note": "Ordine ricevuto dal portale B2B CasaFolino.",
-                "order_line": [
-                    (
-                        0,
-                        0,
-                        {
-                            "product_id": line["product"].product_variant_id.id,
-                            "product_uom_qty": line["qty"],
-                            "price_unit": line["price_unit"],
-                        },
-                    )
-                    for line in cart["lines"]
-                    if line["product"].product_variant_id
-                ],
-            }
-        )
+        self._sync_website_sale_cart(partner, cart)
         self._save_cart({})
-        return request.render("casafolino_b2b_portal.thank_you", {"order": order})
+        return request.redirect("/shop/checkout")
+
+    @http.route(["/b2b/order/submit"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def b2b_order_submit(self, **kwargs):
+        return self.b2b_checkout(**kwargs)

@@ -146,7 +146,11 @@ class CasaFolinoCompanyWebsite(http.Controller):
         sitemap=False,
     )
     def company_localized_backend_login(self, **kwargs):
-        return self._erp_login_redirect()
+        if request.website and request.env.user != request.website.user_id:
+            return request.redirect("/odoo", code=302)
+        response = self._erp_login_redirect()
+        response.set_cookie("frontend_lang", "en_US", max_age=60 * 60 * 24 * 365, path="/")
+        return response
 
     @http.route(["/robots.txt"], type="http", auth="public", website=False, sitemap=False)
     def company_robots(self, **kwargs):

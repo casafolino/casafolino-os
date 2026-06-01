@@ -45,11 +45,10 @@
                         </section>
 
                         <div class="cf-category-rail" t-if="category_sections">
-                            <a href="#cf-best-sellers" class="active">Best seller</a>
-                            <a href="#cf-priority-lines">Linee focus</a>
+                            <a href="#cf-priority-lines" class="active" t-if="priority_sections">Linee focus</a>
                             <a t-foreach="category_sections" t-as="section" t-attf-href="#cf-cat-#{section_index}">
                                 <span t-out="section['name']"/>
-                                <strong t-out="len(section['products'])"/>
+                                <strong t-out="section.get('total_count', len(section['products']))"/>
                             </a>
                         </div>
 
@@ -67,19 +66,6 @@
                         </div>
 
                         <t t-if="products">
-                            <section class="cf-category-section cf-best-sellers" id="cf-best-sellers">
-                                <div class="cf-section-head">
-                                    <p class="cf-eyebrow">Selezione CasaFolino</p>
-                                    <h2>Best seller B2B</h2>
-                                </div>
-                                <div class="cf-b2b-grid cf-featured-grid">
-                                    <t t-call="casafolino_b2b_portal.product_cards">
-                                        <t t-set="items" t-value="best_sellers"/>
-                                        <t t-set="account_state" t-value="account_state"/>
-                                    </t>
-                                </div>
-                            </section>
-
                             <section class="cf-category-section cf-priority-lines" id="cf-priority-lines" t-if="priority_sections">
                                 <div class="cf-section-head">
                                     <p class="cf-eyebrow">Priorita assortimento</p>
@@ -114,9 +100,14 @@
 
                             <section class="cf-category-section" t-foreach="category_sections" t-as="section" t-attf-id="cf-cat-#{section_index}">
                                 <div class="cf-section-head">
-                                    <p class="cf-eyebrow">Categoria</p>
-                                    <h2 t-out="section['name']"/>
-                                    <span class="cf-section-count"><t t-out="len(section['products'])"/> prodotti</span>
+                                    <div>
+                                        <p class="cf-eyebrow">Categoria</p>
+                                        <h2 t-out="section['name']"/>
+                                    </div>
+                                    <div class="cf-section-tools">
+                                        <span class="cf-section-count"><t t-out="section.get('total_count', len(section['products']))"/> prodotti</span>
+                                        <a class="cf-see-all" t-att-href="section['url']">Vedi tutti</a>
+                                    </div>
                                 </div>
                                 <div class="cf-b2b-grid">
                                     <t t-call="casafolino_b2b_portal.product_cards">
@@ -161,9 +152,9 @@
                             <span t-else="">Mancano <t t-out="'€ %.2f' % missing_amount"/> e <t t-out="missing_jars"/> pezzi</span>
                             <i t-attf-style="width: #{min(cart['total_qty'] / cart['min_jars'], cart['total_amount'] / cart['min_amount'], 1) * 100}%"></i>
                         </div>
-                        <form action="/b2b/order/submit" method="post">
+                        <form action="/b2b/checkout" method="post">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <button class="cf-submit" type="submit" t-att-disabled="not cart['can_checkout']">Invia ordine</button>
+                            <button class="cf-submit" type="submit" t-att-disabled="not cart['can_checkout']">Vai al pagamento</button>
                         </form>
                     </details>
                 </main>

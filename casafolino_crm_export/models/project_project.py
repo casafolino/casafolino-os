@@ -229,6 +229,10 @@ class ProjectProject(models.Model):
     cf_partner_mails_count = fields.Integer(
         compute='_compute_partner_mails', string='Mail partner',
     )
+    cf_partner_message_ids = fields.Many2many(
+        'mail.message', compute='_compute_partner_mails',
+        string='Storico mail partner',
+    )
     cf_sibling_dossiers_ids = fields.Many2many(
         'project.project', compute='_compute_sibling_dossiers',
         string='Altri dossier stesso cliente',
@@ -482,31 +486,37 @@ class ProjectProject(models.Model):
     def _compute_partner_mails(self):
         MM = self.env['mail.message']
         for p in self:
-            related_ids = p._get_all_related_partner_ids()
-            if not related_ids:
+            domain = p._cf_partner_message_domain()
+            if not domain:
                 p.cf_partner_mails_count = 0
+                p.cf_partner_message_ids = False
                 continue
-            p.cf_partner_mails_count = MM.search_count([
-                '|',
-                ('author_id', 'in', related_ids),
-                ('partner_ids', 'in', related_ids),
-            ])
+            messages = MM.search(domain, order='date desc, id desc', limit=200)
+            p.cf_partner_mails_count = len(messages)
+            p.cf_partner_message_ids = messages
 
-    def action_view_partner_mails(self):
+    def _cf_partner_message_domain(self):
         self.ensure_one()
         related_ids = self._get_all_related_partner_ids()
         if not related_ids:
+            return None
+        return [
+            '|',
+            ('author_id', 'in', related_ids),
+            ('partner_ids', 'in', related_ids),
+        ]
+
+    def action_view_partner_mails(self):
+        self.ensure_one()
+        domain = self._cf_partner_message_domain()
+        if not domain:
             return False
         return {
             'type': 'ir.actions.act_window',
             'name': _('Mail di %s') % (self.partner_id.name or 'cliente'),
             'res_model': 'mail.message',
             'view_mode': 'list,form',
-            'domain': [
-                '|',
-                ('author_id', 'in', related_ids),
-                ('partner_ids', 'in', related_ids),
-            ],
+            'domain': domain,
         }
 
     @api.depends('partner_id')
@@ -604,65 +614,6 @@ class ProjectProject(models.Model):
     def action_cf_compose_mail(self):
         """Redirect to F8 ComposeWizardDialog."""
         return self.action_compose_email_f8()
-
-    def _cf_activity_action(self, activity_xmlid, summary):
-        """Open the standard activity wizard pre-filled for this dossier."""
-        self.ensure_one()
-        activity_type = self.env.ref(activity_xmlid, raise_if_not_found=False)
-        model_id = self.env['ir.model']._get_id('project.project')
-        return {
-            'type': 'ir.actions.act_window',
-            'name': summary,
-            'res_model': 'mail.activity',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_res_model_id': model_id,
-                'default_res_id': self.id,
-                'default_activity_type_id': activity_type.id if activity_type else False,
-                'default_summary': summary,
-                'default_user_id': self.env.user.id,
-            },
-        }
-
-    def action_cf_schedule_call(self):
-        return self._cf_activity_action(
-            'mail.mail_activity_data_call',
-            _('Chiamata dossier'),
-        )
-
-    def action_cf_schedule_todo(self):
-        return self._cf_activity_action(
-            'mail.mail_activity_data_todo',
-            _('Todo dossier'),
-        )
-
-    def _cf_compose_message_action(self, subtype_xmlid=False):
-        self.ensure_one()
-        context = {
-            'default_model': 'project.project',
-            'default_res_ids': [self.id],
-            'default_composition_mode': 'comment',
-            'default_subject': self.name or _('Dossier'),
-        }
-        if subtype_xmlid:
-            subtype = self.env.ref(subtype_xmlid, raise_if_not_found=False)
-            if subtype:
-                context['default_subtype_id'] = subtype.id
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Messaggio dossier'),
-            'res_model': 'mail.compose.message',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': context,
-        }
-
-    def action_cf_log_message(self):
-        return self._cf_compose_message_action()
-
-    def action_cf_log_note(self):
-        return self._cf_compose_message_action('mail.mt_note')
 
     def action_compose_email_f8(self):
         """Open F8 Outlook-style composer via client action."""
@@ -880,12 +831,14 @@ class ProjectProject(models.Model):
     def action_open_project_dashboard_360(self):
         self.ensure_one()
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Dossier',
-            'res_model': 'project.project',
-            'res_id': self.id,
-            'view_mode': 'form',
-            'views': [(False, 'form')],
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_crm_export.project_dashboard',
+            'name': 'Vista 360° — %s' % self.name,
+            'context': {
+                'default_project_id': self.id,
+                'active_id': self.id,
+                'active_model': 'project.project',
+            },
             'target': 'current',
         }
 
@@ -935,11 +888,11 @@ class ProjectProject(models.Model):
             project.cf_open_issues_count = issue_counts.get(project.id, 0)
 
     # ------------------------------------------------------------------
-    # Legacy dashboard payload kept for compatibility with old callers.
+    # Dashboard 360° aggregator — Brief #5.0
     # ------------------------------------------------------------------
 
     def cf_get_dashboard_data(self):
-        """Return the former dossier dashboard payload.
+        """Single aggregator for the 360° OWL dashboard.
         Returns a JSON-serializable dict with all data the frontend needs."""
         self.ensure_one()
 
@@ -971,14 +924,29 @@ class ProjectProject(models.Model):
         }
 
     def _cf_serialize_project(self):
+        initiative = self.initiative_id
         return {
             'id': self.id,
             'name': self.name or '',
+            'initiative_id': initiative.id if initiative else False,
+            'initiative_name': initiative.name if initiative else '',
+            'lavagna_enabled': bool(initiative and initiative.lavagna_enabled),
             'status_dossier': self.cf_status_dossier or 'exploration',
             'dossier_priority': self.cf_dossier_priority or 'medium',
+            'dossier_value_estimate': self.cf_dossier_value_estimate or 0,
+            'project_type': self.cf_project_type or '',
             'next_action': self.cf_next_action or '',
             'next_action_date': fields.Date.to_string(self.cf_next_action_date)
                 if self.cf_next_action_date else '',
+            'dossier_lang': self.cf_dossier_lang or '',
+            'volume_target': self.cf_volume_target or 0,
+            'volume_unit': self.cf_volume_unit or '',
+            'margin_target': self.cf_margin_target or 0,
+            'incoterms': self.cf_incoterms or '',
+            'payment_term': self.cf_payment_term or '',
+            'moq': self.cf_moq or '',
+            'lead_time': self.cf_lead_time or 0,
+            'shelf_life': self.cf_shelf_life or 0,
             'mail_count': self._cf_get_mail_count(),
             'contact_count': len(self.cf_contact_ids),
             'lead_count': self.cf_lead_count,
@@ -1230,8 +1198,6 @@ class ProjectProject(models.Model):
             'is_primary': is_primary,
         }
 
-    # ── Brief #FINAL — Commerciale ────────────────────────────────
-
     def _cf_count_contact_mail(self, email):
         if not email:
             return 0
@@ -1248,6 +1214,8 @@ class ProjectProject(models.Model):
                 OR lower(coalesce(cc_emails, '')) LIKE %s
         """, (email, '%%' + email + '%%', '%%' + email + '%%'))
         return self.env.cr.fetchone()[0] or 0
+
+    # ── Brief #FINAL — Commerciale ────────────────────────────────
 
     def _cf_get_commerciale(self, partner):
         """Sale orders del partner + pricelist + MOQ notes."""

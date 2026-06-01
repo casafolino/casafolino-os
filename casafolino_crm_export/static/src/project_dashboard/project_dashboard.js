@@ -63,6 +63,7 @@ export class CFProjectDashboard extends Component {
             data: null,
             activeTab: "cockpit",
             timelineFilter: "all",
+            searchQuery: "",
             error: null,
         });
 
@@ -121,6 +122,29 @@ export class CFProjectDashboard extends Component {
         }));
     }
 
+    get dossierStageCards() {
+        const pos = Math.max(1, Math.min(6, this.state.data?.lead?.stage_position || 1));
+        return [
+            { id: 1, label: "Lead creata" },
+            { id: 2, label: "Qualifica" },
+            { id: 3, label: "Campioni" },
+            { id: 4, label: "Offerta" },
+            { id: 5, label: "Negoziazione" },
+            { id: 6, label: "Ordine" },
+        ].map((step) => ({
+            ...step,
+            done: step.id < pos,
+            current: step.id === pos,
+        }));
+    }
+
+    get dossierScore() {
+        const mail = this.state.data?.mail_count || 0;
+        const contacts = this.state.data?.contacts?.length || 0;
+        const samples = this.state.data?.campionature?.samples_count || 0;
+        return Math.min(99, Math.max(35, 35 + mail + contacts * 5 + samples * 4));
+    }
+
     get kpiRevenue() {
         return formatCurrency(this.state.data?.kpi?.revenue);
     }
@@ -130,7 +154,9 @@ export class CFProjectDashboard extends Component {
     }
 
     get filteredTimeline() {
-        const tl = this.state.data?.timeline;
+        const tl = this._filterRows(this.state.data?.timeline || [], [
+            "title", "subtitle", "author", "type", "date_label",
+        ]);
         if (!tl) return [];
         if (this.state.timelineFilter === "all") return tl;
         return tl.filter((ev) => ev.type === this.state.timelineFilter);
@@ -143,11 +169,47 @@ export class CFProjectDashboard extends Component {
     }
 
     get displayedMail() {
-        return (this.state.data?.mail || []).slice(0, 6);
+        return this._filterRows(this.state.data?.mail || [], [
+            "subject", "sender_name", "sender_email", "partner_name", "preview_text", "date_label",
+        ]).slice(0, 6);
     }
 
     get displayedTimeline() {
-        return (this.state.data?.timeline || []).slice(0, 6);
+        return this.filteredTimeline.slice(0, 6);
+    }
+
+    get displayedSamples() {
+        return this._filterRows(this.state.data?.campionature?.samples || [], [
+            "name", "state", "state_label", "date_label",
+        ]).slice(0, 4);
+    }
+
+    get displayedDocuments() {
+        return this._filterRows(this.state.data?.documenti?.attachments || [], [
+            "name", "date_label", "size_label",
+        ]).slice(0, 4);
+    }
+
+    get displayedContacts() {
+        return this._filterRows(this.state.data?.contacts || [], [
+            "name", "email", "role", "role_label", "function",
+        ]);
+    }
+
+    _filterRows(rows, fields) {
+        const query = (this.state.searchQuery || "").trim().toLowerCase();
+        if (!query) return rows;
+        return rows.filter((row) => fields.some((field) => (
+            String(row?.[field] || "").toLowerCase().includes(query)
+        )));
+    }
+
+    onDossierSearchInput(ev) {
+        this.state.searchQuery = ev.target.value || "";
+    }
+
+    onDossierSearchSubmit(ev) {
+        ev.preventDefault();
     }
 
     async _crmLeadFormViews() {
@@ -191,14 +253,11 @@ export class CFProjectDashboard extends Component {
 
     get tabs() {
         return [
-            { id: "cockpit", label: "Cockpit", enabled: true },
-            { id: "timeline", label: "Timeline", enabled: true },
-            { id: "cliente", label: "Persone", enabled: true },
-            { id: "mail", label: "Mail", enabled: true },
-            { id: "commerciale", label: "Commerciale", enabled: true },
-            { id: "campionature", label: "Campionature", enabled: true },
+            { id: "cockpit", label: "Vista 360", enabled: true },
+            { id: "timeline", label: "Evoluzione", enabled: true },
             { id: "documenti", label: "Documenti", enabled: true },
-            { id: "note", label: "Note", enabled: true },
+            { id: "mail", label: "Comunicazioni", enabled: true },
+            { id: "storico", label: "Storico", enabled: true },
         ];
     }
 
@@ -214,6 +273,9 @@ export class CFProjectDashboard extends Component {
     // --- Handlers ---
 
     onTabChange(tabId) {
+        if (!this.tabs.some((tab) => tab.id === tabId && tab.enabled)) {
+            return;
+        }
         this.state.activeTab = tabId;
     }
 
@@ -255,8 +317,70 @@ export class CFProjectDashboard extends Component {
             res_model: "sale.order",
             views: [[false, "form"]],
             target: "current",
-            context: { default_partner_id: partnerId },
+            context: {
+                default_partner_id: partnerId,
+                default_cf_project_id: this.state.data?.project?.id || false,
+            },
         });
+    }
+
+    async onOpenSaleOrders() {
+        const partnerId = this.state.data?.partner?.id;
+        if (!partnerId) {
+            this.notification.add(_t("Nessun partner collegato"), { type: "warning" });
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Preventivi e ordini"),
+            res_model: "sale.order",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: [["partner_id", "=", partnerId]],
+            context: {
+                default_partner_id: partnerId,
+                default_cf_project_id: this.state.data?.project?.id || false,
+            },
+        });
+    }
+
+    async onOpenDocuments() {
+        const projectId = this.state.data?.project?.id;
+        const partnerId = this.state.data?.partner?.id;
+        const domain = [
+            "|",
+            "&", ["res_model", "=", "project.project"], ["res_id", "=", projectId || 0],
+            "&", ["res_model", "=", "res.partner"], ["res_id", "=", partnerId || 0],
+        ];
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Documenti dossier"),
+            res_model: "ir.attachment",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain,
+            context: {
+                default_res_model: "project.project",
+                default_res_id: projectId || false,
+            },
+        });
+    }
+
+    async onUploadDocument() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Carica documento"),
+            res_model: "ir.attachment",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_res_model: "project.project",
+                default_res_id: projectId,
+            },
+        });
+        await this.onRefresh();
     }
 
     async onQuickActionActivity() {
@@ -270,6 +394,52 @@ export class CFProjectDashboard extends Component {
             context: {
                 default_res_model: "project.project",
                 default_res_id: projectId,
+            },
+        });
+    }
+
+    async onOpenLavagna() {
+        const project = this.state.data?.project || {};
+        const initiativeId = project.initiative_id;
+        if (initiativeId) {
+            await this.action.doAction({
+                type: "ir.actions.client",
+                tag: "casafolino_lavagna",
+                name: `Lavagna — ${project.initiative_name || project.name}`,
+                params: { initiative_id: initiativeId },
+                target: "current",
+            });
+            return;
+        }
+
+        try {
+            await this.action.doAction("casafolino_initiative.action_cf_initiative");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.act_window",
+                name: "Lavagne operative",
+                res_model: "cf.initiative",
+                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                target: "current",
+            });
+        }
+    }
+
+    async onUpdateDossier() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) {
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Aggiorna Dossier 360",
+            res_model: "cf.dossier.upsert.wizard",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                active_model: "project.project",
+                active_id: projectId,
+                default_project_id: projectId,
             },
         });
     }
@@ -330,6 +500,18 @@ export class CFProjectDashboard extends Component {
             type: "ir.actions.act_window",
             res_model: "res.partner",
             res_id: partnerId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    async onOpenProjectForm() {
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "project.project",
+            res_id: projectId,
             views: [[false, "form"]],
             target: "current",
         });

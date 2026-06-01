@@ -1,351 +1,349 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <t t-name="casafolino_crm_export.CFProjectDashboard">
+        <div t-if="state.isLoading" class="cf360-loading">
+            <div class="cf360-spinner"/>
+            <span>Caricamento dossier...</span>
+        </div>
 
-<t t-name="casafolino_crm_export.CFProjectDashboard">
-    <div t-if="state.isLoading" class="cf360-loading">
-        <div class="cf360-spinner"/>
-        <span>Caricamento dossier...</span>
-    </div>
+        <div t-elif="state.error" class="cf360-error">
+            <i class="fa fa-exclamation-triangle" title="Errore"/>
+            <strong>Errore nel caricamento</strong>
+            <p t-out="state.error"/>
+            <button class="btn primary" t-on-click="onRefresh">Riprova</button>
+        </div>
 
-    <div t-elif="state.error" class="cf360-error">
-        <i class="fa fa-exclamation-triangle" title="Errore"/>
-        <strong>Errore nel caricamento</strong>
-        <p t-out="state.error"/>
-        <button class="cf360-btn cf360-btn-primary" t-on-click="onRefresh">Riprova</button>
-    </div>
-
-    <div t-else="" class="cf360-app">
-        <aside class="cf360-rail">
-            <div class="cf360-logo">CF</div>
-            <button class="cf360-rail-btn active" title="Dossier">
-                <i class="fa fa-compass"/>
-            </button>
-            <button class="cf360-rail-btn" title="Mail" t-on-click="() => this.onTabChange('mail')">
-                <i class="fa fa-envelope-o"/>
-            </button>
-            <button class="cf360-rail-btn" title="Task">
-                <i class="fa fa-check"/>
-            </button>
-            <button class="cf360-rail-btn" title="Persone" t-on-click="() => this.onTabChange('people')">
-                <i class="fa fa-users"/>
-            </button>
-            <button class="cf360-rail-btn" title="Documenti">
-                <i class="fa fa-th"/>
-            </button>
-        </aside>
-
-        <main class="cf360-main">
-            <header class="cf360-topbar">
-                <div class="cf360-crumb">
-                    <strong>CasaFolino CRM</strong>
-                    <span class="cf360-pill blue">Dossier 360</span>
-                    <span t-attf-class="cf360-pill #{statusColor === 'green' ? 'green' : statusColor === 'orange' ? 'amber' : statusColor === 'emerald' ? 'green' : 'blue'}"
-                          t-out="statusLabel"/>
-                </div>
-                <label class="cf360-command">
-                    <i class="fa fa-search" title="Cerca"/>
-                    <input placeholder="Cerca mail, contatto, campione, task..."/>
-                </label>
-                <div class="cf360-actions">
-                    <button class="cf360-btn" t-on-click="onSyncDossierMail">
-                        <i class="fa fa-refresh"/> Sync mail
-                    </button>
-                    <button class="cf360-btn cf360-btn-primary" t-on-click="onQuickActionMail">
-                        <i class="fa fa-envelope"/> Scrivi
-                    </button>
-                </div>
-            </header>
-
-            <section class="cf360-hero">
-                <div class="cf360-title-stack">
-                    <span class="cf360-eyebrow">
-                        <t t-if="state.data.lead" t-out="state.data.lead.stage_name || 'Lead'"/>
-                        <t t-else="">Dossier commerciale</t>
-                        <t t-if="state.data.partner &amp;&amp; state.data.partner.country_name"> · <t t-out="state.data.partner.country_name"/></t>
-                    </span>
-                    <h1 t-out="state.data.project.name"/>
-                    <div class="cf360-meta-row">
-                        <span t-if="brokerContact" class="cf360-pill violet">
-                            Broker:
-                            <t t-out="brokerContact.name"/>
+        <div t-else="" class="deep-dossier">
+            <div class="dossier-top">
+                <div class="dossier-title">
+                    <h2 t-out="state.data.project.name"/>
+                    <div class="meta-row">
+                        <span t-attf-class="pill #{statusColor === 'green' ? 'green' : statusColor === 'orange' ? 'amber' : statusColor === 'emerald' ? 'green' : ''}"
+                              t-out="statusLabel || 'Dossier attivo'"/>
+                        <span class="pill amber">
+                            Fase:
+                            <t t-if="state.data.lead" t-out="state.data.lead.stage_name || 'offerta'"/>
+                            <t t-else="">dossier</t>
                         </span>
-                        <span class="cf360-pill amber">
+                        <span t-if="brokerContact" class="pill violet">
+                            Broker: <t t-out="brokerContact.name"/>
+                        </span>
+                        <span class="pill">Owner: <t t-out="state.data.project.owner_name || 'Team'"/></span>
+                        <span t-if="state.data.partner &amp;&amp; state.data.partner.country_name" class="pill teal" t-out="state.data.partner.country_name"/>
+                    </div>
+                </div>
+                <div class="dossier-buttons">
+                    <button class="btn primary" t-on-click="onUpdateDossier">Aggiorna dossier</button>
+                    <button class="btn primary" t-on-click="onQuickActionMail">Scrivi mail</button>
+                    <button class="btn" t-on-click="onSyncDossierMail">Sync mail</button>
+                    <button class="btn" t-on-click="onQuickActionActivity">Nuovo task</button>
+                    <button class="btn" t-on-click="onUploadDocument">Carica documento</button>
+                    <button class="btn amber" t-on-click="onOpenLavagna">Apri lavagna</button>
+                </div>
+            </div>
+
+            <div class="dossier-command">
+                <form class="dossier-search" t-on-submit="onDossierSearchSubmit">
+                    <b><i class="fa fa-search" title="Cerca"/></b>
+                    <input type="search"
+                           t-att-value="state.searchQuery"
+                           t-on-input="onDossierSearchInput"
+                           placeholder="Cerca dentro il dossier: mail, telefono, referente, documento, campione, quotazione o nota"/>
+                    <button t-if="state.searchQuery"
+                            type="button"
+                            class="btn"
+                            t-on-click="() => this.state.searchQuery = ''">Pulisci</button>
+                </form>
+                <div class="dossier-command-actions">
+                    <button class="btn primary" t-on-click="onQuickActionMail">Componi mail</button>
+                    <button class="btn" t-on-click="onQuickActionActivity">Aggiungi nota</button>
+                    <button class="btn" t-on-click="onQuickActionActivity">Crea task</button>
+                    <button class="btn" t-on-click="onOpenLead">Apri CRM</button>
+                </div>
+            </div>
+
+            <div class="stage-line">
+                <t t-foreach="dossierStageCards" t-as="step" t-key="step.id">
+                    <div t-attf-class="d-step #{step.done ? 'done' : step.current ? 'now' : ''}">
+                        <span t-out="step.id"/>
+                        <strong t-out="step.label"/>
+                    </div>
+                </t>
+            </div>
+
+            <div class="decision-strip">
+                <div class="next-action-card">
+                    <div class="row-top">
+                        <h3>
                             Prossima azione:
-                            <t t-out="state.data.project.next_action || 'da definire'"/>
+                            <t t-out="state.data.project.next_action || 'definire e inviare il prossimo follow-up commerciale'"/>
+                        </h3>
+                        <span class="pill red">bloccante</span>
+                    </div>
+                    <p>Il dossier deve dire subito cosa fare: thread corretto, referenti chiave, documenti, condizioni e prossima uscita collegata alla storia commerciale.</p>
+                    <div class="next-action-foot">
+                        <span class="mini">
+                            Owner: <t t-out="state.data.project.owner_name || 'Team'"/>
+                            <t t-if="brokerContact"> - referente: <t t-out="brokerContact.name"/></t>
+                            - template: offerta export
                         </span>
-                        <span>
-                            Owner <t t-out="state.data.project.owner_name || '—'"/> ·
-                            <t t-out="state.data.mail_count || 0"/> mail collegate ·
-                            <t t-out="state.data.contacts.length || 0"/> referenti
-                        </span>
+                        <div class="actions">
+                            <button class="btn primary" t-on-click="onQuickActionMail">Apri bozza</button>
+                            <button class="btn" t-on-click="onQuickActionActivity">Segna fatto</button>
+                        </div>
                     </div>
                 </div>
-                <div class="cf360-stage">
-                    <div class="cf360-stage-labels">
-                        <span>Lead</span>
-                        <span>Campioni</span>
-                        <span>Offerta</span>
-                        <span>Negoziazione</span>
-                        <span>Ordine</span>
+                <div class="dossier-kpi-strip">
+                    <div class="dossier-kpi">
+                        <span>Ultima mail</span>
+                        <strong t-out="state.data.mail &amp;&amp; state.data.mail.length ? state.data.mail[0].date_label : '-'"/>
                     </div>
-                    <div class="cf360-stage-track">
-                        <t t-foreach="stageSegments.slice(0, 8)" t-as="seg" t-key="seg.index">
-                            <span t-attf-class="cf360-stage-seg #{seg.current ? 'now' : seg.active ? 'done' : ''}"/>
-                        </t>
+                    <div class="dossier-kpi">
+                        <span>Task aperti</span>
+                        <strong t-out="state.data.kpi.next_activity ? 1 : 0"/>
+                    </div>
+                    <div class="dossier-kpi">
+                        <span>Documenti mancanti</span>
+                        <strong t-out="Math.max(0, 4 - displayedDocuments.length)"/>
+                    </div>
+                    <div class="dossier-kpi">
+                        <span>Valore stimato</span>
+                        <strong>€<t t-out="kpiRevenue"/></strong>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <section class="cf360-workspace">
-                <div class="cf360-left-stack">
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head">
-                            <h2>Dossier pulse</h2>
-                            <span class="cf360-pill green">
-                                <t t-out="state.data.project.dossier_priority || 'medio'"/>
-                            </span>
+            <div class="dossier-grid">
+                <aside class="stack">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Dossier pulse</h3>
+                            <span class="pill green" t-out="dossierScore"/>
                         </div>
-                        <div class="cf360-panel-body cf360-score">
-                            <div class="cf360-ring">
-                                <strong t-out="Math.min(99, Math.max(35, (state.data.mail_count || 0) + 35))"/>
-                            </div>
-                            <div class="cf360-facts">
-                                <div class="cf360-fact"><span>Rischio</span><strong>medio basso</strong></div>
-                                <div class="cf360-fact"><span>Ultimo contatto</span><strong t-out="state.data.mail &amp;&amp; state.data.mail.length ? state.data.mail[0].date_label : '—'"/></div>
-                                <div class="cf360-fact"><span>Lead collegati</span><strong t-out="state.data.project.lead_count || 0"/></div>
-                                <div class="cf360-fact"><span>Priorità</span><strong t-out="state.data.project.dossier_priority || 'medium'"/></div>
+                        <div class="panel-body">
+                            <div class="score-ring"><strong t-out="dossierScore"/></div>
+                            <div class="fact-list">
+                                <div class="fact"><span>Rischio</span><strong t-out="dossierScore &gt;= 70 ? 'medio' : 'da presidiare'"/></div>
+                                <div class="fact"><span>Ultimo contatto</span><strong t-out="state.data.mail &amp;&amp; state.data.mail.length ? state.data.mail[0].date_label : '-'"/></div>
+                                <div class="fact"><span>Mail collegate</span><strong t-out="state.data.mail_count || 0"/></div>
+                                <div class="fact"><span>Task aperti</span><strong t-out="state.data.kpi.next_activity ? 1 : 0"/></div>
+                                <div class="fact"><span>Valore stimato</span><strong>€<t t-out="kpiRevenue"/></strong></div>
                             </div>
                         </div>
-                    </article>
+                    </section>
 
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head">
-                            <h2>Persone</h2>
-                            <button class="cf360-btn" t-on-click="onAddContact">+ Contatto</button>
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Alert e dati mancanti</h3>
+                            <span class="pill red">controllo</span>
                         </div>
-                        <div class="cf360-panel-body cf360-people">
-                            <t t-if="!state.data.contacts.length">
-                                <div class="cf360-empty">Nessun referente ancora collegato</div>
-                            </t>
-                            <t t-foreach="state.data.contacts" t-as="contact" t-key="contact.project_contact_id || contact.id || contact_index">
-                                <button class="cf360-person" t-on-click="() => this.onContactClick(contact.id)">
-                                    <span t-attf-class="cf360-avatar #{contact.role === 'broker' ? 'violet' : contact.is_external ? 'violet' : contact.is_primary ? 'blue' : 'green'}">
-                                        <t t-out="contactInitials(contact)"/>
-                                    </span>
-                                    <span class="cf360-person-copy">
-                                        <strong t-out="contact.name"/>
-                                        <small>
-                                            <t t-out="contact.role_label || contact.function || 'Referente'"/>
-                                            <t t-if="contact.email"> · <t t-out="contact.email"/></t>
-                                        </small>
-                                    </span>
-                                    <span t-attf-class="cf360-pill #{contact.role === 'broker' ? 'violet' : contact.is_primary ? 'blue' : 'green'}">
-                                        <t t-if="contact.mail_count" t-out="contact.mail_count + ' mail'"/>
-                                        <t t-else="">team</t>
-                                    </span>
-                                </button>
-                            </t>
-                        </div>
-                    </article>
-
-                    <article class="cf360-panel cf360-ai">
-                        <div class="cf360-panel-head">
-                            <h2>Sintesi AI dossier</h2>
-                            <span class="cf360-pill blue">live</span>
-                        </div>
-                        <div class="cf360-panel-body">
-                            <div class="cf360-ai-item">
-                                <strong>Contesto</strong>
-                                <p>Mail, referenti e attività sono concentrati qui per decidere la prossima mossa senza saltare tra moduli.</p>
-                            </div>
-                            <div class="cf360-ai-item">
-                                <strong>Da non perdere</strong>
-                                <p>Rispondi dal thread più recente, mantieni broker e referente cliente allineati, collega ogni uscita al dossier.</p>
+                        <div class="panel-body">
+                            <div class="checklist">
+                                <div class="check"><span class="box ok"></span><span>Broker o referente collegato</span><span class="pill green">ok</span></div>
+                                <div class="check"><span t-attf-class="box #{state.data.project.payment_term ? 'ok' : 'warn'}"></span><span>Condizioni pagamento</span><span t-attf-class="pill #{state.data.project.payment_term ? 'green' : 'amber'}"><t t-out="state.data.project.payment_term ? 'ok' : 'serve'"/></span></div>
+                                <div class="check"><span t-attf-class="box #{state.data.project.moq ? 'ok' : 'warn'}"></span><span>MOQ e resa commerciale</span><span t-attf-class="pill #{state.data.project.moq ? 'green' : 'amber'}"><t t-out="state.data.project.moq ? 'ok' : 'serve'"/></span></div>
+                                <div class="check"><span t-attf-class="box #{displayedDocuments.length ? 'ok' : 'warn'}"></span><span>Documenti commerciali pronti</span><span t-attf-class="pill #{displayedDocuments.length ? 'green' : 'amber'}"><t t-out="displayedDocuments.length ? 'ok' : 'serve'"/></span></div>
                             </div>
                         </div>
-                    </article>
-                </div>
+                    </section>
 
-                <div class="cf360-center-stack">
-                    <div class="cf360-kpis">
-                        <div class="cf360-kpi">
-                            <span>Mail dossier</span>
-                            <strong t-out="state.data.mail_count || 0"/>
-                            <small>
-                                <t t-out="inboundMailCount"/> ricevute ·
-                                <t t-out="outboundMailCount"/> inviate
-                            </small>
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Brief commerciale</h3>
                         </div>
-                        <div class="cf360-kpi">
-                            <span>Campioni</span>
-                            <strong t-out="state.data.kpi.sample_count || 0"/>
-                            <small>in preparazione</small>
-                        </div>
-                        <div class="cf360-kpi">
-                            <span>Valore stimato</span>
-                            <strong>€<t t-out="kpiRevenue"/></strong>
-                            <small>forecast preliminare</small>
-                        </div>
-                        <div class="cf360-kpi">
-                            <span>Prossima</span>
-                            <strong t-out="state.data.project.next_action_date || (state.data.kpi.next_activity ? state.data.kpi.next_activity.date : '—')"/>
-                            <small t-out="state.data.project.next_action || 'follow-up'"/>
-                        </div>
-                    </div>
-
-                    <div class="cf360-next-move">
-                        <div>
-                            <h2 t-out="state.data.project.next_action || 'Definire la prossima azione commerciale'"/>
-                            <p>
-                                Usa il thread più recente, includi i referenti chiave e collega la risposta al dossier.
-                            </p>
-                        </div>
-                        <button class="cf360-btn cf360-btn-primary" t-on-click="onQuickActionMail">Apri bozza</button>
-                    </div>
-
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head cf360-mail-toolbar">
-                            <h2>Mail cockpit</h2>
-                            <div class="cf360-segmented">
-                                <button class="active">Tutte</button>
-                                <button>Da leggere</button>
-                                <button>Broker</button>
-                                <button>Cliente</button>
+                        <div class="panel-body">
+                            <div class="field-grid">
+                                <div class="field"><span>Tipo</span><strong t-out="state.data.project.project_type || 'Dossier'"/></div>
+                                <div class="field"><span>Prodotti</span><strong t-out="state.data.lead ? state.data.lead.name : state.data.project.name"/></div>
+                                <div class="field"><span>Volume target</span><strong><t t-out="state.data.project.volume_target || '-'"/> <t t-out="state.data.project.volume_unit || ''"/></strong></div>
+                                <div class="field"><span>Incoterm</span><strong t-out="state.data.project.incoterms || 'da definire'"/></div>
+                                <div class="field"><span>Pagamento</span><strong t-out="state.data.project.payment_term || 'da definire'"/></div>
+                                <div class="field"><span>Priorita</span><strong t-out="state.data.project.dossier_priority || 'media'"/></div>
                             </div>
-                            <button class="cf360-btn" t-on-click="() => this.onTabChange('mail')">Vista thread</button>
                         </div>
-                        <div class="cf360-panel-body cf360-mail-list">
-                            <t t-if="!state.data.mail || !state.data.mail.length">
-                                <div class="cf360-empty">
-                                    <i class="fa fa-envelope-o"/>
-                                    Nessuna mail su questo dossier
+                    </section>
+                </aside>
+
+                <main class="stack">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Centro operativo dossier</h3>
+                            <div class="tabs">
+                                <span class="tab active">Cockpit</span>
+                                <span class="tab">Mail</span>
+                                <span class="tab">Task</span>
+                                <span class="tab">Documenti</span>
+                                <span class="tab">Campioni</span>
+                                <span class="tab">Offerte</span>
+                                <span class="tab">Storico</span>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="signal-grid">
+                                <div class="signal"><span>Obiettivo</span><strong t-out="state.data.project.next_action || 'Far avanzare il dossier alla prossima decisione commerciale'"/></div>
+                                <div class="signal"><span>Perche ora</span><strong>Mail e materiali sono nello stesso cockpit operativo</strong></div>
+                                <div class="signal"><span>Rischio</span><strong t-out="dossierScore &gt;= 70 ? 'Presidiare tempi e risposta' : 'Dati mancanti da chiudere'"/></div>
+                                <div class="signal"><span>Decisione richiesta</span><strong>Prossima uscita commerciale chiara e tracciata</strong></div>
+                            </div>
+                            <div class="board3">
+                                <div class="lane">
+                                    <h4>Oggi</h4>
+                                    <div class="task-row">
+                                        <div class="row-top"><strong t-out="state.data.project.next_action || 'Preparare follow-up'"/><span class="pill red">oggi</span></div>
+                                        <p class="mini" t-out="state.data.project.owner_name || 'Owner'"/>
+                                    </div>
+                                    <div class="task-row">
+                                        <div class="row-top"><strong>Verifica materiali e listino</strong><span class="pill">oggi</span></div>
+                                        <p class="mini">Commerciale</p>
+                                    </div>
                                 </div>
+                                <div class="lane">
+                                    <h4>In attesa</h4>
+                                    <div class="task-row">
+                                        <div class="row-top"><strong>Conferma prodotti target</strong><span class="pill amber">cliente</span></div>
+                                        <p class="mini">Referente esterno</p>
+                                    </div>
+                                    <div class="task-row">
+                                        <div class="row-top"><strong>Allineamento broker</strong><span class="pill">broker</span></div>
+                                        <p class="mini" t-out="brokerContact ? brokerContact.name : 'Broker'"/>
+                                    </div>
+                                </div>
+                                <div class="lane">
+                                    <h4>Pronto</h4>
+                                    <div class="task-row">
+                                        <div class="row-top"><strong>Catalogo digitale export</strong><span class="pill green">pdf</span></div>
+                                        <p class="mini">Caricato nei documenti</p>
+                                    </div>
+                                    <div class="task-row">
+                                        <div class="row-top"><strong>Schede prodotto</strong><span class="pill green">ok</span></div>
+                                        <p class="mini">Disponibili se collegate</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Mail recenti</h3>
+                            <button class="btn" t-on-click="() => this.onTabChange('mail')">Vista thread completa</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="!displayedMail.length">
+                                <div class="empty">Nessuna mail su questo dossier</div>
                             </t>
                             <t t-foreach="displayedMail" t-as="m" t-key="m.casafolino_id">
-                                <button t-attf-class="cf360-mail #{m.is_outbound ? 'outbound' : 'inbound'}"
-                                        t-on-click="() => this.onOpenMailThread(m)">
-                                    <span t-attf-class="cf360-iconbox #{m.is_outbound ? 'out' : m.partner_name &amp;&amp; m.partner_name.toLowerCase().includes('alice') ? 'violet' : ''}">
-                                        <i t-attf-class="fa #{m.is_outbound ? 'fa-paper-plane' : 'fa-envelope'}"/>
-                                    </span>
-                                    <span class="cf360-mail-copy">
-                                        <span class="cf360-mail-subject">
-                                            <strong t-out="m.subject"/>
-                                            <span t-attf-class="cf360-pill #{m.partner_name &amp;&amp; m.partner_name.toLowerCase().includes('alice') ? 'violet' : 'blue'}">
-                                                <t t-out="m.partner_name || 'dossier'"/>
-                                            </span>
-                                        </span>
-                                        <p>
-                                            <t t-out="m.sender_name"/>
-                                            <t t-if="m.preview_text"> · <t t-out="m.preview_text"/></t>
+                                <button class="mail-row" t-on-click="() => this.onOpenMailThread(m)">
+                                    <div t-attf-class="icon #{m.is_outbound ? 'out' : ''}">
+                                        <t t-if="m.is_outbound">OUT</t>
+                                        <t t-else="">IN</t>
+                                    </div>
+                                    <div>
+                                        <strong t-out="m.subject"/>
+                                        <p class="mini">
+                                            <t t-out="m.sender_name || m.partner_name || 'Mail'"/>
+                                            <t t-if="m.preview_text"> - <t t-out="m.preview_text"/></t>
                                         </p>
-                                    </span>
-                                    <span class="cf360-mail-meta" t-out="m.date_label"/>
+                                    </div>
+                                    <span t-attf-class="pill #{m.is_outbound ? 'green' : 'amber'}" t-out="m.date_label || 'mail'"/>
                                 </button>
                             </t>
                         </div>
-                    </article>
+                    </section>
 
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head">
-                            <h2>Execution board</h2>
-                            <span class="cf360-pill amber">azioni aperte</span>
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Timeline decisionale</h3>
+                            <span class="pill">ultimi passaggi</span>
                         </div>
-                        <div class="cf360-panel-body cf360-board">
-                            <div class="cf360-lane">
-                                <h3>Oggi</h3>
-                                <div class="cf360-task">
-                                    <strong t-out="state.data.project.next_action || 'Preparare follow-up'"/>
-                                    <div><span t-out="state.data.project.owner_name || 'Owner'"/><span t-out="state.data.project.next_action_date || 'oggi'"/></div>
-                                </div>
-                                <div class="cf360-task">
-                                    <strong>Verifica materiali e listino</strong>
-                                    <div><span>Team</span><span>prima invio</span></div>
-                                </div>
-                            </div>
-                            <div class="cf360-lane">
-                                <h3>In attesa</h3>
-                                <div class="cf360-task">
-                                    <strong>Conferma prodotti target</strong>
-                                    <div><span>Cliente</span><span>esterno</span></div>
-                                </div>
-                                <div class="cf360-task">
-                                    <strong>Allineamento broker</strong>
-                                    <div><span>Broker</span><span>cc</span></div>
-                                </div>
-                            </div>
-                            <div class="cf360-lane">
-                                <h3>Pronto</h3>
-                                <div class="cf360-task">
-                                    <strong>Catalogo digitale export</strong>
-                                    <div><span>PDF</span><span>caricato</span></div>
-                                </div>
-                                <div class="cf360-task">
-                                    <strong>Schede prodotto</strong>
-                                    <div><span>QA</span><span>ok</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-
-                <aside class="cf360-right-stack">
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head">
-                            <h2>Timeline</h2>
-                            <button class="cf360-btn">Filtra</button>
-                        </div>
-                        <div class="cf360-panel-body cf360-activity">
-                            <t t-if="!state.data.timeline || !state.data.timeline.length">
-                                <div class="cf360-empty">Nessuna attività recente</div>
+                        <div class="panel-body timeline-list">
+                            <t t-if="!displayedTimeline.length">
+                                <div class="empty">Nessuna attivita' recente</div>
                             </t>
                             <t t-foreach="displayedTimeline" t-as="ev" t-key="ev_index">
-                                <div class="cf360-event">
-                                    <span class="cf360-dot">
-                                        <i t-attf-class="fa #{ev.type === 'mail' ? 'fa-envelope' : ev.type === 'activity' ? 'fa-calendar' : ev.type === 'message' ? 'fa-comment' : 'fa-check'}"/>
-                                    </span>
-                                    <span class="cf360-event-copy">
+                                <div class="timeline-item">
+                                    <span class="timeline-dot"></span>
+                                    <div>
                                         <strong t-out="ev.title"/>
-                                        <small>
-                                            <t t-if="ev.author" t-out="ev.author + ' · '"/>
-                                            <t t-out="ev.date_label"/>
-                                        </small>
-                                    </span>
+                                        <p class="mini"><t t-if="ev.author" t-out="ev.author + ' - '"/><t t-out="ev.date_label"/></p>
+                                    </div>
+                                    <span class="pill" t-out="ev.type || 'storia'"/>
                                 </div>
                             </t>
                         </div>
-                    </article>
+                    </section>
+                </main>
 
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head">
-                            <h2>Documenti e prove</h2>
-                            <span class="cf360-pill blue">
-                                <t t-out="state.data.documenti ? state.data.documenti.attachments_count : 0"/> file
-                            </span>
+                <aside class="stack">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Persone</h3>
+                            <button class="btn" t-on-click="onAddContact">+ Referente</button>
                         </div>
-                        <div class="cf360-panel-body cf360-facts">
-                            <div class="cf360-fact"><span>Catalogo export</span><strong>PDF</strong></div>
-                            <div class="cf360-fact"><span>Schede prodotto</span><strong t-out="state.data.documenti ? state.data.documenti.attachments_count : 0"/></div>
-                            <div class="cf360-fact"><span>Campionature</span><strong t-out="state.data.kpi.sample_count || 0"/></div>
-                            <div class="cf360-fact"><span>Certificati</span><strong>da verificare</strong></div>
+                        <div class="panel-body">
+                            <t t-if="!displayedContacts.length">
+                                <div class="empty">Nessun referente ancora collegato</div>
+                            </t>
+                            <t t-foreach="displayedContacts" t-as="contact" t-key="contact.project_contact_id || contact.id || contact_index">
+                                <button class="person-row" t-on-click="() => this.onContactClick(contact.id)">
+                                    <div class="row-top">
+                                        <strong t-out="contact.name"/>
+                                        <span t-attf-class="pill #{contact.role === 'broker' ? 'violet' : contact.is_primary ? 'green' : ''}">
+                                            <t t-out="contact.role_label || contact.function || 'referente'"/>
+                                        </span>
+                                    </div>
+                                    <p class="mini">
+                                        <t t-out="contact.email || 'email non presente'"/>
+                                        <t t-if="contact.mail_count"> - <t t-out="contact.mail_count"/> mail</t>
+                                    </p>
+                                </button>
+                            </t>
                         </div>
-                    </article>
+                    </section>
 
-                    <article class="cf360-panel">
-                        <div class="cf360-panel-head">
-                            <h2>Guardrail</h2>
-                            <span class="cf360-pill red">attenzione</span>
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Documenti</h3>
+                            <span class="pill green"><t t-out="displayedDocuments.length"/> pronti</span>
                         </div>
-                        <div class="cf360-panel-body cf360-facts">
-                            <div class="cf360-fact"><span>Broker in CC</span><strong>sempre</strong></div>
-                            <div class="cf360-fact"><span>Lingua</span><strong t-out="state.data.project.dossier_lang || 'ES / EN'"/></div>
-                            <div class="cf360-fact"><span>Risposta entro</span><strong>24h</strong></div>
-                            <div class="cf360-fact"><span>Owner backup</span><strong>Team</strong></div>
+                        <div class="panel-body">
+                            <t t-if="!displayedDocuments.length">
+                                <div class="empty">Nessun documento collegato</div>
+                            </t>
+                            <t t-foreach="displayedDocuments" t-as="doc" t-key="doc.id">
+                                <a class="doc-row" t-att-href="doc.url" target="_blank">
+                                    <div class="row-top">
+                                        <strong t-out="doc.name"/>
+                                        <span class="pill green">ok</span>
+                                    </div>
+                                    <p class="mini" t-out="doc.date_label || doc.size_label || 'Documento dossier'"/>
+                                </a>
+                            </t>
                         </div>
-                    </article>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Campioni</h3>
+                            <span class="pill amber"><t t-out="displayedSamples.length"/> collegati</span>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="!displayedSamples.length">
+                                <div class="empty">Nessuna campionatura collegata</div>
+                            </t>
+                            <t t-foreach="displayedSamples" t-as="sample" t-key="sample.id">
+                                <button class="doc-row" t-on-click="() => this.onOpenSample(sample.id)">
+                                    <div class="row-top">
+                                        <strong t-out="sample.name"/>
+                                        <span class="pill" t-out="sample.state_label || sample.state || 'campione'"/>
+                                    </div>
+                                    <p class="mini" t-out="sample.date_label || 'Campione dossier'"/>
+                                </button>
+                            </t>
+                        </div>
+                    </section>
                 </aside>
-            </section>
-        </main>
-    </div>
-</t>
-
+            </div>
+        </div>
+    </t>
 </templates>
