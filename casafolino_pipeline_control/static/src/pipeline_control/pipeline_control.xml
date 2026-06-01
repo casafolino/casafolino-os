@@ -567,7 +567,7 @@
                                     <div class="cf-pc-ai-widget-header">
                                         <span class="cf-pc-ai-title"><i class="fa fa-magic"/> Assistente Risposta AI Gemini</span>
                                         <div class="cf-pc-ai-instruction-bar">
-                                            <input type="text" placeholder="Istruzioni per Gemini (es: Sposta appuntamento a venerdì)..." t-model="state.aiInstruction" t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; this.generateAIDraft()"/>
+                                            <input type="text" placeholder="Istruzioni per Gemini (es: Sposta appuntamento a venerdì)..." t-att-value="state.aiInstruction" t-on-input="(ev) => this.state.aiInstruction = ev.target.value" t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; this.generateAIDraft()"/>
                                             <button class="btn btn-primary btn-sm" t-on-click="generateAIDraft" t-att-disabled="state.aiDraftLoading ? 'disabled' : ''">
                                                 <t t-if="state.aiDraftLoading"><i class="fa fa-spinner fa-spin"/> Scrittura...</t>
                                                 <t t-else="">Genera Bozza</t>
@@ -575,7 +575,7 @@
                                         </div>
                                     </div>
                                     <div class="cf-pc-ai-widget-body" t-if="state.aiDraftBody">
-                                        <textarea t-model="state.aiDraftBody" rows="6" class="form-control cf-pc-ai-textarea"/>
+                                        <textarea t-att-value="state.aiDraftBody" t-on-input="(ev) => this.state.aiDraftBody = ev.target.value" rows="6" class="form-control cf-pc-ai-textarea"/>
                                         <div class="cf-pc-ai-widget-footer">
                                             <button class="btn btn-success btn-sm" t-on-click="sendAIDraft" t-att-disabled="state.aiDraftLoading ? 'disabled' : ''">
                                                 <i class="fa fa-paper-plane"/> Invia Email
