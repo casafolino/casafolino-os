@@ -385,6 +385,38 @@ class CfPipelineControl(models.AbstractModel):
         return True
 
     @api.model
+    def search_context_records(self, category, query, limit=5):
+        if not query or len(query) < 2:
+            return []
+        
+        if category == 'partner':
+            domain = ['|', ('name', 'ilike', query), ('email', 'ilike', query)]
+            recs = self.env['res.partner'].search(domain, limit=limit)
+            return [{'id': r.id, 'name': r.name, 'email': r.email or ''} for r in recs]
+            
+        elif category == 'lead':
+            domain = ['|', ('name', 'ilike', query), ('partner_id.name', 'ilike', query), ('active', 'in', [True, False])]
+            recs = self.env['crm.lead'].search(domain, limit=limit)
+            return [{
+                'id': r.id,
+                'name': r.name,
+                'stage_name': r.stage_id.name if r.stage_id else '',
+                'expected_revenue': r.expected_revenue or 0.0,
+            } for r in recs]
+            
+        elif category == 'dossier':
+            domain = ['|', ('name', 'ilike', query), ('partner_id.name', 'ilike', query)]
+            recs = self.env['project.project'].search(domain, limit=limit)
+            return [{
+                'id': r.id,
+                'name': r.name,
+                'partner_name': r.partner_id.name if r.partner_id else '',
+                'status': dict(r._fields['cf_status_dossier'].selection).get(r.cf_status_dossier, r.cf_status_dossier) if 'cf_status_dossier' in r._fields and r.cf_status_dossier else '',
+            } for r in recs]
+            
+        return []
+
+    @api.model
     def get_message_context_info(self, message_id):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:

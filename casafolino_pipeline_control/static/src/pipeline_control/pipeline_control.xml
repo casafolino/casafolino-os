@@ -682,6 +682,45 @@
                                             </t>
                                             <p t-else="" style="font-size: 11.5px; color: #889283; font-style: italic; margin: 4px 0;">Nessuna quotazione attiva.</p>
                                         </div>
+
+                                        <!-- Search and Link another Lead/Dossier even if matched -->
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 6px; text-transform: uppercase;">Cerca &amp; Collega altro Lead</h5>
+                                            <div class="input-group input-group-sm mb-2" style="box-shadow: 0 2px 6px rgba(0,0,0,0.02); border-radius: 8px; overflow: hidden; border: 1px solid #dfe3da;">
+                                                <span class="input-group-text" style="background: #ffffff; border: none; padding-right: 4px;"><i class="fa fa-search" style="color: #a0aab5; font-size: 11px;"/></span>
+                                                <input type="text" class="form-control" placeholder="Cerca trattativa..." style="border: none; font-size: 11.5px; padding-left: 4px;" t-att-value="state.leadSearchQuery" t-on-input="onLeadSearch"/>
+                                            </div>
+                                            <div t-if="state.leadSearchResults.length" class="mb-2" style="background: #ffffff; border: 1px solid #dfe3da; border-radius: 8px; padding: 6px; max-height: 180px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                                <div t-foreach="state.leadSearchResults" t-as="lead" t-key="lead.id" style="padding: 6px; border-bottom: 1px solid #f8faf5; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                                    <div style="font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">
+                                                        <strong style="color: #20251f;" t-out="lead.name"/>
+                                                        <div style="font-size: 9.5px; color: #667061;" t-out="lead.stage_name"/>
+                                                    </div>
+                                                    <button class="btn btn-outline-success btn-sm" style="font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 6px;" t-on-click="() => this.linkLeadToMessage(lead.id)">
+                                                        Collega
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="cf-pc-sidebar-sub">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 6px; text-transform: uppercase;">Cerca &amp; Collega altro Dossier</h5>
+                                            <div class="input-group input-group-sm mb-2" style="box-shadow: 0 2px 6px rgba(0,0,0,0.02); border-radius: 8px; overflow: hidden; border: 1px solid #dfe3da;">
+                                                <span class="input-group-text" style="background: #ffffff; border: none; padding-right: 4px;"><i class="fa fa-search" style="color: #a0aab5; font-size: 11px;"/></span>
+                                                <input type="text" class="form-control" placeholder="Cerca dossier (es. DOS-0117)..." style="border: none; font-size: 11.5px; padding-left: 4px;" t-att-value="state.dossierSearchQuery" t-on-input="onDossierSearch"/>
+                                            </div>
+                                            <div t-if="state.dossierSearchResults.length" class="mb-2" style="background: #ffffff; border: 1px solid #dfe3da; border-radius: 8px; padding: 6px; max-height: 180px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                                <div t-foreach="state.dossierSearchResults" t-as="dossier" t-key="dossier.id" style="padding: 6px; border-bottom: 1px solid #f8faf5; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                                    <div style="font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">
+                                                        <strong style="color: #20251f;" t-out="dossier.name"/>
+                                                        <div style="font-size: 9.5px; color: #667061;" t-out="dossier.partner_name || 'Nessun partner'"/>
+                                                    </div>
+                                                    <button class="btn btn-outline-success btn-sm" style="font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 6px;" t-on-click="() => this.linkDossierToMessage(dossier.id)">
+                                                        Collega
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </t>
                                 <t t-else="">
@@ -695,8 +734,28 @@
                                             </button>
                                         </div>
 
+                                        <!-- Live Search Partner -->
+                                        <div class="cf-pc-sidebar-sub" style="border-top: none; padding-top: 0; margin-top: 0; margin-bottom: 16px;">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 6px; text-transform: uppercase;">Cerca &amp; Associa Anagrafica</h5>
+                                            <div class="input-group input-group-sm mb-2" style="box-shadow: 0 2px 6px rgba(0,0,0,0.02); border-radius: 8px; overflow: hidden; border: 1px solid #dfe3da;">
+                                                <span class="input-group-text" style="background: #ffffff; border: none; padding-right: 4px;"><i class="fa fa-search" style="color: #a0aab5; font-size: 11px;"/></span>
+                                                <input type="text" class="form-control" placeholder="Cerca cliente..." style="border: none; font-size: 11.5px; padding-left: 4px;" t-att-value="state.partnerSearchQuery" t-on-input="onPartnerSearch"/>
+                                            </div>
+                                            <div t-if="state.partnerSearchResults.length" class="mb-2" style="background: #ffffff; border: 1px solid #dfe3da; border-radius: 8px; padding: 6px; max-height: 180px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                                <div t-foreach="state.partnerSearchResults" t-as="sp" t-key="sp.id" style="padding: 6px; border-bottom: 1px solid #f8faf5; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                                    <div style="font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">
+                                                        <strong style="color: #20251f;" t-out="sp.name"/>
+                                                        <div style="font-size: 9.5px; color: #667061;" t-out="sp.email"/>
+                                                    </div>
+                                                    <button class="btn btn-outline-success btn-sm" style="font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 6px;" t-on-click="() => this.linkPartnerToMessage(sp.id)">
+                                                        Collega
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <!-- Domain Suggestions -->
-                                        <div class="cf-pc-sidebar-sub" t-if="state.messageContext.suggested_partners &amp;&amp; state.messageContext.suggested_partners.length" style="border-top: none; padding-top: 0; margin-top: 0;">
+                                        <div class="cf-pc-sidebar-sub" t-if="state.messageContext.suggested_partners &amp;&amp; state.messageContext.suggested_partners.length" style="margin-bottom: 16px;">
                                             <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 8px; text-transform: uppercase;">Contatti Suggeriti (Stesso Dominio)</h5>
                                             <div t-foreach="state.messageContext.suggested_partners" t-as="sp" t-key="sp.id" style="background: #f7faf5; border: 1px solid #eaf0e6; border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
                                                 <div style="font-weight: 750; font-size: 12px; color: #20251f;" t-out="sp.name"/>
@@ -704,6 +763,46 @@
                                                 <button class="btn btn-outline-success btn-sm mt-1" style="font-weight: 700; border-radius: 6px; font-size: 10.5px; padding: 2px 8px; width: fit-content;" t-on-click="() => this.linkPartnerToMessage(sp.id)">
                                                     <i class="fa fa-link" style="margin-right: 3px;"/> Associa
                                                 </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Live Search Lead -->
+                                        <div class="cf-pc-sidebar-sub" style="margin-bottom: 16px;">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 6px; text-transform: uppercase;">Cerca &amp; Associa Lead CRM</h5>
+                                            <div class="input-group input-group-sm mb-2" style="box-shadow: 0 2px 6px rgba(0,0,0,0.02); border-radius: 8px; overflow: hidden; border: 1px solid #dfe3da;">
+                                                <span class="input-group-text" style="background: #ffffff; border: none; padding-right: 4px;"><i class="fa fa-search" style="color: #a0aab5; font-size: 11px;"/></span>
+                                                <input type="text" class="form-control" placeholder="Cerca trattativa..." style="border: none; font-size: 11.5px; padding-left: 4px;" t-att-value="state.leadSearchQuery" t-on-input="onLeadSearch"/>
+                                            </div>
+                                            <div t-if="state.leadSearchResults.length" class="mb-2" style="background: #ffffff; border: 1px solid #dfe3da; border-radius: 8px; padding: 6px; max-height: 180px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                                <div t-foreach="state.leadSearchResults" t-as="lead" t-key="lead.id" style="padding: 6px; border-bottom: 1px solid #f8faf5; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                                    <div style="font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">
+                                                        <strong style="color: #20251f;" t-out="lead.name"/>
+                                                        <div style="font-size: 9.5px; color: #667061;" t-out="lead.stage_name"/>
+                                                    </div>
+                                                    <button class="btn btn-outline-success btn-sm" style="font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 6px;" t-on-click="() => this.linkLeadToMessage(lead.id)">
+                                                        Collega
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Live Search Dossier -->
+                                        <div class="cf-pc-sidebar-sub" style="margin-bottom: 16px;">
+                                            <h5 style="color: #4b5548; font-weight: 800; font-size: 11px; margin-bottom: 6px; text-transform: uppercase;">Cerca &amp; Associa Dossier (DOS-XXXX)</h5>
+                                            <div class="input-group input-group-sm mb-2" style="box-shadow: 0 2px 6px rgba(0,0,0,0.02); border-radius: 8px; overflow: hidden; border: 1px solid #dfe3da;">
+                                                <span class="input-group-text" style="background: #ffffff; border: none; padding-right: 4px;"><i class="fa fa-search" style="color: #a0aab5; font-size: 11px;"/></span>
+                                                <input type="text" class="form-control" placeholder="Cerca dossier (es. DOS-0117)..." style="border: none; font-size: 11.5px; padding-left: 4px;" t-att-value="state.dossierSearchQuery" t-on-input="onDossierSearch"/>
+                                            </div>
+                                            <div t-if="state.dossierSearchResults.length" class="mb-2" style="background: #ffffff; border: 1px solid #dfe3da; border-radius: 8px; padding: 6px; max-height: 180px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                                <div t-foreach="state.dossierSearchResults" t-as="dossier" t-key="dossier.id" style="padding: 6px; border-bottom: 1px solid #f8faf5; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                                    <div style="font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">
+                                                        <strong style="color: #20251f;" t-out="dossier.name"/>
+                                                        <div style="font-size: 9.5px; color: #667061;" t-out="dossier.partner_name || 'Nessun partner'"/>
+                                                    </div>
+                                                    <button class="btn btn-outline-success btn-sm" style="font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 6px;" t-on-click="() => this.linkDossierToMessage(dossier.id)">
+                                                        Collega
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 

@@ -28,6 +28,12 @@ export class CFPipelineControl extends Component {
             selectedMessageBody: "",
             selectedMessageIds: {},
             messageContext: null,
+            partnerSearchQuery: "",
+            leadSearchQuery: "",
+            dossierSearchQuery: "",
+            partnerSearchResults: [],
+            leadSearchResults: [],
+            dossierSearchResults: [],
             aiDraftBody: "",
             aiDraftLoading: false,
             aiInstruction: "",
@@ -72,6 +78,12 @@ export class CFPipelineControl extends Component {
         this.state.aiInstruction = "";
         this.state.selectedMessageBody = _t("Caricamento email...");
         this.state.messageContext = null;
+        this.state.partnerSearchQuery = "";
+        this.state.leadSearchQuery = "";
+        this.state.dossierSearchQuery = "";
+        this.state.partnerSearchResults = [];
+        this.state.leadSearchResults = [];
+        this.state.dossierSearchResults = [];
         
         try {
             const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
@@ -219,6 +231,48 @@ export class CFPipelineControl extends Component {
             }
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async onPartnerSearch(ev) {
+        const query = ev.target.value;
+        this.state.partnerSearchQuery = query;
+        if (query.length < 2) {
+            this.state.partnerSearchResults = [];
+            return;
+        }
+        try {
+            this.state.partnerSearchResults = await this.orm.call("cf.pipeline.control", "search_context_records", ["partner", query]);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async onLeadSearch(ev) {
+        const query = ev.target.value;
+        this.state.leadSearchQuery = query;
+        if (query.length < 2) {
+            this.state.leadSearchResults = [];
+            return;
+        }
+        try {
+            this.state.leadSearchResults = await this.orm.call("cf.pipeline.control", "search_context_records", ["lead", query]);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async onDossierSearch(ev) {
+        const query = ev.target.value;
+        this.state.dossierSearchQuery = query;
+        if (query.length < 2) {
+            this.state.dossierSearchResults = [];
+            return;
+        }
+        try {
+            this.state.dossierSearchResults = await this.orm.call("cf.pipeline.control", "search_context_records", ["dossier", query]);
+        } catch (error) {
+            console.error(error);
         }
     }
 
