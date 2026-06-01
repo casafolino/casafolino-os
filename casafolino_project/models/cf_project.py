@@ -12,6 +12,7 @@ CF_PROJECT_TYPES = [
     ('new_product', 'Lancio Nuovo Prodotto'),
     ('fair_prep', 'Preparazione Fiera'),
     ('strategic', 'Progetto Strategico'),
+    ('dossier', 'Dossier Master Cliente'),
 ]
 
 CF_WAITING_FOR = [
@@ -62,10 +63,10 @@ class CfProject(models.Model):
         CF_WAITING_FOR, string="Bloccato da",
         compute='_compute_main_blocker', store=True)
 
-    # === FIERA PARENT ===
+    # === FIERA/DOSSIER PARENT ===
     cf_parent_project_id = fields.Many2one(
-        'project.project', string="Progetto Padre (Fiera)",
-        domain="[('cf_project_type', '=', 'fair_prep')]")
+        'project.project', string="Progetto Padre / Dossier",
+        domain="[('cf_project_type', 'in', ['fair_prep', 'dossier'])]")
     cf_child_project_ids = fields.One2many(
         'project.project', 'cf_parent_project_id', string="Sotto-progetti")
     cf_child_count = fields.Integer(

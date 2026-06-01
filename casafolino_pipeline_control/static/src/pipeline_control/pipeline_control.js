@@ -24,6 +24,10 @@ export class CFPipelineControl extends Component {
             dossierSearch: "",
             dossierContinent: "all",
             activeDossierId: false,
+            dossierTimeline: [],
+            dossierTimelineLoading: false,
+            dossierNoteBody: "",
+            dossierNoteLoading: false,
             selectedMessageId: null,
             selectedMessageBody: "",
             selectedMessageIds: {},
@@ -297,16 +301,76 @@ export class CFPipelineControl extends Component {
         this.state.dossierContinent = ev.target.value || "all";
     }
 
-    openDossierWorkbench(dossier) {
+    async openDossierWorkbench(dossier) {
         if (!dossier || !dossier.id) {
             this.notification.add(_t("Dossier non disponibile"), { type: "warning" });
             return;
         }
         this.state.activeDossierId = dossier.id;
+        await this.loadDossierTimeline(dossier.id);
+    }
+
+    async loadDossierTimeline(dossierId) {
+        this.state.dossierTimelineLoading = true;
+        try {
+            this.state.dossierTimeline = await this.orm.call(
+                "cf.pipeline.control",
+                "get_dossier_timeline",
+                [dossierId]
+            );
+        } catch (error) {
+            console.error("Error loading timeline", error);
+        } finally {
+            this.state.dossierTimelineLoading = false;
+        }
+    }
+
+    async postDossierNote() {
+        const body = (this.state.dossierNoteBody || "").trim();
+        if (!body || !this.state.activeDossierId) return;
+        this.state.dossierNoteLoading = true;
+        try {
+            const success = await this.orm.call(
+                "cf.pipeline.control",
+                "post_dossier_note",
+                [this.state.activeDossierId, body]
+            );
+            if (success) {
+                this.state.dossierNoteBody = "";
+                this.notification.add(_t("Nota interna aggiunta!"), { type: "success" });
+                await this.loadDossierTimeline(this.state.activeDossierId);
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        } finally {
+            this.state.dossierNoteLoading = false;
+        }
+    }
+
+    async cycleSubprojectTrafficLight(sub) {
+        if (!sub || !sub.id) return;
+        const states = ["green", "yellow", "red"];
+        const nextIdx = (states.indexOf(sub.status) + 1) % states.length;
+        const nextState = states[nextIdx];
+        try {
+            await this.orm.write("project.project", [sub.id], {
+                cf_traffic_light: nextState
+            });
+            this.notification.add(_t("Stato aggiornato!"), { type: "success" });
+            
+            // Reload overall data and active dossier's specific content
+            await this.loadData();
+            if (this.state.activeDossierId) {
+                await this.loadDossierTimeline(this.state.activeDossierId);
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
     }
 
     closeDossierWorkbench() {
         this.state.activeDossierId = false;
+        this.state.dossierTimeline = [];
     }
 
     async openRecord(item) {

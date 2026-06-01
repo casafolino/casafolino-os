@@ -1085,12 +1085,14 @@ class CasafolinoMailMessage(models.Model):
 
         # Format message in simple Markdown
         message = (
-            "📧 *Nuova Email Rilevante!*\n\n"
-            f"*Da:* {self.sender_name or 'Sconosciuto'} <{self.sender_email or ''}>\n"
-            f"*Oggetto:* {self.subject or '(Nessun Oggetto)'}\n"
-            f"*Categoria:* {self.ai_category or 'N/A'}\n"
-            f"*Urgenza:* {self.ai_urgency or 'low'}\n\n"
-            f"*Sintesi:* {summary}\n"
+            "📧 *Nuova Email Rilevante Ricevuta!*\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 *Mittente:* {self.sender_name or 'Sconosciuto'} (`{self.sender_email or ''}`)\n"
+            f"✉️ *Oggetto:* __{self.subject or '(Nessun Oggetto)'}__\n"
+            f"🏷️ *Categoria:* `{self.ai_category or 'N/A'}`\n"
+            f"🔥 *Priorità:* `{self.ai_urgency or 'media'}`\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"💡 *Sintesi AI:*\n{summary}\n"
         )
 
         # Inline Keyboard

@@ -1784,12 +1784,37 @@ class CfPipelineControl(models.AbstractModel):
     def _format_project_detail(self, project, today):
         tasks = self.env['project.task'].search([('project_id', '=', project.id)], limit=80)
         overdue_tasks = tasks.filtered(lambda task: self._is_overdue(task.date_deadline))
+        partner = getattr(project, 'partner_id', False) or getattr(project, 'cf_partner_id', False)
+        
+        financials = self._get_dossier_financials(partner)
+        
+        subprojects = []
+        if 'cf_child_project_ids' in project._fields:
+            for sub in project.cf_child_project_ids:
+                sub_tasks = self.env['project.task'].search([('project_id', '=', sub.id)], limit=40)
+                sub_overdue = sub_tasks.filtered(lambda t: self._is_overdue(t.date_deadline))
+                subprojects.append({
+                    'id': sub.id,
+                    'name': sub.name,
+                    'project_type': sub.cf_project_type,
+                    'project_type_label': dict(sub._fields['cf_project_type'].selection).get(sub.cf_project_type, sub.cf_project_type) if sub.cf_project_type else '',
+                    'status': self._project_status(sub),
+                    'blocker': self._project_blocker_label(sub),
+                    'task_count': len(sub_tasks),
+                    'overdue_count': len(sub_overdue),
+                    'target_date': self._date_label(getattr(sub, 'cf_target_date', False) or getattr(sub, 'date', False)),
+                    'departments': self._project_departments(sub),
+                })
+
         return {
             'id': project.id,
             'model': project._name,
             'res_id': project.id,
             'name': project.name,
             'partner': self._project_partner_name(project),
+            'partner_id': partner.id if partner else False,
+            'partner_email': partner.email if partner else '',
+            'partner_phone': partner.phone if partner else '',
             'status': self._project_status(project),
             'blocker': self._project_blocker_label(project),
             'next_action': project.cf_next_action if 'cf_next_action' in project._fields else '',
@@ -1799,6 +1824,8 @@ class CfPipelineControl(models.AbstractModel):
             'task_count': len(tasks),
             'overdue_count': len(overdue_tasks),
             'departments': self._project_departments(project),
+            'financials': financials,
+            'subprojects': subprojects,
         }
 
     def _project_departments(self, project):
@@ -2116,6 +2143,156 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
             'views': [(False, 'form')],
             'target': 'current',
         }
+
+    def _get_dossier_financials(self, partner):
+        if not partner:
+            return {
+                'revenue_total': 0.0,
+                'quotes_total': 0.0,
+                'exposure': 0.0,
+                'monthly_purchases': [],
+            }
+
+        # 1. Fatturato storico: query account.move (posted out invoices)
+        domain_invoice = [
+            ('partner_id', 'child_of', partner.id),
+            ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ('state', '=', 'posted'),
+        ]
+        invoices = self.env['account.move'].search(domain_invoice)
+        revenue_total = sum(inv.amount_total_signed for inv in invoices)
+
+        # 2. Preventivi attivi: sale.order draft/sent
+        domain_sale = [
+            ('partner_id', 'child_of', partner.id),
+            ('state', 'in', ['draft', 'sent']),
+        ]
+        sales = self.env['sale.order'].search(domain_sale)
+        quotes_total = sum(so.amount_total for so in sales)
+
+        # 3. Esposizione
+        exposure = partner.credit or 0.0
+
+        # 4. Grafico acquisti mensili (past 6 months)
+        from collections import defaultdict
+        import datetime
+        monthly_data = defaultdict(float)
+
+        today_dt = datetime.date.today()
+        months = []
+        for i in range(5, -1, -1):
+            d = today_dt - datetime.timedelta(days=i * 30)
+            month_key = d.strftime('%Y-%m')
+            month_label = d.strftime('%b')
+            months.append((month_key, month_label))
+            monthly_data[month_key] = 0.0
+
+        for inv in invoices:
+            if inv.invoice_date:
+                m_key = inv.invoice_date.strftime('%Y-%m')
+                if m_key in monthly_data:
+                    monthly_data[m_key] += inv.amount_total_signed
+
+        monthly_purchases = []
+        max_val = max(monthly_data.values()) if monthly_data.values() else 0.0
+        for m_key, m_label in months:
+            val = monthly_data[m_key]
+            pct = int((val / max_val * 100)) if max_val > 0 else 0
+            monthly_purchases.append({
+                'label': m_label,
+                'value': val,
+                'pct': pct,
+            })
+
+        return {
+            'revenue_total': revenue_total,
+            'quotes_total': quotes_total,
+            'exposure': exposure,
+            'monthly_purchases': monthly_purchases,
+        }
+
+    @api.model
+    def get_dossier_timeline(self, project_id):
+        project = self.env['project.project'].browse(int(project_id)).exists()
+        if not project:
+            return []
+
+        timeline = []
+        import datetime
+
+        # 1. Custom Emails: casafolino.mail.message
+        emails = self.env['casafolino.mail.message'].search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50)
+        for email in emails:
+            attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', 'casafolino.mail.message'),
+                ('res_id', '=', email.id)
+            ])
+            timeline.append({
+                'id': 'email-%s' % email.id,
+                'type': 'email',
+                'date': self._date_label(email.create_date or email.write_date),
+                'timestamp': email.create_date or email.write_date,
+                'title': email.sender_name or email.sender_email or 'Mittente sconosciuto',
+                'sender_email': email.sender_email or '',
+                'subject': email.subject or 'Nessun oggetto',
+                'body': email.body_plain or email.snippet or '',
+                'body_html': email.body_html or '',
+                'direction': email.direction_computed or 'inbound',
+                'attachments': [{'id': att.id, 'name': att.name} for att in attachments],
+            })
+
+        # 2. Internal Notes: mail.message subtype Note
+        note_subtype = self.env.ref('mail.mt_note', raise_if_not_found=False)
+        domain_notes = [
+            ('model', '=', 'project.project'),
+            ('res_id', '=', project.id),
+        ]
+        if note_subtype:
+            domain_notes.append(('subtype_id', '=', note_subtype.id))
+
+        notes = self.env['mail.message'].search(domain_notes, order='date desc', limit=50)
+        for note in notes:
+            attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', 'project.project'),
+                ('res_id', '=', project.id),
+                ('res_name', '=', note.record_name)
+            ])
+            import re
+            clean_body = re.sub('<[^<]+?>', '', note.body or '')
+            timeline.append({
+                'id': 'note-%s' % note.id,
+                'type': 'note',
+                'date': self._date_label(note.date),
+                'timestamp': note.date,
+                'title': note.author_id.name or 'Staff CasaFolino',
+                'sender_email': note.author_id.email or '',
+                'subject': 'Nota Interna',
+                'body': clean_body,
+                'body_html': note.body or '',
+                'direction': 'note',
+                'attachments': [{'id': att.id, 'name': att.name} for att in attachments],
+            })
+
+        # Sort combined timeline chronologically descending (newest first)
+        timeline.sort(key=lambda x: x['timestamp'] or datetime.datetime.min, reverse=True)
+
+        for item in timeline:
+            if 'timestamp' in item:
+                del item['timestamp']
+
+        return timeline
+
+    @api.model
+    def post_dossier_note(self, project_id, body):
+        project = self.env['project.project'].browse(int(project_id)).exists()
+        if not project or not body:
+            return False
+        project.message_post(
+            body=body,
+            message_type='comment',
+            subtype_xmlid='mail.mt_note'
+        )
+        return True
 
 
 class CfPipelineLinkLeadWizard(models.TransientModel):

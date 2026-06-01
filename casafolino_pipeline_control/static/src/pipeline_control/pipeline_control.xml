@@ -879,129 +879,230 @@
                 <t t-elif="state.activeView === 'dossiers'">
                     <t t-if="activeDossier">
                         <div class="cf-pc-workbench">
-                            <main>
-                                <section class="cf-pc-workbench-hero">
-                                    <div class="cf-pc-workbench-hero-top">
-                                        <div>
-                                            <button class="btn btn-sm btn-light cf-pc-back-btn" t-on-click="closeDossierWorkbench">
-                                                <i class="fa fa-arrow-left"/>
-                                                Dossier
-                                            </button>
-                                            <h1 t-out="activeDossier.name"/>
-                                            <div class="cf-pc-workbench-sub">
-                                                Scrivania operativa dossier · cliente export
-                                                <t t-if="activeDossier.continent_label"> · continente <t t-out="activeDossier.continent_label"/></t>
-                                            </div>
-                                            <div class="cf-pc-workbench-status">
-                                                <span class="red" t-out="activeDossier.blocker || 'Blocco da gestire'"/>
-                                                <span class="amber">Avanzamento dossier</span>
-                                                <span class="blue">Prossima azione: <t t-out="activeDossier.next_action || 'da definire'"/></span>
-                                                <span>Task: <t t-out="activeDossier.task_count || 0"/></span>
-                                            </div>
+                            <!-- Hero Header -->
+                            <section class="cf-pc-workbench-hero" style="background: #ffffff; border: 1px solid #dfe3da; border-radius: 12px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); margin-bottom: 16px;">
+                                <div class="cf-pc-workbench-hero-top" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <div>
+                                        <button class="btn btn-sm btn-light cf-pc-back-btn" t-on-click="closeDossierWorkbench" style="margin-bottom: 8px; font-weight: 750;">
+                                            <i class="fa fa-arrow-left" style="margin-right: 4px;"/>
+                                            Torna ai Dossier
+                                        </button>
+                                        <h1 style="margin: 0; font-size: 20px; font-weight: 850; color: #1f2723; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fa fa-folder-open" style="color: #5a6e3a;"/>
+                                            <t t-out="activeDossier.name"/>
+                                            <span t-attf-class="badge rounded-pill bg-#{activeDossier.status === 'green' ? 'success' : (activeDossier.status === 'yellow' ? 'warning' : 'danger')}" style="font-size: 10px; padding: 4px 10px; font-weight: 800; text-transform: uppercase;">
+                                                <t t-out="activeDossier.status === 'green' ? 'Tutto OK' : (activeDossier.status === 'yellow' ? 'Attenzione' : 'Critico')"/>
+                                            </span>
+                                        </h1>
+                                        <div class="cf-pc-workbench-sub" style="font-size: 12.5px; color: #667061; margin-top: 4px; font-weight: 600;">
+                                            Scrivania operativa dossier cliente
+                                            <t t-if="activeDossier.continent_label"> · continente <strong t-out="activeDossier.continent_label"/></t>
+                                            <t t-if="activeDossier.target_date"> · data target <strong t-out="activeDossier.target_date"/></t>
                                         </div>
-                                        <button class="btn btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'open')">
-                                            Aggiorna avanzamento
+                                    </div>
+                                    <div class="cf-pc-workbench-quick" style="display: flex; gap: 8px;">
+                                        <button class="btn btn-primary btn-sm" t-on-click="() => this.recordQuickAction(activeDossier, 'open')" style="font-weight: 800;">
+                                            <i class="fa fa-pencil"/> Modifica
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.recordQuickAction(activeDossier, 'task')" style="font-weight: 850;">
+                                            <i class="fa fa-plus" style="color: #5a6e3a;"/> Nuova Task
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.recordQuickAction(activeDossier, 'email')" style="font-weight: 850;">
+                                            <i class="fa fa-envelope" style="color: #5a6e3a;"/> Invia Email
                                         </button>
                                     </div>
-                                    <div class="cf-pc-workbench-tabs">
-                                        <span class="active">Vista 360</span>
-                                        <span>Evoluzione</span>
-                                        <span>Documenti</span>
-                                        <span>Comunicazioni</span>
-                                        <span>Storico</span>
-                                    </div>
-                                    <div class="cf-pc-workbench-quick">
-                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'task')"><strong>+</strong>Task reparto</button>
-                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'email')"><strong>✉</strong>Scrivi email</button>
-                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'reply')"><strong>↩</strong>Rispondi cliente</button>
-                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'open')"><strong>📎</strong>Allega documento</button>
-                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'open')"><strong>✓</strong>Chiudi blocco</button>
-                                        <button t-on-click="() => this.recordQuickAction(activeDossier, 'followup7')"><strong>⏱</strong>Programma follow-up</button>
+                                </div>
+                            </section>
+
+                            <!-- 3 Column Cockpit (Mega Lavagna) -->
+                            <div class="cf-pc-dossier-three-col">
+                                <!-- Column 1: Anagrafica & KPI -->
+                                <section class="cf-pc-dossier-col cf-pc-dossier-col-1">
+                                    <header class="cf-pc-col-header">
+                                        <h2>Anagrafica &amp; KPI</h2>
+                                        <i class="fa fa-info-circle" style="color: #889283;"/>
+                                    </header>
+                                    <div class="cf-pc-col-body">
+                                        <!-- Partner Profiling -->
+                                        <div class="cf-pc-dossier-partner-info">
+                                            <div class="partner-name" t-out="activeDossier.partner || 'Nessun partner collegato'"/>
+                                            <div class="partner-meta">
+                                                <span t-if="activeDossier.partner_email"><i class="fa fa-envelope-o"/> <t t-out="activeDossier.partner_email"/></span>
+                                                <span t-if="activeDossier.partner_phone"><i class="fa fa-phone"/> <t t-out="activeDossier.partner_phone"/></span>
+                                                <span t-if="activeDossier.continent_label"><i class="fa fa-globe"/> <t t-out="activeDossier.continent_label"/></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- KPI Grid -->
+                                        <div class="cf-pc-dossier-kpi-grid">
+                                            <div class="cf-pc-dossier-kpi">
+                                                <span>Fatturato Storico</span>
+                                                <strong style="color: #2e7d32;">
+                                                    € <t t-out="Math.round(activeDossier.financials.revenue_total).toLocaleString('it-IT')"/>
+                                                </strong>
+                                            </div>
+                                            <div class="cf-pc-dossier-kpi">
+                                                <span>Preventivi Attivi</span>
+                                                <strong style="color: #245b82;">
+                                                    € <t t-out="Math.round(activeDossier.financials.quotes_total).toLocaleString('it-IT')"/>
+                                                </strong>
+                                            </div>
+                                            <div class="cf-pc-dossier-kpi">
+                                                <span>Esposizione / Fido</span>
+                                                <strong style="color: #c62828;">
+                                                    € <t t-out="Math.round(activeDossier.financials.exposure).toLocaleString('it-IT')"/>
+                                                </strong>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pure CSS Purchases Chart -->
+                                        <div class="cf-pc-monthly-chart">
+                                            <h4>Distribuzione Acquisti Mensili</h4>
+                                            <div class="cf-pc-chart-bars">
+                                                <t t-foreach="activeDossier.financials.monthly_purchases" t-as="m" t-key="m.label">
+                                                    <div class="cf-pc-chart-bar-col">
+                                                        <div class="cf-pc-chart-bar" t-attf-style="height: #{m.pct}%;" t-attf-title="€ #{Math.round(m.value)}">
+                                                            <span class="bar-value">€ <t t-out="Math.round(m.value).toLocaleString('it-IT')"/></span>
+                                                        </div>
+                                                        <span class="bar-label" t-out="m.label"/>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
 
-                                <section class="cf-pc-workbench-grid">
-                                    <div class="cf-pc-workbench-card">
-                                        <h2>Cliente e opportunità</h2>
-                                        <div class="cf-pc-field-grid">
-                                            <div><span>Cliente</span><strong t-out="activeDossier.partner || '-'"/></div>
-                                            <div><span>Mercato</span><strong><t t-out="activeDossier.continent_label || '-'"/> · Export</strong></div>
-                                            <div><span>Lead</span><strong t-out="activeDossier.status || 'Dossier operativo'"/></div>
-                                            <div><span>Priorità</span><strong>Dossier operativo</strong></div>
-                                            <div><span>Scadenza</span><strong t-out="activeDossier.target_date || '-'"/></div>
-                                            <div><span>Rischio</span><strong>Blocchi reparto da chiudere</strong></div>
+                                <!-- Column 2: Timeline Unificata -->
+                                <section class="cf-pc-dossier-col cf-pc-dossier-col-2">
+                                    <header class="cf-pc-col-header">
+                                        <h2>Timeline Unificata</h2>
+                                        <span class="badge rounded-pill bg-light text-dark" t-out="state.dossierTimeline.length"/>
+                                    </header>
+                                    <div class="cf-pc-col-body d-flex flex-column justify-content-between" style="height: 100%;">
+                                        <!-- Timeline Feed Scrollable -->
+                                        <div class="cf-pc-timeline-messages-scroller" style="flex: 1; overflow-y: auto; margin-bottom: 12px; padding-right: 4px;">
+                                            <t t-if="state.dossierTimelineLoading">
+                                                <div class="text-center" style="padding: 50px 0; color: #889283;">
+                                                    <i class="fa fa-spinner fa-spin fa-2x" style="color: #5a6e3a; margin-bottom: 8px;"/>
+                                                    <p>Caricamento discussione...</p>
+                                                </div>
+                                            </t>
+                                            <t t-elif="state.dossierTimeline.length">
+                                                <div class="cf-pc-timeline-messages">
+                                                    <t t-foreach="state.dossierTimeline" t-as="msg" t-key="msg.id">
+                                                        <div t-attf-class="cf-pc-timeline-msg #{msg.direction}">
+                                                            <div class="msg-header">
+                                                                <span t-out="msg.title"/>
+                                                                <span t-out="msg.date"/>
+                                                            </div>
+                                                            <div class="msg-subj" t-if="msg.type === 'email'" t-out="msg.subject"/>
+                                                            <div class="msg-body" t-out="msg.body"/>
+                                                            
+                                                            <!-- Attachements list if any -->
+                                                            <div class="msg-attachments" t-if="msg.attachments &amp;&amp; msg.attachments.length">
+                                                                <t t-foreach="msg.attachments" t-as="att" t-key="att.id">
+                                                                    <a t-attf-href="/web/content/#{att.id}?download=true" class="attachment-link" target="_blank">
+                                                                        <i class="fa fa-paperclip"/>
+                                                                        <t t-out="att.name"/>
+                                                                    </a>
+                                                                </t>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="text-center" style="padding: 50px 0; color: #889283; font-style: italic;">
+                                                    <i class="fa fa-comments-o fa-2x" style="margin-bottom: 8px; color: #bdc5b9;"/>
+                                                    <p>Nessun messaggio o nota registrata.</p>
+                                                </div>
+                                            </t>
                                         </div>
-                                    </div>
-                                    <div class="cf-pc-workbench-card">
-                                        <h2>Decisione da prendere</h2>
-                                        <div class="cf-pc-decision">
-                                            <span class="dot red"/>
-                                            <div>
-                                                <strong>Cosa blocca il prossimo passo?</strong>
-                                                <small t-out="activeDossier.next_action || 'Serve una prossima azione chiara sul dossier.'"/>
+
+                                        <!-- Timeline Input Area at bottom -->
+                                        <div class="cf-pc-timeline-input-area">
+                                            <textarea placeholder="Scrivi una nota interna in questo dossier..." t-att-value="state.dossierNoteBody" t-on-input="(ev) => this.state.dossierNoteBody = ev.target.value" t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; !e.shiftKey &amp;&amp; !state.dossierNoteLoading &amp;&amp; this.postDossierNote()"/>
+                                            <div class="input-footer">
+                                                <button class="btn btn-sm btn-primary" t-on-click="postDossierNote" t-att-disabled="state.dossierNoteLoading ? 'disabled' : ''" style="font-weight: 800;">
+                                                    <t t-if="state.dossierNoteLoading"><i class="fa fa-spinner fa-spin"/> Salvataggio...</t>
+                                                    <t t-else="">Aggiungi Nota</t>
+                                                </button>
                                             </div>
-                                            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'task')">Apri</button>
-                                        </div>
-                                        <div class="cf-pc-decision">
-                                            <span class="dot amber"/>
-                                            <div>
-                                                <strong>Trasporto o documenti da confermare</strong>
-                                                <small>Logistica e Back Office completano il dossier prima del recap cliente.</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'open')">Apri</button>
                                         </div>
                                     </div>
                                 </section>
 
-                                <section class="cf-pc-workbench-card cf-pc-workbench-depts">
-                                    <h2>Vista 360 per reparto</h2>
-                                    <div>
-                                        <t t-foreach="activeDossier.departments" t-as="dept" t-key="'workbench-' + dept.name">
-                                            <article t-attf-class="#{dept.name === 'Qualita' || dept.name === 'Qualità' ? 'blocked' : ''}">
-                                                <h3 t-out="dept.name"/>
-                                                <div class="bar"><span t-att-style="'width:' + (dept.tasks.length ? '72%' : '28%')"/></div>
-                                                <p t-if="dept.tasks.length" t-out="dept.tasks[0].name"/>
-                                                <p t-else="">Nessun task aperto. Reparto pronto o da pianificare.</p>
-                                            </article>
+                                <!-- Column 3: Sottoprogetti -->
+                                <section class="cf-pc-dossier-col cf-pc-dossier-col-3">
+                                    <header class="cf-pc-col-header">
+                                        <h2>Sottoprogetti</h2>
+                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'sample')" style="font-size: 11px; font-weight: 800; padding: 2px 8px;">
+                                            <i class="fa fa-plus"/> Nuovo
+                                        </button>
+                                    </header>
+                                    <div class="cf-pc-col-body">
+                                        <t t-if="activeDossier.subprojects &amp;&amp; activeDossier.subprojects.length">
+                                            <div class="cf-pc-subprojects-list">
+                                                <t t-foreach="activeDossier.subprojects" t-as="sub" t-key="sub.id">
+                                                    <div class="cf-pc-subproject-card">
+                                                        <div class="card-top">
+                                                            <h3 t-on-click="() => this.openRecord({model: 'project.project', res_id: sub.id})" style="cursor: pointer; text-decoration: underline;" title="Apri sottoprogetto in Odoo">
+                                                                <t t-out="sub.name"/>
+                                                            </h3>
+                                                            <!-- Semaforo ciclabile -->
+                                                            <div t-attf-class="subproject-status-dot #{sub.status}" t-on-click="() => this.cycleSubprojectTrafficLight(sub)" t-attf-title="Stato attuale: #{sub.status === 'green' ? 'In Linea' : (sub.status === 'yellow' ? 'Attenzione' : 'Critico')}. Clicca per cambiare."/>
+                                                        </div>
+                                                        <div class="card-meta">
+                                                            <span class="subproject-type" t-out="sub.project_type_label"/>
+                                                            <span class="target-date" t-if="sub.target_date" t-out="sub.target_date"/>
+                                                        </div>
+                                                        
+                                                        <!-- Blocker info if present -->
+                                                        <div class="card-blocker" t-if="sub.blocker &amp;&amp; sub.blocker !== 'Nessuno'">
+                                                            <i class="fa fa-warning"/>
+                                                            <span>Bloccato da: <t t-out="sub.blocker"/></span>
+                                                        </div>
+
+                                                        <!-- Task Progress -->
+                                                        <div class="card-progress">
+                                                            <div class="progress-label">
+                                                                <span>Avanzamento (<t t-out="sub.task_count"/> task)</span>
+                                                                <span class="overdue-count" t-if="sub.overdue_count"><t t-out="sub.overdue_count"/> scadute</span>
+                                                            </div>
+                                                            <div class="progress-bar-container">
+                                                                <!-- Simple ratio completion -->
+                                                                <div class="progress-bar-fill" t-attf-style="width: #{sub.task_count ? 70 : 0}%;"/>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Quick actions on subproject -->
+                                                        <div class="card-actions">
+                                                            <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord({model: 'project.project', res_id: sub.id})" title="Apri in Odoo">
+                                                                <i class="fa fa-external-link"/>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(sub, 'task')" title="Nuova Task">
+                                                                <i class="fa fa-plus"/> Task
+                                                            </button>
+                                                            <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(sub, 'followup7')" title="Follow-up +7gg">
+                                                                <i class="fa fa-calendar-plus-o"/>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="text-center" style="padding: 40px 10px; color: #889283; border: 1px dashed #cfd8cf; border-radius: 8px; background: #fafbf9;">
+                                                <i class="fa fa-cubes fa-2x" style="margin-bottom: 8px; color: #bdc5b9;"/>
+                                                <p style="font-size: 12px; line-height: 1.45;">Nessun sottoprogetto operativo collegato a questo dossier.</p>
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'sample')" style="margin-top: 8px; font-weight: 800;">
+                                                    Avvia Campionatura
+                                                </button>
+                                            </div>
                                         </t>
                                     </div>
                                 </section>
-                            </main>
-
-                            <aside>
-                                <section class="cf-pc-workbench-card">
-                                    <h2>Composer email</h2>
-                                    <div class="cf-pc-composer-preview">
-                                        <div>Risposta cliente - recap dossier</div>
-                                        <div t-out="activeDossier.partner || '-'"/>
-                                        <div><t t-out="activeDossier.name"/> - documenti e prossimi passaggi</div>
-                                        <p>Buongiorno,<br/><br/>le confermo che stiamo completando il dossier.<br/><br/>Appena chiudiamo i blocchi reparto, le inviamo il recap completo con condizioni e documenti allegati.<br/><br/>Resto a disposizione.</p>
-                                        <div class="cf-pc-composer-actions">
-                                            <button class="btn btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'reply')">Salva bozza</button>
-                                            <button class="btn btn-primary" t-on-click="() => this.recordQuickAction(activeDossier, 'email')">Invia dal mio composer</button>
-                                        </div>
-                                    </div>
-                                </section>
-                                <section class="cf-pc-workbench-card">
-                                    <h2>Prossime azioni</h2>
-                                    <div class="cf-pc-decision">
-                                        <span class="dot red"/>
-                                        <div>
-                                            <strong t-out="activeDossier.next_action || 'Definire prossima azione'"/>
-                                            <small>Reparto responsabile · blocca il dossier</small>
-                                        </div>
-                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'task')">Fai</button>
-                                    </div>
-                                    <div class="cf-pc-decision">
-                                        <span class="dot blue"/>
-                                        <div>
-                                            <strong>Preparare email recap</strong>
-                                            <small>Commerciale · usa il composer F8</small>
-                                        </div>
-                                        <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(activeDossier, 'email')">Fai</button>
-                                    </div>
-                                </section>
-                            </aside>
+                            </div>
                         </div>
                     </t>
                     <t t-else="">
