@@ -1134,6 +1134,34 @@ class CfPipelineControl(models.AbstractModel):
         rows_to_reply = [self._format_mail_row(msg) for msg in inbox[:24]]
         rows_waiting = [self._format_mail_row(msg) for msg in waiting[:24]]
         all_rows = rows_to_reply + rows_waiting
+
+        # Weekly AI category distribution stats for the visual dashboard
+        from datetime import datetime, timedelta
+        cutoff = datetime.now() - timedelta(days=7)
+        self.env.cr.execute("""
+            SELECT ai_category, COUNT(*)
+            FROM casafolino_mail_message
+            WHERE email_date >= %s AND is_deleted = False AND ai_category IS NOT NULL
+            GROUP BY ai_category
+        """, [cutoff])
+        
+        distribution = {}
+        total_counted = 0
+        for cat, count in self.env.cr.fetchall():
+            distribution[cat] = count
+            total_counted += count
+            
+        stats_list = []
+        for cat in ['commerciale', 'admin', 'fornitore', 'newsletter', 'interno', 'personale', 'spam']:
+            count = distribution.get(cat, 0)
+            percentage = int(count / total_counted * 100) if total_counted > 0 else 0
+            stats_list.append({
+                'category': cat,
+                'label': cat.title(),
+                'count': count,
+                'percentage': percentage,
+            })
+
         return {
             'kpis': [
                 {'label': 'Tocca a noi', 'value': len(inbox), 'hint': 'Ultimo messaggio inbound o azione richiesta'},
@@ -1141,6 +1169,7 @@ class CfPipelineControl(models.AbstractModel):
                 {'label': 'Senza lead', 'value': len([row for row in all_rows if not row.get('lead_id')]), 'hint': 'Da collegare alla pipeline CRM'},
                 {'label': 'Urgenti', 'value': len([row for row in all_rows if row.get('urgency') == 'high']), 'hint': 'AI urgenza alta'},
             ],
+            'distribution_stats': stats_list,
             'to_reply': rows_to_reply,
             'waiting_customer': rows_waiting,
         }
@@ -1438,10 +1467,29 @@ class CfPipelineControl(models.AbstractModel):
 
     def _format_mail_row(self, msg):
         item = self._format_mail_item(msg)
+        
+        # Deduplication matching suggestion for incoming email not linked to partner
+        suggested_partner = False
+        if not msg.partner_id and msg.sender_domain:
+            generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 'libero.it', 'virgilio.it', 'tiscali.it', 'alice.it'}
+            if msg.sender_domain not in generic_domains:
+                domain_partner = self.env['res.partner'].search([
+                    ('is_company', '=', True),
+                    '|',
+                    ('website', 'ilike', msg.sender_domain),
+                    ('email', '=ilike', '%%@' + msg.sender_domain),
+                ], limit=1)
+                if domain_partner:
+                    suggested_partner = {
+                        'id': domain_partner.id,
+                        'name': domain_partner.name,
+                    }
+
         item.update({
             'lead': msg.lead_id.display_name if msg.lead_id else '',
             'lead_id': msg.lead_id.id if msg.lead_id else False,
             'partner_id': msg.partner_id.id if msg.partner_id else False,
+            'suggested_partner': suggested_partner,
             'thread_id': msg.thread_id.id if msg.thread_id else False,
             'owner': ', '.join(msg.assigned_user_ids.mapped('name')) or '',
             'snippet': msg.snippet or '',
