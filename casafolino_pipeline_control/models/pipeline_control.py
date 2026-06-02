@@ -2594,6 +2594,21 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     ], string='Tipo rapido', default='todo', required=True)
     name = fields.Char(string='Cosa devo ricordare?', required=True)
     note = fields.Text(string='Nota veloce')
+    source_channel = fields.Selection([
+        ('mail', 'Email'),
+        ('call', 'Chiamata'),
+        ('whatsapp', 'WhatsApp'),
+        ('meeting', 'Riunione'),
+        ('manual', 'Manuale'),
+    ], string='Origine', default='manual', required=True)
+    urgency = fields.Selection([
+        ('low', 'Bassa'),
+        ('normal', 'Normale'),
+        ('high', 'Alta'),
+        ('critical', 'Critica'),
+    ], string='Urgenza', default='normal', required=True)
+    customer_promise = fields.Char(string='Promessa fatta al cliente')
+    next_checkpoint = fields.Char(string='Checkpoint prossimo')
     partner_id = fields.Many2one('res.partner', string='Cliente')
     project_id = fields.Many2one('project.project', string='Dossier')
     lead_id = fields.Many2one('crm.lead', string='Lead pipeline')
@@ -2637,7 +2652,11 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'task_type': 'todo',
                 'department': 'sales',
                 'is_mini_project': True,
+                'source_channel': 'call',
+                'urgency': 'high',
                 'note': 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.',
+                'customer_promise': 'Richiamare / dare riscontro appena assegnata la richiesta.',
+                'next_checkpoint': 'Assegnare owner e prima scadenza.',
                 'ai_suggested_next_step': 'Collega cliente/dossier, assegna owner e imposta la prossima scadenza.',
             })
         elif kind == 'sample':
@@ -2648,7 +2667,11 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'is_mini_project': True,
                 'checklist_required': True,
                 'create_sample_shipment': True,
+                'source_channel': 'manual',
+                'urgency': 'high',
                 'note': 'Campionatura da preparare/spedire: prodotti, indirizzo, tracking e feedback atteso.',
+                'customer_promise': 'Inviare tracking appena disponibile.',
+                'next_checkpoint': 'Verificare indirizzo, prodotti e data feedback attesa.',
                 'ai_suggested_next_step': 'Crea o collega la spedizione, abilita TrackBot e programma reminder feedback.',
             })
         else:
@@ -2657,6 +2680,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'task_type': self.env.context.get('default_task_type') or 'todo',
                 'department': self.env.context.get('default_department') or 'sales',
                 'note': self.env.context.get('default_note') or 'Richiesta creata dalla Console Commerciale.',
+                'source_channel': self.env.context.get('default_source_channel') or 'manual',
+                'urgency': self.env.context.get('default_urgency') or 'normal',
             })
 
         lead = self.env['crm.lead'].browse(self.env.context.get('default_lead_id')).exists()
@@ -2671,6 +2696,9 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'note': '%s\n%s' % (message.subject or '', message.snippet or ''),
                 'quick_kind': kind if kind != 'todo' else 'todo',
                 'task_type': 'followup' if kind != 'sample' else 'sample_shipment',
+                'source_channel': 'mail',
+                'urgency': 'high' if message.ai_urgency == 'high' or message.ai_action_required else 'normal',
+                'next_checkpoint': self.env['cf.pipeline.control']._mail_suggested_action(message),
             })
         if lead:
             project = project or getattr(lead, 'cf_project_id', False)
@@ -2690,9 +2718,15 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.task_type = 'todo'
             self.department = 'sales'
             self.is_mini_project = True
+            self.source_channel = 'call'
+            self.urgency = 'high'
             self.checklist_required = self.checklist_required or False
             if not self.note:
                 self.note = 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.'
+            if not self.customer_promise:
+                self.customer_promise = 'Richiamare / dare riscontro appena assegnata la richiesta.'
+            if not self.next_checkpoint:
+                self.next_checkpoint = 'Assegnare owner e prima scadenza.'
             if not self.ai_suggested_next_step:
                 self.ai_suggested_next_step = 'Collega cliente/dossier, assegna owner e imposta la prossima scadenza.'
         elif self.quick_kind == 'sample':
@@ -2702,8 +2736,14 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.is_mini_project = True
             self.checklist_required = True
             self.create_sample_shipment = True
+            self.source_channel = self.source_channel or 'manual'
+            self.urgency = 'high'
             if not self.note:
                 self.note = 'Campionatura da preparare/spedire: prodotti, indirizzo, tracking e feedback atteso.'
+            if not self.customer_promise:
+                self.customer_promise = 'Inviare tracking appena disponibile.'
+            if not self.next_checkpoint:
+                self.next_checkpoint = 'Verificare indirizzo, prodotti e data feedback attesa.'
             if not self.ai_suggested_next_step:
                 self.ai_suggested_next_step = 'Crea o collega la spedizione, abilita TrackBot e programma reminder feedback.'
         else:
@@ -2734,9 +2774,9 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             'project_id': self.project_id.id if self.project_id else False,
             'partner_id': self.partner_id.id if self.partner_id else False,
             'date_deadline': self.deadline or False,
-            'description': self.note or '',
+            'description': self._task_description_payload(),
             'user_ids': [(6, 0, self.user_ids.ids or [self.env.uid])],
-            'cf_task_origin': 'call' if self.quick_kind == 'call' else 'manual',
+            'cf_task_origin': self.source_channel if self.source_channel in ('call', 'manual') else 'manual',
             'cf_task_type': self.task_type,
             'cf_department': self.department,
             'cf_customer_id': self.partner_id.id if self.partner_id else False,
@@ -2758,6 +2798,22 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         self._create_default_checklist(task)
         task.message_post(body='Task veloce creata dalla Console Commerciale.')
         return task
+
+    def _task_description_payload(self):
+        parts = [
+            '<p><strong>Richiesta</strong><br/>%s</p>' % (self.note or ''),
+            '<ul>',
+            '<li><strong>Origine:</strong> %s</li>' % dict(self._fields['source_channel'].selection).get(self.source_channel, self.source_channel),
+            '<li><strong>Urgenza:</strong> %s</li>' % dict(self._fields['urgency'].selection).get(self.urgency, self.urgency),
+        ]
+        if self.customer_promise:
+            parts.append('<li><strong>Promessa al cliente:</strong> %s</li>' % self.customer_promise)
+        if self.next_checkpoint:
+            parts.append('<li><strong>Checkpoint:</strong> %s</li>' % self.next_checkpoint)
+        if self.ai_suggested_next_step:
+            parts.append('<li><strong>Prossimo passo AI:</strong> %s</li>' % self.ai_suggested_next_step)
+        parts.append('</ul>')
+        return ''.join(parts)
 
     def _create_default_checklist(self, task):
         if not self.checklist_required and self.task_type != 'sample_shipment':
