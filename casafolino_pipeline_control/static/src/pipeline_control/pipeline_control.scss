@@ -30,8 +30,8 @@
         position: sticky;
         top: 0;
         height: calc(100vh - 48px);
-        padding: 18px 14px;
-        background: #26342c;
+        padding: 20px 16px;
+        background: linear-gradient(180deg, #1f2c25 0%, #26342c 62%, #30451f 100%);
         color: #f7faf4;
         display: flex;
         flex-direction: column;
@@ -44,7 +44,7 @@
 
         strong {
             display: block;
-            font-size: 17px;
+            font-size: 19px;
             line-height: 1.2;
         }
 
@@ -104,7 +104,7 @@
 
     .cf-pc-main {
         min-width: 0;
-        padding: 20px;
+        padding: 22px 24px;
         padding-bottom: 56px;
     }
 
@@ -124,7 +124,7 @@
         }
 
         h1 {
-            font-size: 24px;
+            font-size: 28px;
         }
 
         h2 {
@@ -134,7 +134,7 @@
         p {
             margin: 5px 0 0;
             color: #667061;
-            font-size: 13px;
+            font-size: 14px;
         }
     }
 
@@ -195,6 +195,7 @@
         background: #fff;
         border: 1px solid #dfe3da;
         border-radius: 8px;
+        box-shadow: 0 1px 0 rgba(32, 37, 31, .03);
 
         .cf-pc-kpi-label {
             color: #667061;
@@ -233,7 +234,7 @@
     .cf-pc-console-grid {
         display: grid;
         grid-template-columns: minmax(360px, .95fr) minmax(520px, 1.35fr);
-        gap: 12px;
+        gap: 14px;
         align-items: start;
     }
 
@@ -252,6 +253,7 @@
 
     .cf-pc-console-context {
         grid-column: 1 / -1;
+        background: #fbfcfa;
     }
 
     .cf-pc-console-lanes {

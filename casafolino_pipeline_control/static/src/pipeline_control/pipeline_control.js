@@ -611,7 +611,7 @@ export class CFPipelineControl extends Component {
 
     get navItems() {
         return [
-            { id: "control", label: "Sala Controllo", count: this.totalLaneCount },
+            { id: "control", label: "Console", count: this.totalLaneCount },
             { id: "followup", label: "Follow-up", count: this.state.data.followup?.kpis?.[0]?.value || 0 },
             { id: "fair", label: "Post-Fiera", count: this.state.data.post_fair?.fair ? this.state.data.post_fair.kpis?.[0]?.value : 0 },
             { id: "inbox", label: "Inbox", count: this.state.data.inbox?.kpis?.[0]?.value || 0 },

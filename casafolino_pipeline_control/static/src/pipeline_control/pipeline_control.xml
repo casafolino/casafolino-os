@@ -5,7 +5,7 @@
     <div class="cf-pipeline-control">
         <div t-if="state.loading" class="cf-pc-loading">
             <i class="fa fa-spinner fa-spin"/>
-            <span>Caricamento sala controllo...</span>
+            <span>Caricamento console commerciale...</span>
         </div>
 
         <div t-elif="state.error" class="cf-pc-error">
@@ -20,8 +20,8 @@
         <div t-else="" class="cf-pc-shell">
             <aside class="cf-pc-sidebar">
                 <div class="cf-pc-brand">
-                    <strong>Pipeline Export</strong>
-                    <span>Sala controllo operativa</span>
+                    <strong>CasaFolino OS</strong>
+                    <span>Console commerciale</span>
                 </div>
                 <div class="cf-pc-nav">
                     <t t-foreach="navItems" t-as="nav" t-key="nav.id">
@@ -33,7 +33,7 @@
                     </t>
                 </div>
                 <div class="cf-pc-note">
-                    Vista operativa per il lavoro commerciale di giornata.
+                    Punto di entrata: mail, pipeline, task e dossier cliente.
                 </div>
             </aside>
 
