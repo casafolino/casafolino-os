@@ -285,28 +285,68 @@
                             <header>
                                 <div>
                                     <h2>Entità 360</h2>
-                                    <p>Clienti e lead da aprire con contesto completo.</p>
+                                    <p>Cerca cliente, lead o dossier e apri subito il contesto completo.</p>
                                 </div>
                                 <button class="btn btn-sm btn-light" t-on-click="() => this.setView('dossiers')">
-                                    Cerca
+                                    Dossier
                                 </button>
                             </header>
+                            <div class="cf-pc-search" style="margin-bottom:10px;">
+                                <i class="fa fa-search"/>
+                                <input type="search"
+                                       placeholder="Cerca cliente, azienda, lead, dossier..."
+                                       t-att-value="state.entitySearchQuery"
+                                       t-on-input="onEntitySearch"/>
+                            </div>
                             <div class="cf-pc-depth-list">
-                                <t t-foreach="consoleEntities" t-as="entity" t-key="'entity360-' + entity.model + '-' + entity.res_id">
-                                    <article class="cf-pc-depth-row">
-                                        <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(entity)">
-                                            <strong t-out="entity.title"/>
-                                            <span t-out="entity.subtitle"/>
-                                            <small t-out="entity.meta"/>
-                                        </button>
-                                        <div class="cf-pc-badges">
-                                            <t t-foreach="entity.badges" t-as="badge" t-key="badge_index">
-                                                <span class="cf-pc-badge" t-out="badge"/>
-                                            </t>
-                                        </div>
-                                    </article>
+                                <t t-if="state.entitySearchResults.length">
+                                    <t t-foreach="state.entitySearchResults" t-as="entity" t-key="'entity-search-' + entity.model + '-' + entity.res_id">
+                                        <article class="cf-pc-depth-row">
+                                            <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(entity)">
+                                                <strong t-out="entity.title"/>
+                                                <span t-out="entity.subtitle"/>
+                                                <small>
+                                                    <t t-out="entity.meta"/>
+                                                    <t t-if="entity.next_action"> · <t t-out="entity.next_action"/></t>
+                                                </small>
+                                            </button>
+                                            <div class="cf-pc-badges">
+                                                <t t-foreach="entity.badges" t-as="badge" t-key="badge_index">
+                                                    <span class="cf-pc-badge" t-out="badge"/>
+                                                </t>
+                                            </div>
+                                            <div class="cf-pc-row-actions">
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.openRecord(entity)" title="Apri">
+                                                    <i class="fa fa-folder-open-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(entity, 'task')" title="Crea task veloce">
+                                                    <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(entity, 'email')" title="Scrivi email">
+                                                    <i class="fa fa-envelope-o"/>
+                                                </button>
+                                            </div>
+                                        </article>
+                                    </t>
                                 </t>
-                                <div t-if="!consoleEntities.length" class="cf-pc-empty">Nessuna entità suggerita</div>
+                                <div t-if="state.entitySearchLoading" class="cf-pc-empty">Ricerca in corso...</div>
+                                <t t-if="!state.entitySearchResults.length &amp;&amp; !state.entitySearchLoading">
+                                    <t t-foreach="consoleEntities" t-as="entity" t-key="'entity360-' + entity.model + '-' + entity.res_id">
+                                        <article class="cf-pc-depth-row">
+                                            <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(entity)">
+                                                <strong t-out="entity.title"/>
+                                                <span t-out="entity.subtitle"/>
+                                                <small t-out="entity.meta"/>
+                                            </button>
+                                            <div class="cf-pc-badges">
+                                                <t t-foreach="entity.badges" t-as="badge" t-key="badge_index">
+                                                    <span class="cf-pc-badge" t-out="badge"/>
+                                                </t>
+                                            </div>
+                                        </article>
+                                    </t>
+                                </t>
+                                <div t-if="!state.entitySearchResults.length &amp;&amp; !consoleEntities.length &amp;&amp; !state.entitySearchLoading" class="cf-pc-empty">Nessuna entità suggerita</div>
                             </div>
                         </section>
 

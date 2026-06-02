@@ -418,6 +418,47 @@ class CfPipelineControl(models.AbstractModel):
         return []
 
     @api.model
+    def search_entity_360(self, query, limit=8):
+        if not query or len(query.strip()) < 2:
+            return []
+        query = query.strip()
+        limit = max(1, min(int(limit or 8), 20))
+        rows = []
+        seen = set()
+
+        Partner = self.env['res.partner']
+        partner_domain = ['|', '|', ('name', 'ilike', query), ('email', 'ilike', query), ('phone', 'ilike', query)]
+        for partner in Partner.search(partner_domain, order='write_date desc, id desc', limit=limit):
+            key = ('res.partner', partner.id)
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append(self._format_entity360_partner(partner))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining:
+            Lead = self.env['crm.lead']
+            lead_domain = ['|', '|', ('name', 'ilike', query), ('partner_id.name', 'ilike', query), ('email_from', 'ilike', query)]
+            for lead in Lead.search(lead_domain, order='write_date desc, expected_revenue desc, id desc', limit=remaining):
+                key = ('crm.lead', lead.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_entity360_lead(lead))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining:
+            Project = self.env['project.project']
+            project_domain = ['|', ('name', 'ilike', query), ('partner_id.name', 'ilike', query)]
+            for project in Project.search(project_domain, order='write_date desc, id desc', limit=remaining):
+                key = ('project.project', project.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_entity360_project(project))
+        return rows
+
+    @api.model
     def get_message_context_info(self, message_id):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:
@@ -1197,6 +1238,124 @@ class CfPipelineControl(models.AbstractModel):
                 })
         return rows
 
+    def _format_entity360_partner(self, partner):
+        counts = self._entity360_counts(partner=partner)
+        return {
+            'id': partner.id,
+            'model': partner._name,
+            'res_id': partner.id,
+            'title': partner.display_name,
+            'subtitle': partner.email or partner.phone or partner.mobile or 'Cliente / contatto',
+            'meta': self._entity360_meta(counts),
+            'next_action': counts.get('next_action') or '',
+            'badges': self._compact([
+                'cliente',
+                partner.country_id.code if partner.country_id else False,
+                '%s mail' % counts['mail_count'] if counts['mail_count'] else False,
+                '%s lead' % counts['lead_count'] if counts['lead_count'] else False,
+                '%s dossier' % counts['project_count'] if counts['project_count'] else False,
+            ]),
+        }
+
+    def _format_entity360_lead(self, lead):
+        counts = self._entity360_counts(partner=lead.partner_id, lead=lead)
+        return {
+            'id': lead.id,
+            'model': lead._name,
+            'res_id': lead.id,
+            'title': lead.partner_id.display_name if lead.partner_id else lead.name,
+            'subtitle': lead.name or 'Lead pipeline',
+            'meta': self._entity360_meta(counts),
+            'next_action': counts.get('next_action') or '',
+            'badges': self._compact([
+                'lead',
+                lead.stage_id.name if lead.stage_id else False,
+                self._lead_origin_label(lead),
+                '€ %s' % int(lead.expected_revenue) if lead.expected_revenue else False,
+            ]),
+        }
+
+    def _format_entity360_project(self, project):
+        counts = self._entity360_counts(partner=project.partner_id, project=project)
+        return {
+            'id': project.id,
+            'model': project._name,
+            'res_id': project.id,
+            'title': project.name,
+            'subtitle': project.partner_id.display_name if project.partner_id else 'Dossier',
+            'meta': self._entity360_meta(counts),
+            'next_action': counts.get('next_action') or '',
+            'badges': self._compact([
+                'dossier',
+                self._project_status(project),
+                self._project_blocker_label(project),
+                '%s task' % counts['task_count'] if counts['task_count'] else False,
+            ]),
+        }
+
+    def _entity360_counts(self, partner=False, lead=False, project=False):
+        Mail = self.env['casafolino.mail.message']
+        Lead = self.env['crm.lead']
+        Project = self.env['project.project']
+        Task = self.env['project.task']
+        Sale = self.env['sale.order']
+
+        mail_domain = [('is_deleted', '=', False)]
+        lead_domain = [('active', 'in', [True, False])]
+        project_domain = []
+        task_domain = []
+        sale_domain = [('state', 'in', ['draft', 'sent'])]
+
+        if partner:
+            mail_domain.append(('partner_id', '=', partner.id))
+            lead_domain.append(('partner_id', '=', partner.id))
+            project_domain.append(('partner_id', '=', partner.id))
+            sale_domain.append(('partner_id', '=', partner.id))
+        if lead:
+            mail_domain = ['|', ('lead_id', '=', lead.id)] + mail_domain
+            project = project or getattr(lead, 'cf_project_id', False)
+            if 'opportunity_id' in Sale._fields:
+                sale_domain = ['|', ('opportunity_id', '=', lead.id)] + sale_domain
+        if project:
+            task_domain.append(('project_id', '=', project.id))
+            if 'cf_project_id' in Mail._fields:
+                mail_domain = ['|', ('cf_project_id', '=', project.id)] + mail_domain
+        elif partner:
+            projects = Project.search(project_domain, limit=50)
+            if projects:
+                task_domain.append(('project_id', 'in', projects.ids))
+
+        next_action = ''
+        if project and 'cf_next_action' in Project._fields:
+            next_action = project.cf_next_action or ''
+        elif lead:
+            date_field = 'cf_date_next_followup' if 'cf_date_next_followup' in Lead._fields else 'date_deadline'
+            next_date = getattr(lead, date_field, False)
+            next_action = self._date_label(next_date) if next_date else ''
+
+        return {
+            'mail_count': Mail.search_count(mail_domain),
+            'lead_count': Lead.search_count(lead_domain) if partner else (1 if lead else 0),
+            'project_count': Project.search_count(project_domain) if partner else (1 if project else 0),
+            'task_count': Task.search_count(task_domain) if task_domain else 0,
+            'quote_count': Sale.search_count(sale_domain),
+            'next_action': next_action,
+        }
+
+    def _entity360_meta(self, counts):
+        parts = []
+        if counts.get('lead_count'):
+            parts.append('%s lead' % counts['lead_count'])
+        if counts.get('project_count'):
+            parts.append('%s dossier' % counts['project_count'])
+        if counts.get('mail_count'):
+            parts.append('%s mail' % counts['mail_count'])
+        if counts.get('task_count'):
+            parts.append('%s task' % counts['task_count'])
+        if counts.get('quote_count'):
+            parts.append('%s preventivi' % counts['quote_count'])
+        return ' · '.join(parts) or 'Nessun collegamento operativo'
+
     def _get_ai_action_queue(self, user):
         Mail = self.env['casafolino.mail.message']
         domain = [
@@ -1375,6 +1534,7 @@ class CfPipelineControl(models.AbstractModel):
     @api.model
     def record_quick_action(self, model, res_id, quick_action):
         allowed_models = {
+            'res.partner': 'Cliente',
             'sale.order': 'Quotazione',
             'cf.export.sample': 'Campionatura',
             'cf.project.shipment': 'Spedizione campioni',
@@ -1388,6 +1548,17 @@ class CfPipelineControl(models.AbstractModel):
             return self._notify('%s non trovato' % allowed_models[model], 'Il record non e piu disponibile.', 'warning')
         if quick_action == 'open':
             return self._open_record(record, allowed_models[model])
+        if model == 'res.partner' and quick_action == 'email':
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'casafolino_mail.compose_f8',
+                'context': {
+                    'default_partner_email': record.email or '',
+                    'default_partner_id': record.id,
+                    'default_subject': '',
+                    'default_body': '<p>Buongiorno,</p><p></p>',
+                },
+            }
         if model == 'project.project' and quick_action == 'email' and hasattr(record, 'action_compose_email_f8'):
             return record.action_compose_email_f8()
         if model == 'project.project' and quick_action == 'reply' and hasattr(record, 'action_reply_last_email_f8'):
@@ -1752,9 +1923,13 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _record_partner(self, record):
+        if record._name == 'res.partner':
+            return record
         return getattr(record, 'partner_id', False) or getattr(record, 'cf_partner_id', False)
 
     def _task_title_for_record(self, record):
+        if record._name == 'res.partner':
+            return 'Prossima azione cliente: %s' % (record.display_name or record.id)
         if record._name == 'sale.order':
             return 'Follow-up quotazione: %s' % (record.name or record.display_name)
         if record._name == 'cf.export.sample':
@@ -1764,6 +1939,8 @@ class CfPipelineControl(models.AbstractModel):
         return 'Task operativa: %s' % (record.display_name or record.id)
 
     def _task_description_for_record(self, record):
+        if record._name == 'res.partner':
+            return 'Aggiornare contesto cliente, prossima azione commerciale e collegamenti a lead/dossier.'
         if record._name == 'sale.order':
             return 'Verificare stato quotazione, prossima decisione cliente e possibilita ordine.'
         if record._name == 'cf.export.sample':

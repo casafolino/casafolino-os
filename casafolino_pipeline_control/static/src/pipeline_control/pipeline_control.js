@@ -38,6 +38,9 @@ export class CFPipelineControl extends Component {
             partnerSearchResults: [],
             leadSearchResults: [],
             dossierSearchResults: [],
+            entitySearchQuery: "",
+            entitySearchResults: [],
+            entitySearchLoading: false,
             aiDraftBody: "",
             aiDraftLoading: false,
             aiInstruction: "",
@@ -277,6 +280,23 @@ export class CFPipelineControl extends Component {
             this.state.dossierSearchResults = await this.orm.call("cf.pipeline.control", "search_context_records", ["dossier", query]);
         } catch (error) {
             console.error(error);
+        }
+    }
+
+    async onEntitySearch(ev) {
+        const query = ev.target.value;
+        this.state.entitySearchQuery = query;
+        if (query.length < 2) {
+            this.state.entitySearchResults = [];
+            return;
+        }
+        this.state.entitySearchLoading = true;
+        try {
+            this.state.entitySearchResults = await this.orm.call("cf.pipeline.control", "search_entity_360", [query, 8]);
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        } finally {
+            this.state.entitySearchLoading = false;
         }
     }
 
