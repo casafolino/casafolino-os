@@ -960,6 +960,40 @@
                                         <i class="fa fa-bolt"/>
                                         <span t-out="state.messageContext.summary.next_step"/>
                                     </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.participants &amp;&amp; state.messageContext.participants.length" style="margin-top: 12px;">
+                                        <h5>Partecipanti esterni</h5>
+                                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                                            <div t-foreach="state.messageContext.participants" t-as="person" t-key="'participant-' + person.email" class="cf-pc-sidebar-card" style="padding: 8px; margin-bottom: 0;">
+                                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                                                    <strong style="font-size: 11.5px; color: #20251f;" t-out="person.name"/>
+                                                    <span t-attf-class="cf-pc-mini-badge #{person.exists ? 'tone-green' : 'tone-amber'}" style="font-size: 9px;">
+                                                        <t t-if="person.exists">OK</t>
+                                                        <t t-else="">Da creare</t>
+                                                    </span>
+                                                </div>
+                                                <div style="font-size: 10.5px; color: #667061; word-break: break-word;" t-out="person.email"/>
+                                                <div style="font-size: 10px; color: #889283; margin-top: 2px;">
+                                                    <span t-out="person.role.toUpperCase()"/>
+                                                    <span t-if="person.company_name"> · <t t-out="person.company_name"/></span>
+                                                    <span t-if="person.duplicate_count &gt; 1" style="color: #bd4b42; font-weight: 750;"> · duplicati <t t-out="person.duplicate_count"/></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary w-100 mt-2" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_company')">
+                                            <i class="fa fa-building-o"/> Aggancia azienda e contatti
+                                        </button>
+                                    </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.duplicate_partners &amp;&amp; state.messageContext.duplicate_partners.length" style="margin-top: 12px;">
+                                        <h5>Anagrafiche simili</h5>
+                                        <div t-foreach="state.messageContext.duplicate_partners" t-as="dup" t-key="'dup-' + dup.id" class="cf-pc-sidebar-card" style="padding: 8px; margin-bottom: 6px; cursor: pointer;" t-on-click="() => this.openRecord({model: 'res.partner', res_id: dup.id})">
+                                            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                                                <strong style="font-size: 11.5px;" t-out="dup.name"/>
+                                                <span class="cf-pc-mini-badge tone-amber" style="font-size: 9px;">Doppione</span>
+                                            </div>
+                                            <div style="font-size: 10.5px; color: #667061;" t-out="dup.email"/>
+                                            <div t-if="dup.company" style="font-size: 10px; color: #889283;" t-out="dup.company"/>
+                                        </div>
+                                    </div>
                                     <div class="cf-pc-ai-next-actions" t-if="state.messageContext.ai_actions &amp;&amp; state.messageContext.ai_actions.length">
                                         <button t-foreach="state.messageContext.ai_actions"
                                                 t-as="aiAction"

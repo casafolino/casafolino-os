@@ -468,6 +468,8 @@ class CfPipelineControl(models.AbstractModel):
             return {
                 'has_partner': False,
                 'partner': None,
+                'participants': [],
+                'duplicate_partners': [],
                 'suggested_partners': [],
                 'leads': [],
                 'dossiers': [],
@@ -569,6 +571,8 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'has_partner': bool(partner),
             'partner': partner_details,
+            'participants': self._message_participant_context(msg),
+            'duplicate_partners': self._message_duplicate_partner_context(msg),
             'summary': {
                 'sender_email': msg.sender_email or '',
                 'sender_domain': msg.sender_domain or '',
@@ -590,6 +594,7 @@ class CfPipelineControl(models.AbstractModel):
 
     def _mail_context_ai_actions(self, msg, partner, leads, projects, sales):
         actions = []
+        participants = self._message_external_participants(msg)
         if self._sender_decision_status(msg) == 'pending':
             actions.append({
                 'key': 'keep',
@@ -597,6 +602,15 @@ class CfPipelineControl(models.AbstractModel):
                 'hint': 'Fai entrare questo mittente nel lavoro commerciale',
                 'icon': 'fa-check',
                 'quick_action': 'keep_sender',
+                'tone': 'green',
+            })
+        if len(participants) > 1:
+            actions.append({
+                'key': 'company_contacts',
+                'label': 'Azienda + contatti',
+                'hint': 'Crea/aggancia tutti i partecipanti esterni',
+                'icon': 'fa-building-o',
+                'quick_action': 'create_company',
                 'tone': 'green',
             })
         if not partner:
@@ -1522,10 +1536,13 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'open_lead':
             if msg.lead_id:
                 return self._open_record(msg.lead_id, 'Lead')
+            self._ensure_company_contacts_from_message(msg)
             return msg.action_create_lead()
         if quick_action == 'create_lead':
+            self._ensure_company_contacts_from_message(msg)
             return msg.action_create_lead()
         if quick_action == 'create_dossier':
+            self._ensure_company_contacts_from_message(msg)
             return {
                 'type': 'ir.actions.act_window',
                 'name': 'Crea dossier da email',
@@ -1546,10 +1563,13 @@ class CfPipelineControl(models.AbstractModel):
                 'reload': True,
             }
         if quick_action == 'task':
+            self._ensure_company_contacts_from_message(msg)
             return self._new_task_from_message(msg)
         if quick_action == 'quote':
+            self._ensure_company_contacts_from_message(msg)
             return self._new_quote_from_message(msg)
         if quick_action == 'sample':
+            self._ensure_company_contacts_from_message(msg)
             return self._new_sample_from_message(msg)
         if quick_action == 'snooze':
             return {
@@ -2006,6 +2026,47 @@ class CfPipelineControl(models.AbstractModel):
         for name, email in getaddresses([(msg.cc_emails or '')]):
             add(name, email, 'cc')
         return participants
+
+    def _message_participant_context(self, msg):
+        Partner = self.env['res.partner']
+        rows = []
+        for person in self._message_external_participants(msg):
+            partners = Partner.search([('email', '=ilike', person['email'])], order='parent_id desc, id asc', limit=6)
+            primary = partners[:1]
+            company = primary.parent_id if primary and not primary.is_company else primary
+            rows.append({
+                'name': person['name'],
+                'email': person['email'],
+                'role': person['role'],
+                'domain': person['domain'],
+                'partner_id': primary.id if primary else False,
+                'company_id': company.id if company else False,
+                'company_name': company.name if company else '',
+                'exists': bool(primary),
+                'duplicate_count': len(partners),
+            })
+        return rows
+
+    def _message_duplicate_partner_context(self, msg):
+        Partner = self.env['res.partner']
+        rows = []
+        seen = set()
+        for person in self._message_external_participants(msg):
+            matches = Partner.search([('email', '=ilike', person['email'])], order='parent_id desc, id asc', limit=12)
+            if len(matches) <= 1:
+                continue
+            for partner in matches:
+                if partner.id in seen:
+                    continue
+                seen.add(partner.id)
+                rows.append({
+                    'id': partner.id,
+                    'name': partner.name or '',
+                    'email': partner.email or '',
+                    'company': partner.parent_id.name if partner.parent_id else '',
+                    'is_company': bool(partner.is_company),
+                })
+        return rows
 
     def _find_company_for_message(self, msg, participants=None):
         Partner = self.env['res.partner']
