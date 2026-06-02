@@ -652,6 +652,34 @@ export class CFPipelineControl extends Component {
         return (this.state.data.pipeline || []).slice(0, 5);
     }
 
+    get operations() {
+        return this.state.data.operations || {};
+    }
+
+    get consoleTasks() {
+        return this.operations.tasks || [];
+    }
+
+    get consoleShipments() {
+        return this.operations.shipments || [];
+    }
+
+    get consoleSamples() {
+        return this.operations.samples || [];
+    }
+
+    get consoleEntities() {
+        return this.operations.entities || [];
+    }
+
+    get consoleAIQueue() {
+        return this.operations.ai_queue || [];
+    }
+
+    get hasConsoleTracking() {
+        return Boolean(this.consoleShipments.length || this.consoleSamples.length);
+    }
+
     get pipelineCount() {
         return (this.state.data.pipeline || []).reduce((sum, column) => sum + (column.count || 0), 0);
     }

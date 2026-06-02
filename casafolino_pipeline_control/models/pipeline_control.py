@@ -350,6 +350,7 @@ class CfPipelineControl(models.AbstractModel):
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
             'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
             'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
+            'operations': self._safe_section('operations', lambda: self._get_operations_data(today, user), {'tasks': [], 'shipments': [], 'samples': [], 'entities': [], 'ai_queue': []}),
         }
 
     @api.model
@@ -1129,6 +1130,87 @@ class CfPipelineControl(models.AbstractModel):
             })
         return columns
 
+    def _get_operations_data(self, today, user):
+        return {
+            'tasks': self._get_operational_tasks(user),
+            'shipments': self._get_sample_shipments(today),
+            'samples': self._get_sample_tracking(today),
+            'entities': self._get_entity_360_suggestions(today),
+            'ai_queue': self._get_ai_action_queue(user),
+        }
+
+    def _get_operational_tasks(self, user):
+        Task = self.env['project.task']
+        domain = [('stage_id.fold', '=', False)]
+        if 'cf_task_origin' in Task._fields:
+            domain = ['|', ('cf_task_origin', '!=', False), ('cf_is_mini_project', '=', True)] + domain
+        if user and 'user_ids' in Task._fields and not user.has_group('base.group_system'):
+            domain = ['|', ('user_ids', '=', False), ('user_ids', 'in', user.ids)] + domain
+        tasks = Task.search(domain, order='date_deadline asc, priority desc, write_date desc', limit=8)
+        return [self._format_task_item(task) for task in tasks]
+
+    def _get_sample_shipments(self, today):
+        if 'cf.project.shipment' not in self.env.registry:
+            return []
+        Shipment = self.env['cf.project.shipment']
+        shipments = Shipment.search([('state', 'not in', ['delivered', 'feedback'])], order='estimated_delivery asc, ship_date desc, id desc', limit=6)
+        return [self._format_shipment_item(shipment, today) for shipment in shipments]
+
+    def _get_sample_tracking(self, today):
+        if 'cf.export.sample' not in self.env.registry:
+            return []
+        Sample = self.env['cf.export.sample']
+        samples = Sample.search([('state', 'not in', ['feedback_ok', 'feedback_ko', 'no_feedback'])], order='date_feedback_expected asc, promised_date asc, id desc', limit=6)
+        return [self._format_sample_item(sample, today) for sample in samples]
+
+    def _get_entity_360_suggestions(self, today):
+        rows = []
+        for msg in self.env['casafolino.mail.message'].search(self._mail_to_reply_domain(self.env.user), order='email_date desc, id desc', limit=5):
+            partner = msg.partner_id
+            lead = msg.lead_id
+            if not partner and not lead:
+                continue
+            rows.append({
+                'id': msg.id,
+                'model': partner._name if partner else lead._name,
+                'res_id': partner.id if partner else lead.id,
+                'title': partner.display_name if partner else lead.display_name,
+                'subtitle': msg.subject or '',
+                'meta': 'Mail %s' % (self._date_label(msg.email_date) or ''),
+                'badges': self._compact([
+                    'partner' if partner else False,
+                    'lead' if lead else False,
+                    lead.stage_id.name if lead and lead.stage_id else False,
+                ]),
+            })
+        if len(rows) < 5:
+            Lead = self.env['crm.lead']
+            for lead in Lead.search(self._hot_lead_domain(), order='expected_revenue desc, write_date desc', limit=5 - len(rows)):
+                rows.append({
+                    'id': lead.id,
+                    'model': lead._name,
+                    'res_id': lead.id,
+                    'title': lead.partner_id.display_name if lead.partner_id else lead.name,
+                    'subtitle': lead.name,
+                    'meta': lead.stage_id.name if lead.stage_id else '',
+                    'badges': self._compact(['lead', self._lead_origin_label(lead)]),
+                })
+        return rows
+
+    def _get_ai_action_queue(self, user):
+        Mail = self.env['casafolino.mail.message']
+        domain = [
+            ('is_archived', '=', False),
+            ('is_deleted', '=', False),
+            '|',
+            ('ai_action_required', '=', True),
+            ('ai_urgency', '=', 'high'),
+        ]
+        if user and not user.has_group('base.group_system'):
+            domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
+        messages = Mail.search(domain, order='email_date desc, id desc', limit=6)
+        return [self._format_ai_queue_item(msg) for msg in messages]
+
     def _get_inbox_data(self, user):
         inbox, waiting = self._get_latest_commercial_threads(user)
         rows_to_reply = [self._format_mail_row(msg) for msg in inbox[:24]]
@@ -1293,6 +1375,7 @@ class CfPipelineControl(models.AbstractModel):
         allowed_models = {
             'sale.order': 'Quotazione',
             'cf.export.sample': 'Campionatura',
+            'cf.project.shipment': 'Spedizione campioni',
             'project.project': 'Dossier',
             'project.task': 'Task',
         }
@@ -1779,6 +1862,72 @@ class CfPipelineControl(models.AbstractModel):
                 'scaduto' if overdue else False,
             ]),
             'res_id': sample.id,
+        }
+
+    def _format_task_item(self, task):
+        deadline = fields.Date.to_date(task.date_deadline) if task.date_deadline else False
+        overdue = bool(deadline and deadline <= fields.Date.context_today(self))
+        department = ''
+        if 'cf_department' in task._fields and task.cf_department:
+            department = dict(task._fields['cf_department'].selection).get(task.cf_department, task.cf_department)
+        task_type = ''
+        if 'cf_task_type' in task._fields and task.cf_task_type:
+            task_type = dict(task._fields['cf_task_type'].selection).get(task.cf_task_type, task.cf_task_type)
+        origin = ''
+        if 'cf_task_origin' in task._fields and task.cf_task_origin:
+            origin = dict(task._fields['cf_task_origin'].selection).get(task.cf_task_origin, task.cf_task_origin)
+        return {
+            'id': task.id,
+            'model': task._name,
+            'res_id': task.id,
+            'title': task.name,
+            'subtitle': task.project_id.name if task.project_id else '',
+            'meta': self._date_label(deadline) if deadline else 'Senza scadenza',
+            'tone': 'red' if overdue else 'amber' if getattr(task, 'cf_is_mini_project', False) else 'blue',
+            'badges': self._compact([
+                department,
+                task_type,
+                origin,
+                'mini-progetto' if getattr(task, 'cf_is_mini_project', False) else False,
+                'scaduta' if overdue else False,
+            ]),
+        }
+
+    def _format_shipment_item(self, shipment, today):
+        estimated = fields.Date.to_date(shipment.estimated_delivery) if shipment.estimated_delivery else False
+        overdue = bool(estimated and estimated <= today and shipment.state not in ['delivered', 'feedback'])
+        return {
+            'id': shipment.id,
+            'model': shipment._name,
+            'res_id': shipment.id,
+            'title': shipment.partner_id.display_name if shipment.partner_id else shipment.project_id.name,
+            'subtitle': shipment.tracking_number or shipment.project_id.name,
+            'meta': self._date_label(estimated) if estimated else 'Consegna non stimata',
+            'tone': 'red' if overdue else 'green' if shipment.state == 'shipped' else 'amber',
+            'badges': self._compact([
+                dict(shipment._fields['state'].selection).get(shipment.state, shipment.state) if shipment.state else False,
+                shipment.carrier,
+                'TrackBot' if shipment.trackbot_enabled else False,
+                'feedback' if shipment.feedback_reminder_date else False,
+            ]),
+            'tracking_url': shipment.tracking_url or '',
+        }
+
+    def _format_ai_queue_item(self, msg):
+        return {
+            'id': msg.id,
+            'model': msg._name,
+            'res_id': msg.id,
+            'title': msg.partner_id.display_name if msg.partner_id else (msg.sender_name or msg.sender_email or 'Email'),
+            'subtitle': msg.subject or '',
+            'meta': self._mail_suggested_action(msg),
+            'tone': 'red' if msg.ai_urgency == 'high' else 'amber',
+            'badges': self._compact([
+                msg.ai_category,
+                msg.ai_language,
+                'azione richiesta' if msg.ai_action_required else False,
+            ]),
+            'snippet': msg.snippet or '',
         }
 
     def _format_project_detail(self, project, today):

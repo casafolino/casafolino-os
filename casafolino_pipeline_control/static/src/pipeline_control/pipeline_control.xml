@@ -243,6 +243,88 @@
                         </section>
                     </div>
 
+                    <div class="cf-pc-depth-grid">
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>Entità 360</h2>
+                                    <p>Clienti e lead da aprire con contesto completo.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('dossiers')">
+                                    Cerca
+                                </button>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleEntities" t-as="entity" t-key="'entity360-' + entity.model + '-' + entity.res_id">
+                                    <article class="cf-pc-depth-row">
+                                        <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(entity)">
+                                            <strong t-out="entity.title"/>
+                                            <span t-out="entity.subtitle"/>
+                                            <small t-out="entity.meta"/>
+                                        </button>
+                                        <div class="cf-pc-badges">
+                                            <t t-foreach="entity.badges" t-as="badge" t-key="badge_index">
+                                                <span class="cf-pc-badge" t-out="badge"/>
+                                            </t>
+                                        </div>
+                                    </article>
+                                </t>
+                                <div t-if="!consoleEntities.length" class="cf-pc-empty">Nessuna entità suggerita</div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>Task / To-do</h2>
+                                    <p>Richieste operative trattate come mini-progetti.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="newTask">
+                                    Nuova task
+                                </button>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleTasks" t-as="item" t-key="'task-op-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!consoleTasks.length" class="cf-pc-empty">Nessuna task operativa aperta</div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>Campionature tracking</h2>
+                                    <p>Spedizioni, feedback attesi e TrackBot.</p>
+                                </div>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleShipments" t-as="item" t-key="'shipment-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <t t-foreach="consoleSamples" t-as="item" t-key="'sample-track-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!hasConsoleTracking" class="cf-pc-empty">Nessuna campionatura aperta</div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>AI action queue</h2>
+                                    <p>Mail con urgenza o azione richiesta dall'AI.</p>
+                                </div>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleAIQueue" t-as="item" t-key="'ai-action-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!consoleAIQueue.length" class="cf-pc-empty">Nessuna azione AI in coda</div>
+                            </div>
+                        </section>
+                    </div>
+
                     <section class="cf-pc-panel cf-pc-b2b-panel">
                         <header>
                             <div>

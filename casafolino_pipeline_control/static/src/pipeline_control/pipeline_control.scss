@@ -588,6 +588,68 @@
         padding: 12px;
     }
 
+    .cf-pc-depth-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+    }
+
+    .cf-pc-depth-panel {
+        min-width: 0;
+        background: #fff;
+    }
+
+    .cf-pc-depth-list {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .cf-pc-depth-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid #e1e5dc;
+        border-radius: 8px;
+        background: #fbfcfa;
+    }
+
+    .cf-pc-depth-main {
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        text-align: left;
+
+        strong,
+        span,
+        small {
+            display: block;
+        }
+
+        strong {
+            color: #20251f;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        span {
+            margin-top: 3px;
+            color: #4b5548;
+            font-size: 12px;
+            line-height: 1.25;
+        }
+
+        small {
+            margin-top: 4px;
+            color: #7b8577;
+            font-size: 11px;
+        }
+    }
+
     .cf-pc-lane,
     .cf-pc-panel {
         background: rgba(255, 255, 255, .65);
@@ -1985,6 +2047,10 @@
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
+        .cf-pc-depth-grid {
+            grid-template-columns: 1fr;
+        }
+
         .cf-pc-console-context {
             grid-column: auto;
         }
@@ -2053,6 +2119,7 @@
         }
 
         .cf-pc-os-grid,
+        .cf-pc-depth-grid,
         .cf-pc-os-hot-grid,
         .cf-pc-os-stage-row,
         .cf-pc-os-context-row {
