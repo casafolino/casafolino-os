@@ -1,10 +1,13 @@
 import logging
 from datetime import timedelta
+from email.utils import getaddresses
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+
+_INTERNAL_EMAIL_DOMAINS = {'casafolino.com', 'folinofood.com'}
 
 
 class CrmLeadPipelineControl(models.Model):
@@ -1959,38 +1962,145 @@ class CfPipelineControl(models.AbstractModel):
             },
         }
 
-    def _create_or_open_company_from_message(self, msg):
+    @staticmethod
+    def _email_domain(email):
+        email = (email or '').strip().lower()
+        if '@' not in email:
+            return ''
+        return email.rsplit('@', 1)[-1]
+
+    @classmethod
+    def _is_internal_email(cls, email):
+        return cls._email_domain(email) in _INTERNAL_EMAIL_DOMAINS
+
+    @staticmethod
+    def _company_name_from_domain(domain):
+        if not domain:
+            return ''
+        label = domain.split('.')[0].replace('-', ' ').replace('_', ' ').strip()
+        return label.title() if label else domain
+
+    def _message_external_participants(self, msg):
+        participants = []
+        seen = set()
+
+        def add(name, email, role):
+            email = (email or '').strip().lower()
+            if not email or '@' not in email:
+                return
+            if self._is_internal_email(email):
+                return
+            if email in seen:
+                return
+            seen.add(email)
+            participants.append({
+                'name': (name or '').strip() or email.split('@')[0].replace('.', ' ').title(),
+                'email': email,
+                'role': role,
+                'domain': self._email_domain(email),
+            })
+
+        add(msg.sender_name, msg.sender_email, 'from')
+        for name, email in getaddresses([(msg.recipient_emails or '')]):
+            add(name, email, 'to')
+        for name, email in getaddresses([(msg.cc_emails or '')]):
+            add(name, email, 'cc')
+        return participants
+
+    def _find_company_for_message(self, msg, participants=None):
+        Partner = self.env['res.partner']
         partner = msg.partner_id
-        company = partner.commercial_partner_id if partner else self.env['res.partner']
-        if company and company.exists() and company.is_company:
-            return self._open_record(company, 'Azienda')
-        if msg.sender_domain:
-            company = self.env['res.partner'].search([
+        if partner and partner.exists():
+            company = partner if partner.is_company else partner.parent_id
+            if company:
+                return company
+
+        participants = participants or self._message_external_participants(msg)
+        domains = []
+        if msg.sender_domain and msg.sender_domain not in _INTERNAL_EMAIL_DOMAINS:
+            domains.append(msg.sender_domain)
+        domains.extend(p['domain'] for p in participants if p.get('domain'))
+
+        for domain in dict.fromkeys(domains):
+            company = Partner.search([
                 ('is_company', '=', True),
                 '|',
-                ('website', 'ilike', msg.sender_domain),
-                ('email', '=ilike', '%%@' + msg.sender_domain),
+                ('website', 'ilike', domain),
+                ('email', 'ilike', '@' + domain),
             ], limit=1)
             if company:
-                if not msg.partner_id:
-                    msg.partner_id = company.id
-                return self._open_record(company, 'Azienda')
-        default_name = msg.sender_domain or msg.sender_name or msg.sender_email or ''
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Nuova azienda da email',
-            'res_model': 'res.partner',
-            'view_mode': 'form',
-            'views': [(False, 'form')],
-            'target': 'new',
-            'context': {
-                'default_name': default_name,
-                'default_email': msg.sender_email or '',
-                'default_website': msg.sender_domain or '',
-                'default_comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
-                'default_is_company': True,
+                return company
+            company = Partner.search([
+                ('is_company', '=', False),
+                ('email', 'ilike', '@' + domain),
+                ('parent_id', '!=', False),
+            ], limit=1).parent_id
+            if company:
+                return company
+        return Partner.browse()
+
+    def _ensure_company_contacts_from_message(self, msg, company=None):
+        Partner = self.env['res.partner']
+        participants = self._message_external_participants(msg)
+        company = company or self._find_company_for_message(msg, participants)
+        if not company:
+            domain = (participants[0]['domain'] if participants else msg.sender_domain) or ''
+            company = Partner.create({
+                'name': self._company_name_from_domain(domain) or msg.sender_name or msg.sender_email or 'Nuova azienda',
+                'email': msg.sender_email if msg.sender_email and not self._is_internal_email(msg.sender_email) else False,
+                'website': domain or False,
+                'is_company': True,
+                'comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
+            })
+
+        created = 0
+        linked = 0
+        primary_contact = False
+        for person in participants:
+            contact = Partner.search([('email', '=ilike', person['email'])], limit=1)
+            if contact:
+                vals = {}
+                if not contact.parent_id and not contact.is_company:
+                    vals['parent_id'] = company.id
+                if contact.is_company:
+                    vals = {}
+                if vals:
+                    contact.write(vals)
+                    linked += 1
+            else:
+                contact = Partner.create({
+                    'name': person['name'],
+                    'email': person['email'],
+                    'parent_id': company.id,
+                    'is_company': False,
+                    'comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
+                })
+                created += 1
+            if person['email'] == (msg.sender_email or '').lower().strip():
+                primary_contact = contact
+
+        if primary_contact:
+            msg.partner_id = primary_contact.id
+            msg.match_type = 'manual'
+        elif company and not msg.partner_id:
+            msg.partner_id = company.id
+            msg.match_type = 'domain'
+
+        return company, created, linked, len(participants)
+
+    def _create_or_open_company_from_message(self, msg):
+        company, created, linked, total = self._ensure_company_contacts_from_message(msg)
+        action = self._open_record(company, 'Azienda')
+        action.update({
+            'display_notification': {
+                'title': 'Azienda aggiornata',
+                'message': 'Contatti esterni trovati: %s. Creati: %s. Agganciati: %s.' % (
+                    total, created, linked
+                ),
+                'type': 'success',
             },
-        }
+        })
+        return action
 
     def _new_task_from_message(self, msg):
         return {
