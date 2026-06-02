@@ -1,6 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_cf_pipeline_quick_task_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.quick.task.wizard.form</field>
+        <field name="model">cf.pipeline.quick.task.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Salva task veloce">
+                <sheet>
+                    <div style="display:grid;gap:14px;max-width:760px;">
+                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                            <div>
+                                <h2 style="margin:0;font-size:22px;">Task veloce</h2>
+                                <p style="margin:4px 0 0;color:#667061;">Poche informazioni, subito salvata. Il dettaglio si lavora dopo.</p>
+                            </div>
+                            <field name="quick_kind" widget="radio"/>
+                        </div>
+                        <group>
+                            <field name="name" placeholder="Es. Aggiungere pagina personalizzata al catalogo cliente"/>
+                            <field name="note" placeholder="Scrivi come parli: cliente, richiesta, urgenza, promesse fatte..." nolabel="1"/>
+                        </group>
+                        <group>
+                            <group string="Collega">
+                                <field name="partner_id" placeholder="Cliente / contatto"/>
+                                <field name="project_id" placeholder="Dossier se esiste"/>
+                                <field name="lead_id" placeholder="Lead pipeline se esiste"/>
+                            </group>
+                            <group string="Assegna">
+                                <field name="task_type"/>
+                                <field name="department"/>
+                                <field name="user_ids" widget="many2many_tags_avatar"/>
+                                <field name="deadline"/>
+                            </group>
+                        </group>
+                        <group string="Opzioni salva-memoria">
+                            <field name="is_mini_project"/>
+                            <field name="checklist_required"/>
+                            <field name="create_sample_shipment" invisible="task_type != 'sample_shipment'"/>
+                            <field name="ai_suggested_next_step" placeholder="Prossimo passo suggerito o promessa fatta al cliente"/>
+                        </group>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_create_task" string="Salva task" type="object" class="btn btn-primary"/>
+                    <button name="action_create_and_open" string="Salva e apri" type="object" class="btn btn-secondary"/>
+                    <button string="Annulla" class="btn btn-light" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="view_cf_pipeline_promote_dossier_wizard" model="ir.ui.view">
         <field name="name">cf.pipeline.promote.dossier.wizard.form</field>
         <field name="model">cf.pipeline.promote.dossier.wizard</field>

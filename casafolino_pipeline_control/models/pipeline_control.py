@@ -1647,28 +1647,20 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _new_task_from_message(self, msg):
-        lead = msg.lead_id
-        project = getattr(lead, 'cf_project_id', False) if lead else False
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Nuova task commerciale',
-            'res_model': 'project.task',
+            'name': 'Task veloce da email',
+            'res_model': 'cf.pipeline.quick.task.wizard',
             'view_mode': 'form',
             'views': [(False, 'form')],
             'target': 'new',
             'context': {
+                'default_message_id': msg.id,
+                'default_quick_kind': 'todo',
                 'default_name': msg.subject or 'Follow-up commerciale',
-                'default_project_id': project.id if project else False,
-                'default_partner_id': msg.partner_id.id if msg.partner_id else False,
-                'default_description': msg.snippet or '',
-                'default_cf_task_origin': 'mail',
-                'default_cf_task_type': 'followup',
-                'default_cf_department': 'sales',
-                'default_cf_waiting_for': 'internal',
-                'default_cf_customer_id': msg.partner_id.id if msg.partner_id else False,
-                'default_cf_is_mini_project': True,
-                'default_cf_source_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
-                'default_cf_ai_suggested_next_step': 'Valuta se trasformare la mail in contatto, lead, dossier o campionatura e assegna il prossimo owner.',
+                'default_task_type': 'followup',
+                'default_department': 'sales',
+                'default_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
             },
         }
 
@@ -1676,48 +1668,42 @@ class CfPipelineControl(models.AbstractModel):
         project = getattr(lead, 'cf_project_id', False)
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Nuova task commerciale',
-            'res_model': 'project.task',
+            'name': 'Task veloce da lead',
+            'res_model': 'cf.pipeline.quick.task.wizard',
             'view_mode': 'form',
             'views': [(False, 'form')],
             'target': 'new',
             'context': {
+                'default_quick_kind': 'todo',
+                'default_lead_id': lead.id,
                 'default_name': 'Follow-up: %s' % (lead.name or lead.display_name),
                 'default_project_id': project.id if project else False,
                 'default_partner_id': lead.partner_id.id if lead.partner_id else False,
-                'default_description': 'Verificare stato trattativa, prossima decisione cliente e prossima azione.',
-                'default_cf_task_origin': 'manual',
-                'default_cf_task_type': 'followup',
-                'default_cf_department': 'sales',
-                'default_cf_waiting_for': 'internal',
-                'default_cf_customer_id': lead.partner_id.id if lead.partner_id else False,
-                'default_cf_source_note': lead.name or '',
+                'default_task_type': 'followup',
+                'default_department': 'sales',
+                'default_note': 'Verificare stato trattativa, prossima decisione cliente e prossima azione.',
             },
         }
 
     def _new_operational_task(self, record):
         partner = self._record_partner(record)
         project = record if record._name == 'project.project' else getattr(record, 'project_id', False)
+        task_type = self._task_type_for_record(record)
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Nuova task operativa',
-            'res_model': 'project.task',
+            'name': 'Task veloce',
+            'res_model': 'cf.pipeline.quick.task.wizard',
             'view_mode': 'form',
             'views': [(False, 'form')],
             'target': 'new',
             'context': {
+                'default_quick_kind': 'sample' if task_type == 'sample_shipment' else 'todo',
                 'default_name': self._task_title_for_record(record),
                 'default_project_id': project.id if project else False,
                 'default_partner_id': partner.id if partner else False,
-                'default_description': self._task_description_for_record(record),
-                'default_cf_task_origin': 'manual',
-                'default_cf_task_type': self._task_type_for_record(record),
-                'default_cf_department': self._task_department_for_record(record),
-                'default_cf_waiting_for': 'internal',
-                'default_cf_customer_id': partner.id if partner else False,
-                'default_cf_is_mini_project': record._name in ('project.project', 'cf.export.sample', 'cf.project.shipment'),
-                'default_cf_checklist_required': record._name in ('cf.export.sample', 'cf.project.shipment'),
-                'default_cf_source_note': self._task_description_for_record(record),
+                'default_task_type': task_type,
+                'default_department': self._task_department_for_record(record),
+                'default_note': self._task_description_for_record(record),
             },
         }
 
@@ -2244,6 +2230,204 @@ class CfPipelineControl(models.AbstractModel):
             subtype_xmlid='mail.mt_note',
         )
         return True
+
+class CfPipelineQuickTaskWizard(models.TransientModel):
+    _name = 'cf.pipeline.quick.task.wizard'
+    _description = 'Task veloce commerciale'
+
+    quick_kind = fields.Selection([
+        ('todo', 'To-do'),
+        ('call', 'Chiamata'),
+        ('sample', 'Campione'),
+    ], string='Tipo rapido', default='todo', required=True)
+    name = fields.Char(string='Cosa devo ricordare?', required=True)
+    note = fields.Text(string='Nota veloce')
+    partner_id = fields.Many2one('res.partner', string='Cliente')
+    project_id = fields.Many2one('project.project', string='Dossier')
+    lead_id = fields.Many2one('crm.lead', string='Lead pipeline')
+    user_ids = fields.Many2many('res.users', string='Assegnato a')
+    deadline = fields.Date(string='Scadenza')
+    task_type = fields.Selection([
+        ('todo', 'To-do operativo'),
+        ('catalog_page', 'Pagina catalogo'),
+        ('sample_shipment', 'Campionatura / spedizione'),
+        ('quote', 'Preventivo'),
+        ('followup', 'Follow-up cliente'),
+        ('data_update', 'Aggiornamento anagrafica'),
+        ('issue', 'Problema / blocco'),
+    ], string='Tipo richiesta', default='todo', required=True)
+    department = fields.Selection([
+        ('sales', 'Commerciale'),
+        ('graphics', 'Grafica'),
+        ('production', 'Produzione'),
+        ('logistics', 'Logistica'),
+        ('admin', 'Amministrazione'),
+        ('management', 'Direzione'),
+    ], string='Reparto owner', default='sales', required=True)
+    is_mini_project = fields.Boolean(string='Mini-progetto')
+    checklist_required = fields.Boolean(string='Checklist obbligatoria')
+    create_sample_shipment = fields.Boolean(string='Crea spedizione/TrackBot')
+    ai_suggested_next_step = fields.Text(string='Prossimo passo')
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        kind = self.env.context.get('default_quick_kind') or 'todo'
+        today = fields.Date.context_today(self)
+        res.update({
+            'quick_kind': kind,
+            'deadline': self.env.context.get('default_deadline') or today,
+            'user_ids': [(6, 0, [self.env.uid])],
+        })
+        if kind == 'call':
+            res.update({
+                'name': 'Richiesta da chiamata cliente',
+                'task_type': 'todo',
+                'department': 'sales',
+                'is_mini_project': True,
+                'note': 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.',
+                'ai_suggested_next_step': 'Collega cliente/dossier, assegna owner e imposta la prossima scadenza.',
+            })
+        elif kind == 'sample':
+            res.update({
+                'name': 'Gestire campionatura cliente',
+                'task_type': 'sample_shipment',
+                'department': 'logistics',
+                'is_mini_project': True,
+                'checklist_required': True,
+                'create_sample_shipment': True,
+                'note': 'Campionatura da preparare/spedire: prodotti, indirizzo, tracking e feedback atteso.',
+                'ai_suggested_next_step': 'Crea o collega la spedizione, abilita TrackBot e programma reminder feedback.',
+            })
+        else:
+            res.update({
+                'name': self.env.context.get('default_name') or 'Nuova richiesta operativa',
+                'task_type': self.env.context.get('default_task_type') or 'todo',
+                'department': self.env.context.get('default_department') or 'sales',
+                'note': self.env.context.get('default_note') or 'Richiesta creata dalla Console Commerciale.',
+            })
+
+        lead = self.env['crm.lead'].browse(self.env.context.get('default_lead_id')).exists()
+        project = self.env['project.project'].browse(self.env.context.get('default_project_id')).exists()
+        partner = self.env['res.partner'].browse(self.env.context.get('default_partner_id')).exists()
+        message = self.env['casafolino.mail.message'].browse(self.env.context.get('default_message_id')).exists()
+        if message:
+            lead = lead or message.lead_id
+            partner = partner or message.partner_id
+            res.update({
+                'name': message.subject or res.get('name'),
+                'note': '%s\n%s' % (message.subject or '', message.snippet or ''),
+                'quick_kind': kind if kind != 'todo' else 'todo',
+                'task_type': 'followup' if kind != 'sample' else 'sample_shipment',
+            })
+        if lead:
+            project = project or getattr(lead, 'cf_project_id', False)
+            partner = partner or lead.partner_id
+            res['lead_id'] = lead.id
+        if project:
+            res['project_id'] = project.id
+            partner = partner or project.partner_id
+        if partner:
+            res['partner_id'] = partner.id
+        return res
+
+    @api.onchange('quick_kind')
+    def _onchange_quick_kind(self):
+        if self.quick_kind == 'call':
+            self.name = self.name if self.name and self.name != 'Nuova richiesta operativa' else 'Richiesta da chiamata cliente'
+            self.task_type = 'todo'
+            self.department = 'sales'
+            self.is_mini_project = True
+            self.checklist_required = self.checklist_required or False
+            if not self.note:
+                self.note = 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.'
+            if not self.ai_suggested_next_step:
+                self.ai_suggested_next_step = 'Collega cliente/dossier, assegna owner e imposta la prossima scadenza.'
+        elif self.quick_kind == 'sample':
+            self.name = self.name if self.name and self.name != 'Nuova richiesta operativa' else 'Gestire campionatura cliente'
+            self.task_type = 'sample_shipment'
+            self.department = 'logistics'
+            self.is_mini_project = True
+            self.checklist_required = True
+            self.create_sample_shipment = True
+            if not self.note:
+                self.note = 'Campionatura da preparare/spedire: prodotti, indirizzo, tracking e feedback atteso.'
+            if not self.ai_suggested_next_step:
+                self.ai_suggested_next_step = 'Crea o collega la spedizione, abilita TrackBot e programma reminder feedback.'
+        else:
+            self.task_type = self.task_type or 'todo'
+            self.department = self.department or 'sales'
+
+    def action_create_task(self):
+        self.ensure_one()
+        self._create_task()
+        return {'type': 'ir.actions.act_window_close'}
+
+    def action_create_and_open(self):
+        self.ensure_one()
+        task = self._create_task()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Task',
+            'res_model': 'project.task',
+            'res_id': task.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
+    def _create_task(self):
+        vals = {
+            'name': self.name,
+            'project_id': self.project_id.id if self.project_id else False,
+            'partner_id': self.partner_id.id if self.partner_id else False,
+            'date_deadline': self.deadline or False,
+            'description': self.note or '',
+            'user_ids': [(6, 0, self.user_ids.ids or [self.env.uid])],
+            'cf_task_origin': 'call' if self.quick_kind == 'call' else 'manual',
+            'cf_task_type': self.task_type,
+            'cf_department': self.department,
+            'cf_customer_id': self.partner_id.id if self.partner_id else False,
+            'cf_waiting_for': 'internal',
+            'cf_is_mini_project': self.is_mini_project,
+            'cf_checklist_required': self.checklist_required,
+            'cf_source_note': self.note or '',
+            'cf_ai_suggested_next_step': self.ai_suggested_next_step or '',
+        }
+        task = self.env['project.task'].create(vals)
+        if self.create_sample_shipment and self.project_id:
+            shipment = self.env['cf.project.shipment'].create({
+                'project_id': self.project_id.id,
+                'state': 'draft',
+                'trackbot_enabled': True,
+                'notes': self.note or '',
+            })
+            task.cf_shipment_id = shipment.id
+        self._create_default_checklist(task)
+        task.message_post(body='Task veloce creata dalla Console Commerciale.')
+        return task
+
+    def _create_default_checklist(self, task):
+        if not self.checklist_required and self.task_type != 'sample_shipment':
+            return
+        if self.task_type == 'sample_shipment':
+            items = [
+                'Confermare indirizzo spedizione cliente',
+                'Definire prodotti e quantita campioni',
+                'Preparare collo e documenti',
+                'Inserire tracking e abilitare TrackBot',
+                'Programmare reminder feedback cliente',
+            ]
+        else:
+            items = [
+                'Chiarire richiesta e risultato atteso',
+                'Assegnare owner/reparto',
+                'Confermare scadenza',
+            ]
+        self.env['cf.project.checklist.item'].create([
+            {'task_id': task.id, 'name': name, 'sequence': (idx + 1) * 10}
+            for idx, name in enumerate(items)
+        ])
 
 
 class CfPipelinePromoteDossierWizard(models.TransientModel):
