@@ -5,6 +5,7 @@ import logging
 import re
 import time
 import uuid
+from email.utils import parseaddr
 
 import requests as req
 
@@ -1340,6 +1341,84 @@ class CasafolinoMailMessage(models.Model):
 
     # ── Body download (Step 3) ───────────────────────────────────────
 
+    @staticmethod
+    def _normalize_message_id(value):
+        value = (value or '').strip()
+        if not value:
+            return ''
+        return value.strip('<>').strip().lower()
+
+    @staticmethod
+    def _extract_raw_email_from_fetch(msg_data):
+        for part in msg_data or []:
+            if isinstance(part, tuple):
+                return part[1]
+        return None
+
+    def _imap_fetch_raw_by_uid(self, imap, uid, use_uid=True):
+        uid_bytes = uid.encode() if isinstance(uid, str) else uid
+        if use_uid:
+            status, msg_data = imap.uid('fetch', uid_bytes, '(RFC822)')
+        else:
+            status, msg_data = imap.fetch(uid_bytes, '(RFC822)')
+        if status != 'OK':
+            return None
+        return self._extract_raw_email_from_fetch(msg_data)
+
+    def _imap_search_raw_by_message_id(self, imap):
+        expected = (self.message_id_rfc or '').strip()
+        if not expected:
+            return None, None
+
+        search_terms = [expected]
+        stripped = expected.strip('<>')
+        if stripped and stripped != expected:
+            search_terms.append(stripped)
+
+        for term in search_terms:
+            try:
+                status, data = imap.uid('search', None, 'HEADER', 'Message-ID', term)
+            except Exception as e:
+                _logger.debug("IMAP Message-ID search failed for %s: %s", expected, e)
+                continue
+            if status != 'OK' or not data or not data[0]:
+                continue
+            for found_uid in reversed(data[0].split()):
+                raw_email = self._imap_fetch_raw_by_uid(imap, found_uid, use_uid=True)
+                if raw_email:
+                    msg = email.message_from_bytes(raw_email)
+                    if self._mail_identity_matches(msg):
+                        return raw_email, found_uid.decode() if isinstance(found_uid, bytes) else found_uid
+        return None, None
+
+    def _mail_identity_matches(self, msg):
+        expected_mid = self._normalize_message_id(self.message_id_rfc)
+        actual_mid = self._normalize_message_id(msg.get('Message-ID', ''))
+        if expected_mid:
+            return actual_mid == expected_mid
+
+        actual_sender = (parseaddr(msg.get('From', ''))[1] or '').lower().strip()
+        expected_sender = (self.sender_email or '').lower().strip()
+        if expected_sender and actual_sender and actual_sender != expected_sender:
+            return False
+
+        actual_subject = self.env['casafolino.mail.account']._decode_header_value(
+            msg.get('Subject', '')
+        ).strip()
+        expected_subject = (self.subject or '').strip()
+        if expected_subject and actual_subject and actual_subject != expected_subject:
+            return False
+        return True
+
+    def _identity_mismatch_error(self, msg):
+        expected_mid = (self.message_id_rfc or '').strip()
+        actual_mid = (msg.get('Message-ID', '') or '').strip()
+        actual_sender = (parseaddr(msg.get('From', ''))[1] or '').lower().strip()
+        return (
+            "Body IMAP non scritto: identita email non coerente. "
+            "Atteso Message-ID=%s sender=%s; scaricato Message-ID=%s sender=%s"
+        ) % (expected_mid, self.sender_email or '', actual_mid, actual_sender)
+
     def _download_body_imap(self, imap, folder_name, uid):
         """Scarica body completo e allegati via IMAP."""
         self.ensure_one()
@@ -1348,22 +1427,32 @@ class CasafolinoMailMessage(models.Model):
         if status != 'OK':
             return
 
-        # Scarica messaggio completo
-        uid_bytes = uid.encode() if isinstance(uid, str) else uid
-        status, msg_data = imap.fetch(uid_bytes, '(RFC822)')
-        if status != 'OK':
-            return
-
-        raw_email = None
-        for part in msg_data:
-            if isinstance(part, tuple):
-                raw_email = part[1]
-                break
+        raw_email, stable_uid = self._imap_search_raw_by_message_id(imap)
+        if not raw_email and uid:
+            # Old records may contain IMAP sequence numbers. Try UID first, then
+            # sequence fallback, but never write a body if identity mismatches.
+            raw_email = self._imap_fetch_raw_by_uid(imap, uid, use_uid=True)
+            if raw_email:
+                candidate_msg = email.message_from_bytes(raw_email)
+                if not self._mail_identity_matches(candidate_msg):
+                    raw_email = None
+            if not raw_email:
+                raw_email = self._imap_fetch_raw_by_uid(imap, uid, use_uid=False)
 
         if not raw_email:
             return
 
         msg = email.message_from_bytes(raw_email)
+        if not self._mail_identity_matches(msg):
+            error_msg = self._identity_mismatch_error(msg)
+            _logger.warning(error_msg)
+            self.write({
+                'fetch_state': 'error',
+                'fetch_error_msg': error_msg[:500],
+            })
+            return
+        if stable_uid and str(stable_uid) != str(self.imap_uid or ''):
+            self.imap_uid = stable_uid
 
         # Estrai body e allegati
         body_html = ''

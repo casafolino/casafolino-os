@@ -224,7 +224,7 @@ class CasafolinoMailAccount(models.Model):
             since_date = self.sync_start_date.strftime('%d-%b-%Y')
 
         search_criteria = '(SINCE %s)' % since_date
-        status, msg_ids = imap.search(None, search_criteria)
+        status, msg_ids = imap.uid('search', None, search_criteria)
 
         if status != 'OK' or not msg_ids[0]:
             return 0, 0, 0
@@ -239,8 +239,8 @@ class CasafolinoMailAccount(models.Model):
             for uid in batch:
                 uid_str = uid.decode()
 
-                status2, fetch_data = imap.fetch(
-                    uid, '(BODY.PEEK[HEADER] BODY.PEEK[TEXT]<0.500>)')
+                status2, fetch_data = imap.uid(
+                    'fetch', uid, '(BODY.PEEK[HEADER] BODY.PEEK[TEXT]<0.500>)')
                 if status2 != 'OK':
                     continue
 
