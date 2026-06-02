@@ -22,6 +22,8 @@
                        decoration-muted="state == 'draft'"/>
                 <field name="carrier"/>
                 <field name="tracking_number"/>
+                <field name="trackbot_enabled" widget="boolean_toggle"/>
+                <field name="feedback_reminder_date"/>
                 <field name="ship_date"/>
                 <field name="estimated_delivery" widget="remaining_days"/>
             </list>
@@ -45,14 +47,23 @@
                             <field name="carrier"/>
                             <field name="tracking_number"/>
                             <field name="tracking_url" widget="url"/>
+                            <field name="trackbot_enabled"/>
+                            <field name="trackbot_chat_ref"
+                                   invisible="not trackbot_enabled"/>
                         </group>
                         <group string="Date e dettagli">
                             <field name="ship_date"/>
                             <field name="estimated_delivery"/>
                             <field name="actual_delivery"/>
+                            <field name="feedback_reminder_date"/>
                             <field name="weight"/>
                             <field name="shipping_cost"/>
                         </group>
+                    </group>
+                    <group string="TrackBot Telegram" invisible="not trackbot_enabled">
+                        <field name="trackbot_last_sync"/>
+                        <field name="trackbot_last_event" nolabel="1"
+                               placeholder="Ultimo evento ricevuto dal tracking o dal bot Telegram"/>
                     </group>
                     <group string="Prodotti campionati">
                         <field name="product_ids" widget="many2many_tags" nolabel="1"/>

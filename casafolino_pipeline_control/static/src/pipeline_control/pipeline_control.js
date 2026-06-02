@@ -524,6 +524,10 @@ export class CFPipelineControl extends Component {
             res_model: "project.task",
             views: [[false, "form"]],
             target: "current",
+            context: {
+                default_cf_task_origin: "manual",
+                default_cf_task_type: "todo",
+            },
         });
     }
 
