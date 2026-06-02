@@ -632,6 +632,26 @@ export class CFPipelineControl extends Component {
         return (this.state.data.lanes || []).slice(2);
     }
 
+    get consoleMailRows() {
+        return [
+            ...(this.state.data.inbox?.to_reply || []),
+            ...(this.state.data.inbox?.waiting_customer || []),
+        ].slice(0, 7);
+    }
+
+    get consoleFocusMail() {
+        return this.consoleMailRows[0] || null;
+    }
+
+    get consoleHotItems() {
+        const lanes = this.state.data.lanes || [];
+        return lanes.flatMap((lane) => lane.items || []).slice(0, 6);
+    }
+
+    get consolePipelineColumns() {
+        return (this.state.data.pipeline || []).slice(0, 5);
+    }
+
     get pipelineCount() {
         return (this.state.data.pipeline || []).reduce((sum, column) => sum + (column.count || 0), 0);
     }

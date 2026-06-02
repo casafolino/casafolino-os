@@ -105,96 +105,92 @@
                         </t>
                     </div>
 
-                    <div class="cf-pc-console-grid">
-                        <section class="cf-pc-panel cf-pc-console-panel">
+                    <div class="cf-pc-os-grid">
+                        <section class="cf-pc-panel cf-pc-os-inbox">
                             <header>
                                 <div>
-                                    <h2>Mail e priorità</h2>
-                                    <p>Tocca a noi, follow-up e richieste da trasformare in azione.</p>
+                                    <h2>Inbox operativa</h2>
+                                    <p>Mail da trasformare in contatto, lead, task o dossier.</p>
                                 </div>
                                 <button class="btn btn-sm btn-light" t-on-click="() => this.setView('inbox')">
                                     Apri inbox
                                 </button>
                             </header>
-                            <div class="cf-pc-console-lanes">
-                                <t t-foreach="primaryControlLanes" t-as="lane" t-key="'primary-' + lane.key">
-                                    <section class="cf-pc-lane cf-pc-lane-compact">
-                                        <header>
-                                            <div>
-                                                <h2 t-out="lane.title"/>
-                                                <p t-if="lane.count > lane.items.length">
-                                                    Prime <t t-out="lane.items.length"/> visibili
-                                                </p>
+                            <div class="cf-pc-os-mail-list">
+                                <t t-if="consoleMailRows.length">
+                                    <t t-foreach="consoleMailRows" t-as="mail" t-key="'console-mail-' + mail.id">
+                                        <article t-attf-class="cf-pc-os-mail #{mail.needs_action ? 'needs-action' : ''}">
+                                            <button class="cf-pc-os-mail-main" t-on-click="() => this.mailQuickAction(mail, 'open')">
+                                                <strong t-out="mail.title"/>
+                                                <span t-out="mail.subtitle"/>
+                                                <small>
+                                                    <t t-out="mail.meta"/>
+                                                    <t t-if="mail.lead"> · <t t-out="mail.lead"/></t>
+                                                </small>
+                                            </button>
+                                            <div class="cf-pc-os-mail-actions">
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(mail, 'reply')" title="Rispondi">
+                                                    <i class="fa fa-reply"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(mail, 'link_lead')" title="Collega lead">
+                                                    <i class="fa fa-link"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(mail, 'task')" title="Crea task">
+                                                    <i class="fa fa-check-square-o"/>
+                                                </button>
                                             </div>
-                                            <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
-                                        </header>
-                                        <div class="cf-pc-lane-body">
-                                            <t t-if="lane.items.length">
-                                                <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
-                                                    <t t-call="casafolino_pipeline_control.ControlCard"/>
-                                                </t>
-                                            </t>
-                                            <div t-else="" class="cf-pc-empty">Nessun elemento</div>
-                                        </div>
-                                    </section>
+                                        </article>
+                                    </t>
                                 </t>
+                                <div t-else="" class="cf-pc-empty">Nessuna mail operativa</div>
                             </div>
                         </section>
 
-                        <section class="cf-pc-panel cf-pc-console-panel">
+                        <section class="cf-pc-panel cf-pc-os-focus">
                             <header>
                                 <div>
-                                    <h2>Pipeline e blocchi</h2>
-                                    <p>Clienti caldi, campioni scaduti, dossier bloccati e preventivi aperti.</p>
+                                    <h2>AI triage e cliente 360</h2>
+                                    <p>Contesto immediato sulla prossima cosa da fare.</p>
                                 </div>
-                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('pipeline')">
-                                    Apri pipeline
-                                </button>
                             </header>
-                            <div class="cf-pc-console-lanes">
-                                <t t-foreach="secondaryControlLanes" t-as="lane" t-key="'secondary-' + lane.key">
-                                    <section class="cf-pc-lane cf-pc-lane-compact">
-                                        <header>
-                                            <div>
-                                                <h2 t-out="lane.title"/>
-                                                <p t-if="lane.count > lane.items.length">
-                                                    Prime <t t-out="lane.items.length"/> visibili
-                                                </p>
-                                            </div>
-                                            <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
-                                        </header>
-                                        <div class="cf-pc-lane-body">
-                                            <t t-if="lane.items.length">
-                                                <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
-                                                    <t t-call="casafolino_pipeline_control.ControlCard"/>
-                                                </t>
-                                            </t>
-                                            <div t-else="" class="cf-pc-empty">Nessun elemento</div>
-                                        </div>
-                                    </section>
-                                </t>
-                            </div>
+                            <t t-if="consoleFocusMail">
+                                <div class="cf-pc-os-focus-card">
+                                    <div class="cf-pc-os-avatar" t-out="(consoleFocusMail.title || '?').slice(0, 2).toUpperCase()"/>
+                                    <div>
+                                        <span class="cf-pc-eyebrow">Priorità AI</span>
+                                        <h3 t-out="consoleFocusMail.title"/>
+                                        <p t-out="consoleFocusMail.subtitle"/>
+                                    </div>
+                                </div>
+                                <div class="cf-pc-os-ai-box">
+                                    <strong t-out="consoleFocusMail.suggested_action || 'Prossima azione'"/>
+                                    <p t-out="consoleFocusMail.snippet || 'Apri la mail per leggere il thread completo e decidere la prossima azione.'"/>
+                                </div>
+                                <div class="cf-pc-os-context-row">
+                                    <span t-if="consoleFocusMail.lead">Lead: <strong t-out="consoleFocusMail.lead"/></span>
+                                    <span t-if="consoleFocusMail.category">Categoria: <strong t-out="consoleFocusMail.category"/></span>
+                                    <span t-if="consoleFocusMail.language">Lingua: <strong t-out="consoleFocusMail.language"/></span>
+                                    <span t-if="consoleFocusMail.thread_count">Thread: <strong t-out="consoleFocusMail.thread_count"/></span>
+                                </div>
+                            </t>
+                            <div t-else="" class="cf-pc-empty">Nessun thread da analizzare</div>
                         </section>
 
-                        <section class="cf-pc-panel cf-pc-console-panel cf-pc-console-context">
+                        <section class="cf-pc-panel cf-pc-os-actions">
                             <header>
                                 <div>
-                                    <h2>Azioni immediate</h2>
-                                    <p>Da qui si crea o collega tutto: contatto, lead, dossier, task e campionatura.</p>
+                                    <h2>Azioni</h2>
+                                    <p>Da mail o chiamata a oggetto operativo.</p>
                                 </div>
                             </header>
-                            <div class="cf-pc-console-actions-grid">
+                            <div class="cf-pc-os-action-stack">
                                 <button class="btn btn-primary" t-on-click="newLead">
                                     <i class="fa fa-plus"/>
-                                    Nuova richiesta
-                                </button>
-                                <button class="btn btn-light" t-on-click="() => this.setView('inbox')">
-                                    <i class="fa fa-envelope-o"/>
-                                    Lavora mail
+                                    Crea richiesta
                                 </button>
                                 <button class="btn btn-light" t-on-click="newTask">
                                     <i class="fa fa-check-square-o"/>
-                                    Task / To-do
+                                    Task da chiamata
                                 </button>
                                 <button class="btn btn-light" t-on-click="newDossier">
                                     <i class="fa fa-folder-open"/>
@@ -204,10 +200,45 @@
                                     <i class="fa fa-search"/>
                                     Cerca entità 360
                                 </button>
-                                <button class="btn btn-light" t-on-click="() => this.setView('followup')">
-                                    <i class="fa fa-calendar-check-o"/>
-                                    Follow-up
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-os-pipeline">
+                            <header>
+                                <div>
+                                    <h2>Pipeline al centro</h2>
+                                    <p>Fasi commerciali sempre sotto controllo.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('pipeline')">
+                                    Apri pipeline
                                 </button>
+                            </header>
+                            <div class="cf-pc-os-stage-row">
+                                <t t-foreach="consolePipelineColumns" t-as="column" t-key="'console-stage-' + column.id">
+                                    <article class="cf-pc-os-stage">
+                                        <strong t-out="column.title"/>
+                                        <span t-out="column.count"/>
+                                        <small>
+                                            <t t-if="column.items.length" t-out="column.items[0].title"/>
+                                            <t t-else="">Nessuna trattativa</t>
+                                        </small>
+                                    </article>
+                                </t>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-os-hot">
+                            <header>
+                                <div>
+                                    <h2>Da non perdere</h2>
+                                    <p>Follow-up, clienti caldi, blocchi e campionature.</p>
+                                </div>
+                            </header>
+                            <div class="cf-pc-os-hot-grid">
+                                <t t-foreach="consoleHotItems" t-as="item" t-key="'console-hot-' + item.model + '-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!consoleHotItems.length" class="cf-pc-empty">Nessun elemento critico</div>
                             </div>
                         </section>
                     </div>
@@ -528,7 +559,7 @@
                             </button>
                         </t>
                     </div>
-                    
+
                     <div class="cf-pc-inbox-three-col">
                         <!-- COLUMN 1: THREAD LIST -->
                         <aside class="cf-pc-inbox-list">
@@ -543,7 +574,7 @@
                                     </button>
                                 </div>
                             </header>
-                            
+
                             <div class="cf-pc-inbox-threads-scroller">
                                 <!-- TO REPLY SECTION -->
                                 <div class="cf-pc-thread-group-title" t-if="filteredToReplyRows.length">
@@ -576,7 +607,7 @@
                                         </div>
                                     </div>
                                 </t>
-                                
+
                                 <!-- WAITING SECTION -->
                                 <div class="cf-pc-thread-group-title" t-if="filteredWaitingRows.length">
                                     <span>In attesa cliente</span>
@@ -601,13 +632,13 @@
                                         </div>
                                     </div>
                                 </t>
-                                
+
                                 <div class="cf-pc-empty" t-if="!filteredToReplyRows.length &amp;&amp; !filteredWaitingRows.length">
                                     Nessun thread email corrispondente.
                                 </div>
                             </div>
                         </aside>
-                        
+
                         <!-- COLUMN 2: EMAIL READING PANE -->
                         <main class="cf-pc-inbox-reader">
                             <t t-if="selectedMessage">
@@ -619,7 +650,7 @@
                                         </div>
                                         <div class="cf-pc-date" t-out="selectedMessage.meta"/>
                                     </div>
-                                    
+
                                     <!-- A myriad of quick actions directly inside the mail reader! -->
                                     <div class="cf-pc-reader-actions">
                                         <button class="btn btn-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')" title="Rispondi">
@@ -628,13 +659,13 @@
                                         <button class="btn btn-success btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_dossier')" title="Crea Dossier">
                                             <i class="fa fa-briefcase"/> Crea Dossier
                                         </button>
-                                        
+
                                         <t t-if="!selectedMessage.partner_id">
                                             <button class="btn btn-warning btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)" title="Registra Contatto">
                                                 <i class="fa fa-user-plus"/> Registra Contatto
                                             </button>
                                         </t>
-                                        
+
                                         <t t-if="!selectedMessage.lead_id">
                                             <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')" title="Crea Lead">
                                                 <i class="fa fa-plus"/> Crea Lead
@@ -651,7 +682,7 @@
                                                 <i class="fa fa-exchange"/> Cambia Lead
                                             </button>
                                         </t>
-                                        
+
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'task')" title="Crea Task Dossier">
                                             <i class="fa fa-check-square-o"/> Task
                                         </button>
@@ -669,11 +700,11 @@
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div class="cf-pc-reader-body">
                                     <iframe t-att-srcdoc="state.selectedMessageBody" class="cf-pc-email-iframe" sandbox="allow-same-origin"/>
                                 </div>
-                                
+
                                 <!-- Gemini AI Reply Assistant -->
                                 <div class="cf-pc-ai-widget">
                                     <div class="cf-pc-ai-widget-header">
@@ -704,7 +735,7 @@
                                 <p>Seleziona un'email per leggerla e avviare le operazioni commerciali.</p>
                             </div>
                         </main>
-                        
+
                         <!-- COLUMN 3: PARTNER SIDEBAR CONTEXT -->
                         <aside class="cf-pc-inbox-sidebar">
                             <t t-if="state.messageContext">
@@ -722,7 +753,7 @@
                                         <div t-if="state.messageContext.partner.mobile" class="cf-pc-partner-mobile" style="font-size: 11px; color: #667061; margin-top: 2px;">
                                             <i class="fa fa-mobile" style="margin-right: 6px;"/> <span t-out="state.messageContext.partner.mobile"/>
                                         </div>
-                                        
+
                                         <!-- Premium circular Lead Score Gauge -->
                                         <div class="cf-pc-gauge-wrap">
                                             <div class="cf-pc-gauge-title">Lead Score / Priorità</div>
@@ -740,7 +771,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- CRM Leads -->
                                         <div class="cf-pc-sidebar-sub">
                                             <h5>Lead CRM Attivi</h5>
@@ -1109,7 +1140,7 @@
                                                             </div>
                                                             <div class="msg-subj" t-if="msg.type === 'email'" t-out="msg.subject"/>
                                                             <div class="msg-body" t-out="msg.body"/>
-                                                            
+
                                                             <!-- Attachements list if any -->
                                                             <div class="msg-attachments" t-if="msg.attachments &amp;&amp; msg.attachments.length">
                                                                 <t t-foreach="msg.attachments" t-as="att" t-key="att.id">
@@ -1168,7 +1199,7 @@
                                                             <span class="subproject-type" t-out="sub.project_type_label"/>
                                                             <span class="target-date" t-if="sub.target_date" t-out="sub.target_date"/>
                                                         </div>
-                                                        
+
                                                         <!-- Blocker info if present -->
                                                         <div class="card-blocker" t-if="sub.blocker &amp;&amp; sub.blocker !== 'Nessuno'">
                                                             <i class="fa fa-warning"/>

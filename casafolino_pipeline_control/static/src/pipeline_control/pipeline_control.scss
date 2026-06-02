@@ -358,6 +358,236 @@
         }
     }
 
+    .cf-pc-os-grid {
+        display: grid;
+        grid-template-columns: minmax(320px, .95fr) minmax(420px, 1.25fr) minmax(220px, .55fr);
+        gap: 14px;
+        align-items: start;
+    }
+
+    .cf-pc-os-inbox,
+    .cf-pc-os-focus,
+    .cf-pc-os-actions,
+    .cf-pc-os-pipeline,
+    .cf-pc-os-hot {
+        min-width: 0;
+        background: #fff;
+    }
+
+    .cf-pc-os-pipeline,
+    .cf-pc-os-hot {
+        grid-column: 1 / -1;
+    }
+
+    .cf-pc-os-mail-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .cf-pc-os-mail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid #e1e5dc;
+        border-radius: 8px;
+        background: #fbfcfa;
+
+        &.needs-action {
+            border-left: 4px solid #8c2c24;
+        }
+    }
+
+    .cf-pc-os-mail-main {
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        text-align: left;
+
+        strong,
+        span,
+        small {
+            display: block;
+        }
+
+        strong {
+            color: #20251f;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        span {
+            margin-top: 3px;
+            color: #4b5548;
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        small {
+            margin-top: 5px;
+            color: #7b8577;
+            font-size: 11px;
+        }
+    }
+
+    .cf-pc-os-mail-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+
+        .btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    .cf-pc-os-focus {
+        padding-bottom: 12px;
+    }
+
+    .cf-pc-os-focus-card,
+    .cf-pc-os-ai-box,
+    .cf-pc-os-context-row {
+        margin: 12px;
+    }
+
+    .cf-pc-os-focus-card {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr);
+        gap: 12px;
+        align-items: center;
+
+        h3 {
+            margin: 5px 0 3px;
+            font-size: 22px;
+            line-height: 1.1;
+        }
+
+        p {
+            margin: 0;
+            color: #4b5548;
+            font-size: 14px;
+        }
+    }
+
+    .cf-pc-os-avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #6f7f3f;
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .cf-pc-os-ai-box {
+        padding: 13px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #f7faf4;
+
+        strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #20251f;
+        }
+
+        p {
+            margin: 0;
+            color: #4b5548;
+            line-height: 1.45;
+        }
+    }
+
+    .cf-pc-os-context-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+
+        span {
+            padding: 8px;
+            border-radius: 7px;
+            background: #fbfcfa;
+            border: 1px solid #e7eadf;
+            color: #667061;
+            font-size: 12px;
+        }
+
+        strong {
+            color: #20251f;
+        }
+    }
+
+    .cf-pc-os-action-stack {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+
+        .btn {
+            min-height: 43px;
+            justify-content: flex-start;
+            gap: 8px;
+            font-weight: 800;
+        }
+    }
+
+    .cf-pc-os-stage-row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .cf-pc-os-stage {
+        min-height: 92px;
+        padding: 11px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fbfcfa;
+
+        strong,
+        span,
+        small {
+            display: block;
+        }
+
+        strong {
+            color: #20251f;
+            font-size: 13px;
+        }
+
+        span {
+            margin: 8px 0;
+            color: #30451f;
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        small {
+            color: #667061;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+    }
+
+    .cf-pc-os-hot-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+    }
+
     .cf-pc-lane,
     .cf-pc-panel {
         background: rgba(255, 255, 255, .65);
@@ -1741,6 +1971,20 @@
             grid-template-columns: 1fr;
         }
 
+        .cf-pc-os-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr);
+        }
+
+        .cf-pc-os-focus,
+        .cf-pc-os-pipeline,
+        .cf-pc-os-hot {
+            grid-column: 1 / -1;
+        }
+
+        .cf-pc-os-stage-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
         .cf-pc-console-context {
             grid-column: auto;
         }
@@ -1806,6 +2050,21 @@
         .cf-pc-lane-compact .cf-pc-lane-body,
         .cf-pc-console-actions-grid {
             grid-template-columns: 1fr;
+        }
+
+        .cf-pc-os-grid,
+        .cf-pc-os-hot-grid,
+        .cf-pc-os-stage-row,
+        .cf-pc-os-context-row {
+            grid-template-columns: 1fr;
+        }
+
+        .cf-pc-os-inbox,
+        .cf-pc-os-focus,
+        .cf-pc-os-actions,
+        .cf-pc-os-pipeline,
+        .cf-pc-os-hot {
+            grid-column: auto;
         }
     }
 }
