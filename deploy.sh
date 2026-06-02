@@ -20,6 +20,8 @@ MODULES=(
     casafolino_production
     casafolino_recall
     casafolino_treasury
+    casafolino_pipeline_control
+    casafolino_voice_ai
 )
 
 if [ -n "$1" ]; then
