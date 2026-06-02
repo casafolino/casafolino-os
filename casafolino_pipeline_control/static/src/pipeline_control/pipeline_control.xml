@@ -960,6 +960,20 @@
                                         <i class="fa fa-bolt"/>
                                         <span t-out="state.messageContext.summary.next_step"/>
                                     </div>
+                                    <div class="cf-pc-ai-next-actions" t-if="state.messageContext.ai_actions &amp;&amp; state.messageContext.ai_actions.length">
+                                        <button t-foreach="state.messageContext.ai_actions"
+                                                t-as="aiAction"
+                                                t-key="'ai-action-' + aiAction.key"
+                                                t-attf-class="cf-pc-ai-next-action tone-#{aiAction.tone}"
+                                                t-on-click="() => this.mailQuickAction(selectedMessage, aiAction.quick_action)"
+                                                t-att-title="aiAction.hint">
+                                            <i t-attf-class="fa #{aiAction.icon}"/>
+                                            <span>
+                                                <strong t-out="aiAction.label"/>
+                                                <small t-out="aiAction.hint"/>
+                                            </span>
+                                        </button>
+                                    </div>
                                 </section>
                                 <t t-if="state.messageContext.has_partner">
                                     <div class="cf-pc-sidebar-section cf-pc-sidebar-partner">

@@ -578,11 +578,78 @@ class CfPipelineControl(models.AbstractModel):
                 'is_linked': bool(partner or msg.lead_id),
                 'next_step': self._mail_suggested_action(msg),
             },
+            'ai_actions': self._mail_context_ai_actions(msg, partner, leads_list, projects_list, sales_list),
             'suggested_partners': suggested_partners,
             'leads': leads_list,
             'dossiers': projects_list,
             'quotes': sales_list,
         }
+
+    def _mail_context_ai_actions(self, msg, partner, leads, projects, sales):
+        actions = []
+        if self._sender_decision_status(msg) == 'pending':
+            actions.append({
+                'key': 'keep',
+                'label': 'Tieni mittente',
+                'hint': 'Fai entrare questo mittente nel lavoro commerciale',
+                'icon': 'fa-check',
+                'quick_action': 'keep_sender',
+                'tone': 'green',
+            })
+        if not partner:
+            actions.append({
+                'key': 'contact',
+                'label': 'Crea contatto',
+                'hint': 'Anagrafica mancante',
+                'icon': 'fa-user-o',
+                'quick_action': 'create_contact',
+                'tone': 'amber',
+            })
+        if not msg.lead_id:
+            actions.append({
+                'key': 'lead',
+                'label': 'Crea lead',
+                'hint': 'Porta la mail in pipeline',
+                'icon': 'fa-star-o',
+                'quick_action': 'create_lead',
+                'tone': 'blue',
+            })
+        if msg.ai_urgency == 'high' or msg.ai_action_required:
+            actions.append({
+                'key': 'reply',
+                'label': 'Rispondi con AI',
+                'hint': 'Thread urgente o con azione richiesta',
+                'icon': 'fa-magic',
+                'quick_action': 'reply',
+                'tone': 'green',
+            })
+        if leads and not projects:
+            actions.append({
+                'key': 'dossier',
+                'label': 'Crea dossier',
+                'hint': 'Lead presente, dossier assente',
+                'icon': 'fa-folder-open-o',
+                'quick_action': 'create_dossier',
+                'tone': 'blue',
+            })
+        if not sales and msg.lead_id:
+            actions.append({
+                'key': 'quote',
+                'label': 'Preventivo',
+                'hint': 'Lead senza quotazione aperta',
+                'icon': 'fa-file-text-o',
+                'quick_action': 'quote',
+                'tone': 'amber',
+            })
+        actions.append({
+            'key': 'task',
+            'label': 'Task rapida',
+            'hint': 'Promessa o prossima azione da non perdere',
+            'icon': 'fa-check-square-o',
+            'quick_action': 'task',
+            'tone': 'neutral',
+        })
+        return actions[:5]
 
     @api.model
     def link_partner_to_message(self, message_id, partner_id):
