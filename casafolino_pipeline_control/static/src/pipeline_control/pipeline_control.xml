@@ -69,7 +69,31 @@
                 </div>
 
                 <t t-if="state.activeView === 'control'">
-                    <div class="cf-pc-kpis">
+                    <section class="cf-pc-command-center">
+                        <div class="cf-pc-command-main">
+                            <span class="cf-pc-eyebrow">Oggi</span>
+                            <h2>Mail al centro, pipeline sempre visibile</h2>
+                            <p>Parti da una mail, una chiamata o una ricerca e trasformi subito in contatto, lead, task o dossier.</p>
+                        </div>
+                        <div class="cf-pc-command-actions">
+                            <button class="btn btn-primary" t-on-click="() => this.setView('inbox')">
+                                <i class="fa fa-envelope-o"/>
+                                Lavora inbox
+                                <span t-out="state.data.inbox?.kpis?.[0]?.value || 0"/>
+                            </button>
+                            <button class="btn btn-light" t-on-click="() => this.setView('pipeline')">
+                                <i class="fa fa-line-chart"/>
+                                Pipeline
+                                <span t-out="pipelineCount"/>
+                            </button>
+                            <button class="btn btn-light" t-on-click="newTask">
+                                <i class="fa fa-check-square-o"/>
+                                Task rapido
+                            </button>
+                        </div>
+                    </section>
+
+                    <div class="cf-pc-kpis cf-pc-kpis-console">
                         <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.key">
                             <div t-attf-class="cf-pc-kpi tone-#{kpi.tone}">
                                 <div class="cf-pc-kpi-label">

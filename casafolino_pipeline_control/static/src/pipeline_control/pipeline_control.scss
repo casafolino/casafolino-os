@@ -152,6 +152,77 @@
         flex-wrap: wrap;
     }
 
+    .cf-pc-command-center {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: stretch;
+        margin-bottom: 14px;
+        padding: 16px;
+        border: 1px solid #dfe3da;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #fff 0%, #f7faf4 58%, #eef4e7 100%);
+        box-shadow: 0 8px 22px rgba(37, 48, 32, .07);
+    }
+
+    .cf-pc-command-main {
+        h2 {
+            margin: 3px 0 5px;
+            font-size: 23px;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        p {
+            max-width: 720px;
+            margin: 0;
+            color: #5f685d;
+            font-size: 14px;
+        }
+    }
+
+    .cf-pc-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #e5f2ea;
+        color: #256245;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .cf-pc-command-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(135px, 1fr));
+        gap: 8px;
+        align-items: stretch;
+
+        .btn {
+            min-height: 48px;
+            justify-content: flex-start;
+            gap: 8px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .btn span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 22px;
+            margin-left: auto;
+            padding: 0 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .72);
+            font-size: 12px;
+            line-height: 1;
+        }
+    }
+
     .cf-pc-segment-row {
         display: flex;
         flex-wrap: wrap;
@@ -1654,6 +1725,14 @@
             grid-template-columns: repeat(3, minmax(130px, 1fr));
         }
 
+        .cf-pc-command-center {
+            grid-template-columns: 1fr;
+        }
+
+        .cf-pc-command-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .cf-pc-grid-2 {
             grid-template-columns: 1fr;
         }
@@ -1708,6 +1787,10 @@
         .cf-pc-kpis,
         .cf-pc-kpis.cf-pc-kpis-4 {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cf-pc-command-actions {
+            grid-template-columns: 1fr;
         }
 
         .cf-pc-dossier-tools {
