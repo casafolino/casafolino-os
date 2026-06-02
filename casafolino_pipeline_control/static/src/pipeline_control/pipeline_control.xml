@@ -40,13 +40,14 @@
             <main class="cf-pc-main">
                 <div class="cf-pc-topbar">
                     <div>
-                        <h1 t-if="state.activeView === 'control'">Sala Controllo</h1>
+                        <h1 t-if="state.activeView === 'control'">Console Commerciale</h1>
                         <h1 t-elif="state.activeView === 'followup'">Follow-up</h1>
                         <h1 t-elif="state.activeView === 'fair'">Post-Fiera</h1>
                         <h1 t-elif="state.activeView === 'inbox'">Inbox Commerciale</h1>
                         <h1 t-elif="state.activeView === 'pipeline'">Pipeline Export</h1>
                         <h1 t-elif="state.activeView === 'dossiers'">Dossier</h1>
-                        <p>Priorità, prossime azioni e blocchi in un'unica postazione.</p>
+                        <p t-if="state.activeView === 'control'">Mail, pipeline e prossime azioni: punto di entrata unico.</p>
+                        <p t-else="">Priorità, prossime azioni e blocchi in un'unica postazione.</p>
                     </div>
                     <div class="cf-pc-actions">
                         <button class="btn btn-light" t-on-click="loadData" title="Aggiorna">
@@ -55,6 +56,10 @@
                         <button class="btn btn-light" t-on-click="newLead">
                             <i class="fa fa-plus"/>
                             Nuova richiesta
+                        </button>
+                        <button class="btn btn-light" t-on-click="newTask">
+                            <i class="fa fa-check-square-o"/>
+                            Task / To-do
                         </button>
                         <button class="btn btn-primary" t-on-click="newDossier">
                             <i class="fa fa-folder-open"/>
@@ -76,28 +81,111 @@
                         </t>
                     </div>
 
-                    <div class="cf-pc-board">
-                        <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
-                            <section class="cf-pc-lane">
-                                <header>
-                                    <div>
-                                        <h2 t-out="lane.title"/>
-                                        <p t-if="lane.count > lane.items.length">
-                                            Prime <t t-out="lane.items.length"/> visibili
-                                        </p>
-                                    </div>
-                                    <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
-                                </header>
-                                <div class="cf-pc-lane-body">
-                                    <t t-if="lane.items.length">
-                                        <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
-                                            <t t-call="casafolino_pipeline_control.ControlCard"/>
-                                        </t>
-                                    </t>
-                                    <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                    <div class="cf-pc-console-grid">
+                        <section class="cf-pc-panel cf-pc-console-panel">
+                            <header>
+                                <div>
+                                    <h2>Mail e priorità</h2>
+                                    <p>Tocca a noi, follow-up e richieste da trasformare in azione.</p>
                                 </div>
-                            </section>
-                        </t>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('inbox')">
+                                    Apri inbox
+                                </button>
+                            </header>
+                            <div class="cf-pc-console-lanes">
+                                <t t-foreach="primaryControlLanes" t-as="lane" t-key="'primary-' + lane.key">
+                                    <section class="cf-pc-lane cf-pc-lane-compact">
+                                        <header>
+                                            <div>
+                                                <h2 t-out="lane.title"/>
+                                                <p t-if="lane.count > lane.items.length">
+                                                    Prime <t t-out="lane.items.length"/> visibili
+                                                </p>
+                                            </div>
+                                            <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
+                                        </header>
+                                        <div class="cf-pc-lane-body">
+                                            <t t-if="lane.items.length">
+                                                <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
+                                                    <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                                </t>
+                                            </t>
+                                            <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                                        </div>
+                                    </section>
+                                </t>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-console-panel">
+                            <header>
+                                <div>
+                                    <h2>Pipeline e blocchi</h2>
+                                    <p>Clienti caldi, campioni scaduti, dossier bloccati e preventivi aperti.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('pipeline')">
+                                    Apri pipeline
+                                </button>
+                            </header>
+                            <div class="cf-pc-console-lanes">
+                                <t t-foreach="secondaryControlLanes" t-as="lane" t-key="'secondary-' + lane.key">
+                                    <section class="cf-pc-lane cf-pc-lane-compact">
+                                        <header>
+                                            <div>
+                                                <h2 t-out="lane.title"/>
+                                                <p t-if="lane.count > lane.items.length">
+                                                    Prime <t t-out="lane.items.length"/> visibili
+                                                </p>
+                                            </div>
+                                            <span t-attf-class="cf-pc-pill tone-#{lane.tone}" t-out="lane.count"/>
+                                        </header>
+                                        <div class="cf-pc-lane-body">
+                                            <t t-if="lane.items.length">
+                                                <t t-foreach="lane.items" t-as="item" t-key="item.model + '-' + item.id">
+                                                    <t t-call="casafolino_pipeline_control.ControlCard"/>
+                                                </t>
+                                            </t>
+                                            <div t-else="" class="cf-pc-empty">Nessun elemento</div>
+                                        </div>
+                                    </section>
+                                </t>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-console-panel cf-pc-console-context">
+                            <header>
+                                <div>
+                                    <h2>Azioni immediate</h2>
+                                    <p>Da qui si crea o collega tutto: contatto, lead, dossier, task e campionatura.</p>
+                                </div>
+                            </header>
+                            <div class="cf-pc-console-actions-grid">
+                                <button class="btn btn-primary" t-on-click="newLead">
+                                    <i class="fa fa-plus"/>
+                                    Nuova richiesta
+                                </button>
+                                <button class="btn btn-light" t-on-click="() => this.setView('inbox')">
+                                    <i class="fa fa-envelope-o"/>
+                                    Lavora mail
+                                </button>
+                                <button class="btn btn-light" t-on-click="newTask">
+                                    <i class="fa fa-check-square-o"/>
+                                    Task / To-do
+                                </button>
+                                <button class="btn btn-light" t-on-click="newDossier">
+                                    <i class="fa fa-folder-open"/>
+                                    Nuovo dossier
+                                </button>
+                                <button class="btn btn-light" t-on-click="() => this.setView('dossiers')">
+                                    <i class="fa fa-search"/>
+                                    Cerca entità 360
+                                </button>
+                                <button class="btn btn-light" t-on-click="() => this.setView('followup')">
+                                    <i class="fa fa-calendar-check-o"/>
+                                    Follow-up
+                                </button>
+                            </div>
+                        </section>
                     </div>
 
                     <section class="cf-pc-panel cf-pc-b2b-panel">

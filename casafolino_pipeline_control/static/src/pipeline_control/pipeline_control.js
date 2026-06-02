@@ -517,6 +517,16 @@ export class CFPipelineControl extends Component {
         });
     }
 
+    async newTask() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Nuova task / to-do"),
+            res_model: "project.task",
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
     async newSample(item) {
         const context = {};
         if (item && item.model === "crm.lead") {
@@ -608,6 +618,14 @@ export class CFPipelineControl extends Component {
 
     get totalLaneCount() {
         return (this.state.data.lanes || []).reduce((sum, lane) => sum + (lane.count || 0), 0);
+    }
+
+    get primaryControlLanes() {
+        return (this.state.data.lanes || []).slice(0, 2);
+    }
+
+    get secondaryControlLanes() {
+        return (this.state.data.lanes || []).slice(2);
     }
 
     get pipelineCount() {
