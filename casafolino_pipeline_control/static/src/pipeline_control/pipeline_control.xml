@@ -132,6 +132,9 @@
                                                 <button class="btn btn-sm btn-primary" t-on-click="() => this.mailQuickAction(mail, 'reply')" title="Rispondi">
                                                     <i class="fa fa-reply"/>
                                                 </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(mail, 'create_contact')" title="Crea o apri contatto">
+                                                    <i class="fa fa-user-o"/>
+                                                </button>
                                                 <button class="btn btn-sm btn-light" t-on-click="() => this.mailQuickAction(mail, 'link_lead')" title="Collega lead">
                                                     <i class="fa fa-link"/>
                                                 </button>
@@ -172,6 +175,32 @@
                                     <span t-if="consoleFocusMail.language">Lingua: <strong t-out="consoleFocusMail.language"/></span>
                                     <span t-if="consoleFocusMail.thread_count">Thread: <strong t-out="consoleFocusMail.thread_count"/></span>
                                 </div>
+                                <div class="cf-pc-mail-convert-bar">
+                                    <button class="btn btn-primary" t-on-click="() => this.mailQuickAction(consoleFocusMail, 'reply')">
+                                        <i class="fa fa-magic"/>
+                                        Draft AI
+                                    </button>
+                                    <button class="btn btn-light" t-on-click="() => this.mailQuickAction(consoleFocusMail, 'create_contact')">
+                                        <i class="fa fa-user-o"/>
+                                        Contatto
+                                    </button>
+                                    <button class="btn btn-light" t-on-click="() => this.mailQuickAction(consoleFocusMail, 'create_lead')">
+                                        <i class="fa fa-star-o"/>
+                                        Lead
+                                    </button>
+                                    <button class="btn btn-light" t-on-click="() => this.mailQuickAction(consoleFocusMail, 'create_dossier')">
+                                        <i class="fa fa-folder-open-o"/>
+                                        Dossier
+                                    </button>
+                                    <button class="btn btn-light" t-on-click="() => this.mailQuickAction(consoleFocusMail, 'task')">
+                                        <i class="fa fa-check-square-o"/>
+                                        Task
+                                    </button>
+                                    <button class="btn btn-light" t-on-click="() => this.mailQuickAction(consoleFocusMail, 'sample')">
+                                        <i class="fa fa-flask"/>
+                                        Campione
+                                    </button>
+                                </div>
                             </t>
                             <div t-else="" class="cf-pc-empty">Nessun thread da analizzare</div>
                         </section>
@@ -188,7 +217,7 @@
                                     <i class="fa fa-plus"/>
                                     Crea richiesta
                                 </button>
-                                <button class="btn btn-light" t-on-click="newTask">
+                                <button class="btn btn-light" t-on-click="newCallTask">
                                     <i class="fa fa-check-square-o"/>
                                     Task da chiamata
                                 </button>
@@ -743,7 +772,7 @@
                                         </button>
 
                                         <t t-if="!selectedMessage.partner_id">
-                                            <button class="btn btn-warning btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)" title="Registra Contatto">
+                                            <button class="btn btn-warning btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_contact')" title="Registra Contatto">
                                                 <i class="fa fa-user-plus"/> Registra Contatto
                                             </button>
                                         </t>

@@ -1270,6 +1270,8 @@ class CfPipelineControl(models.AbstractModel):
             return self._open_record(msg, 'Email')
         if quick_action == 'reply':
             return self._reply_from_message(msg)
+        if quick_action == 'create_contact':
+            return self._create_or_open_contact_from_message(msg)
         if quick_action == 'open_lead':
             if msg.lead_id:
                 return self._open_record(msg.lead_id, 'Lead')
@@ -1621,6 +1623,29 @@ class CfPipelineControl(models.AbstractModel):
             },
         }
 
+    def _create_or_open_contact_from_message(self, msg):
+        partner = msg.partner_id
+        if not partner and msg.sender_email:
+            partner = self.env['res.partner'].search([('email', '=ilike', msg.sender_email)], limit=1)
+            if partner:
+                msg.partner_id = partner.id
+        if partner:
+            return self._open_record(partner, 'Contatto')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuovo contatto da email',
+            'res_model': 'res.partner',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'default_name': msg.sender_name or msg.sender_email or '',
+                'default_email': msg.sender_email or '',
+                'default_comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
+                'default_is_company': False,
+            },
+        }
+
     def _new_task_from_message(self, msg):
         lead = msg.lead_id
         project = getattr(lead, 'cf_project_id', False) if lead else False
@@ -1636,6 +1661,10 @@ class CfPipelineControl(models.AbstractModel):
                 'default_project_id': project.id if project else False,
                 'default_partner_id': msg.partner_id.id if msg.partner_id else False,
                 'default_description': msg.snippet or '',
+                'default_cf_task_origin': 'mail',
+                'default_cf_task_type': 'followup',
+                'default_cf_customer_id': msg.partner_id.id if msg.partner_id else False,
+                'default_cf_source_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
             },
         }
 

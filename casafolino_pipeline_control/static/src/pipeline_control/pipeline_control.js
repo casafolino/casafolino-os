@@ -531,6 +531,22 @@ export class CFPipelineControl extends Component {
         });
     }
 
+    async newCallTask() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Task da chiamata cliente"),
+            res_model: "project.task",
+            views: [[false, "form"]],
+            target: "current",
+            context: {
+                default_name: _t("Richiesta da chiamata cliente"),
+                default_cf_task_origin: "call",
+                default_cf_task_type: "todo",
+                default_cf_is_mini_project: true,
+            },
+        });
+    }
+
     async newSample(item) {
         const context = {};
         if (item && item.model === "crm.lead") {

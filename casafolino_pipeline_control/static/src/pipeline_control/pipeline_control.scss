@@ -528,6 +528,22 @@
         }
     }
 
+    .cf-pc-mail-convert-bar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 12px;
+
+        .btn {
+            min-height: 38px;
+            justify-content: flex-start;
+            gap: 7px;
+            font-weight: 800;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+    }
+
     .cf-pc-os-action-stack {
         display: grid;
         gap: 8px;
@@ -2122,7 +2138,8 @@
         .cf-pc-depth-grid,
         .cf-pc-os-hot-grid,
         .cf-pc-os-stage-row,
-        .cf-pc-os-context-row {
+        .cf-pc-os-context-row,
+        .cf-pc-mail-convert-bar {
             grid-template-columns: 1fr;
         }
 
