@@ -566,6 +566,18 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'has_partner': bool(partner),
             'partner': partner_details,
+            'summary': {
+                'sender_email': msg.sender_email or '',
+                'sender_domain': msg.sender_domain or '',
+                'subject': msg.subject or '',
+                'decision': self._sender_decision_status(msg),
+                'lead_count': len(leads_list),
+                'dossier_count': len(projects_list),
+                'quote_count': len(sales_list),
+                'suggested_partner_count': len(suggested_partners),
+                'is_linked': bool(partner or msg.lead_id),
+                'next_step': self._mail_suggested_action(msg),
+            },
             'suggested_partners': suggested_partners,
             'leads': leads_list,
             'dossiers': projects_list,

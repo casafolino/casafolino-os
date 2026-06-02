@@ -927,6 +927,40 @@
                         <!-- COLUMN 3: PARTNER SIDEBAR CONTEXT -->
                         <aside class="cf-pc-inbox-sidebar">
                             <t t-if="state.messageContext">
+                                <section class="cf-pc-sidebar-section cf-pc-context-brief">
+                                    <div class="cf-pc-context-brief-head">
+                                        <div>
+                                            <span class="cf-pc-eyebrow">Entità 360</span>
+                                            <h4>
+                                                <t t-if="state.messageContext.has_partner" t-out="state.messageContext.partner.name"/>
+                                                <t t-else="">Mittente non collegato</t>
+                                            </h4>
+                                            <p t-out="state.messageContext.summary.sender_email"/>
+                                        </div>
+                                        <span t-attf-class="cf-pc-decision-status #{state.messageContext.summary.decision === 'kept' ? 'kept' : 'pending'}">
+                                            <t t-if="state.messageContext.summary.decision === 'kept'">Tenuto</t>
+                                            <t t-else="">Da decidere</t>
+                                        </span>
+                                    </div>
+                                    <div class="cf-pc-context-kpis">
+                                        <div>
+                                            <strong t-out="state.messageContext.summary.lead_count"/>
+                                            <span>Lead</span>
+                                        </div>
+                                        <div>
+                                            <strong t-out="state.messageContext.summary.dossier_count"/>
+                                            <span>Dossier</span>
+                                        </div>
+                                        <div>
+                                            <strong t-out="state.messageContext.summary.quote_count"/>
+                                            <span>Preventivi</span>
+                                        </div>
+                                    </div>
+                                    <div class="cf-pc-context-next">
+                                        <i class="fa fa-bolt"/>
+                                        <span t-out="state.messageContext.summary.next_step"/>
+                                    </div>
+                                </section>
                                 <t t-if="state.messageContext.has_partner">
                                     <div class="cf-pc-sidebar-section cf-pc-sidebar-partner">
                                         <h4>Profilo Cliente</h4>
