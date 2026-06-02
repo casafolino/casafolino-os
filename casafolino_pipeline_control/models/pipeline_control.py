@@ -1429,8 +1429,14 @@ class CfPipelineControl(models.AbstractModel):
             return self._open_record(msg, 'Email')
         if quick_action == 'reply':
             return self._reply_from_message(msg)
+        if quick_action == 'keep_sender':
+            return self._keep_sender_from_message(msg)
+        if quick_action == 'dismiss_sender':
+            return self._dismiss_sender_from_message(msg)
         if quick_action == 'create_contact':
             return self._create_or_open_contact_from_message(msg)
+        if quick_action == 'create_company':
+            return self._create_or_open_company_from_message(msg)
         if quick_action == 'open_lead':
             if msg.lead_id:
                 return self._open_record(msg.lead_id, 'Lead')
@@ -1580,13 +1586,11 @@ class CfPipelineControl(models.AbstractModel):
             '|',
             ('thread_id', '=', False),
             ('thread_id.is_snoozed', '=', False),
-            '|',
-            ('partner_id', '!=', False),
-            ('lead_id', '!=', False),
         ]
         if user and not user.has_group('base.group_system'):
             domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
-        messages = Mail.search(domain, order='email_date desc, id desc', limit=250)
+        messages = Mail.search(domain, order='email_date desc, id desc', limit=400)
+        messages = messages.filtered(lambda msg: self._sender_decision_status(msg) != 'dismissed')
         latest_by_thread = {}
         for msg in messages:
             key = msg.thread_key or (msg.partner_id.id and 'partner:%s' % msg.partner_id.id) or msg.sender_email or msg.subject or msg.id
@@ -1745,6 +1749,9 @@ class CfPipelineControl(models.AbstractModel):
             'lead': msg.lead_id.display_name if msg.lead_id else '',
             'lead_id': msg.lead_id.id if msg.lead_id else False,
             'partner_id': msg.partner_id.id if msg.partner_id else False,
+            'sender_email': msg.sender_email or '',
+            'sender_domain': msg.sender_domain or '',
+            'sender_decision': self._sender_decision_status(msg),
             'suggested_partner': suggested_partner,
             'thread_id': msg.thread_id.id if msg.thread_id else False,
             'owner': ', '.join(msg.assigned_user_ids.mapped('name')) or '',
@@ -1761,12 +1768,68 @@ class CfPipelineControl(models.AbstractModel):
         })
         return item
 
+    def _sender_preference(self, msg):
+        if not msg.sender_email or not msg.account_id:
+            return self.env['casafolino.mail.sender_preference']
+        return self.env['casafolino.mail.sender_preference'].search([
+            ('email', '=ilike', msg.sender_email),
+            ('account_id', '=', msg.account_id.id),
+        ], limit=1)
+
+    def _sender_decision_status(self, msg):
+        pref = self._sender_preference(msg)
+        if pref:
+            return pref.status or 'pending'
+        if msg.state in ('keep', 'auto_keep', 'auto_attached'):
+            return 'kept'
+        return 'pending'
+
+    def _ensure_sender_preference(self, msg):
+        Preference = self.env['casafolino.mail.sender_preference']
+        pref = self._sender_preference(msg)
+        if pref or not msg.sender_email or not msg.account_id:
+            return pref
+        return Preference.create({
+            'email': msg.sender_email.lower().strip(),
+            'account_id': msg.account_id.id,
+            'status': 'pending',
+        })
+
     def _mail_suggested_action(self, msg):
         if not msg.lead_id:
             return 'Collega lead'
         if msg.direction_computed == 'inbound' or msg.ai_action_required:
             return 'Rispondi'
         return 'Attendi risposta'
+
+    def _keep_sender_from_message(self, msg):
+        pref = self._ensure_sender_preference(msg)
+        if pref:
+            pref.action_keep()
+        if hasattr(msg, 'action_keep'):
+            msg.action_keep()
+        return self._notify('Mittente tenuto', 'Le prossime email di questo mittente resteranno nella Inbox CasaFolino.', reload=True)
+
+    def _dismiss_sender_from_message(self, msg):
+        pref = self._ensure_sender_preference(msg)
+        if pref:
+            pref.write({
+                'status': 'dismissed',
+                'decided_at': fields.Datetime.now(),
+                'decided_by_id': self.env.uid,
+                'last_dismissed_at': fields.Datetime.now(),
+                'undo_token': False,
+            })
+        # Hide existing messages from this sender in the operating inbox; Gmail is not touched.
+        if msg.sender_email:
+            domain = [
+                ('sender_email', '=ilike', msg.sender_email),
+                ('is_deleted', '=', False),
+            ]
+            if msg.account_id:
+                domain.append(('account_id', '=', msg.account_id.id))
+            self.env['casafolino.mail.message'].search(domain, limit=200).write({'is_deleted': True})
+        return self._notify('Mittente scartato', 'Non lo vedrai piu nella Inbox CasaFolino. Gmail resta invariato.', reload=True)
 
     def _open_record(self, record, name):
         return {
@@ -1814,6 +1877,39 @@ class CfPipelineControl(models.AbstractModel):
                 'default_email': msg.sender_email or '',
                 'default_comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
                 'default_is_company': False,
+            },
+        }
+
+    def _create_or_open_company_from_message(self, msg):
+        partner = msg.partner_id
+        company = partner.commercial_partner_id if partner else self.env['res.partner']
+        if company and company.exists() and company.is_company:
+            return self._open_record(company, 'Azienda')
+        if msg.sender_domain:
+            company = self.env['res.partner'].search([
+                ('is_company', '=', True),
+                '|',
+                ('website', 'ilike', msg.sender_domain),
+                ('email', '=ilike', '%%@' + msg.sender_domain),
+            ], limit=1)
+            if company:
+                if not msg.partner_id:
+                    msg.partner_id = company.id
+                return self._open_record(company, 'Azienda')
+        default_name = msg.sender_domain or msg.sender_name or msg.sender_email or ''
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuova azienda da email',
+            'res_model': 'res.partner',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'default_name': default_name,
+                'default_email': msg.sender_email or '',
+                'default_website': msg.sender_domain or '',
+                'default_comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
+                'default_is_company': True,
             },
         }
 

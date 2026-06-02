@@ -719,11 +719,14 @@
                         </t>
                     </div>
 
-                    <div class="cf-pc-inbox-three-col">
+                    <div class="cf-pc-inbox-workbench">
                         <!-- COLUMN 1: THREAD LIST -->
                         <aside class="cf-pc-inbox-list">
                             <header class="cf-pc-list-header">
-                                <h2>Thread Email</h2>
+                                <div>
+                                    <h2>Inbox decisionale</h2>
+                                    <small>Tieni o scarta il mittente, poi trasformi la mail in CRM.</small>
+                                </div>
                                 <div class="cf-pc-inbox-bulk-bar" t-if="Object.values(state.selectedMessageIds).some(v => v)">
                                     <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('archive')" title="Archivia selezionati">
                                         <i class="fa fa-archive"/> Archivia
@@ -753,6 +756,8 @@
                                             <div class="cf-pc-thread-subj" t-out="row.subtitle"/>
                                             <div class="cf-pc-thread-snippet" t-out="row.snippet"/>
                                             <div class="cf-pc-thread-badges">
+                                                <span t-if="row.sender_decision === 'pending'" class="cf-pc-badge decision-pending">Da decidere</span>
+                                                <span t-if="row.sender_decision === 'kept'" class="cf-pc-badge decision-kept">Tenuto</span>
                                                 <span t-if="row.urgency" t-attf-class="cf-pc-badge urgency-#{row.urgency}">
                                                     <t t-out="row.urgency === 'high' ? 'URGENTE' : 'Priorità media'"/>
                                                 </span>
@@ -785,6 +790,8 @@
                                             <div class="cf-pc-thread-subj" t-out="row.subtitle"/>
                                             <div class="cf-pc-thread-snippet" t-out="row.snippet"/>
                                             <div class="cf-pc-thread-badges">
+                                                <span t-if="row.sender_decision === 'pending'" class="cf-pc-badge decision-pending">Da decidere</span>
+                                                <span t-if="row.sender_decision === 'kept'" class="cf-pc-badge decision-kept">Tenuto</span>
                                                 <span class="cf-pc-badge waiting-badge">In attesa cliente</span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
                                             </div>
@@ -803,6 +810,22 @@
                             <t t-if="selectedMessage">
                                 <div class="cf-pc-reader-header">
                                     <div class="cf-pc-reader-meta">
+                                        <div class="cf-pc-decision-strip">
+                                            <span t-if="selectedMessage.sender_decision === 'pending'" class="cf-pc-decision-status pending">
+                                                Mittente da decidere
+                                            </span>
+                                            <span t-elif="selectedMessage.sender_decision === 'kept'" class="cf-pc-decision-status kept">
+                                                Mittente tenuto
+                                            </span>
+                                            <div class="cf-pc-decision-actions">
+                                                <button class="btn btn-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'keep_sender')" title="Continua a mostrare questo mittente in Odoo">
+                                                    <i class="fa fa-check"/> Tieni
+                                                </button>
+                                                <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'dismiss_sender')" title="Nascondi questo mittente dalla Inbox CasaFolino">
+                                                    <i class="fa fa-ban"/> Scarta
+                                                </button>
+                                            </div>
+                                        </div>
                                         <h3 t-out="selectedMessage.subtitle"/>
                                         <div class="cf-pc-sender">
                                             <strong>Da: </strong> <t t-out="selectedMessage.title"/> &lt;<t t-out="selectedMessage.sender_email"/>&gt;
@@ -810,52 +833,58 @@
                                         <div class="cf-pc-date" t-out="selectedMessage.meta"/>
                                     </div>
 
-                                    <!-- A myriad of quick actions directly inside the mail reader! -->
+                                    <div class="cf-pc-reader-prompt">
+                                        <strong>Trasforma questa mail in lavoro</strong>
+                                        <span>Contatto, azienda, lead, dossier, task e follow-up in pochi tap.</span>
+                                    </div>
                                     <div class="cf-pc-reader-actions">
-                                        <button class="btn btn-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')" title="Rispondi">
-                                            <i class="fa fa-reply"/> Rispondi
+                                        <button class="cf-pc-action-tile primary" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')" title="Rispondi con composer AI">
+                                            <i class="fa fa-magic"/>
+                                            <span>Rispondi AI</span>
                                         </button>
-                                        <button class="btn btn-success btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_dossier')" title="Crea Dossier">
-                                            <i class="fa fa-briefcase"/> Crea Dossier
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_contact')" title="Crea o apri contatto">
+                                            <i class="fa fa-user-o"/>
+                                            <span>Contatto</span>
                                         </button>
-
-                                        <t t-if="!selectedMessage.partner_id">
-                                            <button class="btn btn-warning btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_contact')" title="Registra Contatto">
-                                                <i class="fa fa-user-plus"/> Registra Contatto
-                                            </button>
-                                        </t>
-
-                                        <t t-if="!selectedMessage.lead_id">
-                                            <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')" title="Crea Lead">
-                                                <i class="fa fa-plus"/> Crea Lead
-                                            </button>
-                                            <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'link_lead')" title="Collega Lead">
-                                                <i class="fa fa-link"/> Collega Lead
-                                            </button>
-                                        </t>
-                                        <t t-else="">
-                                            <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'open_lead')" title="Apri Lead">
-                                                <i class="fa fa-handshake-o"/> Apri Lead
-                                            </button>
-                                            <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'link_lead')" title="Cambia Lead">
-                                                <i class="fa fa-exchange"/> Cambia Lead
-                                            </button>
-                                        </t>
-
-                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'task')" title="Crea Task Dossier">
-                                            <i class="fa fa-check-square-o"/> Task
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_company')" title="Crea o apri azienda">
+                                            <i class="fa fa-building-o"/>
+                                            <span>Azienda</span>
                                         </button>
-                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'quote')" title="Crea Preventivo">
-                                            <i class="fa fa-file-text-o"/> Preventivo
+                                        <button t-if="!selectedMessage.lead_id" class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')" title="Crea lead">
+                                            <i class="fa fa-star-o"/>
+                                            <span>Lead</span>
                                         </button>
-                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'sample')" title="Crea Campionatura">
-                                            <i class="fa fa-flask"/> Campione
+                                        <button t-else="" class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'open_lead')" title="Apri lead">
+                                            <i class="fa fa-handshake-o"/>
+                                            <span>Lead</span>
                                         </button>
-                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'snooze')" title="Posticipa">
-                                            <i class="fa fa-clock-o"/> Posticipa
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'link_lead')" title="Collega o cambia lead">
+                                            <i class="fa fa-link"/>
+                                            <span>Collega</span>
                                         </button>
-                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'archive')" title="Archivia">
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_dossier')" title="Crea dossier">
+                                            <i class="fa fa-folder-open-o"/>
+                                            <span>Dossier</span>
+                                        </button>
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'task')" title="Crea task veloce">
+                                            <i class="fa fa-check-square-o"/>
+                                            <span>Task</span>
+                                        </button>
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'quote')" title="Crea preventivo">
+                                            <i class="fa fa-file-text-o"/>
+                                            <span>Preventivo</span>
+                                        </button>
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'sample')" title="Crea campionatura">
+                                            <i class="fa fa-flask"/>
+                                            <span>Campione</span>
+                                        </button>
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'snooze')" title="Posticipa">
+                                            <i class="fa fa-clock-o"/>
+                                            <span>Reminder</span>
+                                        </button>
+                                        <button class="cf-pc-action-tile muted" t-on-click="() => this.mailQuickAction(selectedMessage, 'archive')" title="Archivia">
                                             <i class="fa fa-archive"/>
+                                            <span>Archivia</span>
                                         </button>
                                     </div>
                                 </div>
