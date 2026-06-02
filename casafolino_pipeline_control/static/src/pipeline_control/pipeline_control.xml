@@ -221,9 +221,17 @@
                                     <i class="fa fa-check-square-o"/>
                                     Task da chiamata
                                 </button>
+                                <button class="btn btn-light" t-on-click="newSampleTask">
+                                    <i class="fa fa-truck"/>
+                                    Task campionatura
+                                </button>
                                 <button class="btn btn-light" t-on-click="newDossier">
                                     <i class="fa fa-folder-open"/>
                                     Nuovo dossier
+                                </button>
+                                <button class="btn btn-light" t-on-click="openTasks">
+                                    <i class="fa fa-list-ul"/>
+                                    Le mie task
                                 </button>
                                 <button class="btn btn-light" t-on-click="() => this.setView('dossiers')">
                                     <i class="fa fa-search"/>
@@ -308,8 +316,8 @@
                                     <h2>Task / To-do</h2>
                                     <p>Richieste operative trattate come mini-progetti.</p>
                                 </div>
-                                <button class="btn btn-sm btn-light" t-on-click="newTask">
-                                    Nuova task
+                                <button class="btn btn-sm btn-light" t-on-click="openTasks">
+                                    Apri task
                                 </button>
                             </header>
                             <div class="cf-pc-depth-list">

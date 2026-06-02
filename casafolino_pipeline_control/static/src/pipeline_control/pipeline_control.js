@@ -523,10 +523,14 @@ export class CFPipelineControl extends Component {
             name: _t("Nuova task / to-do"),
             res_model: "project.task",
             views: [[false, "form"]],
-            target: "current",
+            target: "new",
             context: {
+                default_name: _t("Nuova richiesta operativa"),
                 default_cf_task_origin: "manual",
                 default_cf_task_type: "todo",
+                default_cf_department: "sales",
+                default_cf_waiting_for: "internal",
+                default_cf_source_note: _t("Richiesta creata dalla Console Commerciale."),
             },
         });
     }
@@ -537,12 +541,51 @@ export class CFPipelineControl extends Component {
             name: _t("Task da chiamata cliente"),
             res_model: "project.task",
             views: [[false, "form"]],
-            target: "current",
+            target: "new",
             context: {
                 default_name: _t("Richiesta da chiamata cliente"),
                 default_cf_task_origin: "call",
                 default_cf_task_type: "todo",
+                default_cf_department: "sales",
+                default_cf_waiting_for: "internal",
                 default_cf_is_mini_project: true,
+                default_cf_source_note: _t("Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti."),
+                default_cf_ai_suggested_next_step: _t("Identifica cliente, collega o crea dossier, assegna owner e imposta la prossima scadenza."),
+            },
+        });
+    }
+
+    async newSampleTask() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Task campionatura / spedizione"),
+            res_model: "project.task",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_name: _t("Gestire campionatura cliente"),
+                default_cf_task_origin: "manual",
+                default_cf_task_type: "sample_shipment",
+                default_cf_department: "logistics",
+                default_cf_waiting_for: "internal",
+                default_cf_is_mini_project: true,
+                default_cf_checklist_required: true,
+                default_cf_source_note: _t("Campionatura da preparare/spedire. Collegare cliente, prodotti, tracking e feedback atteso."),
+                default_cf_ai_suggested_next_step: _t("Crea o collega la spedizione, abilita TrackBot, assegna logistica e programma reminder feedback."),
+            },
+        });
+    }
+
+    async openTasks() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Task / To-do operativi"),
+            res_model: "project.task",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            context: {
+                search_default_my_tasks: 1,
+                search_default_group_project: 1,
             },
         });
     }

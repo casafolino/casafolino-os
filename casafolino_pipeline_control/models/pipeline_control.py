@@ -1663,8 +1663,12 @@ class CfPipelineControl(models.AbstractModel):
                 'default_description': msg.snippet or '',
                 'default_cf_task_origin': 'mail',
                 'default_cf_task_type': 'followup',
+                'default_cf_department': 'sales',
+                'default_cf_waiting_for': 'internal',
                 'default_cf_customer_id': msg.partner_id.id if msg.partner_id else False,
+                'default_cf_is_mini_project': True,
                 'default_cf_source_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
+                'default_cf_ai_suggested_next_step': 'Valuta se trasformare la mail in contatto, lead, dossier o campionatura e assegna il prossimo owner.',
             },
         }
 
@@ -1681,6 +1685,13 @@ class CfPipelineControl(models.AbstractModel):
                 'default_name': 'Follow-up: %s' % (lead.name or lead.display_name),
                 'default_project_id': project.id if project else False,
                 'default_partner_id': lead.partner_id.id if lead.partner_id else False,
+                'default_description': 'Verificare stato trattativa, prossima decisione cliente e prossima azione.',
+                'default_cf_task_origin': 'manual',
+                'default_cf_task_type': 'followup',
+                'default_cf_department': 'sales',
+                'default_cf_waiting_for': 'internal',
+                'default_cf_customer_id': lead.partner_id.id if lead.partner_id else False,
+                'default_cf_source_note': lead.name or '',
             },
         }
 
@@ -1699,6 +1710,14 @@ class CfPipelineControl(models.AbstractModel):
                 'default_project_id': project.id if project else False,
                 'default_partner_id': partner.id if partner else False,
                 'default_description': self._task_description_for_record(record),
+                'default_cf_task_origin': 'manual',
+                'default_cf_task_type': self._task_type_for_record(record),
+                'default_cf_department': self._task_department_for_record(record),
+                'default_cf_waiting_for': 'internal',
+                'default_cf_customer_id': partner.id if partner else False,
+                'default_cf_is_mini_project': record._name in ('project.project', 'cf.export.sample', 'cf.project.shipment'),
+                'default_cf_checklist_required': record._name in ('cf.export.sample', 'cf.project.shipment'),
+                'default_cf_source_note': self._task_description_for_record(record),
             },
         }
 
@@ -1766,6 +1785,18 @@ class CfPipelineControl(models.AbstractModel):
         if record._name == 'project.project':
             return 'Aggiornare stato reparto, blocchi, prossima decisione e owner.'
         return ''
+
+    def _task_type_for_record(self, record):
+        if record._name in ('cf.export.sample', 'cf.project.shipment'):
+            return 'sample_shipment'
+        if record._name == 'sale.order':
+            return 'quote'
+        return 'todo'
+
+    def _task_department_for_record(self, record):
+        if record._name in ('cf.export.sample', 'cf.project.shipment'):
+            return 'logistics'
+        return 'sales'
 
     def _notify(self, title, message, notification_type='success', reload=False):
         return {
