@@ -768,6 +768,26 @@
                                                     Senza Lead
                                                 </span>
                                             </div>
+                                            <div class="cf-pc-thread-quick-actions">
+                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
+                                                    <i class="fa fa-check"/>
+                                                </button>
+                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
+                                                    <i class="fa fa-ban"/>
+                                                </button>
+                                                <button t-if="!row.lead_id" t-on-click.stop="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
+                                                    <i class="fa fa-star-o"/>
+                                                </button>
+                                                <button t-else="" t-on-click.stop="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
+                                                    <i class="fa fa-handshake-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
+                                                    <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'snooze')" title="Reminder">
+                                                    <i class="fa fa-clock-o"/>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </t>
@@ -794,6 +814,26 @@
                                                 <span t-if="row.sender_decision === 'kept'" class="cf-pc-badge decision-kept">Tenuto</span>
                                                 <span class="cf-pc-badge waiting-badge">In attesa cliente</span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
+                                            </div>
+                                            <div class="cf-pc-thread-quick-actions">
+                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
+                                                    <i class="fa fa-check"/>
+                                                </button>
+                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
+                                                    <i class="fa fa-ban"/>
+                                                </button>
+                                                <button t-if="!row.lead_id" t-on-click.stop="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
+                                                    <i class="fa fa-star-o"/>
+                                                </button>
+                                                <button t-else="" t-on-click.stop="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
+                                                    <i class="fa fa-handshake-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
+                                                    <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'snooze')" title="Reminder">
+                                                    <i class="fa fa-clock-o"/>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -960,6 +1000,31 @@
                                         <i class="fa fa-bolt"/>
                                         <span t-out="state.messageContext.summary.next_step"/>
                                     </div>
+                                    <div class="cf-pc-sidebar-sub" style="margin-top: 12px;">
+                                        <h5>Brief AI operativo</h5>
+                                        <div class="cf-pc-ai-brief-grid">
+                                            <div>
+                                                <span>Urgenza</span>
+                                                <strong t-out="state.messageContext.summary.ai_urgency || 'normale'"/>
+                                            </div>
+                                            <div>
+                                                <span>Categoria</span>
+                                                <strong t-out="state.messageContext.summary.ai_category || 'n.d.'"/>
+                                            </div>
+                                            <div>
+                                                <span>Lingua</span>
+                                                <strong t-out="state.messageContext.summary.ai_language || 'n.d.'"/>
+                                            </div>
+                                            <div>
+                                                <span>Thread</span>
+                                                <strong t-out="state.messageContext.summary.thread_count + ' mail'"/>
+                                            </div>
+                                        </div>
+                                        <div t-if="state.messageContext.summary.ai_action_required" class="cf-pc-context-next urgent">
+                                            <i class="fa fa-exclamation-triangle"/>
+                                            <span>Azione richiesta rilevata dall'AI</span>
+                                        </div>
+                                    </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.participants &amp;&amp; state.messageContext.participants.length" style="margin-top: 12px;">
                                         <h5>Partecipanti esterni</h5>
                                         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
@@ -992,6 +1057,21 @@
                                             </div>
                                             <div style="font-size: 10.5px; color: #667061;" t-out="dup.email"/>
                                             <div t-if="dup.company" style="font-size: 10px; color: #889283;" t-out="dup.company"/>
+                                        </div>
+                                    </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.mail_timeline &amp;&amp; state.messageContext.mail_timeline.length" style="margin-top: 12px;">
+                                        <h5>Timeline email cliente</h5>
+                                        <div t-foreach="state.messageContext.mail_timeline" t-as="mail" t-key="'mail-timeline-' + mail.id" t-attf-class="cf-pc-mail-timeline-row #{mail.is_current ? 'current' : ''}" t-on-click="() => this.openRecord({model: 'casafolino.mail.message', res_id: mail.id})">
+                                            <div class="cf-pc-mail-timeline-top">
+                                                <strong t-out="mail.subject"/>
+                                                <span t-out="mail.date"/>
+                                            </div>
+                                            <div class="cf-pc-mail-timeline-meta">
+                                                <span t-out="mail.direction || 'mail'"/>
+                                                <span t-if="mail.needs_action" class="cf-pc-mini-badge tone-amber">azione</span>
+                                                <span t-if="mail.urgency === 'high'" class="cf-pc-mini-badge tone-red">urgente</span>
+                                                <span t-if="mail.is_current" class="cf-pc-mini-badge tone-green">aperta</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="cf-pc-ai-next-actions" t-if="state.messageContext.ai_actions &amp;&amp; state.messageContext.ai_actions.length">

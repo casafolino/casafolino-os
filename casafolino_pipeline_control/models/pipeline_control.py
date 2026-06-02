@@ -470,6 +470,7 @@ class CfPipelineControl(models.AbstractModel):
                 'partner': None,
                 'participants': [],
                 'duplicate_partners': [],
+                'mail_timeline': [],
                 'suggested_partners': [],
                 'leads': [],
                 'dossiers': [],
@@ -573,11 +574,18 @@ class CfPipelineControl(models.AbstractModel):
             'partner': partner_details,
             'participants': self._message_participant_context(msg),
             'duplicate_partners': self._message_duplicate_partner_context(msg),
+            'mail_timeline': self._message_context_mail_timeline(msg, partner),
             'summary': {
                 'sender_email': msg.sender_email or '',
                 'sender_domain': msg.sender_domain or '',
                 'subject': msg.subject or '',
                 'decision': self._sender_decision_status(msg),
+                'ai_category': msg.ai_category or '',
+                'ai_urgency': msg.ai_urgency or '',
+                'ai_language': msg.ai_language or '',
+                'ai_action_required': bool(msg.ai_action_required),
+                'account': msg.account_id.display_name if msg.account_id else '',
+                'thread_count': msg.thread_id.message_count if msg.thread_id else 1,
                 'lead_count': len(leads_list),
                 'dossier_count': len(projects_list),
                 'quote_count': len(sales_list),
@@ -2066,6 +2074,36 @@ class CfPipelineControl(models.AbstractModel):
                     'company': partner.parent_id.name if partner.parent_id else '',
                     'is_company': bool(partner.is_company),
                 })
+        return rows
+
+    def _message_context_mail_timeline(self, msg, partner=None):
+        Mail = self.env['casafolino.mail.message']
+        domain = [
+            ('is_deleted', '=', False),
+            ('is_archived', '=', False),
+        ]
+        if partner:
+            domain.append(('partner_id', '=', partner.id))
+        elif msg.sender_domain:
+            domain.append(('sender_domain', '=', msg.sender_domain))
+        elif msg.sender_email:
+            domain.append(('sender_email', '=ilike', msg.sender_email))
+        else:
+            return []
+
+        rows = []
+        for mail in Mail.search(domain, order='email_date desc, id desc', limit=6):
+            rows.append({
+                'id': mail.id,
+                'subject': mail.subject or 'Senza oggetto',
+                'date': self._date_label(mail.email_date),
+                'direction': mail.direction_computed or mail.direction or '',
+                'sender': mail.sender_name or mail.sender_email or '',
+                'snippet': mail.snippet or '',
+                'is_current': mail.id == msg.id,
+                'needs_action': bool(mail.ai_action_required),
+                'urgency': mail.ai_urgency or '',
+            })
         return rows
 
     def _find_company_for_message(self, msg, participants=None):
