@@ -1335,9 +1335,138 @@ class CasafolinoMailMessage(models.Model):
             'target': 'current',
         }
 
+    def action_open_partner(self):
+        """Open the linked contact from the operational mail form."""
+        self.ensure_one()
+        if not self.partner_id:
+            return self.action_create_partner()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Contatto',
+            'res_model': 'res.partner',
+            'res_id': self.partner_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_create_company_from_mail(self):
+        """Create or link the sender company, then keep the person as a contact."""
+        self.ensure_one()
+        email_addr, name = self._get_contact_email_and_name()
+        domain = ''
+        if email_addr and '@' in email_addr:
+            domain = email_addr.split('@', 1)[1].lower().strip()
+        if not domain:
+            raise UserError("Non riesco a creare l'azienda: manca il dominio email esterno.")
+
+        generic_domains = {
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+            'icloud.com', 'mail.com', 'protonmail.com', 'live.com', 'msn.com',
+            'gmx.de', 'web.de', 'libero.it', 'virgilio.it', 'alice.it',
+            't-online.de', 'wanadoo.fr', 'orange.fr', 'free.fr',
+        }
+        if domain in generic_domains:
+            raise UserError("Dominio email generico: crea prima il contatto e scegli manualmente l'azienda.")
+
+        Partner = self.env['res.partner'].sudo()
+        company = Partner.search([
+            ('is_company', '=', True),
+            '|',
+            ('email', 'ilike', '@' + domain),
+            ('website', 'ilike', domain),
+        ], limit=1)
+        if not company:
+            company = Partner.create({
+                'name': domain.split('.')[0].replace('-', ' ').replace('_', ' ').title(),
+                'is_company': True,
+                'email': False,
+                'website': 'https://%s' % domain,
+            })
+
+        contact = self.partner_id
+        if not contact and email_addr:
+            contact = Partner.search([
+                ('is_company', '=', False),
+                ('email', '=ilike', email_addr),
+            ], limit=1)
+        if not contact and email_addr:
+            contact = Partner.create({
+                'name': name or email_addr,
+                'email': email_addr,
+                'parent_id': company.id,
+                'company_type': 'person',
+            })
+        elif contact and not contact.is_company and not contact.parent_id:
+            contact.parent_id = company.id
+
+        vals = {'match_type': 'manual'}
+        if contact:
+            vals['partner_id'] = contact.id
+        self.write(vals)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Azienda',
+            'res_model': 'res.partner',
+            'res_id': company.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_create_task_from_mail(self):
+        """Open the commercial quick task wizard prefilled from this message."""
+        self.ensure_one()
+        if not self.env.registry.get('cf.pipeline.quick.task.wizard'):
+            raise UserError("Modulo Pipeline Control non disponibile.")
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Task da email',
+            'res_model': 'cf.pipeline.quick.task.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_message_id': self.id,
+                'default_quick_kind': 'todo',
+                'default_source_channel': 'mail',
+            },
+        }
+
+    def action_create_dossier_from_mail(self):
+        """Open the dossier wizard prefilled from this message."""
+        self.ensure_one()
+        if not self.env.registry.get('cf.pipeline.create.dossier.wizard'):
+            raise UserError("Modulo Pipeline Control non disponibile.")
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Crea dossier da email',
+            'res_model': 'cf.pipeline.create.dossier.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_message_id': self.id},
+        }
+
     def action_discard(self):
         """Hard delete record (v11). Gmail originale resta intatto."""
         self.unlink()
+
+    def action_discard_sender(self):
+        """Hide this sender from the operational inbox without touching Gmail."""
+        self.ensure_one()
+        if not self.sender_email:
+            return self.action_delete_soft()
+        sender = self.sender_email.strip().lower()
+        to_hide = self.search([
+            ('sender_email', '=ilike', sender),
+            ('is_deleted', '=', False),
+            ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_discard']),
+        ])
+        if to_hide:
+            to_hide.write({
+                'state': 'discard',
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
+            to_hide.action_delete_soft()
+        return {'type': 'ir.actions.act_window_close'}
 
     # ── Body download (Step 3) ───────────────────────────────────────
 
