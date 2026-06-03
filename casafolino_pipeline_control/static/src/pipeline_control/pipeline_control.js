@@ -608,7 +608,6 @@ export class CFPipelineControl extends Component {
             target: "current",
             context: {
                 search_default_my_tasks: 1,
-                search_default_group_project: 1,
             },
         });
     }

@@ -18,6 +18,8 @@
                 <field name="cf_waiting_for"/>
                 <separator/>
                 <filter name="my_tasks" string="Le mie task" domain="[('user_ids', 'in', uid)]"/>
+                <filter name="today" string="Oggi"
+                        domain="[('date_deadline', '=', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter name="overdue" string="Scadute"
                         domain="[('date_deadline', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter name="blocked" string="Bloccate"
@@ -49,25 +51,25 @@
         <field name="name">project.task.list.cf.mytasks</field>
         <field name="model">project.task</field>
         <field name="arch" type="xml">
-            <list string="Le Mie Task" default_group_by="project_id"
+            <list string="Le Mie Task"
                   decoration-danger="cf_days_in_stage > 7"
                   decoration-warning="cf_days_in_stage > 3">
                 <field name="priority" widget="priority"/>
                 <field name="name" string="Titolo"/>
-                <field name="project_id" string="Progetto"/>
                 <field name="cf_customer_id" string="Cliente" optional="show"/>
+                <field name="date_deadline" string="Scadenza" widget="remaining_days"/>
+                <field name="stage_id" string="Stato"/>
                 <field name="cf_task_type" string="Tipo" widget="badge" optional="show"/>
                 <field name="cf_department" string="Reparto" widget="badge" optional="show"/>
                 <field name="cf_waiting_for" string="In attesa di" widget="badge"
                        decoration-info="cf_waiting_for == 'client'"
                        decoration-warning="cf_waiting_for == 'production'"
                        decoration-danger="cf_waiting_for == 'printer'"/>
-                <field name="date_deadline" string="Scadenza" widget="remaining_days"/>
+                <field name="project_id" string="Dossier / Progetto"/>
                 <field name="cf_days_in_stage" string="Giorni" widget="badge"
                        decoration-danger="cf_days_in_stage > 7"
                        decoration-warning="cf_days_in_stage > 3"/>
                 <field name="cf_checklist_progress" string="Checklist %" widget="progressbar"/>
-                <field name="stage_id" string="Stage"/>
                 <field name="user_ids" string="Responsabile" widget="many2many_tags_avatar"/>
             </list>
         </field>
