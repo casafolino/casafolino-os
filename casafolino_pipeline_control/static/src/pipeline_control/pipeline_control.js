@@ -572,6 +572,19 @@ export class CFPipelineControl extends Component {
         });
     }
 
+    async newCatalogTask() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Task catalogo"),
+            res_model: "cf.pipeline.quick.task.wizard",
+            views: [[false, "form"]],
+            target: "new",
+            context: {
+                default_quick_kind: "catalog",
+            },
+        });
+    }
+
     async newSampleTask() {
         await this.action.doAction({
             type: "ir.actions.act_window",

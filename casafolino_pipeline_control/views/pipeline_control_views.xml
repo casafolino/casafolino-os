@@ -45,6 +45,7 @@
                             </group>
                             <group string="Automazioni">
                                 <field name="create_sample_shipment" invisible="task_type != 'sample_shipment'"/>
+                                <field name="create_reminder"/>
                                 <field name="ai_suggested_next_step" placeholder="Prossimo passo suggerito"/>
                             </group>
                         </group>

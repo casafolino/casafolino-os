@@ -3062,6 +3062,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     quick_kind = fields.Selection([
         ('todo', 'To-do'),
         ('call', 'Chiamata'),
+        ('catalog', 'Catalogo'),
         ('sample', 'Campione'),
     ], string='Tipo rapido', default='todo', required=True)
     name = fields.Char(string='Cosa devo ricordare?', required=True)
@@ -3071,6 +3072,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         ('call', 'Chiamata'),
         ('whatsapp', 'WhatsApp'),
         ('meeting', 'Riunione'),
+        ('voice_ai', 'Voice AI'),
         ('manual', 'Manuale'),
     ], string='Origine', default='manual', required=True)
     urgency = fields.Selection([
@@ -3106,6 +3108,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     is_mini_project = fields.Boolean(string='Mini-progetto')
     checklist_required = fields.Boolean(string='Checklist obbligatoria')
     create_sample_shipment = fields.Boolean(string='Crea spedizione/TrackBot')
+    create_reminder = fields.Boolean(string='Crea reminder', default=True)
     ai_suggested_next_step = fields.Text(string='Prossimo passo')
 
     @api.model
@@ -3130,6 +3133,20 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'customer_promise': 'Richiamare / dare riscontro appena assegnata la richiesta.',
                 'next_checkpoint': 'Assegnare owner e prima scadenza.',
                 'ai_suggested_next_step': 'Collega cliente/dossier, assegna owner e imposta la prossima scadenza.',
+            })
+        elif kind == 'catalog':
+            res.update({
+                'name': 'Pagina catalogo personalizzata',
+                'task_type': 'catalog_page',
+                'department': 'graphics',
+                'is_mini_project': True,
+                'checklist_required': True,
+                'source_channel': 'call',
+                'urgency': 'high',
+                'note': 'Cliente richiede una pagina catalogo personalizzata: raccogliere brief, contenuti, immagini e scadenza.',
+                'customer_promise': 'Confermare fattibilita e tempi appena assegnata a grafica.',
+                'next_checkpoint': 'Recuperare brief minimo e assegnare a Grafica.',
+                'ai_suggested_next_step': 'Trasforma la richiesta in mini-progetto con checklist grafica e reminder al reparto.',
             })
         elif kind == 'sample':
             res.update({
@@ -3201,6 +3218,22 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 self.next_checkpoint = 'Assegnare owner e prima scadenza.'
             if not self.ai_suggested_next_step:
                 self.ai_suggested_next_step = 'Collega cliente/dossier, assegna owner e imposta la prossima scadenza.'
+        elif self.quick_kind == 'catalog':
+            self.name = self.name if self.name and self.name != 'Nuova richiesta operativa' else 'Pagina catalogo personalizzata'
+            self.task_type = 'catalog_page'
+            self.department = 'graphics'
+            self.is_mini_project = True
+            self.checklist_required = True
+            self.source_channel = self.source_channel if self.source_channel != 'manual' else 'call'
+            self.urgency = 'high'
+            if not self.note:
+                self.note = 'Cliente richiede una pagina catalogo personalizzata: raccogliere brief, contenuti, immagini e scadenza.'
+            if not self.customer_promise:
+                self.customer_promise = 'Confermare fattibilita e tempi appena assegnata a grafica.'
+            if not self.next_checkpoint:
+                self.next_checkpoint = 'Recuperare brief minimo e assegnare a Grafica.'
+            if not self.ai_suggested_next_step:
+                self.ai_suggested_next_step = 'Trasforma la richiesta in mini-progetto con checklist grafica e reminder al reparto.'
         elif self.quick_kind == 'sample':
             self.name = self.name if self.name and self.name != 'Nuova richiesta operativa' else 'Gestire campionatura cliente'
             self.task_type = 'sample_shipment'
@@ -3248,16 +3281,18 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             'date_deadline': self.deadline or False,
             'description': self._task_description_payload(),
             'user_ids': [(6, 0, self.user_ids.ids or [self.env.uid])],
-            'cf_task_origin': self.source_channel if self.source_channel in ('call', 'manual') else 'manual',
+            'cf_task_origin': self._task_origin_value(),
             'cf_task_type': self.task_type,
             'cf_department': self.department,
             'cf_customer_id': self.partner_id.id if self.partner_id else False,
-            'cf_waiting_for': 'internal',
+            'cf_waiting_for': self._waiting_for_value(),
             'cf_is_mini_project': self.is_mini_project,
             'cf_checklist_required': self.checklist_required,
             'cf_source_note': self.note or '',
             'cf_ai_suggested_next_step': self.ai_suggested_next_step or '',
         }
+        if self.urgency in ('high', 'critical') and 'priority' in self.env['project.task']._fields:
+            vals['priority'] = '1'
         task = self.env['project.task'].create(vals)
         if self.create_sample_shipment and self.project_id:
             shipment = self.env['cf.project.shipment'].create({
@@ -3268,8 +3303,49 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             })
             task.cf_shipment_id = shipment.id
         self._create_default_checklist(task)
-        task.message_post(body='Task veloce creata dalla Console Commerciale.')
+        if self.create_reminder:
+            self._schedule_task_reminders(task)
+        task.message_post(body=self._task_chatter_note())
         return task
+
+    def _task_origin_value(self):
+        if self.source_channel in ('call', 'mail', 'voice_ai', 'manual'):
+            return self.source_channel
+        return 'manual'
+
+    def _waiting_for_value(self):
+        if self.department == 'graphics':
+            return 'graphic'
+        if self.department == 'production':
+            return 'production'
+        if self.department == 'logistics':
+            return 'internal'
+        if self.department in ('admin', 'management'):
+            return 'internal'
+        return 'client' if self.task_type in ('followup', 'data_update') else 'internal'
+
+    def _schedule_task_reminders(self, task):
+        deadline = self.deadline or fields.Date.context_today(self)
+        summary = 'Seguire: %s' % self.name
+        users = self.user_ids or self.env.user
+        for user in users:
+            task.activity_schedule(
+                'mail.mail_activity_data_todo',
+                date_deadline=deadline,
+                user_id=user.id,
+                summary=summary,
+                note=self.next_checkpoint or self.customer_promise or self.note or '',
+            )
+
+    def _task_chatter_note(self):
+        return ''.join([
+            '<p><strong>Task salva-memoria creata dalla Console Commerciale.</strong></p>',
+            '<p>%s</p>' % (self.note or ''),
+            '<p><strong>Promessa:</strong> %s<br/><strong>Checkpoint:</strong> %s</p>' % (
+                self.customer_promise or 'n.d.',
+                self.next_checkpoint or 'n.d.',
+            ),
+        ])
 
     def _task_description_payload(self):
         parts = [
@@ -3297,6 +3373,14 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'Preparare collo e documenti',
                 'Inserire tracking e abilitare TrackBot',
                 'Programmare reminder feedback cliente',
+            ]
+        elif self.task_type == 'catalog_page':
+            items = [
+                'Raccogliere brief minimo dal cliente',
+                'Recuperare logo, immagini e testi necessari',
+                'Assegnare lavorazione a Grafica',
+                'Preparare bozza pagina catalogo',
+                'Inviare bozza al cliente e programmare feedback',
             ]
         else:
             items = [

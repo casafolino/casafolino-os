@@ -221,6 +221,10 @@
                                     <i class="fa fa-check-square-o"/>
                                     Task da chiamata
                                 </button>
+                                <button class="btn btn-light" t-on-click="newCatalogTask">
+                                    <i class="fa fa-file-text-o"/>
+                                    Task catalogo
+                                </button>
                                 <button class="btn btn-light" t-on-click="newSampleTask">
                                     <i class="fa fa-truck"/>
                                     Task campionatura
