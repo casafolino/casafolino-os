@@ -10,7 +10,12 @@ _logger = logging.getLogger(__name__)
 class LavagnaControllerMailStats(LavagnaController):
     """Extend Lavagna data endpoint to include email performance stats."""
 
-    @http.route()
+    @http.route(
+        '/casafolino/lavagna/<int:initiative_id>/data',
+        type='json',
+        auth='user',
+        methods=['POST'],
+    )
     def get_lavagna_data(self, initiative_id, **kwargs):
         result = super().get_lavagna_data(initiative_id, **kwargs)
         if isinstance(result, dict) and 'error' not in result:
