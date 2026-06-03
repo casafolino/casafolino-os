@@ -121,11 +121,11 @@ class ProjectProjectPipelineControl(models.Model):
     cf360_mail_ids = fields.Many2many(
         'casafolino.mail.message',
         compute='_compute_cf360_mail_ids',
-        string='Mail dossier',
+        string='Comunicazioni 360',
     )
     cf360_mail_count = fields.Integer(
         compute='_compute_cf360_mail_ids',
-        string='Mail dossier',
+        string='Comunicazioni 360',
     )
     cf360_task_count = fields.Integer(
         compute='_compute_cf360_counts',
