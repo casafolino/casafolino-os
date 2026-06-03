@@ -1095,6 +1095,23 @@
                                     </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.participants &amp;&amp; state.messageContext.participants.length" style="margin-top: 12px;">
                                         <h5>Partecipanti esterni</h5>
+                                        <div t-if="state.messageContext.contact_plan" class="cf-pc-contact-plan">
+                                            <div>
+                                                <span>Azienda</span>
+                                                <strong>
+                                                    <t t-if="state.messageContext.contact_plan.company_name" t-out="state.messageContext.contact_plan.company_name"/>
+                                                    <t t-else="">Da creare</t>
+                                                </strong>
+                                            </div>
+                                            <div>
+                                                <span>Contatti</span>
+                                                <strong>
+                                                    <t t-out="state.messageContext.contact_plan.existing_contacts"/> ok
+                                                    · <t t-out="state.messageContext.contact_plan.contacts_to_create"/> da creare
+                                                    · <t t-out="state.messageContext.contact_plan.contacts_to_link"/> da agganciare
+                                                </strong>
+                                            </div>
+                                        </div>
                                         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
                                             <div t-foreach="state.messageContext.participants" t-as="person" t-key="'participant-' + person.email" class="cf-pc-sidebar-card" style="padding: 8px; margin-bottom: 0;">
                                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
@@ -1108,6 +1125,8 @@
                                                 <div style="font-size: 10px; color: #889283; margin-top: 2px;">
                                                     <span t-out="person.role.toUpperCase()"/>
                                                     <span t-if="person.company_name"> · <t t-out="person.company_name"/></span>
+                                                    <span t-if="person.will_create" style="color: #7c5312; font-weight: 750;"> · nuovo contatto</span>
+                                                    <span t-if="person.will_link" style="color: #4f7337; font-weight: 750;"> · aggancia azienda</span>
                                                     <span t-if="person.duplicate_count &gt; 1" style="color: #bd4b42; font-weight: 750;"> · duplicati <t t-out="person.duplicate_count"/></span>
                                                 </div>
                                             </div>

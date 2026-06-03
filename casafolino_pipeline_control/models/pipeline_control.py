@@ -621,6 +621,7 @@ class CfPipelineControl(models.AbstractModel):
             'next_move': self._message_next_move_context(msg, partner, leads_list, projects_list, sales_list),
             'sender_rule_impact': self._message_sender_rule_impact(msg),
             'ai_brief': self._message_ai_brief(msg),
+            'contact_plan': self._message_contact_plan(msg),
             'summary': {
                 'sender_email': msg.sender_email or '',
                 'sender_domain': msg.sender_domain or '',
@@ -720,16 +721,44 @@ class CfPipelineControl(models.AbstractModel):
             base_domain.append(('account_id', '=', msg.account_id.id))
         sender_count = 0
         domain_count = 0
+        sender_domain = msg.sender_domain or self._email_domain(msg.sender_email)
         if msg.sender_email:
             sender_count = Mail.search_count(base_domain + [('sender_email', '=ilike', msg.sender_email)])
-        if msg.sender_domain:
-            domain_count = Mail.search_count(base_domain + [('sender_domain', '=', msg.sender_domain)])
+        if sender_domain:
+            domain_count = Mail.search_count(base_domain + ['|', ('sender_domain', '=', sender_domain), ('sender_email', 'ilike', '@' + sender_domain)])
         return {
             'sender_email': msg.sender_email or '',
-            'sender_domain': msg.sender_domain or '',
+            'sender_domain': sender_domain or '',
             'sender_visible_count': sender_count,
             'domain_visible_count': domain_count,
             'suggested_scope': 'domain' if domain_count > sender_count and domain_count <= 30 else 'sender',
+        }
+
+    def _message_contact_plan(self, msg):
+        participants = self._message_external_participants(msg)
+        company = self._find_company_for_message(msg, participants)
+        existing = 0
+        to_create = 0
+        to_link = 0
+        for person in participants:
+            contact = self.env['res.partner'].search([
+                ('is_company', '=', False),
+                ('email', '=ilike', person['email']),
+            ], limit=1)
+            if contact:
+                existing += 1
+                if company and not contact.parent_id:
+                    to_link += 1
+            else:
+                to_create += 1
+        return {
+            'company_id': company.id if company else False,
+            'company_name': company.display_name if company else '',
+            'total_participants': len(participants),
+            'existing_contacts': existing,
+            'contacts_to_create': to_create,
+            'contacts_to_link': to_link,
+            'company_will_create': not bool(company) and bool(participants or msg.sender_domain or msg.sender_email),
         }
 
     def _message_next_move_context(self, msg, partner, leads, projects, sales):
@@ -2236,10 +2265,15 @@ class CfPipelineControl(models.AbstractModel):
     def _message_participant_context(self, msg):
         Partner = self.env['res.partner']
         rows = []
+        target_company = self._find_company_for_message(msg)
         for person in self._message_external_participants(msg):
-            partners = Partner.search([('email', '=ilike', person['email'])], order='parent_id desc, id asc', limit=6)
+            partners = Partner.search([
+                ('is_company', '=', False),
+                ('email', '=ilike', person['email']),
+            ], order='parent_id desc, id asc', limit=6)
             primary = partners[:1]
             company = primary.parent_id if primary and not primary.is_company else primary
+            will_link = bool(primary and target_company and not primary.parent_id)
             rows.append({
                 'name': person['name'],
                 'email': person['email'],
@@ -2250,6 +2284,8 @@ class CfPipelineControl(models.AbstractModel):
                 'company_name': company.name if company else '',
                 'exists': bool(primary),
                 'duplicate_count': len(partners),
+                'will_create': not bool(primary),
+                'will_link': will_link,
             })
         return rows
 
@@ -2372,8 +2408,8 @@ class CfPipelineControl(models.AbstractModel):
             domain = (participants[0]['domain'] if participants else msg.sender_domain) or ''
             company = Partner.create({
                 'name': self._company_name_from_domain(domain) or msg.sender_name or msg.sender_email or 'Nuova azienda',
-                'email': msg.sender_email if msg.sender_email and not self._is_internal_email(msg.sender_email) else False,
-                'website': domain or False,
+                'email': False,
+                'website': 'https://%s' % domain if domain else False,
                 'is_company': True,
                 'comment': 'Creato da mail CasaFolino: %s' % (msg.subject or ''),
             })
@@ -2382,13 +2418,14 @@ class CfPipelineControl(models.AbstractModel):
         linked = 0
         primary_contact = False
         for person in participants:
-            contact = Partner.search([('email', '=ilike', person['email'])], limit=1)
+            contact = Partner.search([
+                ('is_company', '=', False),
+                ('email', '=ilike', person['email']),
+            ], limit=1)
             if contact:
                 vals = {}
                 if not contact.parent_id and not contact.is_company:
                     vals['parent_id'] = company.id
-                if contact.is_company:
-                    vals = {}
                 if vals:
                     contact.write(vals)
                     linked += 1
