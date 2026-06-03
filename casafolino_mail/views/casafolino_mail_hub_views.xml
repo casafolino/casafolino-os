@@ -303,7 +303,7 @@
                 <button name="action_view_casafolino_emails" string="Email CRM"
                         type="object" class="oe_stat_button" icon="fa-envelope"
                         invisible="casafolino_email_count == 0">
-                    <field name="casafolino_email_count" string="Email" widget="statinfo"/>
+                    <field name="casafolino_email_count" string="CRM" widget="statinfo"/>
                 </button>
                 <button name="action_sync_full_email_history" string="Importa Email"
                         type="object" class="oe_stat_button" icon="fa-download"
