@@ -125,7 +125,7 @@ class ProjectProjectPipelineControl(models.Model):
     )
     cf360_mail_count = fields.Integer(
         compute='_compute_cf360_mail_ids',
-        string='Comunicazioni 360',
+        string='Numero comunicazioni 360',
     )
     cf360_task_count = fields.Integer(
         compute='_compute_cf360_counts',
