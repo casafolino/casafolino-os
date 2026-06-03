@@ -56,7 +56,7 @@ class CfProjectTask(models.Model):
 
     # === CHECKLIST ===
     cf_checklist_ids = fields.One2many(
-        'cf.project.checklist.item', 'task_id', string="Checklist")
+        'cf.project.checklist.item', 'task_id', string="Checklist operativa")
     cf_checklist_progress = fields.Float(
         compute='_compute_checklist_progress', string="Checklist %")
     cf_checklist_required = fields.Boolean(
