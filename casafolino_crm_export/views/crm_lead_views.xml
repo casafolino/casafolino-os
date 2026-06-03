@@ -131,20 +131,20 @@
                             <!-- Quick actions (hover only) -->
                             <div class="cf-kanban-quick-actions">
                                 <a t-attf-href="tel:#{record.phone.raw_value || ''}"
-                                   class="cf-qa-btn" title="Chiama"
+                                   class="cf-qa-btn" title="Chiama" role="button"
                                    t-if="record.phone.raw_value">
-                                    <i class="fa fa-phone"/>
+                                    <i class="fa fa-phone" title="Chiama"/>
                                 </a>
                                 <button name="action_send_email" type="object"
                                         class="cf-qa-btn" title="Email">
-                                    <i class="fa fa-envelope"/>
+                                    <i class="fa fa-envelope" title="Email"/>
                                 </button>
-                                <a type="open" class="cf-qa-btn" title="Apri">
-                                    <i class="fa fa-external-link"/>
+                                <a type="open" class="cf-qa-btn" title="Apri" role="button">
+                                    <i class="fa fa-external-link" title="Apri"/>
                                 </a>
                                 <button name="action_kanban_archive" type="object"
                                         class="cf-qa-btn cf-qa-archive" title="Archivia">
-                                    <i class="fa fa-archive"/>
+                                    <i class="fa fa-archive" title="Archivia"/>
                                 </button>
                             </div>
                         </div>
@@ -238,13 +238,13 @@
                                 </div>
                                 <div class="cf-contact-meta">
                                     <span invisible="not email_from">
-                                        <i class="fa fa-envelope-o"/> <field name="email_from" widget="email"/>
+                                        <i class="fa fa-envelope-o" title="Email"/> <field name="email_from" widget="email"/>
                                     </span>
                                     <span invisible="not phone">
-                                        <i class="fa fa-phone"/> <field name="phone" widget="phone"/>
+                                        <i class="fa fa-phone" title="Telefono"/> <field name="phone" widget="phone"/>
                                     </span>
                                     <span invisible="not cf_partner_country">
-                                        <i class="fa fa-globe"/> <field name="cf_partner_country"/>
+                                        <i class="fa fa-globe" title="Paese"/> <field name="cf_partner_country"/>
                                     </span>
                                 </div>
                             </div>
@@ -254,15 +254,15 @@
                                 <button name="action_send_email" type="object"
                                     class="cf-action-btn" title="Invia Email"
                                     invisible="not partner_id">
-                                    <i class="fa fa-envelope"/>
+                                    <i class="fa fa-envelope" title="Invia Email"/>
                                 </button>
                                 <button name="action_schedule_followup" type="object"
                                     class="cf-action-btn" title="Pianifica Follow-up">
-                                    <i class="fa fa-calendar-plus-o"/>
+                                    <i class="fa fa-calendar-plus-o" title="Pianifica Follow-up"/>
                                 </button>
                                 <button name="action_mark_contacted" type="object"
                                     class="cf-action-btn" title="Segna Contattato">
-                                    <i class="fa fa-check"/>
+                                    <i class="fa fa-check" title="Segna Contattato"/>
                                 </button>
                             </div>
                             <div class="cf-priority-user">
