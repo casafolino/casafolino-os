@@ -5,7 +5,7 @@ import logging
 import re
 import time
 import uuid
-from email.utils import parseaddr
+from email.utils import getaddresses, parseaddr
 
 import requests as req
 
@@ -1244,6 +1244,84 @@ class CasafolinoMailMessage(models.Model):
             aid = rec.account_id.id if rec.account_id else 0
             rec.thread_key = '%s::%s' % (norm, aid) if norm else ''
 
+    def _sender_key(self):
+        self.ensure_one()
+        return (self.sender_email or '').lower().strip()
+
+    def _is_internal_email(self, email_addr):
+        self.ensure_one()
+        email_addr = (email_addr or '').lower().strip()
+        company_domain = (self.account_id.company_domain or '').lower().strip()
+        return bool(company_domain and email_addr.endswith('@' + company_domain))
+
+    def _external_mail_participants(self):
+        """Return external people seen in the message, with sender first."""
+        self.ensure_one()
+        participants = []
+        seen = set()
+
+        def add(name, email_addr):
+            email_addr = (email_addr or '').lower().strip()
+            if not email_addr or email_addr in seen or self._is_internal_email(email_addr):
+                return
+            seen.add(email_addr)
+            participants.append({
+                'name': (name or '').strip() or email_addr,
+                'email': email_addr,
+            })
+
+        add(self.sender_name, self.sender_email)
+        header_values = [self.recipient_emails or '', self.cc_emails or '']
+        for name, email_addr in getaddresses(header_values):
+            add(name, email_addr)
+        return participants
+
+    def _find_sender_preference(self, create=False):
+        self.ensure_one()
+        sender = self._sender_key()
+        if not sender or not self.account_id:
+            return self.env['casafolino.mail.sender_preference']
+        Preference = self.env['casafolino.mail.sender_preference'].sudo()
+        pref = Preference.search([
+            ('email', '=ilike', sender),
+            ('account_id', '=', self.account_id.id),
+        ], limit=1)
+        if not pref and create:
+            pref = Preference.create({
+                'email': sender,
+                'account_id': self.account_id.id,
+            })
+        return pref
+
+    def _set_sender_preference(self, status):
+        self.ensure_one()
+        pref = self._find_sender_preference(create=True)
+        if not pref:
+            return pref
+        if status == 'kept':
+            pref.action_keep()
+        elif status == 'dismissed':
+            pref.action_dismiss()
+        return pref
+
+    def _propagate_sender_link(self, partner=False, states=None):
+        self.ensure_one()
+        sender = self._sender_key()
+        if not sender:
+            return
+        domain = [
+            ('sender_email', '=ilike', sender),
+            ('account_id', '=', self.account_id.id),
+        ]
+        if states:
+            domain.append(('state', 'in', states))
+        vals = {'match_type': 'manual'}
+        if partner:
+            vals['partner_id'] = partner.id
+        siblings = self.search(domain)
+        if siblings:
+            siblings.write(vals)
+
     # ── Quick Convert → CRM Lead ────────────────────────────────────
 
     def action_create_lead(self):
@@ -1289,6 +1367,7 @@ class CasafolinoMailMessage(models.Model):
             # Se ha un partner, attiva tracking
             if record.partner_id and not record.partner_id.mail_tracked:
                 record.partner_id.sudo().mail_tracked = True
+            record._set_sender_preference('kept')
 
         # Auto-keep: tutte le email dallo stesso mittente ancora in 'new'
         sender_emails = set()
@@ -1352,7 +1431,10 @@ class CasafolinoMailMessage(models.Model):
     def action_create_company_from_mail(self):
         """Create or link the sender company, then keep the person as a contact."""
         self.ensure_one()
-        email_addr, name = self._get_contact_email_and_name()
+        participants = self._external_mail_participants()
+        if not participants:
+            raise UserError("Non trovo contatti esterni nella mail.")
+        email_addr = participants[0]['email']
         domain = ''
         if email_addr and '@' in email_addr:
             domain = email_addr.split('@', 1)[1].lower().strip()
@@ -1383,26 +1465,33 @@ class CasafolinoMailMessage(models.Model):
                 'website': 'https://%s' % domain,
             })
 
-        contact = self.partner_id
-        if not contact and email_addr:
-            contact = Partner.search([
+        contact = False
+        for index, participant in enumerate(participants):
+            person = Partner.search([
                 ('is_company', '=', False),
-                ('email', '=ilike', email_addr),
+                ('email', '=ilike', participant['email']),
             ], limit=1)
-        if not contact and email_addr:
-            contact = Partner.create({
-                'name': name or email_addr,
-                'email': email_addr,
-                'parent_id': company.id,
-                'company_type': 'person',
-            })
-        elif contact and not contact.is_company and not contact.parent_id:
-            contact.parent_id = company.id
+            if not person:
+                person_vals = {
+                    'name': participant['name'] or participant['email'],
+                    'email': participant['email'],
+                    'parent_id': company.id,
+                    'company_type': 'person',
+                }
+                self._enrich_partner_vals(person_vals)
+                person = Partner.create(person_vals)
+            elif not person.is_company and not person.parent_id:
+                person.parent_id = company.id
+            if index == 0:
+                contact = person
 
         vals = {'match_type': 'manual'}
         if contact:
             vals['partner_id'] = contact.id
         self.write(vals)
+        if contact:
+            self._propagate_sender_link(partner=contact)
+        self.action_keep()
         return {
             'type': 'ir.actions.act_window',
             'name': 'Azienda',
@@ -1453,6 +1542,7 @@ class CasafolinoMailMessage(models.Model):
         self.ensure_one()
         if not self.sender_email:
             return self.action_delete_soft()
+        self._set_sender_preference('dismissed')
         sender = self.sender_email.strip().lower()
         to_hide = self.search([
             ('sender_email', '=ilike', sender),
@@ -1700,14 +1790,18 @@ class CasafolinoMailMessage(models.Model):
         self.ensure_one()
         email_addr, name = self._get_contact_email_and_name()
 
-        vals = {
-            'name': name or email_addr,
-            'email': email_addr,
-        }
-        self._enrich_partner_vals(vals)
-
-        partner = self.env['res.partner'].sudo().create(vals)
+        Partner = self.env['res.partner'].sudo()
+        partner = Partner.search([('email', '=ilike', email_addr)], limit=1)
+        if not partner:
+            vals = {
+                'name': name or email_addr,
+                'email': email_addr,
+            }
+            self._enrich_partner_vals(vals)
+            partner = Partner.create(vals)
         self.write({'partner_id': partner.id, 'match_type': 'manual'})
+        self._propagate_sender_link(partner=partner)
+        self.action_keep()
 
         return {
             'type': 'ir.actions.act_window',
@@ -2556,6 +2650,7 @@ class CasafolinoMailMessage(models.Model):
         if not msg.exists() or not msg.sender_email:
             return {'success': False}
         addr = msg.sender_email.strip().lower()
+        msg._set_sender_preference('kept')
         # Keep all new emails from this sender on this account
         siblings = self.search([
             ('sender_email', '=ilike', addr),
@@ -2576,14 +2671,7 @@ class CasafolinoMailMessage(models.Model):
         if not msg.exists() or not msg.sender_email:
             return {'success': False}
         addr = msg.sender_email.strip().lower()
-        # [Brief #6.0] sender_policy creation removed — just discard emails
-        # Discard ALL emails from this sender (new + keep)
-        to_discard = self.search([
-            ('sender_email', '=ilike', addr),
-            ('state', 'in', ['new', 'keep']),
-        ])
-        if to_discard:
-            to_discard.action_discard()
+        msg.action_discard_sender()
         return {'success': True, 'action': 'exclude', 'email': addr}
 
     @api.model

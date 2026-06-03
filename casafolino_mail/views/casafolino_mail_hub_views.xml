@@ -223,9 +223,9 @@
                         </div>
 
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px;border:1px solid #dfe5df;border-radius:8px;background:#ffffff;">
-                            <button name="action_open_partner" string="Contatto"
+                            <button name="action_open_partner" string="Crea/Apri contatto"
                                     type="object" class="btn btn-light"/>
-                            <button name="action_create_company_from_mail" string="Azienda"
+                            <button name="action_create_company_from_mail" string="Crea/Apri azienda"
                                     type="object" class="btn btn-light"/>
                             <button name="action_create_lead" string="Lead"
                                     type="object" class="btn btn-primary"
