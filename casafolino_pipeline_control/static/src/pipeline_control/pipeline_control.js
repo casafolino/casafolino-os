@@ -51,7 +51,7 @@ export class CFPipelineControl extends Component {
                 followup: { kpis: [], columns: [], routes: [], timeline: [] },
                 post_fair: { kpis: [], columns: [], timeline: [], fair_options: [] },
                 pipeline: [],
-                inbox: { kpis: [], to_reply: [], waiting_customer: [] },
+                inbox: { kpis: [], ai_status: {}, to_reply: [], waiting_customer: [] },
                 dossiers: [],
                 operations: { tasks: [], shipments: [], samples: [], entities: [], ai_queue: [] },
             },
@@ -783,6 +783,10 @@ export class CFPipelineControl extends Component {
             { id: "ai_action", label: "Azione AI", count: rows.filter((row) => row.needs_action).length },
             { id: "attachments", label: "Allegati", count: rows.filter((row) => row.has_attachments).length },
         ];
+    }
+
+    get inboxAIStatus() {
+        return this.state.data.inbox?.ai_status || {};
     }
 
     get filteredToReplyRows() {

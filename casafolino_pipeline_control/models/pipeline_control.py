@@ -1739,9 +1739,47 @@ class CfPipelineControl(models.AbstractModel):
                 {'label': 'Senza lead', 'value': len([row for row in all_rows if not row.get('lead_id')]), 'hint': 'Da collegare alla pipeline CRM'},
                 {'label': 'Urgenti', 'value': len([row for row in all_rows if row.get('urgency') == 'high']), 'hint': 'AI urgenza alta'},
             ],
+            'ai_status': self._get_ai_readiness_status(all_rows),
             'distribution_stats': stats_list,
             'to_reply': rows_to_reply,
             'waiting_customer': rows_waiting,
+        }
+
+    def _get_ai_readiness_status(self, inbox_rows):
+        ICP = self.env['ir.config_parameter'].sudo()
+        gemini_configured = bool(ICP.get_param('casafolino.gemini_api_key', '').strip())
+        groq_configured = bool(ICP.get_param('casafolino.groq_api_key', '').strip())
+        provider = 'Gemini' if gemini_configured else ('Groq fallback' if groq_configured else 'Non configurata')
+
+        Mail = self.env['casafolino.mail.message']
+        seven_days_ago = fields.Datetime.now() - timedelta(days=7)
+        weekly_domain = [
+            ('email_date', '>=', seven_days_ago),
+            ('is_deleted', '=', False),
+            ('is_archived', '=', False),
+        ]
+        weekly_total = Mail.search_count(weekly_domain)
+        weekly_classified = Mail.search_count(weekly_domain + [
+            '|',
+            ('ai_category', '!=', False),
+            ('ai_action_required', '=', True),
+        ])
+        pending_senders = len([row for row in inbox_rows if row.get('sender_decision') == 'pending'])
+        kept_senders = len([row for row in inbox_rows if row.get('sender_decision') == 'kept'])
+        urgent_actions = len([row for row in inbox_rows if row.get('urgency') == 'high' or row.get('needs_action')])
+        coverage = int((weekly_classified / weekly_total) * 100) if weekly_total else 0
+
+        return {
+            'provider': provider,
+            'configured': gemini_configured or groq_configured,
+            'coverage': coverage,
+            'weekly_total': weekly_total,
+            'weekly_classified': weekly_classified,
+            'pending_senders': pending_senders,
+            'kept_senders': kept_senders,
+            'urgent_actions': urgent_actions,
+            'health_label': 'Pronta' if (gemini_configured or groq_configured) else 'Da configurare',
+            'health_tone': 'green' if (gemini_configured or groq_configured) else 'red',
         }
 
     @api.model

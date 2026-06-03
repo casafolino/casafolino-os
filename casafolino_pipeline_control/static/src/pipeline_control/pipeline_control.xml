@@ -836,6 +836,38 @@
                         </t>
                     </div>
 
+                    <section class="cf-pc-panel cf-pc-ai-readiness">
+                        <header>
+                            <div>
+                                <h2>AI e triage reale</h2>
+                                <p>Stato provider, copertura classificazione e decisioni sui mittenti.</p>
+                            </div>
+                            <span t-attf-class="cf-pc-pill tone-#{inboxAIStatus.health_tone || 'amber'}" t-out="inboxAIStatus.health_label || 'Verifica'"/>
+                        </header>
+                        <div class="cf-pc-ai-readiness-grid">
+                            <article>
+                                <span>Provider</span>
+                                <strong t-out="inboxAIStatus.provider || 'Non configurata'"/>
+                                <small>Usata per bozze, intenti e suggerimenti operativi.</small>
+                            </article>
+                            <article>
+                                <span>Classificazione 7 giorni</span>
+                                <strong><t t-out="inboxAIStatus.coverage || 0"/>%</strong>
+                                <small><t t-out="inboxAIStatus.weekly_classified || 0"/> / <t t-out="inboxAIStatus.weekly_total || 0"/> mail analizzate</small>
+                            </article>
+                            <article>
+                                <span>Mittenti da decidere</span>
+                                <strong t-out="inboxAIStatus.pending_senders || 0"/>
+                                <small>Tieni o scarta: decide cosa resta in Odoo.</small>
+                            </article>
+                            <article>
+                                <span>Azioni urgenti</span>
+                                <strong t-out="inboxAIStatus.urgent_actions || 0"/>
+                                <small>Mail con urgenza alta o azione richiesta.</small>
+                            </article>
+                        </div>
+                    </section>
+
                     <div class="cf-pc-inbox-workbench">
                         <!-- COLUMN 1: THREAD LIST -->
                         <aside class="cf-pc-inbox-list">
