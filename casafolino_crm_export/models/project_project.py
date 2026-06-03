@@ -189,7 +189,7 @@ class ProjectProject(models.Model):
     # ------------------------------------------------------------------
 
     cf_mail_count = fields.Integer(
-        compute='_compute_cf_mail_count', string='Mail',
+        compute='_compute_cf_mail_count', string='Numero comunicazioni dossier',
     )
     cf_unread_mail_count = fields.Integer(
         compute='_compute_cf_unread_mail_count', string='Mail nuove',
