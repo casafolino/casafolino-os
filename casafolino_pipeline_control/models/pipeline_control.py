@@ -619,6 +619,8 @@ class CfPipelineControl(models.AbstractModel):
             'mail_timeline': self._message_context_mail_timeline(msg, partner),
             'open_tasks': self._message_context_open_tasks(msg, partner, leads_list, projects_list),
             'next_move': self._message_next_move_context(msg, partner, leads_list, projects_list, sales_list),
+            'sender_rule_impact': self._message_sender_rule_impact(msg),
+            'ai_brief': self._message_ai_brief(msg),
             'summary': {
                 'sender_email': msg.sender_email or '',
                 'sender_domain': msg.sender_domain or '',
@@ -642,6 +644,92 @@ class CfPipelineControl(models.AbstractModel):
             'leads': leads_list,
             'dossiers': projects_list,
             'quotes': sales_list,
+        }
+
+    def _message_ai_brief(self, msg):
+        text = ' '.join([
+            msg.subject or '',
+            msg.snippet or '',
+            (msg.body_plain or '')[:1200],
+        ]).lower()
+        products = []
+        product_patterns = [
+            ('Pesto', ['pesto', 'genovese']),
+            ('Olive Oil', ['olive oil', 'olio evo', 'extra virgin', 'olio extravergine']),
+            ('Pickles / Relish', ['pickle', 'pickles', 'relish']),
+            ('Pasta', ['pasta']),
+            ('Sauces', ['sauce', 'salsa', 'sughi', 'sugo']),
+            ('Catalogo', ['catalog', 'catalogo', 'brochure']),
+            ('Campioni', ['sample', 'samples', 'campione', 'campioni', 'campionatura']),
+        ]
+        for label, needles in product_patterns:
+            if any(needle in text for needle in needles):
+                products.append(label)
+
+        intent = 'Da qualificare'
+        if any(word in text for word in ['quote', 'quotation', 'preventivo', 'pricing', 'price list', 'listino']):
+            intent = 'Richiesta quotazione'
+        elif any(word in text for word in ['sample', 'campione', 'campionatura']):
+            intent = 'Campionatura'
+        elif any(word in text for word in ['order', 'ordine', 'po ', 'purchase order']):
+            intent = 'Ordine / richiesta acquisto'
+        elif any(word in text for word in ['catalog', 'catalogo', 'brochure', 'scheda tecnica', 'technical sheet']):
+            intent = 'Richiesta materiali'
+        elif msg.ai_category:
+            intent = dict(msg._fields['ai_category'].selection).get(msg.ai_category, msg.ai_category)
+
+        action_items = []
+        if msg.ai_action_required:
+            action_items.append('Rispondere al cliente')
+        if not msg.partner_id:
+            action_items.append('Creare o collegare anagrafica')
+        if not msg.lead_id:
+            action_items.append('Creare lead pipeline')
+        if msg.ai_urgency == 'high':
+            action_items.append('Gestire oggi')
+        if any(product in products for product in ['Campioni', 'Pickles / Relish', 'Pesto', 'Olive Oil']):
+            action_items.append('Verificare prodotto e disponibilita')
+        if not action_items:
+            action_items.append('Programmare follow-up')
+
+        confidence = 45
+        if msg.ai_category:
+            confidence += 20
+        if msg.ai_urgency:
+            confidence += 10
+        if msg.ai_action_required:
+            confidence += 10
+        if products:
+            confidence += 10
+
+        return {
+            'intent': intent,
+            'products': products[:5],
+            'action_items': action_items[:5],
+            'confidence': min(confidence, 95),
+            'sentiment': msg.ai_sentiment or 'neutral',
+        }
+
+    def _message_sender_rule_impact(self, msg):
+        Mail = self.env['casafolino.mail.message']
+        base_domain = [
+            ('is_deleted', '=', False),
+            ('is_archived', '=', False),
+        ]
+        if msg.account_id:
+            base_domain.append(('account_id', '=', msg.account_id.id))
+        sender_count = 0
+        domain_count = 0
+        if msg.sender_email:
+            sender_count = Mail.search_count(base_domain + [('sender_email', '=ilike', msg.sender_email)])
+        if msg.sender_domain:
+            domain_count = Mail.search_count(base_domain + [('sender_domain', '=', msg.sender_domain)])
+        return {
+            'sender_email': msg.sender_email or '',
+            'sender_domain': msg.sender_domain or '',
+            'sender_visible_count': sender_count,
+            'domain_visible_count': domain_count,
+            'suggested_scope': 'domain' if domain_count > sender_count and domain_count <= 30 else 'sender',
         }
 
     def _message_next_move_context(self, msg, partner, leads, projects, sales):
@@ -1981,6 +2069,8 @@ class CfPipelineControl(models.AbstractModel):
             'category': msg.ai_category or '',
             'language': msg.ai_language or '',
             'needs_action': bool(msg.ai_action_required),
+            'has_attachments': bool(msg.attachment_ids),
+            'attachment_count': len(msg.attachment_ids),
             'thread_count': msg.thread_id.message_count if msg.thread_id else 1,
             'suggested_action': self._mail_suggested_action(msg),
         })

@@ -756,10 +756,13 @@ export class CFPipelineControl extends Component {
         const rows = this.allInboxRows;
         return [
             { id: "all", label: "Tutti", count: rows.length },
+            { id: "pending", label: "Da decidere", count: rows.filter((row) => row.sender_decision === "pending").length },
+            { id: "kept", label: "Tenute", count: rows.filter((row) => row.sender_decision === "kept").length },
             { id: "urgent", label: "Urgenti", count: rows.filter((row) => row.urgency === "high").length },
             { id: "no_lead", label: "Senza lead", count: rows.filter((row) => !row.lead_id).length },
             { id: "with_lead", label: "Con lead", count: rows.filter((row) => row.lead_id).length },
             { id: "ai_action", label: "Azione AI", count: rows.filter((row) => row.needs_action).length },
+            { id: "attachments", label: "Allegati", count: rows.filter((row) => row.has_attachments).length },
         ];
     }
 
@@ -839,6 +842,12 @@ export class CFPipelineControl extends Component {
         if (filter === "urgent") {
             return rows.filter((row) => row.urgency === "high");
         }
+        if (filter === "pending") {
+            return rows.filter((row) => row.sender_decision === "pending");
+        }
+        if (filter === "kept") {
+            return rows.filter((row) => row.sender_decision === "kept");
+        }
         if (filter === "no_lead") {
             return rows.filter((row) => !row.lead_id);
         }
@@ -847,6 +856,9 @@ export class CFPipelineControl extends Component {
         }
         if (filter === "ai_action") {
             return rows.filter((row) => row.needs_action);
+        }
+        if (filter === "attachments") {
+            return rows.filter((row) => row.has_attachments);
         }
         return rows;
     }

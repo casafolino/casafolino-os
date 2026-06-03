@@ -1049,6 +1049,50 @@
                                             <span>Azione richiesta rilevata dall'AI</span>
                                         </div>
                                     </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.ai_brief" style="margin-top: 12px;">
+                                        <h5>AI Triage Card</h5>
+                                        <div class="cf-pc-ai-triage-card">
+                                            <div class="cf-pc-ai-triage-head">
+                                                <div>
+                                                    <span>Intent</span>
+                                                    <strong t-out="state.messageContext.ai_brief.intent"/>
+                                                </div>
+                                                <div class="cf-pc-ai-confidence">
+                                                    <strong t-out="state.messageContext.ai_brief.confidence + '%'"/>
+                                                    <span>confidenza</span>
+                                                </div>
+                                            </div>
+                                            <div class="cf-pc-ai-products" t-if="state.messageContext.ai_brief.products &amp;&amp; state.messageContext.ai_brief.products.length">
+                                                <span t-foreach="state.messageContext.ai_brief.products" t-as="product" t-key="'ai-product-' + product" t-out="product"/>
+                                            </div>
+                                            <div class="cf-pc-ai-actions-list">
+                                                <div t-foreach="state.messageContext.ai_brief.action_items" t-as="item" t-key="'ai-action-item-' + item">
+                                                    <i class="fa fa-check-circle-o"/>
+                                                    <span t-out="item"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.sender_rule_impact" style="margin-top: 12px;">
+                                        <h5>Impatto regola mittente</h5>
+                                        <div class="cf-pc-rule-impact">
+                                            <div>
+                                                <span>Mittente</span>
+                                                <strong t-out="state.messageContext.sender_rule_impact.sender_visible_count"/>
+                                            </div>
+                                            <div>
+                                                <span>Dominio</span>
+                                                <strong t-out="state.messageContext.sender_rule_impact.domain_visible_count"/>
+                                            </div>
+                                            <div>
+                                                <span>Scope suggerito</span>
+                                                <strong t-out="state.messageContext.sender_rule_impact.suggested_scope === 'domain' ? 'Dominio' : 'Mittente'"/>
+                                            </div>
+                                        </div>
+                                        <small class="cf-pc-rule-impact-note">
+                                            Prima di scartare sai quante mail spariscono dalla console. Gmail resta invariato.
+                                        </small>
+                                    </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.participants &amp;&amp; state.messageContext.participants.length" style="margin-top: 12px;">
                                         <h5>Partecipanti esterni</h5>
                                         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
