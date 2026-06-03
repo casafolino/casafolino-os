@@ -47,11 +47,30 @@ class CasafolinoMailSenderDecision(models.Model):
     # [Brief #6.0] sender_policy_id removed — sender_policy engine demolished
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ('partner_active_unique',
-         'UNIQUE(partner_id) WHERE active = TRUE',
-         'Questo partner ha già una decisione attiva.'),
-    ]
+    def init(self):
+        """Keep one active sender decision per partner with a partial index."""
+        self.env.cr.execute("""
+            WITH ranked AS (
+                SELECT id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY partner_id
+                           ORDER BY triaged_at DESC NULLS LAST, id DESC
+                       ) AS rn
+                  FROM casafolino_mail_sender_decision
+                 WHERE active IS TRUE
+            )
+            UPDATE casafolino_mail_sender_decision AS decision
+               SET active = FALSE
+              FROM ranked
+             WHERE decision.id = ranked.id
+               AND ranked.rn > 1
+        """)
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                casafolino_mail_sender_decision_partner_active_uidx
+            ON casafolino_mail_sender_decision (partner_id)
+            WHERE active IS TRUE
+        """)
 
     @api.depends('sender_email')
     def _compute_sender_domain(self):

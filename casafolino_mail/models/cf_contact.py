@@ -36,7 +36,7 @@ class ResPartnerMailExt(models.Model):
         'Feedback totali', compute='_compute_cf_ai_feedback_count')
     cf_ai_feedback_ids = fields.One2many(
         'cf.mail.position.feedback', 'partner_id', string='Storico feedback AI')
-    mail_message_count = fields.Integer('Comunicazioni importate',
+    mail_message_count = fields.Integer('Numero comunicazioni importate',
         compute='_compute_mail_message_count')
     partner_message_ids = fields.One2many(
         'casafolino.mail.message', 'partner_id', string='Comunicazioni importate')
