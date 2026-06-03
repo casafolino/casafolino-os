@@ -3125,6 +3125,13 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     project_id = fields.Many2one('project.project', string='Dossier')
     lead_id = fields.Many2one('crm.lead', string='Lead pipeline')
     user_ids = fields.Many2many('res.users', string='Assegnato a')
+    due_preset = fields.Selection([
+        ('today', 'Oggi'),
+        ('tomorrow', 'Domani'),
+        ('monday', 'Prossimo lunedi'),
+        ('week', 'Entro 7 giorni'),
+        ('custom', 'Data manuale'),
+    ], string='Quando', default='today', required=True)
     deadline = fields.Date(string='Scadenza')
     task_type = fields.Selection([
         ('todo', 'To-do operativo'),
@@ -3156,6 +3163,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         today = fields.Date.context_today(self)
         res.update({
             'quick_kind': kind,
+            'due_preset': self.env.context.get('default_due_preset') or 'today',
             'deadline': self.env.context.get('default_deadline') or today,
             'user_ids': [(6, 0, [self.env.uid])],
         })
@@ -3167,6 +3175,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'is_mini_project': True,
                 'source_channel': 'call',
                 'urgency': 'high',
+                'due_preset': 'tomorrow',
+                'deadline': today + timedelta(days=1),
                 'note': 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.',
                 'customer_promise': 'Richiamare / dare riscontro appena assegnata la richiesta.',
                 'next_checkpoint': 'Assegnare owner e prima scadenza.',
@@ -3181,6 +3191,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'checklist_required': True,
                 'source_channel': 'call',
                 'urgency': 'high',
+                'due_preset': 'tomorrow',
+                'deadline': today + timedelta(days=1),
                 'note': 'Cliente richiede una pagina catalogo personalizzata: raccogliere brief, contenuti, immagini e scadenza.',
                 'customer_promise': 'Confermare fattibilita e tempi appena assegnata a grafica.',
                 'next_checkpoint': 'Recuperare brief minimo e assegnare a Grafica.',
@@ -3196,6 +3208,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'create_sample_shipment': True,
                 'source_channel': 'manual',
                 'urgency': 'high',
+                'due_preset': 'tomorrow',
+                'deadline': today + timedelta(days=1),
                 'note': 'Campionatura da preparare/spedire: prodotti, indirizzo, tracking e feedback atteso.',
                 'customer_promise': 'Inviare tracking appena disponibile.',
                 'next_checkpoint': 'Verificare indirizzo, prodotti e data feedback attesa.',
@@ -3240,6 +3254,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
 
     @api.onchange('quick_kind')
     def _onchange_quick_kind(self):
+        today = fields.Date.context_today(self)
         if self.quick_kind == 'call':
             self.name = self.name if self.name and self.name != 'Nuova richiesta operativa' else 'Richiesta da chiamata cliente'
             self.task_type = 'todo'
@@ -3247,6 +3262,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.is_mini_project = True
             self.source_channel = 'call'
             self.urgency = 'high'
+            self.due_preset = 'tomorrow'
+            self.deadline = today + timedelta(days=1)
             self.checklist_required = self.checklist_required or False
             if not self.note:
                 self.note = 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.'
@@ -3264,6 +3281,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.checklist_required = True
             self.source_channel = self.source_channel if self.source_channel != 'manual' else 'call'
             self.urgency = 'high'
+            self.due_preset = 'tomorrow'
+            self.deadline = today + timedelta(days=1)
             if not self.note:
                 self.note = 'Cliente richiede una pagina catalogo personalizzata: raccogliere brief, contenuti, immagini e scadenza.'
             if not self.customer_promise:
@@ -3281,6 +3300,8 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.create_sample_shipment = True
             self.source_channel = self.source_channel or 'manual'
             self.urgency = 'high'
+            self.due_preset = 'tomorrow'
+            self.deadline = today + timedelta(days=1)
             if not self.note:
                 self.note = 'Campionatura da preparare/spedire: prodotti, indirizzo, tracking e feedback atteso.'
             if not self.customer_promise:
@@ -3292,6 +3313,19 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         else:
             self.task_type = self.task_type or 'todo'
             self.department = self.department or 'sales'
+
+    @api.onchange('due_preset')
+    def _onchange_due_preset(self):
+        today = fields.Date.context_today(self)
+        if self.due_preset == 'today':
+            self.deadline = today
+        elif self.due_preset == 'tomorrow':
+            self.deadline = today + timedelta(days=1)
+        elif self.due_preset == 'monday':
+            days_until_monday = (7 - today.weekday()) % 7
+            self.deadline = today + timedelta(days=days_until_monday or 7)
+        elif self.due_preset == 'week':
+            self.deadline = today + timedelta(days=7)
 
     def action_create_task(self):
         self.ensure_one()
@@ -3391,7 +3425,11 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             '<ul>',
             '<li><strong>Origine:</strong> %s</li>' % dict(self._fields['source_channel'].selection).get(self.source_channel, self.source_channel),
             '<li><strong>Urgenza:</strong> %s</li>' % dict(self._fields['urgency'].selection).get(self.urgency, self.urgency),
+            '<li><strong>Tipo:</strong> %s</li>' % dict(self._fields['task_type'].selection).get(self.task_type, self.task_type),
+            '<li><strong>Reparto:</strong> %s</li>' % dict(self._fields['department'].selection).get(self.department, self.department),
         ]
+        if self.deadline:
+            parts.append('<li><strong>Scadenza:</strong> %s</li>' % fields.Date.to_string(self.deadline))
         if self.customer_promise:
             parts.append('<li><strong>Promessa al cliente:</strong> %s</li>' % self.customer_promise)
         if self.next_checkpoint:
@@ -3419,6 +3457,35 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'Assegnare lavorazione a Grafica',
                 'Preparare bozza pagina catalogo',
                 'Inviare bozza al cliente e programmare feedback',
+            ]
+        elif self.task_type == 'quote':
+            items = [
+                'Verificare anagrafica e condizioni commerciali',
+                'Raccogliere prodotti, quantita e destinazione',
+                'Preparare preventivo',
+                'Inviare preventivo al cliente',
+                'Programmare follow-up preventivo',
+            ]
+        elif self.task_type == 'followup':
+            items = [
+                'Rileggere ultime mail e dossier cliente',
+                'Preparare risposta o chiamata',
+                'Registrare esito del contatto',
+                'Aggiornare fase pipeline e prossima azione',
+            ]
+        elif self.task_type == 'data_update':
+            items = [
+                'Verificare azienda, contatto e indirizzi',
+                'Aggiornare dati fiscali e commerciali',
+                'Collegare eventuali contatti duplicati',
+                'Confermare dati al commerciale owner',
+            ]
+        elif self.task_type == 'issue':
+            items = [
+                'Descrivere blocco e impatto cliente',
+                'Assegnare reparto risolutore',
+                'Definire workaround o risposta provvisoria',
+                'Aggiornare cliente e prossima scadenza',
             ]
         else:
             items = [

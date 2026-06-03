@@ -11,20 +11,21 @@
                         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
                             <div>
                                 <h2 style="margin:0;font-size:22px;">Task salva-memoria</h2>
-                                <p style="margin:4px 0 0;color:#667061;">Scrivi la richiesta, assegna reparto, promessa e checkpoint. Il dettaglio si lavora dopo.</p>
+                                <p style="margin:4px 0 0;color:#667061;">Poche tap: origine, tipo, reparto e scadenza. Checklist e mini-progetto si generano sotto.</p>
                             </div>
                             <field name="quick_kind" widget="radio"/>
                         </div>
                         <group>
                             <group string="Decisione rapida">
                                 <field name="source_channel"/>
-                                <field name="urgency"/>
                                 <field name="task_type"/>
                                 <field name="department"/>
+                                <field name="urgency"/>
                             </group>
                             <group string="Scadenza e owner">
+                                <field name="due_preset" widget="radio"/>
                                 <field name="user_ids" widget="many2many_tags_avatar"/>
-                                <field name="deadline"/>
+                                <field name="deadline" invisible="due_preset != 'custom'"/>
                                 <field name="is_mini_project"/>
                                 <field name="checklist_required"/>
                             </group>
