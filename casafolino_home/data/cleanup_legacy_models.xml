@@ -3,5 +3,5 @@
     <delete model="ir.ui.view" search="[('model', 'in', ['casafolino.task', 'casafolino.b2b.approve.wizard', 'casafolino.fair.report.wizard'])]"/>
     <delete model="ir.actions.act_window" search="[('res_model', 'in', ['casafolino.task', 'casafolino.b2b.approve.wizard', 'casafolino.fair.report.wizard'])]"/>
     <delete model="ir.model.access" search="[('model_id.model', 'in', ['casafolino.task', 'casafolino.b2b.approve.wizard', 'casafolino.fair.report.wizard'])]"/>
-    <delete model="ir.model" search="[('model', 'in', ['casafolino.task', 'casafolino.b2b.approve.wizard', 'casafolino.fair.report.wizard'])]"/>
+    <function model="cf.home.kpi" name="cf_cleanup_legacy_model_declarations"/>
 </odoo>

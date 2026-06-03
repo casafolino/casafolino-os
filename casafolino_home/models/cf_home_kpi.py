@@ -277,3 +277,32 @@ class CFHomeKpi(models.AbstractModel):
             'haccp': self.cf_get_kpi_haccp(),
             'admin': self.cf_get_kpi_admin(),
         }
+
+    @api.model
+    def cf_cleanup_legacy_model_declarations(self):
+        legacy_models = (
+            'casafolino.task',
+            'casafolino.b2b.approve.wizard',
+            'casafolino.fair.report.wizard',
+        )
+        self.env.cr.execute(
+            """
+            DELETE FROM ir_model_data
+             WHERE (model = 'ir.model.fields' AND res_id IN (
+                       SELECT id FROM ir_model_fields WHERE model = ANY(%s)
+                   ))
+                OR (model = 'ir.model' AND res_id IN (
+                       SELECT id FROM ir_model WHERE model = ANY(%s)
+                   ))
+            """,
+            (list(legacy_models), list(legacy_models)),
+        )
+        self.env.cr.execute(
+            "DELETE FROM ir_model_fields WHERE model = ANY(%s)",
+            (list(legacy_models),),
+        )
+        self.env.cr.execute(
+            "DELETE FROM ir_model WHERE model = ANY(%s)",
+            (list(legacy_models),),
+        )
+        _logger.info("Cleaned stale legacy model declarations: %s", ", ".join(legacy_models))
