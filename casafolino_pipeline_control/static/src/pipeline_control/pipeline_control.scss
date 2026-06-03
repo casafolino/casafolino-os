@@ -1491,7 +1491,10 @@
 
         .cf-pc-inbox-bulk-bar {
             display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 6px;
+            max-width: 330px;
             
             .btn {
                 font-size: 11px;
@@ -2115,6 +2118,90 @@
                     font-size: 12px;
                     font-weight: 850;
                 }
+            }
+        }
+
+        .cf-pc-next-move {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1fr);
+            gap: 9px;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #dfe3da;
+            border-radius: 8px;
+            background: #fafbf9;
+
+            .cf-pc-next-move-icon {
+                width: 30px;
+                height: 30px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.75);
+            }
+
+            strong,
+            span {
+                display: block;
+                min-width: 0;
+            }
+
+            strong {
+                color: #20251f;
+                font-size: 12.5px;
+                font-weight: 850;
+                line-height: 1.2;
+            }
+
+            span {
+                margin-top: 3px;
+                color: #667061;
+                font-size: 10.8px;
+                line-height: 1.25;
+            }
+        }
+
+        .cf-pc-mail-task-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: start;
+            padding: 8px;
+            margin-bottom: 6px;
+            border: 1px solid #edf0ea;
+            border-radius: 8px;
+            background: #fafbf9;
+            cursor: pointer;
+
+            &:hover {
+                border-color: #c8d5c5;
+                background: #f5f8f2;
+            }
+
+            strong,
+            span {
+                display: block;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            strong {
+                color: #20251f;
+                font-size: 11.5px;
+                font-weight: 800;
+            }
+
+            span,
+            small {
+                color: #667061;
+                font-size: 10.5px;
+            }
+
+            small {
+                white-space: nowrap;
             }
         }
 

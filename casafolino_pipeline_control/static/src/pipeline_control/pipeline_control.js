@@ -118,7 +118,16 @@ export class CFPipelineControl extends Component {
             return;
         }
         try {
-            if (actionType === 'archive') {
+            if (actionType === 'keep') {
+                const result = await this.orm.call("cf.pipeline.control", "mass_keep_senders", [ids]);
+                this.notification.add(_t("Mittenti tenuti: ") + (result?.count || ids.length), { type: "success" });
+            } else if (actionType === 'dismiss') {
+                const result = await this.orm.call("cf.pipeline.control", "mass_dismiss_senders", [ids]);
+                this.notification.add(_t("Mittenti scartati: ") + (result?.count || ids.length), { type: "success" });
+            } else if (actionType === 'snooze_tomorrow') {
+                const result = await this.orm.call("cf.pipeline.control", "mass_snooze_tomorrow", [ids]);
+                this.notification.add(_t("Reminder domani creati: ") + (result?.count || 0), { type: "success" });
+            } else if (actionType === 'archive') {
                 await this.orm.call("cf.pipeline.control", "mass_archive", [ids]);
                 this.notification.add(_t("Messaggi archiviati con successo"), { type: "success" });
             } else if (actionType === 'link_lead') {

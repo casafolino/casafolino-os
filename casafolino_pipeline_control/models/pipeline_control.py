@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from email.utils import getaddresses
 
 from odoo import api, fields, models
@@ -364,6 +364,46 @@ class CfPipelineControl(models.AbstractModel):
         return True
 
     @api.model
+    def mass_keep_senders(self, message_ids):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        for msg in msgs:
+            self._keep_sender_from_message(msg)
+        return {'count': len(msgs)}
+
+    @api.model
+    def mass_dismiss_senders(self, message_ids):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        for msg in msgs:
+            self._dismiss_sender_from_message(msg)
+        return {'count': len(msgs)}
+
+    @api.model
+    def mass_snooze_tomorrow(self, message_ids):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        wake_date = fields.Date.context_today(self) + timedelta(days=1)
+        wake_at = fields.Datetime.to_string(datetime.combine(wake_date, time(hour=9)))
+        snoozed = 0
+        Snooze = self.env['casafolino.mail.snooze']
+        for msg in msgs:
+            if not msg.thread_id:
+                continue
+            Snooze.search([
+                ('thread_id', '=', msg.thread_id.id),
+                ('active', '=', True),
+            ]).write({'active': False})
+            Snooze.create({
+                'thread_id': msg.thread_id.id,
+                'user_id': self.env.uid,
+                'snooze_type': 'until_date',
+                'wake_at': wake_at,
+                'snoozed_at': fields.Datetime.now(),
+                'note': 'Posticipato dalla Console Commerciale',
+            })
+            msg.thread_id.write({'is_snoozed': True})
+            snoozed += 1
+        return {'count': snoozed, 'wake_at': wake_at}
+
+    @api.model
     def mass_link_lead(self, message_ids, lead_id):
         msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
         lead = self.env['crm.lead'].browse(int(lead_id)).exists()
@@ -471,6 +511,8 @@ class CfPipelineControl(models.AbstractModel):
                 'participants': [],
                 'duplicate_partners': [],
                 'mail_timeline': [],
+                'open_tasks': [],
+                'next_move': {},
                 'suggested_partners': [],
                 'leads': [],
                 'dossiers': [],
@@ -575,6 +617,8 @@ class CfPipelineControl(models.AbstractModel):
             'participants': self._message_participant_context(msg),
             'duplicate_partners': self._message_duplicate_partner_context(msg),
             'mail_timeline': self._message_context_mail_timeline(msg, partner),
+            'open_tasks': self._message_context_open_tasks(msg, partner, leads_list, projects_list),
+            'next_move': self._message_next_move_context(msg, partner, leads_list, projects_list, sales_list),
             'summary': {
                 'sender_email': msg.sender_email or '',
                 'sender_domain': msg.sender_domain or '',
@@ -598,6 +642,70 @@ class CfPipelineControl(models.AbstractModel):
             'leads': leads_list,
             'dossiers': projects_list,
             'quotes': sales_list,
+        }
+
+    def _message_next_move_context(self, msg, partner, leads, projects, sales):
+        if self._sender_decision_status(msg) == 'pending':
+            return {
+                'title': 'Decidi il mittente',
+                'detail': 'Tieni se e commerciale, scarta se non deve piu entrare in console.',
+                'quick_action': 'keep_sender',
+                'button': 'Tieni mittente',
+                'tone': 'amber',
+                'icon': 'fa-check',
+            }
+        if not partner:
+            return {
+                'title': 'Crea o collega contatto',
+                'detail': 'Prima aggancia anagrafica e azienda, poi porta la mail in pipeline.',
+                'quick_action': 'create_company',
+                'button': 'Azienda + contatti',
+                'tone': 'amber',
+                'icon': 'fa-building-o',
+            }
+        if not msg.lead_id and not leads:
+            return {
+                'title': 'Porta in pipeline',
+                'detail': 'Nessun lead collegato: crea la trattativa dalla mail.',
+                'quick_action': 'create_lead',
+                'button': 'Crea lead',
+                'tone': 'blue',
+                'icon': 'fa-star-o',
+            }
+        if leads and not projects:
+            return {
+                'title': 'Serve dossier operativo',
+                'detail': 'Lead presente ma dossier assente: prepara mini-progetto e task reparto.',
+                'quick_action': 'create_dossier',
+                'button': 'Crea dossier',
+                'tone': 'green',
+                'icon': 'fa-folder-open-o',
+            }
+        if msg.ai_action_required or msg.ai_urgency == 'high':
+            return {
+                'title': 'Risposta o task urgente',
+                'detail': 'AI ha rilevato azione richiesta: rispondi o crea una task memoria.',
+                'quick_action': 'reply',
+                'button': 'Rispondi AI',
+                'tone': 'red',
+                'icon': 'fa-magic',
+            }
+        if not sales and (msg.lead_id or leads):
+            return {
+                'title': 'Valuta preventivo',
+                'detail': 'Pipeline attiva senza quotazione aperta.',
+                'quick_action': 'quote',
+                'button': 'Preventivo',
+                'tone': 'amber',
+                'icon': 'fa-file-text-o',
+            }
+        return {
+            'title': 'Programma follow-up',
+            'detail': 'Lascia una task o reminder per non perdere il prossimo passo.',
+            'quick_action': 'task',
+            'button': 'Task rapida',
+            'tone': 'neutral',
+            'icon': 'fa-check-square-o',
         }
 
     def _mail_context_ai_actions(self, msg, partner, leads, projects, sales):
@@ -2105,6 +2213,34 @@ class CfPipelineControl(models.AbstractModel):
                 'urgency': mail.ai_urgency or '',
             })
         return rows
+
+    def _message_context_open_tasks(self, msg, partner=None, leads=None, projects=None):
+        Task = self.env['project.task']
+        domains = []
+        project_ids = [row['id'] for row in (projects or []) if row.get('id')]
+        if project_ids:
+            domains.append([('project_id', 'in', project_ids)])
+        if msg.lead_id:
+            lead_project = getattr(msg.lead_id, 'cf_project_id', False)
+            if lead_project:
+                domains.append([('project_id', '=', lead_project.id)])
+        if partner:
+            partner_projects = self.env['project.project'].search([('partner_id', '=', partner.id)], limit=20)
+            if partner_projects:
+                domains.append([('project_id', 'in', partner_projects.ids)])
+        if not domains:
+            return []
+
+        domain = ['|'] * (len(domains) - 1)
+        for part in domains:
+            domain += part
+        domain += [('stage_id.fold', '=', False)]
+
+        rows = []
+        for task in Task.search(domain, order='date_deadline asc, write_date desc', limit=5):
+            rows.append(self._format_task_item(task))
+        return rows
+
 
     def _find_company_for_message(self, msg, participants=None):
         Partner = self.env['res.partner']

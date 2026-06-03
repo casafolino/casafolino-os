@@ -728,6 +728,15 @@
                                     <small>Tieni o scarta il mittente, poi trasformi la mail in CRM.</small>
                                 </div>
                                 <div class="cf-pc-inbox-bulk-bar" t-if="Object.values(state.selectedMessageIds).some(v => v)">
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('keep')" title="Tieni i mittenti selezionati">
+                                        <i class="fa fa-check"/> Tieni
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('dismiss')" title="Scarta i mittenti selezionati">
+                                        <i class="fa fa-ban"/> Scarta
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('snooze_tomorrow')" title="Posticipa a domani mattina">
+                                        <i class="fa fa-clock-o"/> Domani
+                                    </button>
                                     <button class="btn btn-sm btn-light" t-on-click="() => this.triggerBulkAction('archive')" title="Archivia selezionati">
                                         <i class="fa fa-archive"/> Archivia
                                     </button>
@@ -1000,6 +1009,21 @@
                                         <i class="fa fa-bolt"/>
                                         <span t-out="state.messageContext.summary.next_step"/>
                                     </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.next_move &amp;&amp; state.messageContext.next_move.title" style="margin-top: 12px;">
+                                        <h5>Prossima mossa</h5>
+                                        <div t-attf-class="cf-pc-next-move tone-#{state.messageContext.next_move.tone || 'neutral'}">
+                                            <div class="cf-pc-next-move-icon">
+                                                <i t-attf-class="fa #{state.messageContext.next_move.icon || 'fa-bolt'}"/>
+                                            </div>
+                                            <div>
+                                                <strong t-out="state.messageContext.next_move.title"/>
+                                                <span t-out="state.messageContext.next_move.detail"/>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary w-100 mt-2" t-on-click="() => this.mailQuickAction(selectedMessage, state.messageContext.next_move.quick_action)">
+                                            <t t-out="state.messageContext.next_move.button"/>
+                                        </button>
+                                    </div>
                                     <div class="cf-pc-sidebar-sub" style="margin-top: 12px;">
                                         <h5>Brief AI operativo</h5>
                                         <div class="cf-pc-ai-brief-grid">
@@ -1072,6 +1096,16 @@
                                                 <span t-if="mail.urgency === 'high'" class="cf-pc-mini-badge tone-red">urgente</span>
                                                 <span t-if="mail.is_current" class="cf-pc-mini-badge tone-green">aperta</span>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="cf-pc-sidebar-sub" t-if="state.messageContext.open_tasks &amp;&amp; state.messageContext.open_tasks.length" style="margin-top: 12px;">
+                                        <h5>Task aperte collegate</h5>
+                                        <div t-foreach="state.messageContext.open_tasks" t-as="task" t-key="'mail-task-' + task.id" t-attf-class="cf-pc-mail-task-row tone-#{task.tone || 'blue'}" t-on-click="() => this.openRecord({model: 'project.task', res_id: task.id})">
+                                            <div>
+                                                <strong t-out="task.title"/>
+                                                <span t-out="task.subtitle || 'Task operativa'"/>
+                                            </div>
+                                            <small t-out="task.meta"/>
                                         </div>
                                     </div>
                                     <div class="cf-pc-ai-next-actions" t-if="state.messageContext.ai_actions &amp;&amp; state.messageContext.ai_actions.length">
