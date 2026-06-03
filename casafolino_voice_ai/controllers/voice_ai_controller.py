@@ -29,7 +29,7 @@ class CasaFolinoVoiceAIController(http.Controller):
         return request.make_json_response({'ok': True, 'service': 'casafolino_voice_ai'})
 
     @http.route('/voice_ai/config', type='http', auth='public', methods=['GET'], csrf=False)
-    def bridge_config(self):
+    def bridge_config(self, **kwargs):
         if not self._check_token():
             return request.make_json_response({'error': 'unauthorized'}, status=401)
         params = request.env['ir.config_parameter'].sudo()
@@ -1332,7 +1332,7 @@ class CasaFolinoVoiceAIController(http.Controller):
         return request.make_json_response({'ok': True, 'job_id': job.id, 'state': job.state})
 
     @http.route('/voice_ai/outbound/next', type='http', auth='public', methods=['GET'], csrf=False)
-    def outbound_next(self):
+    def outbound_next(self, **kwargs):
         if not self._check_token():
             return request.make_json_response({'error': 'unauthorized'}, status=401)
         payload = request.env['casafolino.voice.outbound.queue'].sudo().get_next_ready_job_payload()
