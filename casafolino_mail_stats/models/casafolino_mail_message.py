@@ -10,7 +10,7 @@ class CasafolinoMailMessage(models.Model):
         ('open', 'Aperta'),
         ('reply', 'Risposta'),
         ('bounce', 'Bounce'),
-    ], string='Tracking', compute='_compute_mail_tracking_status', store=False)
+    ], string='Stato tracking', compute='_compute_mail_tracking_status', store=False)
 
     mail_tracking_open_date = fields.Datetime(
         'Data Apertura', compute='_compute_mail_tracking_status', store=False)

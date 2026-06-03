@@ -9,7 +9,7 @@
         <field name="priority">100</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='state']" position="after">
-                <field name="mail_tracking_status" string="Tracking" widget="badge" optional="show"
+                <field name="mail_tracking_status" string="Stato tracking" widget="badge" optional="show"
                        decoration-success="mail_tracking_status in ('open', 'reply')"
                        decoration-warning="mail_tracking_status == 'sent'"
                        decoration-danger="mail_tracking_status == 'bounce'"

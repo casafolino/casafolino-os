@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail Stats',
-    'version': '18.0.0.1.0',
+    'version': '18.0.0.2.0',
     'summary': 'Tracking aperture/click/bounce/reply visibile in Mail Hub, Lavagna, Partner, Lead',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
