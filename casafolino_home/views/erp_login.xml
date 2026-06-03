@@ -78,7 +78,7 @@
                 Accesso riservato agli utenti autorizzati CasaFolino.
             </div>
         </xpath>
-        <xpath expr="//button[@type='submit' and contains(@class, 'btn-primary')]" position="replace">
+        <xpath expr="//button[@type='submit' and hasclass('btn-primary')]" position="replace">
             <t t-set="cf_request_host" t-value="request.httprequest.host.split(':')[0] if request and request.httprequest and request.httprequest.host else ''"/>
             <button t-if="cf_request_host == 'erp.casafolino.com'" type="submit" class="btn btn-primary cf-erp-login__submit">Accedi all'ERP</button>
             <button t-else="" type="submit" class="btn btn-primary">Accedi</button>
