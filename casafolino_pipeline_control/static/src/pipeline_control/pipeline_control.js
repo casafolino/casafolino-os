@@ -53,6 +53,7 @@ export class CFPipelineControl extends Component {
                 pipeline: [],
                 inbox: { kpis: [], to_reply: [], waiting_customer: [] },
                 dossiers: [],
+                operations: { tasks: [], shipments: [], samples: [], entities: [], ai_queue: [] },
             },
         });
         onWillStart(this.loadData.bind(this));
@@ -697,6 +698,7 @@ export class CFPipelineControl extends Component {
             { id: "fair", label: "Post-Fiera", count: this.state.data.post_fair?.fair ? this.state.data.post_fair.kpis?.[0]?.value : 0 },
             { id: "inbox", label: "Inbox", count: this.state.data.inbox?.kpis?.[0]?.value || 0 },
             { id: "pipeline", label: "Pipeline", count: this.pipelineCount },
+            { id: "tasks", label: "Task", count: this.taskCount },
             { id: "dossiers", label: "Dossier", count: this.state.data.dossiers?.length || 0 },
         ];
     }
@@ -759,6 +761,10 @@ export class CFPipelineControl extends Component {
 
     get hasConsoleTracking() {
         return Boolean(this.consoleShipments.length || this.consoleSamples.length);
+    }
+
+    get taskCount() {
+        return this.consoleTasks.length + this.consoleShipments.length + this.consoleSamples.length;
     }
 
     get pipelineCount() {

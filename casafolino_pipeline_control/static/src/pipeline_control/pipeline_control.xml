@@ -45,8 +45,10 @@
                         <h1 t-elif="state.activeView === 'fair'">Post-Fiera</h1>
                         <h1 t-elif="state.activeView === 'inbox'">Inbox Commerciale</h1>
                         <h1 t-elif="state.activeView === 'pipeline'">Pipeline Export</h1>
+                        <h1 t-elif="state.activeView === 'tasks'">Task / To-do</h1>
                         <h1 t-elif="state.activeView === 'dossiers'">Dossier</h1>
                         <p t-if="state.activeView === 'control'">Mail, pipeline e prossime azioni: punto di entrata unico.</p>
+                        <p t-elif="state.activeView === 'tasks'">Memoria operativa, mini-progetti e campionature da seguire.</p>
                         <p t-else="">Priorità, prossime azioni e blocchi in un'unica postazione.</p>
                     </div>
                     <div class="cf-pc-actions">
@@ -479,6 +481,117 @@
                             </div>
                         </div>
                     </section>
+                </t>
+
+                <t t-elif="state.activeView === 'tasks'">
+                    <section class="cf-pc-command-center">
+                        <div class="cf-pc-command-main">
+                            <span class="cf-pc-eyebrow">Salva-vita</span>
+                            <h2>Da chiamata o mail a task in pochi tap</h2>
+                            <p>Ogni richiesta diventa memoria operativa: owner, scadenza, checklist, reminder e collegamento a cliente, lead o dossier.</p>
+                        </div>
+                        <div class="cf-pc-command-actions">
+                            <button class="btn btn-primary" t-on-click="newCallTask">
+                                <i class="fa fa-phone"/>
+                                Da chiamata
+                            </button>
+                            <button class="btn btn-light" t-on-click="newCatalogTask">
+                                <i class="fa fa-file-text-o"/>
+                                Catalogo
+                            </button>
+                            <button class="btn btn-light" t-on-click="newSampleTask">
+                                <i class="fa fa-truck"/>
+                                Campionatura
+                            </button>
+                        </div>
+                    </section>
+
+                    <div class="cf-pc-depth-grid">
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>Task operative</h2>
+                                    <p>Mini-progetti, follow-up e richieste reparto aperte.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="openTasks">
+                                    Apri elenco
+                                </button>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleTasks" t-as="item" t-key="'tasks-page-task-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!consoleTasks.length" class="cf-pc-empty">Nessuna task operativa aperta</div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>Campionature e tracking</h2>
+                                    <p>Spedizioni, feedback attesi e blocchi logistici.</p>
+                                </div>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleShipments" t-as="item" t-key="'tasks-page-shipment-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <t t-foreach="consoleSamples" t-as="item" t-key="'tasks-page-sample-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!hasConsoleTracking" class="cf-pc-empty">Nessuna campionatura aperta</div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>AI action queue</h2>
+                                    <p>Mail che chiedono una prossima azione concreta.</p>
+                                </div>
+                                <button class="btn btn-sm btn-light" t-on-click="() => this.setView('inbox')">
+                                    Apri inbox
+                                </button>
+                            </header>
+                            <div class="cf-pc-depth-list">
+                                <t t-foreach="consoleAIQueue" t-as="item" t-key="'tasks-page-ai-' + item.id">
+                                    <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                </t>
+                                <div t-if="!consoleAIQueue.length" class="cf-pc-empty">Nessuna azione AI in coda</div>
+                            </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel">
+                            <header>
+                                <div>
+                                    <h2>Azioni rapide</h2>
+                                    <p>Crea subito la memoria giusta senza cambiare schermata.</p>
+                                </div>
+                            </header>
+                            <div class="cf-pc-os-action-stack">
+                                <button class="btn btn-primary" t-on-click="newTask">
+                                    <i class="fa fa-check-square-o"/>
+                                    Task generica
+                                </button>
+                                <button class="btn btn-light" t-on-click="newCallTask">
+                                    <i class="fa fa-phone"/>
+                                    Telefonata cliente
+                                </button>
+                                <button class="btn btn-light" t-on-click="newCatalogTask">
+                                    <i class="fa fa-file-text-o"/>
+                                    Pagina catalogo
+                                </button>
+                                <button class="btn btn-light" t-on-click="newSampleTask">
+                                    <i class="fa fa-flask"/>
+                                    Campionatura
+                                </button>
+                                <button class="btn btn-light" t-on-click="() => this.setView('dossiers')">
+                                    <i class="fa fa-search"/>
+                                    Collega a dossier
+                                </button>
+                            </div>
+                        </section>
+                    </div>
                 </t>
 
                 <t t-elif="state.activeView === 'followup'">
