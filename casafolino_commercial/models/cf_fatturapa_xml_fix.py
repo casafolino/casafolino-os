@@ -261,19 +261,20 @@ class AccountMove(models.Model):
             if not lines:
                 continue
 
-            current_base = self._cf_decimal(sum(lines.mapped("price_subtotal")), Decimal("0.00"))
-            diff = expected_base - current_base
-            if abs(diff) < Decimal(str(self.currency_id.rounding)):
-                continue
-
             target = lines.filtered(lambda line: not float_is_zero(line.quantity, precision_digits=12))[-1:]
             if not target:
                 continue
 
-            quantity = self._cf_decimal(target.quantity, Decimal("1.0"))
-            target.with_context(check_move_validity=False).write({
-                "price_unit": target.price_unit + float(diff / quantity),
-            })
+            for _attempt in range(5):
+                current_base = self._cf_decimal(sum(lines.mapped("price_subtotal")), Decimal("0.00"))
+                diff = expected_base - current_base
+                if abs(diff) < Decimal("0.005"):
+                    break
+                quantity = self._cf_decimal(target.quantity, Decimal("1.0"))
+                target.with_context(check_move_validity=False).write({
+                    "price_unit": target.price_unit + float(diff / quantity),
+                })
+                lines.invalidate_recordset(["price_subtotal", "price_total"])
         return True
 
     def _cf_align_fatturapa_xml_summaries(self, parsed):
