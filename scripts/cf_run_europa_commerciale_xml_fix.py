@@ -43,17 +43,21 @@ def main():
 
         fixed = 0
         for move in moves:
-            fixed += move._cf_fix_fatturapa_xml_lines()
-            move.invalidate_recordset()
-            print(
-                "AFTER "
-                f"{move.name} id={move.id} state={move.state} payment={move.payment_state} "
-                f"total={move.amount_total:.2f} xml={move.cf_fatturapa_xml_amount_total:.2f} "
-                f"check={move.cf_fatturapa_xml_check_state}",
-                flush=True,
-            )
-            if move.cf_fatturapa_xml_check_message:
-                print(f"  {move.cf_fatturapa_xml_check_message}", flush=True)
+            try:
+                with cr.savepoint():
+                    fixed += move._cf_fix_fatturapa_xml_lines()
+                    move.invalidate_recordset()
+                    print(
+                        "AFTER "
+                        f"{move.name} id={move.id} state={move.state} payment={move.payment_state} "
+                        f"total={move.amount_total:.2f} xml={move.cf_fatturapa_xml_amount_total:.2f} "
+                        f"check={move.cf_fatturapa_xml_check_state}",
+                        flush=True,
+                    )
+                    if move.cf_fatturapa_xml_check_message:
+                        print(f"  {move.cf_fatturapa_xml_check_message}", flush=True)
+            except Exception as exc:
+                print(f"ERROR {move.name} id={move.id}: {exc}", flush=True)
 
         if args.dry_run:
             cr.rollback()
