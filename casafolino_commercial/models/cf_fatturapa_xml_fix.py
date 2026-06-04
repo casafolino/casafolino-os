@@ -95,7 +95,11 @@ class AccountMove(models.Model):
     def _cf_parse_fatturapa_xml(self, xml_content):
         if not xml_content:
             return {}
-        root = etree.fromstring(xml_content)
+        try:
+            root = etree.fromstring(xml_content)
+        except etree.XMLSyntaxError:
+            _logger.warning("CF FatturaPA XML: allegato XML non parsabile.")
+            return {}
         body = root.xpath(".//*[local-name()='FatturaElettronicaBody']")
         body = body[0] if body else root
 
@@ -435,6 +439,13 @@ class AccountMove(models.Model):
                 continue
 
             parsed = move._cf_parse_fatturapa_xml(xml_content)
+            if not parsed.get("lines") and parsed.get("amount_total") is None:
+                move.write({
+                    "cf_fatturapa_xml_check_state": "missing_xml",
+                    "cf_fatturapa_xml_check_message": _("XML FatturaPA non parsabile o vuoto."),
+                })
+                move.message_post(body=_("Riallineamento XML saltato: XML FatturaPA non parsabile o vuoto."))
+                continue
             xml_lines = parsed.get("lines") or []
             product_lines = move.invoice_line_ids.filtered(
                 lambda line: line.display_type == "product" and line.name != CF_XML_ROUNDING_LINE_NAME
