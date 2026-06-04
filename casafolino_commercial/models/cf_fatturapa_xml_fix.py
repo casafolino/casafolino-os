@@ -240,9 +240,41 @@ class AccountMove(models.Model):
         move = super()._l10n_it_edi_import_invoice(invoice, data, is_new)
         if move.move_type in ("in_invoice", "in_refund") and data.get("xml_tree") is not None:
             parsed = move._cf_parse_fatturapa_xml(etree.tostring(data["xml_tree"]))
+            move._cf_align_fatturapa_xml_bases(parsed)
             move._cf_align_fatturapa_xml_summaries(parsed)
             move._cf_validate_fatturapa_xml_amounts(parsed, post_message=True)
         return move
+
+    def _cf_align_fatturapa_xml_bases(self, parsed):
+        self.ensure_one()
+        summaries = parsed.get("summaries") or []
+        for summary in summaries:
+            tax_rate = summary.get("tax_rate")
+            expected_base = summary.get("base")
+            if tax_rate is None or expected_base is None:
+                continue
+
+            lines = self.invoice_line_ids.filtered(
+                lambda line: line.display_type == "product"
+                and self._cf_decimal(line.cf_fatturapa_xml_tax_rate) == tax_rate
+            ).sorted("sequence")
+            if not lines:
+                continue
+
+            current_base = self._cf_decimal(sum(lines.mapped("price_subtotal")), Decimal("0.00"))
+            diff = expected_base - current_base
+            if abs(diff) < Decimal(str(self.currency_id.rounding)):
+                continue
+
+            target = lines.filtered(lambda line: not float_is_zero(line.quantity, precision_digits=12))[-1:]
+            if not target:
+                continue
+
+            quantity = self._cf_decimal(target.quantity, Decimal("1.0"))
+            target.with_context(check_move_validity=False).write({
+                "price_unit": target.price_unit + float(diff / quantity),
+            })
+        return True
 
     def _cf_align_fatturapa_xml_summaries(self, parsed):
         self.ensure_one()
@@ -389,6 +421,7 @@ class AccountMove(models.Model):
                     line.with_context(check_move_validity=False).write(vals)
                     touched += 1
 
+            move._cf_align_fatturapa_xml_bases(parsed)
             move._cf_align_fatturapa_xml_summaries(parsed)
             if was_posted:
                 move.action_post()
