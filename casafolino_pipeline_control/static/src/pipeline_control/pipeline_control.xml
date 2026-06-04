@@ -1331,6 +1331,24 @@
                                             <div class="cf-pc-ai-products" t-if="state.messageContext.ai_brief.products &amp;&amp; state.messageContext.ai_brief.products.length">
                                                 <span t-foreach="state.messageContext.ai_brief.products" t-as="product" t-key="'ai-product-' + product" t-out="product"/>
                                             </div>
+                                            <div class="cf-pc-ai-decision-grid">
+                                                <div>
+                                                    <span>Rischio</span>
+                                                    <strong t-attf-class="tone-#{state.messageContext.ai_brief.risk || 'low'}" t-out="state.messageContext.ai_brief.risk || 'low'"/>
+                                                </div>
+                                                <div>
+                                                    <span>Valore</span>
+                                                    <strong t-out="state.messageContext.ai_brief.value_signal || 'standard'"/>
+                                                </div>
+                                                <div>
+                                                    <span>Azione</span>
+                                                    <strong t-out="state.messageContext.ai_brief.recommended_action || 'task'"/>
+                                                </div>
+                                            </div>
+                                            <div class="cf-pc-ai-decision-reason" t-if="state.messageContext.ai_brief.decision_reason">
+                                                <i class="fa fa-lightbulb-o"/>
+                                                <span t-out="state.messageContext.ai_brief.decision_reason"/>
+                                            </div>
                                             <div class="cf-pc-ai-actions-list">
                                                 <div t-foreach="state.messageContext.ai_brief.action_items" t-as="item" t-key="'ai-action-item-' + item">
                                                     <i class="fa fa-check-circle-o"/>

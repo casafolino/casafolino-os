@@ -885,6 +885,10 @@ class CfPipelineControl(models.AbstractModel):
             intent = dict(msg._fields['ai_category'].selection).get(msg.ai_category, msg.ai_category)
 
         action_items = []
+        business_risk = 'medium' if msg.ai_action_required or msg.ai_urgency == 'high' else 'low'
+        value_signal = 'standard'
+        recommended_action = 'task'
+        decision_reason = 'Serve tracciare la prossima azione e mantenere il thread agganciato al CRM.'
         if msg.ai_action_required:
             action_items.append('Rispondere al cliente')
         if not msg.partner_id:
@@ -897,6 +901,30 @@ class CfPipelineControl(models.AbstractModel):
             action_items.append('Verificare prodotto e disponibilita')
         if not action_items:
             action_items.append('Programmare follow-up')
+
+        if intent == 'Richiesta quotazione':
+            value_signal = 'commerciale'
+            recommended_action = 'quote' if msg.lead_id else 'create_lead'
+            decision_reason = 'La mail contiene richiesta prezzo/preventivo: prima pipeline, poi quotazione.'
+        elif intent == 'Campionatura':
+            value_signal = 'campionatura'
+            recommended_action = 'sample'
+            decision_reason = 'La richiesta riguarda campioni: crea campionatura o task campione con tracking.'
+        elif intent == 'Richiesta materiali':
+            value_signal = 'materiali'
+            recommended_action = 'catalog'
+            decision_reason = 'La mail richiede materiale commerciale/tecnico: assegna a Grafica o prepara catalogo.'
+        elif intent == 'Ordine / richiesta acquisto':
+            value_signal = 'ordine'
+            business_risk = 'high'
+            recommended_action = 'reply'
+            decision_reason = 'Possibile ordine o PO: dare risposta rapida e collegare a pipeline/cliente.'
+        elif not msg.partner_id:
+            recommended_action = 'create_company'
+            decision_reason = 'Manca ancora il collegamento anagrafico: prima crea azienda/contatti.'
+
+        if msg.ai_urgency == 'high':
+            business_risk = 'high'
 
         confidence = 45
         if msg.ai_category:
@@ -914,6 +942,10 @@ class CfPipelineControl(models.AbstractModel):
             'action_items': action_items[:5],
             'confidence': min(confidence, 95),
             'sentiment': msg.ai_sentiment or 'neutral',
+            'risk': business_risk,
+            'value_signal': value_signal,
+            'recommended_action': recommended_action,
+            'decision_reason': decision_reason,
         }
 
     def _message_sender_rule_impact(self, msg):
@@ -1078,6 +1110,25 @@ class CfPipelineControl(models.AbstractModel):
                 'quick_action': 'reply',
                 'tone': 'green',
             })
+        ai_brief = self._message_ai_brief(msg)
+        if ai_brief.get('recommended_action') == 'sample':
+            actions.append({
+                'key': 'sample',
+                'label': 'Campione',
+                'hint': 'Crea campionatura o task campione da questa mail',
+                'icon': 'fa-truck',
+                'quick_action': 'sample',
+                'tone': 'amber',
+            })
+        if ai_brief.get('recommended_action') == 'catalog':
+            actions.append({
+                'key': 'catalog',
+                'label': 'Catalogo',
+                'hint': 'Crea task catalogo/materiali per grafica',
+                'icon': 'fa-book',
+                'quick_action': 'catalog',
+                'tone': 'amber',
+            })
         if leads and not projects:
             actions.append({
                 'key': 'dossier',
@@ -1104,7 +1155,15 @@ class CfPipelineControl(models.AbstractModel):
             'quick_action': 'task',
             'tone': 'neutral',
         })
-        return actions[:5]
+        deduped = []
+        seen = set()
+        for action in actions:
+            key = action.get('quick_action') or action.get('key')
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(action)
+        return deduped[:7]
 
     @api.model
     def link_partner_to_message(self, message_id, partner_id):
