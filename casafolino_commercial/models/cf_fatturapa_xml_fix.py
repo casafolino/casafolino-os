@@ -425,6 +425,8 @@ class AccountMove(models.Model):
             move._cf_align_fatturapa_xml_summaries(parsed)
             if was_posted:
                 move.action_post()
+                move._cf_align_fatturapa_xml_bases(parsed)
+                move._cf_align_fatturapa_xml_summaries(parsed)
 
             move._cf_validate_fatturapa_xml_amounts(parsed=parsed)
             fixed_count += 1
