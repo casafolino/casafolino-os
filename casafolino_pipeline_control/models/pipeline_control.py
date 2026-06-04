@@ -2170,6 +2170,31 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'task':
             self._ensure_company_contacts_from_message(msg)
             return self._new_task_from_message(msg)
+        if quick_action == 'catalog':
+            self._ensure_company_contacts_from_message(msg)
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Task catalogo da email',
+                'res_model': 'cf.pipeline.quick.task.wizard',
+                'view_mode': 'form',
+                'views': [(False, 'form')],
+                'target': 'new',
+                'context': {
+                    'default_message_id': msg.id,
+                    'default_quick_kind': 'catalog',
+                    'default_name': 'Pagina catalogo: %s' % (msg.subject or msg.sender_name or msg.sender_email or 'cliente'),
+                    'default_task_type': 'catalog_page',
+                    'default_department': 'graphics',
+                    'default_source_channel': 'mail',
+                    'default_urgency': 'high',
+                    'default_is_mini_project': True,
+                    'default_checklist_required': True,
+                    'default_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
+                    'default_customer_promise': 'Confermare fattibilita e tempi appena assegnata a grafica.',
+                    'default_next_checkpoint': 'Recuperare brief minimo, contenuti, immagini e scadenza cliente.',
+                    'default_ai_suggested_next_step': 'Crea task catalogo, collega cliente/azienda e assegna a Grafica con checklist.',
+                },
+            }
         if quick_action == 'quote':
             self._ensure_company_contacts_from_message(msg)
             return self._new_quote_from_message(msg)

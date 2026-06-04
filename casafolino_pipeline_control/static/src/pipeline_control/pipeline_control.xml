@@ -1034,6 +1034,9 @@
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                     <i class="fa fa-check-square-o"/>
                                                 </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'catalog')" title="Crea task catalogo">
+                                                    <i class="fa fa-book"/>
+                                                </button>
                                                 <button t-if="row.can_sample" t-on-click.stop="() => this.mailQuickAction(row, 'sample')" title="Crea campionatura">
                                                     <i class="fa fa-truck"/>
                                                 </button>
@@ -1092,6 +1095,9 @@
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                     <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'catalog')" title="Crea task catalogo">
+                                                    <i class="fa fa-book"/>
                                                 </button>
                                                 <button t-if="row.can_sample" t-on-click.stop="() => this.mailQuickAction(row, 'sample')" title="Crea campionatura">
                                                     <i class="fa fa-truck"/>
@@ -1174,6 +1180,10 @@
                                         <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'task')" title="Crea task veloce">
                                             <i class="fa fa-check-square-o"/>
                                             <span>Task</span>
+                                        </button>
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'catalog')" title="Crea task catalogo">
+                                            <i class="fa fa-book"/>
+                                            <span>Catalogo</span>
                                         </button>
                                         <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'quote')" title="Crea preventivo">
                                             <i class="fa fa-file-text-o"/>
