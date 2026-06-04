@@ -902,7 +902,12 @@ class CfPipelineControl(models.AbstractModel):
             'next_move': self._message_next_move_context(msg, partner, leads_list, projects_list, sales_list),
             'sender_rule_impact': self._message_sender_rule_impact(msg),
             'ai_brief': self._message_ai_brief(msg),
-            'assistant_suggestion': self._message_assistant_suggestion(msg, partner, leads_recs, project_recs),
+            'assistant_suggestion': self._message_assistant_suggestion(
+                msg,
+                partner,
+                leads_recs if (partner or msg.lead_id) else self.env['crm.lead'],
+                project_recs if (partner or msg.cf_project_id) else self.env['project.project'],
+            ),
             'contact_plan': self._message_contact_plan(msg),
             'summary': {
                 'sender_email': msg.sender_email or '',
