@@ -539,6 +539,17 @@ class CfPipelineControl(models.AbstractModel):
                     continue
                 seen.add(key)
                 rows.append(self._format_entity360_sample(sample))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining:
+            Sale = self.env['sale.order']
+            quote_domain = ['|', '|', ('name', 'ilike', query), ('client_order_ref', 'ilike', query), ('partner_id.name', 'ilike', query)]
+            for order in Sale.search(quote_domain, order='write_date desc, amount_total desc, id desc', limit=remaining):
+                key = ('sale.order', order.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_entity360_quote(order))
         return rows
 
     @api.model
@@ -684,9 +695,11 @@ class CfPipelineControl(models.AbstractModel):
             'shipment_count': len(shipment_rows),
             'quote_count': len(quotes),
         }
+        next_moves = self._entity360_next_moves(record, partner, company, lead, project, tasks, mails, sample_rows, quotes)
         return {
             'found': True,
             'header': header,
+            'next_moves': next_moves,
             'kpis': [
                 {'label': 'Mail', 'value': counts['mail_count']},
                 {'label': 'Lead', 'value': counts['lead_count']},
@@ -706,6 +719,67 @@ class CfPipelineControl(models.AbstractModel):
                 'quotes': [self._format_entity360_quote(item) for item in quotes],
             },
         }
+
+    def _entity360_next_moves(self, record, partner, company, lead, project, tasks, mails, sample_rows, quotes):
+        moves = []
+        overdue_tasks = tasks.filtered(lambda task: self._is_overdue(task.date_deadline)) if tasks else self.env['project.task']
+        action_required = mails.filtered(lambda mail: mail.ai_action_required) if mails else self.env['casafolino.mail.message']
+        open_quotes = quotes.filtered(lambda order: order.state in ['draft', 'sent']) if quotes else self.env['sale.order']
+        overdue_samples = [row for row in sample_rows if row.get('tone') == 'red']
+
+        if overdue_tasks:
+            moves.append({
+                'label': 'Task scadute',
+                'value': len(overdue_tasks),
+                'hint': overdue_tasks[0].name,
+                'tone': 'red',
+            })
+        if action_required:
+            moves.append({
+                'label': 'Mail da lavorare',
+                'value': len(action_required),
+                'hint': action_required[0].subject or action_required[0].sender_email or 'Thread cliente',
+                'tone': 'red',
+            })
+        if overdue_samples:
+            moves.append({
+                'label': 'Feedback campioni',
+                'value': len(overdue_samples),
+                'hint': overdue_samples[0].get('title') or 'Campionatura da chiudere',
+                'tone': 'amber',
+            })
+        if open_quotes:
+            moves.append({
+                'label': 'Preventivi aperti',
+                'value': len(open_quotes),
+                'hint': open_quotes[0].name,
+                'tone': 'blue',
+            })
+        if project and getattr(project, 'cf_next_action', False):
+            moves.append({
+                'label': 'Prossima azione dossier',
+                'value': '!',
+                'hint': project.cf_next_action,
+                'tone': 'green',
+            })
+        if lead:
+            followup_field = 'cf_date_next_followup' if 'cf_date_next_followup' in lead._fields else 'date_deadline'
+            followup = getattr(lead, followup_field, False)
+            if followup:
+                moves.append({
+                    'label': 'Follow-up pipeline',
+                    'value': self._date_label(followup),
+                    'hint': lead.name,
+                    'tone': 'green',
+                })
+        if not moves:
+            moves.append({
+                'label': 'Contesto stabile',
+                'value': 'OK',
+                'hint': (company or partner).display_name if (company or partner) else record.display_name,
+                'tone': 'green',
+            })
+        return moves[:4]
 
     @api.model
     def get_message_context_info(self, message_id):
@@ -4704,6 +4778,12 @@ class CfPipelineSnoozeWizard(models.TransientModel):
     _name = 'cf.pipeline.snooze.wizard'
     _description = 'Posticipa thread commerciale'
 
+    preset = fields.Selection([
+        ('tomorrow', 'Domani mattina'),
+        ('weekend', 'Weekend'),
+        ('next_week', 'Prossima settimana'),
+        ('custom', 'Data personalizzata'),
+    ], string='Quando', default='tomorrow', required=True)
     message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
     thread_id = fields.Many2one('casafolino.mail.thread', string='Thread', readonly=True)
     wake_at = fields.Datetime(string='Rientra il', required=True)
@@ -4717,10 +4797,31 @@ class CfPipelineSnoozeWizard(models.TransientModel):
             res.update({
                 'message_id': message.id,
                 'thread_id': message.thread_id.id if message.thread_id else False,
-                'wake_at': fields.Datetime.now() + timedelta(days=1),
+                'preset': 'tomorrow',
+                'wake_at': self._snooze_preset_datetime('tomorrow'),
                 'note': 'Posticipato da Inbox Commerciale',
             })
         return res
+
+    @api.onchange('preset')
+    def _onchange_preset(self):
+        for wizard in self:
+            if wizard.preset and wizard.preset != 'custom':
+                wizard.wake_at = wizard._snooze_preset_datetime(wizard.preset)
+
+    def _snooze_preset_datetime(self, preset):
+        now = fields.Datetime.context_timestamp(self, fields.Datetime.now())
+        if preset == 'weekend':
+            days = (5 - now.weekday()) % 7
+            days = days or 7
+            target = now + timedelta(days=days)
+            return fields.Datetime.to_string(target.replace(hour=9, minute=0, second=0, microsecond=0))
+        if preset == 'next_week':
+            days = 7 - now.weekday()
+            target = now + timedelta(days=days)
+            return fields.Datetime.to_string(target.replace(hour=9, minute=0, second=0, microsecond=0))
+        target = now + timedelta(days=1)
+        return fields.Datetime.to_string(target.replace(hour=9, minute=0, second=0, microsecond=0))
 
     def action_snooze(self):
         self.ensure_one()
@@ -4744,6 +4845,7 @@ class CfPipelineSnoozeWizard(models.TransientModel):
             'note': self.note or 'Posticipato da Inbox Commerciale',
         })
         self.thread_id.write({'is_snoozed': True})
+        self._schedule_partner_activity()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -4755,6 +4857,21 @@ class CfPipelineSnoozeWizard(models.TransientModel):
             },
             'reload': True,
         }
+
+    def _schedule_partner_activity(self):
+        partner = self.message_id.partner_id
+        if not partner:
+            return
+        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+        if not activity_type:
+            return
+        partner.activity_schedule(
+            activity_type_id=activity_type.id,
+            date_deadline=fields.Date.to_date(self.wake_at),
+            user_id=self.env.user.id,
+            summary='Riprendere email: %s' % (self.message_id.subject or self.message_id.sender_email or 'thread cliente'),
+            note=self.note or 'Posticipato da Inbox Commerciale',
+        )
 
 
 class CfPipelinePlanFairFollowupWizard(models.TransientModel):

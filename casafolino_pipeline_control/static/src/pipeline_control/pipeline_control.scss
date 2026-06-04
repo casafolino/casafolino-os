@@ -719,6 +719,65 @@
         }
     }
 
+    .cf-pc-entity-next-moves {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+        border-bottom: 1px solid #edf0ea;
+    }
+
+    .cf-pc-next-move {
+        min-height: 68px;
+        padding: 10px;
+        border: 1px solid #e1e5dc;
+        border-left: 4px solid #5a6e3a;
+        border-radius: 8px;
+        background: #fbfcfa;
+
+        span,
+        small {
+            display: block;
+        }
+
+        span {
+            color: #667061;
+            font-size: 10.5px;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        strong {
+            display: block;
+            margin-top: 4px;
+            color: #20251f;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        small {
+            margin-top: 7px;
+            color: #4b5548;
+            font-size: 11.5px;
+            line-height: 1.25;
+        }
+
+        &.is-red {
+            border-left-color: #b42318;
+            background: #fff7f6;
+        }
+
+        &.is-amber {
+            border-left-color: #b7791f;
+            background: #fffaf0;
+        }
+
+        &.is-blue {
+            border-left-color: #3a6ea5;
+            background: #f5faff;
+        }
+    }
+
     .cf-pc-entity-kpis {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2897,6 +2956,27 @@
     }
 }
 
+@media (max-width: 1180px) {
+    .cf-pipeline-control {
+        .cf-pc-dossier-three-col {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .cf-pc-dossier-col-3 {
+            grid-column: auto;
+        }
+    }
+}
+
+@media (max-width: 760px) {
+    .cf-pipeline-control {
+        .cf-pc-dossier-action-strip {
+            grid-template-columns: minmax(0, 1fr);
+            max-width: none;
+        }
+    }
+}
+
 .cf-dossier-workbench-360 {
     max-width: 100%;
     overflow-x: hidden;
@@ -2963,6 +3043,10 @@
             grid-template-columns: minmax(0, 1fr);
         }
 
+        .cf-pc-entity-next-moves {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .cf-pc-entity-head {
             grid-template-columns: minmax(0, 1fr);
         }
@@ -3013,6 +3097,10 @@
         button {
             max-width: 100%;
             white-space: normal !important;
+        }
+
+        .cf-pc-entity-next-moves {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 }
@@ -3301,12 +3389,16 @@
 .cf-pipeline-control {
     .cf-pc-dossier-three-col {
         display: grid;
-        grid-template-columns: 310px minmax(0, 1fr) 340px;
+        grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
         gap: 16px;
-        height: calc(100vh - 190px);
+        height: auto;
         min-height: 520px;
         margin-top: 14px;
         align-items: stretch;
+    }
+
+    .cf-pc-dossier-col-3 {
+        grid-column: 1 / -1;
     }
 
     .cf-pc-dossier-col {
@@ -3340,6 +3432,46 @@
             flex: 1;
             overflow-y: auto;
             padding: 14px;
+        }
+    }
+
+    .cf-pc-dossier-action-strip {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) 100px 100px;
+        gap: 8px;
+        margin-top: 12px;
+        max-width: 560px;
+
+        article {
+            background: #fafbf9;
+            border: 1px solid #dfe3da;
+            border-left: 4px solid #5a6e3a;
+            border-radius: 8px;
+            padding: 8px 10px;
+
+            &.is-red {
+                border-left-color: #b42318;
+                background: #fff7f6;
+            }
+        }
+
+        span,
+        strong {
+            display: block;
+        }
+
+        span {
+            color: #667061;
+            font-size: 10.5px;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        strong {
+            margin-top: 3px;
+            color: #1f2723;
+            font-size: 13px;
+            line-height: 1.2;
         }
     }
 

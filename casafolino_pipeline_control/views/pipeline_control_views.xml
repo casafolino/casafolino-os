@@ -197,6 +197,7 @@
                         <field name="thread_id"/>
                     </group>
                     <group>
+                        <field name="preset" widget="radio"/>
                         <field name="wake_at"/>
                         <field name="note"/>
                     </group>

@@ -398,6 +398,15 @@
                                         </t>
                                     </div>
                                 </div>
+                                <div t-if="state.entityDetail.next_moves?.length" class="cf-pc-entity-next-moves">
+                                    <t t-foreach="state.entityDetail.next_moves" t-as="move" t-key="'entity-next-' + move.label">
+                                        <article t-attf-class="cf-pc-next-move is-#{move.tone || 'green'}">
+                                            <span t-out="move.label"/>
+                                            <strong t-out="move.value"/>
+                                            <small t-out="move.hint"/>
+                                        </article>
+                                    </t>
+                                </div>
                                 <div class="cf-pc-entity-kpis">
                                     <t t-foreach="state.entityDetail.kpis" t-as="kpi" t-key="'entity-kpi-' + kpi.label">
                                         <article>
@@ -1828,6 +1837,20 @@
                                             Scrivania operativa dossier cliente
                                             <t t-if="activeDossier.continent_label"> · continente <strong t-out="activeDossier.continent_label"/></t>
                                             <t t-if="activeDossier.target_date"> · data target <strong t-out="activeDossier.target_date"/></t>
+                                        </div>
+                                        <div class="cf-pc-dossier-action-strip">
+                                            <article>
+                                                <span>Prossima azione</span>
+                                                <strong t-out="activeDossier.next_action || activeDossier.blocker || 'Da pianificare'"/>
+                                            </article>
+                                            <article>
+                                                <span>Task aperte</span>
+                                                <strong><t t-out="activeDossier.task_count || 0"/></strong>
+                                            </article>
+                                            <article t-attf-class="#{activeDossier.overdue_count ? 'is-red' : ''}">
+                                                <span>Scadute</span>
+                                                <strong><t t-out="activeDossier.overdue_count || 0"/></strong>
+                                            </article>
                                         </div>
                                     </div>
                                     <div class="cf-pc-workbench-quick" style="display: flex; gap: 8px;">

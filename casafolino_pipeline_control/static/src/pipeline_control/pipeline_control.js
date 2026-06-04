@@ -321,7 +321,7 @@ export class CFPipelineControl extends Component {
         }
         this.state.entitySearchLoading = true;
         try {
-            this.state.entitySearchResults = await this.orm.call("cf.pipeline.control", "search_entity_360", [query, 8]);
+            this.state.entitySearchResults = await this.orm.call("cf.pipeline.control", "search_entity_360", [query, 12]);
             if (this.state.entitySearchResults.length) {
                 await this.selectEntity360(this.state.entitySearchResults[0]);
             }
