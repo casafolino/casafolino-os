@@ -60,6 +60,15 @@ class AccountMove(models.Model):
         return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @api.model
+    def _cf_balance_line_vals(self, amount):
+        amount = float(amount)
+        return {
+            "debit": amount if amount > 0 else 0.0,
+            "credit": -amount if amount < 0 else 0.0,
+            "amount_currency": amount,
+        }
+
+    @api.model
     def _cf_is_europa_commerciale_partner(self, partner):
         partner = partner.commercial_partner_id
         return partner.vat == "IT03201710799" or partner.l10n_it_codice_fiscale == "03201710799"
@@ -231,8 +240,42 @@ class AccountMove(models.Model):
         move = super()._l10n_it_edi_import_invoice(invoice, data, is_new)
         if move.move_type in ("in_invoice", "in_refund") and data.get("xml_tree") is not None:
             parsed = move._cf_parse_fatturapa_xml(etree.tostring(data["xml_tree"]))
+            move._cf_align_fatturapa_xml_summaries(parsed)
             move._cf_validate_fatturapa_xml_amounts(parsed, post_message=True)
         return move
+
+    def _cf_align_fatturapa_xml_summaries(self, parsed):
+        self.ensure_one()
+        summaries = parsed.get("summaries") or []
+        if not summaries:
+            return False
+
+        direction = 1 if self.move_type == "in_invoice" else -1
+        for summary in summaries:
+            tax_rate = summary.get("tax_rate")
+            tax_amount = summary.get("tax")
+            if tax_rate is None or tax_amount is None:
+                continue
+
+            tax_lines = self.line_ids.filtered(
+                lambda line: line.display_type == "tax"
+                and line.tax_line_id
+                and self._cf_decimal(line.tax_line_id.amount) == tax_rate
+            )
+            if len(tax_lines) != 1:
+                continue
+
+            tax_lines.with_context(check_move_validity=False).write(
+                self._cf_balance_line_vals(direction * tax_amount)
+            )
+
+        term_lines = self.line_ids.filtered(lambda line: line.display_type == "payment_term")
+        if len(term_lines) == 1:
+            counterpart = -sum(self.line_ids.filtered(lambda line: line not in term_lines).mapped("balance"))
+            term_lines.with_context(check_move_validity=False).write(
+                self._cf_balance_line_vals(counterpart)
+            )
+        return True
 
     def _cf_validate_fatturapa_xml_amounts(self, parsed=None, post_message=False):
         for move in self:
@@ -346,6 +389,7 @@ class AccountMove(models.Model):
                     line.with_context(check_move_validity=False).write(vals)
                     touched += 1
 
+            move._cf_align_fatturapa_xml_summaries(parsed)
             if was_posted:
                 move.action_post()
 
