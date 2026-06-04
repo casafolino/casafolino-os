@@ -1441,7 +1441,8 @@
                                             <div>
                                                 <span>Azienda</span>
                                                 <strong>
-                                                    <t t-if="state.messageContext.contact_plan.company_name" t-out="state.messageContext.contact_plan.company_name"/>
+                                                    <t t-if="state.messageContext.contact_plan.company_target" t-out="state.messageContext.contact_plan.company_target"/>
+                                                    <t t-elif="state.messageContext.contact_plan.company_name" t-out="state.messageContext.contact_plan.company_name"/>
                                                     <t t-else="">Da creare</t>
                                                 </strong>
                                             </div>
@@ -1453,6 +1454,17 @@
                                                     · <t t-out="state.messageContext.contact_plan.contacts_to_link"/> da agganciare
                                                 </strong>
                                             </div>
+                                        </div>
+                                        <div t-if="state.messageContext.contact_plan.domains &amp;&amp; state.messageContext.contact_plan.domains.length" style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;">
+                                            <span t-foreach="state.messageContext.contact_plan.domains"
+                                                  t-as="domain"
+                                                  t-key="'contact-domain-' + domain"
+                                                  class="cf-pc-mini-badge tone-blue"
+                                                  t-out="domain"/>
+                                        </div>
+                                        <div t-if="state.messageContext.contact_plan.next_step" class="cf-pc-sidebar-card" style="padding:8px;margin-bottom:8px;border-left:4px solid #5a6e3a;">
+                                            <strong style="display:block;font-size:11.5px;color:#20251f;">Prossimo passo anagrafica</strong>
+                                            <span style="display:block;font-size:11px;color:#667061;line-height:1.3;" t-out="state.messageContext.contact_plan.next_step"/>
                                         </div>
                                         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
                                             <div t-foreach="state.messageContext.participants" t-as="person" t-key="'participant-' + person.email" class="cf-pc-sidebar-card" style="padding: 8px; margin-bottom: 0;">
@@ -2153,6 +2165,7 @@
             </span>
         </div>
         <div class="cf-pc-card-meta" t-out="item.meta"/>
+        <div t-if="item.next_action" class="cf-pc-card-meta" style="color:#4f7337;font-weight:750;" t-out="item.next_action"/>
         <div class="cf-pc-badges">
             <t t-foreach="item.badges" t-as="badge" t-key="badge_index">
                 <span t-attf-class="cf-pc-badge tone-#{item.tone}" t-out="badge"/>

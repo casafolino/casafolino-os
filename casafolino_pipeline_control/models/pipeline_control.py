@@ -1122,7 +1122,10 @@ class CfPipelineControl(models.AbstractModel):
         existing = 0
         to_create = 0
         to_link = 0
+        domains = []
         for person in participants:
+            if person.get('domain') and person['domain'] not in domains:
+                domains.append(person['domain'])
             contact = self.env['res.partner'].search([
                 ('is_company', '=', False),
                 ('email', '=ilike', person['email']),
@@ -1136,12 +1139,35 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'company_id': company.id if company else False,
             'company_name': company.display_name if company else '',
+            'company_target': company.display_name if company else self._company_name_from_email_context(msg, participants),
+            'domains': domains[:4],
             'total_participants': len(participants),
             'existing_contacts': existing,
             'contacts_to_create': to_create,
             'contacts_to_link': to_link,
             'company_will_create': not bool(company) and bool(participants or msg.sender_domain or msg.sender_email),
+            'next_step': self._contact_plan_next_step(company, existing, to_create, to_link),
         }
+
+    def _company_name_from_email_context(self, msg, participants):
+        domain = msg.sender_domain or (participants[0]['domain'] if participants else '')
+        if not domain:
+            return msg.sender_name or msg.sender_email or ''
+        root = domain.split('.')[0].replace('-', ' ').replace('_', ' ').strip()
+        return root.title() if root else domain
+
+    def _contact_plan_next_step(self, company, existing, to_create, to_link):
+        if not company:
+            return 'Crea azienda e aggancia tutti i partecipanti esterni.'
+        if to_create and to_link:
+            return 'Crea i contatti mancanti e collega quelli senza azienda.'
+        if to_create:
+            return 'Crea i contatti mancanti sotto azienda.'
+        if to_link:
+            return 'Collega i contatti esistenti alla azienda.'
+        if existing:
+            return 'Contatti gia allineati: porta la mail in pipeline.'
+        return 'Verifica anagrafica prima di creare lead o dossier.'
 
     def _message_next_move_context(self, msg, partner, leads, projects, sales):
         ai_brief = self._message_ai_brief(msg)
@@ -2025,14 +2051,14 @@ class CfPipelineControl(models.AbstractModel):
         if 'cf.project.shipment' not in self.env.registry:
             return []
         Shipment = self.env['cf.project.shipment']
-        shipments = Shipment.search([('state', 'not in', ['delivered', 'feedback'])], order='estimated_delivery asc, ship_date desc, id desc', limit=6)
+        shipments = Shipment.search([('state', 'not in', ['delivered', 'feedback'])], order='estimated_delivery asc, ship_date desc, id desc', limit=10)
         return [self._format_shipment_item(shipment, today) for shipment in shipments]
 
     def _get_sample_tracking(self, today):
         if 'cf.export.sample' not in self.env.registry:
             return []
         Sample = self.env['cf.export.sample']
-        samples = Sample.search([('state', 'not in', ['feedback_ok', 'feedback_ko', 'no_feedback'])], order='date_feedback_expected asc, promised_date asc, id desc', limit=6)
+        samples = Sample.search([('state', 'not in', ['feedback_ok', 'feedback_ko', 'no_feedback'])], order='date_feedback_expected asc, promised_date asc, id desc', limit=10)
         return [self._format_sample_item(sample, today) for sample in samples]
 
     def _get_entity_360_suggestions(self, today):
@@ -3574,6 +3600,7 @@ class CfPipelineControl(models.AbstractModel):
             'subtitle': shipment.tracking_number or shipment.project_id.name,
             'meta': self._date_label(estimated) if estimated else 'Consegna non stimata',
             'tone': 'red' if overdue else 'green' if shipment.state == 'shipped' else 'amber',
+            'next_action': self._shipment_next_action(shipment, estimated, overdue),
             'badges': self._compact([
                 dict(shipment._fields['state'].selection).get(shipment.state, shipment.state) if shipment.state else False,
                 shipment.carrier,
@@ -3582,6 +3609,21 @@ class CfPipelineControl(models.AbstractModel):
             ]),
             'tracking_url': shipment.tracking_url or '',
         }
+
+    def _shipment_next_action(self, shipment, estimated=False, overdue=False):
+        if overdue:
+            return 'Verificare consegna e sollecitare feedback cliente.'
+        if shipment.state == 'draft':
+            return 'Preparare collo e inserire tracking.'
+        if shipment.state in ('ready', 'prepared'):
+            return 'Spedire e comunicare tracking.'
+        if shipment.state == 'shipped':
+            return 'Monitorare tracking TrackBot.'
+        if shipment.feedback_reminder_date:
+            return 'Attendere feedback campione.'
+        if estimated:
+            return 'Consegna stimata %s.' % self._date_label(estimated)
+        return 'Aggiornare stato spedizione.'
 
     def _format_ai_queue_item(self, msg, ai_brief=None):
         ai_brief = ai_brief or self._message_ai_brief(msg)
@@ -3890,8 +3932,10 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     lead_id = fields.Many2one('crm.lead', string='Lead pipeline')
     user_ids = fields.Many2many('res.users', string='Assegnato a')
     due_preset = fields.Selection([
+        ('now', 'Subito'),
         ('today', 'Oggi'),
         ('tomorrow', 'Domani'),
+        ('this_week', 'Questa settimana'),
         ('monday', 'Prossimo lunedi'),
         ('week', 'Entro 7 giorni'),
         ('custom', 'Data manuale'),
@@ -4100,10 +4144,12 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     @api.onchange('due_preset')
     def _onchange_due_preset(self):
         today = fields.Date.context_today(self)
-        if self.due_preset == 'today':
+        if self.due_preset in ('now', 'today'):
             self.deadline = today
         elif self.due_preset == 'tomorrow':
             self.deadline = today + timedelta(days=1)
+        elif self.due_preset == 'this_week':
+            self.deadline = today + timedelta(days=max(0, 4 - today.weekday()))
         elif self.due_preset == 'monday':
             days_until_monday = (7 - today.weekday()) % 7
             self.deadline = today + timedelta(days=days_until_monday or 7)
