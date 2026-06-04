@@ -1016,14 +1016,26 @@
                                                 <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
                                                     <i class="fa fa-ban"/>
                                                 </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'create_contact')" title="Crea o apri contatto">
+                                                    <i class="fa fa-user-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'create_company')" title="Crea o apri azienda">
+                                                    <i class="fa fa-building-o"/>
+                                                </button>
                                                 <button t-if="!row.lead_id" t-on-click.stop="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
                                                     <i class="fa fa-star-o"/>
                                                 </button>
                                                 <button t-else="" t-on-click.stop="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
                                                     <i class="fa fa-handshake-o"/>
                                                 </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'create_dossier')" title="Crea dossier">
+                                                    <i class="fa fa-folder-open-o"/>
+                                                </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                     <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-if="row.can_sample" t-on-click.stop="() => this.mailQuickAction(row, 'sample')" title="Crea campionatura">
+                                                    <i class="fa fa-truck"/>
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'snooze')" title="Reminder">
                                                     <i class="fa fa-clock-o"/>
@@ -1063,14 +1075,26 @@
                                                 <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
                                                     <i class="fa fa-ban"/>
                                                 </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'create_contact')" title="Crea o apri contatto">
+                                                    <i class="fa fa-user-o"/>
+                                                </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'create_company')" title="Crea o apri azienda">
+                                                    <i class="fa fa-building-o"/>
+                                                </button>
                                                 <button t-if="!row.lead_id" t-on-click.stop="() => this.mailQuickAction(row, 'create_lead')" title="Crea lead">
                                                     <i class="fa fa-star-o"/>
                                                 </button>
                                                 <button t-else="" t-on-click.stop="() => this.mailQuickAction(row, 'open_lead')" title="Apri lead">
                                                     <i class="fa fa-handshake-o"/>
                                                 </button>
+                                                <button t-on-click.stop="() => this.mailQuickAction(row, 'create_dossier')" title="Crea dossier">
+                                                    <i class="fa fa-folder-open-o"/>
+                                                </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                     <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-if="row.can_sample" t-on-click.stop="() => this.mailQuickAction(row, 'sample')" title="Crea campionatura">
+                                                    <i class="fa fa-truck"/>
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'snooze')" title="Reminder">
                                                     <i class="fa fa-clock-o"/>
