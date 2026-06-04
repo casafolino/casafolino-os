@@ -1882,11 +1882,26 @@ class CfPipelineControl(models.AbstractModel):
         stages = self.env['crm.stage'].search([], order='sequence asc, id asc', limit=8)
         columns = []
         for stage in stages:
-            leads = Lead.search([('stage_id', '=', stage.id)], order='expected_revenue desc, create_date desc', limit=5)
+            stage_domain = [('stage_id', '=', stage.id)]
+            leads = Lead.search(stage_domain, order='expected_revenue desc, create_date desc', limit=5)
+            all_count = Lead.search_count(stage_domain)
+            followup_field = 'cf_date_next_followup' if 'cf_date_next_followup' in Lead._fields else 'date_deadline'
+            overdue_domain = stage_domain + [(followup_field, '<=', today)]
+            no_next_domain = stage_domain + [(followup_field, '=', False)]
+            stale_limit = fields.Datetime.now() - timedelta(days=21)
+            stale_count = Lead.search_count(stage_domain + [('write_date', '<=', stale_limit)])
+            value_rows = Lead.read_group(stage_domain, ['expected_revenue:sum'], [])
+            expected_total = 0.0
+            if value_rows:
+                expected_total = value_rows[0].get('expected_revenue_sum') or value_rows[0].get('expected_revenue') or 0.0
             columns.append({
                 'id': stage.id,
                 'title': stage.name,
-                'count': Lead.search_count([('stage_id', '=', stage.id)]),
+                'count': all_count,
+                'overdue_count': Lead.search_count(overdue_domain),
+                'no_next_count': Lead.search_count(no_next_domain),
+                'stale_count': stale_count,
+                'expected_total': expected_total,
                 'items': [self._format_lead_item(lead, today) for lead in leads],
             })
         return columns
@@ -2932,12 +2947,26 @@ class CfPipelineControl(models.AbstractModel):
                 if partner.id in seen:
                     continue
                 seen.add(partner.id)
+                reasons = ['email uguale']
+                score = 70
+                if partner.parent_id:
+                    reasons.append('azienda collegata')
+                    score += 10
+                if partner.phone or partner.mobile:
+                    reasons.append('telefono presente')
+                    score += 10
+                if partner.company_name or partner.parent_id:
+                    reasons.append('storico anagrafica')
+                    score += 5
                 rows.append({
                     'id': partner.id,
                     'name': partner.name or '',
                     'email': partner.email or '',
+                    'phone': partner.phone or partner.mobile or '',
                     'company': partner.parent_id.name if partner.parent_id else '',
                     'is_company': bool(partner.is_company),
+                    'score': min(score, 95),
+                    'reasons': reasons[:4],
                 })
         return rows
 

@@ -7,14 +7,38 @@
         <field name="arch" type="xml">
             <form string="Salva task veloce">
                 <sheet>
-                    <div style="display:grid;gap:14px;max-width:820px;">
-                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                    <div style="display:grid;gap:12px;max-width:880px;">
+                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8df;padding-bottom:10px;">
                             <div>
                                 <h2 style="margin:0;font-size:22px;">Task salva-memoria</h2>
-                                <p style="margin:4px 0 0;color:#667061;">Poche tap: origine, tipo, reparto e scadenza. Checklist e mini-progetto si generano sotto.</p>
+                                <p style="margin:4px 0 0;color:#667061;">Scrivi al volo, scegli preset, assegna reparto. Checklist, reminder e mini-progetto si generano sotto.</p>
                             </div>
-                            <field name="quick_kind" widget="radio"/>
+                            <div style="min-width:290px;">
+                                <field name="quick_kind" widget="radio" options="{'horizontal': true}"/>
+                            </div>
                         </div>
+                        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
+                            <div style="border:1px solid #dfe7dc;border-radius:8px;background:#fbfcfa;padding:10px;">
+                                <strong style="display:block;color:#334033;">To-do</strong>
+                                <span style="font-size:12px;color:#687266;">Promessa, memoria, azione interna.</span>
+                            </div>
+                            <div style="border:1px solid #dfe7dc;border-radius:8px;background:#fbfcfa;padding:10px;">
+                                <strong style="display:block;color:#334033;">Chiamata</strong>
+                                <span style="font-size:12px;color:#687266;">Da auto, telefono, Voice AI.</span>
+                            </div>
+                            <div style="border:1px solid #dfe7dc;border-radius:8px;background:#f7f1df;padding:10px;">
+                                <strong style="display:block;color:#5f4a1d;">Catalogo</strong>
+                                <span style="font-size:12px;color:#75653f;">Brief grafica e pagina cliente.</span>
+                            </div>
+                            <div style="border:1px solid #dfe7dc;border-radius:8px;background:#edf6f0;padding:10px;">
+                                <strong style="display:block;color:#275c3d;">Campione</strong>
+                                <span style="font-size:12px;color:#486a55;">Spedizione, tracking, feedback.</span>
+                            </div>
+                        </div>
+                        <group>
+                            <field name="name" placeholder="Es. Aggiungere pagina personalizzata al catalogo cliente"/>
+                            <field name="note" placeholder="Scrivi come parli: chi ha chiamato, cosa vuole, promessa fatta, urgenza, reparti coinvolti..." nolabel="1"/>
+                        </group>
                         <group>
                             <group string="Decisione rapida">
                                 <field name="source_channel"/>
@@ -29,10 +53,6 @@
                                 <field name="is_mini_project"/>
                                 <field name="checklist_required"/>
                             </group>
-                        </group>
-                        <group>
-                            <field name="name" placeholder="Es. Aggiungere pagina personalizzata al catalogo cliente"/>
-                            <field name="note" placeholder="Scrivi come parli: cliente, richiesta, urgenza, promesse fatte..." nolabel="1"/>
                         </group>
                         <group string="Memoria cliente">
                             <field name="customer_promise" placeholder="Es. Gli ho promesso risposta entro martedì"/>
@@ -50,6 +70,20 @@
                                 <field name="ai_suggested_next_step" placeholder="Prossimo passo suggerito"/>
                             </group>
                         </group>
+                        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+                            <div style="border-left:4px solid #6f7f37;background:#f8faf6;border-radius:8px;padding:10px;">
+                                <strong>1. Memoria</strong>
+                                <p style="margin:3px 0 0;color:#667061;font-size:12px;">Descrivi la richiesta senza formalismi.</p>
+                            </div>
+                            <div style="border-left:4px solid #7b5570;background:#fbf8fb;border-radius:8px;padding:10px;">
+                                <strong>2. Reparto</strong>
+                                <p style="margin:3px 0 0;color:#667061;font-size:12px;">Owner, scadenza e priorità bastano.</p>
+                            </div>
+                            <div style="border-left:4px solid #4f8b67;background:#f6fbf8;border-radius:8px;padding:10px;">
+                                <strong>3. Automazione</strong>
+                                <p style="margin:3px 0 0;color:#667061;font-size:12px;">Checklist, reminder e TrackBot se campione.</p>
+                            </div>
+                        </div>
                     </div>
                 </sheet>
                 <footer>

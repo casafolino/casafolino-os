@@ -825,9 +825,25 @@
                         <t t-foreach="state.data.post_fair.columns" t-as="column" t-key="column.title">
                             <section class="cf-pc-lane">
                                 <header>
-                                    <h2 t-out="column.title"/>
+                                    <div>
+                                        <h2 t-out="column.title"/>
+                                        <small>
+                                            € <t t-out="Math.round(column.expected_total || 0).toLocaleString('it-IT')"/>
+                                        </small>
+                                    </div>
                                     <span class="cf-pc-pill" t-out="column.count"/>
                                 </header>
+                                <div class="cf-pc-lane-metrics">
+                                    <span t-if="column.overdue_count" class="tone-red">
+                                        <i class="fa fa-warning"/> <t t-out="column.overdue_count"/> scaduti
+                                    </span>
+                                    <span t-if="column.no_next_count" class="tone-amber">
+                                        <i class="fa fa-calendar-o"/> <t t-out="column.no_next_count"/> senza azione
+                                    </span>
+                                    <span t-if="column.stale_count" class="tone-muted">
+                                        <i class="fa fa-hourglass-half"/> <t t-out="column.stale_count"/> fermi
+                                    </span>
+                                </div>
                                 <div class="cf-pc-lane-body">
                                     <t t-foreach="column.items" t-as="item" t-key="item.model + '-' + item.id">
                                         <t t-call="casafolino_pipeline_control.ControlCard"/>
@@ -1425,15 +1441,22 @@
                                         </button>
                                     </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.duplicate_partners &amp;&amp; state.messageContext.duplicate_partners.length" style="margin-top: 12px;">
-                                        <h5>Anagrafiche simili</h5>
-                                        <div t-foreach="state.messageContext.duplicate_partners" t-as="dup" t-key="'dup-' + dup.id" class="cf-pc-sidebar-card" style="padding: 8px; margin-bottom: 6px; cursor: pointer;" t-on-click="() => this.openRecord({model: 'res.partner', res_id: dup.id})">
+                                        <h5>Suggerimenti partner simili</h5>
+                                        <div t-foreach="state.messageContext.duplicate_partners" t-as="dup" t-key="'dup-' + dup.id" class="cf-pc-sidebar-card" style="padding: 9px; margin-bottom: 7px; cursor: pointer;" t-on-click="() => this.openRecord({model: 'res.partner', res_id: dup.id})">
                                             <div style="display: flex; justify-content: space-between; gap: 8px;">
                                                 <strong style="font-size: 11.5px;" t-out="dup.name"/>
-                                                <span class="cf-pc-mini-badge tone-amber" style="font-size: 9px;">Doppione</span>
+                                                <span class="cf-pc-mini-badge tone-amber" style="font-size: 9px;"><t t-out="dup.score"/>%</span>
                                             </div>
                                             <div style="font-size: 10.5px; color: #667061;" t-out="dup.email"/>
+                                            <div t-if="dup.phone" style="font-size: 10px; color: #667061;" t-out="dup.phone"/>
                                             <div t-if="dup.company" style="font-size: 10px; color: #889283;" t-out="dup.company"/>
+                                            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                                                <span t-foreach="dup.reasons" t-as="reason" t-key="'dup-reason-' + dup.id + '-' + reason" class="cf-pc-mini-badge tone-green" style="font-size: 8.5px;" t-out="reason"/>
+                                            </div>
                                         </div>
+                                        <button class="btn btn-sm btn-primary w-100 mt-2" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_company')">
+                                            <i class="fa fa-link"/> Collega/crea contatti corretti
+                                        </button>
                                     </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.mail_timeline &amp;&amp; state.messageContext.mail_timeline.length" style="margin-top: 12px;">
                                         <h5>Timeline email cliente</h5>
