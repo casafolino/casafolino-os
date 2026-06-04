@@ -1344,9 +1344,8 @@
     }
 
     .cf-pc-workbench {
-        display: grid;
-        grid-template-columns: minmax(760px, 1fr) 360px;
-        gap: 18px;
+        display: block;
+        min-width: 0;
 
         h1 {
             margin: 6px 0 5px;
@@ -3925,6 +3924,34 @@
                 align-items: center;
                 gap: 4px;
             }
+        }
+    }
+
+    .cf-pc-workbench-hero-top,
+    .cf-pc-workbench-quick {
+        flex-wrap: wrap;
+    }
+
+    .cf-pc-workbench-quick {
+        justify-content: flex-end;
+    }
+
+    @media (max-width: 900px) {
+        .cf-pc-dossier-three-col {
+            grid-template-columns: 1fr;
+        }
+
+        .cf-pc-dossier-col-3 {
+            grid-column: auto;
+        }
+
+        .cf-pc-dossier-action-strip {
+            grid-template-columns: 1fr;
+            max-width: none;
+        }
+
+        .cf-pc-workbench-quick {
+            justify-content: flex-start;
         }
     }
 }

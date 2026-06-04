@@ -78,6 +78,15 @@ export class CFPipelineControl extends Component {
             if (allInbox.length && (!this.state.selectedMessageId || !allInbox.find(m => m.id === this.state.selectedMessageId))) {
                 await this.selectMessage(allInbox[0].id);
             }
+
+            const dossiers = this.state.data.dossiers || [];
+            if (this.state.activeView === "dossiers" && dossiers.length) {
+                const activeExists = dossiers.some((row) => row.id === this.state.activeDossierId);
+                if (!this.state.activeDossierId || !activeExists) {
+                    this.state.activeDossierId = dossiers[0].id;
+                    await this.loadDossierTimeline(dossiers[0].id);
+                }
+            }
         } catch (error) {
             this.state.error = error.message || String(error);
         } finally {
