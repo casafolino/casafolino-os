@@ -2491,7 +2491,7 @@ class CfPipelineControl(models.AbstractModel):
             'thread_id': msg.thread_id.id if msg.thread_id else False,
             'owner': ', '.join(msg.assigned_user_ids.mapped('name')) or '',
             'snippet': msg.snippet or '',
-            'can_sample': bool(msg.lead_id),
+            'can_sample': bool(msg.sender_email or msg.lead_id),
             'account': msg.account_id.display_name if msg.account_id else '',
             'direction': msg.direction_computed or msg.direction or '',
             'urgency': msg.ai_urgency or '',
@@ -2976,7 +2976,30 @@ class CfPipelineControl(models.AbstractModel):
 
     def _new_sample_from_message(self, msg):
         if not msg.lead_id:
-            return self._notify('Lead richiesto', 'Collega o crea prima una trattativa CRM.', 'warning')
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Task campionatura da email',
+                'res_model': 'cf.pipeline.quick.task.wizard',
+                'view_mode': 'form',
+                'views': [(False, 'form')],
+                'target': 'new',
+                'context': {
+                    'default_message_id': msg.id,
+                    'default_quick_kind': 'sample',
+                    'default_name': 'Campionatura: %s' % (msg.subject or msg.sender_name or msg.sender_email or 'cliente'),
+                    'default_task_type': 'sample_shipment',
+                    'default_department': 'logistics',
+                    'default_source_channel': 'mail',
+                    'default_urgency': 'high',
+                    'default_create_sample_shipment': True,
+                    'default_is_mini_project': True,
+                    'default_checklist_required': True,
+                    'default_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
+                    'default_customer_promise': 'Inviare tracking appena disponibile.',
+                    'default_next_checkpoint': 'Creare/collegare lead o dossier e verificare prodotti, indirizzo e feedback atteso.',
+                    'default_ai_suggested_next_step': 'Crea task campionatura, collega cliente/azienda e trasforma in lead se la richiesta e commerciale.',
+                },
+            }
         return self._new_sample_from_lead(msg.lead_id)
 
     def _new_sample_from_lead(self, lead):
