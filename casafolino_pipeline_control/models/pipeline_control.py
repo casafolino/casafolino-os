@@ -1070,6 +1070,8 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _message_next_move_context(self, msg, partner, leads, projects, sales):
+        ai_brief = self._message_ai_brief(msg)
+        recommended = ai_brief.get('recommended_action')
         if self._sender_decision_status(msg) == 'pending':
             return {
                 'title': 'Decidi il mittente',
@@ -1087,6 +1089,33 @@ class CfPipelineControl(models.AbstractModel):
                 'button': 'Azienda + contatti',
                 'tone': 'amber',
                 'icon': 'fa-building-o',
+            }
+        if recommended == 'sample':
+            return {
+                'title': 'Crea campionatura',
+                'detail': ai_brief.get('decision_reason') or 'La mail sembra richiedere campioni: apri task/campionatura con tracking.',
+                'quick_action': 'sample',
+                'button': 'Campione',
+                'tone': 'amber',
+                'icon': 'fa-truck',
+            }
+        if recommended == 'catalog':
+            return {
+                'title': 'Prepara catalogo',
+                'detail': ai_brief.get('decision_reason') or 'La mail richiede materiale commerciale o tecnico: crea task per grafica/commerciale.',
+                'quick_action': 'catalog',
+                'button': 'Catalogo',
+                'tone': 'amber',
+                'icon': 'fa-book',
+            }
+        if recommended == 'quote' and (msg.lead_id or leads):
+            return {
+                'title': 'Prepara preventivo',
+                'detail': ai_brief.get('decision_reason') or 'Richiesta prezzo rilevata: apri o crea quotazione collegata alla pipeline.',
+                'quick_action': 'quote',
+                'button': 'Preventivo',
+                'tone': 'amber',
+                'icon': 'fa-file-text-o',
             }
         if not msg.lead_id and not leads:
             return {
@@ -2188,7 +2217,27 @@ class CfPipelineControl(models.AbstractModel):
         if user and not user.has_group('base.group_system'):
             domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
         messages = Mail.search(domain, order='email_date desc, id desc', limit=6)
-        return [self._format_ai_queue_item(msg) for msg in messages]
+        rows = [self._format_ai_queue_item(msg) for msg in messages]
+        seen = set(messages.ids)
+
+        recent_domain = [
+            ('is_archived', '=', False),
+            ('is_deleted', '=', False),
+            ('ai_category', 'in', ['commerciale', 'admin']),
+        ]
+        if user and not user.has_group('base.group_system'):
+            recent_domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + recent_domain
+        for msg in Mail.search(recent_domain, order='email_date desc, id desc', limit=40):
+            if msg.id in seen:
+                continue
+            ai_brief = self._message_ai_brief(msg)
+            if ai_brief.get('recommended_action') not in ('sample', 'catalog', 'quote', 'create_lead'):
+                continue
+            rows.append(self._format_ai_queue_item(msg, ai_brief=ai_brief))
+            seen.add(msg.id)
+            if len(rows) >= 8:
+                break
+        return rows[:8]
 
     def _get_inbox_data(self, user):
         inbox, waiting = self._get_latest_commercial_threads(user)
@@ -3409,18 +3458,20 @@ class CfPipelineControl(models.AbstractModel):
             'tracking_url': shipment.tracking_url or '',
         }
 
-    def _format_ai_queue_item(self, msg):
+    def _format_ai_queue_item(self, msg, ai_brief=None):
+        ai_brief = ai_brief or self._message_ai_brief(msg)
         return {
             'id': msg.id,
             'model': msg._name,
             'res_id': msg.id,
             'title': msg.partner_id.display_name if msg.partner_id else (msg.sender_name or msg.sender_email or 'Email'),
             'subtitle': msg.subject or '',
-            'meta': self._mail_suggested_action(msg),
-            'tone': 'red' if msg.ai_urgency == 'high' else 'amber',
+            'meta': ai_brief.get('decision_reason') or self._mail_suggested_action(msg),
+            'tone': 'red' if ai_brief.get('risk') == 'high' else 'amber',
             'badges': self._compact([
                 msg.ai_category,
                 msg.ai_language,
+                ai_brief.get('recommended_action'),
                 'azione richiesta' if msg.ai_action_required else False,
             ]),
             'snippet': msg.snippet or '',
