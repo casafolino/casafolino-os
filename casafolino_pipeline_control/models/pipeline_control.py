@@ -3748,9 +3748,10 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         }
 
     def _create_task(self):
+        project = self._ensure_project_for_operational_task()
         vals = {
             'name': self.name,
-            'project_id': self.project_id.id if self.project_id else False,
+            'project_id': project.id if project else False,
             'partner_id': self.partner_id.id if self.partner_id else False,
             'date_deadline': self.deadline or False,
             'description': self._task_description_payload(),
@@ -3768,9 +3769,9 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         if self.urgency in ('high', 'critical') and 'priority' in self.env['project.task']._fields:
             vals['priority'] = '1'
         task = self.env['project.task'].create(vals)
-        if self.create_sample_shipment and self.project_id:
+        if self.create_sample_shipment and project:
             shipment = self.env['cf.project.shipment'].create({
-                'project_id': self.project_id.id,
+                'project_id': project.id,
                 'state': 'draft',
                 'trackbot_enabled': True,
                 'notes': self.note or '',
@@ -3781,6 +3782,43 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self._schedule_task_reminders(task)
         task.message_post(body=self._task_chatter_note())
         return task
+
+    def _ensure_project_for_operational_task(self):
+        self.ensure_one()
+        if self.project_id:
+            return self.project_id
+        if not self.create_sample_shipment:
+            return self.env['project.project']
+
+        project = self.env['project.project']
+        if self.lead_id and hasattr(self.lead_id, '_ensure_project_360'):
+            project = self.lead_id._ensure_project_360()
+        elif self.partner_id:
+            domain_parts = [[('partner_id', '=', self.partner_id.id)]]
+            if 'cf_partner_id' in project._fields:
+                domain_parts.append([('cf_partner_id', '=', self.partner_id.id)])
+            domain = ['|'] * (len(domain_parts) - 1)
+            for part in domain_parts:
+                domain += part
+            project = project.search(domain, order='write_date desc, id desc', limit=1)
+            if not project:
+                vals = {
+                    'name': 'Campionatura - %s' % self.partner_id.display_name,
+                    'partner_id': self.partner_id.id,
+                    'user_id': self.env.user.id,
+                }
+                if 'cf_partner_id' in project._fields:
+                    vals['cf_partner_id'] = self.partner_id.id
+                if 'cf_project_type' in project._fields:
+                    vals['cf_project_type'] = 'sample_client'
+                if 'cf_status_dossier' in project._fields:
+                    vals['cf_status_dossier'] = 'exploration'
+                if 'cf_dossier_priority' in project._fields:
+                    vals['cf_dossier_priority'] = 'medium'
+                project = project.create(vals)
+        if project:
+            self.project_id = project.id
+        return project
 
     def _task_origin_value(self):
         if self.source_channel in ('call', 'mail', 'voice_ai', 'manual'):
