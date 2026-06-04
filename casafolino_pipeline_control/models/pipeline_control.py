@@ -1,4 +1,5 @@
 import logging
+import json
 from datetime import datetime, time, timedelta
 from email.utils import getaddresses
 
@@ -853,6 +854,7 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _message_ai_brief(self, msg):
+        ai_payload = self._message_ai_payload(msg)
         text = ' '.join([
             msg.subject or '',
             msg.snippet or '',
@@ -871,8 +873,12 @@ class CfPipelineControl(models.AbstractModel):
         for label, needles in product_patterns:
             if any(needle in text for needle in needles):
                 products.append(label)
+        for product in ai_payload.get('products', []):
+            product_label = str(product or '').strip()
+            if product_label and product_label not in products:
+                products.append(product_label)
 
-        intent = 'Da qualificare'
+        intent = ai_payload.get('intent') or ai_payload.get('category_label') or 'Da qualificare'
         if any(word in text for word in ['quote', 'quotation', 'preventivo', 'pricing', 'price list', 'listino']):
             intent = 'Richiesta quotazione'
         elif any(word in text for word in ['sample', 'campione', 'campionatura']):
@@ -884,7 +890,7 @@ class CfPipelineControl(models.AbstractModel):
         elif msg.ai_category:
             intent = dict(msg._fields['ai_category'].selection).get(msg.ai_category, msg.ai_category)
 
-        action_items = []
+        action_items = [str(item).strip() for item in ai_payload.get('action_items', []) if str(item or '').strip()]
         business_risk = 'medium' if msg.ai_action_required or msg.ai_urgency == 'high' else 'low'
         value_signal = 'standard'
         recommended_action = 'task'
@@ -925,6 +931,14 @@ class CfPipelineControl(models.AbstractModel):
 
         if msg.ai_urgency == 'high':
             business_risk = 'high'
+        if ai_payload.get('risk') in ('low', 'medium', 'high'):
+            business_risk = ai_payload['risk']
+        if ai_payload.get('value_signal'):
+            value_signal = ai_payload['value_signal']
+        if ai_payload.get('recommended_action'):
+            recommended_action = ai_payload['recommended_action']
+        if ai_payload.get('decision_reason'):
+            decision_reason = ai_payload['decision_reason']
 
         confidence = 45
         if msg.ai_category:
@@ -934,6 +948,8 @@ class CfPipelineControl(models.AbstractModel):
         if msg.ai_action_required:
             confidence += 10
         if products:
+            confidence += 10
+        if ai_payload:
             confidence += 10
 
         return {
@@ -946,6 +962,61 @@ class CfPipelineControl(models.AbstractModel):
             'value_signal': value_signal,
             'recommended_action': recommended_action,
             'decision_reason': decision_reason,
+            'summary': ai_payload.get('summary') or msg.snippet or '',
+            'provider': ai_payload.get('provider') or ('classificatore AI' if msg.ai_classified_at else 'euristica console'),
+        }
+
+    def _message_ai_payload(self, msg):
+        raw = msg.ai_raw_response or ''
+        if not raw:
+            return {}
+        try:
+            data = json.loads(raw)
+        except Exception:
+            return {}
+        if not isinstance(data, dict):
+            return {}
+        if isinstance(data.get('choices'), list):
+            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+            try:
+                data = json.loads(content)
+            except Exception:
+                return {}
+        category = (data.get('category') or msg.ai_category or '').lower()
+        urgency = (data.get('urgency') or msg.ai_urgency or '').lower()
+        summary = data.get('summary') or data.get('reasoning') or data.get('decision_reason') or ''
+        action_items = data.get('action_items') or data.get('actions') or []
+        if isinstance(action_items, str):
+            action_items = [action_items]
+        products = data.get('products') or data.get('product_interests') or []
+        if isinstance(products, str):
+            products = [products]
+        intent = data.get('intent') or data.get('customer_intent') or ''
+        recommended = data.get('recommended_action') or data.get('next_action') or ''
+        if recommended in ('sample_request', 'sample_task'):
+            recommended = 'sample'
+        elif recommended in ('catalog_request', 'materials'):
+            recommended = 'catalog'
+        elif recommended in ('quotation', 'quote_request'):
+            recommended = 'quote'
+        risk = data.get('risk') or ''
+        if not risk and urgency == 'high':
+            risk = 'high'
+        category_labels = dict(msg._fields['ai_category'].selection)
+        value_signal = data.get('value_signal') or ''
+        if not value_signal and category == 'commerciale':
+            value_signal = 'commerciale'
+        return {
+            'intent': intent,
+            'category_label': category_labels.get(category, category),
+            'products': products,
+            'action_items': action_items,
+            'summary': summary,
+            'recommended_action': recommended,
+            'decision_reason': data.get('decision_reason') or data.get('reasoning') or '',
+            'risk': risk if risk in ('low', 'medium', 'high') else '',
+            'value_signal': value_signal,
+            'provider': data.get('provider') or data.get('model') or '',
         }
 
     def _message_sender_rule_impact(self, msg):
@@ -1205,17 +1276,44 @@ class CfPipelineControl(models.AbstractModel):
             return {'success': False, 'error': 'Email non trovata'}
 
         original_body = msg.body_plain or msg.snippet or ''
+        partner = msg.partner_id
+        lead = msg.lead_id
+        project = getattr(msg, 'cf_project_id', False)
+        ai_brief = self._message_ai_brief(msg)
+        open_tasks = []
+        if project:
+            open_tasks = self.env['project.task'].search([
+                ('project_id', '=', project.id),
+                ('stage_id.fold', '=', False),
+            ], order='date_deadline asc, id desc', limit=5)
+        elif lead and partner:
+            open_tasks = self.env['project.task'].search([
+                ('partner_id', '=', partner.id),
+                ('stage_id.fold', '=', False),
+            ], order='date_deadline asc, id desc', limit=5)
+        task_lines = []
+        for task in open_tasks:
+            deadline = fields.Date.to_string(task.date_deadline) if task.date_deadline else 'senza scadenza'
+            task_lines.append("- %s (%s)" % (task.display_name, deadline))
         
         system_instruction = (
             "You are an expert sales assistant for CasaFolino, an Italian artisan gourmet food company.\n"
             "Your task is to write a highly professional, polite, and helpful email reply to the customer's email.\n"
             "Write the reply in the same language as the customer's email (typically Italian or English).\n"
-            "Do NOT include any email subject or headers. Output ONLY the email body text in HTML format. Keep paragraphs clean using <p> tags. Do not put markdown placeholders. Keep it elegant."
+            "Do NOT include any email subject or headers. Output ONLY the email body text in HTML format. Keep paragraphs clean using <p> tags. Do not put markdown placeholders. Keep it elegant.\n"
+            "Use only facts provided in the context. If something is missing, ask for it politely instead of inventing details."
         )
 
         user_prompt = (
             f"Customer email sender: {msg.sender_name or 'Customer'} <{msg.sender_email or ''}>\n"
             f"Customer email subject: {msg.subject or '(no subject)'}\n"
+            f"Matched company/contact: {(partner.display_name if partner else 'not linked yet')}\n"
+            f"Pipeline lead: {(lead.display_name if lead else 'none')}\n"
+            f"Dossier/project: {(project.display_name if project else 'none')}\n"
+            f"AI intent: {ai_brief.get('intent')}\n"
+            f"AI recommended action: {ai_brief.get('recommended_action')}\n"
+            f"AI action items: {', '.join(ai_brief.get('action_items') or []) or 'none'}\n"
+            f"Open operational tasks:\n{chr(10).join(task_lines) if task_lines else '- none'}\n"
             f"Customer email body:\n\"\"\"\n{original_body[:3000]}\n\"\"\"\n\n"
         )
         
