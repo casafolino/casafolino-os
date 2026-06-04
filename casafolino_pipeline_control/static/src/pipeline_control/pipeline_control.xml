@@ -1419,6 +1419,65 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="cf-pc-sidebar-sub"
+                                         t-if="state.messageContext.assistant_suggestion"
+                                         style="margin-top: 12px;">
+                                        <h5>Assistente CasaFolino</h5>
+                                        <div t-attf-class="cf-pc-assistant-card tone-#{state.messageContext.assistant_suggestion.confidence_band || 'low'}">
+                                            <div class="cf-pc-assistant-head">
+                                                <div>
+                                                    <span>Decisione operativa</span>
+                                                    <strong t-if="state.messageContext.assistant_suggestion.has_suggestion"
+                                                            t-out="state.messageContext.assistant_suggestion.project_name"/>
+                                                    <strong t-else="">Dossier da confermare</strong>
+                                                    <em t-if="state.messageContext.assistant_suggestion.partner_name"
+                                                        t-out="state.messageContext.assistant_suggestion.partner_name"/>
+                                                </div>
+                                                <div class="cf-pc-assistant-score">
+                                                    <strong t-out="state.messageContext.assistant_suggestion.confidence + '%'"/>
+                                                    <span t-out="state.messageContext.assistant_suggestion.department_label"/>
+                                                </div>
+                                            </div>
+                                            <div class="cf-pc-assistant-reason">
+                                                <i class="fa fa-magic"/>
+                                                <span t-out="state.messageContext.assistant_suggestion.reason"/>
+                                            </div>
+                                            <div class="cf-pc-assistant-next">
+                                                <i class="fa fa-location-arrow"/>
+                                                <span t-out="state.messageContext.assistant_suggestion.next_action"/>
+                                            </div>
+                                            <div class="cf-pc-assistant-evidence"
+                                                 t-if="state.messageContext.assistant_suggestion.evidence &amp;&amp; state.messageContext.assistant_suggestion.evidence.length">
+                                                <span t-foreach="state.messageContext.assistant_suggestion.evidence"
+                                                      t-as="evidence"
+                                                      t-key="'assistant-evidence-' + evidence"
+                                                      t-out="evidence"/>
+                                            </div>
+                                            <div class="cf-pc-assistant-actions"
+                                                 t-if="state.messageContext.assistant_suggestion.has_suggestion">
+                                                <button class="btn btn-sm btn-primary"
+                                                        t-on-click="() => this.linkDossierToMessage(state.messageContext.assistant_suggestion.project_id)">
+                                                    <i class="fa fa-link"/> Collega al dossier
+                                                </button>
+                                                <button class="btn btn-sm btn-light"
+                                                        t-on-click="() => this.mailQuickAction(selectedMessage, state.messageContext.assistant_suggestion.department === 'samples' ? 'sample' : 'task')">
+                                                    <i class="fa fa-check-square-o"/> Crea task
+                                                </button>
+                                            </div>
+                                            <div class="cf-pc-assistant-candidates"
+                                                 t-if="state.messageContext.assistant_suggestion.candidates &amp;&amp; state.messageContext.assistant_suggestion.candidates.length &gt; 1">
+                                                <div t-foreach="state.messageContext.assistant_suggestion.candidates.slice(1)"
+                                                     t-as="candidate"
+                                                     t-key="'assistant-candidate-' + candidate.id">
+                                                    <span t-out="candidate.name"/>
+                                                    <button class="btn btn-sm btn-light"
+                                                            t-on-click="() => this.linkDossierToMessage(candidate.id)">
+                                                        <t t-out="candidate.confidence"/>%
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.sender_rule_impact" style="margin-top: 12px;">
                                         <h5>Impatto regola mittente</h5>
                                         <div class="cf-pc-rule-impact">

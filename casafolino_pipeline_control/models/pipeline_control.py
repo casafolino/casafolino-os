@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 from datetime import datetime, time, timedelta
 from email.utils import getaddresses
 
@@ -901,6 +902,7 @@ class CfPipelineControl(models.AbstractModel):
             'next_move': self._message_next_move_context(msg, partner, leads_list, projects_list, sales_list),
             'sender_rule_impact': self._message_sender_rule_impact(msg),
             'ai_brief': self._message_ai_brief(msg),
+            'assistant_suggestion': self._message_assistant_suggestion(msg, partner, leads_recs, project_recs),
             'contact_plan': self._message_contact_plan(msg),
             'summary': {
                 'sender_email': msg.sender_email or '',
@@ -1092,6 +1094,231 @@ class CfPipelineControl(models.AbstractModel):
             'value_signal': value_signal,
             'provider': data.get('provider') or data.get('model') or '',
         }
+
+    def _message_assistant_suggestion(self, msg, partner=None, leads=None, projects=None):
+        text = self._message_text_for_matching(msg)
+        candidates = self._message_project_candidates(msg, text, partner, leads, projects)
+        scored = []
+        for project in candidates:
+            score, evidence = self._score_message_project_candidate(msg, project, text, leads)
+            if score > 0:
+                scored.append((score, project, evidence))
+        scored.sort(key=lambda item: item[0], reverse=True)
+        department = self._infer_message_department(msg, text)
+        if not scored:
+            return {
+                'has_suggestion': False,
+                'department': department['key'],
+                'department_label': department['label'],
+                'confidence': 0,
+                'reason': 'Non ho trovato un dossier abbastanza coerente. Cerca o collega manualmente il dossier.',
+                'next_action': department['fallback_action'],
+                'candidates': [],
+            }
+
+        top_score, top_project, evidence = scored[0]
+        confidence = min(96, max(35, int(top_score)))
+        action = self._assistant_next_action(top_project, department, msg)
+        return {
+            'has_suggestion': True,
+            'project_id': top_project.id,
+            'project_name': top_project.display_name,
+            'partner_name': self._project_partner_name(top_project),
+            'department': department['key'],
+            'department_label': department['label'],
+            'confidence': confidence,
+            'confidence_band': 'high' if confidence >= 80 else ('medium' if confidence >= 55 else 'low'),
+            'reason': self._assistant_reason(top_project, department, evidence),
+            'next_action': action,
+            'evidence': evidence[:4],
+            'candidates': [{
+                'id': project.id,
+                'name': project.display_name,
+                'partner_name': self._project_partner_name(project),
+                'confidence': min(96, max(35, int(score))),
+                'evidence': item_evidence[:3],
+            } for score, project, item_evidence in scored[:3]],
+        }
+
+    def _message_text_for_matching(self, msg):
+        parts = [
+            msg.subject or '',
+            msg.sender_name or '',
+            msg.sender_email or '',
+            msg.recipient_emails or '',
+            msg.cc_emails or '',
+            msg.snippet or '',
+            (msg.body_plain or '')[:2500],
+        ]
+        return ' '.join(parts).lower()
+
+    def _message_match_tokens(self, text):
+        stop = {
+            'casa', 'folino', 'food', 'reorder', 'references', 'nuovo', 'ordine',
+            'cliente', 'request', 'information', 'reply', 'from', 'with', 'new',
+        }
+        tokens = []
+        for token in re.findall(r'[a-z0-9][a-z0-9._/-]{3,}', text):
+            clean = token.strip('._-/')
+            if len(clean) < 4 or clean in stop:
+                continue
+            if clean not in tokens:
+                tokens.append(clean)
+        refs = re.findall(r'\b[a-z]{0,4}\d{3,}(?:[/-]\d+)*\b', text)
+        for ref in refs:
+            if ref not in tokens:
+                tokens.insert(0, ref)
+        return tokens[:16]
+
+    def _message_project_candidates(self, msg, text, partner=None, leads=None, projects=None):
+        Project = self.env['project.project']
+        Lead = self.env['crm.lead']
+        candidates = Project.browse()
+        if projects:
+            candidates |= projects
+        if msg.cf_project_id:
+            candidates |= msg.cf_project_id
+        if msg.cf_ai_suggestion_ids:
+            candidates |= msg.cf_ai_suggestion_ids
+
+        lead_candidates = Lead.browse()
+        if leads:
+            lead_candidates |= leads
+        if msg.lead_id:
+            lead_candidates |= msg.lead_id
+        for token in self._message_match_tokens(text)[:10]:
+            lead_candidates |= Lead.search([
+                ('active', '=', True),
+                ('type', '=', 'opportunity'),
+                ('name', 'ilike', token),
+            ], limit=5)
+
+        for lead in lead_candidates[:12]:
+            if lead.partner_id:
+                candidates |= Project.search(self._active_project_domain() + [
+                    '|',
+                    ('partner_id', '=', lead.partner_id.id),
+                    ('cf_lead_ids', 'in', [lead.id]),
+                ], limit=8)
+            else:
+                candidates |= Project.search(self._active_project_domain() + [
+                    ('cf_lead_ids', 'in', [lead.id]),
+                ], limit=8)
+
+        partners = self.env['res.partner'].browse()
+        for candidate_partner in (partner, msg.partner_id):
+            if candidate_partner:
+                partners |= candidate_partner
+                if candidate_partner.commercial_partner_id:
+                    partners |= candidate_partner.commercial_partner_id
+        for lead in lead_candidates:
+            if lead.partner_id:
+                partners |= lead.partner_id
+                partners |= lead.partner_id.commercial_partner_id
+        if partners:
+            candidates |= Project.search(self._active_project_domain() + [
+                ('partner_id', 'in', partners.ids),
+            ], limit=12)
+
+        for token in self._message_match_tokens(text)[:10]:
+            candidates |= Project.search(self._active_project_domain() + [
+                '|',
+                ('name', 'ilike', token),
+                ('partner_id.name', 'ilike', token),
+            ], limit=8)
+
+        return candidates[:30]
+
+    def _score_message_project_candidate(self, msg, project, text, leads=None):
+        score = 0
+        evidence = []
+        if msg.cf_project_id and msg.cf_project_id.id == project.id:
+            score += 100
+            evidence.append('Mail gia posizionata su questo dossier')
+        if project in msg.cf_ai_suggestion_ids:
+            ai_points = 50 + int((msg.cf_ai_confidence or 0) * 35)
+            score += ai_points
+            evidence.append('Suggerimento AI storico')
+
+        lead_ids = set((leads or self.env['crm.lead']).ids)
+        if msg.lead_id:
+            lead_ids.add(msg.lead_id.id)
+        project_lead_ids = set(getattr(project, 'cf_lead_ids', self.env['crm.lead']).ids)
+        if lead_ids and project_lead_ids.intersection(lead_ids):
+            score += 55
+            evidence.append('Lead collegato al dossier')
+        if msg.lead_id and msg.lead_id.partner_id and project.partner_id == msg.lead_id.partner_id:
+            score += 35
+            evidence.append('Partner del lead coincide col dossier')
+        if msg.partner_id and project.partner_id == msg.partner_id:
+            score += 28
+            evidence.append('Partner mail coincide col dossier')
+
+        names = [
+            project.display_name,
+            project.partner_id.display_name if project.partner_id else '',
+            getattr(project.partner_id, 'commercial_company_name', '') if project.partner_id else '',
+        ]
+        for label in names:
+            for token in self._message_match_tokens((label or '').lower())[:8]:
+                if token and token in text:
+                    score += 34 if len(token) >= 6 else 18
+                    evidence.append('Testo mail contiene "%s"' % token)
+                    break
+
+        for token in self._message_match_tokens(text)[:8]:
+            if token and (
+                token in (project.display_name or '').lower()
+                or (project.partner_id and token in project.partner_id.display_name.lower())
+            ):
+                score += 22
+                evidence.append('Riferimento "%s" combacia col dossier' % token)
+                break
+
+        if project.partner_id and project.partner_id.email:
+            partner_domain = self._email_domain(project.partner_id.email)
+            if partner_domain and partner_domain in text:
+                score += 24
+                evidence.append('Dominio cliente riconosciuto')
+
+        clean_evidence = []
+        for item in evidence:
+            if item not in clean_evidence:
+                clean_evidence.append(item)
+        return score, clean_evidence
+
+    def _infer_message_department(self, msg, text):
+        sender_domain = msg.sender_domain or self._email_domain(msg.sender_email)
+        rules = [
+            ('logistics', 'Logistica', ['logistica', 'logistic', 'freight', 'tecnofreight', 'spedizione', 'shipment', 'tracking', 'trasporto', 'delivery', 'dhl', 'container', 'dogana', 'customs', 'saudi', 'tc/'], 'Collega al dossier e crea task logistica'),
+            ('commercial', 'Commerciale', ['reorder', 'new references', 'quotation', 'quote', 'offerta', 'preventivo', 'ordine', 'purchase order', 'price', 'listino'], 'Collega a pipeline/dossier e prepara risposta commerciale'),
+            ('graphics', 'Grafica', ['grafici', 'artwork', 'catalogo', 'catalog', 'brochure', 'etichetta', 'label', 'packaging'], 'Crea task grafica/materiali nel dossier'),
+            ('samples', 'Campionature', ['campione', 'campioni', 'sample', 'samples', 'campionatura'], 'Crea task campionatura con tracking'),
+            ('admin', 'Amministrazione', ['pagamento', 'payment', 'invoice', 'fattura', 'acconto', 'rimborso'], 'Collega e assegna ad amministrazione'),
+        ]
+        for key, label, needles, fallback in rules:
+            if any(needle in text for needle in needles) or (sender_domain and any(needle in sender_domain for needle in needles)):
+                return {'key': key, 'label': label, 'fallback_action': fallback}
+        return {'key': 'commercial', 'label': 'Commerciale', 'fallback_action': 'Collega al cliente e crea prossima azione'}
+
+    def _assistant_next_action(self, project, department, msg):
+        if department['key'] == 'logistics':
+            return 'Collega la mail a %s e crea task Logistica/Spedizione.' % project.display_name
+        if department['key'] == 'graphics':
+            return 'Collega la mail a %s e crea task Grafica/Materiali.' % project.display_name
+        if department['key'] == 'samples':
+            return 'Collega la mail a %s e crea campionatura con tracking.' % project.display_name
+        if not msg.lead_id:
+            return 'Collega la mail a %s e verifica lead pipeline.' % project.display_name
+        return 'Collega la mail a %s e aggiorna prossima azione.' % project.display_name
+
+    def _assistant_reason(self, project, department, evidence):
+        bits = evidence[:3] or ['dossier piu coerente tra quelli attivi']
+        return '%s: %s. Reparto suggerito: %s.' % (
+            project.display_name,
+            '; '.join(bits),
+            department['label'],
+        )
 
     def _message_sender_rule_impact(self, msg):
         Mail = self.env['casafolino.mail.message']
