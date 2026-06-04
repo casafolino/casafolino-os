@@ -1035,11 +1035,13 @@
                                                 </span>
                                             </div>
                                             <div class="cf-pc-thread-quick-actions">
-                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
+                                                <button t-if="row.sender_decision === 'pending'" class="cf-pc-decision-action keep" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
                                                     <i class="fa fa-check"/>
+                                                    <span>Tieni</span>
                                                 </button>
-                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
+                                                <button t-if="row.sender_decision === 'pending'" class="cf-pc-decision-action dismiss" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
                                                     <i class="fa fa-ban"/>
+                                                    <span>Scarta</span>
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'create_contact')" title="Crea o apri contatto">
                                                     <i class="fa fa-user-o"/>
@@ -1097,11 +1099,13 @@
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
                                             </div>
                                             <div class="cf-pc-thread-quick-actions">
-                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
+                                                <button t-if="row.sender_decision === 'pending'" class="cf-pc-decision-action keep" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
                                                     <i class="fa fa-check"/>
+                                                    <span>Tieni</span>
                                                 </button>
-                                                <button t-if="row.sender_decision === 'pending'" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
+                                                <button t-if="row.sender_decision === 'pending'" class="cf-pc-decision-action dismiss" t-on-click.stop="() => this.mailQuickAction(row, 'dismiss_sender')" title="Scarta mittente">
                                                     <i class="fa fa-ban"/>
+                                                    <span>Scarta</span>
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'create_contact')" title="Crea o apri contatto">
                                                     <i class="fa fa-user-o"/>

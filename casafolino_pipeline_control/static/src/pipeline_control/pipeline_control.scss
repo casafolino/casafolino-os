@@ -1871,6 +1871,26 @@
                     border-color: #c8d5c5;
                     color: #2f7d57;
                 }
+
+                &.cf-pc-decision-action {
+                    width: auto;
+                    min-width: 58px;
+                    padding: 0 7px;
+                    gap: 4px;
+                    font-weight: 800;
+
+                    &.keep {
+                        border-color: #c9dcc8;
+                        background: #f3faf2;
+                        color: #2f6f3c;
+                    }
+
+                    &.dismiss {
+                        border-color: #f0d0cd;
+                        background: #fff7f6;
+                        color: #9a332b;
+                    }
+                }
             }
         }
 

@@ -2913,7 +2913,12 @@ class CfPipelineControl(models.AbstractModel):
             pref.action_keep()
         if hasattr(msg, 'action_keep'):
             msg.action_keep()
-        return self._notify('Mittente tenuto', 'Le prossime email di questo mittente resteranno nella Inbox CasaFolino.', reload=True)
+        visible_count = self._sender_visible_message_count(msg)
+        return self._notify(
+            'Mittente tenuto',
+            'Le prossime email resteranno nella Inbox CasaFolino. Thread visibili oggi: %s.' % visible_count,
+            reload=True,
+        )
 
     def _dismiss_sender_from_message(self, msg):
         pref = self._ensure_sender_preference(msg)
@@ -2933,8 +2938,28 @@ class CfPipelineControl(models.AbstractModel):
             ]
             if msg.account_id:
                 domain.append(('account_id', '=', msg.account_id.id))
-            self.env['casafolino.mail.message'].search(domain, limit=200).write({'is_deleted': True})
-        return self._notify('Mittente scartato', 'Non lo vedrai piu nella Inbox CasaFolino. Gmail resta invariato.', reload=True)
+            hidden = self.env['casafolino.mail.message'].search(domain, limit=200)
+            hidden_count = len(hidden)
+            hidden.write({'is_deleted': True})
+        else:
+            hidden_count = 0
+        return self._notify(
+            'Mittente scartato',
+            'Nascoste %s mail dalla Inbox CasaFolino. Gmail resta invariato.' % hidden_count,
+            reload=True,
+        )
+
+    def _sender_visible_message_count(self, msg):
+        if not msg.sender_email:
+            return 0
+        domain = [
+            ('sender_email', '=ilike', msg.sender_email),
+            ('is_deleted', '=', False),
+            ('is_archived', '=', False),
+        ]
+        if msg.account_id:
+            domain.append(('account_id', '=', msg.account_id.id))
+        return self.env['casafolino.mail.message'].search_count(domain)
 
     def _open_record(self, record, name):
         return {
