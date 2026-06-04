@@ -1322,11 +1322,16 @@
                                                 <div>
                                                     <span>Intent</span>
                                                     <strong t-out="state.messageContext.ai_brief.intent"/>
+                                                    <em t-if="state.messageContext.ai_brief.provider" t-out="state.messageContext.ai_brief.provider"/>
                                                 </div>
                                                 <div class="cf-pc-ai-confidence">
                                                     <strong t-out="state.messageContext.ai_brief.confidence + '%'"/>
                                                     <span>confidenza</span>
                                                 </div>
+                                            </div>
+                                            <div class="cf-pc-ai-summary" t-if="state.messageContext.ai_brief.summary">
+                                                <i class="fa fa-align-left"/>
+                                                <span t-out="state.messageContext.ai_brief.summary"/>
                                             </div>
                                             <div class="cf-pc-ai-products" t-if="state.messageContext.ai_brief.products &amp;&amp; state.messageContext.ai_brief.products.length">
                                                 <span t-foreach="state.messageContext.ai_brief.products" t-as="product" t-key="'ai-product-' + product" t-out="product"/>
