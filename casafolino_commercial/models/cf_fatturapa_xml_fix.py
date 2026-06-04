@@ -208,9 +208,10 @@ class AccountMove(models.Model):
         quantity = self._cf_decimal(self._cf_xml_text(element, ".//*[local-name()='Quantita']"), Decimal("1"))
         price_total = self._cf_decimal(self._cf_xml_text(element, ".//*[local-name()='PrezzoTotale']"))
         tax_rate = self._cf_decimal(self._cf_xml_text(element, ".//*[local-name()='AliquotaIVA']"))
-        if quantity and price_total is not None:
+        line_quantity = self._cf_decimal(move_line.quantity, quantity)
+        if line_quantity and price_total is not None:
             move_line.with_context(check_move_validity=False).write({
-                "price_unit": float(price_total / quantity),
+                "price_unit": float(price_total / line_quantity),
                 "discount": 0.0,
                 "cf_fatturapa_xml_price_total": float(price_total),
             })
@@ -322,7 +323,7 @@ class AccountMove(models.Model):
 
             touched = 0
             for xml_line, line in zip(xml_lines, product_lines):
-                quantity = xml_line["quantity"] or Decimal("1")
+                quantity = self._cf_decimal(line.quantity, xml_line["quantity"] or Decimal("1"))
                 price_total = xml_line["price_total"]
                 tax_rate = xml_line["tax_rate"]
                 vals = {}
