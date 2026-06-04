@@ -2209,6 +2209,20 @@ class CfPipelineControl(models.AbstractModel):
             return self._notify('Follow-up pianificato', 'Prossima azione tra 7 giorni.', reload=True)
         if quick_action == 'sample':
             return self._new_sample_from_lead(lead)
+        if quick_action == 'catalog':
+            return self._new_operational_task(
+                lead,
+                quick_kind='catalog',
+                forced_task_type='catalog_page',
+                forced_department='graphics',
+            )
+        if quick_action == 'sample_task':
+            return self._new_operational_task(
+                lead,
+                quick_kind='sample',
+                forced_task_type='sample_shipment',
+                forced_department='logistics',
+            )
         if quick_action == 'quote':
             return self._new_quote_from_lead(lead)
         if quick_action == 'task':
@@ -2278,6 +2292,20 @@ class CfPipelineControl(models.AbstractModel):
             return record.action_reply_last_email_f8()
         if quick_action == 'task':
             return self._new_operational_task(record)
+        if quick_action == 'catalog':
+            return self._new_operational_task(
+                record,
+                quick_kind='catalog',
+                forced_task_type='catalog_page',
+                forced_department='graphics',
+            )
+        if quick_action == 'sample_task':
+            return self._new_operational_task(
+                record,
+                quick_kind='sample',
+                forced_task_type='sample_shipment',
+                forced_department='logistics',
+            )
         if quick_action == 'followup7':
             return self._new_followup_task(record, fields.Date.context_today(self) + timedelta(days=7))
         if quick_action == 'today':
@@ -2875,10 +2903,25 @@ class CfPipelineControl(models.AbstractModel):
             },
         }
 
-    def _new_operational_task(self, record):
+    def _new_operational_task(self, record, quick_kind=None, forced_task_type=None, forced_department=None):
         partner = self._record_partner(record)
         project = record if record._name == 'project.project' else getattr(record, 'project_id', False)
-        task_type = self._task_type_for_record(record)
+        if record._name == 'crm.lead':
+            project = getattr(record, 'cf_project_id', False)
+        lead = record if record._name == 'crm.lead' else getattr(record, 'lead_id', False)
+        if not lead and record._name == 'project.project' and 'cf_lead_ids' in record._fields:
+            lead = record.cf_lead_ids[:1]
+        task_type = forced_task_type or self._task_type_for_record(record)
+        kind = quick_kind or ('sample' if task_type == 'sample_shipment' else 'todo')
+        department = forced_department or self._task_department_for_record(record)
+        title = self._task_title_for_record(record)
+        note = self._task_description_for_record(record)
+        if kind == 'catalog':
+            title = 'Pagina catalogo personalizzata: %s' % (partner.display_name if partner else record.display_name)
+            note = 'Creare pagina catalogo personalizzata: brief minimo, contenuti, immagini, owner grafica e scadenza cliente.'
+        elif kind == 'sample':
+            title = 'Campionatura cliente: %s' % (partner.display_name if partner else record.display_name)
+            note = 'Gestire campionatura come mini-progetto: prodotti, indirizzo, spedizione, tracking TrackBot e reminder feedback.'
         return {
             'type': 'ir.actions.act_window',
             'name': 'Task veloce',
@@ -2887,13 +2930,19 @@ class CfPipelineControl(models.AbstractModel):
             'views': [(False, 'form')],
             'target': 'new',
             'context': {
-                'default_quick_kind': 'sample' if task_type == 'sample_shipment' else 'todo',
-                'default_name': self._task_title_for_record(record),
+                'default_quick_kind': kind,
+                'default_name': title,
+                'default_lead_id': lead.id if lead else False,
                 'default_project_id': project.id if project else False,
                 'default_partner_id': partner.id if partner else False,
                 'default_task_type': task_type,
-                'default_department': self._task_department_for_record(record),
-                'default_note': self._task_description_for_record(record),
+                'default_department': department,
+                'default_note': note,
+                'default_is_mini_project': kind in ('catalog', 'sample'),
+                'default_checklist_required': kind in ('catalog', 'sample'),
+                'default_create_sample_shipment': kind == 'sample',
+                'default_source_channel': 'manual',
+                'default_urgency': 'high' if kind in ('catalog', 'sample') else 'normal',
             },
         }
 
@@ -3558,6 +3607,25 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'source_channel': self.env.context.get('default_source_channel') or 'manual',
                 'urgency': self.env.context.get('default_urgency') or 'normal',
             })
+
+        for field_name in (
+            'name',
+            'task_type',
+            'department',
+            'note',
+            'source_channel',
+            'urgency',
+            'customer_promise',
+            'next_checkpoint',
+            'ai_suggested_next_step',
+            'is_mini_project',
+            'checklist_required',
+            'create_sample_shipment',
+            'create_reminder',
+        ):
+            context_key = 'default_%s' % field_name
+            if context_key in self.env.context:
+                res[field_name] = self.env.context.get(context_key)
 
         lead = self.env['crm.lead'].browse(self.env.context.get('default_lead_id')).exists()
         project = self.env['project.project'].browse(self.env.context.get('default_project_id')).exists()

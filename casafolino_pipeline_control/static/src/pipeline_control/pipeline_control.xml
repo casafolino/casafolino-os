@@ -362,11 +362,28 @@
                                     <h2>Contesto completo</h2>
                                     <p>Mail, pipeline, dossier, task, campioni e preventivi collegati.</p>
                                 </div>
-                                <button t-if="state.entityDetail?.header"
-                                        class="btn btn-sm btn-light"
-                                        t-on-click="() => this.openRecord(state.entityDetail.header)">
-                                    Apri record
-                                </button>
+                                <div t-if="state.entityDetail?.header" class="cf-pc-header-actions">
+                                    <button class="btn btn-sm btn-primary"
+                                            t-on-click="() => this.recordQuickAction(state.entityDetail.header, 'task')"
+                                            title="Crea una task salva-memoria">
+                                        <i class="fa fa-check-square-o"/> Task
+                                    </button>
+                                    <button class="btn btn-sm btn-light"
+                                            t-on-click="() => this.recordQuickAction(state.entityDetail.header, 'catalog')"
+                                            title="Crea mini-progetto catalogo">
+                                        <i class="fa fa-file-text-o"/> Catalogo
+                                    </button>
+                                    <button class="btn btn-sm btn-light"
+                                            t-on-click="() => this.recordQuickAction(state.entityDetail.header, 'sample_task')"
+                                            title="Crea task campionatura con tracking">
+                                        <i class="fa fa-truck"/> Campione
+                                    </button>
+                                    <button class="btn btn-sm btn-light"
+                                            t-on-click="() => this.openRecord(state.entityDetail.header)"
+                                            title="Apri il record originale">
+                                        Apri record
+                                    </button>
+                                </div>
                             </header>
                             <div t-if="state.entityDetailLoading" class="cf-pc-empty">Caricamento contesto 360...</div>
                             <t t-elif="state.entityDetail?.header">

@@ -682,6 +682,17 @@
         min-height: 280px;
     }
 
+    .cf-pc-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+
+        .btn {
+            white-space: nowrap;
+        }
+    }
+
     .cf-pc-entity-head {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
