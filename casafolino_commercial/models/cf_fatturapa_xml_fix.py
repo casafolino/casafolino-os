@@ -10,6 +10,7 @@ from odoo.tools.float_utils import float_compare, float_is_zero
 
 
 _logger = logging.getLogger(__name__)
+CF_XML_ROUNDING_LINE_NAME = "Arrotondamento XML FatturaPA"
 
 
 class AccountMove(models.Model):
@@ -242,6 +243,7 @@ class AccountMove(models.Model):
             parsed = move._cf_parse_fatturapa_xml(etree.tostring(data["xml_tree"]))
             move._cf_align_fatturapa_xml_bases(parsed)
             move._cf_align_fatturapa_xml_summaries(parsed)
+            move._cf_apply_fatturapa_xml_total_rounding(parsed)
             move._cf_validate_fatturapa_xml_amounts(parsed, post_message=True)
         return move
 
@@ -308,6 +310,57 @@ class AccountMove(models.Model):
             term_lines.with_context(check_move_validity=False).write(
                 self._cf_balance_line_vals(counterpart)
             )
+        return True
+
+    def _cf_apply_fatturapa_xml_total_rounding(self, parsed):
+        self.ensure_one()
+        xml_total = parsed.get("amount_total")
+        if xml_total is None:
+            return False
+
+        direction = 1 if self.move_type == "in_invoice" else -1
+        non_term_lines = self.line_ids.filtered(
+            lambda line: line.display_type != "payment_term" and line.name != CF_XML_ROUNDING_LINE_NAME
+        )
+        current_total = self._cf_decimal(direction * sum(non_term_lines.mapped("balance")), Decimal("0.00"))
+        diff = xml_total - current_total
+
+        rounding_lines = self.invoice_line_ids.filtered(lambda line: line.name == CF_XML_ROUNDING_LINE_NAME)
+        if abs(diff) < Decimal("0.005"):
+            if rounding_lines:
+                rounding_lines.with_context(check_move_validity=False).unlink()
+            return True
+
+        rounding_line = rounding_lines[:1]
+        extra_rounding_lines = rounding_lines - rounding_line
+        if extra_rounding_lines:
+            extra_rounding_lines.with_context(check_move_validity=False).unlink()
+
+        account = self.invoice_line_ids.filtered(
+            lambda line: line.display_type == "product"
+            and line.name != CF_XML_ROUNDING_LINE_NAME
+            and line.account_id
+        )[:1].account_id
+        if not account:
+            return False
+
+        vals = {
+            "name": CF_XML_ROUNDING_LINE_NAME,
+            "display_type": "product",
+            "account_id": account.id,
+            "quantity": 1.0,
+            "price_unit": float(diff),
+            "discount": 0.0,
+            "tax_ids": [(6, 0, [])],
+            "cf_fatturapa_xml_price_total": float(diff),
+            "cf_fatturapa_xml_tax_rate": 0.0,
+            "sequence": max(self.invoice_line_ids.mapped("sequence") or [0]) + 1,
+        }
+        if rounding_line:
+            rounding_line.with_context(check_move_validity=False).write(vals)
+        else:
+            vals["move_id"] = self.id
+            self.env["account.move.line"].with_context(check_move_validity=False).create(vals)
         return True
 
     def _cf_validate_fatturapa_xml_amounts(self, parsed=None, post_message=False):
@@ -383,7 +436,9 @@ class AccountMove(models.Model):
 
             parsed = move._cf_parse_fatturapa_xml(xml_content)
             xml_lines = parsed.get("lines") or []
-            product_lines = move.invoice_line_ids.filtered(lambda line: line.display_type == "product").sorted("sequence")
+            product_lines = move.invoice_line_ids.filtered(
+                lambda line: line.display_type == "product" and line.name != CF_XML_ROUNDING_LINE_NAME
+            ).sorted("sequence")
             if len(xml_lines) != len(product_lines):
                 move.message_post(body=_(
                     "Riallineamento XML saltato: righe XML %(xml)s, righe Odoo %(odoo)s.",
@@ -424,10 +479,12 @@ class AccountMove(models.Model):
 
             move._cf_align_fatturapa_xml_bases(parsed)
             move._cf_align_fatturapa_xml_summaries(parsed)
+            move._cf_apply_fatturapa_xml_total_rounding(parsed)
             if was_posted:
                 move.action_post()
                 move._cf_align_fatturapa_xml_bases(parsed)
                 move._cf_align_fatturapa_xml_summaries(parsed)
+                move._cf_apply_fatturapa_xml_total_rounding(parsed)
 
             move._cf_validate_fatturapa_xml_amounts(parsed=parsed)
             fixed_count += 1
