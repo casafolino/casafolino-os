@@ -294,11 +294,12 @@
         grid-template-columns: repeat(4, minmax(230px, 1fr));
         gap: 12px;
         align-items: start;
-        overflow-x: auto;
+        overflow: visible;
         padding-bottom: 8px;
 
         &.cf-pc-board-wide {
-            grid-template-columns: repeat(5, minmax(230px, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
         }
     }
 
@@ -927,6 +928,38 @@
         display: flex;
         flex-direction: column;
         gap: 9px;
+    }
+
+    .cf-pc-board-wide {
+        .cf-pc-lane {
+            min-width: 0;
+        }
+
+        .cf-pc-lane header {
+            min-height: 54px;
+            padding: 12px 14px;
+        }
+
+        .cf-pc-lane-body {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .cf-pc-card {
+            min-width: 0;
+        }
+
+        .cf-pc-card-title {
+            gap: 8px;
+
+            h3 {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+        }
     }
 
     .cf-pc-card {
@@ -3290,6 +3323,7 @@
         }
 
         .cf-pc-lane-compact .cf-pc-lane-body,
+        .cf-pc-board-wide .cf-pc-lane-body,
         .cf-pc-console-actions-grid {
             grid-template-columns: 1fr;
         }

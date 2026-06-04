@@ -1559,6 +1559,20 @@ class CfPipelineControl(models.AbstractModel):
                 'domain': "[('cf_status_dossier', '!=', False)]",
                 'context': "{'default_cf_status_dossier': 'exploration'}",
             })
+
+        # Older manual/client actions can survive module upgrades without an XML id.
+        # Normalize them so bookmarks and stale menu links still land on the new console.
+        client_actions = self.env['ir.actions.client'].sudo().search([
+            ('tag', '=', 'casafolino_pipeline_control'),
+        ])
+        for client_action in client_actions:
+            action_name = (client_action.name or '').strip().lower()
+            if action_name in {'scrivania commerciale', 'pipeline export sala controllo operativa'}:
+                client_action.write({
+                    'name': 'Sala Controllo',
+                    'target': 'current',
+                    'context': "{'default_view': 'control'}",
+                })
         return True
 
     def _normalize_fair_id(self, fair_id):
