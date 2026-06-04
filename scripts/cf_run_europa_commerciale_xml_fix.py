@@ -36,30 +36,31 @@ def main():
             domain.append(("name", "=", args.invoice))
 
         moves = env["account.move"].search(domain, order="invoice_date, name, id")
-        print(f"Partner: {partner.display_name} ({partner.id})")
-        print(f"Fatture candidate: {len(moves)}")
+        print(f"Partner: {partner.display_name} ({partner.id})", flush=True)
+        print(f"Fatture candidate: {len(moves)}", flush=True)
         for move in moves:
-            print(f"BEFORE {move.name} id={move.id} state={move.state} payment={move.payment_state} total={move.amount_total:.2f}")
+            print(f"BEFORE {move.name} id={move.id} state={move.state} payment={move.payment_state} total={move.amount_total:.2f}", flush=True)
 
-        fixed = moves._cf_fix_fatturapa_xml_lines()
-        moves.invalidate_recordset()
-
+        fixed = 0
         for move in moves:
+            fixed += move._cf_fix_fatturapa_xml_lines()
+            move.invalidate_recordset()
             print(
                 "AFTER "
                 f"{move.name} id={move.id} state={move.state} payment={move.payment_state} "
                 f"total={move.amount_total:.2f} xml={move.cf_fatturapa_xml_amount_total:.2f} "
-                f"check={move.cf_fatturapa_xml_check_state}"
+                f"check={move.cf_fatturapa_xml_check_state}",
+                flush=True,
             )
             if move.cf_fatturapa_xml_check_message:
-                print(f"  {move.cf_fatturapa_xml_check_message}")
+                print(f"  {move.cf_fatturapa_xml_check_message}", flush=True)
 
         if args.dry_run:
             cr.rollback()
-            print(f"DRY-RUN rollback eseguito. Fatture elaborate: {fixed}")
+            print(f"DRY-RUN rollback eseguito. Fatture elaborate: {fixed}", flush=True)
         else:
             cr.commit()
-            print(f"COMMIT eseguito. Fatture elaborate: {fixed}")
+            print(f"COMMIT eseguito. Fatture elaborate: {fixed}", flush=True)
 
 
 if __name__ == "__main__":
