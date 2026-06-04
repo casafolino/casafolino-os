@@ -3488,6 +3488,16 @@
         }
     }
 
+    .cf-pc-dossier-col-1,
+    .cf-pc-dossier-col-2 {
+        min-height: 470px;
+        max-height: 620px;
+    }
+
+    .cf-pc-dossier-col-3 {
+        min-height: 260px;
+    }
+
     .cf-pc-dossier-action-strip {
         display: grid;
         grid-template-columns: minmax(180px, 1fr) 100px 100px;
@@ -3659,6 +3669,10 @@
         flex-direction: column;
         gap: 12px;
         margin-bottom: 14px;
+    }
+
+    .cf-pc-timeline-messages-scroller {
+        max-height: 430px;
     }
     
     .cf-pc-timeline-msg {
@@ -3936,7 +3950,13 @@
         justify-content: flex-end;
     }
 
-    @media (max-width: 900px) {
+    .cf-pc-dossier-col-3 .cf-pc-subprojects-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    @media (max-width: 720px) {
         .cf-pc-dossier-three-col {
             grid-template-columns: 1fr;
         }
@@ -3952,6 +3972,10 @@
 
         .cf-pc-workbench-quick {
             justify-content: flex-start;
+        }
+
+        .cf-pc-dossier-col-3 .cf-pc-subprojects-list {
+            grid-template-columns: 1fr;
         }
     }
 }
