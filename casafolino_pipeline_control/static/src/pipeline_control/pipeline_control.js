@@ -41,6 +41,9 @@ export class CFPipelineControl extends Component {
             entitySearchQuery: "",
             entitySearchResults: [],
             entitySearchLoading: false,
+            entityDetail: null,
+            entityDetailLoading: false,
+            selectedEntityKey: "",
             aiDraftBody: "",
             aiDraftLoading: false,
             aiInstruction: "",
@@ -298,15 +301,42 @@ export class CFPipelineControl extends Component {
         this.state.entitySearchQuery = query;
         if (query.length < 2) {
             this.state.entitySearchResults = [];
+            this.state.entityDetail = null;
+            this.state.selectedEntityKey = "";
             return;
         }
         this.state.entitySearchLoading = true;
         try {
             this.state.entitySearchResults = await this.orm.call("cf.pipeline.control", "search_entity_360", [query, 8]);
+            if (this.state.entitySearchResults.length) {
+                await this.selectEntity360(this.state.entitySearchResults[0]);
+            }
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         } finally {
             this.state.entitySearchLoading = false;
+        }
+    }
+
+    async selectEntity360(entity) {
+        if (!entity || !entity.model || !entity.res_id) {
+            return;
+        }
+        this.state.selectedEntityKey = `${entity.model}-${entity.res_id}`;
+        this.state.entityDetailLoading = true;
+        try {
+            const detail = await this.orm.call("cf.pipeline.control", "get_entity_360_detail", [entity.model, entity.res_id]);
+            if (detail?.found) {
+                this.state.entityDetail = detail;
+            } else {
+                this.state.entityDetail = null;
+                this.notification.add(detail?.error || _t("Entità non trovata"), { type: "warning" });
+            }
+        } catch (error) {
+            this.state.entityDetail = null;
+            this.notification.add(error.message || String(error), { type: "danger" });
+        } finally {
+            this.state.entityDetailLoading = false;
         }
     }
 
@@ -756,6 +786,30 @@ export class CFPipelineControl extends Component {
 
     get consoleAIQueue() {
         return this.operations.ai_queue || [];
+    }
+
+    get entity360Sections() {
+        const detail = this.state.entityDetail;
+        if (!detail?.sections) {
+            return [];
+        }
+        const config = [
+            ["leads", "Lead e pipeline"],
+            ["mails", "Mail recenti"],
+            ["dossiers", "Dossier"],
+            ["tasks", "Task aperte"],
+            ["samples", "Campionature"],
+            ["shipments", "Tracking spedizioni"],
+            ["quotes", "Preventivi / ordini"],
+            ["contacts", "Contatti azienda"],
+        ];
+        return config
+            .map(([key, label]) => ({
+                key,
+                label,
+                rows: detail.sections[key] || [],
+            }))
+            .filter((section) => section.rows.length);
     }
 
     get hasConsoleTracking() {

@@ -499,7 +499,212 @@ class CfPipelineControl(models.AbstractModel):
                     continue
                 seen.add(key)
                 rows.append(self._format_entity360_project(project))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining:
+            Mail = self.env['casafolino.mail.message']
+            mail_domain = [
+                ('is_deleted', '=', False),
+                '|', '|', '|',
+                ('subject', 'ilike', query),
+                ('sender_name', 'ilike', query),
+                ('sender_email', 'ilike', query),
+                ('recipient_emails', 'ilike', query),
+            ]
+            for mail in Mail.search(mail_domain, order='email_date desc, id desc', limit=remaining):
+                key = ('casafolino.mail.message', mail.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_entity360_mail(mail))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining:
+            Task = self.env['project.task']
+            for task in Task.search([('name', 'ilike', query)], order='write_date desc, id desc', limit=remaining):
+                key = ('project.task', task.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_entity360_task(task))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining and 'cf.export.sample' in self.env.registry:
+            Sample = self.env['cf.export.sample']
+            sample_domain = ['|', '|', ('reference', 'ilike', query), ('partner_id.name', 'ilike', query), ('lead_id.name', 'ilike', query)]
+            for sample in Sample.search(sample_domain, order='write_date desc, id desc', limit=remaining):
+                key = ('cf.export.sample', sample.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_entity360_sample(sample))
         return rows
+
+    @api.model
+    def get_entity_360_detail(self, model, res_id):
+        allowed_models = {
+            'res.partner',
+            'crm.lead',
+            'project.project',
+            'casafolino.mail.message',
+            'project.task',
+            'cf.export.sample',
+            'cf.project.shipment',
+            'sale.order',
+        }
+        if model not in allowed_models or model not in self.env.registry:
+            return {'found': False, 'error': 'Entita non disponibile'}
+        record = self.env[model].browse(int(res_id)).exists()
+        if not record:
+            return {'found': False, 'error': 'Record non trovato'}
+
+        context = self._entity360_context_from_record(record)
+        partner = context.get('partner')
+        company = context.get('company')
+        lead = context.get('lead')
+        project = context.get('project')
+
+        partner_ids = set()
+        if company:
+            partner_ids.add(company.id)
+            partner_ids.update(self.env['res.partner'].search([('parent_id', '=', company.id)], limit=80).ids)
+        if partner:
+            partner_ids.add(partner.id)
+            if partner.parent_id:
+                partner_ids.add(partner.parent_id.id)
+        partner_ids = list(partner_ids)
+
+        lead_domain = [('active', 'in', [True, False])]
+        lead_or_parts = []
+        if partner_ids:
+            lead_or_parts.append([('partner_id', 'in', partner_ids)])
+        if lead:
+            lead_or_parts.append([('id', '=', lead.id)])
+        leads = self.env['crm.lead'].search(
+            self._or_domain(lead_or_parts) + lead_domain,
+            order='write_date desc, expected_revenue desc, id desc',
+            limit=10,
+        ) if lead_or_parts else self.env['crm.lead']
+
+        project_or_parts = []
+        if partner_ids:
+            project_or_parts.append([('partner_id', 'in', partner_ids)])
+        if leads and 'cf_lead_ids' in self.env['project.project']._fields:
+            project_or_parts.append([('cf_lead_ids', 'in', leads.ids)])
+        if project:
+            project_or_parts.append([('id', '=', project.id)])
+        projects = self.env['project.project'].search(
+            self._or_domain(project_or_parts),
+            order='write_date desc, id desc',
+            limit=10,
+        ) if project_or_parts else self.env['project.project']
+
+        project_ids = projects.ids
+        lead_ids = leads.ids
+
+        mail_parts = []
+        if partner_ids:
+            mail_parts.append([('partner_id', 'in', partner_ids)])
+        if lead_ids:
+            mail_parts.append([('lead_id', 'in', lead_ids)])
+        if project_ids and 'cf_project_id' in self.env['casafolino.mail.message']._fields:
+            mail_parts.append([('cf_project_id', 'in', project_ids)])
+        if record._name == 'casafolino.mail.message':
+            mail_parts.append([('id', '=', record.id)])
+        mails = self.env['casafolino.mail.message'].search(
+            self._or_domain(mail_parts) + [('is_deleted', '=', False)],
+            order='email_date desc, id desc',
+            limit=12,
+        ) if mail_parts else self.env['casafolino.mail.message']
+
+        tasks = self.env['project.task'].search(
+            [('project_id', 'in', project_ids), ('stage_id.fold', '=', False)],
+            order='date_deadline asc, priority desc, write_date desc',
+            limit=10,
+        ) if project_ids else self.env['project.task']
+
+        sample_rows = []
+        if 'cf.export.sample' in self.env.registry:
+            sample_parts = []
+            if partner_ids:
+                sample_parts.append([('partner_id', 'in', partner_ids)])
+            if lead_ids:
+                sample_parts.append([('lead_id', 'in', lead_ids)])
+            if project_ids:
+                sample_parts.append([('project_id', 'in', project_ids)])
+            if record._name == 'cf.export.sample':
+                sample_parts.append([('id', '=', record.id)])
+            samples = self.env['cf.export.sample'].search(
+                self._or_domain(sample_parts),
+                order='date_feedback_expected asc, write_date desc, id desc',
+                limit=10,
+            ) if sample_parts else self.env['cf.export.sample']
+            sample_rows = [self._format_entity360_sample(sample) for sample in samples]
+
+        shipment_rows = []
+        if project_ids and 'cf.project.shipment' in self.env.registry:
+            shipments = self.env['cf.project.shipment'].search(
+                [('project_id', 'in', project_ids)],
+                order='estimated_delivery asc, ship_date desc, id desc',
+                limit=8,
+            )
+            today = fields.Date.context_today(self)
+            shipment_rows = [self._format_shipment_item(shipment, today) for shipment in shipments]
+
+        quote_parts = []
+        Sale = self.env['sale.order']
+        if partner_ids:
+            quote_parts.append([('partner_id', 'in', partner_ids)])
+        if lead_ids and 'opportunity_id' in Sale._fields:
+            quote_parts.append([('opportunity_id', 'in', lead_ids)])
+        if project_ids and 'cf_project_id' in Sale._fields:
+            quote_parts.append([('cf_project_id', 'in', project_ids)])
+        quotes = Sale.search(
+            self._or_domain(quote_parts) + [('state', 'in', ['draft', 'sent', 'sale'])],
+            order='write_date desc, id desc',
+            limit=10,
+        ) if quote_parts else Sale
+
+        contact_rows = []
+        if company:
+            contact_rows = [self._format_entity360_partner(p) for p in self.env['res.partner'].search(
+                [('parent_id', '=', company.id)], order='write_date desc, id desc', limit=8
+            )]
+        elif partner:
+            contact_rows = [self._format_entity360_partner(partner)]
+
+        header = self._entity360_header(record, partner, company, lead, project)
+        counts = {
+            'mail_count': len(mails),
+            'lead_count': len(leads),
+            'project_count': len(projects),
+            'task_count': len(tasks),
+            'sample_count': len(sample_rows),
+            'shipment_count': len(shipment_rows),
+            'quote_count': len(quotes),
+        }
+        return {
+            'found': True,
+            'header': header,
+            'kpis': [
+                {'label': 'Mail', 'value': counts['mail_count']},
+                {'label': 'Lead', 'value': counts['lead_count']},
+                {'label': 'Dossier', 'value': counts['project_count']},
+                {'label': 'Task', 'value': counts['task_count']},
+                {'label': 'Campioni', 'value': counts['sample_count']},
+                {'label': 'Preventivi', 'value': counts['quote_count']},
+            ],
+            'sections': {
+                'contacts': contact_rows,
+                'mails': [self._format_entity360_mail(mail) for mail in mails],
+                'leads': [self._format_entity360_lead(item) for item in leads],
+                'dossiers': [self._format_entity360_project(item) for item in projects],
+                'tasks': [self._format_entity360_task(item) for item in tasks],
+                'samples': sample_rows,
+                'shipments': shipment_rows,
+                'quotes': [self._format_entity360_quote(item) for item in quotes],
+            },
+        }
 
     @api.model
     def get_message_context_info(self, message_id):
@@ -1566,6 +1771,135 @@ class CfPipelineControl(models.AbstractModel):
                     'badges': self._compact(['lead', self._lead_origin_label(lead)]),
                 })
         return rows
+
+    @staticmethod
+    def _or_domain(parts):
+        parts = [part for part in (parts or []) if part]
+        if not parts:
+            return []
+        domain = ['|'] * (len(parts) - 1)
+        for part in parts:
+            domain += part
+        return domain
+
+    def _entity360_context_from_record(self, record):
+        partner = self.env['res.partner']
+        company = self.env['res.partner']
+        lead = self.env['crm.lead']
+        project = self.env['project.project']
+
+        if record._name == 'res.partner':
+            partner = record
+            company = record if record.is_company else record.parent_id
+        elif record._name == 'crm.lead':
+            lead = record
+            partner = record.partner_id
+            company = partner if partner and partner.is_company else partner.parent_id
+            project = getattr(record, 'cf_project_id', False)
+        elif record._name == 'project.project':
+            project = record
+            partner = getattr(record, 'partner_id', False) or getattr(record, 'cf_partner_id', False)
+            company = partner if partner and partner.is_company else partner.parent_id
+        elif record._name == 'casafolino.mail.message':
+            partner = record.partner_id
+            lead = record.lead_id
+            project = getattr(record, 'cf_project_id', False) or getattr(lead, 'cf_project_id', False)
+            company = partner if partner and partner.is_company else partner.parent_id
+        elif record._name == 'project.task':
+            project = record.project_id
+            partner = project.partner_id if project else self.env['res.partner']
+            company = partner if partner and partner.is_company else partner.parent_id
+        elif record._name == 'cf.export.sample':
+            partner = record.partner_id
+            lead = record.lead_id
+            project = record.project_id
+            company = partner if partner and partner.is_company else partner.parent_id
+        elif record._name == 'cf.project.shipment':
+            project = record.project_id
+            partner = record.partner_id
+            company = partner if partner and partner.is_company else partner.parent_id
+        elif record._name == 'sale.order':
+            partner = record.partner_id
+            lead = record.opportunity_id if 'opportunity_id' in record._fields else self.env['crm.lead']
+            project = record.cf_project_id if 'cf_project_id' in record._fields else self.env['project.project']
+            company = partner if partner and partner.is_company else partner.parent_id
+
+        return {
+            'partner': partner if partner and partner.exists() else self.env['res.partner'],
+            'company': company if company and company.exists() else self.env['res.partner'],
+            'lead': lead if lead and lead.exists() else self.env['crm.lead'],
+            'project': project if project and project.exists() else self.env['project.project'],
+        }
+
+    def _entity360_header(self, record, partner=False, company=False, lead=False, project=False):
+        title = ''
+        subtitle = ''
+        badges = []
+        if partner:
+            title = partner.display_name
+            subtitle = partner.email or partner.phone or partner.mobile or ''
+            badges = self._compact(['contatto' if not partner.is_company else 'azienda', partner.country_id.code if partner.country_id else False])
+        elif lead:
+            title = lead.partner_id.display_name if lead.partner_id else lead.name
+            subtitle = lead.name
+            badges = self._compact(['lead', lead.stage_id.name if lead.stage_id else False])
+        elif project:
+            title = project.name
+            subtitle = self._project_partner_name(project)
+            badges = self._compact(['dossier', self._project_status(project)])
+        else:
+            title = record.display_name
+            subtitle = record._description or record._name
+            badges = [record._name]
+        if company and company != partner:
+            badges.append(company.display_name)
+        return {
+            'model': record._name,
+            'res_id': record.id,
+            'title': title or record.display_name,
+            'subtitle': subtitle or '',
+            'badges': badges,
+            'company_id': company.id if company else False,
+            'company_name': company.display_name if company else '',
+        }
+
+    def _format_entity360_mail(self, mail):
+        return {
+            'id': mail.id,
+            'model': mail._name,
+            'res_id': mail.id,
+            'title': mail.partner_id.display_name if mail.partner_id else (mail.sender_name or mail.sender_email or 'Email'),
+            'subtitle': mail.subject or 'Senza oggetto',
+            'meta': self._date_label(mail.email_date),
+            'next_action': self._mail_suggested_action(mail),
+            'badges': self._compact([
+                'mail',
+                mail.ai_category,
+                mail.ai_language,
+                'urgente' if mail.ai_urgency == 'high' else False,
+                mail.lead_id.stage_id.name if mail.lead_id and mail.lead_id.stage_id else False,
+            ]),
+        }
+
+    def _format_entity360_task(self, task):
+        return self._format_task_item(task)
+
+    def _format_entity360_sample(self, sample):
+        today = fields.Date.context_today(self)
+        return self._format_sample_item(sample, today)
+
+    def _format_entity360_quote(self, order):
+        state_label = dict(order._fields['state'].selection).get(order.state, order.state) if order.state else ''
+        return {
+            'id': order.id,
+            'model': order._name,
+            'res_id': order.id,
+            'title': order.partner_id.display_name if order.partner_id else order.name,
+            'subtitle': order.name,
+            'meta': '€ %s' % int(order.amount_total or 0),
+            'next_action': self._date_label(order.validity_date) if 'validity_date' in order._fields and order.validity_date else '',
+            'badges': self._compact(['preventivo', state_label, order.user_id.name if order.user_id else False]),
+        }
 
     def _format_entity360_partner(self, partner):
         counts = self._entity360_counts(partner=partner)

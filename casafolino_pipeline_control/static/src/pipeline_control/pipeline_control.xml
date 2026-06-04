@@ -307,8 +307,8 @@
                             <div class="cf-pc-depth-list">
                                 <t t-if="state.entitySearchResults.length">
                                     <t t-foreach="state.entitySearchResults" t-as="entity" t-key="'entity-search-' + entity.model + '-' + entity.res_id">
-                                        <article class="cf-pc-depth-row">
-                                            <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(entity)">
+                                        <article t-attf-class="cf-pc-depth-row #{state.selectedEntityKey === entity.model + '-' + entity.res_id ? 'active' : ''}">
+                                            <button class="cf-pc-depth-main" t-on-click="() => this.selectEntity360(entity)">
                                                 <strong t-out="entity.title"/>
                                                 <span t-out="entity.subtitle"/>
                                                 <small>
@@ -338,8 +338,8 @@
                                 <div t-if="state.entitySearchLoading" class="cf-pc-empty">Ricerca in corso...</div>
                                 <t t-if="!state.entitySearchResults.length &amp;&amp; !state.entitySearchLoading">
                                     <t t-foreach="consoleEntities" t-as="entity" t-key="'entity360-' + entity.model + '-' + entity.res_id">
-                                        <article class="cf-pc-depth-row">
-                                            <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(entity)">
+                                        <article t-attf-class="cf-pc-depth-row #{state.selectedEntityKey === entity.model + '-' + entity.res_id ? 'active' : ''}">
+                                            <button class="cf-pc-depth-main" t-on-click="() => this.selectEntity360(entity)">
                                                 <strong t-out="entity.title"/>
                                                 <span t-out="entity.subtitle"/>
                                                 <small t-out="entity.meta"/>
@@ -354,6 +354,72 @@
                                 </t>
                                 <div t-if="!state.entitySearchResults.length &amp;&amp; !consoleEntities.length &amp;&amp; !state.entitySearchLoading" class="cf-pc-empty">Nessuna entità suggerita</div>
                             </div>
+                        </section>
+
+                        <section class="cf-pc-panel cf-pc-depth-panel cf-pc-entity-detail">
+                            <header>
+                                <div>
+                                    <h2>Contesto completo</h2>
+                                    <p>Mail, pipeline, dossier, task, campioni e preventivi collegati.</p>
+                                </div>
+                                <button t-if="state.entityDetail?.header"
+                                        class="btn btn-sm btn-light"
+                                        t-on-click="() => this.openRecord(state.entityDetail.header)">
+                                    Apri record
+                                </button>
+                            </header>
+                            <div t-if="state.entityDetailLoading" class="cf-pc-empty">Caricamento contesto 360...</div>
+                            <t t-elif="state.entityDetail?.header">
+                                <div class="cf-pc-entity-head">
+                                    <div>
+                                        <strong t-out="state.entityDetail.header.title"/>
+                                        <span t-out="state.entityDetail.header.subtitle"/>
+                                    </div>
+                                    <div class="cf-pc-badges">
+                                        <t t-foreach="state.entityDetail.header.badges" t-as="badge" t-key="'entity-head-badge-' + badge_index">
+                                            <span class="cf-pc-badge" t-out="badge"/>
+                                        </t>
+                                    </div>
+                                </div>
+                                <div class="cf-pc-entity-kpis">
+                                    <t t-foreach="state.entityDetail.kpis" t-as="kpi" t-key="'entity-kpi-' + kpi.label">
+                                        <article>
+                                            <span t-out="kpi.label"/>
+                                            <strong t-out="kpi.value"/>
+                                        </article>
+                                    </t>
+                                </div>
+                                <div class="cf-pc-entity-section-grid">
+                                    <t t-foreach="entity360Sections" t-as="section" t-key="'entity-section-' + section.key">
+                                        <section class="cf-pc-entity-section">
+                                            <header>
+                                                <h3 t-out="section.label"/>
+                                                <span class="cf-pc-pill" t-out="section.rows.length"/>
+                                            </header>
+                                            <div class="cf-pc-depth-list">
+                                                <t t-foreach="section.rows.slice(0, 5)" t-as="item" t-key="'entity-section-row-' + section.key + '-' + item.model + '-' + item.res_id">
+                                                    <article class="cf-pc-depth-row compact">
+                                                        <button class="cf-pc-depth-main" t-on-click="() => this.openRecord(item)">
+                                                            <strong t-out="item.title"/>
+                                                            <span t-out="item.subtitle"/>
+                                                            <small>
+                                                                <t t-out="item.meta"/>
+                                                                <t t-if="item.next_action"> · <t t-out="item.next_action"/></t>
+                                                            </small>
+                                                        </button>
+                                                        <div class="cf-pc-badges">
+                                                            <t t-foreach="item.badges || []" t-as="badge" t-key="'entity-row-badge-' + section.key + '-' + item.res_id + '-' + badge_index">
+                                                                <span class="cf-pc-badge" t-out="badge"/>
+                                                            </t>
+                                                        </div>
+                                                    </article>
+                                                </t>
+                                            </div>
+                                        </section>
+                                    </t>
+                                </div>
+                            </t>
+                            <div t-else="" class="cf-pc-empty">Cerca o seleziona un cliente per vedere il 360.</div>
                         </section>
 
                         <section class="cf-pc-panel cf-pc-depth-panel">
