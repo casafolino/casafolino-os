@@ -1299,7 +1299,7 @@ class CfPipelineControl(models.AbstractModel):
         return False
 
     @api.model
-    def generate_ai_draft(self, message_id, instruction=''):
+    def generate_ai_draft(self, message_id, instruction='', mode='reply', tone='professional'):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:
             return {'success': False, 'error': 'Email non trovata'}
@@ -1324,16 +1324,38 @@ class CfPipelineControl(models.AbstractModel):
         for task in open_tasks:
             deadline = fields.Date.to_string(task.date_deadline) if task.date_deadline else 'senza scadenza'
             task_lines.append("- %s (%s)" % (task.display_name, deadline))
+        mode = mode or 'reply'
+        tone = tone or 'professional'
+        mode_instructions = {
+            'reply': 'Write a complete customer reply: acknowledge, answer, clarify next step, and ask for missing facts only when needed.',
+            'quote': 'Focus on a quotation/pricing request. Ask for missing products, quantities, destination, billing/company data, and timing. Do not invent prices.',
+            'catalog': 'Focus on sending catalog, price list, product sheets, or technical material. Confirm what material will be prepared and ask for the exact line/product if unclear.',
+            'sample': 'Focus on sample shipment. Confirm sample handling, ask for products/address if missing, mention tracking only when available or as next step.',
+            'data': 'Ask elegantly for missing company/billing data: company name, address, VAT/tax ID, contact person, phone, email.',
+            'reminder': 'Write a polite follow-up/reminder. Mention the open topic, keep it short, and propose a clear next deadline or action.',
+        }
+        tone_instructions = {
+            'professional': 'Tone: professional, warm, concise.',
+            'commercial': 'Tone: commercial and proactive, but never pushy.',
+            'formal': 'Tone: formal and precise.',
+            'polite': 'Tone: very polite and diplomatic.',
+            'operational': 'Tone: practical, clear, action-oriented.',
+            'short': 'Tone: short, direct, maximum 2-3 short paragraphs.',
+        }
         
         system_instruction = (
             "You are an expert sales assistant for CasaFolino, an Italian artisan gourmet food company.\n"
             "Your task is to write a highly professional, polite, and helpful email reply to the customer's email.\n"
             "Write the reply in the same language as the customer's email (typically Italian or English).\n"
             "Do NOT include any email subject or headers. Output ONLY the email body text in HTML format. Keep paragraphs clean using <p> tags. Do not put markdown placeholders. Keep it elegant.\n"
-            "Use only facts provided in the context. If something is missing, ask for it politely instead of inventing details."
+            "Use only facts provided in the context. If something is missing, ask for it politely instead of inventing details.\n"
+            "Never promise shipment, prices, discounts, delivery dates, or attachments unless explicitly present in the context."
         )
 
         user_prompt = (
+            f"Composer mode: {mode}\n"
+            f"Composer objective: {mode_instructions.get(mode, mode_instructions['reply'])}\n"
+            f"Composer tone: {tone_instructions.get(tone, tone_instructions['professional'])}\n"
             f"Customer email sender: {msg.sender_name or 'Customer'} <{msg.sender_email or ''}>\n"
             f"Customer email subject: {msg.subject or '(no subject)'}\n"
             f"Matched company/contact: {(partner.display_name if partner else 'not linked yet')}\n"
@@ -1347,9 +1369,9 @@ class CfPipelineControl(models.AbstractModel):
         )
         
         if instruction:
-            user_prompt += f"USER INSTRUCTIONS for the reply: {instruction}\n\n"
+            user_prompt += f"USER EXTRA INSTRUCTIONS for the reply: {instruction}\n\n"
         else:
-            user_prompt += "Write a friendly, professional response acknowledging receipt and addressing any questions in the email.\n\n"
+            user_prompt += "No extra user instructions. Follow the composer objective and context.\n\n"
 
         user_prompt += "Draft Response (HTML):"
 

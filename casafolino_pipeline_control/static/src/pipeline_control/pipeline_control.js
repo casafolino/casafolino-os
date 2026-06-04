@@ -47,6 +47,8 @@ export class CFPipelineControl extends Component {
             aiDraftBody: "",
             aiDraftLoading: false,
             aiInstruction: "",
+            aiComposerMode: "reply",
+            aiComposerTone: "professional",
             data: {
                 kpis: [],
                 lanes: [],
@@ -172,7 +174,12 @@ export class CFPipelineControl extends Component {
         if (!this.state.selectedMessageId) return;
         this.state.aiDraftLoading = true;
         try {
-            const res = await this.orm.call("cf.pipeline.control", "generate_ai_draft", [this.state.selectedMessageId, this.state.aiInstruction]);
+            const res = await this.orm.call("cf.pipeline.control", "generate_ai_draft", [
+                this.state.selectedMessageId,
+                this.state.aiInstruction,
+                this.state.aiComposerMode,
+                this.state.aiComposerTone,
+            ]);
             if (res.success) {
                 this.state.aiDraftBody = res.draft;
                 this.notification.add(_t("Bozza AI generata con successo"), { type: "success" });
@@ -184,6 +191,13 @@ export class CFPipelineControl extends Component {
         } finally {
             this.state.aiDraftLoading = false;
         }
+    }
+
+    setAIComposerPreset(mode, instruction = "", tone = "professional") {
+        this.state.aiComposerMode = mode;
+        this.state.aiComposerTone = tone;
+        this.state.aiInstruction = instruction;
+        this.state.aiDraftBody = "";
     }
 
     async sendAIDraft() {

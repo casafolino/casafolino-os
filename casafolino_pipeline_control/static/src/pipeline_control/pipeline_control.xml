@@ -1227,12 +1227,40 @@
                                 <!-- Gemini AI Reply Assistant -->
                                 <div class="cf-pc-ai-widget">
                                     <div class="cf-pc-ai-widget-header">
-                                        <span class="cf-pc-ai-title"><i class="fa fa-magic"/> Assistente Risposta AI Gemini</span>
+                                        <span class="cf-pc-ai-title"><i class="fa fa-magic"/> Composer AI F8</span>
+                                        <div class="cf-pc-ai-preset-grid">
+                                            <button t-attf-class="cf-pc-ai-preset #{state.aiComposerMode === 'reply' ? 'active' : ''}" t-on-click="() => this.setAIComposerPreset('reply', 'Rispondi in modo completo, concreto e cortese. Conferma ricezione, chiarisci prossimo passo e non inventare dati mancanti.', 'professional')">
+                                                <i class="fa fa-reply"/> Risposta
+                                            </button>
+                                            <button t-attf-class="cf-pc-ai-preset #{state.aiComposerMode === 'quote' ? 'active' : ''}" t-on-click="() => this.setAIComposerPreset('quote', 'Prepara risposta commerciale per richiesta prezzo/preventivo. Chiedi solo i dati mancanti: prodotti, quantita, destinazione, dati aziendali.', 'commercial')">
+                                                <i class="fa fa-file-text-o"/> Preventivo
+                                            </button>
+                                            <button t-attf-class="cf-pc-ai-preset #{state.aiComposerMode === 'catalog' ? 'active' : ''}" t-on-click="() => this.setAIComposerPreset('catalog', 'Rispondi per invio catalogo, listino o schede tecniche. Spiega che prepariamo/inviamo il materiale corretto e chiedi eventuale formato o linea prodotto.', 'commercial')">
+                                                <i class="fa fa-book"/> Catalogo
+                                            </button>
+                                            <button t-attf-class="cf-pc-ai-preset #{state.aiComposerMode === 'sample' ? 'active' : ''}" t-on-click="() => this.setAIComposerPreset('sample', 'Rispondi su campionatura. Conferma gestione campioni, chiedi indirizzo/prodotti se mancanti e anticipa tracking quando disponibile.', 'operational')">
+                                                <i class="fa fa-truck"/> Campioni
+                                            </button>
+                                            <button t-attf-class="cf-pc-ai-preset #{state.aiComposerMode === 'data' ? 'active' : ''}" t-on-click="() => this.setAIComposerPreset('data', 'Chiedi in modo elegante i dati anagrafici o fiscali mancanti: ragione sociale, indirizzo, P.IVA/VAT, referente, telefono.', 'formal')">
+                                                <i class="fa fa-address-card-o"/> Anagrafica
+                                            </button>
+                                            <button t-attf-class="cf-pc-ai-preset #{state.aiComposerMode === 'reminder' ? 'active' : ''}" t-on-click="() => this.setAIComposerPreset('reminder', 'Scrivi un sollecito gentile e professionale. Ricorda il tema aperto e proponi una prossima scadenza chiara.', 'polite')">
+                                                <i class="fa fa-clock-o"/> Sollecito
+                                            </button>
+                                        </div>
                                         <div class="cf-pc-ai-instruction-bar">
-                                            <input type="text" placeholder="Istruzioni per Gemini (es: Sposta appuntamento a venerdì)..." t-att-value="state.aiInstruction" t-on-input="(ev) => this.state.aiInstruction = ev.target.value" t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; this.generateAIDraft()"/>
+                                            <select t-att-value="state.aiComposerTone" t-on-change="(ev) => this.state.aiComposerTone = ev.target.value">
+                                                <option value="professional">Professionale</option>
+                                                <option value="commercial">Commerciale</option>
+                                                <option value="formal">Formale</option>
+                                                <option value="polite">Gentile</option>
+                                                <option value="operational">Operativo</option>
+                                                <option value="short">Breve</option>
+                                            </select>
+                                            <input type="text" placeholder="Istruzioni extra: cosa vuoi ottenere, dati da chiedere, promessa fatta..." t-att-value="state.aiInstruction" t-on-input="(ev) => this.state.aiInstruction = ev.target.value" t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; this.generateAIDraft()"/>
                                             <button class="btn btn-primary btn-sm" t-on-click="generateAIDraft" t-att-disabled="state.aiDraftLoading ? 'disabled' : ''">
                                                 <t t-if="state.aiDraftLoading"><i class="fa fa-spinner fa-spin"/> Scrittura...</t>
-                                                <t t-else="">Genera Bozza</t>
+                                                <t t-else="">Genera</t>
                                             </button>
                                         </div>
                                     </div>
