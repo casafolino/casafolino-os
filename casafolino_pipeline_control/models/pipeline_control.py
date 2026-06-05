@@ -1111,7 +1111,7 @@ class CfPipelineControl(models.AbstractModel):
         scored.sort(key=lambda item: item[0], reverse=True)
         department = self._infer_message_department(msg, text)
         if not scored:
-            return {
+            suggestion = {
                 'has_suggestion': False,
                 'department': department['key'],
                 'department_label': department['label'],
@@ -1119,12 +1119,14 @@ class CfPipelineControl(models.AbstractModel):
                 'reason': 'Non ho trovato un dossier abbastanza coerente. Cerca o collega manualmente il dossier.',
                 'next_action': department['fallback_action'],
                 'candidates': [],
+                'provider': 'Odoo data match',
             }
+            return self._message_llm_assistant_overlay(msg, suggestion, candidates, text)
 
         top_score, top_project, evidence = scored[0]
         confidence = min(96, max(35, int(top_score)))
         action = self._assistant_next_action(top_project, department, msg)
-        return {
+        suggestion = {
             'has_suggestion': True,
             'project_id': top_project.id,
             'project_name': top_project.display_name,
@@ -1136,6 +1138,7 @@ class CfPipelineControl(models.AbstractModel):
             'reason': self._assistant_reason(top_project, department, evidence),
             'next_action': action,
             'evidence': evidence[:4],
+            'provider': 'Odoo data match',
             'candidates': [{
                 'id': project.id,
                 'name': project.display_name,
@@ -1144,6 +1147,81 @@ class CfPipelineControl(models.AbstractModel):
                 'evidence': item_evidence[:3],
             } for score, project, item_evidence in scored[:3]],
         }
+        if confidence < 80:
+            return self._message_llm_assistant_overlay(msg, suggestion, candidates, text)
+        return suggestion
+
+    def _message_llm_assistant_overlay(self, msg, suggestion, candidate_projects, text):
+        router = self.env['cf.ai.router']
+        status = router.provider_status()
+        if not status.get('configured') or not candidate_projects:
+            return suggestion
+        candidates = [{
+            'project_id': project.id,
+            'name': project.display_name,
+            'partner': self._project_partner_name(project),
+            'status': getattr(project, 'cf_status_dossier', '') or '',
+            'next_action': getattr(project, 'cf_next_action', '') or '',
+        } for project in candidate_projects[:8]]
+        valid_ids = {item['project_id'] for item in candidates}
+        prompt = json.dumps({
+            'task': 'Choose the best CasaFolino dossier/project for this email and identify the operating department.',
+            'rules': [
+                'Use only candidate project_id values. Do not invent records.',
+                'If evidence is weak, keep has_suggestion false or confidence below 55.',
+                'Department must be one of logistics, commercial, graphics, samples, admin.',
+                'Return JSON only.',
+            ],
+            'email': {
+                'id': msg.id,
+                'from_name': msg.sender_name or '',
+                'from_email': msg.sender_email or '',
+                'subject': msg.subject or '',
+                'snippet': msg.snippet or '',
+                'body_excerpt': (msg.body_plain or '')[:1600],
+            },
+            'deterministic_suggestion': suggestion,
+            'candidates': candidates,
+        }, ensure_ascii=False)
+        system_instruction = (
+            'You are CasaFolino OS operational AI. '
+            'You route business emails to the correct CRM dossier and operating department. '
+            'Be conservative, use only provided IDs, and return strict JSON.'
+        )
+        try:
+            data = router.call_json(system_instruction, prompt, purpose='mail_assistant_route', max_tokens=650, temperature=0.05)
+        except Exception as exc:
+            _logger.warning("Mail assistant LLM overlay failed for message %s: %s", msg.id, exc)
+            return suggestion
+        project_id = int(data.get('project_id') or 0)
+        if project_id not in valid_ids:
+            return suggestion
+        project = candidate_projects.filtered(lambda rec: rec.id == project_id)[:1]
+        if not project:
+            return suggestion
+        confidence = int(data.get('confidence') or suggestion.get('confidence') or 0)
+        confidence = max(0, min(96, confidence))
+        if confidence < max(45, int(suggestion.get('confidence') or 0) - 10):
+            return suggestion
+        department_key = data.get('department') if data.get('department') in ('logistics', 'commercial', 'graphics', 'samples', 'admin') else suggestion.get('department')
+        department = self._department_label_map().get(department_key, self._department_label_map()['commercial'])
+        suggestion.update({
+            'has_suggestion': confidence >= 45,
+            'project_id': project.id,
+            'project_name': project.display_name,
+            'partner_name': self._project_partner_name(project),
+            'department': department_key,
+            'department_label': department,
+            'confidence': confidence,
+            'confidence_band': 'high' if confidence >= 80 else ('medium' if confidence >= 55 else 'low'),
+            'reason': data.get('reason') or suggestion.get('reason'),
+            'next_action': data.get('next_action') or suggestion.get('next_action'),
+            'provider': status.get('primary') or 'CasaFolino AI',
+        })
+        action_items = data.get('action_items') or []
+        if isinstance(action_items, list):
+            suggestion['action_items'] = [str(item) for item in action_items[:4] if str(item or '').strip()]
+        return suggestion
 
     def _message_text_for_matching(self, msg):
         parts = [
@@ -1305,6 +1383,15 @@ class CfPipelineControl(models.AbstractModel):
             if any(needle in text for needle in needles) or (sender_domain and any(needle in sender_domain for needle in needles)):
                 return {'key': key, 'label': label, 'fallback_action': fallback}
         return {'key': 'commercial', 'label': 'Commerciale', 'fallback_action': 'Collega al cliente e crea prossima azione'}
+
+    def _department_label_map(self):
+        return {
+            'logistics': 'Logistica',
+            'commercial': 'Commerciale',
+            'graphics': 'Grafica',
+            'samples': 'Campionature',
+            'admin': 'Amministrazione',
+        }
 
     def _assistant_next_action(self, project, department, msg):
         if department['key'] == 'logistics':
@@ -2669,10 +2756,9 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _get_ai_readiness_status(self, inbox_rows):
-        ICP = self.env['ir.config_parameter'].sudo()
-        gemini_configured = bool(ICP.get_param('casafolino.gemini_api_key', '').strip())
-        groq_configured = bool(ICP.get_param('casafolino.groq_api_key', '').strip())
-        provider = 'Gemini' if gemini_configured else ('Groq fallback' if groq_configured else 'Non configurata')
+        status = self.env['cf.ai.router'].provider_status()
+        provider = status.get('primary') or 'Non configurata'
+        configured = bool(status.get('configured'))
 
         Mail = self.env['casafolino.mail.message']
         seven_days_ago = fields.Datetime.now() - timedelta(days=7)
@@ -2694,15 +2780,15 @@ class CfPipelineControl(models.AbstractModel):
 
         return {
             'provider': provider,
-            'configured': gemini_configured or groq_configured,
+            'configured': configured,
             'coverage': coverage,
             'weekly_total': weekly_total,
             'weekly_classified': weekly_classified,
             'pending_senders': pending_senders,
             'kept_senders': kept_senders,
             'urgent_actions': urgent_actions,
-            'health_label': 'Pronta' if (gemini_configured or groq_configured) else 'Da configurare',
-            'health_tone': 'green' if (gemini_configured or groq_configured) else 'red',
+            'health_label': 'Pronta' if configured else 'Da configurare',
+            'health_tone': 'green' if configured else 'red',
         }
 
     @api.model

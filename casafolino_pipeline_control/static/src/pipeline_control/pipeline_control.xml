@@ -1432,6 +1432,9 @@
                                                     <strong t-else="">Dossier da confermare</strong>
                                                     <em t-if="state.messageContext.assistant_suggestion.partner_name"
                                                         t-out="state.messageContext.assistant_suggestion.partner_name"/>
+                                                    <em t-if="state.messageContext.assistant_suggestion.provider">
+                                                        AI: <t t-out="state.messageContext.assistant_suggestion.provider"/>
+                                                    </em>
                                                 </div>
                                                 <div class="cf-pc-assistant-score">
                                                     <strong t-out="state.messageContext.assistant_suggestion.confidence + '%'"/>
