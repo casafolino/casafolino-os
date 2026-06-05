@@ -832,7 +832,7 @@ class CfPipelineControl(models.AbstractModel):
                         })
 
         # Fetch CRM Leads
-        Lead = self.env['crm.lead']
+        Lead = self.env['crm.lead'].with_context(active_test=False)
         lead_domain = [('active', '=', True), ('type', '=', 'opportunity')]
         if partner:
             lead_domain.append(('partner_id', '=', partner.id))
@@ -1193,7 +1193,6 @@ class CfPipelineControl(models.AbstractModel):
             lead_candidates |= msg.lead_id
         for token in self._message_match_tokens(text)[:10]:
             lead_candidates |= Lead.search([
-                ('active', '=', True),
                 ('type', '=', 'opportunity'),
                 ('name', 'ilike', token),
             ], limit=5)
