@@ -30,6 +30,7 @@ export class CFPipelineControl extends Component {
             dossierNoteLoading: false,
             selectedMessageId: null,
             selectedMessageBody: "",
+            selectedMessageLoadSeq: 0,
             selectedMessageIds: {},
             messageContext: null,
             partnerSearchQuery: "",
@@ -95,6 +96,8 @@ export class CFPipelineControl extends Component {
     }
 
     async selectMessage(messageId) {
+        const loadSeq = (this.state.selectedMessageLoadSeq || 0) + 1;
+        this.state.selectedMessageLoadSeq = loadSeq;
         this.state.selectedMessageId = messageId;
         this.state.aiDraftBody = "";
         this.state.aiInstruction = "";
@@ -109,15 +112,25 @@ export class CFPipelineControl extends Component {
         
         try {
             const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
+            if (this.state.selectedMessageId !== messageId || this.state.selectedMessageLoadSeq !== loadSeq) {
+                return;
+            }
             if (records && records.length) {
                 this.state.selectedMessageBody = records[0].body_html || `<pre>${records[0].body_plain || ''}</pre>` || _t("Nessun contenuto.");
             } else {
                 this.state.selectedMessageBody = _t("Impossibile caricare il corpo del messaggio.");
             }
-            
+
             // Fetch sidebar context database info
-            this.state.messageContext = await this.orm.call("cf.pipeline.control", "get_message_context_info", [messageId]);
+            const context = await this.orm.call("cf.pipeline.control", "get_message_context_info", [messageId]);
+            if (this.state.selectedMessageId !== messageId || this.state.selectedMessageLoadSeq !== loadSeq) {
+                return;
+            }
+            this.state.messageContext = context;
         } catch (error) {
+            if (this.state.selectedMessageId !== messageId || this.state.selectedMessageLoadSeq !== loadSeq) {
+                return;
+            }
             this.state.selectedMessageBody = _t("Errore caricamento corpo email: ") + (error.message || String(error));
         }
     }
