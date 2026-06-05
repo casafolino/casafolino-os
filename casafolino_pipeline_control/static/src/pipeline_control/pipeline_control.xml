@@ -2306,6 +2306,15 @@
             <button t-if="['sale.order', 'cf.export.sample', 'project.project'].includes(item.model)" class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(item, 'task')" title="Nuova task operativa">
                 <i class="fa fa-plus"/>
             </button>
+            <button t-if="item.model === 'cf.project.shipment'" class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(item, 'shipped')" title="Segna spedito">
+                <i class="fa fa-truck"/>
+            </button>
+            <button t-if="item.model === 'cf.project.shipment'" class="btn btn-sm btn-light" t-on-click="() => this.recordQuickAction(item, 'delivered')" title="Segna consegnato">
+                <i class="fa fa-check"/>
+            </button>
+            <button t-if="item.model === 'cf.project.shipment'" class="btn btn-sm btn-primary" t-on-click="() => this.recordQuickAction(item, 'feedback')" title="Feedback ricevuto">
+                <i class="fa fa-commenting-o"/>
+            </button>
         </div>
     </article>
 </t>

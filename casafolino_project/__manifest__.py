@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Project',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.4.0',
     'category': 'CasaFolino',
     'summary': 'Gestione progetti CasaFolino: campionature, etichette, fiere, lanci',
     'author': 'CasaFolino',

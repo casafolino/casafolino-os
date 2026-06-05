@@ -3261,6 +3261,15 @@ class CfPipelineControl(models.AbstractModel):
             return record.action_reply_last_email_f8()
         if quick_action == 'task':
             return self._new_operational_task(record)
+        if model == 'cf.project.shipment' and quick_action == 'shipped' and hasattr(record, 'action_mark_shipped'):
+            record.action_mark_shipped()
+            return self._notify('Spedizione aggiornata', 'Stato impostato su spedito e TrackBot attivo.', reload=True)
+        if model == 'cf.project.shipment' and quick_action == 'delivered' and hasattr(record, 'action_mark_delivered'):
+            record.action_mark_delivered()
+            return self._notify('Consegna registrata', 'Creato reminder feedback campionatura.', reload=True)
+        if model == 'cf.project.shipment' and quick_action == 'feedback' and hasattr(record, 'action_feedback_received'):
+            record.action_feedback_received()
+            return self._notify('Feedback registrato', 'La spedizione e stata chiusa con feedback ricevuto.', reload=True)
         if quick_action == 'catalog':
             return self._new_operational_task(
                 record,
@@ -3324,7 +3333,17 @@ class CfPipelineControl(models.AbstractModel):
             'attivita: to-do',
             '/mail/view?model=',
         ]
-        return sum(1 for marker in markers if marker in text) >= 2
+        auto_reply_markers = [
+            'out of office',
+            'fuori ufficio',
+            'risposta automatica',
+            'automatic reply',
+            'auto reply',
+            'autoreply',
+            'vacation responder',
+            'absence notification',
+        ]
+        return sum(1 for marker in markers if marker in text) >= 2 or any(marker in text for marker in auto_reply_markers)
 
     def _is_service_notification_message(self, msg):
         return self._is_service_notification_text(
@@ -4895,10 +4914,13 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             vals['priority'] = '1'
         task = self.env['project.task'].create(vals)
         if self.create_sample_shipment and project:
+            today = fields.Date.context_today(self)
             shipment = self.env['cf.project.shipment'].create({
                 'project_id': project.id,
                 'state': 'draft',
                 'trackbot_enabled': True,
+                'estimated_delivery': self.deadline or today + timedelta(days=3),
+                'feedback_reminder_date': (self.deadline or today) + timedelta(days=7),
                 'notes': self.note or '',
             })
             task.cf_shipment_id = shipment.id
