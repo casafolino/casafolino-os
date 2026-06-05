@@ -1193,11 +1193,12 @@ class CfPipelineControl(models.AbstractModel):
             lead_candidates |= msg.lead_id
         for token in self._message_match_tokens(text)[:10]:
             lead_candidates |= Lead.search([
-                ('type', '=', 'opportunity'),
                 ('name', 'ilike', token),
             ], limit=5)
 
         for lead in lead_candidates[:12]:
+            if getattr(lead, 'cf_project_id', False):
+                candidates |= lead.cf_project_id
             if lead.partner_id:
                 candidates |= Project.search(self._active_project_domain() + [
                     '|',
