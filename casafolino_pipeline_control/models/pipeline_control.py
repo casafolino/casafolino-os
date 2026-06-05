@@ -1103,6 +1103,10 @@ class CfPipelineControl(models.AbstractModel):
     def _message_assistant_suggestion(self, msg, partner=None, leads=None, projects=None):
         text = self._message_text_for_matching(msg)
         related_leads = self._message_related_leads(msg, text, leads)
+        if related_leads and not any(getattr(lead, 'cf_project_id', False) for lead in related_leads):
+            lead_suggestion = self._message_lead_without_dossier_suggestion(msg, related_leads, self._infer_message_department(msg, text))
+            if lead_suggestion:
+                return lead_suggestion
         candidates = self._message_project_candidates(msg, text, partner, related_leads, projects)
         scored = []
         for project in candidates:
