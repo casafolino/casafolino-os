@@ -5215,12 +5215,12 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
             if msg:
                 res.update({
                     'message_id': msg.id,
-                    'partner_id': msg.partner_id.id if msg.partner_id else False,
-                    'partner_name': msg.sender_name or (msg.sender_email.split('@')[0] if msg.sender_email else ''),
-                    'partner_email': msg.sender_email or '',
-                    'project_name': msg.subject or 'Dossier da email',
-                    'next_action': 'Risposta commerciale e listino',
-                    'next_action_date': fields.Date.context_today(self) + timedelta(days=7),
+                    'partner_id': res.get('partner_id') or (msg.partner_id.id if msg.partner_id else False),
+                    'partner_name': res.get('partner_name') or msg.sender_name or (msg.sender_email.split('@')[0] if msg.sender_email else ''),
+                    'partner_email': res.get('partner_email') or msg.sender_email or '',
+                    'project_name': res.get('project_name') or msg.subject or 'Dossier da email',
+                    'next_action': res.get('next_action') or self.env.context.get('default_next_action') or 'Risposta commerciale e listino',
+                    'next_action_date': res.get('next_action_date') or fields.Date.context_today(self) + timedelta(days=7),
                 })
         return res
 
