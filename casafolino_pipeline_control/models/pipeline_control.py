@@ -3091,7 +3091,10 @@ class CfPipelineControl(models.AbstractModel):
         if user and not user.has_group('base.group_system'):
             domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
         messages = Mail.search(domain, order='email_date desc, id desc', limit=400)
-        messages = messages.filtered(lambda msg: self._sender_decision_status(msg) != 'dismissed')
+        messages = messages.filtered(
+            lambda msg: self._sender_decision_status(msg) != 'dismissed'
+            and not self._is_service_notification_message(msg)
+        )
         latest_by_thread = {}
         for msg in messages:
             key = msg.thread_key or (msg.partner_id.id and 'partner:%s' % msg.partner_id.id) or msg.sender_email or msg.subject or msg.id
@@ -3105,6 +3108,27 @@ class CfPipelineControl(models.AbstractModel):
             elif msg.direction_computed == 'outbound':
                 waiting.append(msg)
         return to_reply, waiting
+
+    @staticmethod
+    def _is_service_notification_text(body_html='', body_plain='', subject=''):
+        text = ' '.join([subject or '', body_html or '', body_plain or '']).lower()
+        text = re.sub(r'<[^>]+>', ' ', text)
+        text = re.sub(r'\s+', ' ', text)
+        markers = [
+            'ti ha appena assegnato la seguente attivita',
+            'ti ha appena assegnato la seguente attività',
+            'attività: to-do',
+            'attivita: to-do',
+            '/mail/view?model=',
+        ]
+        return sum(1 for marker in markers if marker in text) >= 2
+
+    def _is_service_notification_message(self, msg):
+        return self._is_service_notification_text(
+            msg.body_html or '',
+            msg.body_plain or '',
+            msg.subject or '',
+        )
 
     def _get_dossier_data(self, today):
         Project = self.env['project.project']

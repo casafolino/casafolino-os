@@ -1880,6 +1880,15 @@ class CasafolinoMailMessage(models.Model):
     def _parse_and_save_body(self, msg_obj):
         """Parsa body e allegati da un oggetto email.message già scaricato."""
         self.ensure_one()
+        if not self._mail_identity_matches(msg_obj):
+            error_msg = self._identity_mismatch_error(msg_obj)
+            _logger.warning(error_msg)
+            self.write({
+                'fetch_state': 'error',
+                'fetch_error_msg': error_msg[:500],
+            })
+            return
+
         body_html = ''
         body_text = ''
         attachments = []
@@ -1918,10 +1927,20 @@ class CasafolinoMailMessage(models.Model):
                 else:
                     body_text = payload.decode(charset, errors='ignore')
 
-        self.write({
+        vals = {
             'body_html': body_html or ('<pre>%s</pre>' % body_text),
             'body_downloaded': True,
-        })
+            'fetch_state': 'done',
+            'fetch_error_msg': False,
+        }
+        if self._is_odoo_activity_notification_body(body_html, body_text):
+            vals.update({
+                'state': 'discard',
+                'is_deleted': True,
+                'is_archived': True,
+                'fetch_error_msg': 'Notifica attività Odoo esclusa dalla console commerciale.',
+            })
+        self.write(vals)
 
         for att in attachments:
             self.env['ir.attachment'].create({
@@ -1931,6 +1950,20 @@ class CasafolinoMailMessage(models.Model):
                 'res_model': 'casafolino.mail.message',
                 'res_id': self.id,
             })
+
+    @staticmethod
+    def _is_odoo_activity_notification_body(body_html='', body_text=''):
+        text = re.sub(r'<[^>]+>', ' ', body_html or '')
+        text = ' '.join([text, body_text or '']).lower()
+        text = re.sub(r'\s+', ' ', text)
+        markers = [
+            'ti ha appena assegnato la seguente attivita',
+            'ti ha appena assegnato la seguente attività',
+            'attività: to-do',
+            'attivita: to-do',
+            '/mail/view?model=',
+        ]
+        return sum(1 for marker in markers if marker in text) >= 2
 
     # ── Bulk actions ───────────────────────────────────────────────────
 
