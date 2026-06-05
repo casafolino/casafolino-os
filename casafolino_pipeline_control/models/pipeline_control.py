@@ -1977,7 +1977,8 @@ class CfPipelineControl(models.AbstractModel):
             "Never promise shipment, prices, discounts, delivery dates, or attachments unless explicitly present in the context.\n"
             "You are not a generic chatbot: you are inside CasaFolino OS, so use the CRM/dossier/task context to decide the next business move.\n"
             "If the email belongs to an existing dossier, mention the operational follow-up naturally only when useful to the customer.\n"
-            "If the sender or participants are not linked yet, do not claim they already exist in the CRM."
+            "If the sender or participants are not linked yet, do not claim they already exist in the CRM.\n"
+            "Do not invent the sender signature or any CasaFolino person name. If a closing is needed, use only CasaFolino Team."
         )
 
         user_prompt = (
