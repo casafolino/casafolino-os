@@ -2026,7 +2026,6 @@ class CfPipelineControl(models.AbstractModel):
                 return {'success': False, 'error': 'Il provider AI ha restituito una bozza vuota'}
             
             if '```' in draft:
-                import re
                 draft = re.sub(r'^```\w*\n?', '', draft)
                 draft = re.sub(r'\n?```$', '', draft)
                 draft = draft.strip()
