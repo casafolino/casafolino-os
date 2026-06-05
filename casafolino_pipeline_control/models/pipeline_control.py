@@ -1894,11 +1894,30 @@ class CfPipelineControl(models.AbstractModel):
         if not msg:
             return {'success': False, 'error': 'Email non trovata'}
 
-        original_body = msg.body_plain or msg.snippet or ''
         partner = msg.partner_id
         lead = msg.lead_id
         project = getattr(msg, 'cf_project_id', False)
         ai_brief = self._message_ai_brief(msg)
+        body_payload = self.get_message_body(msg.id)
+        original_body = (body_payload.get('body_plain') or msg.body_plain or msg.snippet or '').strip()
+        if not original_body and body_payload.get('body_html'):
+            original_body = re.sub(r'<[^>]+>', ' ', body_payload.get('body_html') or '')
+            original_body = re.sub(r'\s+', ' ', original_body).strip()
+        assistant = self._message_assistant_suggestion(msg, partner)
+        participants = self._message_participant_context(msg)
+        contact_plan = self._message_contact_plan(msg)
+        sales_list = []
+        Sale = self.env['sale.order']
+        sale_domain = [('state', 'in', ['draft', 'sent'])]
+        if partner:
+            sale_domain.append(('partner_id', '=', partner.id))
+        for order in Sale.search(sale_domain, order='write_date desc, id desc', limit=4):
+            sales_list.append({
+                'name': order.name,
+                'amount_total': order.amount_total or 0.0,
+                'state': order.state or '',
+                'validity_date': fields.Date.to_string(order.validity_date) if 'validity_date' in Sale._fields and order.validity_date else '',
+            })
         open_tasks = []
         if project:
             open_tasks = self.env['project.task'].search([
@@ -1914,6 +1933,22 @@ class CfPipelineControl(models.AbstractModel):
         for task in open_tasks:
             deadline = fields.Date.to_string(task.date_deadline) if task.date_deadline else 'senza scadenza'
             task_lines.append("- %s (%s)" % (task.display_name, deadline))
+        participant_lines = []
+        for item in (participants or [])[:6]:
+            status = 'linked' if item.get('partner_id') else 'to_create_or_link'
+            participant_lines.append("- %s <%s> [%s, %s]" % (
+                item.get('name') or item.get('email') or 'unknown',
+                item.get('email') or '',
+                item.get('role') or 'participant',
+                status,
+            ))
+        contact_plan_lines = [
+            "- Target company: %s" % (contact_plan.get('company_target') or 'unknown'),
+            "- Existing contacts: %s" % (contact_plan.get('existing_contacts') or 0),
+            "- Contacts to create: %s" % (contact_plan.get('contacts_to_create') or 0),
+            "- Contacts to link: %s" % (contact_plan.get('contacts_to_link') or 0),
+            "- Next step: %s" % (contact_plan.get('next_step') or ''),
+        ]
         mode = mode or 'reply'
         tone = tone or 'professional'
         mode_instructions = {
@@ -1939,22 +1974,36 @@ class CfPipelineControl(models.AbstractModel):
             "Write the reply in the same language as the customer's email (typically Italian or English).\n"
             "Do NOT include any email subject or headers. Output ONLY the email body text in HTML format. Keep paragraphs clean using <p> tags. Do not put markdown placeholders. Keep it elegant.\n"
             "Use only facts provided in the context. If something is missing, ask for it politely instead of inventing details.\n"
-            "Never promise shipment, prices, discounts, delivery dates, or attachments unless explicitly present in the context."
+            "Never promise shipment, prices, discounts, delivery dates, or attachments unless explicitly present in the context.\n"
+            "You are not a generic chatbot: you are inside CasaFolino OS, so use the CRM/dossier/task context to decide the next business move.\n"
+            "If the email belongs to an existing dossier, mention the operational follow-up naturally only when useful to the customer.\n"
+            "If the sender or participants are not linked yet, do not claim they already exist in the CRM."
         )
 
         user_prompt = (
             f"Composer mode: {mode}\n"
             f"Composer objective: {mode_instructions.get(mode, mode_instructions['reply'])}\n"
             f"Composer tone: {tone_instructions.get(tone, tone_instructions['professional'])}\n"
+            f"AI provider route: use CasaFolino unified router with fallback.\n"
             f"Customer email sender: {msg.sender_name or 'Customer'} <{msg.sender_email or ''}>\n"
             f"Customer email subject: {msg.subject or '(no subject)'}\n"
             f"Matched company/contact: {(partner.display_name if partner else 'not linked yet')}\n"
             f"Pipeline lead: {(lead.display_name if lead else 'none')}\n"
             f"Dossier/project: {(project.display_name if project else 'none')}\n"
+            f"Assistant dossier suggestion: {json.dumps(assistant, ensure_ascii=False, default=str)[:1800]}\n"
             f"AI intent: {ai_brief.get('intent')}\n"
             f"AI recommended action: {ai_brief.get('recommended_action')}\n"
             f"AI action items: {', '.join(ai_brief.get('action_items') or []) or 'none'}\n"
+            f"AI urgency: {ai_brief.get('urgency') or msg.ai_urgency or 'unknown'}\n"
+            f"Participants found in the thread:\n{chr(10).join(participant_lines) if participant_lines else '- none'}\n"
+            f"Contact linking plan:\n{chr(10).join(contact_plan_lines) if contact_plan_lines else '- none'}\n"
+            f"Open quotations:\n{json.dumps(sales_list, ensure_ascii=False, default=str) if sales_list else '- none'}\n"
             f"Open operational tasks:\n{chr(10).join(task_lines) if task_lines else '- none'}\n"
+            "Business rules for this draft:\n"
+            "- If a dossier/lead is suggested, keep the answer aligned with that context.\n"
+            "- If the topic is logistics, samples, catalogue, payment, graphics, or quotation, be explicit about the next operational step.\n"
+            "- If data is missing, ask only for the missing data needed to proceed.\n"
+            "- Never expose internal IDs, confidence scores, or AI reasoning to the customer.\n"
             f"Customer email body:\n\"\"\"\n{original_body[:3000]}\n\"\"\"\n\n"
         )
         
@@ -1966,9 +2015,15 @@ class CfPipelineControl(models.AbstractModel):
         user_prompt += "Draft Response (HTML):"
 
         try:
-            draft = self.env['cf.gemini.client']._call_gemini_raw(system_instruction, user_prompt)
+            draft = self.env['cf.ai.router'].call_raw(
+                system_instruction,
+                user_prompt,
+                purpose='mail_ai_composer',
+                max_tokens=1100,
+                temperature=0.25,
+            )
             if not draft:
-                return {'success': False, 'error': 'Gemini ha restituito una bozza vuota'}
+                return {'success': False, 'error': 'Il provider AI ha restituito una bozza vuota'}
             
             if '```' in draft:
                 import re
