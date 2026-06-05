@@ -523,12 +523,36 @@ class CfPipelineControl(models.AbstractModel):
         remaining = max(limit - len(rows), 0)
         if remaining:
             Task = self.env['project.task']
-            for task in Task.search([('name', 'ilike', query)], order='write_date desc, id desc', limit=remaining):
+            task_domain = ['|', '|',
+                ('name', 'ilike', query),
+                ('project_id.name', 'ilike', query),
+                ('partner_id.name', 'ilike', query),
+            ]
+            if 'cf_source_note' in Task._fields:
+                task_domain = ['|'] + task_domain + [('cf_source_note', 'ilike', query)]
+            for task in Task.search(task_domain, order='write_date desc, id desc', limit=remaining):
                 key = ('project.task', task.id)
                 if key in seen:
                     continue
                 seen.add(key)
                 rows.append(self._format_entity360_task(task))
+
+        remaining = max(limit - len(rows), 0)
+        if remaining and 'cf.project.shipment' in self.env.registry:
+            Shipment = self.env['cf.project.shipment']
+            shipment_domain = ['|', '|', '|',
+                ('tracking_number', 'ilike', query),
+                ('carrier', 'ilike', query),
+                ('project_id.name', 'ilike', query),
+                ('partner_id.name', 'ilike', query),
+            ]
+            today = fields.Date.context_today(self)
+            for shipment in Shipment.search(shipment_domain, order='estimated_delivery asc, ship_date desc, id desc', limit=remaining):
+                key = ('cf.project.shipment', shipment.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(self._format_shipment_item(shipment, today))
 
         remaining = max(limit - len(rows), 0)
         if remaining and 'cf.export.sample' in self.env.registry:
