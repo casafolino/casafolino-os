@@ -111,14 +111,17 @@ export class CFPipelineControl extends Component {
         this.state.dossierSearchResults = [];
         
         try {
-            const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
+            const bodyInfo = await this.orm.call("cf.pipeline.control", "get_message_body", [messageId]);
             if (this.state.selectedMessageId !== messageId || this.state.selectedMessageLoadSeq !== loadSeq) {
                 return;
             }
-            if (records && records.length) {
-                this.state.selectedMessageBody = records[0].body_html || `<pre>${records[0].body_plain || ''}</pre>` || _t("Nessun contenuto.");
+            if (bodyInfo?.found) {
+                this.state.selectedMessageBody = bodyInfo.body_html || `<pre>${bodyInfo.body_plain || ''}</pre>` || _t("Nessun contenuto.");
+                if (!bodyInfo.downloaded && bodyInfo.fetch_error_msg) {
+                    this.notification.add(bodyInfo.fetch_error_msg, { type: "warning" });
+                }
             } else {
-                this.state.selectedMessageBody = _t("Impossibile caricare il corpo del messaggio.");
+                this.state.selectedMessageBody = bodyInfo?.message || _t("Impossibile caricare il corpo del messaggio.");
             }
 
             // Fetch sidebar context database info

@@ -1696,6 +1696,47 @@ class CfPipelineControl(models.AbstractModel):
         return deduped[:7]
 
     @api.model
+    def get_message_body(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return {
+                'found': False,
+                'body_html': '',
+                'body_plain': '',
+                'message': 'Email non trovata.',
+            }
+        if not (msg.body_html or msg.body_plain) and msg.account_id and msg.fetch_state != 'error':
+            try:
+                msg.with_context(cf_skip_mail_attachments=True)._ensure_body_downloaded()
+            except Exception as exc:
+                _logger.warning('Console body fetch failed for mail %s: %s', msg.id, exc)
+        if hasattr(msg, '_is_odoo_activity_notification_body') and msg._is_odoo_activity_notification_body(msg.body_html or '', msg.body_plain or ''):
+            msg.write({
+                'state': 'discard',
+                'is_deleted': True,
+                'is_archived': True,
+                'fetch_error_msg': 'Notifica attività Odoo esclusa dalla console commerciale.',
+            })
+            return {
+                'found': False,
+                'body_html': '',
+                'body_plain': '',
+                'message': 'Notifica interna esclusa dalla console commerciale.',
+            }
+        body_html = msg.body_html or ''
+        body_plain = msg.body_plain or ''
+        if not body_html and body_plain:
+            body_html = '<pre>%s</pre>' % body_plain
+        return {
+            'found': True,
+            'body_html': body_html,
+            'body_plain': body_plain,
+            'fetch_state': msg.fetch_state or '',
+            'fetch_error_msg': msg.fetch_error_msg or '',
+            'downloaded': bool(msg.body_html or msg.body_plain),
+        }
+
+    @api.model
     def link_partner_to_message(self, message_id, partner_id):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         partner = self.env['res.partner'].browse(int(partner_id)).exists()
