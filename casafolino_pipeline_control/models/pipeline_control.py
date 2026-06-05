@@ -1157,6 +1157,10 @@ class CfPipelineControl(models.AbstractModel):
 
         top_score, top_project, evidence = scored[0]
         confidence = min(96, max(35, int(top_score)))
+        guard = self._message_project_safety_guard(msg, top_project, text, related_leads, evidence)
+        if guard:
+            confidence = min(confidence, guard['max_confidence'])
+            evidence = self._compact(evidence + guard['evidence'])
         action = self._assistant_next_action(top_project, department, msg)
         suggestion = {
             'has_suggestion': True,
@@ -1167,6 +1171,8 @@ class CfPipelineControl(models.AbstractModel):
             'department_label': department['label'],
             'confidence': confidence,
             'confidence_band': 'high' if confidence >= 80 else ('medium' if confidence >= 55 else 'low'),
+            'safe_to_apply': confidence >= 80 and not guard,
+            'requires_confirmation': confidence < 80 or bool(guard),
             'reason': self._assistant_reason(top_project, department, evidence),
             'next_action': action,
             'evidence': evidence[:4],
@@ -1211,6 +1217,8 @@ class CfPipelineControl(models.AbstractModel):
             'department_label': department['label'],
             'confidence': 58,
             'confidence_band': 'medium',
+            'safe_to_apply': False,
+            'requires_confirmation': True,
             'reason': 'Ho trovato il lead "%s", ma non ha ancora un dossier collegato.' % lead.display_name,
             'next_action': action,
             'evidence': ['Lead CRM riconosciuto dal testo mail', 'Dossier assente sul lead'],
@@ -1281,6 +1289,9 @@ class CfPipelineControl(models.AbstractModel):
         confidence = max(0, min(96, confidence))
         if confidence < int(suggestion.get('confidence') or 0):
             confidence = int(suggestion.get('confidence') or confidence)
+        guard = self._message_project_safety_guard(msg, project, text, self._message_related_leads(msg, text), suggestion.get('evidence') or [])
+        if guard:
+            confidence = min(confidence, guard['max_confidence'])
         department_key = data.get('department') if data.get('department') in ('logistics', 'commercial', 'graphics', 'samples', 'admin') else suggestion.get('department')
         department = self._department_label_map().get(department_key, self._department_label_map()['commercial'])
         suggestion.update({
@@ -1292,16 +1303,30 @@ class CfPipelineControl(models.AbstractModel):
             'department_label': department,
             'confidence': confidence,
             'confidence_band': 'high' if confidence >= 80 else ('medium' if confidence >= 55 else 'low'),
+            'safe_to_apply': confidence >= 80 and not guard,
+            'requires_confirmation': confidence < 80 or bool(guard),
             'reason': data.get('reason') or suggestion.get('reason'),
             'next_action': data.get('next_action') or suggestion.get('next_action'),
             'provider': status.get('primary') or 'CasaFolino AI',
         })
+        if guard:
+            suggestion['evidence'] = self._compact((suggestion.get('evidence') or []) + guard['evidence'])[:4]
         action_items = data.get('action_items') or []
         if isinstance(action_items, list):
             suggestion['action_items'] = [str(item) for item in action_items[:4] if str(item or '').strip()]
         return suggestion
 
     def _message_text_for_matching(self, msg):
+        if self._is_service_notification_text(msg.body_html or '', msg.body_plain or '', msg.subject or ''):
+            parts = [
+                msg.subject or '',
+                msg.sender_name or '',
+                msg.sender_email or '',
+                msg.recipient_emails or '',
+                msg.cc_emails or '',
+                msg.snippet or '',
+            ]
+            return ' '.join(parts).lower()
         parts = [
             msg.subject or '',
             msg.sender_name or '',
@@ -1312,6 +1337,44 @@ class CfPipelineControl(models.AbstractModel):
             (msg.body_plain or '')[:2500],
         ]
         return ' '.join(parts).lower()
+
+    def _message_identity_text_for_matching(self, msg):
+        parts = [
+            msg.subject or '',
+            msg.sender_name or '',
+            msg.sender_email or '',
+            msg.recipient_emails or '',
+            msg.cc_emails or '',
+            msg.snippet or '',
+        ]
+        return ' '.join(parts).lower()
+
+    def _message_project_safety_guard(self, msg, project, text, related_leads, evidence):
+        sender_domain = msg.sender_domain or self._email_domain(msg.sender_email)
+        if not sender_domain or sender_domain in _INTERNAL_EMAIL_DOMAINS or not project.partner_id:
+            return False
+        project_domains = set()
+        for value in [project.partner_id.email, project.partner_id.website]:
+            domain = self._email_domain(value) if value else ''
+            if domain:
+                project_domains.add(domain)
+        identity_text = self._message_identity_text_for_matching(msg)
+        strong_reference = False
+        for label in [project.display_name, project.partner_id.display_name]:
+            for token in self._message_match_tokens((label or '').lower())[:8]:
+                if token and token in identity_text:
+                    strong_reference = True
+                    break
+            if strong_reference:
+                break
+        project_lead_ids = set(getattr(project, 'cf_lead_ids', self.env['crm.lead']).ids)
+        lead_match = bool(related_leads and project_lead_ids.intersection(set(related_leads.ids)))
+        if sender_domain in project_domains or strong_reference or lead_match:
+            return False
+        return {
+            'max_confidence': 62,
+            'evidence': ['Associazione da confermare: dominio mittente diverso dal dossier'],
+        }
 
     def _message_match_tokens(self, text):
         stop = {
@@ -1774,6 +1837,19 @@ class CfPipelineControl(models.AbstractModel):
                 msg.with_context(cf_skip_mail_attachments=True)._ensure_body_downloaded()
             except Exception as exc:
                 _logger.warning('Console body fetch failed for mail %s: %s', msg.id, exc)
+        if self._is_service_notification_text(msg.body_html or '', msg.body_plain or '', msg.subject or ''):
+            msg.write({
+                'state': 'discard',
+                'is_deleted': True,
+                'is_archived': True,
+                'fetch_error_msg': 'Notifica o risposta automatica esclusa dalla console commerciale.',
+            })
+            return {
+                'found': False,
+                'body_html': '',
+                'body_plain': '',
+                'message': 'Notifica o risposta automatica esclusa dalla console commerciale.',
+            }
         if hasattr(msg, '_is_odoo_activity_notification_body') and msg._is_odoo_activity_notification_body(msg.body_html or '', msg.body_plain or ''):
             msg.write({
                 'state': 'discard',
@@ -3122,6 +3198,12 @@ class CfPipelineControl(models.AbstractModel):
     def _apply_ai_decision_from_message(self, msg):
         self._ensure_company_contacts_from_message(msg)
         assistant = self._message_assistant_suggestion(msg, msg.partner_id)
+        if assistant.get('has_suggestion') and not assistant.get('safe_to_apply'):
+            return self._notify(
+                'Conferma richiesta',
+                'La proposta AI non ha abbastanza evidenza per collegare automaticamente. Controlla i candidati e collega manualmente il dossier corretto.',
+                'warning',
+            )
         if assistant.get('has_suggestion') and assistant.get('project_id'):
             project = self.env['project.project'].browse(int(assistant.get('project_id'))).exists()
             if project:

@@ -1441,6 +1441,20 @@
                                                     <span t-out="state.messageContext.assistant_suggestion.department_label"/>
                                                 </div>
                                             </div>
+                                            <div class="cf-pc-assistant-safe-strip"
+                                                 t-if="state.messageContext.assistant_suggestion.requires_confirmation || state.messageContext.assistant_suggestion.safe_to_apply">
+                                                <span t-if="state.messageContext.assistant_suggestion.safe_to_apply"
+                                                      class="cf-pc-mini-badge tone-green">
+                                                    Applicabile
+                                                </span>
+                                                <span t-else=""
+                                                      class="cf-pc-mini-badge tone-amber">
+                                                    Verifica prima di collegare
+                                                </span>
+                                                <small t-if="state.messageContext.assistant_suggestion.requires_confirmation">
+                                                    L'AI ha trovato un possibile collegamento, ma serve conferma umana.
+                                                </small>
+                                            </div>
                                             <div class="cf-pc-assistant-reason">
                                                 <i class="fa fa-magic"/>
                                                 <span t-out="state.messageContext.assistant_suggestion.reason"/>
@@ -1459,6 +1473,8 @@
                                             <div class="cf-pc-assistant-actions"
                                                  t-if="state.messageContext.assistant_suggestion">
                                                 <button class="btn btn-sm btn-primary"
+                                                        t-att-disabled="state.messageContext.assistant_suggestion.safe_to_apply ? false : 'disabled'"
+                                                        t-att-title="state.messageContext.assistant_suggestion.safe_to_apply ? 'Applica collegamento AI' : 'Serve conferma manuale: usa i candidati sotto'"
                                                         t-on-click="() => this.mailQuickAction(selectedMessage, 'apply_ai')">
                                                     <i class="fa fa-bolt"/> Applica AI
                                                 </button>
