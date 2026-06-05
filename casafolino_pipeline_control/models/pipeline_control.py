@@ -1102,15 +1102,19 @@ class CfPipelineControl(models.AbstractModel):
 
     def _message_assistant_suggestion(self, msg, partner=None, leads=None, projects=None):
         text = self._message_text_for_matching(msg)
-        candidates = self._message_project_candidates(msg, text, partner, leads, projects)
+        related_leads = self._message_related_leads(msg, text, leads)
+        candidates = self._message_project_candidates(msg, text, partner, related_leads, projects)
         scored = []
         for project in candidates:
-            score, evidence = self._score_message_project_candidate(msg, project, text, leads)
+            score, evidence = self._score_message_project_candidate(msg, project, text, related_leads)
             if score > 0:
                 scored.append((score, project, evidence))
         scored.sort(key=lambda item: item[0], reverse=True)
         department = self._infer_message_department(msg, text)
         if not scored:
+            lead_suggestion = self._message_lead_without_dossier_suggestion(msg, related_leads, department)
+            if lead_suggestion:
+                return lead_suggestion
             suggestion = {
                 'has_suggestion': False,
                 'department': department['key'],
@@ -1150,6 +1154,41 @@ class CfPipelineControl(models.AbstractModel):
         if confidence < 80:
             return self._message_llm_assistant_overlay(msg, suggestion, candidates, text)
         return suggestion
+
+    def _message_related_leads(self, msg, text, leads=None):
+        Lead = self.env['crm.lead']
+        lead_candidates = Lead.browse()
+        if leads:
+            lead_candidates |= leads
+        if msg.lead_id:
+            lead_candidates |= msg.lead_id
+        for token in self._message_match_tokens(text)[:12]:
+            lead_candidates |= Lead.search([
+                ('name', 'ilike', token),
+            ], order='write_date desc, id desc', limit=6)
+        return lead_candidates[:18]
+
+    def _message_lead_without_dossier_suggestion(self, msg, leads, department):
+        lead = leads.filtered(lambda item: not getattr(item, 'cf_project_id', False))[:1]
+        if not lead:
+            return False
+        action = department['fallback_action']
+        if department['key'] == 'logistics':
+            action = 'Crea dossier operativo e task logistica per questa conversazione'
+        return {
+            'has_suggestion': False,
+            'lead_id': lead.id,
+            'lead_name': lead.display_name,
+            'department': department['key'],
+            'department_label': department['label'],
+            'confidence': 58,
+            'confidence_band': 'medium',
+            'reason': 'Ho trovato il lead "%s", ma non ha ancora un dossier collegato.' % lead.display_name,
+            'next_action': action,
+            'evidence': ['Lead CRM riconosciuto dal testo mail', 'Dossier assente sul lead'],
+            'candidates': [],
+            'provider': 'Odoo data match',
+        }
 
     def _message_llm_assistant_overlay(self, msg, suggestion, candidate_projects, text):
         router = self.env['cf.ai.router']
@@ -1275,15 +1314,7 @@ class CfPipelineControl(models.AbstractModel):
         if msg.cf_ai_suggestion_ids:
             candidates |= msg.cf_ai_suggestion_ids
 
-        lead_candidates = Lead.browse()
-        if leads:
-            lead_candidates |= leads
-        if msg.lead_id:
-            lead_candidates |= msg.lead_id
-        for token in self._message_match_tokens(text)[:10]:
-            lead_candidates |= Lead.search([
-                ('name', 'ilike', token),
-            ], limit=5)
+        lead_candidates = self._message_related_leads(msg, text, leads)
 
         for lead in lead_candidates[:12]:
             if getattr(lead, 'cf_project_id', False):
@@ -1341,6 +1372,11 @@ class CfPipelineControl(models.AbstractModel):
         if lead_ids and project_lead_ids.intersection(lead_ids):
             score += 55
             evidence.append('Lead collegato al dossier')
+        for lead in (leads or self.env['crm.lead']):
+            if getattr(lead, 'cf_project_id', False) and lead.cf_project_id.id == project.id:
+                score += 70
+                evidence.append('Dossier indicato dal lead CRM')
+                break
         if msg.lead_id and msg.lead_id.partner_id and project.partner_id == msg.lead_id.partner_id:
             score += 35
             evidence.append('Partner del lead coincide col dossier')
