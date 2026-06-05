@@ -1172,6 +1172,15 @@ class CfPipelineControl(models.AbstractModel):
                 'Department must be one of logistics, commercial, graphics, samples, admin.',
                 'Return JSON only.',
             ],
+            'schema': {
+                'has_suggestion': True,
+                'project_id': 0,
+                'department': 'commercial',
+                'confidence': 0,
+                'reason': 'short evidence-based explanation',
+                'next_action': 'short operational next action',
+                'action_items': ['optional short item'],
+            },
             'email': {
                 'id': msg.id,
                 'from_name': msg.sender_name or '',
@@ -1193,16 +1202,18 @@ class CfPipelineControl(models.AbstractModel):
         except Exception as exc:
             _logger.warning("Mail assistant LLM overlay failed for message %s: %s", msg.id, exc)
             return suggestion
-        project_id = int(data.get('project_id') or 0)
+        project_id = int(data.get('project_id') or data.get('suggested_project_id') or data.get('dossier_id') or 0)
+        if not project_id and len(candidates) == 1 and data.get('has_suggestion') is not False:
+            project_id = candidates[0]['project_id']
         if project_id not in valid_ids:
             return suggestion
         project = candidate_projects.filtered(lambda rec: rec.id == project_id)[:1]
         if not project:
             return suggestion
-        confidence = int(data.get('confidence') or suggestion.get('confidence') or 0)
+        confidence = int(data.get('confidence') or data.get('score') or suggestion.get('confidence') or 0)
         confidence = max(0, min(96, confidence))
-        if confidence < max(45, int(suggestion.get('confidence') or 0) - 10):
-            return suggestion
+        if confidence < int(suggestion.get('confidence') or 0):
+            confidence = int(suggestion.get('confidence') or confidence)
         department_key = data.get('department') if data.get('department') in ('logistics', 'commercial', 'graphics', 'samples', 'admin') else suggestion.get('department')
         department = self._department_label_map().get(department_key, self._department_label_map()['commercial'])
         suggestion.update({
