@@ -4586,6 +4586,10 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         message = self.env['casafolino.mail.message'].browse(self.env.context.get('default_message_id')).exists()
         if message:
             lead = lead or message.lead_id
+            if not lead:
+                control = self.env['cf.pipeline.control']
+                text = control._message_text_for_matching(message)
+                lead = control._message_related_leads(message, text)[:1]
             partner = partner or message.partner_id
             res.update({
                 'name': message.subject or res.get('name'),
@@ -4595,6 +4599,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'source_channel': 'mail',
                 'urgency': 'high' if message.ai_urgency == 'high' or message.ai_action_required else 'normal',
                 'next_checkpoint': self.env['cf.pipeline.control']._mail_suggested_action(message),
+                'is_mini_project': bool(lead and not getattr(lead, 'cf_project_id', False)),
             })
         if lead:
             project = project or getattr(lead, 'cf_project_id', False)
@@ -4742,7 +4747,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         self.ensure_one()
         if self.project_id:
             return self.project_id
-        if not self.create_sample_shipment:
+        if not (self.create_sample_shipment or self.is_mini_project):
             return self.env['project.project']
 
         project = self.env['project.project']
@@ -4771,6 +4776,19 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 if 'cf_dossier_priority' in project._fields:
                     vals['cf_dossier_priority'] = 'medium'
                 project = project.create(vals)
+        elif self.lead_id:
+            vals = {
+                'name': 'Dossier - %s' % (self.lead_id.name or self.name),
+                'partner_id': self.lead_id.partner_id.id if self.lead_id.partner_id else False,
+                'user_id': self.env.user.id,
+            }
+            if 'cf_status_dossier' in project._fields:
+                vals['cf_status_dossier'] = 'exploration'
+            if 'cf_dossier_priority' in project._fields:
+                vals['cf_dossier_priority'] = 'medium'
+            project = project.create(vals)
+            if 'cf_project_id' in self.lead_id._fields and not self.lead_id.cf_project_id:
+                self.lead_id.cf_project_id = project.id
         if project:
             self.project_id = project.id
         return project
