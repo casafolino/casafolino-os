@@ -93,7 +93,7 @@ class CfProjectShipment(models.Model):
             return
         for shipment in self:
             shipment.activity_schedule(
-                todo_type.id,
+                'mail.mail_activity_data_todo',
                 date_deadline=shipment.feedback_reminder_date or fields.Date.context_today(shipment),
                 user_id=shipment.project_id.user_id.id or self.env.user.id,
                 summary='Richiedere feedback campionatura',
