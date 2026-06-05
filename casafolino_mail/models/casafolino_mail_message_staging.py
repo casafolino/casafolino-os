@@ -532,6 +532,8 @@ class CasafolinoMailMessage(models.Model):
     def _do_ai_suggestion(self):
         """Call Gemini/Groq with structured prompt → JSON with candidate dossiers."""
         self.ensure_one()
+        if self._do_pipeline_control_ai_suggestion():
+            return
         if not self.partner_id:
             self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
                         'cf_ai_reasoning': 'Nessun partner associato.'})
@@ -659,6 +661,54 @@ class CasafolinoMailMessage(models.Model):
                 'cf_ai_confidence': 0.0,
                 'cf_ai_reasoning': 'AI error: %s' % str(e)[:200],
             })
+
+    def _do_pipeline_control_ai_suggestion(self):
+        """Use the CasaFolino OS console matcher when available.
+
+        The console matcher can route by subject, lead and operational context,
+        while the legacy mail matcher only works after partner resolution.
+        """
+        self.ensure_one()
+        if 'cf.pipeline.control' not in self.env.registry:
+            return False
+        try:
+            control = self.env['cf.pipeline.control']
+            text = control._message_text_for_matching(self)
+            leads = control._message_related_leads(self, text)
+            suggestion = control._message_assistant_suggestion(self, self.partner_id, leads, self.env['project.project'])
+        except Exception as exc:
+            _logger.warning("Pipeline Control AI suggestion failed for msg %s: %s", self.id, exc)
+            return False
+
+        if not suggestion:
+            return False
+
+        vals = {
+            'cf_ai_processed': True,
+            'cf_ai_confidence': 0.0,
+            'cf_ai_reasoning': suggestion.get('reason') or suggestion.get('next_action') or 'Nessun suggerimento dossier affidabile.',
+        }
+        confidence = float(suggestion.get('confidence') or 0.0)
+        if confidence > 1:
+            confidence = confidence / 100.0
+        vals['cf_ai_confidence'] = max(0.0, min(confidence, 1.0))
+
+        project_id = int(suggestion.get('project_id') or 0)
+        if project_id:
+            vals['cf_ai_suggestion_ids'] = [(6, 0, [project_id])]
+
+        lead_id = int(suggestion.get('lead_id') or 0)
+        if lead_id and not self.lead_id:
+            vals['lead_id'] = lead_id
+            lead = self.env['crm.lead'].browse(lead_id).exists()
+            if lead and lead.partner_id and not self.partner_id:
+                vals['partner_id'] = lead.partner_id.id
+
+        if not project_id and not lead_id and not suggestion.get('has_suggestion'):
+            return False
+
+        self.write(vals)
+        return True
 
     @api.model
     def _cron_run_ai_suggestion(self, batch_size=20):
