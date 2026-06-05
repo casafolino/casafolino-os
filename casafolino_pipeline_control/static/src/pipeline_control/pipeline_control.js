@@ -261,10 +261,23 @@ export class CFPipelineControl extends Component {
         }
     }
 
-    async linkDossierToMessage(projectId) {
+    async linkDossierToMessage(projectId, assistantSuggestion = null) {
         if (!this.state.selectedMessageId) return;
         try {
-            const success = await this.orm.call("cf.pipeline.control", "link_dossier_to_message", [this.state.selectedMessageId, projectId]);
+            const args = [this.state.selectedMessageId, projectId];
+            if (assistantSuggestion) {
+                args.push({
+                    project_id: assistantSuggestion.project_id || false,
+                    confidence: assistantSuggestion.confidence || 0,
+                    confidence_band: assistantSuggestion.confidence_band || "",
+                    provider: assistantSuggestion.provider || "",
+                    department: assistantSuggestion.department || "",
+                    department_label: assistantSuggestion.department_label || "",
+                    reason: assistantSuggestion.reason || "",
+                    next_action: assistantSuggestion.next_action || "",
+                });
+            }
+            const success = await this.orm.call("cf.pipeline.control", "link_dossier_to_message", args);
             if (success) {
                 this.notification.add(_t("Email associata al dossier con successo"), { type: "success" });
                 await this.loadData();

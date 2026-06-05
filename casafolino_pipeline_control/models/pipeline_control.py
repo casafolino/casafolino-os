@@ -1720,13 +1720,68 @@ class CfPipelineControl(models.AbstractModel):
         return False
 
     @api.model
-    def link_dossier_to_message(self, message_id, project_id):
+    def link_dossier_to_message(self, message_id, project_id, assistant_payload=None):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         project = self.env['project.project'].browse(int(project_id)).exists()
         if msg and project:
-            msg.action_position_to_project(project.id)
+            position_reason = False
+            if isinstance(assistant_payload, dict):
+                self._apply_assistant_feedback_to_message(msg, project, assistant_payload)
+                position_reason = self._assistant_feedback_reason(assistant_payload)
+            msg.with_context(cf_position_reason=position_reason).action_position_to_project(project.id)
             return True
         return False
+
+    def _apply_assistant_feedback_to_message(self, msg, actual_project, assistant_payload):
+        """Persist the AI hypothesis before the user confirmation creates feedback."""
+        suggested_project = actual_project
+        raw_suggested_id = assistant_payload.get('project_id')
+        if raw_suggested_id:
+            try:
+                suggested_project = self.env['project.project'].browse(int(raw_suggested_id)).exists() or actual_project
+            except (TypeError, ValueError):
+                suggested_project = actual_project
+
+        raw_confidence = assistant_payload.get('confidence') or 0.0
+        try:
+            confidence = float(raw_confidence)
+        except (TypeError, ValueError):
+            confidence = 0.0
+        if confidence > 1:
+            confidence = confidence / 100.0
+        confidence = max(0.0, min(confidence, 1.0))
+
+        provider = (assistant_payload.get('provider') or 'CasaFolino AI').strip()
+        department = (assistant_payload.get('department_label') or assistant_payload.get('department') or '').strip()
+        reason = (assistant_payload.get('reason') or '').strip()
+        next_action = (assistant_payload.get('next_action') or '').strip()
+        reasoning_parts = [
+            'Provider: %s' % provider,
+            'Reparto: %s' % department if department else '',
+            reason,
+            'Prossima azione: %s' % next_action if next_action else '',
+        ]
+        vals = {
+            'cf_ai_processed': True,
+            'cf_ai_confidence': confidence,
+            'cf_ai_reasoning': '\n'.join(part for part in reasoning_parts if part),
+            'cf_ai_suggestion_ids': [(6, 0, [suggested_project.id])],
+        }
+        sender_domain = msg.sender_domain or self._email_domain(msg.sender_email)
+        if actual_project.partner_id and (not msg.partner_id or sender_domain in _INTERNAL_EMAIL_DOMAINS):
+            vals['partner_id'] = actual_project.partner_id.id
+            if 'match_type' in msg._fields:
+                vals['match_type'] = 'manual'
+        msg.write(vals)
+
+    @staticmethod
+    def _assistant_feedback_reason(assistant_payload):
+        provider = (assistant_payload.get('provider') or 'CasaFolino AI').strip()
+        department = (assistant_payload.get('department') or '').strip()
+        return 'assistant_confirmed:%s%s' % (
+            provider,
+            ':%s' % department if department else '',
+        )
 
     @api.model
     def generate_ai_draft(self, message_id, instruction='', mode='reply', tone='professional'):

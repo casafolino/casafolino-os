@@ -1459,7 +1459,7 @@
                                             <div class="cf-pc-assistant-actions"
                                                  t-if="state.messageContext.assistant_suggestion.has_suggestion">
                                                 <button class="btn btn-sm btn-primary"
-                                                        t-on-click="() => this.linkDossierToMessage(state.messageContext.assistant_suggestion.project_id)">
+                                                        t-on-click="() => this.linkDossierToMessage(state.messageContext.assistant_suggestion.project_id, state.messageContext.assistant_suggestion)">
                                                     <i class="fa fa-link"/> Collega al dossier
                                                 </button>
                                                 <button class="btn btn-sm btn-light"
@@ -1474,7 +1474,7 @@
                                                      t-key="'assistant-candidate-' + candidate.id">
                                                     <span t-out="candidate.name"/>
                                                     <button class="btn btn-sm btn-light"
-                                                            t-on-click="() => this.linkDossierToMessage(candidate.id)">
+                                                            t-on-click="() => this.linkDossierToMessage(candidate.id, state.messageContext.assistant_suggestion)">
                                                         <t t-out="candidate.confidence"/>%
                                                     </button>
                                                 </div>
