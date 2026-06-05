@@ -234,17 +234,23 @@ class ResPartnerMailExt(models.Model):
             'name': 'Backfill mail partner %s' % self.id,
             'model_id': model_id,
             'state': 'code',
-            'code': "env['res.partner'].browse(%d).action_sync_full_email_history()" % self.id,
+            'code': 'pass',
         })
-        self.env['ir.cron'].sudo().create({
+        cron = self.env['ir.cron'].sudo().create({
             'name': 'Backfill mail partner %s (%s)' % (self.id, self.name or ''),
             'ir_actions_server_id': server_action.id,
             'interval_number': 1,
             'interval_type': 'minutes',
-            'numbercall': 1,
             'active': True,
             'nextcall': fields.Datetime.now(),
             'user_id': self.env.ref('base.user_admin').id,
+        })
+        server_action.write({
+            'code': (
+                "env['res.partner'].browse(%d).action_sync_full_email_history();"
+                "env['ir.cron'].browse(%d).write({'active': False});"
+                "env['ir.actions.server'].browse(%d).unlink()"
+            ) % (self.id, cron.id, server_action.id),
         })
 
     def action_enable_mail_tracking(self):
