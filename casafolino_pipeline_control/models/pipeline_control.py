@@ -3854,6 +3854,39 @@ class CfPipelineControl(models.AbstractModel):
         return action
 
     def _new_task_from_message(self, msg):
+        assistant = self._message_assistant_suggestion(msg, msg.partner_id)
+        lead = msg.lead_id
+        if not lead and assistant.get('lead_id'):
+            lead = self.env['crm.lead'].browse(assistant.get('lead_id')).exists()
+        project = getattr(msg, 'cf_project_id', False)
+        if not project and assistant.get('project_id'):
+            project = self.env['project.project'].browse(assistant.get('project_id')).exists()
+        if not project and lead:
+            project = getattr(lead, 'cf_project_id', False)
+        partner = msg.partner_id or (lead.partner_id if lead else False) or (project.partner_id if project else False)
+        department_map = {
+            'commercial': 'sales',
+            'graphics': 'graphics',
+            'samples': 'logistics',
+            'logistics': 'logistics',
+            'admin': 'admin',
+        }
+        task_type_map = {
+            'graphics': 'catalog_page',
+            'samples': 'sample_shipment',
+            'logistics': 'sample_shipment',
+            'admin': 'issue',
+            'commercial': 'followup',
+        }
+        department = department_map.get(assistant.get('department'), 'sales')
+        task_type = task_type_map.get(assistant.get('department'), 'followup')
+        next_action = assistant.get('next_action') or self._mail_suggested_action(msg)
+        note_lines = [msg.subject or '', msg.snippet or '']
+        if assistant.get('reason'):
+            note_lines.append('AI: %s' % assistant.get('reason'))
+        if assistant.get('evidence'):
+            note_lines.append('Evidenze: %s' % ', '.join(assistant.get('evidence')[:4]))
+        quick_kind = 'sample' if assistant.get('department') == 'samples' else 'todo'
         return {
             'type': 'ir.actions.act_window',
             'name': 'Task veloce da email',
@@ -3863,11 +3896,21 @@ class CfPipelineControl(models.AbstractModel):
             'target': 'new',
             'context': {
                 'default_message_id': msg.id,
-                'default_quick_kind': 'todo',
+                'default_quick_kind': quick_kind,
                 'default_name': msg.subject or 'Follow-up commerciale',
-                'default_task_type': 'followup',
-                'default_department': 'sales',
-                'default_note': '%s\n%s' % (msg.subject or '', msg.snippet or ''),
+                'default_lead_id': lead.id if lead else False,
+                'default_project_id': project.id if project else False,
+                'default_partner_id': partner.id if partner else False,
+                'default_task_type': task_type,
+                'default_department': department,
+                'default_source_channel': 'mail',
+                'default_urgency': 'high' if msg.ai_urgency == 'high' or msg.ai_action_required else 'normal',
+                'default_note': '\n'.join([line for line in note_lines if line]),
+                'default_next_checkpoint': next_action,
+                'default_ai_suggested_next_step': next_action,
+                'default_is_mini_project': bool(lead and not project),
+                'default_checklist_required': assistant.get('department') in ('graphics', 'samples', 'logistics'),
+                'default_create_sample_shipment': assistant.get('department') == 'samples',
             },
         }
 
