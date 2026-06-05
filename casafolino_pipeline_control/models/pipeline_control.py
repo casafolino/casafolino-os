@@ -3035,6 +3035,8 @@ class CfPipelineControl(models.AbstractModel):
             return self._keep_sender_from_message(msg)
         if quick_action == 'dismiss_sender':
             return self._dismiss_sender_from_message(msg)
+        if quick_action == 'apply_ai':
+            return self._apply_ai_decision_from_message(msg)
         if quick_action == 'create_contact':
             return self._create_or_open_contact_from_message(msg)
         if quick_action == 'create_company':
@@ -3116,6 +3118,47 @@ class CfPipelineControl(models.AbstractModel):
             msg.action_archive()
             return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla sala controllo.', reload=True)
         return self._notify('Azione non disponibile', quick_action, 'warning')
+
+    def _apply_ai_decision_from_message(self, msg):
+        self._ensure_company_contacts_from_message(msg)
+        assistant = self._message_assistant_suggestion(msg, msg.partner_id)
+        if assistant.get('has_suggestion') and assistant.get('project_id'):
+            project = self.env['project.project'].browse(int(assistant.get('project_id'))).exists()
+            if project:
+                self.link_dossier_to_message(msg.id, project.id, assistant)
+                return self._notify(
+                    'Decisione AI applicata',
+                    'Email collegata a %s. Prossima azione: %s' % (
+                        project.display_name,
+                        assistant.get('next_action') or 'crea task/follow-up operativo',
+                    ),
+                    reload=True,
+                )
+        lead = self.env['crm.lead']
+        if assistant.get('lead_id'):
+            lead = self.env['crm.lead'].browse(int(assistant.get('lead_id'))).exists()
+            if lead:
+                self.link_lead_to_message(msg.id, lead.id)
+        if lead and not getattr(lead, 'cf_project_id', False):
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Crea dossier operativo',
+                'res_model': 'cf.pipeline.create.dossier.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_message_id': msg.id,
+                    'default_partner_id': lead.partner_id.id if lead.partner_id else False,
+                    'default_project_name': lead.name or msg.subject or 'Dossier da email',
+                    'default_next_action': assistant.get('next_action') or 'Creare task operativa dal thread email',
+                },
+                'reload': True,
+            }
+        if assistant.get('department') in ('samples', 'logistics'):
+            return self._new_task_from_message(msg)
+        if not msg.lead_id:
+            return msg.action_create_lead()
+        return self._new_task_from_message(msg)
 
     @api.model
     def lead_quick_action(self, lead_id, quick_action):

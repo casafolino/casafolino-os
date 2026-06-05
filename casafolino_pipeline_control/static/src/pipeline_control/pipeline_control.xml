@@ -1457,8 +1457,13 @@
                                                       t-out="evidence"/>
                                             </div>
                                             <div class="cf-pc-assistant-actions"
-                                                 t-if="state.messageContext.assistant_suggestion.has_suggestion">
+                                                 t-if="state.messageContext.assistant_suggestion">
                                                 <button class="btn btn-sm btn-primary"
+                                                        t-on-click="() => this.mailQuickAction(selectedMessage, 'apply_ai')">
+                                                    <i class="fa fa-bolt"/> Applica AI
+                                                </button>
+                                                <button class="btn btn-sm btn-primary"
+                                                        t-if="state.messageContext.assistant_suggestion.has_suggestion"
                                                         t-on-click="() => this.linkDossierToMessage(state.messageContext.assistant_suggestion.project_id, state.messageContext.assistant_suggestion)">
                                                     <i class="fa fa-link"/> Collega al dossier
                                                 </button>
