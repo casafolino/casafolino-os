@@ -4144,7 +4144,12 @@ class CfPipelineControl(models.AbstractModel):
             note_lines.append('AI: %s' % assistant.get('reason'))
         if assistant.get('evidence'):
             note_lines.append('Evidenze: %s' % ', '.join(assistant.get('evidence')[:4]))
-        quick_kind = 'sample' if assistant.get('department') == 'samples' else 'todo'
+        if assistant.get('department') == 'samples':
+            quick_kind = 'sample'
+        elif assistant.get('department') == 'graphics':
+            quick_kind = 'catalog'
+        else:
+            quick_kind = 'todo'
         return {
             'type': 'ir.actions.act_window',
             'name': 'Task veloce da email',
@@ -4870,6 +4875,10 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     checklist_required = fields.Boolean(string='Checklist obbligatoria')
     create_sample_shipment = fields.Boolean(string='Crea spedizione/TrackBot')
     create_reminder = fields.Boolean(string='Crea reminder', default=True)
+    handoff_graphics = fields.Boolean(string='Serve Grafica')
+    handoff_production = fields.Boolean(string='Serve Produzione')
+    handoff_logistics = fields.Boolean(string='Serve Logistica')
+    handoff_admin = fields.Boolean(string='Serve Amministrazione')
     ai_suggested_next_step = fields.Text(string='Prossimo passo')
 
     @api.model
@@ -4889,6 +4898,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'task_type': 'todo',
                 'department': 'sales',
                 'is_mini_project': True,
+                'checklist_required': True,
                 'source_channel': 'call',
                 'urgency': 'high',
                 'due_preset': 'tomorrow',
@@ -4955,6 +4965,10 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             'checklist_required',
             'create_sample_shipment',
             'create_reminder',
+            'handoff_graphics',
+            'handoff_production',
+            'handoff_logistics',
+            'handoff_admin',
         ):
             context_key = 'default_%s' % field_name
             if context_key in self.env.context:
@@ -5004,7 +5018,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.urgency = 'high'
             self.due_preset = 'tomorrow'
             self.deadline = today + timedelta(days=1)
-            self.checklist_required = self.checklist_required or False
+            self.checklist_required = True
             if not self.note:
                 self.note = 'Telefonata cliente: annotare richiesta, persona che ha chiamato, urgenza e reparti coinvolti.'
             if not self.customer_promise:
@@ -5087,6 +5101,27 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             'target': 'current',
         }
 
+    def action_create_and_new(self):
+        self.ensure_one()
+        self._create_task()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Task salva-memoria',
+            'res_model': 'cf.pipeline.quick.task.wizard',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'default_quick_kind': self.quick_kind,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+                'default_project_id': self.project_id.id if self.project_id else False,
+                'default_lead_id': self.lead_id.id if self.lead_id else False,
+                'default_source_channel': self.source_channel,
+                'default_department': self.department,
+                'default_due_preset': self.due_preset,
+            },
+        }
+
     def _create_task(self):
         project = self._ensure_project_for_operational_task()
         vals = {
@@ -5121,6 +5156,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             })
             task.cf_shipment_id = shipment.id
         self._create_default_checklist(task)
+        self._create_handoff_tasks(task, project)
         if self.create_reminder:
             self._schedule_task_reminders(task)
         task.message_post(body=self._task_chatter_note())
@@ -5206,6 +5242,11 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             )
 
     def _task_chatter_note(self):
+        handoffs = self._handoff_departments()
+        handoff_note = ''
+        if handoffs:
+            labels = [dict(self._fields['department'].selection).get(dep, dep) for dep in handoffs]
+            handoff_note = '<p><strong>Reparti coinvolti:</strong> %s</p>' % ', '.join(labels)
         return ''.join([
             '<p><strong>Task salva-memoria creata dalla Console Commerciale.</strong></p>',
             '<p>%s</p>' % (self.note or ''),
@@ -5213,6 +5254,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 self.customer_promise or 'n.d.',
                 self.next_checkpoint or 'n.d.',
             ),
+            handoff_note,
         ])
 
     def _task_description_payload(self):
@@ -5232,8 +5274,103 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             parts.append('<li><strong>Checkpoint:</strong> %s</li>' % self.next_checkpoint)
         if self.ai_suggested_next_step:
             parts.append('<li><strong>Prossimo passo AI:</strong> %s</li>' % self.ai_suggested_next_step)
+        handoffs = self._handoff_departments()
+        if handoffs:
+            labels = [dict(self._fields['department'].selection).get(dep, dep) for dep in handoffs]
+            parts.append('<li><strong>Reparti coinvolti:</strong> %s</li>' % ', '.join(labels))
         parts.append('</ul>')
         return ''.join(parts)
+
+    def _handoff_departments(self):
+        departments = []
+        if self.handoff_graphics:
+            departments.append('graphics')
+        if self.handoff_production:
+            departments.append('production')
+        if self.handoff_logistics:
+            departments.append('logistics')
+        if self.handoff_admin:
+            departments.append('admin')
+        return [dep for dep in departments if dep != self.department]
+
+    def _create_handoff_tasks(self, parent_task, project):
+        departments = self._handoff_departments()
+        if not departments:
+            return self.env['project.task']
+        Task = self.env['project.task']
+        task_type_by_department = {
+            'graphics': 'catalog_page',
+            'production': 'issue',
+            'logistics': 'sample_shipment' if self.task_type == 'sample_shipment' else 'todo',
+            'admin': 'data_update',
+        }
+        waiting_by_department = {
+            'graphics': 'graphic',
+            'production': 'production',
+            'logistics': 'internal',
+            'admin': 'internal',
+        }
+        created = Task
+        for department in departments:
+            label = dict(self._fields['department'].selection).get(department, department)
+            vals = {
+                'name': '[%s] %s' % (label, self.name),
+                'project_id': project.id if project else False,
+                'partner_id': self.partner_id.id if self.partner_id else False,
+                'date_deadline': self.deadline or False,
+                'description': self._task_description_payload(),
+                'user_ids': [(6, 0, self.user_ids.ids or [self.env.uid])],
+                'cf_task_origin': self._task_origin_value(),
+                'cf_task_type': task_type_by_department.get(department, self.task_type),
+                'cf_department': department,
+                'cf_customer_id': self.partner_id.id if self.partner_id else False,
+                'cf_waiting_for': waiting_by_department.get(department, 'internal'),
+                'cf_is_mini_project': True,
+                'cf_checklist_required': True,
+                'cf_source_note': self.note or '',
+                'cf_ai_suggested_next_step': self.ai_suggested_next_step or self.next_checkpoint or '',
+            }
+            if 'parent_id' in Task._fields:
+                vals['parent_id'] = parent_task.id
+            child = Task.create(vals)
+            self._create_department_checklist(child, department)
+            if self.create_reminder:
+                self._schedule_task_reminders(child)
+            child.message_post(body='<p>Task reparto generata dalla task madre: <strong>%s</strong>.</p>' % parent_task.display_name)
+            created |= child
+        return created
+
+    def _create_department_checklist(self, task, department):
+        items_by_department = {
+            'graphics': [
+                'Raccogliere brief, logo, immagini e testi',
+                'Preparare bozza grafica o pagina catalogo',
+                'Condividere bozza e raccogliere feedback',
+            ],
+            'production': [
+                'Verificare fattibilita produzione e tempi',
+                'Confermare disponibilita prodotto/materiali',
+                'Aggiornare commerciale su blocchi o data pronta',
+            ],
+            'logistics': [
+                'Verificare indirizzo, prodotti e documenti',
+                'Preparare spedizione e tracking',
+                'Programmare feedback cliente post consegna',
+            ],
+            'admin': [
+                'Verificare anagrafica, fiscali e condizioni',
+                'Aggiornare dati o documenti necessari',
+                'Confermare completamento al commerciale owner',
+            ],
+        }
+        items = items_by_department.get(department, [
+            'Prendere in carico richiesta',
+            'Aggiornare owner task madre',
+        ])
+        self.env['cf.project.checklist.item'].create([
+            {'task_id': task.id, 'name': name, 'sequence': (idx + 1) * 10}
+            for idx, name in enumerate(items)
+        ])
 
     def _create_default_checklist(self, task):
         if not self.checklist_required and self.task_type != 'sample_shipment':
@@ -5268,6 +5405,14 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'Preparare risposta o chiamata',
                 'Registrare esito del contatto',
                 'Aggiornare fase pipeline e prossima azione',
+            ]
+        elif self.quick_kind == 'call':
+            items = [
+                'Identificare cliente, contatto e dossier collegato',
+                'Scrivere promessa fatta e risultato atteso',
+                'Assegnare reparti coinvolti',
+                'Impostare prima scadenza e reminder',
+                'Aggiornare cliente appena la richiesta e presa in carico',
             ]
         elif self.task_type == 'data_update':
             items = [

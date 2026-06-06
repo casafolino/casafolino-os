@@ -39,6 +39,10 @@
                             <field name="name" placeholder="Es. Aggiungere pagina personalizzata al catalogo cliente"/>
                             <field name="note" placeholder="Scrivi come parli: chi ha chiamato, cosa vuole, promessa fatta, urgenza, reparti coinvolti..." nolabel="1"/>
                         </group>
+                        <group string="In due tap: promessa e prossimo passo">
+                            <field name="customer_promise" placeholder="Es. Gli ho promesso risposta entro martedì"/>
+                            <field name="next_checkpoint" placeholder="Es. Sentire grafica e confermare costo"/>
+                        </group>
                         <group>
                             <group string="Decisione rapida">
                                 <field name="source_channel"/>
@@ -54,9 +58,11 @@
                                 <field name="checklist_required"/>
                             </group>
                         </group>
-                        <group string="Memoria cliente">
-                            <field name="customer_promise" placeholder="Es. Gli ho promesso risposta entro martedì"/>
-                            <field name="next_checkpoint" placeholder="Es. Sentire grafica e confermare costo"/>
+                        <group string="Reparti coinvolti">
+                            <field name="handoff_graphics"/>
+                            <field name="handoff_production"/>
+                            <field name="handoff_logistics"/>
+                            <field name="handoff_admin"/>
                         </group>
                         <group>
                             <group string="Collega">
@@ -88,6 +94,7 @@
                 </sheet>
                 <footer>
                     <button name="action_create_task" string="Crea task" type="object" class="btn btn-primary"/>
+                    <button name="action_create_and_new" string="Crea e continua" type="object" class="btn btn-secondary"/>
                     <button name="action_create_and_open" string="Crea e apri" type="object" class="btn btn-secondary"/>
                     <button string="Annulla" class="btn btn-light" special="cancel"/>
                 </footer>
