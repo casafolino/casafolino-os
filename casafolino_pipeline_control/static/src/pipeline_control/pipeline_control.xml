@@ -1473,15 +1473,31 @@
                                                  t-if="state.messageContext.assistant_suggestion.requires_confirmation || state.messageContext.assistant_suggestion.safe_to_apply">
                                                 <span t-if="state.messageContext.assistant_suggestion.safe_to_apply"
                                                       class="cf-pc-mini-badge tone-green">
-                                                    Applicabile
+                                                    <t t-out="state.messageContext.assistant_suggestion.safety_label || 'Applicabile'"/>
                                                 </span>
                                                 <span t-else=""
                                                       class="cf-pc-mini-badge tone-amber">
-                                                    Verifica prima di collegare
+                                                    <t t-out="state.messageContext.assistant_suggestion.safety_label || 'Verifica prima di collegare'"/>
                                                 </span>
                                                 <small t-if="state.messageContext.assistant_suggestion.requires_confirmation">
                                                     L'AI ha trovato un possibile collegamento, ma serve conferma umana.
                                                 </small>
+                                            </div>
+                                            <div class="cf-pc-ai-route-card">
+                                                <div>
+                                                    <span>Destinazione AI</span>
+                                                    <strong t-if="state.messageContext.assistant_suggestion.project_name"
+                                                            t-out="state.messageContext.assistant_suggestion.project_name"/>
+                                                    <strong t-elif="state.messageContext.assistant_suggestion.lead_name">
+                                                        Lead: <t t-out="state.messageContext.assistant_suggestion.lead_name"/>
+                                                    </strong>
+                                                    <strong t-else="">Nessun dossier sicuro</strong>
+                                                </div>
+                                                <div>
+                                                    <span>Reparto / lavoro</span>
+                                                    <strong t-out="state.messageContext.assistant_suggestion.department_label || 'Commerciale'"/>
+                                                </div>
+                                                <p t-out="state.messageContext.assistant_suggestion.execution_preview || state.messageContext.assistant_suggestion.next_action"/>
                                             </div>
                                             <div class="cf-pc-assistant-reason">
                                                 <i class="fa fa-magic"/>

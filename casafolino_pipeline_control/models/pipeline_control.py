@@ -1179,6 +1179,8 @@ class CfPipelineControl(models.AbstractModel):
                 'reason': 'Non ho trovato un dossier abbastanza coerente. Cerca o collega manualmente il dossier.',
                 'next_action': department['fallback_action'],
                 'route_summary': 'Nessun dossier sicuro: serve ricerca manuale o creazione dossier.',
+                'safety_label': 'Da confermare',
+                'execution_preview': 'Apri ricerca 360 o crea un dossier prima di trasformare la mail in lavoro.',
                 'operating_stage': self._assistant_operating_stage(False, department, msg),
                 'task_quick_action': self._assistant_task_quick_action(department),
                 'task_button_label': self._assistant_task_button_label(department),
@@ -1209,6 +1211,8 @@ class CfPipelineControl(models.AbstractModel):
             'reason': self._assistant_reason(top_project, department, evidence),
             'next_action': action,
             'route_summary': self._assistant_route_summary(top_project, department, confidence),
+            'safety_label': 'Sicura' if confidence >= 80 and not guard else 'Da confermare',
+            'execution_preview': self._assistant_execution_preview(top_project, department, confidence, bool(guard)),
             'operating_stage': self._assistant_operating_stage(top_project, department, msg),
             'task_quick_action': self._assistant_task_quick_action(department),
             'task_button_label': self._assistant_task_button_label(department),
@@ -1260,6 +1264,8 @@ class CfPipelineControl(models.AbstractModel):
             'reason': 'Ho trovato il lead "%s", ma non ha ancora un dossier collegato.' % lead.display_name,
             'next_action': action,
             'route_summary': 'Lead riconosciuto, ma manca il dossier operativo.',
+            'safety_label': 'Da trasformare',
+            'execution_preview': 'Crea il dossier dal lead, poi apri una task operativa collegata alla conversazione.',
             'operating_stage': self._assistant_operating_stage(False, department, msg),
             'task_quick_action': self._assistant_task_quick_action(department),
             'task_button_label': self._assistant_task_button_label(department),
@@ -1351,6 +1357,8 @@ class CfPipelineControl(models.AbstractModel):
             'reason': data.get('reason') or suggestion.get('reason'),
             'next_action': data.get('next_action') or suggestion.get('next_action'),
             'route_summary': self._assistant_route_summary(project, department, confidence),
+            'safety_label': 'Sicura' if confidence >= 80 and not guard else 'Da confermare',
+            'execution_preview': self._assistant_execution_preview(project, {'key': department_key, 'label': department}, confidence, bool(guard)),
             'operating_stage': self._assistant_operating_stage(project, department, msg),
             'task_quick_action': self._assistant_task_quick_action({'key': department_key}),
             'task_button_label': self._assistant_task_button_label({'key': department_key}),
@@ -1600,11 +1608,29 @@ class CfPipelineControl(models.AbstractModel):
     def _assistant_route_summary(self, project, department, confidence):
         if not project:
             return 'Collegamento dossier da confermare prima di procedere.'
+        if not isinstance(department, dict):
+            department = {
+                'label': department or 'Commerciale',
+            }
         confidence_label = 'alta' if confidence >= 80 else ('media' if confidence >= 55 else 'bassa')
         return '%s -> %s, confidenza %s.' % (
             department.get('label') or self._department_label_map().get(department.get('key'), 'Commerciale'),
             project.display_name,
             confidence_label,
+        )
+
+    def _assistant_execution_preview(self, project, department, confidence, guarded=False):
+        if not project:
+            return 'Nessun collegamento automatico: scegli un dossier o crea una nuova entita 360.'
+        label = department.get('label') if isinstance(department, dict) else (department or 'Commerciale')
+        if confidence >= 80 and not guarded:
+            return 'Applica + lavora collega la mail a %s e apre una task %s gia contestualizzata.' % (
+                project.display_name,
+                label.lower(),
+            )
+        return 'Prima conferma %s; poi puoi aprire una task %s con la mail gia nel contesto.' % (
+            project.display_name,
+            label.lower(),
         )
 
     def _assistant_operating_stage(self, project, department, msg):
