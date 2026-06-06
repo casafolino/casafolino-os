@@ -31,6 +31,9 @@ const config = {
 };
 
 const activeCalls = new Map();
+const MULAW_BIAS = 0x84;
+const LOCAL_BARGE_IN_RMS_THRESHOLD = Number(process.env.LOCAL_BARGE_IN_RMS_THRESHOLD || 900);
+const LOCAL_BARGE_IN_COOLDOWN_MS = Number(process.env.LOCAL_BARGE_IN_COOLDOWN_MS || 900);
 
 const BASE_INSTRUCTIONS = `
 Sei Viola di CasaFolino, l'assistente virtuale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
@@ -70,6 +73,28 @@ function escapeXml(value) {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function decodeMulawSample(sample) {
+  const value = ~sample & 0xff;
+  const sign = value & 0x80;
+  const exponent = (value >> 4) & 0x07;
+  const mantissa = value & 0x0f;
+  let decoded = ((mantissa << 3) + MULAW_BIAS) << exponent;
+  decoded -= MULAW_BIAS;
+  return sign ? -decoded : decoded;
+}
+
+function mulawRms(buffer) {
+  if (!buffer.length) {
+    return 0;
+  }
+  let sumSquares = 0;
+  for (const sample of buffer) {
+    const pcm = decodeMulawSample(sample);
+    sumSquares += pcm * pcm;
+  }
+  return Math.sqrt(sumSquares / buffer.length);
 }
 
 function log(level, message, details = undefined) {
@@ -184,7 +209,7 @@ function buildDeepgramSettings(agentPayload) {
         prompt: instructions,
       },
       speak: buildSpeakConfig(),
-      greeting: agentPayload?.first_message || "Buongiorno! Sono Pula di CasaFolino. La chiamo per fare un breve test dell'assistente outbound.",
+      greeting: agentPayload?.first_message || "Buongiorno, sono Pula di CasaFolino. Mi sente bene?",
     },
     tags: ['casafolino', 'autobahn', 'twilio'],
     mip_opt_out: true,
@@ -442,6 +467,7 @@ wss.on('connection', (ws, req) => {
   let openAiWs = null;
   let deepgramWs = null;
   let deepgramInputBuffer = Buffer.alloc(0);
+  let lastLocalBargeInAt = 0;
   let callState = 'connecting';
   let transcript = [];
   
@@ -580,6 +606,7 @@ wss.on('connection', (ws, req) => {
               log('info', `Received Deepgram event: ${deepgramMsg.type}`);
             }
             if (deepgramMsg.type === 'UserStartedSpeaking' && streamSid) {
+              log('info', 'Deepgram detected user speech. Clearing Twilio playback buffer...');
               ws.send(JSON.stringify({
                 event: 'clear',
                 streamSid,
@@ -842,9 +869,25 @@ wss.on('connection', (ws, req) => {
     if (msg.event === 'media' && deepgramWs && deepgramWs.readyState === WebSocket.OPEN) {
       const track = msg.media?.track;
       if (!track || track === 'inbound') {
+        const inboundAudio = Buffer.from(msg.media.payload, 'base64');
+        const now = Date.now();
+        if (streamSid && now - lastLocalBargeInAt > LOCAL_BARGE_IN_COOLDOWN_MS) {
+          const rms = mulawRms(inboundAudio);
+          if (rms >= LOCAL_BARGE_IN_RMS_THRESHOLD) {
+            lastLocalBargeInAt = now;
+            log('info', 'Local Twilio speech energy detected. Clearing playback buffer...', {
+              rms: Math.round(rms),
+              threshold: LOCAL_BARGE_IN_RMS_THRESHOLD,
+            });
+            ws.send(JSON.stringify({
+              event: 'clear',
+              streamSid,
+            }));
+          }
+        }
         deepgramInputBuffer = Buffer.concat([
           deepgramInputBuffer,
-          Buffer.from(msg.media.payload, 'base64'),
+          inboundAudio,
         ]);
 
         const chunkSize = 20 * 160;
