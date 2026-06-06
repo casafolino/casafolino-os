@@ -10,6 +10,7 @@ const config = {
   odooDb: process.env.ODOO_DB || 'folinofood',
   odooWebhookToken: process.env.ODOO_WEBHOOK_TOKEN || '',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
+  openaiVoice: process.env.OPENAI_VOICE || 'nova',
   voiceProvider: (process.env.VOICE_PROVIDER || 'openai').toLowerCase(),
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
