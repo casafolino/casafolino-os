@@ -13,6 +13,7 @@ const config = {
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+  humanTransferUri: process.env.HUMAN_TRANSFER_URI || '',
   publicBridgeUrl: stripTrailingSlash(process.env.PUBLIC_BRIDGE_URL || ''),
   logLevel: process.env.LOG_LEVEL || 'info',
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 10000),
@@ -243,8 +244,14 @@ async function handleTwilioOutbound(req, res, url) {
 }
 
 async function handleTwilioTransfer(req, res, url) {
-  const target = url.searchParams.get('target') || config.humanTransferUri || 'tel:+390000000000';
+  const target = url.searchParams.get('target') || config.humanTransferUri;
   log('info', 'Twilio call transfer TwiML requested', { target });
+  if (!target || !/^(tel:+?[0-9]{6,15}|sip:[^s@]+@[^s@]+)$/i.test(target.trim())) {
+    log('error', 'Twilio transfer requested without a valid human target', { target });
+    const twiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Say language="it-IT">Mi dispiace, al momento non riesco a trasferire la chiamata. Resti pure in linea con Giulia.</Say></Response>';
+    sendTwiML(res, twiml);
+    return;
+  }
   
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -570,6 +577,12 @@ wss.on('connection', (ws, req) => {
                   });
                   
                   log('info', 'Tool execution result from Odoo', { name, odooResult });
+                  if (name === 'transfer_to_human' && odooResult.transfer_requested && !config.humanTransferUri) {
+                    odooResult.transfer_requested = false;
+                    odooResult.transfer_available = false;
+                    odooResult.message = 'Trasferimento telefonico non configurato: continua la chiamata con il cliente, raccogli la richiesta e proponi una richiamata dall ufficio di Lamezia Terme.';
+                    log('warn', 'transfer_to_human requested but HUMAN_TRANSFER_URI is not configured; keeping call on AI', { department: odooResult.department, reason: odooResult.reason });
+                  }
                   
                   openAiWs.send(JSON.stringify({
                     type: 'conversation.item.create',
