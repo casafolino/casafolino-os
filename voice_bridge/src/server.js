@@ -36,7 +36,7 @@ const LOCAL_BARGE_IN_RMS_THRESHOLD = Number(process.env.LOCAL_BARGE_IN_RMS_THRES
 const LOCAL_BARGE_IN_COOLDOWN_MS = Number(process.env.LOCAL_BARGE_IN_COOLDOWN_MS || 900);
 
 const BASE_INSTRUCTIONS = `
-Sei Viola di CasaFolino, l'assistente virtuale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
+Sei Pula di CasaFolino, l'assistente virtuale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
 Rileva dinamicamente la lingua parlata dal cliente fin dal primo turno di conversazione e rispondi fluidamente nella stessa lingua (italiano, inglese, francese, spagnolo, tedesco, ecc.) adattandoti all'istante con tono estremamente naturale, amichevole, professionale e caloroso. Rispondi in modo conciso e naturale per facilitare la conversazione telefonica (massimo 1-2 frasi brevi per risposta).
 
 Il tuo scopo è assistere i clienti che chiamano, rispondere alle loro domande sui prodotti di CasaFolino, verificare lo stato dell'ordine, gestire contatti e richieste commerciali (lead), o aprire segnalazioni di assistenza.
@@ -59,7 +59,7 @@ KNOWLEDGE BASE (INFORMAZIONI AZIENDALI):
    - Se il cliente fa richieste complesse o chiede di parlare con una persona reale (come Antonio Folino), usa il tool 'transfer_to_human' specificando il reparto generale e il motivo.
 
 COMPORTAMENTO DIALOGO:
-- Presentati all'inizio come "Viola di CasaFolino".
+- Presentati all'inizio come "Pula di CasaFolino".
 - Sii sempre educata, spigliata e mantieni le risposte brevi per non annoiare il cliente al telefono.
 `;
 
@@ -95,6 +95,24 @@ function mulawRms(buffer) {
     sumSquares += pcm * pcm;
   }
   return Math.sqrt(sumSquares / buffer.length);
+}
+
+function buildManualOutboundAgent(jobId) {
+  return {
+    first_message: "Buongiorno, sono Pula di CasaFolino. Mi sente bene?",
+    instructions: [
+      `Questa e una chiamata outbound CasaFolino${jobId ? `, job ${jobId}` : ''}.`,
+      'Il tuo nome e sempre Pula. Non usare mai altri nomi come Viola o Giulia.',
+      'Non dire che il cliente e in coda e non chiedere tutti i dati anagrafici insieme.',
+      'Fai una domanda alla volta e lascia spazio al cliente dopo ogni frase.',
+      'Se il cliente ti interrompe, fermati subito, ascolta e rispondi alla sua ultima richiesta.',
+      'Obiettivo del test: verificare conversazione naturale, barge-in e raccolta feedback.',
+    ].join('\n'),
+    metadata: {
+      source: 'manual_outbound_test',
+      job_id: jobId || 'manual_outbound_test',
+    },
+  };
 }
 
 function log(level, message, details = undefined) {
@@ -345,11 +363,12 @@ async function handleTwilioOutbound(req, res, url) {
   const jobId = url.searchParams.get('job_id');
   log('info', 'Outbound call answered by customer', { callSid: body.CallSid, jobId });
   
-  const streamUrl = `wss://${config.publicBridgeUrl.replace(/^https?:\/\//, '')}/media-stream?job_id=${jobId}`;
+  const streamUrl = `wss://${config.publicBridgeUrl.replace(/^https?:\/\//, '')}/media-stream?job_id=${encodeURIComponent(jobId || '')}`;
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
     <Stream url="${streamUrl}">
+      <Parameter name="job_id" value="${escapeXml(jobId || '')}" />
       <Parameter name="from" value="${escapeXml(body.From || '')}" />
       <Parameter name="to" value="${escapeXml(body.To || '')}" />
       <Parameter name="callSid" value="${escapeXml(body.CallSid || '')}" />
@@ -458,7 +477,7 @@ server.on('upgrade', (req, socket, head) => {
 
 wss.on('connection', (ws, req) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const jobId = url.searchParams.get('job_id');
+  let jobId = url.searchParams.get('job_id');
   
   let streamSid = null;
   let callSid = null;
@@ -488,6 +507,8 @@ wss.on('connection', (ws, req) => {
       log('info', 'Twilio media stream start event received', { streamSid, callSid });
       
       try {
+        jobId = jobId || msg.start.customParameters?.job_id || null;
+
         if (jobId) {
           const activeCall = activeCalls.get(`job_${jobId}`);
           if (activeCall) {
@@ -499,6 +520,17 @@ wss.on('connection', (ws, req) => {
               streamSid
             });
             activeCalls.delete(`job_${jobId}`);
+          } else {
+            agentPayload = buildManualOutboundAgent(jobId);
+            activeCalls.set(callSid, {
+              direction: 'outbound',
+              callSid,
+              streamSid,
+              jobId,
+              agentPayload,
+              startedAt: new Date().toISOString()
+            });
+            log('info', 'Using manual outbound test agent payload', { jobId });
           }
         }
         
@@ -683,8 +715,8 @@ wss.on('connection', (ws, req) => {
           openAiWs.send(JSON.stringify(sessionUpdate));
           
           // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const greetingText = agentPayload?.first_message || "Buongiorno! Sono Viola di CasaFolino, l'assistente virtuale. Come posso aiutarti oggi?";
-          const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Viola di CasaFolino, l'assistente virtuale, con questa esatta frase: "${greetingText}"`;
+          const greetingText = agentPayload?.first_message || "Buongiorno! Sono Pula di CasaFolino, l'assistente virtuale. Come posso aiutarti oggi?";
+          const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Pula di CasaFolino, l'assistente virtuale, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({
             type: 'conversation.item.create',
             item: {
