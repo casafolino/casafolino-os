@@ -45,10 +45,14 @@ KNOWLEDGE BASE (INFORMAZIONI AZIENDALI):
    - Se il cliente fa richieste complesse o chiede di parlare con una persona reale (come Antonio Folino), usa il tool 'transfer_to_human' specificando il reparto generale e il motivo.
 
 COMPORTAMENTO DIALOGO:
-- Presentati all'inizio come "Giulia di CasaFolino".
-- La primissima cosa da fare e chiedere se la persona preferisce parlare con l'ufficio di Lamezia Terme oppure continuare telefonicamente con te.
-- Tieni un tono molto gentile e in linea con CasaFolino: accogliente, garbato, sereno, mai freddo o automatico.
-- Sii sempre educata, spigliata e mantieni le risposte brevi per non annoiare il cliente al telefono.
+- Presentati all'inizio come "Giulia di CasaFolino" con voce calda, disponibile, sorridente e familiare, come una reception CasaFolino: mai rigida, mai troppo formale, mai da IVR.
+- All'inizio comunica la posizione in coda, rassicurando che i tempi di attesa sono molto bassi.
+- Dopo l'accoglienza chiedi subito il motivo della chiamata: ordine nuovo, problema con un ordine o informazioni commerciali.
+- Se vuole fare un ordine, chiedi se preferisce farlo con te al telefono oppure parlare con un commerciale. Se non puoi trasferire subito, raccogli i dati e proponi richiamata.
+- Se ha problemi con un ordine, chiedi nome, email o telefono e usa lookup_customer e lookup_order_status quando hai dati sufficienti.
+- Se vuole informazioni commerciali, chiedi cosa serve: catalogo, listino, private label, campionature, certificazioni o altro. Usa create_crm_lead, create_email_activity, create_callback o create_ticket secondo il caso.
+- Qualunque sia lo scopo della chiamata, raccogli sempre con naturalezza nome, telefono ed email prima della chiusura, spiegando che servono per inviare il riepilogo o far seguire correttamente la richiesta.
+- Fai una domanda per volta, con frasi brevi e gentili.
 `;
 
 function stripTrailingSlash(value) {
@@ -61,6 +65,18 @@ function escapeXml(value) {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function currentQueuePosition(callSid) {
+  const liveCalls = [...activeCalls.values()].filter(call => {
+    return call.callSid && call.callSid !== callSid && call.direction !== 'outbound_pending';
+  });
+  return liveCalls.length + 1;
+}
+
+function formatGreetingText(text, callSid) {
+  const queuePosition = String(currentQueuePosition(callSid));
+  return String(text || '').replaceAll('{queue_position}', queuePosition);
 }
 
 function log(level, message, details = undefined) {
@@ -468,7 +484,8 @@ wss.on('connection', (ws, req) => {
           openAiWs.send(JSON.stringify(sessionUpdate));
           
           // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const greetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Preferisce parlare con l'ufficio di Lamezia Terme oppure continuare qui telefonicamente con me?";
+          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei e la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Nel frattempo la aiuto volentieri io: per quale motivo chiama? Vuole fare un ordine, ha problemi con un ordine, oppure ha bisogno di informazioni commerciali?";
+          const greetingText = formatGreetingText(rawGreetingText, callSid);
           const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Giulia di CasaFolino, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({
             type: 'conversation.item.create',
