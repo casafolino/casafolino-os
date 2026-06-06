@@ -243,13 +243,41 @@
         <field name="model">cf.haccp.tracciabilita</field>
         <field name="arch" type="xml">
             <form string="Scheda Tracciabilita">
+                <header>
+                    <button name="action_build_timeline_from_lot" type="object"
+                            string="Ricostruisci cronostoria"
+                            class="btn-primary"/>
+                </header>
                 <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_lot" type="object"
+                                class="oe_stat_button" icon="fa-barcode"
+                                invisible="not lot_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Lotto Odoo</span>
+                            </div>
+                        </button>
+                        <button name="action_open_lot_moves" type="object"
+                                class="oe_stat_button" icon="fa-random"
+                                invisible="not lot_id">
+                            <field name="move_line_count" widget="statinfo" string="Movimenti"/>
+                        </button>
+                        <button name="action_open_lot_productions" type="object"
+                                class="oe_stat_button" icon="fa-industry"
+                                invisible="not lot_id">
+                            <field name="production_count" widget="statinfo" string="Produzioni"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <label for="lotto_pf"/>
                         <h1><field name="lotto_pf"/></h1>
                     </div>
                     <group>
                         <group string="Lotti">
+                            <field name="lot_id"
+                                   options="{'no_create': True}"
+                                   placeholder="Seleziona un lotto Odoo..."/>
+                            <field name="product_id" readonly="1"/>
                             <field name="date"/>
                             <field name="lotto_mp"/>
                             <field name="lotto_pf"/>
@@ -261,6 +289,9 @@
                     </group>
                     <group string="Note">
                         <field name="note" nolabel="1"/>
+                    </group>
+                    <group string="Cronostoria Lotto Odoo">
+                        <field name="timeline_html" nolabel="1" readonly="1"/>
                     </group>
                 </sheet>
                 <chatter/>
@@ -274,6 +305,8 @@
         <field name="arch" type="xml">
             <list string="Tracciabilita">
                 <field name="date"/>
+                <field name="lot_id"/>
+                <field name="product_id"/>
                 <field name="lotto_mp"/>
                 <field name="lotto_pf"/>
                 <field name="production_id"/>
