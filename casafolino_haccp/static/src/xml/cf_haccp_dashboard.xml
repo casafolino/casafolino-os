@@ -1,116 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates xml:space="preserve">
 <t t-name="casafolino_haccp.CfHaccpDashboard">
-    <div class="cf-dashboard cf-haccp-dashboard-action o_action">
-        <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
-             style="background:#1e2432;color:#fff;min-height:56px;">
-            <div class="d-flex align-items-center gap-2">
-                <span style="font-size:20px;">🔬</span>
-                <h4 class="mb-0 fw-bold" style="font-size:16px;">Dashboard HACCP</h4>
+    <div class="cf-haccp-control o_action">
+        <div class="cf-haccp-topbar">
+            <div class="cf-haccp-brand">
+                <div class="cf-haccp-mark">CF</div>
+                <div>
+                    <div class="cf-haccp-title">HACCP Control Room</div>
+                    <div class="cf-haccp-subtitle">Tracciabilita, gate operativi, evidenze audit</div>
+                </div>
             </div>
-            <button class="btn btn-sm btn-outline-light" t-on-click="onRefresh">↺ Aggiorna</button>
+            <div class="cf-haccp-top-actions">
+                <span t-attf-class="cf-haccp-state-pill cf-state-#{state.data ? state.data.overall_state : 'gray'}">
+                    <t t-if="state.data">
+                        <t t-esc="state.data.overall_state == 'red' ? 'Critico' : state.data.overall_state == 'yellow' ? 'Attenzione' : 'Presidiato'"/>
+                    </t>
+                    <t t-else="">Caricamento</t>
+                </span>
+                <button class="cf-haccp-icon-btn" t-on-click="onRefresh" title="Aggiorna">↻</button>
+            </div>
         </div>
 
         <t t-if="state.loading">
-            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
-                <div class="spinner-border text-secondary"/>
+            <div class="cf-haccp-loading">
+                <div class="cf-haccp-spinner"/>
+                <span>Carico il quadro HACCP...</span>
             </div>
         </t>
         <t t-elif="state.error">
-            <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+            <div class="cf-haccp-error"><t t-esc="state.error"/></div>
         </t>
         <t t-elif="state.data">
-            <div class="cf-dash-body px-4 py-3">
+            <div class="cf-haccp-body">
+                <section class="cf-haccp-hero">
+                    <div class="cf-haccp-hero-main">
+                        <div class="cf-haccp-hero-label">Stato audit</div>
+                        <div class="cf-haccp-hero-value">
+                            <t t-esc="state.data.audit_alerts"/>
+                        </div>
+                        <div class="cf-haccp-hero-copy">punti da presidiare ora</div>
+                    </div>
+                    <div class="cf-haccp-chain">
+                        <button class="cf-chain-step" t-on-click="onOpenReceiptPending">
+                            <span class="cf-chain-kicker">01</span>
+                            <strong>Ricezione MP</strong>
+                            <span><t t-esc="state.data.receipt_pending"/> da completare</span>
+                        </button>
+                        <div class="cf-chain-line"/>
+                        <button class="cf-chain-step" t-on-click="onOpenProductionPending">
+                            <span class="cf-chain-kicker">02</span>
+                            <strong>Produzione</strong>
+                            <span><t t-esc="state.data.production_pending"/> da completare</span>
+                        </button>
+                        <div class="cf-chain-line"/>
+                        <button class="cf-chain-step" t-on-click="onOpenTraceability">
+                            <span class="cf-chain-kicker">03</span>
+                            <strong>Lotto → cliente</strong>
+                            <span><t t-esc="state.data.trace_coverage"/>% copertura</span>
+                        </button>
+                    </div>
+                </section>
 
-                <!-- Semaforo generale -->
-                <div class="cf-haccp-semaforo mb-4"
-                     t-attf-style="border-left: 5px solid #{state.data.overall_state == 'red' ? '#dc3545' : state.data.overall_state == 'yellow' ? '#ffc107' : '#28a745'};">
-                    <span class="fw-bold" style="font-size:14px;">Stato HACCP generale:</span>
-                    <span t-attf-class="ms-2 badge #{state.data.overall_state == 'red' ? 'bg-danger' : state.data.overall_state == 'yellow' ? 'bg-warning text-dark' : 'bg-success'}"
-                          style="font-size:13px;">
-                        <t t-esc="state.data.overall_state == 'red' ? '🔴 Critico' : state.data.overall_state == 'yellow' ? '🟡 Attenzione' : '🟢 OK'"/>
-                    </span>
-                </div>
+                <section class="cf-haccp-kpi-grid">
+                    <button class="cf-haccp-kpi cf-kpi-warn" t-on-click="onOpenReceiptPending">
+                        <span>Ricezioni aperte</span>
+                        <strong><t t-esc="state.data.receipt_pending"/></strong>
+                        <small><t t-esc="state.data.receipt_blocked"/> bloccate</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-info" t-on-click="onOpenProductionPending">
+                        <span>Produzioni aperte</span>
+                        <strong><t t-esc="state.data.production_pending"/></strong>
+                        <small><t t-esc="state.data.production_blocked"/> in blocco/analisi</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-green" t-on-click="onOpenTraceability">
+                        <span>Lotti tracciati</span>
+                        <strong><t t-esc="state.data.traced_lots"/></strong>
+                        <small><t t-esc="state.data.trace_with_customer"/> con destinatari</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-info" t-on-click="onOpenTraceability">
+                        <span>Pronto IFS/BRCGS</span>
+                        <strong><t t-esc="state.data.trace_ready_score"/>%</strong>
+                        <small><t t-esc="state.data.trace_recall_tested"/> recall testati</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-red" t-on-click="onOpenQuarantine">
+                        <span>Quarantene</span>
+                        <strong><t t-esc="state.data.active_quarantines"/></strong>
+                        <small>merce segregata</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-red" t-on-click="onOpenNcCritical">
+                        <span>NC alte/critiche</span>
+                        <strong><t t-esc="state.data.nc_critical_open"/></strong>
+                        <small><t t-esc="state.data.nc_open"/> NC aperte</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-warn" t-on-click="onOpenTemperatureToday">
+                        <span>Temperature</span>
+                        <strong><t t-esc="state.data.temp_pending_today + state.data.temp_ko_today"/></strong>
+                        <small>pending/KO oggi</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-info" t-on-click="onOpenSanificationToday">
+                        <span>Sanificazioni</span>
+                        <strong><t t-esc="state.data.san_missing_today"/></strong>
+                        <small>da chiudere</small>
+                    </button>
+                    <button class="cf-haccp-kpi cf-kpi-warn" t-on-click="onOpenDocsExpiring">
+                        <span>Doc. e strumenti</span>
+                        <strong><t t-esc="state.data.docs_expired + state.data.instruments_expired"/></strong>
+                        <small><t t-esc="state.data.docs_expiring + state.data.instruments_expiring"/> in scadenza</small>
+                    </button>
+                </section>
 
-                <!-- NC KPI cards -->
-                <div class="row g-3 mb-4">
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" t-on-click="onOpenNcOpen"
-                             t-attf-style="border-top: 3px solid #{state.data.nc_open > 0 ? '#fd7e14' : '#28a745'};">
-                            <div class="cf-kpi-label">NC Aperte</div>
-                            <div t-attf-class="cf-kpi-value #{state.data.nc_open > 0 ? 'text-warning' : 'text-success'}">
-                                <t t-esc="state.data.nc_open"/>
+                <section class="cf-haccp-main-grid">
+                    <div class="cf-haccp-panel cf-haccp-panel-wide">
+                        <div class="cf-panel-head">
+                            <div>
+                                <h3>Tracciabilita recente</h3>
+                                <span>lotto materia prima → produzione → cliente</span>
                             </div>
-                            <div class="cf-kpi-sub">in stato "Aperta"</div>
+                            <button t-on-click="onOpenTraceability">Apri</button>
+                        </div>
+                        <div class="cf-trace-list">
+                            <t t-if="state.data.recent_traces.length">
+                                <t t-foreach="state.data.recent_traces" t-as="trace" t-key="trace.id">
+                                    <div t-att-class="'cf-trace-row cf-trace-' + trace.status">
+                                        <div class="cf-trace-lot">
+                                            <strong><t t-esc="trace.lotto_pf"/></strong>
+                                            <span>MP <t t-esc="trace.lotto_mp"/></span>
+                                        </div>
+                                        <div class="cf-trace-route">
+                                            <span><t t-esc="trace.production"/></span>
+                                            <div class="cf-trace-route-line"/>
+                                            <span><t t-esc="trace.customers"/></span>
+                                        </div>
+                                        <div class="cf-trace-meta">
+                                            <span><t t-esc="trace.status_label"/></span>
+                                            <strong><t t-esc="trace.audit_ready_score"/>% audit</strong>
+                                            <small><t t-esc="trace.risk_count"/> alert · <t t-esc="trace.mass_balance"/></small>
+                                            <small><t t-esc="trace.date"/></small>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-empty">Nessuna scheda tracciabilita ancora presente.</div>
+                            </t>
                         </div>
                     </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" t-on-click="onOpenNcCritical"
-                             t-attf-style="border-top: 3px solid #{state.data.nc_critical_open > 0 ? '#dc3545' : '#28a745'};">
-                            <div class="cf-kpi-label">NC Critiche / Alte</div>
-                            <div t-attf-class="cf-kpi-value #{state.data.nc_critical_open > 0 ? 'text-danger' : 'text-success'}">
-                                <t t-esc="state.data.nc_critical_open"/>
-                            </div>
-                            <div class="cf-kpi-sub">gravità alta + critica aperte</div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" t-on-click="onOpenCalibExpiring"
-                             t-attf-style="border-top: 3px solid #{state.data.instruments_expired > 0 ? '#dc3545' : state.data.instruments_expiring > 0 ? '#ffc107' : '#28a745'};">
-                            <div class="cf-kpi-label">Strumenti Scaduti</div>
-                            <div t-attf-class="cf-kpi-value #{state.data.instruments_expired > 0 ? 'text-danger' : 'text-success'}">
-                                <t t-esc="state.data.instruments_expired"/>
-                            </div>
-                            <div class="cf-kpi-sub">
-                                + <t t-esc="state.data.instruments_expiring"/> in scadenza
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="cf-kpi-card" t-on-click="onOpenDocsExpiring"
-                             t-attf-style="border-top: 3px solid #{state.data.docs_expired > 0 ? '#dc3545' : state.data.docs_expiring > 0 ? '#ffc107' : '#28a745'};">
-                            <div class="cf-kpi-label">Documenti Scaduti</div>
-                            <div t-attf-class="cf-kpi-value #{state.data.docs_expired > 0 ? 'text-danger' : 'text-success'}">
-                                <t t-esc="state.data.docs_expired"/>
-                            </div>
-                            <div class="cf-kpi-sub">
-                                + <t t-esc="state.data.docs_expiring"/> in scadenza
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- NC pipeline -->
-                <div class="cf-dash-panel">
-                    <div class="cf-dash-panel-title">📋 Flusso Non Conformità</div>
-                    <div class="d-flex gap-3 flex-wrap">
-                        <div class="cf-nc-stage-box" style="border-color:#fd7e14;">
-                            <div class="cf-nc-stage-label">Aperte</div>
-                            <div class="cf-nc-stage-count" style="color:#fd7e14;">
-                                <t t-esc="state.data.nc_open"/>
+                    <div class="cf-haccp-panel">
+                        <div class="cf-panel-head">
+                            <div>
+                                <h3>NC pipeline</h3>
+                                <span>stati aperti e chiusure</span>
                             </div>
+                            <button t-on-click="onOpenNcOpen">Apri</button>
                         </div>
-                        <div class="cf-nc-arrow">→</div>
-                        <div class="cf-nc-stage-box" style="border-color:#0d6efd;">
-                            <div class="cf-nc-stage-label">In Analisi</div>
-                            <div class="cf-nc-stage-count" style="color:#0d6efd;">
-                                <t t-esc="state.data.nc_analysis"/>
-                            </div>
-                        </div>
-                        <div class="cf-nc-arrow">→</div>
-                        <div class="cf-nc-stage-box" style="border-color:#6f42c1;">
-                            <div class="cf-nc-stage-label">Azione Correttiva</div>
-                            <div class="cf-nc-stage-count" style="color:#6f42c1;">
-                                <t t-esc="state.data.nc_action"/>
-                            </div>
-                        </div>
-                        <div class="cf-nc-arrow">→</div>
-                        <div class="cf-nc-stage-box" style="border-color:#28a745;">
-                            <div class="cf-nc-stage-label">Chiuse</div>
-                            <div class="cf-nc-stage-count" style="color:#28a745;">0</div>
+                        <div class="cf-stage-flow">
+                            <div><span>Aperte</span><strong><t t-esc="state.data.nc_open"/></strong></div>
+                            <div><span>Analisi</span><strong><t t-esc="state.data.nc_analysis"/></strong></div>
+                            <div><span>Azioni</span><strong><t t-esc="state.data.nc_action"/></strong></div>
+                            <div><span>Chiuse</span><strong><t t-esc="state.data.nc_closed"/></strong></div>
                         </div>
                     </div>
-                </div>
+
+                    <div class="cf-haccp-panel">
+                        <div class="cf-panel-head">
+                            <div>
+                                <h3>Quarantene attive</h3>
+                                <span>lotti segregati</span>
+                            </div>
+                            <button t-on-click="onOpenQuarantine">Apri</button>
+                        </div>
+                        <div class="cf-compact-list">
+                            <t t-if="state.data.active_quarantine_rows.length">
+                                <t t-foreach="state.data.active_quarantine_rows" t-as="q" t-key="q.id">
+                                    <div class="cf-compact-row">
+                                        <strong><t t-esc="q.reference"/></strong>
+                                        <span><t t-esc="q.lot"/> · <t t-esc="q.product"/></span>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="cf-empty">Nessuna quarantena attiva.</div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <div class="cf-haccp-panel">
+                        <div class="cf-panel-head">
+                            <div>
+                                <h3>Azioni rapide</h3>
+                                <span>percorsi facili per operatori</span>
+                            </div>
+                        </div>
+                        <div class="cf-action-stack">
+                            <button t-on-click="onOpenReceiptPending">Completa ricezioni</button>
+                            <button t-on-click="onOpenProductionPending">Completa produzioni</button>
+                            <button t-on-click="onOpenTemperatureToday">Registro temperature</button>
+                            <button t-on-click="onOpenCcpKo">CCP fuori limite</button>
+                        </div>
+                    </div>
+                </section>
             </div>
         </t>
     </div>
