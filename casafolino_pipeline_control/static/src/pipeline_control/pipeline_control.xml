@@ -1027,6 +1027,10 @@
                                                 <span t-if="row.urgency" t-attf-class="cf-pc-badge urgency-#{row.urgency}">
                                                     <t t-out="row.urgency === 'high' ? 'URGENTE' : 'Priorità media'"/>
                                                 </span>
+                                                <span t-if="row.workstream_label"
+                                                      t-attf-class="cf-pc-badge workstream-#{row.workstream_tone || 'green'}">
+                                                    <t t-out="row.workstream_label"/>
+                                                </span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge">
                                                     <i class="fa fa-handshake-o"/> <t t-out="row.lead"/>
                                                 </span>
@@ -1096,6 +1100,10 @@
                                                 <span t-if="row.sender_decision === 'pending'" class="cf-pc-badge decision-pending">Da decidere</span>
                                                 <span t-if="row.sender_decision === 'kept'" class="cf-pc-badge decision-kept">Tenuto</span>
                                                 <span class="cf-pc-badge waiting-badge">In attesa cliente</span>
+                                                <span t-if="row.workstream_label"
+                                                      t-attf-class="cf-pc-badge workstream-#{row.workstream_tone || 'green'}">
+                                                    <t t-out="row.workstream_label"/>
+                                                </span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
                                             </div>
                                             <div class="cf-pc-thread-quick-actions">

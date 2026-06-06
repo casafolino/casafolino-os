@@ -1076,6 +1076,33 @@ class CfPipelineControl(models.AbstractModel):
             'provider': ai_payload.get('provider') or ('classificatore AI' if msg.ai_classified_at else 'euristica console'),
         }
 
+    def _message_workstream(self, msg, ai_brief=None):
+        ai_brief = ai_brief or self._message_ai_brief(msg)
+        text = ' '.join([
+            msg.subject or '',
+            msg.sender_name or '',
+            msg.sender_email or '',
+            msg.sender_domain or '',
+            msg.snippet or '',
+            (msg.body_plain or '')[:800],
+        ]).lower()
+        category = (msg.ai_category or '').lower()
+        recommended = (ai_brief.get('recommended_action') or '').lower()
+        intent = (ai_brief.get('intent') or '').lower()
+        if self._is_service_notification_text(msg.body_html or '', msg.body_plain or '', msg.subject or ''):
+            return {'key': 'service', 'label': 'Notifica', 'tone': 'muted'}
+        if recommended == 'sample' or 'campion' in intent or any(word in text for word in ['sample', 'samples', 'campione', 'campioni', 'campionatura']):
+            return {'key': 'samples', 'label': 'Campioni', 'tone': 'amber'}
+        if any(word in text for word in ['logistic', 'logistica', 'freight', 'spedizione', 'shipment', 'tracking', 'dhl', 'dogana', 'customs', 'container', 'tecnofreight']):
+            return {'key': 'logistics', 'label': 'Logistica', 'tone': 'blue'}
+        if category == 'admin' or recommended in ('invoice', 'payment') or any(word in text for word in ['pagamento', 'payment', 'invoice', 'fattura', 'acconto', 'rimborso', 'bonifico']):
+            return {'key': 'admin', 'label': 'Admin', 'tone': 'red'}
+        if recommended == 'catalog' or any(word in text for word in ['catalogo', 'catalog', 'brochure', 'scheda tecnica', 'technical sheet', 'artwork', 'grafica', 'etichetta', 'label']):
+            return {'key': 'materials', 'label': 'Materiali', 'tone': 'green'}
+        if category in ('newsletter', 'spam', 'personale') or any(word in text for word in ['newsletter', 'unsubscribe', 'disiscriviti', 'webinar']):
+            return {'key': 'low_value', 'label': 'Bassa priorita', 'tone': 'muted'}
+        return {'key': 'commercial', 'label': 'Commerciale', 'tone': 'green'}
+
     def _message_ai_payload(self, msg):
         raw = msg.ai_raw_response or ''
         if not raw:
@@ -3023,6 +3050,10 @@ class CfPipelineControl(models.AbstractModel):
         rows_to_reply = [self._format_mail_row(msg) for msg in inbox[:24]]
         rows_waiting = [self._format_mail_row(msg) for msg in waiting[:24]]
         all_rows = rows_to_reply + rows_waiting
+        workstream_counts = {}
+        for row in all_rows:
+            key = row.get('workstream') or 'commercial'
+            workstream_counts[key] = workstream_counts.get(key, 0) + 1
 
         # Weekly AI category distribution stats for the visual dashboard
         from datetime import datetime, timedelta
@@ -3059,6 +3090,7 @@ class CfPipelineControl(models.AbstractModel):
                 {'label': 'Urgenti', 'value': len([row for row in all_rows if row.get('urgency') == 'high']), 'hint': 'AI urgenza alta'},
             ],
             'ai_status': self._get_ai_readiness_status(all_rows),
+            'workstream_counts': workstream_counts,
             'distribution_stats': stats_list,
             'to_reply': rows_to_reply,
             'waiting_customer': rows_waiting,
@@ -3563,6 +3595,8 @@ class CfPipelineControl(models.AbstractModel):
 
     def _format_mail_row(self, msg):
         item = self._format_mail_item(msg)
+        ai_brief = self._message_ai_brief(msg)
+        workstream = self._message_workstream(msg, ai_brief)
         
         # Deduplication matching suggestion for incoming email not linked to partner
         suggested_partner = False
@@ -3603,6 +3637,10 @@ class CfPipelineControl(models.AbstractModel):
             'attachment_count': len(msg.attachment_ids),
             'thread_count': msg.thread_id.message_count if msg.thread_id else 1,
             'suggested_action': self._mail_suggested_action(msg),
+            'workstream': workstream['key'],
+            'workstream_label': workstream['label'],
+            'workstream_tone': workstream['tone'],
+            'recommended_action': ai_brief.get('recommended_action') or '',
         })
         return item
 

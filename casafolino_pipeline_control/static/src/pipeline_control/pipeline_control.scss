@@ -1960,6 +1960,26 @@
                 background: #e5f2ea;
                 color: #256245;
             }
+            &.workstream-green {
+                background: #e5f2ea;
+                color: #256245;
+            }
+            &.workstream-blue {
+                background: #e6f0f7;
+                color: #245b82;
+            }
+            &.workstream-amber {
+                background: #f7ead8;
+                color: #7c4b0c;
+            }
+            &.workstream-red {
+                background: #f6e2df;
+                color: #8c2c24;
+            }
+            &.workstream-muted {
+                background: #f0f2ee;
+                color: #667061;
+            }
         }
     }
 

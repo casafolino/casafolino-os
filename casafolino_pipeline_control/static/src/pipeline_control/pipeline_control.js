@@ -881,12 +881,13 @@ export class CFPipelineControl extends Component {
         return [
             { id: "all", label: "Tutti", count: rows.length },
             { id: "pending", label: "Da decidere", count: rows.filter((row) => row.sender_decision === "pending").length },
-            { id: "kept", label: "Tenute", count: rows.filter((row) => row.sender_decision === "kept").length },
             { id: "urgent", label: "Urgenti", count: rows.filter((row) => row.urgency === "high").length },
-            { id: "no_lead", label: "Senza lead", count: rows.filter((row) => !row.lead_id).length },
-            { id: "with_lead", label: "Con lead", count: rows.filter((row) => row.lead_id).length },
-            { id: "ai_action", label: "Azione AI", count: rows.filter((row) => row.needs_action).length },
-            { id: "attachments", label: "Allegati", count: rows.filter((row) => row.has_attachments).length },
+            { id: "commercial", label: "Commerciale", count: rows.filter((row) => row.workstream === "commercial").length },
+            { id: "logistics", label: "Logistica", count: rows.filter((row) => row.workstream === "logistics").length },
+            { id: "admin", label: "Admin", count: rows.filter((row) => row.workstream === "admin").length },
+            { id: "materials", label: "Materiali", count: rows.filter((row) => row.workstream === "materials").length },
+            { id: "samples", label: "Campioni", count: rows.filter((row) => row.workstream === "samples").length },
+            { id: "no_lead", label: "Da collegare", count: rows.filter((row) => !row.lead_id || !row.partner_id).length },
         ];
     }
 
@@ -976,8 +977,11 @@ export class CFPipelineControl extends Component {
         if (filter === "kept") {
             return rows.filter((row) => row.sender_decision === "kept");
         }
+        if (["commercial", "logistics", "admin", "materials", "samples"].includes(filter)) {
+            return rows.filter((row) => row.workstream === filter);
+        }
         if (filter === "no_lead") {
-            return rows.filter((row) => !row.lead_id);
+            return rows.filter((row) => !row.lead_id || !row.partner_id);
         }
         if (filter === "with_lead") {
             return rows.filter((row) => row.lead_id);
