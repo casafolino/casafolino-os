@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <data>
     <record id="mail_template_voice_inbound_summary" model="mail.template">
         <field name="name">Centralino telefonico - riepilogo chiamata inbound</field>
         <field name="model_id" ref="model_casafolino_voice_call"/>
@@ -21,4 +22,5 @@
         ]]></field>
         <field name="auto_delete" eval="False"/>
     </record>
+    </data>
 </odoo>
