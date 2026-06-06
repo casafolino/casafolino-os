@@ -631,6 +631,8 @@ class CfPipelineControl(models.AbstractModel):
         project_or_parts = []
         if partner_ids:
             project_or_parts.append([('partner_id', 'in', partner_ids)])
+            if 'cf_partner_id' in self.env['project.project']._fields:
+                project_or_parts.append([('cf_partner_id', 'in', partner_ids)])
         if leads and 'cf_lead_ids' in self.env['project.project']._fields:
             project_or_parts.append([('cf_lead_ids', 'in', leads.ids)])
         if project:
@@ -2952,7 +2954,7 @@ class CfPipelineControl(models.AbstractModel):
             project = getattr(record, 'cf_project_id', False)
         elif record._name == 'project.project':
             project = record
-            partner = getattr(record, 'partner_id', False) or getattr(record, 'cf_partner_id', False)
+            partner = self._project_partner(record)
             company = partner if partner and partner.is_company else partner.parent_id
         elif record._name == 'casafolino.mail.message':
             partner = record.partner_id
@@ -2961,7 +2963,7 @@ class CfPipelineControl(models.AbstractModel):
             company = partner if partner and partner.is_company else partner.parent_id
         elif record._name == 'project.task':
             project = record.project_id
-            partner = project.partner_id if project else self.env['res.partner']
+            partner = self._project_partner(project) if project else self.env['res.partner']
             company = partner if partner and partner.is_company else partner.parent_id
         elif record._name == 'cf.export.sample':
             partner = record.partner_id
@@ -3093,13 +3095,14 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _format_entity360_project(self, project):
-        counts = self._entity360_counts(partner=project.partner_id, project=project)
+        partner = self._project_partner(project)
+        counts = self._entity360_counts(partner=partner, project=project)
         return {
             'id': project.id,
             'model': project._name,
             'res_id': project.id,
             'title': project.name,
-            'subtitle': project.partner_id.display_name if project.partner_id else 'Dossier',
+            'subtitle': partner.display_name if partner else 'Dossier',
             'meta': self._entity360_meta(counts),
             'next_action': counts.get('next_action') or '',
             'badges': self._compact([
@@ -3123,10 +3126,16 @@ class CfPipelineControl(models.AbstractModel):
         task_domain = []
         sale_domain = [('state', 'in', ['draft', 'sent'])]
 
+        if project and not partner:
+            partner = self._project_partner(project)
+
         if partner:
             mail_domain.append(('partner_id', '=', partner.id))
             lead_domain.append(('partner_id', '=', partner.id))
-            project_domain.append(('partner_id', '=', partner.id))
+            if 'cf_partner_id' in Project._fields:
+                project_domain.extend(['|', ('partner_id', '=', partner.id), ('cf_partner_id', '=', partner.id)])
+            else:
+                project_domain.append(('partner_id', '=', partner.id))
             sale_domain.append(('partner_id', '=', partner.id))
         if lead:
             mail_domain = ['|', ('lead_id', '=', lead.id)] + mail_domain
@@ -4881,8 +4890,14 @@ class CfPipelineControl(models.AbstractModel):
         return bool(deadline and deadline < fields.Date.context_today(self))
 
     def _project_partner_name(self, project):
-        partner = getattr(project, 'partner_id', False) or getattr(project, 'cf_partner_id', False)
+        partner = self._project_partner(project)
         return partner.display_name if partner else ''
+
+    @staticmethod
+    def _project_partner(project):
+        if not project:
+            return False
+        return getattr(project, 'partner_id', False) or getattr(project, 'cf_partner_id', False)
 
     def _project_continent_label(self, project):
         if 'cf360_continent' not in project._fields or not project.cf360_continent:
