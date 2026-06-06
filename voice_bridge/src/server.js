@@ -554,6 +554,7 @@ wss.on('connection', (ws, req) => {
   let transcript = [];
   let lastSpeechStartedAt = 0;
   let lastDeepgramClearAt = 0;
+  let openAiResponseActive = false;
   let fallbackRedirected = false;
   
   log('info', 'New Twilio WebSocket media-stream connection established', { jobId });
@@ -835,7 +836,19 @@ wss.on('connection', (ws, req) => {
             log('info', `Received OpenAI event: ${openAiMsg.type}`, { eventId: openAiMsg.event_id || null });
           }
 
+          if (openAiMsg.type === 'response.created') {
+            openAiResponseActive = true;
+          }
+
+          if (['response.done', 'response.cancelled'].includes(openAiMsg.type)) {
+            openAiResponseActive = false;
+          }
+
           if (openAiMsg.type === 'input_audio_buffer.speech_started') {
+            if (!openAiResponseActive) {
+              log('debug', 'Ignoring speech_started because no OpenAI response is active');
+              return;
+            }
             const now = Date.now();
             if (now - lastSpeechStartedAt < config.bargeInMinIntervalMs) {
               log('debug', 'Ignoring duplicate/noisy speech_started event', { elapsed_ms: now - lastSpeechStartedAt });
