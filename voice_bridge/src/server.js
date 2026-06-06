@@ -17,6 +17,10 @@ const config = {
   publicBridgeUrl: stripTrailingSlash(process.env.PUBLIC_BRIDGE_URL || ''),
   logLevel: process.env.LOG_LEVEL || 'info',
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 10000),
+  vadThreshold: Number(process.env.OPENAI_VAD_THRESHOLD || 0.78),
+  vadPrefixPaddingMs: Number(process.env.OPENAI_VAD_PREFIX_PADDING_MS || 300),
+  vadSilenceDurationMs: Number(process.env.OPENAI_VAD_SILENCE_DURATION_MS || 850),
+  bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 1200),
 };
 
 const activeCalls = new Map();
@@ -24,6 +28,7 @@ const activeCalls = new Map();
 const BASE_INSTRUCTIONS = `
 Sei Giulia di CasaFolino, l'assistente vocale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
 Rileva dinamicamente la lingua parlata dal cliente fin dal primo turno di conversazione e rispondi fluidamente nella stessa lingua (italiano, inglese, francese, spagnolo, tedesco, ecc.) adattandoti all'istante con tono estremamente naturale, gentile, familiare, professionale e caloroso. Rispondi in modo conciso e naturale per facilitare la conversazione telefonica (massimo 1-2 frasi brevi per risposta).
+Parla con ritmo telefonico leggermente piu rapido del normale, senza pause lunghe. Dopo aver raccolto il nome, chiama il cliente per nome in modo naturale e non eccessivo.
 
 Il tuo scopo è assistere i clienti che chiamano, rispondere alle loro domande sui prodotti di CasaFolino, verificare lo stato dell'ordine, gestire contatti e richieste commerciali (lead), o aprire segnalazioni di assistenza.
 
@@ -48,11 +53,15 @@ COMPORTAMENTO DIALOGO:
 - Presentati all'inizio come "Giulia di CasaFolino" con voce calda, disponibile, sorridente e familiare, come una reception CasaFolino: mai rigida, mai troppo formale, mai da IVR.
 - All'inizio comunica la posizione in coda, rassicurando che i tempi di attesa sono molto bassi.
 - Dopo l'accoglienza chiedi immediatamente nome, cognome, telefono, email e azienda; salva il contatto prima di passare al motivo della chiamata.
+- Chiedi i dati con tono sciolto e veloce, in una frase breve; se il cliente si ferma, raccogli quello che manca una domanda alla volta.
 - Se vuole fare un ordine, chiedi se preferisce farlo con te al telefono oppure parlare con un commerciale. Se non puoi trasferire subito, raccogli i dati e proponi richiamata.
 - Se ha problemi con un ordine, chiedi nome, email o telefono e usa lookup_customer e lookup_order_status quando hai dati sufficienti.
 - Se vuole informazioni commerciali, chiedi cosa serve: catalogo, listino, private label, campionature, certificazioni o altro. Usa create_crm_lead, create_email_activity, create_callback o create_ticket secondo il caso.
 - Dopo aver salvato il contatto, chiedi il motivo della chiamata: ordine nuovo, problema con un ordine o informazioni commerciali.
 - Fai una domanda per volta, con frasi brevi e gentili.
+- Usa sempre record_call_outcome prima di chiudere, cosi il cliente riceve una mail di riepilogo della conversazione.
+- Per richieste commerciali, cataloghi, listini e campionature il referente interno e Antonio, con Martina in copia. Per assistenza, ordini, reclami, documenti e backoffice il referente interno e Martina, con Antonio in copia.
+- Se il cliente chiede il catalogo in una lingua diversa dall'inglese, invia il catalogo italiano.
 `;
 
 function stripTrailingSlash(value) {
@@ -367,6 +376,7 @@ wss.on('connection', (ws, req) => {
   let openAiWs = null;
   let callState = 'connecting';
   let transcript = [];
+  let lastSpeechStartedAt = 0;
   
   log('info', 'New Twilio WebSocket media-stream connection established', { jobId });
   
@@ -468,6 +478,12 @@ wss.on('connection', (ws, req) => {
                 input: {
                   format: {
                     type: 'audio/pcmu'
+                  },
+                  turn_detection: {
+                    type: 'server_vad',
+                    threshold: config.vadThreshold,
+                    prefix_padding_ms: config.vadPrefixPaddingMs,
+                    silence_duration_ms: config.vadSilenceDurationMs
                   }
                 },
                 output: {
@@ -484,7 +500,7 @@ wss.on('connection', (ws, req) => {
           openAiWs.send(JSON.stringify(sessionUpdate));
           
           // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Prima di iniziare le chiedo gentilmente nome, cognome, telefono, email e nome azienda, così apro correttamente la chiamata e posso inviarle il riepilogo.";
+          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Per aprire la chiamata mi dice nome, cognome, telefono, email e azienda? Poi la aiuto subito.";
           const greetingText = formatGreetingText(rawGreetingText, callSid);
           const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Giulia di CasaFolino, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({
@@ -541,6 +557,12 @@ wss.on('connection', (ws, req) => {
           }
 
           if (openAiMsg.type === 'input_audio_buffer.speech_started') {
+            const now = Date.now();
+            if (now - lastSpeechStartedAt < config.bargeInMinIntervalMs) {
+              log('debug', 'Ignoring duplicate/noisy speech_started event', { elapsed_ms: now - lastSpeechStartedAt });
+              return;
+            }
+            lastSpeechStartedAt = now;
             log('info', 'Detected user barge-in / speech started. Interrupting agent response...');
             if (streamSid) {
               ws.send(JSON.stringify({

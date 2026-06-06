@@ -161,6 +161,57 @@ class CasaFolinoVoiceAIController(http.Controller):
                     return att
         return Attachment.browse()
 
+    def _classify_request_area(self, payload=None):
+        payload = payload or {}
+        fields_to_scan = [
+            'department', 'request_type', 'category', 'intent', 'summary',
+            'next_action', 'outcome', 'reason', 'subject', 'description', 'interest',
+        ]
+        text = ' '.join(str(payload.get(field) or '') for field in fields_to_scan).lower()
+        explicit_commercial = ['commerciale', 'catalogo', 'catalog', 'listino', 'campionatura', 'campione', 'campioni', 'sample']
+        explicit_backoffice = ['assistenza', 'backoffice', 'supporto', 'ticket', 'problema', 'reclamo', 'fattura', 'amministrazione']
+        if any(term in text for term in explicit_commercial):
+            return 'commerciale'
+        if any(term in text for term in explicit_backoffice):
+            return 'backoffice'
+        backoffice_terms = [
+            'problema ordine', 'problemi ordine', 'problema con un ordine', 'problemi con un ordine',
+            'stato ordine', 'consegna', 'spedizione', 'merce mancante', 'danneggiato',
+            'fattura', 'fatture', 'pagamento', 'amministrazione', 'documento', 'documenti',
+        ]
+        commercial_terms = [
+            'nuovo ordine', 'fare ordine', 'fare un ordine', 'ordine nuovo', 'commerciale',
+            'catalogo', 'catalog', 'listino', 'prezzo', 'prezzi', 'campionatura',
+            'campione', 'campioni', 'sample', 'private label', 'preventivo',
+            'fornitura', 'rivenditore', 'gdo', 'export', 'lead',
+        ]
+        if any(term in text for term in backoffice_terms):
+            return 'backoffice'
+        if any(term in text for term in commercial_terms):
+            return 'commerciale'
+        return 'commerciale'
+
+    def _dedupe_emails(self, emails, exclude=None):
+        exclude = {email.strip().lower() for email in (exclude or []) if email}
+        seen = set()
+        cleaned = []
+        for email in emails:
+            email = (email or '').strip()
+            key = email.lower()
+            if not email or key in exclude or key in seen:
+                continue
+            cleaned.append(email)
+            seen.add(key)
+        return cleaned
+
+    def _route_recipients(self, payload=None, caller_email=None):
+        area = self._classify_request_area(payload)
+        responsible = 'martina.sinopoli@casafolino.com' if area == 'backoffice' else 'antonio@casafolino.com'
+        copy_to = ['antonio@casafolino.com'] if area == 'backoffice' else ['martina.sinopoli@casafolino.com']
+        email_to = (caller_email or '').strip() or responsible
+        cc = copy_to + ([responsible] if caller_email and responsible.lower() != caller_email.lower() else [])
+        return {'area': area, 'to': email_to, 'cc': self._dedupe_emails(cc, exclude=[email_to])}
+
     def _send_catalog_email(self, payload):
         partner = self._save_inbound_contact(payload)
         email_to = payload.get('email') or partner.email
@@ -184,8 +235,8 @@ class CasaFolinoVoiceAIController(http.Controller):
         attachment = self._find_catalog_attachment(payload)
         if not attachment:
             raise ValueError('allegato catalogo non trovato')
-        cc_emails = ['martina.sinopoli@casafolino.com', 'commerciale@casafolino.com', 'antonio@casafolino.com']
-        cc_emails = [email for email in cc_emails if email.lower() != email_to.lower()]
+        route = self._route_recipients({**payload, 'request_type': 'commerciale catalogo'}, email_to)
+        cc_emails = route['cc']
         mail = request.env['mail.mail'].sudo().create({
             'subject': subject,
             'body_html': body_html,
@@ -222,9 +273,10 @@ class CasaFolinoVoiceAIController(http.Controller):
     def _send_inbound_call_email(self, call, payload=None):
         payload = payload or {}
         partner = call.partner_id
-        email_to = payload.get('email') or (partner.email if partner else '') or 'antonio@casafolino.com'
-        cc_emails = ['martina.sinopoli@casafolino.com', 'commerciale@casafolino.com', 'antonio@casafolino.com']
-        cc_emails = [email for email in cc_emails if email and email.lower() != (email_to or '').lower()]
+        caller_email = payload.get('email') or (partner.email if partner else '')
+        route = self._route_recipients(payload, caller_email)
+        email_to = route['to']
+        cc_emails = route['cc']
         company = payload.get('company_name') or ''
         if not company and partner:
             company = partner.parent_id.display_name or getattr(partner, 'company_name', '') or ''
@@ -240,6 +292,7 @@ class CasaFolinoVoiceAIController(http.Controller):
                 <tr><td><b>Azienda</b></td><td>%s</td></tr>
                 <tr><td><b>Telefono</b></td><td>%s</td></tr>
                 <tr><td><b>Email</b></td><td>%s</td></tr>
+                <tr><td><b>Referente interno</b></td><td>%s</td></tr>
                 <tr><td><b>Riepilogo</b></td><td>%s</td></tr>
                 <tr><td><b>Prossima azione</b></td><td>%s</td></tr>
             </table>
@@ -250,7 +303,8 @@ class CasaFolinoVoiceAIController(http.Controller):
             html.escape(contact),
             html.escape(company or 'N/D'),
             html.escape(phone),
-            html.escape(email_to or 'N/D'),
+            html.escape(caller_email or 'N/D'),
+            html.escape('Martina / backoffice' if route['area'] == 'backoffice' else 'Antonio / commerciale'),
             html.escape(payload.get('summary') or call.summary or 'Nessun riepilogo disponibile'),
             html.escape(payload.get('next_action') or call.next_action or 'Nessuna azione indicata'),
         )
@@ -565,8 +619,10 @@ class CasaFolinoVoiceAIController(http.Controller):
 
     def _send_notification_email(self, tool_name, payload):
         try:
+            route = self._route_recipients({'request_type': 'commerciale'} if tool_name == 'create_crm_lead' else {'request_type': 'backoffice assistenza'})
+            greeting_name = 'Martina' if route['area'] == 'backoffice' else 'Antonio'
             subject_text = "Notifica Voice AI: Nuovo Lead creato" if tool_name == 'create_crm_lead' else "Notifica Voice AI: Nuova Segnalazione creata"
-            body_html = "<p>Ciao Antonio,<br><br>L'assistente vocale Viola ha gestito una richiesta e ha creato un record in Odoo:</p>"
+            body_html = "<p>Ciao %s,<br><br>Giulia ha gestito una richiesta e ha creato un record in Odoo:</p>" % greeting_name
             if tool_name == 'create_crm_lead':
                 body_html += """
                 <ul>
@@ -610,7 +666,10 @@ class CasaFolinoVoiceAIController(http.Controller):
             mail_values = {
                 'subject': subject_text,
                 'body_html': body_html,
-                'email_to': 'antonio@casafolino.com',
+                'email_to': route['to'],
+                'email_cc': ','.join(route['cc']),
+                'email_from': 'Antonio Folino <antonio@casafolino.com>',
+                'reply_to': 'antonio@casafolino.com',
             }
             request.env['mail.mail'].sudo().create(mail_values).send()
         except Exception as e:
