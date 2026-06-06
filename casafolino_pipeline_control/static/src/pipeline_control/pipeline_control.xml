@@ -1539,6 +1539,9 @@
                                                     <t t-out="state.messageContext.contact_plan.existing_contacts"/> ok
                                                     · <t t-out="state.messageContext.contact_plan.contacts_to_create"/> da creare
                                                     · <t t-out="state.messageContext.contact_plan.contacts_to_link"/> da agganciare
+                                                    <t t-if="state.messageContext.contact_plan.contacts_out_of_scope">
+                                                        · <t t-out="state.messageContext.contact_plan.contacts_out_of_scope"/> altro dominio
+                                                    </t>
                                                 </strong>
                                             </div>
                                         </div>

@@ -10,6 +10,11 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 _INTERNAL_EMAIL_DOMAINS = {'casafolino.com', 'folinofood.com'}
+_GENERIC_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+    'live.com', 'aol.com', 'icloud.com', 'me.com', 'mail.com', 'protonmail.com',
+    'libero.it', 'virgilio.it', 'tiscali.it', 'alice.it',
+}
 
 
 class CrmLeadPipelineControl(models.Model):
@@ -1572,9 +1577,11 @@ class CfPipelineControl(models.AbstractModel):
     def _message_contact_plan(self, msg):
         participants = self._message_external_participants(msg)
         company = self._find_company_for_message(msg, participants)
+        company_domain = self._partner_business_domain(company) if company else self._message_primary_business_domain(msg, participants)
         existing = 0
         to_create = 0
         to_link = 0
+        out_of_scope = 0
         domains = []
         for person in participants:
             if person.get('domain') and person['domain'] not in domains:
@@ -1585,10 +1592,13 @@ class CfPipelineControl(models.AbstractModel):
             ], limit=1)
             if contact:
                 existing += 1
-                if company and not contact.parent_id:
+                if company and not contact.parent_id and self._participant_can_link_to_company(person, company_domain):
                     to_link += 1
             else:
-                to_create += 1
+                if company and not self._participant_can_link_to_company(person, company_domain):
+                    out_of_scope += 1
+                else:
+                    to_create += 1
         return {
             'company_id': company.id if company else False,
             'company_name': company.display_name if company else '',
@@ -1598,6 +1608,7 @@ class CfPipelineControl(models.AbstractModel):
             'existing_contacts': existing,
             'contacts_to_create': to_create,
             'contacts_to_link': to_link,
+            'contacts_out_of_scope': out_of_scope,
             'company_will_create': not bool(company) and bool(participants or msg.sender_domain or msg.sender_email),
             'next_step': self._contact_plan_next_step(company, existing, to_create, to_link),
         }
@@ -3735,9 +3746,13 @@ class CfPipelineControl(models.AbstractModel):
     @staticmethod
     def _email_domain(email):
         email = (email or '').strip().lower()
-        if '@' not in email:
-            return ''
-        return email.rsplit('@', 1)[-1]
+        if '@' in email:
+            return email.rsplit('@', 1)[-1].strip().strip('>')
+        email = re.sub(r'^https?://', '', email)
+        email = email.split('/', 1)[0].split(':', 1)[0].strip()
+        if '.' in email and ' ' not in email:
+            return email[4:] if email.startswith('www.') else email
+        return ''
 
     @classmethod
     def _is_internal_email(cls, email):
@@ -3775,12 +3790,19 @@ class CfPipelineControl(models.AbstractModel):
             add(name, email, 'to')
         for name, email in getaddresses([(msg.cc_emails or '')]):
             add(name, email, 'cc')
+        body_excerpt = ' '.join(self._compact([msg.snippet, (msg.body_plain or '')[:2500]]))
+        for email in re.findall(r'[\w.\-+%]+@[\w.\-]+\.[a-zA-Z]{2,}', body_excerpt or '')[:12]:
+            domain = self._email_domain(email)
+            if domain in _GENERIC_EMAIL_DOMAINS and domain != (msg.sender_domain or ''):
+                continue
+            add('', email, 'body')
         return participants
 
     def _message_participant_context(self, msg):
         Partner = self.env['res.partner']
         rows = []
         target_company = self._find_company_for_message(msg)
+        target_domain = self._partner_business_domain(target_company) if target_company else self._message_primary_business_domain(msg)
         for person in self._message_external_participants(msg):
             partners = Partner.search([
                 ('is_company', '=', False),
@@ -3788,7 +3810,8 @@ class CfPipelineControl(models.AbstractModel):
             ], order='parent_id desc, id asc', limit=6)
             primary = partners[:1]
             company = primary.parent_id if primary and not primary.is_company else primary
-            will_link = bool(primary and target_company and not primary.parent_id)
+            can_link = self._participant_can_link_to_company(person, target_domain)
+            will_link = bool(primary and target_company and not primary.parent_id and can_link)
             rows.append({
                 'name': person['name'],
                 'email': person['email'],
@@ -3801,6 +3824,7 @@ class CfPipelineControl(models.AbstractModel):
                 'duplicate_count': len(partners),
                 'will_create': not bool(primary),
                 'will_link': will_link,
+                'same_company_domain': can_link,
             })
         return rows
 
@@ -3896,6 +3920,56 @@ class CfPipelineControl(models.AbstractModel):
             rows.append(self._format_task_item(task))
         return rows
 
+    def _message_business_domains(self, msg, participants=None):
+        domains = []
+        if msg.sender_domain:
+            domains.append(msg.sender_domain)
+        for person in (participants or self._message_external_participants(msg)):
+            if person.get('domain'):
+                domains.append(person['domain'])
+        cleaned = []
+        for domain in domains:
+            domain = (domain or '').strip().lower()
+            if not domain or domain in _INTERNAL_EMAIL_DOMAINS or domain in _GENERIC_EMAIL_DOMAINS:
+                continue
+            cleaned.append(domain)
+        return cleaned
+
+    def _message_primary_business_domain(self, msg, participants=None):
+        domains = self._message_business_domains(msg, participants)
+        if not domains:
+            return ''
+        counts = {}
+        for domain in domains:
+            counts[domain] = counts.get(domain, 0) + 1
+        sender_domain = (msg.sender_domain or '').strip().lower()
+        if sender_domain in counts:
+            return sender_domain
+        ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+        if len(ranked) > 1 and ranked[0][1] == ranked[1][1]:
+            return ''
+        return ranked[0][0]
+
+    def _partner_business_domain(self, partner):
+        if not partner:
+            return ''
+        for value in [partner.email, partner.website]:
+            domain = self._email_domain(value) if value else ''
+            if domain and domain not in _GENERIC_EMAIL_DOMAINS:
+                return domain
+        child = self.env['res.partner'].search([
+            ('parent_id', '=', partner.id),
+            ('email', '!=', False),
+        ], limit=1)
+        domain = self._email_domain(child.email) if child else ''
+        return domain if domain and domain not in _GENERIC_EMAIL_DOMAINS else ''
+
+    @staticmethod
+    def _participant_can_link_to_company(person, company_domain):
+        if not company_domain:
+            return True
+        participant_domain = (person.get('domain') or '').strip().lower()
+        return participant_domain == company_domain or participant_domain in _GENERIC_EMAIL_DOMAINS
 
     def _find_company_for_message(self, msg, participants=None):
         Partner = self.env['res.partner']
@@ -3906,10 +3980,8 @@ class CfPipelineControl(models.AbstractModel):
                 return company
 
         participants = participants or self._message_external_participants(msg)
-        domains = []
-        if msg.sender_domain and msg.sender_domain not in _INTERNAL_EMAIL_DOMAINS:
-            domains.append(msg.sender_domain)
-        domains.extend(p['domain'] for p in participants if p.get('domain'))
+        primary_domain = self._message_primary_business_domain(msg, participants)
+        domains = [primary_domain] if primary_domain else self._message_business_domains(msg, participants)
 
         for domain in dict.fromkeys(domains):
             company = Partner.search([
@@ -3934,7 +4006,7 @@ class CfPipelineControl(models.AbstractModel):
         participants = self._message_external_participants(msg)
         company = company or self._find_company_for_message(msg, participants)
         if not company:
-            domain = (participants[0]['domain'] if participants else msg.sender_domain) or ''
+            domain = self._message_primary_business_domain(msg, participants)
             company = Partner.create({
                 'name': self._company_name_from_domain(domain) or msg.sender_name or msg.sender_email or 'Nuova azienda',
                 'email': False,
@@ -3945,20 +4017,28 @@ class CfPipelineControl(models.AbstractModel):
 
         created = 0
         linked = 0
+        skipped = 0
         primary_contact = False
+        company_domain = self._partner_business_domain(company) or self._message_primary_business_domain(msg, participants)
         for person in participants:
             contact = Partner.search([
                 ('is_company', '=', False),
                 ('email', '=ilike', person['email']),
             ], limit=1)
+            can_link = self._participant_can_link_to_company(person, company_domain)
             if contact:
                 vals = {}
-                if not contact.parent_id and not contact.is_company:
+                if not contact.parent_id and not contact.is_company and can_link:
                     vals['parent_id'] = company.id
                 if vals:
                     contact.write(vals)
                     linked += 1
+                elif not can_link:
+                    skipped += 1
             else:
+                if not can_link:
+                    skipped += 1
+                    continue
                 contact = Partner.create({
                     'name': person['name'],
                     'email': person['email'],
@@ -3977,16 +4057,16 @@ class CfPipelineControl(models.AbstractModel):
             msg.partner_id = company.id
             msg.match_type = 'domain'
 
-        return company, created, linked, len(participants)
+        return company, created, linked, len(participants), skipped
 
     def _create_or_open_company_from_message(self, msg):
-        company, created, linked, total = self._ensure_company_contacts_from_message(msg)
+        company, created, linked, total, skipped = self._ensure_company_contacts_from_message(msg)
         action = self._open_record(company, 'Azienda')
         action.update({
             'display_notification': {
                 'title': 'Azienda aggiornata',
-                'message': 'Contatti esterni trovati: %s. Creati: %s. Agganciati: %s.' % (
-                    total, created, linked
+                'message': 'Contatti esterni trovati: %s. Creati: %s. Agganciati: %s. Non agganciati per dominio diverso: %s.' % (
+                    total, created, linked, skipped
                 ),
                 'type': 'success',
             },
