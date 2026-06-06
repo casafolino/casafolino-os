@@ -15,6 +15,11 @@ const config = {
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
   deepgramListenModel: process.env.DEEPGRAM_LISTEN_MODEL || 'nova-3',
   deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-livia-it',
+  ttsProvider: (process.env.TTS_PROVIDER || 'deepgram').toLowerCase(),
+  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || '',
+  elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID || '',
+  elevenLabsModelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_turbo_v2_5',
+  elevenLabsLanguageCode: process.env.ELEVENLABS_LANGUAGE_CODE || 'it',
   deepgramThinkProvider: process.env.DEEPGRAM_THINK_PROVIDER || 'open_ai',
   deepgramThinkModel: process.env.DEEPGRAM_THINK_MODEL || 'gpt-4o-mini',
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
@@ -104,6 +109,43 @@ async function readFormUrlEncoded(req) {
   return body;
 }
 
+function buildSpeakConfig() {
+  if (config.ttsProvider === 'eleven_labs') {
+    if (!config.elevenLabsApiKey || !config.elevenLabsVoiceId) {
+      throw new Error('ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID are required when TTS_PROVIDER=eleven_labs');
+    }
+
+    return [
+      {
+        provider: {
+          type: 'eleven_labs',
+          model_id: config.elevenLabsModelId,
+          language_code: config.elevenLabsLanguageCode,
+        },
+        endpoint: {
+          url: `https://api.elevenlabs.io/v1/text-to-speech/${config.elevenLabsVoiceId}/stream`,
+          headers: {
+            'xi-api-key': config.elevenLabsApiKey,
+          },
+        },
+      },
+      {
+        provider: {
+          type: 'deepgram',
+          model: config.deepgramSpeakModel,
+        },
+      },
+    ];
+  }
+
+  return {
+    provider: {
+      type: 'deepgram',
+      model: config.deepgramSpeakModel,
+    },
+  };
+}
+
 function buildDeepgramSettings(agentPayload) {
   const instructions = agentPayload?.instructions
     ? `${BASE_INSTRUCTIONS}\n\nISTRUZIONI DINAMICHE DA ODOO:\n${agentPayload.instructions}`
@@ -141,12 +183,7 @@ function buildDeepgramSettings(agentPayload) {
         },
         prompt: instructions,
       },
-      speak: {
-        provider: {
-          type: 'deepgram',
-          model: config.deepgramSpeakModel,
-        },
-      },
+      speak: buildSpeakConfig(),
       greeting: agentPayload?.first_message || "Buongiorno! Sono Pula di CasaFolino. La chiamo per fare un breve test dell'assistente outbound.",
     },
     tags: ['casafolino', 'autobahn', 'twilio'],
@@ -349,7 +386,10 @@ async function router(req, res) {
         db: config.odooDb,
         has_openai_key: Boolean(config.openaiApiKey),
         voice_provider: config.voiceProvider,
+        tts_provider: config.ttsProvider,
         has_deepgram_key: Boolean(config.deepgramApiKey),
+        has_elevenlabs_key: Boolean(config.elevenLabsApiKey),
+        has_elevenlabs_voice: Boolean(config.elevenLabsVoiceId),
         active_calls: activeCalls.size,
       });
       return;
