@@ -160,8 +160,6 @@ function buildDeepgramSettings(agentPayload, callSid) {
         provider: {
           type: 'deepgram',
           model: config.deepgramSpeakModel,
-          speed: config.deepgramSpeakSpeed,
-          language: 'it',
         },
       },
       greeting: buildGreeting(agentPayload, callSid),
