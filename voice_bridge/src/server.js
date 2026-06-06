@@ -20,7 +20,7 @@ const config = {
   vadThreshold: Number(process.env.OPENAI_VAD_THRESHOLD || 0.78),
   vadPrefixPaddingMs: Number(process.env.OPENAI_VAD_PREFIX_PADDING_MS || 300),
   vadSilenceDurationMs: Number(process.env.OPENAI_VAD_SILENCE_DURATION_MS || 850),
-  bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 350),
+  bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 1200),
   voiceProvider: (process.env.VOICE_PROVIDER || 'openai').toLowerCase(),
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
@@ -749,7 +749,7 @@ wss.on('connection', (ws, req) => {
           
           // Send initial session setup immediately with default/cached instructions
           const baseInstructionsForSession = buildInstructions(agentPayload);
-          const initialVoice = agentPayload?.voice || config.openaiVoice || 'shimmer';
+          const initialVoice = agentPayload?.voice || config.openaiVoice;
           const initialTools = agentPayload?.tools || [];
           
           const sessionUpdate = {
