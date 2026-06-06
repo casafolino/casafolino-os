@@ -947,6 +947,10 @@ wss.on('connection', (ws, req) => {
           }
           
           if (openAiMsg.type === 'error') {
+            if (openAiMsg.error?.code === 'response_cancel_not_active') {
+              log('warn', 'Ignoring harmless OpenAI cancel error because no response is active', openAiMsg.error);
+              return;
+            }
             log('error', 'OpenAI Realtime session error', openAiMsg.error);
             if (!fallbackRedirected && callSid) {
               fallbackRedirected = true;
