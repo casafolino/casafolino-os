@@ -77,6 +77,11 @@
                         <strong><t t-esc="state.data.traced_lots"/></strong>
                         <small><t t-esc="state.data.trace_with_customer"/> con destinatari</small>
                     </button>
+                    <button class="cf-haccp-kpi cf-kpi-info" t-on-click="onOpenTraceability">
+                        <span>Pronto IFS/BRCGS</span>
+                        <strong><t t-esc="state.data.trace_ready_score"/>%</strong>
+                        <small><t t-esc="state.data.trace_recall_tested"/> recall testati</small>
+                    </button>
                     <button class="cf-haccp-kpi cf-kpi-red" t-on-click="onOpenQuarantine">
                         <span>Quarantene</span>
                         <strong><t t-esc="state.data.active_quarantines"/></strong>
@@ -128,7 +133,8 @@
                                         </div>
                                         <div class="cf-trace-meta">
                                             <span><t t-esc="trace.status_label"/></span>
-                                            <strong><t t-esc="trace.risk_count"/> alert</strong>
+                                            <strong><t t-esc="trace.audit_ready_score"/>% audit</strong>
+                                            <small><t t-esc="trace.risk_count"/> alert · <t t-esc="trace.mass_balance"/></small>
                                             <small><t t-esc="trace.date"/></small>
                                         </div>
                                     </div>

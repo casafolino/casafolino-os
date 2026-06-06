@@ -327,4 +327,112 @@
         </t>
     </template>
 
+    <!-- Report Action: Dossier Audit Tracciabilita -->
+    <record id="report_haccp_traceability_dossier" model="ir.actions.report">
+        <field name="name">Dossier Audit Tracciabilita IFS/BRCGS</field>
+        <field name="model">cf.haccp.tracciabilita</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_haccp.report_haccp_traceability_dossier_template</field>
+        <field name="report_file">casafolino_haccp.report_haccp_traceability_dossier_template</field>
+        <field name="binding_model_id" ref="model_cf_haccp_tracciabilita"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_haccp_traceability_dossier_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Dossier Audit Tracciabilita IFS/BRCGS</h2>
+                        <p>
+                            Documento operativo per verifica tracciabilita, recall simulato,
+                            mass balance ed evidenze lotto.
+                        </p>
+
+                        <h4>Identita lotto</h4>
+                        <table class="table table-sm table-bordered">
+                            <tr><td><strong>Lotto PF</strong></td><td><t t-out="doc.lotto_pf"/></td></tr>
+                            <tr><td><strong>Lotti MP</strong></td><td><t t-out="doc.lotto_mp or '-'"/></td></tr>
+                            <tr><td><strong>Prodotto</strong></td><td><t t-out="doc.product_id.display_name or '-'"/></td></tr>
+                            <tr><td><strong>Produzione</strong></td><td><t t-out="doc.production_id.name or '-'"/></td></tr>
+                            <tr><td><strong>Standard audit</strong></td><td><t t-out="dict(doc._fields['audit_standard'].selection).get(doc.audit_standard)"/></td></tr>
+                            <tr><td><strong>Stato</strong></td><td><t t-out="dict(doc._fields['trace_status'].selection).get(doc.trace_status)"/></td></tr>
+                            <tr><td><strong>Pronto audit</strong></td><td><t t-out="doc.audit_ready_score"/>%</td></tr>
+                        </table>
+
+                        <h4>Recall simulato e mass balance</h4>
+                        <table class="table table-sm table-bordered">
+                            <tr><td><strong>Clienti coinvolti</strong></td><td><t t-out="doc.customer_count"/></td></tr>
+                            <tr><td><strong>Consegne coinvolte</strong></td><td><t t-out="doc.delivery_count"/></td></tr>
+                            <tr><td><strong>Quantita prodotta</strong></td><td><t t-out="doc.production_id.product_qty or 0.0"/></td></tr>
+                            <tr><td><strong>Quantita consegnata</strong></td><td><t t-out="doc.delivered_qty"/></td></tr>
+                            <tr><td><strong>Mass balance</strong></td><td><t t-out="dict(doc._fields['mass_balance_status'].selection).get(doc.mass_balance_status)"/></td></tr>
+                            <tr><td><strong>Ultimo test recall</strong></td><td><t t-out="doc.recall_test_date or '-'"/></td></tr>
+                            <tr><td><strong>Eseguito da</strong></td><td><t t-out="doc.recall_test_user_id.name or '-'"/></td></tr>
+                        </table>
+
+                        <h4>Clienti e consegne lotto</h4>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Consegna</th>
+                                    <th>Cliente</th>
+                                    <th>Quantita lotto</th>
+                                    <th>Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.cf_haccp_get_recall_rows()" t-as="row">
+                                    <tr>
+                                        <td><t t-out="row['date']"/></td>
+                                        <td><t t-out="row['picking']"/></td>
+                                        <td><t t-out="row['partner']"/></td>
+                                        <td><t t-out="row['qty']"/></td>
+                                        <td><t t-out="row['state']"/></td>
+                                    </tr>
+                                </t>
+                                <tr t-if="not doc.cf_haccp_get_recall_rows()">
+                                    <td colspan="5">Nessuna consegna cliente trovata per il lotto.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Rischi e azioni aperte</h4>
+                        <table class="table table-sm table-bordered">
+                            <tr><td><strong>NC aperte</strong></td><td><t t-out="doc.nc_count"/></td></tr>
+                            <tr><td><strong>Quarantene attive</strong></td><td><t t-out="doc.quarantine_count"/></td></tr>
+                            <tr><td><strong>CCP KO</strong></td><td><t t-out="doc.ccp_ko_count"/></td></tr>
+                            <tr><td><strong>Evidenze allegate</strong></td><td><t t-out="doc.evidence_count"/></td></tr>
+                        </table>
+
+                        <h4>Matrice requisiti</h4>
+                        <table class="table table-sm table-bordered">
+                            <tr><td>IFS Food v8 4.18</td><td>Tracciabilita end-to-end lotto / prodotto / cliente</td></tr>
+                            <tr><td>IFS Food v8 5.9</td><td>Test interno recall/withdrawal end-to-end</td></tr>
+                            <tr><td>BRCGS FS9 3.9</td><td>Traceability avanti e indietro, record audit-ready</td></tr>
+                            <tr><td>BRCGS FS9 3.11</td><td>Incident management, withdrawal e recall</td></tr>
+                        </table>
+
+                        <h4>Gap audit</h4>
+                        <div t-out="doc.audit_gap_html"/>
+
+                        <t t-if="doc.note">
+                            <h4>Note</h4>
+                            <p><t t-out="doc.note"/></p>
+                        </t>
+
+                        <div style="margin-top:30px; border-top:1px solid #ccc; padding-top:15px; font-size:9px;">
+                            <p>
+                                Generato da CasaFolino OS su database <t t-out="doc.env.cr.dbname"/>.
+                                Il dossier supporta la verifica operativa IFS/BRCGS; la conformita finale dipende
+                                da procedure, registrazioni e validazione del sistema qualita.
+                            </p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
 </odoo>

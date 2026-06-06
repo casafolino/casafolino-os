@@ -262,11 +262,19 @@
                             icon="fa-ban">
                             <field name="quarantine_count" widget="statinfo" string="Quarantene"/>
                         </button>
+                        <button name="action_open_deliveries" type="object" class="oe_stat_button"
+                            icon="fa-truck">
+                            <field name="delivery_count" widget="statinfo" string="Consegne"/>
+                        </button>
+                        <button name="action_open_evidence" type="object" class="oe_stat_button"
+                            icon="fa-paperclip">
+                            <field name="evidence_count" widget="statinfo" string="Evidenze"/>
+                        </button>
                     </div>
                     <div class="cf-haccp-form-banner">
                         <div>
-                            <strong>Tracciabilita lotto end-to-end</strong>
-                            <span>Materia prima, produzione, lotto finito, clienti e blocchi qualita collegati in un'unica evidenza.</span>
+                            <strong>Tracciabilita lotto end-to-end IFS/BRCGS</strong>
+                            <span>Materia prima, produzione, lotto finito, clienti, mass balance, recall test ed evidenze in un'unica schermata.</span>
                         </div>
                         <field name="trace_status" widget="badge"
                             decoration-success="trace_status == 'complete'"
@@ -277,9 +285,18 @@
                         <label for="lotto_pf"/>
                         <h1><field name="lotto_pf"/></h1>
                     </div>
+                    <div class="o_row mb-3">
+                        <button name="action_sync_customers" type="object"
+                            string="Sincronizza clienti da consegne" class="btn btn-secondary"/>
+                        <button name="action_simulate_recall" type="object"
+                            string="Simula recall lotto" class="btn btn-primary"/>
+                        <button name="action_print_audit_dossier" type="object"
+                            string="Dossier audit PDF" class="btn btn-success"/>
+                    </div>
                     <group>
                         <group string="Identita lotto">
                             <field name="date"/>
+                            <field name="audit_standard"/>
                             <field name="lotto_pf"/>
                             <field name="lot_id" readonly="1"/>
                             <field name="product_id" readonly="1"/>
@@ -288,10 +305,42 @@
                         <group string="Copertura e rischio">
                             <field name="lotto_mp"/>
                             <field name="partner_ids" widget="many2many_tags"/>
+                            <field name="auto_partner_ids" widget="many2many_tags" readonly="1"/>
                             <field name="customer_count" readonly="1"/>
+                            <field name="auto_customer_count" readonly="1"/>
+                            <field name="delivered_qty" readonly="1"/>
+                            <field name="mass_balance_status" widget="badge"
+                                decoration-success="mass_balance_status == 'ok'"
+                                decoration-warning="mass_balance_status == 'watch'"
+                                decoration-danger="mass_balance_status == 'missing'"/>
                             <field name="ccp_ko_count" readonly="1"/>
                         </group>
                     </group>
+                    <group string="Pronto audit">
+                        <group>
+                            <field name="audit_ready_score" readonly="1" widget="progressbar"/>
+                            <field name="recall_test_date" readonly="1"/>
+                            <field name="recall_test_user_id" readonly="1"/>
+                            <field name="recall_test_duration" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="audit_gap_html" nolabel="1" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Recall e mass balance">
+                            <field name="recall_summary_html" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="Timeline lotto">
+                            <field name="timeline_html" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="IFS/BRCGS">
+                            <field name="standard_matrix_html" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="Evidenze">
+                            <field name="evidence_attachment_ids" widget="many2many_binary" readonly="1"/>
+                        </page>
+                    </notebook>
                     <group string="Note">
                         <field name="note" nolabel="1"/>
                     </group>
@@ -314,12 +363,20 @@
                     decoration-warning="trace_status == 'watch'"
                     decoration-danger="trace_status == 'blocked'"/>
                 <field name="date"/>
+                <field name="audit_ready_score" widget="progressbar"/>
                 <field name="lotto_pf"/>
                 <field name="lot_id"/>
                 <field name="product_id"/>
                 <field name="lotto_mp"/>
                 <field name="production_id"/>
                 <field name="partner_ids" widget="many2many_tags"/>
+                <field name="auto_customer_count"/>
+                <field name="delivery_count"/>
+                <field name="delivered_qty"/>
+                <field name="mass_balance_status" widget="badge"
+                    decoration-success="mass_balance_status == 'ok'"
+                    decoration-warning="mass_balance_status == 'watch'"
+                    decoration-danger="mass_balance_status == 'missing'"/>
                 <field name="customer_count"/>
                 <field name="nc_count"/>
                 <field name="quarantine_count"/>

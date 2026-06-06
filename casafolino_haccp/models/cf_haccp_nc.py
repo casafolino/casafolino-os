@@ -86,6 +86,7 @@ class CfHaccpNc(models.Model):
         pest_next = self.env["cf.haccp.pest.control"].search(
             [("prossima_visita", "!=", False)], limit=1, order="prossima_visita asc")
         recent_traces = trace.search([], limit=5, order="date desc, id desc")
+        all_traces = trace.search([])
         active_quarantines = quarantine.search([("state", "=", "active")], limit=5, order="date_start desc")
         receipt_pending = picking.search_count([
             ("picking_type_code", "=", "incoming"),
@@ -104,9 +105,14 @@ class CfHaccpNc(models.Model):
         production_blocked = production.search_count([
             ("haccp_esito", "in", ("non_conforme", "bloccato", "attesa_analisi")),
         ])
-        traced_lots = trace.search_count([])
-        trace_with_customer = trace.search_count([("partner_ids", "!=", False)])
+        traced_lots = len(all_traces)
+        trace_with_customer = len(all_traces.filtered(lambda rec: rec.customer_count > 0))
         trace_coverage = round((trace_with_customer / traced_lots) * 100) if traced_lots else 0
+        trace_ready_score = round(
+            sum(all_traces.mapped("audit_ready_score")) / traced_lots
+        ) if traced_lots else 0
+        trace_recall_tested = len(all_traces.filtered(lambda rec: rec.recall_test_date))
+        trace_blocked = len(all_traces.filtered(lambda rec: rec.trace_status == "blocked"))
         audit_alerts = (
             critical_open + temp_ko_today + temp_pending_today + san_missing_today +
             ccp_ko + quarantine.search_count([("state", "=", "active")]) +
@@ -130,6 +136,9 @@ class CfHaccpNc(models.Model):
             "traced_lots": traced_lots,
             "trace_with_customer": trace_with_customer,
             "trace_coverage": trace_coverage,
+            "trace_ready_score": trace_ready_score,
+            "trace_recall_tested": trace_recall_tested,
+            "trace_blocked": trace_blocked,
             "active_quarantines": quarantine.search_count([("state", "=", "active")]),
             "instruments_expiring": calib.search_count([("state", "=", "expiring")]),
             "instruments_expired": calib.search_count([("state", "=", "expired")]),
@@ -147,7 +156,9 @@ class CfHaccpNc(models.Model):
                 "lotto_mp": rec.lotto_mp or "-",
                 "date": str(rec.date or ""),
                 "production": rec.production_id.name or "-",
-                "customers": ", ".join(rec.partner_ids.mapped("name")[:2]) or "-",
+                "customers": ", ".join((rec.partner_ids | rec.auto_partner_ids).mapped("name")[:2]) or "-",
+                "audit_ready_score": rec.audit_ready_score,
+                "mass_balance": rec.mass_balance_status or "missing",
                 "status": rec.trace_status or "watch",
                 "status_label": dict(rec._fields["trace_status"].selection).get(
                     rec.trace_status, "Da presidiare"),
