@@ -52,6 +52,14 @@ function stripTrailingSlash(value) {
   return value.replace(/\/+$/, '');
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function log(level, message, details = undefined) {
   const levels = ['debug', 'info', 'warn', 'error'];
   if (levels.indexOf(level) < levels.indexOf(config.logLevel)) {
@@ -202,7 +210,11 @@ async function handleTwilioInbound(req, res) {
 <Response>
   <Say language="it-IT" voice="Polly.Giorgio">Connessione all'assistente vocale CasaFolino...</Say>
   <Connect>
-    <Stream url="${streamUrl}" />
+    <Stream url="${streamUrl}">
+      <Parameter name="from" value="${escapeXml(body.From || '')}" />
+      <Parameter name="to" value="${escapeXml(body.To || '')}" />
+      <Parameter name="callSid" value="${escapeXml(body.CallSid || '')}" />
+    </Stream>
   </Connect>
 </Response>`;
   
@@ -218,7 +230,11 @@ async function handleTwilioOutbound(req, res, url) {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="${streamUrl}" />
+    <Stream url="${streamUrl}">
+      <Parameter name="from" value="${escapeXml(body.From || '')}" />
+      <Parameter name="to" value="${escapeXml(body.To || '')}" />
+      <Parameter name="callSid" value="${escapeXml(body.CallSid || '')}" />
+    </Stream>
   </Connect>
 </Response>`;
   
