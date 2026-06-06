@@ -47,11 +47,11 @@ KNOWLEDGE BASE (INFORMAZIONI AZIENDALI):
 COMPORTAMENTO DIALOGO:
 - Presentati all'inizio come "Giulia di CasaFolino" con voce calda, disponibile, sorridente e familiare, come una reception CasaFolino: mai rigida, mai troppo formale, mai da IVR.
 - All'inizio comunica la posizione in coda, rassicurando che i tempi di attesa sono molto bassi.
-- Dopo l'accoglienza chiedi subito il motivo della chiamata: ordine nuovo, problema con un ordine o informazioni commerciali.
+- Dopo l'accoglienza chiedi immediatamente nome, cognome, telefono, email e azienda; salva il contatto prima di passare al motivo della chiamata.
 - Se vuole fare un ordine, chiedi se preferisce farlo con te al telefono oppure parlare con un commerciale. Se non puoi trasferire subito, raccogli i dati e proponi richiamata.
 - Se ha problemi con un ordine, chiedi nome, email o telefono e usa lookup_customer e lookup_order_status quando hai dati sufficienti.
 - Se vuole informazioni commerciali, chiedi cosa serve: catalogo, listino, private label, campionature, certificazioni o altro. Usa create_crm_lead, create_email_activity, create_callback o create_ticket secondo il caso.
-- Qualunque sia lo scopo della chiamata, raccogli sempre con naturalezza nome, telefono ed email prima della chiusura, spiegando che servono per inviare il riepilogo o far seguire correttamente la richiesta.
+- Dopo aver salvato il contatto, chiedi il motivo della chiamata: ordine nuovo, problema con un ordine o informazioni commerciali.
 - Fai una domanda per volta, con frasi brevi e gentili.
 `;
 
@@ -484,7 +484,7 @@ wss.on('connection', (ws, req) => {
           openAiWs.send(JSON.stringify(sessionUpdate));
           
           // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Nel frattempo la aiuto volentieri io: per quale motivo chiama? Vuole fare un ordine, ha problemi con un ordine, oppure ha bisogno di informazioni commerciali?";
+          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Prima di iniziare le chiedo gentilmente nome, cognome, telefono, email e nome azienda, così apro correttamente la chiamata e posso inviarle il riepilogo.";
           const greetingText = formatGreetingText(rawGreetingText, callSid);
           const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Giulia di CasaFolino, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({

@@ -63,6 +63,124 @@ class CasaFolinoVoiceAIController(http.Controller):
             domain = [('name', 'ilike', name)]
         return Partner.search(domain, limit=1) if domain else Partner.browse()
 
+    def _inbound_contact_tags(self):
+        Tag = request.env.get('cf.contact.tag')
+        if Tag is None:
+            return []
+        tag_ids = []
+        for name in ['Centralino telefonico', 'Telefonate inbound']:
+            tag = Tag.sudo().search([('name', '=', name)], limit=1)
+            if not tag:
+                vals = {'name': name}
+                if 'category' in Tag._fields:
+                    vals['category'] = 'Centralino'
+                if 'color' in Tag._fields:
+                    vals['color'] = '#3B82F6'
+                tag = Tag.sudo().create(vals)
+            tag_ids.append(tag.id)
+        return tag_ids
+
+    def _save_inbound_contact(self, payload):
+        Partner = request.env['res.partner'].sudo()
+        partner = self._find_partner(payload)
+        first_name = (payload.get('first_name') or '').strip()
+        last_name = (payload.get('last_name') or '').strip()
+        full_name = (payload.get('name') or payload.get('customer_name') or ' '.join([first_name, last_name]).strip()).strip()
+        company_name = (payload.get('company_name') or '').strip()
+        email = (payload.get('email') or '').strip()
+        phone = (payload.get('phone') or '').strip()
+        vals = {}
+        if full_name:
+            vals['name'] = full_name
+        elif company_name:
+            vals['name'] = company_name
+        if email:
+            vals['email'] = email
+        if phone:
+            vals['phone'] = phone
+            vals['mobile'] = phone
+        if company_name:
+            company = Partner.search([('is_company', '=', True), ('name', '=ilike', company_name)], limit=1)
+            if not company:
+                company = Partner.create({'name': company_name, 'is_company': True})
+            vals['parent_id'] = company.id
+            vals['company_name'] = company_name
+        if not partner:
+            partner = Partner.create(vals or {'name': full_name or company_name or phone or email or 'Contatto centralino'})
+        else:
+            safe_vals = {key: value for key, value in vals.items() if value}
+            if safe_vals:
+                partner.write(safe_vals)
+        tag_ids = self._inbound_contact_tags()
+        if tag_ids and 'cf_tag_ids' in partner._fields:
+            partner.write({'cf_tag_ids': [(4, tag_id) for tag_id in tag_ids]})
+        call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
+        if call.exists():
+            call.write({'partner_id': partner.id})
+            call.message_post(
+                body='Contatto centralino salvato/aggiornato: %s<br/>Telefono: %s<br/>Email: %s<br/>Azienda: %s' % (
+                    html.escape(partner.display_name or ''),
+                    html.escape(phone or partner.phone or partner.mobile or ''),
+                    html.escape(email or partner.email or ''),
+                    html.escape(company_name or getattr(partner, 'company_name', '') or ''),
+                ),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        return partner
+
+    def _send_inbound_call_email(self, call, payload=None):
+        payload = payload or {}
+        partner = call.partner_id
+        email_to = payload.get('email') or (partner.email if partner else '') or 'antonio@casafolino.com'
+        cc_emails = ['martina.sinopoli@casafolino.com', 'commerciale@casafolino.com', 'antonio@casafolino.com']
+        cc_emails = [email for email in cc_emails if email and email.lower() != (email_to or '').lower()]
+        company = payload.get('company_name') or ''
+        if not company and partner:
+            company = partner.parent_id.display_name or getattr(partner, 'company_name', '') or ''
+        contact = (partner.display_name if partner else '') or payload.get('customer_name') or payload.get('name') or 'N/D'
+        phone = payload.get('phone') or call.phone or (partner.phone if partner else '') or (partner.mobile if partner else '') or 'N/D'
+        subject = 'Riepilogo chiamata centralino CasaFolino - %s' % (call.name or 'nuova chiamata')
+        body_html = """
+            <p>Buongiorno,</p>
+            <p>grazie per aver contattato CasaFolino. Di seguito trova il riepilogo della chiamata appena gestita dal centralino telefonico.</p>
+            <table cellpadding="6" style="border-collapse: collapse;">
+                <tr><td><b>Chiamata</b></td><td>%s</td></tr>
+                <tr><td><b>Contatto</b></td><td>%s</td></tr>
+                <tr><td><b>Azienda</b></td><td>%s</td></tr>
+                <tr><td><b>Telefono</b></td><td>%s</td></tr>
+                <tr><td><b>Email</b></td><td>%s</td></tr>
+                <tr><td><b>Riepilogo</b></td><td>%s</td></tr>
+                <tr><td><b>Prossima azione</b></td><td>%s</td></tr>
+            </table>
+            <p>Il team CasaFolino dara seguito alla richiesta quando necessario.</p>
+            <p>Grazie,<br/>CasaFolino</p>
+        """ % (
+            html.escape(call.name or ''),
+            html.escape(contact),
+            html.escape(company or 'N/D'),
+            html.escape(phone),
+            html.escape(email_to or 'N/D'),
+            html.escape(payload.get('summary') or call.summary or 'Nessun riepilogo disponibile'),
+            html.escape(payload.get('next_action') or call.next_action or 'Nessuna azione indicata'),
+        )
+        mail = request.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body_html,
+            'email_to': email_to,
+            'email_cc': ','.join(cc_emails),
+            'email_from': 'Antonio Folino <antonio@casafolino.com>',
+            'reply_to': 'antonio@casafolino.com',
+            'auto_delete': False,
+        })
+        mail.send()
+        call.message_post(
+            body='Email riepilogo centralino inviata a %s, cc %s' % (html.escape(email_to), html.escape(', '.join(cc_emails))),
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+        return mail
+
     def _lookup_voice_knowledge(self, payload, limit=6):
         Knowledge = request.env['casafolino.voice.knowledge'].sudo()
         query = payload.get('query') or ''
@@ -103,6 +221,16 @@ class CasaFolinoVoiceAIController(http.Controller):
             return request.make_json_response({'error': 'unauthorized'}, status=401)
         payload = self._json_body()
         partner = self._find_partner(payload)
+
+        if tool_name == 'save_inbound_contact':
+            partner = self._save_inbound_contact(payload)
+            return request.make_json_response({
+                'ok': True,
+                'partner_id': partner.id,
+                'name': partner.display_name,
+                'email': partner.email,
+                'phone': partner.phone or partner.mobile,
+            })
 
         if tool_name == 'lookup_customer':
             if not partner:
@@ -223,17 +351,30 @@ class CasaFolinoVoiceAIController(http.Controller):
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
             if not call.exists():
                 return request.make_json_response({'error': 'call not found'}, status=404)
+            if payload.get('email') or payload.get('phone') or payload.get('customer_name') or payload.get('name') or payload.get('company_name'):
+                partner = self._save_inbound_contact(payload)
             call.write({
                 'state': 'completed' if payload.get('outcome') != 'transferred' else 'transferred',
                 'outcome': payload.get('outcome') or 'other',
                 'summary': payload.get('summary'),
                 'next_action': payload.get('next_action'),
                 'ended_at': fields.Datetime.now(),
+                'partner_id': partner.id if partner else call.partner_id.id,
             })
             detected_language = payload.get('detected_language')
             if detected_language and call.partner_id and detected_language in ['it-IT', 'en-US', 'fr-FR', 'es-ES', 'de-DE']:
                 call.partner_id.voice_ai_language = detected_language
-            return request.make_json_response({'ok': True})
+            mail_sent = False
+            try:
+                self._send_inbound_call_email(call, payload)
+                mail_sent = True
+            except Exception as exc:
+                call.message_post(
+                    body='Errore invio email riepilogo centralino: %s' % html.escape(str(exc)),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_note',
+                )
+            return request.make_json_response({'ok': True, 'partner_id': call.partner_id.id if call.partner_id else None, 'mail_sent': mail_sent})
 
         if tool_name == 'opt_out_customer':
             phone = payload.get('phone')
@@ -549,6 +690,16 @@ class CasaFolinoVoiceAIController(http.Controller):
     def _execute_voice_tool(self, tool_name, payload):
         partner = self._find_partner(payload)
 
+        if tool_name == 'save_inbound_contact':
+            partner = self._save_inbound_contact(payload)
+            return {
+                'ok': True,
+                'partner_id': partner.id,
+                'name': partner.display_name,
+                'email': partner.email,
+                'phone': partner.phone or partner.mobile,
+            }
+
         if tool_name == 'lookup_customer':
             if not partner:
                 return {'ok': True, 'customer': None}
@@ -666,14 +817,23 @@ class CasaFolinoVoiceAIController(http.Controller):
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
             if not call.exists():
                 return {'error': 'call not found'}
+            if payload.get('email') or payload.get('phone') or payload.get('customer_name') or payload.get('name') or payload.get('company_name'):
+                partner = self._save_inbound_contact(payload)
             call.write({
                 'state': 'completed' if payload.get('outcome') != 'transferred' else 'transferred',
                 'outcome': payload.get('outcome') or 'other',
                 'summary': payload.get('summary'),
                 'next_action': payload.get('next_action'),
                 'ended_at': fields.Datetime.now(),
+                'partner_id': partner.id if partner else call.partner_id.id,
             })
-            return {'ok': True}
+            mail_sent = False
+            try:
+                self._send_inbound_call_email(call, payload)
+                mail_sent = True
+            except Exception as exc:
+                call.message_post(body='Errore invio email riepilogo centralino: %s' % html.escape(str(exc)), message_type='comment', subtype_xmlid='mail.mt_note')
+            return {'ok': True, 'partner_id': call.partner_id.id if call.partner_id else None, 'mail_sent': mail_sent}
 
         if tool_name == 'create_ticket':
             partner = partner or self._find_partner(payload)

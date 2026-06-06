@@ -4,6 +4,26 @@ from odoo import fields, models
 VOICE_AI_TOOL_SCHEMAS = [
     {
         'type': 'function',
+        'name': 'save_inbound_contact',
+        'description': 'Crea o aggiorna il contatto della chiamata inbound con nome, cognome, telefono, email e azienda; applica i tag Centralino telefonico e Telefonate inbound.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'call_id': {'type': 'integer'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'name': {'type': 'string'},
+                'customer_name': {'type': 'string'},
+                'phone': {'type': 'string'},
+                'email': {'type': 'string'},
+                'company_name': {'type': 'string'},
+            },
+            'required': ['phone'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
         'name': 'lookup_customer',
         'description': 'Cerca un cliente CasaFolino per numero di telefono, nome o email.',
         'parameters': {
@@ -137,6 +157,13 @@ VOICE_AI_TOOL_SCHEMAS = [
                 'summary': {'type': 'string'},
                 'next_action': {'type': 'string'},
                 'detected_language': {'type': 'string'},
+                'partner_id': {'type': 'integer'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'customer_name': {'type': 'string'},
+                'phone': {'type': 'string'},
+                'email': {'type': 'string'},
+                'company_name': {'type': 'string'},
             },
             'required': ['call_id', 'outcome', 'summary'],
             'additionalProperties': False,

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_voice_inbound_summary" model="mail.template">
+        <field name="name">Centralino telefonico - riepilogo chiamata inbound</field>
+        <field name="model_id" ref="model_casafolino_voice_call"/>
+        <field name="subject">Riepilogo chiamata centralino CasaFolino - {{ object.name }}</field>
+        <field name="email_from">Antonio Folino &lt;antonio@casafolino.com&gt;</field>
+        <field name="email_cc">martina.sinopoli@casafolino.com,commerciale@casafolino.com,antonio@casafolino.com</field>
+        <field name="body_html" type="html"><![CDATA[
+<p>Buongiorno,</p>
+<p>grazie per aver contattato CasaFolino. Di seguito trova il riepilogo della chiamata appena gestita dal centralino telefonico.</p>
+<table cellpadding="6" style="border-collapse: collapse;">
+    <tr><td><b>Chiamata</b></td><td><t t-out="object.name"/></td></tr>
+    <tr><td><b>Contatto</b></td><td><t t-out="object.partner_id.display_name or ''"/></td></tr>
+    <tr><td><b>Telefono</b></td><td><t t-out="object.phone or ''"/></td></tr>
+    <tr><td><b>Riepilogo</b></td><td><t t-out="object.summary or ''"/></td></tr>
+    <tr><td><b>Prossima azione</b></td><td><t t-out="object.next_action or ''"/></td></tr>
+</table>
+<p>Il team CasaFolino dara seguito alla richiesta quando necessario.</p>
+<p>Grazie,<br/>CasaFolino</p>
+        ]]></field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+</odoo>
