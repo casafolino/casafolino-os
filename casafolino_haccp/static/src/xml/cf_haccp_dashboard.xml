@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates xml:space="preserve">
 <t t-name="casafolino_haccp.CfHaccpDashboard">
-    <div class="cf-dashboard o_action">
+    <div class="cf-dashboard cf-haccp-dashboard-action o_action">
         <div class="cf-dash-header d-flex align-items-center justify-content-between px-4 py-3"
              style="background:#1e2432;color:#fff;min-height:56px;">
             <div class="d-flex align-items-center gap-2">
