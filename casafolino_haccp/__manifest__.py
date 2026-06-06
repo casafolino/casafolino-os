@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino HACCP",
-    "version": "18.0.2.1.0",
+    "version": "18.0.2.2.0",
     "category": "Manufacturing",
     "summary": "HACCP Manager nativo Odoo 18",
     "author": "CasaFolino Srls",

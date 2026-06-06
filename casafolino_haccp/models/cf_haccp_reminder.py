@@ -15,7 +15,37 @@ class CfHaccpReminder(models.Model):
         group = self.env.ref(
             "casafolino_haccp.group_haccp_operator", raise_if_not_found=False,
         )
-        return group.users if group else self.env["res.users"]
+        users = group.users if group else self.env["res.users"]
+        return users or self.env.user
+
+    def _activity_exists(self, model_name, res_id, user, summary):
+        model = self.env["ir.model"].sudo().search(
+            [("model", "=", model_name)], limit=1,
+        )
+        if not model:
+            return True
+        return bool(self.env["mail.activity"].sudo().search([
+            ("res_model_id", "=", model.id),
+            ("res_id", "=", res_id),
+            ("user_id", "=", user.id),
+            ("summary", "=", summary),
+        ], limit=1))
+
+    def _schedule_activity_once(self, record, user, summary, note, deadline):
+        activity_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
+        if not activity_type or self._activity_exists(record._name, record.id, user, summary):
+            return
+        self.env["mail.activity"].sudo().create({
+            "res_model_id": self.env["ir.model"].sudo().search(
+                [("model", "=", record._name)], limit=1,
+            ).id,
+            "res_id": record.id,
+            "activity_type_id": activity_type.id,
+            "summary": summary,
+            "note": note,
+            "user_id": user.id,
+            "date_deadline": deadline,
+        })
 
     def _send_telegram_message(self, message):
         ICP = self.env["ir.config_parameter"].sudo()
@@ -36,34 +66,26 @@ class CfHaccpReminder(models.Model):
     @api.model
     def _send_temperature_reminders(self):
         oggi = datetime.now().date()
-        logs_oggi = self.env["cf.haccp.temperature.log"].sudo().search([
-            ("date", ">=", str(oggi)),
-        ])
-        if logs_oggi:
+        log_oggi = self.env["cf.haccp.temperature.log"].sudo().search([
+            ("date", "=", oggi),
+        ], limit=1)
+        if log_oggi and log_oggi.esito != "pending":
             return
-        users = self._get_haccp_operators()
-        activity_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
-        if not activity_type:
-            return
-        temp_model_id = self.env["ir.model"].sudo().search(
-            [("model", "=", "cf.haccp.temperature.log")], limit=1,
-        )
-        if not temp_model_id:
-            return
-        existing = self.env["cf.haccp.temperature.log"].sudo().search([], limit=1)
-        res_id = existing.id if existing else False
-        if not res_id:
-            return
-        for user in users:
-            self.env["mail.activity"].sudo().create({
-                "res_model_id": temp_model_id.id,
-                "res_id": res_id,
-                "activity_type_id": activity_type.id,
-                "summary": "Registro Temperature da compilare",
-                "note": "Il registro temperature di oggi (%s) non e ancora stato compilato." % oggi,
-                "user_id": user.id,
-                "date_deadline": oggi,
+        if not log_oggi:
+            log_oggi = self.env["cf.haccp.temperature.log"].sudo().create({
+                "date": oggi,
+                "note": "Creato automaticamente dal reminder HACCP giornaliero.",
             })
+        users = self._get_haccp_operators()
+        summary = "Registro Temperature da compilare"
+        for user in users:
+            self._schedule_activity_once(
+                log_oggi,
+                user,
+                summary,
+                "Il registro temperature di oggi (%s) non e ancora stato compilato." % oggi,
+                oggi,
+            )
         self._send_telegram_message(
             "<b>CasaFolino HACCP</b>\n"
             "Registro Temperature NON compilato oggi (%s)" % oggi
@@ -72,35 +94,46 @@ class CfHaccpReminder(models.Model):
     @api.model
     def _send_sanification_reminders(self):
         oggi = datetime.now().date()
-        logs_oggi = self.env["cf.haccp.sanification.log"].sudo().search([
-            ("date", ">=", str(oggi)),
-        ])
-        if logs_oggi:
+        daily_areas = ["zone1", "zone2", "zone3", "frigo", "attrezzature", "pavimenti"]
+        missing_logs = self.env["cf.haccp.sanification.log"].sudo()
+        for area in daily_areas:
+            log = self.env["cf.haccp.sanification.log"].sudo().search([
+                ("date", "=", oggi),
+                ("area", "=", area),
+            ], limit=1)
+            if not log:
+                log = self.env["cf.haccp.sanification.log"].sudo().create({
+                    "date": oggi,
+                    "area": area,
+                    "frequenza": "giornaliera",
+                    "note": "Creato automaticamente dal reminder HACCP giornaliero.",
+                })
+            if not log.eseguita:
+                missing_logs |= log
+        if not missing_logs:
             return
         users = self._get_haccp_operators()
-        activity_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
-        if not activity_type:
-            return
-        san_model_id = self.env["ir.model"].sudo().search(
-            [("model", "=", "cf.haccp.sanification.log")], limit=1,
-        )
-        if not san_model_id:
-            return
-        existing = self.env["cf.haccp.sanification.log"].sudo().search([], limit=1)
-        res_id = existing.id if existing else False
-        if not res_id:
-            return
-        for user in users:
-            self.env["mail.activity"].sudo().create({
-                "res_model_id": san_model_id.id,
-                "res_id": res_id,
-                "activity_type_id": activity_type.id,
-                "summary": "Registro Pulizie da compilare",
-                "note": "Il registro sanificazione di oggi (%s) non e ancora stato compilato." % oggi,
-                "user_id": user.id,
-                "date_deadline": oggi,
-            })
+        summary = "Registro Pulizie da compilare"
+        for log in missing_logs:
+            for user in users:
+                self._schedule_activity_once(
+                    log,
+                    user,
+                    summary,
+                    "Il registro sanificazione di oggi (%s) non e ancora completo." % oggi,
+                    oggi,
+                )
         self._send_telegram_message(
             "<b>CasaFolino HACCP</b>\n"
-            "Registro Pulizie NON compilato oggi (%s)" % oggi
+            "Registro Pulizie NON completo oggi (%s)" % oggi
         )
+
+    @api.model
+    def _send_daily_reminders(self):
+        self._send_temperature_reminders()
+        self._send_sanification_reminders()
+
+    @api.model
+    def _send_weekly_document_reminders(self):
+        self.env["cf.haccp.calibration"].sudo().send_expiring_alerts()
+        self.env["cf.haccp.document"].sudo().send_expiry_alerts()

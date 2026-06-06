@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -16,9 +17,11 @@ class CfHaccpTemperatureLog(models.Model):
     frigo2_temp = fields.Float(string="Frigo 2 (°C)", digits=(5, 1))
     ambiente_temp = fields.Float(string="Temperatura Ambiente (°C)", digits=(5, 1))
     esito = fields.Selection([
+        ('pending', 'Da compilare'),
         ('ok', 'OK — Tutto nei limiti'),
         ('ko', 'KO — Superato limite critico'),
-    ], string="Esito", compute="_compute_esito", store=True, tracking=True)
+    ], string="Esito", compute="_compute_esito", store=True, tracking=True,
+       default='pending')
     operatore_id = fields.Many2one("res.users", string="Operatore",
                                     default=lambda self: self.env.user)
     firma_digitale = fields.Binary(string="Firma Digitale")
@@ -30,11 +33,24 @@ class CfHaccpTemperatureLog(models.Model):
     @api.depends("frigo1_temp", "frigo2_temp")
     def _compute_esito(self):
         for rec in self:
+            if not rec.frigo1_temp and not rec.frigo2_temp:
+                rec.esito = 'pending'
+                continue
             if (rec.frigo1_temp and rec.frigo1_temp > self.LIMITE_FRIGO) or \
                (rec.frigo2_temp and rec.frigo2_temp > self.LIMITE_FRIGO):
                 rec.esito = 'ko'
             else:
                 rec.esito = 'ok'
+
+    @api.constrains("date")
+    def _check_unique_date(self):
+        for rec in self:
+            duplicate = self.search([
+                ("date", "=", rec.date),
+                ("id", "!=", rec.id),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError("Esiste gia un registro temperature per questa data.")
 
     @api.model_create_multi
     def create(self, vals_list):
