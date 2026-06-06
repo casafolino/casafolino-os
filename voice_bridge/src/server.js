@@ -28,6 +28,10 @@ const config = {
   deepgramThinkModel: process.env.DEEPGRAM_THINK_MODEL || 'gpt-4o-mini',
   deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-livia-it',
   deepgramSpeakSpeed: Number(process.env.DEEPGRAM_SPEAK_SPEED || 1.12),
+  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || '',
+  elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID || '',
+  elevenLabsModelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_turbo_v2_5',
+  elevenLabsLanguageCode: process.env.ELEVENLABS_LANGUAGE_CODE || 'it',
 };
 
 const activeCalls = new Map();
@@ -100,7 +104,10 @@ function sleep(ms) {
 }
 
 function activeProvider() {
-  return config.voiceProvider === 'deepgram' ? 'deepgram' : 'openai';
+  if (['deepgram', 'elevenlabs'].includes(config.voiceProvider)) {
+    return config.voiceProvider;
+  }
+  return 'openai';
 }
 
 function buildInstructions(agentPayload) {
@@ -120,6 +127,33 @@ function mapToolsForDeepgram(tools) {
     description: tool.description || '',
     parameters: tool.parameters || { type: 'object', properties: {} },
   })).filter(tool => tool.name);
+}
+
+function buildSpeakSettings() {
+  if (activeProvider() === 'elevenlabs') {
+    if (!config.elevenLabsApiKey || !config.elevenLabsVoiceId) {
+      throw new Error('VOICE_PROVIDER=elevenlabs requires ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID');
+    }
+    return {
+      provider: {
+        type: 'eleven_labs',
+        model_id: config.elevenLabsModelId,
+        language_code: config.elevenLabsLanguageCode,
+      },
+      endpoint: {
+        url: `wss://api.elevenlabs.io/v1/text-to-speech/${config.elevenLabsVoiceId}/multi-stream-input`,
+        headers: {
+          'xi-api-key': config.elevenLabsApiKey,
+        },
+      },
+    };
+  }
+  return {
+    provider: {
+      type: 'deepgram',
+      model: config.deepgramSpeakModel,
+    },
+  };
 }
 
 function buildDeepgramSettings(agentPayload, callSid) {
@@ -156,12 +190,7 @@ function buildDeepgramSettings(agentPayload, callSid) {
         prompt: buildInstructions(agentPayload),
         functions: mapToolsForDeepgram(agentPayload?.tools),
       },
-      speak: {
-        provider: {
-          type: 'deepgram',
-          model: config.deepgramSpeakModel,
-        },
-      },
+      speak: buildSpeakSettings(),
       greeting: buildGreeting(agentPayload, callSid),
     },
   };
@@ -448,6 +477,12 @@ async function router(req, res) {
             think_model: config.deepgramThinkModel,
             speak_model: config.deepgramSpeakModel,
           },
+          elevenlabs: {
+            configured: Boolean(config.elevenLabsApiKey && config.elevenLabsVoiceId),
+            model_id: config.elevenLabsModelId,
+            voice_id: config.elevenLabsVoiceId ? 'configured' : '',
+            language_code: config.elevenLabsLanguageCode,
+          },
         },
         active_calls: activeCalls.size,
       });
@@ -580,7 +615,7 @@ wss.on('connection', (ws, req) => {
           });
         }
         
-        if (activeProvider() === 'deepgram') {
+        if (['deepgram', 'elevenlabs'].includes(activeProvider())) {
           if (!config.deepgramApiKey) {
             throw new Error('VOICE_PROVIDER=deepgram but DEEPGRAM_API_KEY is missing');
           }
