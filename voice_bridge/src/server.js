@@ -605,7 +605,7 @@ wss.on('connection', (ws, req) => {
           });
 
           deepgramWs.on('message', async (data, isBinary) => {
-            if (isBinary || Buffer.isBuffer(data)) {
+            if (isBinary) {
               if (streamSid) {
                 ws.send(JSON.stringify({
                   event: 'media',
