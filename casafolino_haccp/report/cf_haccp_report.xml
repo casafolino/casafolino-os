@@ -38,6 +38,22 @@
                             <tr><td><strong>Operatore:</strong></td><td><t t-esc="doc.haccp_operatore_id.name"/></td></tr>
                         </table>
 
+                        <h4>Evidenza Audit</h4>
+                        <table class="table table-sm table-bordered">
+                            <tr>
+                                <td><strong>Gate HACCP:</strong></td>
+                                <td><t t-esc="'Completato' if doc.haccp_state == 'done' else 'Bloccante / da completare'"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Stato firma:</strong></td>
+                                <td><t t-esc="doc.haccp_stato_firma"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Responsabile approvazione:</strong></td>
+                                <td><t t-esc="doc.haccp_responsabile_id.name or '-'"/></td>
+                            </tr>
+                        </table>
+
                         <h4>Trasporto</h4>
                         <table class="table table-sm">
                             <tr>
@@ -124,6 +140,22 @@
                             <tr><td><strong>Operatore:</strong></td><td><t t-esc="doc.haccp_operatore_id.name"/></td></tr>
                             <tr><td><strong>Resa:</strong></td><td><t t-esc="'%.1f' % doc.haccp_resa"/>%</td></tr>
                             <tr><td><strong>Scarti:</strong></td><td><t t-esc="doc.haccp_scarti"/> kg</td></tr>
+                        </table>
+
+                        <h4>Evidenza Audit</h4>
+                        <table class="table table-sm table-bordered">
+                            <tr>
+                                <td><strong>Gate HACCP:</strong></td>
+                                <td><t t-esc="'Completato' if doc.haccp_state == 'done' else 'Bloccante / da completare'"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Stato firma:</strong></td>
+                                <td><t t-esc="doc.haccp_stato_firma"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Responsabile qualita:</strong></td>
+                                <td><t t-esc="doc.haccp_responsabile_id.name or '-'"/></td>
+                            </tr>
                         </table>
 
                         <h4>Prerequisiti</h4>
