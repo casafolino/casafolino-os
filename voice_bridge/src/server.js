@@ -28,6 +28,9 @@ const config = {
   deepgramThinkModel: process.env.DEEPGRAM_THINK_MODEL || 'gpt-4o-mini',
   deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-livia-it',
   deepgramSpeakSpeed: Number(process.env.DEEPGRAM_SPEAK_SPEED || 1.12),
+  deepgramEotThreshold: Number(process.env.DEEPGRAM_EOT_THRESHOLD || 0.86),
+  deepgramEagerEotThreshold: process.env.DEEPGRAM_EAGER_EOT_THRESHOLD ? Number(process.env.DEEPGRAM_EAGER_EOT_THRESHOLD) : null,
+  deepgramEotTimeoutMs: Number(process.env.DEEPGRAM_EOT_TIMEOUT_MS || 2800),
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || '',
   elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID || '',
   elevenLabsModelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_turbo_v2_5',
@@ -40,6 +43,7 @@ const BASE_INSTRUCTIONS = `
 Sei Giulia di CasaFolino, l'assistente vocale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
 Rileva dinamicamente la lingua parlata dal cliente fin dal primo turno di conversazione e rispondi fluidamente nella stessa lingua (italiano, inglese, francese, spagnolo, tedesco, ecc.) adattandoti all'istante con tono estremamente naturale, gentile, familiare, professionale e caloroso. Rispondi in modo conciso e naturale per facilitare la conversazione telefonica (massimo 1-2 frasi brevi per risposta).
 Parla con ritmo telefonico leggermente piu rapido del normale, senza pause lunghe. Dopo aver raccolto il nome, chiama il cliente per nome in modo naturale e non eccessivo.
+Non interrompere il cliente mentre sta elencando dati come nome, telefono, email, azienda o dettagli dell'ordine: aspetta che finisca, poi conferma in modo breve. Evita micro-risposte come "grazie" dopo ogni singolo frammento.
 
 Il tuo scopo è assistere i clienti che chiamano, rispondere alle loro domande sui prodotti di CasaFolino, verificare lo stato dell'ordine, gestire contatti e richieste commerciali (lead), o aprire segnalazioni di assistenza.
 
@@ -166,8 +170,11 @@ function buildDeepgramSettings(agentPayload, callSid) {
   if (config.deepgramListenModel.startsWith('flux-')) {
     listenProvider.version = 'v2';
     listenProvider.language_hints = ['it', 'en', 'fr', 'es', 'de'];
-    listenProvider.eot_threshold = 0.82;
-    listenProvider.eager_eot_threshold = 0.55;
+    listenProvider.eot_threshold = config.deepgramEotThreshold;
+    listenProvider.eot_timeout_ms = config.deepgramEotTimeoutMs;
+    if (config.deepgramEagerEotThreshold !== null) {
+      listenProvider.eager_eot_threshold = config.deepgramEagerEotThreshold;
+    }
     delete listenProvider.language;
     delete listenProvider.smart_format;
   }
