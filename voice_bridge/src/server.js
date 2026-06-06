@@ -25,6 +25,7 @@ const config = {
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
   deepgramListenModel: process.env.DEEPGRAM_LISTEN_MODEL || 'flux-general-multi',
+  deepgramThinkProvider: process.env.DEEPGRAM_THINK_PROVIDER || 'open_ai',
   deepgramThinkModel: process.env.DEEPGRAM_THINK_MODEL || 'gpt-4o-mini',
   deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-livia-it',
   deepgramSpeakSpeed: Number(process.env.DEEPGRAM_SPEAK_SPEED || 1.12),
@@ -35,6 +36,8 @@ const config = {
   elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID || '',
   elevenLabsModelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_turbo_v2_5',
   elevenLabsLanguageCode: process.env.ELEVENLABS_LANGUAGE_CODE || 'it',
+  openaiRealtimeModel: process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime',
+  openaiVoice: process.env.OPENAI_VOICE || 'marin',
 };
 
 const activeCalls = new Map();
@@ -190,7 +193,7 @@ function buildDeepgramSettings(agentPayload, callSid) {
       listen: { provider: listenProvider },
       think: {
         provider: {
-          type: 'open_ai',
+          type: config.deepgramThinkProvider,
           model: config.deepgramThinkModel,
           temperature: 0.3,
         },
@@ -730,7 +733,7 @@ wss.on('connection', (ws, req) => {
         }
 
         // 2. Connect immediately to OpenAI Realtime WebSocket (GA)
-        const model = 'gpt-realtime-2';
+        const model = config.openaiRealtimeModel;
         log('info', 'Connecting immediately to OpenAI Realtime WebSocket (GA)...', { model });
         
         openAiWs = new WebSocket(`wss://api.openai.com/v1/realtime?model=${model}`, {
