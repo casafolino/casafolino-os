@@ -10,6 +10,7 @@
         'security/ir.model.access.csv',
         'wizards/sale_discount_wizard.xml',
         'wizards/cf_bank_resilience_runner.xml',
+        'data/account_tax_data.xml',
         'data/cf_treasury_cron.xml',
         'views/cf_doc_footer_views.xml',
         'views/cf_gdo_views.xml',
