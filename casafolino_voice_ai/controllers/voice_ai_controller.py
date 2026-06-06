@@ -72,8 +72,6 @@ class CasaFolinoVoiceAIController(http.Controller):
             tag = Tag.sudo().search([('name', '=', name)], limit=1)
             if not tag:
                 vals = {'name': name}
-                if 'category' in Tag._fields:
-                    vals['category'] = 'Centralino'
                 if 'color' in Tag._fields:
                     vals['color'] = '#3B82F6'
                 tag = Tag.sudo().create(vals)
