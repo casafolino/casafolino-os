@@ -11,7 +11,6 @@
         'data/voice_knowledge_data.xml',
         'data/voice_agent_data.xml',
         'data/voice_pbx_data.xml',
-        'data/voice_mail_template_data.xml',
         'views/voice_agent_views.xml',
         'views/voice_call_views.xml',
         'views/voice_consent_views.xml',
