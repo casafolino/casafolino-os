@@ -882,7 +882,30 @@ wss.on('connection', (ws, req) => {
             for (const item of openAiMsg.response.output) {
               if (item.type === 'function_call') {
                 const name = item.name;
-                const args = JSON.parse(item.arguments || '{}');
+                let args = {};
+                try {
+                  args = JSON.parse(item.arguments || '{}');
+                } catch (err) {
+                  log('error', 'Skipping OpenAI tool call with invalid JSON arguments', {
+                    name,
+                    message: err.message,
+                    arguments_preview: String(item.arguments || '').slice(0, 200),
+                  });
+                  openAiWs.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: {
+                      type: 'function_call_output',
+                      call_id: item.call_id,
+                      output: JSON.stringify({
+                        ok: false,
+                        error: 'tool_arguments_invalid',
+                        message: 'Non ho ricevuto tutti i dati in modo chiaro: chiedi al cliente di ripetere solo le informazioni mancanti.',
+                      }),
+                    },
+                  }));
+                  openAiWs.send(JSON.stringify({ type: 'response.create' }));
+                  continue;
+                }
                 log('info', 'Executing Odoo tool call', { name, args });
                 
                 try {
