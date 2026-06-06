@@ -1041,6 +1041,10 @@
                                                     Senza Lead
                                                 </span>
                                             </div>
+                                            <div t-if="row.ai_safe_to_apply" class="cf-pc-thread-ai-route">
+                                                <i class="fa fa-bolt"/>
+                                                <span t-out="row.ai_route_hint || row.ai_department_label + ' -> ' + row.ai_project_name"/>
+                                            </div>
                                             <div class="cf-pc-thread-quick-actions">
                                                 <button t-if="row.sender_decision === 'pending'" class="cf-pc-decision-action keep" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">
                                                     <i class="fa fa-check"/>
@@ -1118,6 +1122,10 @@
                                                     AI sicura: <t t-out="row.ai_project_name"/>
                                                 </span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
+                                            </div>
+                                            <div t-if="row.ai_safe_to_apply" class="cf-pc-thread-ai-route">
+                                                <i class="fa fa-bolt"/>
+                                                <span t-out="row.ai_route_hint || row.ai_department_label + ' -> ' + row.ai_project_name"/>
                                             </div>
                                             <div class="cf-pc-thread-quick-actions">
                                                 <button t-if="row.sender_decision === 'pending'" class="cf-pc-decision-action keep" t-on-click.stop="() => this.mailQuickAction(row, 'keep_sender')" title="Tieni mittente">

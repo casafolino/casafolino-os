@@ -3797,6 +3797,7 @@ class CfPipelineControl(models.AbstractModel):
             'ai_project_name': ai_row_action.get('project_name'),
             'ai_department_label': ai_row_action.get('department_label'),
             'ai_task_button_label': ai_row_action.get('task_button_label'),
+            'ai_route_hint': ai_row_action.get('route_hint'),
         })
         return item
 
@@ -3827,6 +3828,11 @@ class CfPipelineControl(models.AbstractModel):
             'project_name': project.display_name,
             'department_label': department['label'],
             'task_button_label': self._assistant_task_button_label(department),
+            'route_hint': '%s -> %s, apre %s' % (
+                department['label'],
+                project.display_name,
+                self._assistant_task_button_label(department).lower(),
+            ),
         }
 
     def _sender_preference(self, msg):
