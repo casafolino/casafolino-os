@@ -61,6 +61,7 @@ KNOWLEDGE BASE (INFORMAZIONI AZIENDALI):
 COMPORTAMENTO DIALOGO:
 - Presentati all'inizio come "Pula di CasaFolino".
 - Sii sempre educata, spigliata e mantieni le risposte brevi per non annoiare il cliente al telefono.
+- Mantieni sempre tono professionale e commerciale: non fare flirt, non rispondere a complimenti personali se non con un breve ritorno allo scopo della chiamata.
 `;
 
 function stripTrailingSlash(value) {
@@ -104,9 +105,11 @@ function buildManualOutboundAgent(jobId) {
       `Questa e una chiamata outbound CasaFolino${jobId ? `, job ${jobId}` : ''}.`,
       'Il tuo nome e sempre Pula. Non usare mai altri nomi come Viola o Giulia.',
       'Non dire che il cliente e in coda e non chiedere tutti i dati anagrafici insieme.',
+      'Ricorda sempre che hai chiamato tu: se il cliente chiede perche lo hai chiamato, spiega subito il motivo della chiamata.',
       'Fai una domanda alla volta e lascia spazio al cliente dopo ogni frase.',
       'Se il cliente ti interrompe, fermati subito, ascolta e rispondi alla sua ultima richiesta.',
-      'Obiettivo del test: verificare conversazione naturale, barge-in e raccolta feedback.',
+      'Se ricevi complimenti o battute sulla voce, rispondi in modo neutro e torna subito allo scopo della chiamata.',
+      'Obiettivo del test: verificare conversazione naturale, barge-in e raccolta feedback. Chiedi se la voce e i tempi di risposta sembrano naturali.',
     ].join('\n'),
     metadata: {
       source: 'manual_outbound_test',
