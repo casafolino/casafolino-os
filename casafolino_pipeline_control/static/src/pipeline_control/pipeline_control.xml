@@ -1031,6 +1031,9 @@
                                                       t-attf-class="cf-pc-badge workstream-#{row.workstream_tone || 'green'}">
                                                     <t t-out="row.workstream_label"/>
                                                 </span>
+                                                <span t-if="row.ai_safe_to_apply" class="cf-pc-badge decision-kept">
+                                                    AI sicura: <t t-out="row.ai_project_name"/>
+                                                </span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge">
                                                     <i class="fa fa-handshake-o"/> <t t-out="row.lead"/>
                                                 </span>
@@ -1064,6 +1067,13 @@
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                     <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-if="row.ai_safe_to_apply"
+                                                        class="cf-pc-decision-action keep"
+                                                        t-on-click.stop="() => this.mailQuickAction(row, 'apply_ai_task')"
+                                                        t-att-title="'AI sicura: ' + row.ai_department_label + ' -> ' + row.ai_project_name">
+                                                    <i class="fa fa-bolt"/>
+                                                    <span t-out="row.ai_task_button_label || 'Lavora'"/>
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'catalog')" title="Crea task catalogo">
                                                     <i class="fa fa-book"/>
@@ -1104,6 +1114,9 @@
                                                       t-attf-class="cf-pc-badge workstream-#{row.workstream_tone || 'green'}">
                                                     <t t-out="row.workstream_label"/>
                                                 </span>
+                                                <span t-if="row.ai_safe_to_apply" class="cf-pc-badge decision-kept">
+                                                    AI sicura: <t t-out="row.ai_project_name"/>
+                                                </span>
                                                 <span t-if="row.lead" class="cf-pc-badge lead-badge"><t t-out="row.lead"/></span>
                                             </div>
                                             <div class="cf-pc-thread-quick-actions">
@@ -1132,6 +1145,13 @@
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'task')" title="Crea task">
                                                     <i class="fa fa-check-square-o"/>
+                                                </button>
+                                                <button t-if="row.ai_safe_to_apply"
+                                                        class="cf-pc-decision-action keep"
+                                                        t-on-click.stop="() => this.mailQuickAction(row, 'apply_ai_task')"
+                                                        t-att-title="'AI sicura: ' + row.ai_department_label + ' -> ' + row.ai_project_name">
+                                                    <i class="fa fa-bolt"/>
+                                                    <span t-out="row.ai_task_button_label || 'Lavora'"/>
                                                 </button>
                                                 <button t-on-click.stop="() => this.mailQuickAction(row, 'catalog')" title="Crea task catalogo">
                                                     <i class="fa fa-book"/>

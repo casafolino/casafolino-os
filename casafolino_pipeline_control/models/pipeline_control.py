@@ -3718,6 +3718,7 @@ class CfPipelineControl(models.AbstractModel):
         item = self._format_mail_item(msg)
         ai_brief = self._message_ai_brief(msg)
         workstream = self._message_workstream(msg, ai_brief)
+        ai_row_action = self._message_ai_row_action(msg)
         
         # Deduplication matching suggestion for incoming email not linked to partner
         suggested_partner = False
@@ -3762,8 +3763,42 @@ class CfPipelineControl(models.AbstractModel):
             'workstream_label': workstream['label'],
             'workstream_tone': workstream['tone'],
             'recommended_action': ai_brief.get('recommended_action') or '',
+            'ai_safe_to_apply': ai_row_action.get('safe_to_apply'),
+            'ai_project_id': ai_row_action.get('project_id'),
+            'ai_project_name': ai_row_action.get('project_name'),
+            'ai_department_label': ai_row_action.get('department_label'),
+            'ai_task_button_label': ai_row_action.get('task_button_label'),
         })
         return item
+
+    def _message_ai_row_action(self, msg):
+        text = self._message_text_for_matching(msg)
+        related_leads = self._message_related_leads(msg, text)
+        candidates = self._message_project_candidates(msg, text, msg.partner_id, related_leads)
+        scored = []
+        for project in candidates:
+            score, evidence = self._score_message_project_candidate(msg, project, text, related_leads)
+            if score > 0:
+                scored.append((score, project, evidence))
+        if not scored:
+            return {}
+        scored.sort(key=lambda item: item[0], reverse=True)
+        score, project, evidence = scored[0]
+        confidence = min(96, max(35, int(score)))
+        department = self._infer_message_department(msg, text)
+        guard = self._message_project_safety_guard(msg, project, text, related_leads, evidence)
+        if guard:
+            confidence = min(confidence, guard['max_confidence'])
+        safe = confidence >= 80 and not guard
+        if not safe:
+            return {}
+        return {
+            'safe_to_apply': True,
+            'project_id': project.id,
+            'project_name': project.display_name,
+            'department_label': department['label'],
+            'task_button_label': self._assistant_task_button_label(department),
+        }
 
     def _sender_preference(self, msg):
         if not msg.sender_email or not msg.account_id:
