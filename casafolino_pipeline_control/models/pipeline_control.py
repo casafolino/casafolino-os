@@ -2126,6 +2126,40 @@ class CfPipelineControl(models.AbstractModel):
             ':%s' % department if department else '',
         )
 
+    def _post_ai_decision_audit(self, msg, project, assistant_payload, action_label='Applica AI'):
+        if not msg or not project or not assistant_payload:
+            return
+        provider = assistant_payload.get('provider') or 'CasaFolino AI'
+        confidence = assistant_payload.get('confidence') or 0
+        department = assistant_payload.get('department_label') or assistant_payload.get('department') or 'n.d.'
+        reason = assistant_payload.get('reason') or assistant_payload.get('route_summary') or 'Motivazione non disponibile.'
+        next_action = assistant_payload.get('next_action') or assistant_payload.get('execution_preview') or ''
+        body = (
+            '<p><strong>AI CasaFolino applicata</strong></p>'
+            '<ul>'
+            '<li><strong>Azione:</strong> %s</li>'
+            '<li><strong>Email:</strong> %s</li>'
+            '<li><strong>Dossier:</strong> %s</li>'
+            '<li><strong>Reparto:</strong> %s</li>'
+            '<li><strong>Confidenza:</strong> %s%%</li>'
+            '<li><strong>Provider:</strong> %s</li>'
+            '<li><strong>Motivo:</strong> %s</li>'
+            '</ul>'
+        ) % (
+            action_label,
+            msg.subject or msg.sender_email or msg.display_name,
+            project.display_name,
+            department,
+            confidence,
+            provider,
+            reason,
+        )
+        if next_action:
+            body += '<p><strong>Prossima azione:</strong> %s</p>' % next_action
+        project.message_post(body=body)
+        if hasattr(msg, 'message_post'):
+            msg.message_post(body=body)
+
     @api.model
     def generate_ai_draft(self, message_id, instruction='', mode='reply', tone='professional'):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
@@ -3377,6 +3411,7 @@ class CfPipelineControl(models.AbstractModel):
             project = self.env['project.project'].browse(int(assistant.get('project_id'))).exists()
             if project:
                 self.link_dossier_to_message(msg.id, project.id, assistant)
+                self._post_ai_decision_audit(msg, project, assistant, action_label='Applica AI')
                 return self._notify(
                     'Decisione AI applicata',
                     'Email collegata a %s. Prossima azione: %s' % (
@@ -3424,6 +3459,7 @@ class CfPipelineControl(models.AbstractModel):
         if not project:
             return self._notify('Dossier non trovato', 'Il dossier suggerito non e piu disponibile.', 'warning')
         self.link_dossier_to_message(msg.id, project.id, assistant)
+        self._post_ai_decision_audit(msg, project, assistant, action_label='Applica AI + apri lavoro')
         quick_action = assistant.get('task_quick_action') or 'task'
         if quick_action == 'sample':
             return self._new_sample_from_message(msg)
