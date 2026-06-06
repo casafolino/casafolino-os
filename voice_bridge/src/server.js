@@ -246,7 +246,7 @@ async function handleTwilioOutbound(req, res, url) {
 async function handleTwilioTransfer(req, res, url) {
   const target = url.searchParams.get('target') || config.humanTransferUri;
   log('info', 'Twilio call transfer TwiML requested', { target });
-  if (!target || !/^(tel:+?[0-9]{6,15}|sip:[^s@]+@[^s@]+)$/i.test(target.trim())) {
+  if (!target || !/^(tel:|sip:)/i.test(target.trim())) {
     log('error', 'Twilio transfer requested without a valid human target', { target });
     const twiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Say language="it-IT">Mi dispiace, al momento non riesco a trasferire la chiamata. Resti pure in linea con Giulia.</Say></Response>';
     sendTwiML(res, twiml);
