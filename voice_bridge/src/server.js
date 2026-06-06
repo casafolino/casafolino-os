@@ -21,6 +21,13 @@ const config = {
   vadPrefixPaddingMs: Number(process.env.OPENAI_VAD_PREFIX_PADDING_MS || 300),
   vadSilenceDurationMs: Number(process.env.OPENAI_VAD_SILENCE_DURATION_MS || 850),
   bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 1200),
+  voiceProvider: (process.env.VOICE_PROVIDER || 'openai').toLowerCase(),
+  deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
+  deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
+  deepgramListenModel: process.env.DEEPGRAM_LISTEN_MODEL || 'flux-general-multi',
+  deepgramThinkModel: process.env.DEEPGRAM_THINK_MODEL || 'gpt-4o-mini',
+  deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-livia-it',
+  deepgramSpeakSpeed: Number(process.env.DEEPGRAM_SPEAK_SPEED || 1.12),
 };
 
 const activeCalls = new Map();
@@ -86,6 +93,80 @@ function currentQueuePosition(callSid) {
 function formatGreetingText(text, callSid) {
   const queuePosition = String(currentQueuePosition(callSid));
   return String(text || '').replaceAll('{queue_position}', queuePosition);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function activeProvider() {
+  return config.voiceProvider === 'deepgram' ? 'deepgram' : 'openai';
+}
+
+function buildInstructions(agentPayload) {
+  return agentPayload?.instructions
+    ? `${BASE_INSTRUCTIONS}\n\nISTRUZIONI DINAMICHE DA ODOO:\n${agentPayload.instructions}`
+    : BASE_INSTRUCTIONS;
+}
+
+function buildGreeting(agentPayload, callSid) {
+  const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Per aprire la chiamata mi dice nome, cognome, telefono, email e azienda? Poi la aiuto subito.";
+  return formatGreetingText(rawGreetingText, callSid);
+}
+
+function mapToolsForDeepgram(tools) {
+  return (tools || []).map(tool => ({
+    name: tool.name,
+    description: tool.description || '',
+    parameters: tool.parameters || { type: 'object', properties: {} },
+  })).filter(tool => tool.name);
+}
+
+function buildDeepgramSettings(agentPayload, callSid) {
+  const listenProvider = {
+    type: 'deepgram',
+    model: config.deepgramListenModel,
+    language: 'it',
+    smart_format: true,
+  };
+  if (config.deepgramListenModel.startsWith('flux-')) {
+    listenProvider.version = 'v2';
+    listenProvider.language_hints = ['it', 'en', 'fr', 'es', 'de'];
+    listenProvider.eot_threshold = 0.82;
+    listenProvider.eager_eot_threshold = 0.55;
+    delete listenProvider.language;
+    delete listenProvider.smart_format;
+  }
+  return {
+    type: 'Settings',
+    tags: ['casafolino', 'prod', activeProvider()],
+    flags: { history: true },
+    audio: {
+      input: { encoding: 'mulaw', sample_rate: 8000 },
+      output: { encoding: 'mulaw', sample_rate: 8000, container: 'none' },
+    },
+    agent: {
+      listen: { provider: listenProvider },
+      think: {
+        provider: {
+          type: 'open_ai',
+          model: config.deepgramThinkModel,
+          temperature: 0.3,
+        },
+        prompt: buildInstructions(agentPayload),
+        functions: mapToolsForDeepgram(agentPayload?.tools),
+      },
+      speak: {
+        provider: {
+          type: 'deepgram',
+          model: config.deepgramSpeakModel,
+          speed: config.deepgramSpeakSpeed,
+          language: 'it',
+        },
+      },
+      greeting: buildGreeting(agentPayload, callSid),
+    },
+  };
 }
 
 function log(level, message, details = undefined) {
@@ -357,6 +438,19 @@ async function router(req, res) {
         odoo: config.odooBaseUrl,
         db: config.odooDb,
         has_openai_key: Boolean(config.openaiApiKey),
+    has_deepgram_key: Boolean(config.deepgramApiKey),
+    voice_provider: activeProvider(),
+        has_deepgram_key: Boolean(config.deepgramApiKey),
+        voice_provider: activeProvider(),
+        providers: {
+          openai: { configured: Boolean(config.openaiApiKey) },
+          deepgram: {
+            configured: Boolean(config.deepgramApiKey),
+            listen_model: config.deepgramListenModel,
+            think_model: config.deepgramThinkModel,
+            speak_model: config.deepgramSpeakModel,
+          },
+        },
         active_calls: activeCalls.size,
       });
       return;
@@ -412,6 +506,7 @@ wss.on('connection', (ws, req) => {
   let odooCallId = null;
   let agentPayload = null;
   let openAiWs = null;
+  let deepgramWs = null;
   let callState = 'connecting';
   let transcript = [];
   let lastSpeechStartedAt = 0;
@@ -487,6 +582,107 @@ wss.on('connection', (ws, req) => {
           });
         }
         
+        if (activeProvider() === 'deepgram') {
+          if (!config.deepgramApiKey) {
+            throw new Error('VOICE_PROVIDER=deepgram but DEEPGRAM_API_KEY is missing');
+          }
+          if (odooResolvePromise) {
+            await Promise.race([odooResolvePromise, sleep(1500)]);
+          }
+          log('info', 'Connecting to Deepgram Voice Agent WebSocket...', {
+            listen_model: config.deepgramListenModel,
+            think_model: config.deepgramThinkModel,
+            speak_model: config.deepgramSpeakModel,
+          });
+          deepgramWs = new WebSocket(config.deepgramAgentUrl, {
+            headers: { Authorization: `Token ${config.deepgramApiKey}` },
+          });
+
+          deepgramWs.on('open', () => {
+            log('info', 'Deepgram Voice Agent connection successfully opened');
+            callState = 'active';
+            deepgramWs.send(JSON.stringify(buildDeepgramSettings(agentPayload, callSid)));
+          });
+
+          deepgramWs.on('message', async (data, isBinary) => {
+            if (isBinary || Buffer.isBuffer(data)) {
+              if (streamSid) {
+                ws.send(JSON.stringify({
+                  event: 'media',
+                  streamSid,
+                  media: { payload: Buffer.from(data).toString('base64') },
+                }));
+              }
+              return;
+            }
+            let deepgramMsg;
+            try {
+              deepgramMsg = JSON.parse(data.toString());
+            } catch {
+              log('debug', 'Received non-JSON text message from Deepgram');
+              return;
+            }
+            if (!['ConversationText'].includes(deepgramMsg.type)) {
+              log('info', `Received Deepgram event: ${deepgramMsg.type}`);
+            }
+            if (deepgramMsg.type === 'UserStartedSpeaking' && streamSid) {
+              ws.send(JSON.stringify({ event: 'clear', streamSid }));
+            }
+            if (deepgramMsg.type === 'ConversationText' && deepgramMsg.content) {
+              const label = deepgramMsg.role === 'user' ? 'Cliente' : 'Agente';
+              transcript.push(`${label}: ${deepgramMsg.content}`);
+              log('info', `Transcript update: ${label}: ${deepgramMsg.content}`);
+            }
+            if (deepgramMsg.type === 'FunctionCallRequest') {
+              for (const fn of deepgramMsg.functions || []) {
+                const name = fn.name;
+                let args = {};
+                try {
+                  args = JSON.parse(fn.arguments || '{}');
+                } catch (err) {
+                  log('error', 'Failed to parse Deepgram tool arguments', { name, message: err.message });
+                }
+                try {
+                  const odooResult = await odooRequest(`/voice_ai/tool/${encodeURIComponent(name)}`, {
+                    method: 'POST',
+                    body: { ...args, call_id: odooCallId },
+                  });
+                  log('info', 'Tool execution result from Odoo via Deepgram', { name, odooResult });
+                  deepgramWs.send(JSON.stringify({
+                    type: 'FunctionCallResponse',
+                    id: fn.id,
+                    name,
+                    content: JSON.stringify(odooResult),
+                  }));
+                } catch (err) {
+                  log('error', 'Failed to dispatch Deepgram tool call to Odoo', { name, message: err.message });
+                  deepgramWs.send(JSON.stringify({
+                    type: 'FunctionCallResponse',
+                    id: fn.id,
+                    name,
+                    content: JSON.stringify({ ok: false, error: err.message }),
+                  }));
+                }
+              }
+            }
+            if (deepgramMsg.type === 'Error') {
+              log('error', 'Deepgram Voice Agent error', deepgramMsg);
+            }
+          });
+
+          deepgramWs.on('close', () => {
+            log('info', 'Deepgram Voice Agent connection closed');
+            if (callState === 'active') {
+              ws.close();
+            }
+          });
+
+          deepgramWs.on('error', (err) => {
+            log('error', 'Deepgram Voice Agent connection error', { message: err.message });
+          });
+          return;
+        }
+
         // 2. Connect immediately to OpenAI Realtime WebSocket (GA)
         const model = 'gpt-realtime-2';
         log('info', 'Connecting immediately to OpenAI Realtime WebSocket (GA)...', { model });
@@ -502,9 +698,7 @@ wss.on('connection', (ws, req) => {
           callState = 'active';
           
           // Send initial session setup immediately with default/cached instructions
-          const baseInstructionsForSession = agentPayload?.instructions
-            ? `${BASE_INSTRUCTIONS}\n\nISTRUZIONI DINAMICHE DA ODOO:\n${agentPayload.instructions}`
-            : BASE_INSTRUCTIONS;
+          const baseInstructionsForSession = buildInstructions(agentPayload);
           const initialVoice = agentPayload?.voice || config.openaiVoice || 'shimmer';
           const initialTools = agentPayload?.tools || [];
           
@@ -539,8 +733,7 @@ wss.on('connection', (ws, req) => {
           openAiWs.send(JSON.stringify(sessionUpdate));
           
           // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Per aprire la chiamata mi dice nome, cognome, telefono, email e azienda? Poi la aiuto subito.";
-          const greetingText = formatGreetingText(rawGreetingText, callSid);
+          const greetingText = buildGreeting(agentPayload, callSid);
           const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Giulia di CasaFolino, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({
             type: 'conversation.item.create',
@@ -557,9 +750,7 @@ wss.on('connection', (ws, req) => {
             odooResolvePromise.then(res => {
               if (res && res.agent && openAiWs.readyState === WebSocket.OPEN) {
                 log('info', 'Updating OpenAI session with custom resolved Odoo instructions and tools');
-                const resolvedInstructions = res.agent.instructions
-                  ? `${BASE_INSTRUCTIONS}\n\nISTRUZIONI DINAMICHE DA ODOO:\n${res.agent.instructions}`
-                  : BASE_INSTRUCTIONS;
+                const resolvedInstructions = buildInstructions(res.agent);
                 const updatePayload = {
                   type: 'session.update',
                   session: {
@@ -742,11 +933,18 @@ wss.on('connection', (ws, req) => {
         audio: msg.media.payload
       }));
     }
+
+    if (msg.event === 'media' && deepgramWs && deepgramWs.readyState === WebSocket.OPEN) {
+      deepgramWs.send(Buffer.from(msg.media.payload, 'base64'));
+    }
     
     if (msg.event === 'stop') {
       log('info', 'Twilio stream stopped');
       if (openAiWs) {
         openAiWs.close();
+      }
+      if (deepgramWs) {
+        deepgramWs.close();
       }
       callState = 'ended';
     }
@@ -757,6 +955,9 @@ wss.on('connection', (ws, req) => {
     callState = 'ended';
     if (openAiWs) {
       openAiWs.close();
+    }
+    if (deepgramWs) {
+      deepgramWs.close();
     }
     
     if (odooCallId) {
