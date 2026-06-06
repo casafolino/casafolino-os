@@ -28,6 +28,10 @@ class MrpProductionHaccpExtend(models.Model):
         string="Salta controlli qualita retroattivi",
         help="Campo di compatibilita per view storiche di produzione presenti nel DB.",
     )
+    cf_skip_quality_checks_note = fields.Text(
+        string="Motivo salto controlli qualita",
+        help="Campo di compatibilita per view storiche di produzione presenti nel DB.",
+    )
 
     # ── PREREQUISITI ──
     haccp_area_ok = fields.Boolean("Area Sanificata")
