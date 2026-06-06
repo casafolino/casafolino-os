@@ -3251,6 +3251,8 @@ class CfPipelineControl(models.AbstractModel):
             return self._dismiss_sender_from_message(msg)
         if quick_action == 'apply_ai':
             return self._apply_ai_decision_from_message(msg)
+        if quick_action == 'apply_ai_task':
+            return self._apply_ai_and_open_task_from_message(msg)
         if quick_action == 'create_contact':
             return self._create_or_open_contact_from_message(msg)
         if quick_action == 'create_company':
@@ -3378,6 +3380,26 @@ class CfPipelineControl(models.AbstractModel):
             return self._new_task_from_message(msg)
         if not msg.lead_id:
             return msg.action_create_lead()
+        return self._new_task_from_message(msg)
+
+    def _apply_ai_and_open_task_from_message(self, msg):
+        self._ensure_company_contacts_from_message(msg)
+        assistant = self._message_assistant_suggestion(msg, msg.partner_id)
+        if not assistant.get('has_suggestion') or not assistant.get('safe_to_apply') or not assistant.get('project_id'):
+            return self._notify(
+                'Conferma richiesta',
+                'Prima collega manualmente il dossier: la proposta AI non e abbastanza sicura per creare lavoro automatico.',
+                'warning',
+            )
+        project = self.env['project.project'].browse(int(assistant.get('project_id'))).exists()
+        if not project:
+            return self._notify('Dossier non trovato', 'Il dossier suggerito non e piu disponibile.', 'warning')
+        self.link_dossier_to_message(msg.id, project.id, assistant)
+        quick_action = assistant.get('task_quick_action') or 'task'
+        if quick_action == 'sample':
+            return self._new_sample_from_message(msg)
+        if quick_action == 'catalog':
+            return self.mail_quick_action(msg.id, 'catalog')
         return self._new_task_from_message(msg)
 
     @api.model

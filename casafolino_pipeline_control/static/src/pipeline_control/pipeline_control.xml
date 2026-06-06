@@ -1521,6 +1521,12 @@
                                                     <i class="fa fa-check-square-o"/>
                                                     <t t-out="state.messageContext.assistant_suggestion.task_button_label || 'Crea task'"/>
                                                 </button>
+                                                <button class="btn btn-sm btn-light"
+                                                        t-att-disabled="state.messageContext.assistant_suggestion.safe_to_apply ? false : 'disabled'"
+                                                        t-att-title="state.messageContext.assistant_suggestion.safe_to_apply ? 'Collega dossier e apri task operativa' : 'Serve conferma manuale del dossier'"
+                                                        t-on-click="() => this.mailQuickAction(selectedMessage, 'apply_ai_task')">
+                                                    <i class="fa fa-play-circle-o"/> Applica + lavora
+                                                </button>
                                             </div>
                                             <div class="cf-pc-assistant-candidates"
                                                  t-if="state.messageContext.assistant_suggestion.candidates &amp;&amp; state.messageContext.assistant_suggestion.candidates.length &gt; 1">
