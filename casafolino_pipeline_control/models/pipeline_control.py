@@ -922,6 +922,9 @@ class CfPipelineControl(models.AbstractModel):
             })
 
         return {
+            'message_id': msg.id,
+            'message_subject': msg.subject or '',
+            'message_sender_email': msg.sender_email or '',
             'has_partner': bool(partner),
             'partner': partner_details,
             'participants': self._message_participant_context(msg),

@@ -775,6 +775,17 @@ export class CFPipelineControl extends Component {
         return this.allInboxRows.find(m => m.id === this.state.selectedMessageId) || null;
     }
 
+    get activeMessageContext() {
+        const context = this.state.messageContext;
+        if (!context || !this.state.selectedMessageId) {
+            return null;
+        }
+        if (context.message_id && context.message_id !== this.state.selectedMessageId) {
+            return null;
+        }
+        return context;
+    }
+
     get navItems() {
         return [
             { id: "control", label: "Console", count: this.totalLaneCount },
