@@ -14,7 +14,7 @@ const config = {
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
   deepgramListenModel: process.env.DEEPGRAM_LISTEN_MODEL || 'nova-3',
-  deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-thalia-en',
+  deepgramSpeakModel: process.env.DEEPGRAM_SPEAK_MODEL || 'aura-2-livia-it',
   deepgramThinkProvider: process.env.DEEPGRAM_THINK_PROVIDER || 'open_ai',
   deepgramThinkModel: process.env.DEEPGRAM_THINK_MODEL || 'gpt-4o-mini',
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
