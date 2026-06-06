@@ -5116,6 +5116,9 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     is_mini_project = fields.Boolean(string='Mini-progetto')
     checklist_required = fields.Boolean(string='Checklist obbligatoria')
     create_sample_shipment = fields.Boolean(string='Crea spedizione/TrackBot')
+    sample_carrier = fields.Char(string='Corriere')
+    sample_tracking_number = fields.Char(string='Tracking')
+    sample_feedback_days = fields.Integer(string='Feedback dopo giorni', default=7)
     create_reminder = fields.Boolean(string='Crea reminder', default=True)
     handoff_graphics = fields.Boolean(string='Serve Grafica')
     handoff_production = fields.Boolean(string='Serve Produzione')
@@ -5174,6 +5177,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 'is_mini_project': True,
                 'checklist_required': True,
                 'create_sample_shipment': True,
+                'sample_feedback_days': 7,
                 'source_channel': 'manual',
                 'urgency': 'high',
                 'due_preset': 'tomorrow',
@@ -5206,6 +5210,9 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             'is_mini_project',
             'checklist_required',
             'create_sample_shipment',
+            'sample_carrier',
+            'sample_tracking_number',
+            'sample_feedback_days',
             'create_reminder',
             'handoff_graphics',
             'handoff_production',
@@ -5294,6 +5301,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             self.is_mini_project = True
             self.checklist_required = True
             self.create_sample_shipment = True
+            self.sample_feedback_days = self.sample_feedback_days or 7
             self.source_channel = self.source_channel or 'manual'
             self.urgency = 'high'
             self.due_preset = 'tomorrow'
@@ -5388,15 +5396,22 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         task = self.env['project.task'].create(vals)
         if self.create_sample_shipment and project:
             today = fields.Date.context_today(self)
+            feedback_days = self.sample_feedback_days or 7
+            estimated_delivery = self.deadline or today + timedelta(days=3)
             shipment = self.env['cf.project.shipment'].create({
                 'project_id': project.id,
                 'state': 'draft',
+                'carrier': self.sample_carrier or '',
+                'tracking_number': self.sample_tracking_number or '',
                 'trackbot_enabled': True,
-                'estimated_delivery': self.deadline or today + timedelta(days=3),
-                'feedback_reminder_date': (self.deadline or today) + timedelta(days=7),
-                'notes': self.note or '',
+                'estimated_delivery': estimated_delivery,
+                'feedback_reminder_date': estimated_delivery + timedelta(days=feedback_days),
+                'notes': self._sample_shipment_notes(),
             })
             task.cf_shipment_id = shipment.id
+            shipment.message_post(body=self._sample_shipment_chatter_note(shipment))
+            if self.create_reminder:
+                shipment._schedule_feedback_activity()
         self._create_default_checklist(task)
         self._create_handoff_tasks(task, project)
         if self.create_reminder:
@@ -5407,6 +5422,14 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
     def _ensure_project_for_operational_task(self):
         self.ensure_one()
         if self.project_id:
+            if self.partner_id:
+                write_vals = {}
+                if not self.project_id.partner_id:
+                    write_vals['partner_id'] = self.partner_id.id
+                if 'cf_partner_id' in self.project_id._fields and not self.project_id.cf_partner_id:
+                    write_vals['cf_partner_id'] = self.partner_id.id
+                if write_vals:
+                    self.project_id.write(write_vals)
             return self.project_id
         if not (self.create_sample_shipment or self.is_mini_project):
             return self.env['project.project']
@@ -5437,6 +5460,14 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 if 'cf_dossier_priority' in project._fields:
                     vals['cf_dossier_priority'] = 'medium'
                 project = project.create(vals)
+            else:
+                write_vals = {}
+                if not project.partner_id:
+                    write_vals['partner_id'] = self.partner_id.id
+                if 'cf_partner_id' in project._fields and not project.cf_partner_id:
+                    write_vals['cf_partner_id'] = self.partner_id.id
+                if write_vals:
+                    project.write(write_vals)
         elif self.lead_id:
             vals = {
                 'name': 'Dossier - %s' % (self.lead_id.name or self.name),
@@ -5453,6 +5484,32 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         if project:
             self.project_id = project.id
         return project
+
+    def _sample_shipment_notes(self):
+        parts = [
+            self.note or '',
+            'Promessa cliente: %s' % self.customer_promise if self.customer_promise else '',
+            'Checkpoint: %s' % self.next_checkpoint if self.next_checkpoint else '',
+        ]
+        if self.sample_carrier:
+            parts.append('Corriere previsto: %s' % self.sample_carrier)
+        if self.sample_tracking_number:
+            parts.append('Tracking: %s' % self.sample_tracking_number)
+        if self.sample_feedback_days:
+            parts.append('Reminder feedback dopo %s giorni dalla consegna stimata.' % self.sample_feedback_days)
+        return '\n'.join([part for part in parts if part])
+
+    def _sample_shipment_chatter_note(self, shipment):
+        return ''.join([
+            '<p><strong>Campionatura creata da task salva-memoria.</strong></p>',
+            '<ul>',
+            '<li><strong>Cliente:</strong> %s</li>' % (shipment.partner_id.display_name if shipment.partner_id else (self.partner_id.display_name if self.partner_id else 'n.d.')),
+            '<li><strong>Consegna stimata:</strong> %s</li>' % (fields.Date.to_string(shipment.estimated_delivery) if shipment.estimated_delivery else 'n.d.'),
+            '<li><strong>Feedback:</strong> %s</li>' % (fields.Date.to_string(shipment.feedback_reminder_date) if shipment.feedback_reminder_date else 'n.d.'),
+            '<li><strong>TrackBot:</strong> attivo</li>',
+            '</ul>',
+            '<p>%s</p>' % (self.note or ''),
+        ])
 
     def _task_origin_value(self):
         if self.source_channel in ('call', 'mail', 'voice_ai', 'manual'):
@@ -5489,6 +5546,13 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
         if handoffs:
             labels = [dict(self._fields['department'].selection).get(dep, dep) for dep in handoffs]
             handoff_note = '<p><strong>Reparti coinvolti:</strong> %s</p>' % ', '.join(labels)
+        shipment_note = ''
+        if self.create_sample_shipment:
+            shipment_note = '<p><strong>Campionatura:</strong> spedizione TrackBot attiva, feedback dopo %s giorni%s%s.</p>' % (
+                self.sample_feedback_days or 7,
+                ', corriere %s' % self.sample_carrier if self.sample_carrier else '',
+                ', tracking %s' % self.sample_tracking_number if self.sample_tracking_number else '',
+            )
         return ''.join([
             '<p><strong>Task salva-memoria creata dalla Console Commerciale.</strong></p>',
             '<p>%s</p>' % (self.note or ''),
@@ -5496,6 +5560,7 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
                 self.customer_promise or 'n.d.',
                 self.next_checkpoint or 'n.d.',
             ),
+            shipment_note,
             handoff_note,
         ])
 
@@ -5514,6 +5579,12 @@ class CfPipelineQuickTaskWizard(models.TransientModel):
             parts.append('<li><strong>Promessa al cliente:</strong> %s</li>' % self.customer_promise)
         if self.next_checkpoint:
             parts.append('<li><strong>Checkpoint:</strong> %s</li>' % self.next_checkpoint)
+        if self.create_sample_shipment:
+            if self.sample_carrier:
+                parts.append('<li><strong>Corriere:</strong> %s</li>' % self.sample_carrier)
+            if self.sample_tracking_number:
+                parts.append('<li><strong>Tracking:</strong> %s</li>' % self.sample_tracking_number)
+            parts.append('<li><strong>Reminder feedback campione:</strong> +%s giorni</li>' % (self.sample_feedback_days or 7))
         if self.ai_suggested_next_step:
             parts.append('<li><strong>Prossimo passo AI:</strong> %s</li>' % self.ai_suggested_next_step)
         handoffs = self._handoff_departments()

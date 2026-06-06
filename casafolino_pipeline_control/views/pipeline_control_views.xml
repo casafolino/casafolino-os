@@ -72,6 +72,9 @@
                             </group>
                             <group string="Automazioni">
                                 <field name="create_sample_shipment" invisible="task_type != 'sample_shipment'"/>
+                                <field name="sample_carrier" invisible="task_type != 'sample_shipment'" placeholder="DHL, UPS, GLS..."/>
+                                <field name="sample_tracking_number" invisible="task_type != 'sample_shipment'" placeholder="Se gia disponibile"/>
+                                <field name="sample_feedback_days" invisible="task_type != 'sample_shipment'"/>
                                 <field name="create_reminder"/>
                                 <field name="ai_suggested_next_step" placeholder="Prossimo passo suggerito"/>
                             </group>
