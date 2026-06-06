@@ -10,7 +10,7 @@ const config = {
   odooDb: process.env.ODOO_DB || 'folinofood',
   odooWebhookToken: process.env.ODOO_WEBHOOK_TOKEN || '',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
-  openaiVoice: process.env.OPENAI_VOICE || 'nova',
+  openaiVoice: process.env.OPENAI_VOICE || 'coral',
   voiceProvider: (process.env.VOICE_PROVIDER || 'openai').toLowerCase(),
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
@@ -491,6 +491,7 @@ wss.on('connection', (ws, req) => {
   let deepgramWs = null;
   let deepgramInputBuffer = Buffer.alloc(0);
   let lastLocalBargeInAt = 0;
+  let openAiResponseActive = false;
   let callState = 'connecting';
   let transcript = [];
   
@@ -774,8 +775,16 @@ wss.on('connection', (ws, req) => {
             log('info', `Received OpenAI event: ${openAiMsg.type}`, { eventId: openAiMsg.event_id || null });
           }
 
+          if (openAiMsg.type === 'response.created') {
+            openAiResponseActive = true;
+          }
+
           if (openAiMsg.type === 'input_audio_buffer.speech_started') {
-            log('info', 'Detected user barge-in / speech started. Interrupting agent response...');
+            if (!openAiResponseActive) {
+              log('debug', 'Ignoring speech_started because no OpenAI response is active');
+              return;
+            }
+            log('info', 'Detected user barge-in during active response. Interrupting agent response...');
             if (streamSid) {
               ws.send(JSON.stringify({
                 event: 'clear',
@@ -811,6 +820,10 @@ wss.on('connection', (ws, req) => {
             }
           }
           
+          if (openAiMsg.type === 'response.done') {
+            openAiResponseActive = false;
+          }
+
           if (openAiMsg.type === 'response.done' && openAiMsg.response?.output) {
             for (const item of openAiMsg.response.output) {
               if (item.type === 'function_call') {
