@@ -3950,6 +3950,21 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _create_or_open_contact_from_message(self, msg):
+        participants = self._message_external_participants(msg)
+        if participants:
+            company, created, linked, total, skipped = self._ensure_company_contacts_from_message(msg)
+            partner = msg.partner_id or company
+            action = self._open_record(partner, 'Contatto' if partner and not partner.is_company else 'Azienda')
+            action.update({
+                'display_notification': {
+                    'title': 'Anagrafiche aggiornate',
+                    'message': 'Partecipanti esterni: %s. Contatti creati: %s. Agganciati: %s. Esclusi per dominio diverso: %s.' % (
+                        total, created, linked, skipped
+                    ),
+                    'type': 'success',
+                },
+            })
+            return action
         partner = msg.partner_id
         if not partner and msg.sender_email:
             partner = self.env['res.partner'].search([('email', '=ilike', msg.sender_email)], limit=1)

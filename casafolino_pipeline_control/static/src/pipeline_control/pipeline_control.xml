@@ -1218,9 +1218,9 @@
                                             <i class="fa fa-magic"/>
                                             <span>Rispondi AI</span>
                                         </button>
-                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_contact')" title="Crea o apri contatto">
+                                        <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_contact')" title="Crea o aggancia tutti i contatti esterni della mail">
                                             <i class="fa fa-user-o"/>
-                                            <span>Contatto</span>
+                                            <span>Contatti</span>
                                         </button>
                                         <button class="cf-pc-action-tile" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_company')" title="Crea o apri azienda">
                                             <i class="fa fa-building-o"/>
@@ -1659,8 +1659,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <button class="btn btn-sm btn-primary w-100 mt-2" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_company')">
-                                            <i class="fa fa-building-o"/> Aggancia azienda e contatti
+                                        <button class="btn btn-sm btn-primary w-100 mt-2" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_contact')">
+                                            <i class="fa fa-users"/> Crea/aggancia tutti i contatti
                                         </button>
                                     </div>
                                     <div class="cf-pc-sidebar-sub" t-if="state.messageContext.duplicate_partners &amp;&amp; state.messageContext.duplicate_partners.length" style="margin-top: 12px;">
