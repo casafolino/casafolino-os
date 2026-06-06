@@ -884,6 +884,7 @@ export class CFPipelineControl extends Component {
         return [
             { id: "all", label: "Tutti", count: rows.length },
             { id: "pending", label: "Da decidere", count: rows.filter((row) => row.sender_decision === "pending").length },
+            { id: "ai_safe", label: "AI sicura", count: rows.filter((row) => row.ai_safe_to_apply).length },
             { id: "urgent", label: "Urgenti", count: rows.filter((row) => row.urgency === "high").length },
             { id: "commercial", label: "Commerciale", count: rows.filter((row) => row.workstream === "commercial").length },
             { id: "logistics", label: "Logistica", count: rows.filter((row) => row.workstream === "logistics").length },
@@ -976,6 +977,9 @@ export class CFPipelineControl extends Component {
         }
         if (filter === "pending") {
             return rows.filter((row) => row.sender_decision === "pending");
+        }
+        if (filter === "ai_safe") {
+            return rows.filter((row) => row.ai_safe_to_apply);
         }
         if (filter === "kept") {
             return rows.filter((row) => row.sender_decision === "kept");
