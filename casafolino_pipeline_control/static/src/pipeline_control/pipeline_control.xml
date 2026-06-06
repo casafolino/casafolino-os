@@ -1467,9 +1467,34 @@
                                                 <i class="fa fa-magic"/>
                                                 <span t-out="state.messageContext.assistant_suggestion.reason"/>
                                             </div>
+                                            <div class="cf-pc-assistant-next"
+                                                 t-if="state.messageContext.assistant_suggestion.route_summary">
+                                                <i class="fa fa-random"/>
+                                                <span t-out="state.messageContext.assistant_suggestion.route_summary"/>
+                                            </div>
+                                            <div class="cf-pc-ai-decision-grid"
+                                                 t-if="state.messageContext.assistant_suggestion.operating_stage">
+                                                <div>
+                                                    <span>Fase</span>
+                                                    <strong t-out="state.messageContext.assistant_suggestion.operating_stage"/>
+                                                </div>
+                                                <div>
+                                                    <span>Task</span>
+                                                    <strong t-out="state.messageContext.assistant_suggestion.task_button_label || 'Task operativa'"/>
+                                                </div>
+                                            </div>
                                             <div class="cf-pc-assistant-next">
                                                 <i class="fa fa-location-arrow"/>
                                                 <span t-out="state.messageContext.assistant_suggestion.next_action"/>
+                                            </div>
+                                            <div class="cf-pc-ai-actions-list"
+                                                 t-if="state.messageContext.assistant_suggestion.action_items &amp;&amp; state.messageContext.assistant_suggestion.action_items.length">
+                                                <div t-foreach="state.messageContext.assistant_suggestion.action_items"
+                                                     t-as="item"
+                                                     t-key="'assistant-action-' + item">
+                                                    <i class="fa fa-check-circle-o"/>
+                                                    <span t-out="item"/>
+                                                </div>
                                             </div>
                                             <div class="cf-pc-assistant-evidence"
                                                  t-if="state.messageContext.assistant_suggestion.evidence &amp;&amp; state.messageContext.assistant_suggestion.evidence.length">
@@ -1492,8 +1517,9 @@
                                                     <i class="fa fa-link"/> Collega al dossier
                                                 </button>
                                                 <button class="btn btn-sm btn-light"
-                                                        t-on-click="() => this.mailQuickAction(selectedMessage, state.messageContext.assistant_suggestion.department === 'samples' ? 'sample' : 'task')">
-                                                    <i class="fa fa-check-square-o"/> Crea task
+                                                        t-on-click="() => this.mailQuickAction(selectedMessage, state.messageContext.assistant_suggestion.task_quick_action || (state.messageContext.assistant_suggestion.department === 'samples' ? 'sample' : 'task'))">
+                                                    <i class="fa fa-check-square-o"/>
+                                                    <t t-out="state.messageContext.assistant_suggestion.task_button_label || 'Crea task'"/>
                                                 </button>
                                             </div>
                                             <div class="cf-pc-assistant-candidates"

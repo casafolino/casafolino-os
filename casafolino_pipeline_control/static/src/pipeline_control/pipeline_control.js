@@ -291,6 +291,9 @@ export class CFPipelineControl extends Component {
                     department_label: assistantSuggestion.department_label || "",
                     reason: assistantSuggestion.reason || "",
                     next_action: assistantSuggestion.next_action || "",
+                    route_summary: assistantSuggestion.route_summary || "",
+                    operating_stage: assistantSuggestion.operating_stage || "",
+                    task_quick_action: assistantSuggestion.task_quick_action || "",
                 });
             }
             const success = await this.orm.call("cf.pipeline.control", "link_dossier_to_message", args);

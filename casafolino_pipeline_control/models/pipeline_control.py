@@ -1178,6 +1178,11 @@ class CfPipelineControl(models.AbstractModel):
                 'confidence': 0,
                 'reason': 'Non ho trovato un dossier abbastanza coerente. Cerca o collega manualmente il dossier.',
                 'next_action': department['fallback_action'],
+                'route_summary': 'Nessun dossier sicuro: serve ricerca manuale o creazione dossier.',
+                'operating_stage': self._assistant_operating_stage(False, department, msg),
+                'task_quick_action': self._assistant_task_quick_action(department),
+                'task_button_label': self._assistant_task_button_label(department),
+                'action_items': self._assistant_action_items(False, department, msg),
                 'candidates': [],
                 'provider': 'Odoo data match',
             }
@@ -1203,6 +1208,11 @@ class CfPipelineControl(models.AbstractModel):
             'requires_confirmation': confidence < 80 or bool(guard),
             'reason': self._assistant_reason(top_project, department, evidence),
             'next_action': action,
+            'route_summary': self._assistant_route_summary(top_project, department, confidence),
+            'operating_stage': self._assistant_operating_stage(top_project, department, msg),
+            'task_quick_action': self._assistant_task_quick_action(department),
+            'task_button_label': self._assistant_task_button_label(department),
+            'action_items': self._assistant_action_items(top_project, department, msg),
             'evidence': evidence[:4],
             'provider': 'Odoo data match',
             'candidates': [{
@@ -1249,6 +1259,11 @@ class CfPipelineControl(models.AbstractModel):
             'requires_confirmation': True,
             'reason': 'Ho trovato il lead "%s", ma non ha ancora un dossier collegato.' % lead.display_name,
             'next_action': action,
+            'route_summary': 'Lead riconosciuto, ma manca il dossier operativo.',
+            'operating_stage': self._assistant_operating_stage(False, department, msg),
+            'task_quick_action': self._assistant_task_quick_action(department),
+            'task_button_label': self._assistant_task_button_label(department),
+            'action_items': self._assistant_action_items(False, department, msg),
             'evidence': ['Lead CRM riconosciuto dal testo mail', 'Dossier assente sul lead'],
             'candidates': [],
             'provider': 'Odoo data match',
@@ -1335,13 +1350,17 @@ class CfPipelineControl(models.AbstractModel):
             'requires_confirmation': confidence < 80 or bool(guard),
             'reason': data.get('reason') or suggestion.get('reason'),
             'next_action': data.get('next_action') or suggestion.get('next_action'),
+            'route_summary': self._assistant_route_summary(project, department, confidence),
+            'operating_stage': self._assistant_operating_stage(project, department, msg),
+            'task_quick_action': self._assistant_task_quick_action({'key': department_key}),
+            'task_button_label': self._assistant_task_button_label({'key': department_key}),
             'provider': status.get('primary') or 'CasaFolino AI',
         })
         if guard:
             suggestion['evidence'] = self._compact((suggestion.get('evidence') or []) + guard['evidence'])[:4]
         action_items = data.get('action_items') or []
         if isinstance(action_items, list):
-            suggestion['action_items'] = [str(item) for item in action_items[:4] if str(item or '').strip()]
+            suggestion['action_items'] = [str(item) for item in action_items[:4] if str(item or '').strip()] or suggestion.get('action_items', [])
         return suggestion
 
     def _message_text_for_matching(self, msg):
@@ -1577,6 +1596,86 @@ class CfPipelineControl(models.AbstractModel):
             '; '.join(bits),
             department['label'],
         )
+
+    def _assistant_route_summary(self, project, department, confidence):
+        if not project:
+            return 'Collegamento dossier da confermare prima di procedere.'
+        confidence_label = 'alta' if confidence >= 80 else ('media' if confidence >= 55 else 'bassa')
+        return '%s -> %s, confidenza %s.' % (
+            department.get('label') or self._department_label_map().get(department.get('key'), 'Commerciale'),
+            project.display_name,
+            confidence_label,
+        )
+
+    def _assistant_operating_stage(self, project, department, msg):
+        key = department.get('key') if isinstance(department, dict) else department
+        if key == 'logistics':
+            return 'Logistica / spedizione'
+        if key == 'samples':
+            return 'Campionatura / tracking'
+        if key == 'graphics':
+            return 'Materiali / grafica'
+        if key == 'admin':
+            return 'Amministrazione / dati'
+        if msg.lead_id:
+            stage = msg.lead_id.stage_id.display_name if msg.lead_id.stage_id else ''
+            return 'Pipeline commerciale%s' % (': %s' % stage if stage else '')
+        if project and getattr(project, 'cf_status_dossier', False):
+            return 'Dossier: %s' % dict(project._fields['cf_status_dossier'].selection).get(project.cf_status_dossier, project.cf_status_dossier)
+        return 'Pipeline commerciale'
+
+    def _assistant_task_quick_action(self, department):
+        key = department.get('key') if isinstance(department, dict) else department
+        if key == 'samples':
+            return 'sample'
+        if key == 'graphics':
+            return 'catalog'
+        return 'task'
+
+    def _assistant_task_button_label(self, department):
+        key = department.get('key') if isinstance(department, dict) else department
+        if key == 'logistics':
+            return 'Task logistica'
+        if key == 'samples':
+            return 'Campionatura'
+        if key == 'graphics':
+            return 'Task grafica'
+        if key == 'admin':
+            return 'Task admin'
+        return 'Task commerciale'
+
+    def _assistant_action_items(self, project, department, msg):
+        key = department.get('key') if isinstance(department, dict) else department
+        project_label = project.display_name if project else 'dossier corretto'
+        if key == 'logistics':
+            return [
+                'Collega la conversazione a %s' % project_label,
+                'Crea task logistica con scadenza e owner',
+                'Verifica tracking, documenti e prossima risposta cliente',
+            ]
+        if key == 'samples':
+            return [
+                'Collega la conversazione a %s' % project_label,
+                'Crea campionatura con TrackBot',
+                'Programma reminder feedback dopo consegna',
+            ]
+        if key == 'graphics':
+            return [
+                'Collega la conversazione a %s' % project_label,
+                'Crea task grafica/materiali con checklist',
+                'Raccogli brief, file e scadenza cliente',
+            ]
+        if key == 'admin':
+            return [
+                'Collega la conversazione a %s' % project_label,
+                'Crea task amministrativa',
+                'Verifica fatture, pagamenti o dati anagrafici',
+            ]
+        return [
+            'Collega la conversazione a %s' % project_label,
+            'Aggiorna lead, fase pipeline o prossima azione',
+            'Prepara risposta cliente con contesto dossier',
+        ]
 
     def _message_sender_rule_impact(self, msg):
         Mail = self.env['casafolino.mail.message']
