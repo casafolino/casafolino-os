@@ -20,7 +20,7 @@ const config = {
   vadThreshold: Number(process.env.OPENAI_VAD_THRESHOLD || 0.78),
   vadPrefixPaddingMs: Number(process.env.OPENAI_VAD_PREFIX_PADDING_MS || 300),
   vadSilenceDurationMs: Number(process.env.OPENAI_VAD_SILENCE_DURATION_MS || 850),
-  bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 1200),
+  bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 350),
   voiceProvider: (process.env.VOICE_PROVIDER || 'openai').toLowerCase(),
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   deepgramAgentUrl: process.env.DEEPGRAM_AGENT_URL || 'wss://agent.deepgram.com/v1/agent/converse',
@@ -543,6 +543,7 @@ wss.on('connection', (ws, req) => {
   let callState = 'connecting';
   let transcript = [];
   let lastSpeechStartedAt = 0;
+  let lastDeepgramClearAt = 0;
   let fallbackRedirected = false;
   
   log('info', 'New Twilio WebSocket media-stream connection established', { jobId });
@@ -658,8 +659,13 @@ wss.on('connection', (ws, req) => {
             if (!['ConversationText'].includes(deepgramMsg.type)) {
               log('info', `Received Deepgram event: ${deepgramMsg.type}`);
             }
-            if (deepgramMsg.type === 'UserStartedSpeaking' && streamSid) {
-              ws.send(JSON.stringify({ event: 'clear', streamSid }));
+            if (['UserStartedSpeaking', 'StartOfTurn'].includes(deepgramMsg.type) && streamSid) {
+              const now = Date.now();
+              if (now - lastDeepgramClearAt >= Math.max(250, config.bargeInMinIntervalMs)) {
+                lastDeepgramClearAt = now;
+                log('info', 'Detected Deepgram barge-in. Clearing Twilio playback buffer...', { type: deepgramMsg.type });
+                ws.send(JSON.stringify({ event: 'clear', streamSid }));
+              }
             }
             if (deepgramMsg.type === 'ConversationText' && deepgramMsg.content) {
               const label = deepgramMsg.role === 'user' ? 'Cliente' : 'Agente';
