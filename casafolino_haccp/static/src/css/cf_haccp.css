@@ -1,64 +1,402 @@
-/* CasaFolino HACCP — Custom UI Styles */
+/* CasaFolino HACCP Control Room */
+:root {
+    --cf-haccp-bg: #FBFAF6;
+    --cf-haccp-card: #FFFFFF;
+    --cf-haccp-border: #E8E5DC;
+    --cf-haccp-text: #2D2A24;
+    --cf-haccp-muted: #7E7768;
+    --cf-haccp-accent: #5A6E3A;
+    --cf-haccp-brown: #3E2518;
+    --cf-haccp-gold: #C8A43A;
+    --cf-haccp-red: #B91C1C;
+    --cf-haccp-orange: #B45309;
+    --cf-haccp-blue: #1D4ED8;
+    --cf-haccp-green: #166534;
+}
 
-/* Semaforo generale */
-.cf-haccp-semaforo {
-    background: #fff;
-    border-radius: 6px;
-    padding: 12px 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+.cf-haccp-control {
+    min-height: 100vh;
+    background: var(--cf-haccp-bg);
+    color: var(--cf-haccp-text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.cf-haccp-topbar {
+    min-height: 58px;
+    padding: 10px 24px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--cf-haccp-brown);
+    color: #F5E6C8;
+    border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
-/* NC flow boxes */
-.cf-nc-stage-box {
-    border: 2px solid #ccc;
+.cf-haccp-brand,
+.cf-haccp-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cf-haccp-mark {
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
-    padding: 12px 18px;
-    text-align: center;
-    min-width: 110px;
-    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F5E6C8;
+    color: var(--cf-haccp-brown);
+    font-weight: 800;
+    font-size: 13px;
 }
 
-.cf-nc-stage-label {
+.cf-haccp-title {
+    font-size: 16px;
+    font-weight: 750;
+}
+
+.cf-haccp-subtitle {
+    font-size: 12px;
+    color: rgba(245,230,200,.72);
+}
+
+.cf-haccp-state-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.cf-state-green { background: #DCFCE7; color: var(--cf-haccp-green); }
+.cf-state-yellow { background: #FEF3C7; color: #92400E; }
+.cf-state-red { background: #FEE2E2; color: var(--cf-haccp-red); }
+.cf-state-gray { background: #F3F4F6; color: #4B5563; }
+
+.cf-haccp-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.18);
+    color: #F5E6C8;
+    background: transparent;
+    font-size: 16px;
+}
+
+.cf-haccp-icon-btn:hover {
+    border-color: var(--cf-haccp-gold);
+    background: rgba(255,255,255,.08);
+}
+
+.cf-haccp-body {
+    padding: 22px 28px 48px;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+.cf-haccp-loading,
+.cf-haccp-error {
+    min-height: 360px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cf-haccp-muted);
+    gap: 12px;
+}
+
+.cf-haccp-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--cf-haccp-border);
+    border-top-color: var(--cf-haccp-accent);
+    border-radius: 50%;
+    animation: cf-haccp-spin .8s linear infinite;
+}
+
+@keyframes cf-haccp-spin { to { transform: rotate(360deg); } }
+
+.cf-haccp-hero,
+.cf-haccp-panel,
+.cf-haccp-kpi {
+    background: var(--cf-haccp-card);
+    border: 1px solid var(--cf-haccp-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(45,42,36,.05);
+}
+
+.cf-haccp-hero {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) 1fr;
+    gap: 18px;
+    padding: 20px;
+    margin-bottom: 18px;
+}
+
+.cf-haccp-hero-main {
+    border-left: 5px solid var(--cf-haccp-accent);
+    padding-left: 16px;
+}
+
+.cf-haccp-hero-label,
+.cf-haccp-kpi span,
+.cf-panel-head span,
+.cf-chain-kicker {
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: .4px;
-    color: #6c757d;
-    font-weight: 600;
-    margin-bottom: 4px;
+    letter-spacing: .7px;
+    color: var(--cf-haccp-muted);
+    font-weight: 700;
 }
 
-.cf-nc-stage-count {
-    font-size: 26px;
-    font-weight: 800;
+.cf-haccp-hero-value {
+    font-size: 44px;
     line-height: 1;
+    font-weight: 850;
+    color: var(--cf-haccp-brown);
+    margin: 6px 0;
 }
 
-.cf-nc-arrow {
+.cf-haccp-hero-copy {
+    color: var(--cf-haccp-muted);
+    font-size: 13px;
+}
+
+.cf-haccp-chain {
+    display: grid;
+    grid-template-columns: 1fr 36px 1fr 36px 1fr;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-chain-step {
+    min-height: 96px;
+    padding: 14px;
+    border: 1px solid #E1DED4;
+    border-radius: 8px;
+    background: #FCFBF8;
+    text-align: left;
+}
+
+.cf-chain-step strong {
+    display: block;
+    margin: 4px 0;
+    color: var(--cf-haccp-text);
+    font-size: 15px;
+}
+
+.cf-chain-step span:last-child {
+    color: var(--cf-haccp-muted);
+    font-size: 12px;
+}
+
+.cf-chain-step:hover,
+.cf-haccp-kpi:hover,
+.cf-action-stack button:hover {
+    border-color: var(--cf-haccp-accent);
+    box-shadow: 0 4px 14px rgba(45,42,36,.09);
+}
+
+.cf-chain-line {
+    height: 2px;
+    background: linear-gradient(90deg, #C8A43A, #5A6E3A);
+    border-radius: 999px;
+}
+
+.cf-haccp-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.cf-haccp-kpi {
+    min-height: 116px;
+    padding: 15px 16px;
+    text-align: left;
+    border-left: 4px solid var(--cf-haccp-accent);
+}
+
+.cf-haccp-kpi strong {
+    display: block;
+    margin: 7px 0 4px;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--cf-haccp-text);
+}
+
+.cf-haccp-kpi small {
+    color: var(--cf-haccp-muted);
+    font-size: 12px;
+}
+
+.cf-kpi-red { border-left-color: var(--cf-haccp-red); }
+.cf-kpi-warn { border-left-color: var(--cf-haccp-orange); }
+.cf-kpi-info { border-left-color: var(--cf-haccp-blue); }
+.cf-kpi-green { border-left-color: var(--cf-haccp-green); }
+
+.cf-haccp-main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+}
+
+.cf-haccp-panel {
+    padding: 16px;
+    min-height: 180px;
+}
+
+.cf-haccp-panel-wide {
+    grid-row: span 2;
+}
+
+.cf-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--cf-haccp-border);
+}
+
+.cf-panel-head h3 {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 760;
+}
+
+.cf-panel-head button,
+.cf-action-stack button {
+    border: 1px solid var(--cf-haccp-border);
+    border-radius: 8px;
+    background: #FBFAF6;
+    color: var(--cf-haccp-accent);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 10px;
+}
+
+.cf-trace-list,
+.cf-compact-list,
+.cf-action-stack {
+    display: grid;
+    gap: 10px;
+}
+
+.cf-trace-row {
+    display: grid;
+    grid-template-columns: 170px 1fr 96px;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #EEEAE0;
+    border-radius: 8px;
+    background: #FCFBF8;
+}
+
+.cf-trace-lot strong,
+.cf-compact-row strong {
+    display: block;
+    font-size: 14px;
+}
+
+.cf-trace-lot span,
+.cf-compact-row span,
+.cf-trace-date {
+    color: var(--cf-haccp-muted);
+    font-size: 12px;
+}
+
+.cf-trace-route {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) 48px minmax(120px, 1fr);
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+}
+
+.cf-trace-route-line {
+    height: 2px;
+    background: #D8D2C4;
+}
+
+.cf-stage-flow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.cf-stage-flow div,
+.cf-compact-row {
+    border: 1px solid #EEEAE0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #FCFBF8;
+}
+
+.cf-stage-flow span {
+    color: var(--cf-haccp-muted);
+    font-size: 12px;
+}
+
+.cf-stage-flow strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 23px;
+}
+
+.cf-empty {
+    padding: 14px;
+    border: 1px dashed #D8D2C4;
+    border-radius: 8px;
+    color: var(--cf-haccp-muted);
+    font-size: 13px;
+}
+
+.cf-haccp-form-banner {
+    margin: 8px 0 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--cf-haccp-border);
+    background: #FBFAF6;
     display: flex;
     align-items: center;
-    font-size: 20px;
-    color: #adb5bd;
-    font-weight: 300;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-/* Reuse shared dashboard classes from cf_crm_style if loaded,
-   else define them here for standalone use */
-.cf-dashboard { background: #f4f6f8; min-height: 100%; }
-
-.cf-kpi-card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 16px 18px;
-    cursor: pointer;
-    transition: box-shadow .15s ease, transform .1s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06);
-    height: 100%;
+.cf-haccp-form-banner strong {
+    display: block;
+    font-size: 14px;
 }
-.cf-kpi-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); transform: translateY(-1px); }
-.cf-kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #8a9b6d; font-weight: 700; margin-bottom: 6px; }
-.cf-kpi-value { font-size: 26px; font-weight: 800; color: #1e2432; line-height: 1.1; margin-bottom: 4px; }
-.cf-kpi-sub { font-size: 11px; color: #6c757d; }
-.cf-dash-panel { background: #fff; border-radius: 8px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-.cf-dash-panel-title { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: #5A6E3A; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(90,110,58,.12); }
+
+.cf-haccp-form-banner span {
+    color: var(--cf-haccp-muted);
+    font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+    .cf-haccp-hero,
+    .cf-haccp-main-grid {
+        grid-template-columns: 1fr;
+    }
+    .cf-haccp-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .cf-haccp-body { padding: 16px; }
+    .cf-haccp-chain { grid-template-columns: 1fr; }
+    .cf-chain-line { height: 16px; width: 2px; margin-left: 16px; }
+    .cf-haccp-kpi-grid { grid-template-columns: 1fr; }
+    .cf-trace-row,
+    .cf-trace-route {
+        grid-template-columns: 1fr;
+    }
+}

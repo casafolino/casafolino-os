@@ -55,10 +55,46 @@ class CfHaccpDashboard extends Component {
         this._openModel("cf.haccp.document", [["state", "in", ["expiring", "expired"]]]);
     }
 
-    async _openModel(model, domain) {
+    onOpenReceiptPending() {
+        this._openModel("stock.picking", [["picking_type_code", "=", "incoming"], ["haccp_state", "=", "pending"]], "Ricezioni HACCP da completare");
+    }
+
+    onOpenReceiptBlocked() {
+        this._openModel("stock.picking", [["picking_type_code", "=", "incoming"], ["haccp_esito", "in", ["quarantena", "rifiutato"]]], "Ricezioni bloccate");
+    }
+
+    onOpenProductionPending() {
+        this._openModel("mrp.production", [["haccp_state", "=", "pending"]], "Produzioni HACCP da completare");
+    }
+
+    onOpenProductionBlocked() {
+        this._openModel("mrp.production", [["haccp_esito", "in", ["non_conforme", "bloccato", "attesa_analisi"]]], "Produzioni bloccate");
+    }
+
+    onOpenTraceability() {
+        this._openModel("cf.haccp.tracciabilita", [], "Tracciabilita lotti");
+    }
+
+    onOpenQuarantine() {
+        this._openModel("cf.haccp.quarantine", [["state", "=", "active"]], "Quarantene attive");
+    }
+
+    onOpenTemperatureToday() {
+        this._openModel("cf.haccp.temperature.log", [["esito", "in", ["pending", "ko"]]], "Registro temperature");
+    }
+
+    onOpenSanificationToday() {
+        this._openModel("cf.haccp.sanification.log", [["eseguita", "=", false]], "Sanificazioni da completare");
+    }
+
+    onOpenCcpKo() {
+        this._openModel("cf.haccp.ccp.log", [["esito", "=", "fuori_limite"]], "CCP fuori limite");
+    }
+
+    async _openModel(model, domain, name = null) {
         await this.action.doAction({
             type: "ir.actions.act_window",
-            name: model,
+            name: name || model,
             res_model: model,
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],

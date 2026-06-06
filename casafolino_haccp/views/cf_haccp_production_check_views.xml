@@ -62,13 +62,19 @@
         <field name="arch" type="xml">
             <xpath expr="//page[last()]" position="after">
                 <page string="Scheda HACCP">
+                    <div class="cf-haccp-form-banner">
+                        <div>
+                            <strong>Gate produzione e rilascio lotto</strong>
+                            <span>Prerequisiti, CCP, controlli in processo e approvazione qualita in un unico percorso.</span>
+                        </div>
+                        <field name="haccp_state" widget="badge"
+                            decoration-danger="haccp_state == 'pending'"
+                            decoration-success="haccp_state == 'done'"/>
+                    </div>
 
                     <!-- STATO IN TESTA -->
                     <group>
                         <group string="Stato Controllo">
-                            <field name="haccp_state" widget="badge"
-                                decoration-danger="haccp_state == 'pending'"
-                                decoration-success="haccp_state == 'done'"/>
                             <field name="haccp_stato_firma" widget="badge"
                                 decoration-muted="haccp_stato_firma == 'bozza'"
                                 decoration-info="haccp_stato_firma == 'firmato'"

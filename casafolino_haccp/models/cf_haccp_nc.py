@@ -66,14 +66,54 @@ class CfHaccpNc(models.Model):
 
         calib = self.env["cf.haccp.calibration"]
         docs = self.env["cf.haccp.document"]
+        picking = self.env["stock.picking"]
+        production = self.env["mrp.production"]
+        trace = self.env["cf.haccp.tracciabilita"]
+        quarantine = self.env["cf.haccp.quarantine"]
+        temperature = self.env["cf.haccp.temperature.log"]
+        sanification = self.env["cf.haccp.sanification.log"]
+        ccp_log = self.env["cf.haccp.ccp.log"]
 
         today = fields.Date.today()
-        temp_ko_today = self.env["cf.haccp.temperature.log"].search_count([
+        temp_pending_today = temperature.search_count([
+            ("date", "=", today), ("esito", "=", "pending")])
+        temp_ko_today = temperature.search_count([
             ("date", "=", today), ("esito", "=", "ko")])
-        ccp_ko = self.env["cf.haccp.ccp.log"].search_count([
+        san_missing_today = sanification.search_count([
+            ("date", "=", today), ("eseguita", "=", False)])
+        ccp_ko = ccp_log.search_count([
             ("esito", "=", "fuori_limite")])
         pest_next = self.env["cf.haccp.pest.control"].search(
             [("prossima_visita", "!=", False)], limit=1, order="prossima_visita asc")
+        recent_traces = trace.search([], limit=5, order="date desc, id desc")
+        active_quarantines = quarantine.search([("state", "=", "active")], limit=5, order="date_start desc")
+        receipt_pending = picking.search_count([
+            ("picking_type_code", "=", "incoming"),
+            ("haccp_state", "=", "pending"),
+        ])
+        receipt_done = picking.search_count([
+            ("picking_type_code", "=", "incoming"),
+            ("haccp_state", "=", "done"),
+        ])
+        receipt_blocked = picking.search_count([
+            ("picking_type_code", "=", "incoming"),
+            ("haccp_esito", "in", ("quarantena", "rifiutato")),
+        ])
+        production_pending = production.search_count([("haccp_state", "=", "pending")])
+        production_done = production.search_count([("haccp_state", "=", "done")])
+        production_blocked = production.search_count([
+            ("haccp_esito", "in", ("non_conforme", "bloccato", "attesa_analisi")),
+        ])
+        traced_lots = trace.search_count([])
+        trace_with_customer = trace.search_count([("partner_ids", "!=", False)])
+        trace_coverage = round((trace_with_customer / traced_lots) * 100) if traced_lots else 0
+        audit_alerts = (
+            critical_open + temp_ko_today + temp_pending_today + san_missing_today +
+            ccp_ko + quarantine.search_count([("state", "=", "active")]) +
+            receipt_pending + production_pending +
+            calib.search_count([("state", "=", "expired")]) +
+            docs.search_count([("state", "=", "expired")])
+        )
 
         return {
             "nc_open": nc_counts.get("open", 0),
@@ -81,17 +121,48 @@ class CfHaccpNc(models.Model):
             "nc_action": nc_counts.get("action", 0),
             "nc_closed": nc_counts.get("closed", 0),
             "nc_critical_open": critical_open,
+            "receipt_pending": receipt_pending,
+            "receipt_done": receipt_done,
+            "receipt_blocked": receipt_blocked,
+            "production_pending": production_pending,
+            "production_done": production_done,
+            "production_blocked": production_blocked,
+            "traced_lots": traced_lots,
+            "trace_with_customer": trace_with_customer,
+            "trace_coverage": trace_coverage,
+            "active_quarantines": quarantine.search_count([("state", "=", "active")]),
             "instruments_expiring": calib.search_count([("state", "=", "expiring")]),
             "instruments_expired": calib.search_count([("state", "=", "expired")]),
             "docs_expiring": docs.search_count([("state", "=", "expiring")]),
             "docs_expired": docs.search_count([("state", "=", "expired")]),
+            "temp_pending_today": temp_pending_today,
             "temp_ko_today": temp_ko_today,
+            "san_missing_today": san_missing_today,
             "ccp_ko_total": ccp_ko,
             "pest_next_visit": str(pest_next.prossima_visita) if pest_next else "",
+            "audit_alerts": audit_alerts,
+            "recent_traces": [{
+                "id": rec.id,
+                "lotto_pf": rec.lotto_pf or "-",
+                "lotto_mp": rec.lotto_mp or "-",
+                "date": str(rec.date or ""),
+                "production": rec.production_id.name or "-",
+                "customers": ", ".join(rec.partner_ids.mapped("name")[:2]) or "-",
+            } for rec in recent_traces],
+            "active_quarantine_rows": [{
+                "id": rec.id,
+                "reference": rec.reference,
+                "lot": rec.lot_id.name or "-",
+                "product": rec.product_id.display_name or "-",
+                "date_start": str(rec.date_start or ""),
+            } for rec in active_quarantines],
             "overall_state": (
-                "red" if (critical_open > 0 or temp_ko_today > 0 or
+                "red" if (critical_open > 0 or temp_ko_today > 0 or receipt_blocked > 0 or
+                          production_blocked > 0 or quarantine.search_count([("state", "=", "active")]) > 0 or
                           calib.search_count([("state", "=", "expired")]) > 0)
                 else "yellow" if (nc_counts.get("open", 0) > 0 or ccp_ko > 0 or
+                                   receipt_pending > 0 or production_pending > 0 or
+                                   temp_pending_today > 0 or san_missing_today > 0 or
                                    calib.search_count([("state", "=", "expiring")]) > 0)
                 else "green"
             ),
