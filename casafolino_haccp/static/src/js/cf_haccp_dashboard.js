@@ -22,12 +22,44 @@ class CfHaccpDashboard extends Component {
                 args: [],
                 kwargs: {},
             });
-            this.state.data = result;
+            this.state.data = this._normalizeData(result);
         } catch (e) {
             this.state.error = "Errore caricamento dati HACCP.";
         } finally {
             this.state.loading = false;
         }
+    }
+
+    _normalizeData(data) {
+        return {
+            active_quarantine_rows: [],
+            active_quarantines: 0,
+            audit_alerts: 0,
+            docs_expired: 0,
+            docs_expiring: 0,
+            instruments_expired: 0,
+            instruments_expiring: 0,
+            nc_action: 0,
+            nc_analysis: 0,
+            nc_closed: 0,
+            nc_critical_open: 0,
+            nc_open: 0,
+            overall_state: "green",
+            production_blocked: 0,
+            production_pending: 0,
+            receipt_blocked: 0,
+            receipt_pending: 0,
+            recent_traces: [],
+            san_missing_today: 0,
+            temp_ko_today: 0,
+            temp_pending_today: 0,
+            trace_coverage: 0,
+            trace_ready_score: 0,
+            trace_recall_tested: 0,
+            trace_with_customer: 0,
+            traced_lots: 0,
+            ...(data || {}),
+        };
     }
 
     onRefresh() {
