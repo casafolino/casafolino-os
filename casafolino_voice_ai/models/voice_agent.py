@@ -24,6 +24,28 @@ VOICE_AI_TOOL_SCHEMAS = [
     },
     {
         'type': 'function',
+        'name': 'send_catalog_email',
+        'description': 'Invia subito al cliente il template Catalogo CasaFolino con catalogo PDF allegato, usando il mittente CasaFolino configurato.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'call_id': {'type': 'integer'},
+                'partner_id': {'type': 'integer'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'name': {'type': 'string'},
+                'customer_name': {'type': 'string'},
+                'phone': {'type': 'string'},
+                'email': {'type': 'string'},
+                'company_name': {'type': 'string'},
+                'language': {'type': 'string'},
+            },
+            'required': ['email'],
+            'additionalProperties': False,
+        },
+    },
+    {
+        'type': 'function',
         'name': 'lookup_customer',
         'description': 'Cerca un cliente CasaFolino per numero di telefono, nome o email.',
         'parameters': {

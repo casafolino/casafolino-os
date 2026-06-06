@@ -127,6 +127,98 @@ class CasaFolinoVoiceAIController(http.Controller):
             )
         return partner
 
+    def _find_catalog_template(self, payload=None):
+        payload = payload or {}
+        lang = payload.get('language') or payload.get('detected_language') or 'it_IT'
+        lang = 'en_US' if str(lang).lower().startswith('en') else 'it_IT'
+        template_name = 'Catalogue attached' if lang == 'en_US' else 'Catalogo allegato'
+        template = request.env['casafolino.mail.template'].sudo().search([('name', '=', template_name)], limit=1)
+        if not template:
+            template = request.env['casafolino.mail.template'].sudo().search([
+                ('default_attachment_policy', '=', 'catalog'),
+                ('language', '=', lang),
+            ], limit=1)
+        return template
+
+    def _find_catalog_attachment(self, payload=None):
+        payload = payload or {}
+        lang = payload.get('language') or payload.get('detected_language') or 'it_IT'
+        is_en = str(lang).lower().startswith('en')
+        terms = ['catalog', 'catalogue'] if is_en else ['catalogo', 'catalog']
+        Attachment = request.env['ir.attachment'].sudo()
+        if 'documents.document' in request.env.registry:
+            Document = request.env['documents.document'].sudo()
+            for term in terms:
+                docs = Document.search([('name', 'ilike', term)], limit=12, order='write_date desc')
+                for doc in docs:
+                    att = doc.attachment_id
+                    if att and att.exists() and ((att.mimetype or '').lower() == 'application/pdf' or (att.name or '').lower().endswith('.pdf')):
+                        return att
+        for term in terms:
+            atts = Attachment.search([('name', 'ilike', term)], limit=12, order='write_date desc')
+            for att in atts:
+                if (att.mimetype or '').lower() == 'application/pdf' or (att.name or '').lower().endswith('.pdf'):
+                    return att
+        return Attachment.browse()
+
+    def _send_catalog_email(self, payload):
+        partner = self._save_inbound_contact(payload)
+        email_to = payload.get('email') or partner.email
+        if not email_to:
+            raise ValueError('email destinatario mancante per invio catalogo')
+        template = self._find_catalog_template(payload)
+        if template:
+            rendered = request.env['casafolino.mail.template'].sudo().render_template(
+                template.id,
+                partner.id,
+                context_extra={
+                    'partner_first_name': (payload.get('first_name') or (partner.name or '').split(' ')[0] or ''),
+                    'partner_name': partner.display_name or payload.get('customer_name') or payload.get('name') or '',
+                },
+            )
+            subject = rendered.get('subject') or 'Catalogo CasaFolino'
+            body_html = rendered.get('body_html') or template.body_html or ''
+        else:
+            subject = 'Catalogo CasaFolino'
+            body_html = '<p>Buongiorno,</p><p>le invio in allegato il catalogo CasaFolino con la nostra selezione prodotti.</p><p>Resto a disposizione.</p><p>Cordiali saluti,<br/>CasaFolino</p>'
+        attachment = self._find_catalog_attachment(payload)
+        if not attachment:
+            raise ValueError('allegato catalogo non trovato')
+        cc_emails = ['martina.sinopoli@casafolino.com', 'commerciale@casafolino.com', 'antonio@casafolino.com']
+        cc_emails = [email for email in cc_emails if email.lower() != email_to.lower()]
+        mail = request.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body_html,
+            'email_to': email_to,
+            'email_cc': ','.join(cc_emails),
+            'email_from': 'Antonio Folino <antonio@casafolino.com>',
+            'reply_to': 'antonio@casafolino.com',
+            'attachment_ids': [(6, 0, [attachment.id])],
+            'auto_delete': False,
+        })
+        mail.send()
+        call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
+        if call.exists():
+            call.write({'partner_id': partner.id})
+            call.message_post(
+                body='Catalogo inviato a %s con allegato %s, cc %s' % (
+                    html.escape(email_to),
+                    html.escape(attachment.name or ''),
+                    html.escape(', '.join(cc_emails)),
+                ),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        return {
+            'ok': True,
+            'partner_id': partner.id,
+            'mail_id': mail.id,
+            'template_id': template.id if template else None,
+            'attachment_id': attachment.id,
+            'attachment_name': attachment.name,
+            'email_to': email_to,
+        }
+
     def _send_inbound_call_email(self, call, payload=None):
         payload = payload or {}
         partner = call.partner_id
@@ -229,6 +321,12 @@ class CasaFolinoVoiceAIController(http.Controller):
                 'email': partner.email,
                 'phone': partner.phone or partner.mobile,
             })
+
+        if tool_name == 'send_catalog_email':
+            try:
+                return request.make_json_response(self._send_catalog_email(payload))
+            except Exception as exc:
+                return request.make_json_response({'ok': False, 'error': str(exc)}, status=500)
 
         if tool_name == 'lookup_customer':
             if not partner:
@@ -697,6 +795,12 @@ class CasaFolinoVoiceAIController(http.Controller):
                 'email': partner.email,
                 'phone': partner.phone or partner.mobile,
             }
+
+        if tool_name == 'send_catalog_email':
+            try:
+                return self._send_catalog_email(payload)
+            except Exception as exc:
+                return {'ok': False, 'error': str(exc)}
 
         if tool_name == 'lookup_customer':
             if not partner:
