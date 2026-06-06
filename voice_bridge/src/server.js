@@ -484,7 +484,7 @@ wss.on('connection', (ws, req) => {
           openAiWs.send(JSON.stringify(sessionUpdate));
           
           // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei e la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Nel frattempo la aiuto volentieri io: per quale motivo chiama? Vuole fare un ordine, ha problemi con un ordine, oppure ha bisogno di informazioni commerciali?";
+          const rawGreetingText = agentPayload?.first_message || "Buongiorno, sono Giulia di CasaFolino. Lei è la chiamata numero {queue_position} in coda, ma non si preoccupi: i tempi di attesa sono molto bassi. Nel frattempo la aiuto volentieri io: per quale motivo chiama? Vuole fare un ordine, ha problemi con un ordine, oppure ha bisogno di informazioni commerciali?";
           const greetingText = formatGreetingText(rawGreetingText, callSid);
           const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Giulia di CasaFolino, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({
