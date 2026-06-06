@@ -52,7 +52,7 @@ class MrpProductionHaccpExtend(models.Model):
         string="Schede Tracciabilita",
     )
     haccp_traceability_count = fields.Integer(
-        string="Schede Tracciabilita",
+        string="N. Schede Tracciabilita",
         compute="_compute_haccp_traceability_count",
     )
 
