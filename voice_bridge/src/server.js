@@ -268,6 +268,39 @@ async function handleTwilioOutbound(req, res, url) {
   sendTwiML(res, twiml);
 }
 
+async function redirectLiveCallToFallback(callSid, reason = 'openai_error') {
+  if (!callSid || !config.twilioAccountSid || !config.twilioAuthToken || !config.publicBridgeUrl) {
+    log('error', 'Cannot redirect live call to fallback: missing call SID or Twilio config', { callSid, reason });
+    return false;
+  }
+  const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${config.twilioAccountSid}/Calls/${callSid}.json`;
+  const fallbackUrl = `${config.publicBridgeUrl}/twilio/fallback?reason=${encodeURIComponent(reason)}`;
+  const response = await fetch(twilioUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({ Url: fallbackUrl })
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Twilio fallback redirect failed: ${response.status} ${detail}`);
+  }
+  log('warn', 'Live call redirected to Twilio fallback', { callSid, reason });
+  return true;
+}
+
+async function handleTwilioFallback(req, res, url) {
+  const reason = url.searchParams.get('reason') || 'temporary_unavailable';
+  log('warn', 'Twilio fallback TwiML requested', { reason });
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="it-IT" voice="alice">Buongiorno, sono Giulia di CasaFolino. In questo momento sto avendo un problema tecnico temporaneo sulla linea. Non si preoccupi: abbiamo registrato la chiamata e la invitiamo a richiamare tra qualche minuto. Grazie da CasaFolino.</Say>
+</Response>`;
+  sendTwiML(res, twiml);
+}
+
 async function handleTwilioTransfer(req, res, url) {
   const target = url.searchParams.get('target') || config.humanTransferUri;
   log('info', 'Twilio call transfer TwiML requested', { target });
@@ -344,6 +377,11 @@ async function router(req, res) {
       return;
     }
 
+    if (req.method === 'POST' && url.pathname === '/twilio/fallback') {
+      await handleTwilioFallback(req, res, url);
+      return;
+    }
+
     sendJson(res, 404, { ok: false, error: 'not found' });
   } catch (error) {
     log('error', 'request failed', { message: error.message });
@@ -377,6 +415,7 @@ wss.on('connection', (ws, req) => {
   let callState = 'connecting';
   let transcript = [];
   let lastSpeechStartedAt = 0;
+  let fallbackRedirected = false;
   
   log('info', 'New Twilio WebSocket media-stream connection established', { jobId });
   
@@ -669,12 +708,20 @@ wss.on('connection', (ws, req) => {
           
           if (openAiMsg.type === 'error') {
             log('error', 'OpenAI Realtime session error', openAiMsg.error);
+            if (!fallbackRedirected && callSid) {
+              fallbackRedirected = true;
+              try {
+                await redirectLiveCallToFallback(callSid, openAiMsg.error?.code || openAiMsg.error?.type || 'openai_error');
+              } catch (err) {
+                log('error', 'Failed to redirect call after OpenAI error', { message: err.message });
+              }
+            }
           }
         });
         
         openAiWs.on('close', () => {
           log('info', 'OpenAI Realtime connection closed');
-          if (callState === 'active') {
+          if (callState === 'active' && !fallbackRedirected) {
             ws.close();
           }
         });
