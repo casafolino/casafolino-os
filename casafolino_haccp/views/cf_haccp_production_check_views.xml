@@ -99,6 +99,9 @@
                         <button name="action_genera_pdf_produzione" type="object"
                             string="Genera PDF" class="btn btn-secondary"
                             invisible="haccp_stato_firma == 'bozza'"/>
+                        <button name="action_haccp_open_traceability" type="object"
+                            string="Tracciabilita lotto" class="btn btn-secondary"/>
+                        <field name="haccp_traceability_count" invisible="1"/>
                     </div>
 
                     <!-- PREREQUISITI -->

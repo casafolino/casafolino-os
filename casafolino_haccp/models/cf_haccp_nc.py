@@ -148,6 +148,10 @@ class CfHaccpNc(models.Model):
                 "date": str(rec.date or ""),
                 "production": rec.production_id.name or "-",
                 "customers": ", ".join(rec.partner_ids.mapped("name")[:2]) or "-",
+                "status": rec.trace_status or "watch",
+                "status_label": dict(rec._fields["trace_status"].selection).get(
+                    rec.trace_status, "Da presidiare"),
+                "risk_count": rec.nc_count + rec.quarantine_count + rec.ccp_ko_count,
             } for rec in recent_traces],
             "active_quarantine_rows": [{
                 "id": rec.id,

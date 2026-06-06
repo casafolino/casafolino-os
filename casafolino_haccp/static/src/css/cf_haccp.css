@@ -290,13 +290,26 @@
 
 .cf-trace-row {
     display: grid;
-    grid-template-columns: 170px 1fr 96px;
+    grid-template-columns: 170px 1fr 118px;
     gap: 14px;
     align-items: center;
     padding: 12px;
     border: 1px solid #EEEAE0;
+    border-left: 4px solid #D8D2C4;
     border-radius: 8px;
     background: #FCFBF8;
+}
+
+.cf-trace-complete {
+    border-left-color: #2F7D5A;
+}
+
+.cf-trace-watch {
+    border-left-color: #C58B1E;
+}
+
+.cf-trace-blocked {
+    border-left-color: #B23A2E;
 }
 
 .cf-trace-lot strong,
@@ -323,6 +336,19 @@
 .cf-trace-route-line {
     height: 2px;
     background: #D8D2C4;
+}
+
+.cf-trace-meta {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    font-size: 12px;
+    color: var(--cf-haccp-muted);
+}
+
+.cf-trace-meta span,
+.cf-trace-meta strong {
+    color: var(--cf-haccp-ink);
 }
 
 .cf-stage-flow {

@@ -116,7 +116,7 @@
                         <div class="cf-trace-list">
                             <t t-if="state.data.recent_traces.length">
                                 <t t-foreach="state.data.recent_traces" t-as="trace" t-key="trace.id">
-                                    <div class="cf-trace-row">
+                                    <div t-att-class="'cf-trace-row cf-trace-' + trace.status">
                                         <div class="cf-trace-lot">
                                             <strong><t t-esc="trace.lotto_pf"/></strong>
                                             <span>MP <t t-esc="trace.lotto_mp"/></span>
@@ -126,7 +126,11 @@
                                             <div class="cf-trace-route-line"/>
                                             <span><t t-esc="trace.customers"/></span>
                                         </div>
-                                        <div class="cf-trace-date"><t t-esc="trace.date"/></div>
+                                        <div class="cf-trace-meta">
+                                            <span><t t-esc="trace.status_label"/></span>
+                                            <strong><t t-esc="trace.risk_count"/> alert</strong>
+                                            <small><t t-esc="trace.date"/></small>
+                                        </div>
                                     </div>
                                 </t>
                             </t>

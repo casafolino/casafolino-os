@@ -46,6 +46,15 @@ class MrpProductionHaccpExtend(models.Model):
     haccp_ccp_ids = fields.One2many(
         "cf.haccp.ccp.line", "production_id", "Monitoraggio CCP",
     )
+    haccp_traceability_ids = fields.One2many(
+        "cf.haccp.tracciabilita",
+        "production_id",
+        string="Schede Tracciabilita",
+    )
+    haccp_traceability_count = fields.Integer(
+        string="Schede Tracciabilita",
+        compute="_compute_haccp_traceability_count",
+    )
 
     # ── TEMPERATURE CIOCCOLATO/CREME ──
     haccp_temp_fusione = fields.Float("Temperatura Fusione (°C)")
@@ -100,6 +109,18 @@ class MrpProductionHaccpExtend(models.Model):
                 ) * 100
             else:
                 rec.haccp_resa = 0.0
+
+    @api.depends("haccp_traceability_ids")
+    def _compute_haccp_traceability_count(self):
+        for rec in self:
+            rec.haccp_traceability_count = len(rec.haccp_traceability_ids)
+
+    def _cf_haccp_raw_lot_names(self):
+        self.ensure_one()
+        lots = self.move_raw_ids.move_line_ids.lot_id
+        if not lots and "lot_ids" in self.move_raw_ids._fields:
+            lots = self.move_raw_ids.lot_ids
+        return ", ".join(lots.mapped("name"))
 
     def _cf_haccp_enforce_production_gate(self):
         value = self.env["ir.config_parameter"].sudo().get_param(
@@ -177,6 +198,30 @@ class MrpProductionHaccpExtend(models.Model):
         return self.env.ref(
             "casafolino_haccp.report_haccp_produzione"
         ).report_action(self)
+
+    def action_haccp_open_traceability(self):
+        self.ensure_one()
+        trace = self.haccp_traceability_ids[:1]
+        if not trace:
+            trace = self.env["cf.haccp.tracciabilita"].create({
+                "production_id": self.id,
+                "lotto_pf": self.lot_producing_id.name or self.name,
+                "lotto_mp": self._cf_haccp_raw_lot_names(),
+                "date": fields.Date.today(),
+            })
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Tracciabilita lotto",
+            "res_model": "cf.haccp.tracciabilita",
+            "view_mode": "form",
+            "res_id": trace.id,
+            "target": "current",
+            "context": {
+                "default_production_id": self.id,
+                "default_lotto_pf": self.lot_producing_id.name or self.name,
+                "default_lotto_mp": self._cf_haccp_raw_lot_names(),
+            },
+        }
 
 
 class CfHaccpCcpLine(models.Model):

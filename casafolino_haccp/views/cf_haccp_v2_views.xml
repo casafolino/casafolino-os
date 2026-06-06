@@ -247,19 +247,49 @@
         <field name="arch" type="xml">
             <form string="Scheda Tracciabilita">
                 <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_production" type="object" class="oe_stat_button"
+                            icon="fa-industry" invisible="not production_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Produzione</span>
+                            </div>
+                        </button>
+                        <button name="action_open_nc" type="object" class="oe_stat_button"
+                            icon="fa-exclamation-triangle">
+                            <field name="nc_count" widget="statinfo" string="NC aperte"/>
+                        </button>
+                        <button name="action_open_quarantine" type="object" class="oe_stat_button"
+                            icon="fa-ban">
+                            <field name="quarantine_count" widget="statinfo" string="Quarantene"/>
+                        </button>
+                    </div>
+                    <div class="cf-haccp-form-banner">
+                        <div>
+                            <strong>Tracciabilita lotto end-to-end</strong>
+                            <span>Materia prima, produzione, lotto finito, clienti e blocchi qualita collegati in un'unica evidenza.</span>
+                        </div>
+                        <field name="trace_status" widget="badge"
+                            decoration-success="trace_status == 'complete'"
+                            decoration-warning="trace_status == 'watch'"
+                            decoration-danger="trace_status == 'blocked'"/>
+                    </div>
                     <div class="oe_title">
                         <label for="lotto_pf"/>
                         <h1><field name="lotto_pf"/></h1>
                     </div>
                     <group>
-                        <group string="Lotti">
+                        <group string="Identita lotto">
                             <field name="date"/>
-                            <field name="lotto_mp"/>
                             <field name="lotto_pf"/>
+                            <field name="lot_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
                             <field name="production_id"/>
                         </group>
-                        <group string="Destinatari">
+                        <group string="Copertura e rischio">
+                            <field name="lotto_mp"/>
                             <field name="partner_ids" widget="many2many_tags"/>
+                            <field name="customer_count" readonly="1"/>
+                            <field name="ccp_ko_count" readonly="1"/>
                         </group>
                     </group>
                     <group string="Note">
@@ -275,12 +305,25 @@
         <field name="name">cf.haccp.tracciabilita.list</field>
         <field name="model">cf.haccp.tracciabilita</field>
         <field name="arch" type="xml">
-            <list string="Tracciabilita">
+            <list string="Tracciabilita"
+                  decoration-success="trace_status == 'complete'"
+                  decoration-warning="trace_status == 'watch'"
+                  decoration-danger="trace_status == 'blocked'">
+                <field name="trace_status" widget="badge"
+                    decoration-success="trace_status == 'complete'"
+                    decoration-warning="trace_status == 'watch'"
+                    decoration-danger="trace_status == 'blocked'"/>
                 <field name="date"/>
-                <field name="lotto_mp"/>
                 <field name="lotto_pf"/>
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="lotto_mp"/>
                 <field name="production_id"/>
                 <field name="partner_ids" widget="many2many_tags"/>
+                <field name="customer_count"/>
+                <field name="nc_count"/>
+                <field name="quarantine_count"/>
+                <field name="ccp_ko_count"/>
             </list>
         </field>
     </record>
