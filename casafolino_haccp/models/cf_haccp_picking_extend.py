@@ -3,6 +3,7 @@ import hashlib
 import json
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 
 class StockPickingHaccpExtend(models.Model):
@@ -91,6 +92,56 @@ class StockPickingHaccpExtend(models.Model):
             else:
                 rec.haccp_state = "pending"
 
+    def _cf_haccp_enforce_receipt_gate(self):
+        value = self.env["ir.config_parameter"].sudo().get_param(
+            "cf_haccp.enforce_receipt_gate", "1"
+        )
+        return value not in ("0", "False", "false")
+
+    def _cf_haccp_requires_receipt_gate(self):
+        self.ensure_one()
+        if self.picking_type_code != "incoming":
+            return False
+        products = self.move_ids.mapped("product_id.product_tmpl_id")
+        return any(product.is_raw_material for product in products)
+
+    def _cf_haccp_check_receipt_gate(self):
+        for rec in self:
+            if not rec._cf_haccp_enforce_receipt_gate():
+                continue
+            if not rec._cf_haccp_requires_receipt_gate():
+                continue
+            missing = []
+            if not rec.haccp_line_ids:
+                missing.append("almeno una riga controllo prodotto")
+            if rec.haccp_esito == "pending":
+                missing.append("esito globale HACCP")
+            if rec.haccp_stato_firma != "approvato":
+                missing.append("firma e approvazione responsabile")
+            if rec.haccp_esito == "accettato_riserva" and not rec.haccp_note:
+                missing.append("note obbligatorie per accettazione con riserva")
+            pending_lines = rec.haccp_line_ids.filtered(lambda line: line.esito_riga == "pending")
+            if pending_lines:
+                missing.append("esito su tutte le righe prodotto")
+            blocked_lines = rec.haccp_line_ids.filtered(
+                lambda line: line.esito_riga in ("quarantena", "rifiutato")
+            )
+            if rec.haccp_esito in ("quarantena", "rifiutato") or blocked_lines:
+                raise UserError(
+                    "Validazione bloccata: il controllo HACCP e in stato "
+                    "quarantena/rifiutato. Aprire quarantena o NC prima di "
+                    "validare la ricezione."
+                )
+            if missing:
+                raise UserError(
+                    "Validazione bloccata: completare HACCP ricezione (%s)."
+                    % ", ".join(missing)
+                )
+
+    def button_validate(self):
+        self._cf_haccp_check_receipt_gate()
+        return super().button_validate()
+
     def action_haccp_firma_operatore(self):
         for rec in self:
             payload = json.dumps({
@@ -105,6 +156,8 @@ class StockPickingHaccpExtend(models.Model):
 
     def action_haccp_approva(self):
         for rec in self:
+            if not rec.haccp_firma_operatore:
+                raise UserError("Firma operatore richiesta prima dell'approvazione HACCP.")
             payload = json.dumps({
                 "model": rec._name, "id": rec.id,
                 "user": rec.env.uid, "ts": str(fields.Datetime.now()),

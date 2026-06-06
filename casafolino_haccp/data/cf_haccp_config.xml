@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="param_cf_haccp_enforce_receipt_gate" model="ir.config_parameter">
+        <field name="key">cf_haccp.enforce_receipt_gate</field>
+        <field name="value">1</field>
+    </record>
+    <record id="param_cf_haccp_enforce_production_gate" model="ir.config_parameter">
+        <field name="key">cf_haccp.enforce_production_gate</field>
+        <field name="value">1</field>
+    </record>
+</odoo>

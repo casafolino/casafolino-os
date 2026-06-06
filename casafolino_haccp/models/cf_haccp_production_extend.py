@@ -3,6 +3,7 @@ import hashlib
 import json
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 
 class MrpProductionHaccpExtend(models.Model):
@@ -92,6 +93,52 @@ class MrpProductionHaccpExtend(models.Model):
             else:
                 rec.haccp_resa = 0.0
 
+    def _cf_haccp_enforce_production_gate(self):
+        value = self.env["ir.config_parameter"].sudo().get_param(
+            "cf_haccp.enforce_production_gate", "1"
+        )
+        return value not in ("0", "False", "false")
+
+    def _cf_haccp_check_production_gate(self):
+        required_checks = [
+            ("haccp_area_ok", "area sanificata"),
+            ("haccp_attrezzature_ok", "attrezzature calibrate"),
+            ("haccp_igiene_ok", "igiene personale"),
+            ("haccp_dpi_ok", "DPI"),
+            ("haccp_allergeni_ok", "cambio linea/allergeni"),
+            ("haccp_curva_ok", "curva temperaggio"),
+            ("haccp_peso_ok", "peso porzione"),
+            ("haccp_metalli_ok", "rilevatore metalli"),
+            ("haccp_imballo_ok", "imballaggio"),
+            ("haccp_etichetta_ok", "etichetta"),
+            ("haccp_lotto_etichetta_ok", "lotto/scadenza su etichetta"),
+        ]
+        for rec in self:
+            if not rec._cf_haccp_enforce_production_gate():
+                continue
+            missing = [label for field, label in required_checks if not rec[field]]
+            failed_ccp = rec.haccp_ccp_ids.filtered(lambda line: not line.ccp_ok)
+            if rec.haccp_esito != "conforme":
+                missing.append("esito produzione conforme")
+            if rec.haccp_stato_firma != "approvato":
+                missing.append("firma e approvazione responsabile qualita")
+            if not rec.haccp_ccp_ids:
+                missing.append("almeno un CCP monitorato")
+            if failed_ccp:
+                raise UserError(
+                    "Chiusura produzione bloccata: esistono CCP non conformi. "
+                    "Registrare azione correttiva o bloccare il lotto."
+                )
+            if missing:
+                raise UserError(
+                    "Chiusura produzione bloccata: completare HACCP produzione (%s)."
+                    % ", ".join(missing)
+                )
+
+    def button_mark_done(self):
+        self._cf_haccp_check_production_gate()
+        return super().button_mark_done()
+
     def action_haccp_firma_operatore(self):
         for rec in self:
             payload = json.dumps({
@@ -105,6 +152,8 @@ class MrpProductionHaccpExtend(models.Model):
 
     def action_haccp_approva(self):
         for rec in self:
+            if not rec.haccp_firma_operatore:
+                raise UserError("Firma operatore richiesta prima dell'approvazione HACCP.")
             payload = json.dumps({
                 "model": rec._name, "id": rec.id,
                 "user": rec.env.uid, "ts": str(fields.Datetime.now()),

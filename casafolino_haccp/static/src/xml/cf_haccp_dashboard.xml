@@ -107,7 +107,9 @@
                         <div class="cf-nc-arrow">→</div>
                         <div class="cf-nc-stage-box" style="border-color:#28a745;">
                             <div class="cf-nc-stage-label">Chiuse</div>
-                            <div class="cf-nc-stage-count" style="color:#28a745;">0</div>
+                            <div class="cf-nc-stage-count" style="color:#28a745;">
+                                <t t-esc="state.data.nc_closed"/>
+                            </div>
                         </div>
                     </div>
                 </div>

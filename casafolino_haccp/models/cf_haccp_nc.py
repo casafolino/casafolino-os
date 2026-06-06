@@ -79,6 +79,7 @@ class CfHaccpNc(models.Model):
             "nc_open": nc_counts.get("open", 0),
             "nc_analysis": nc_counts.get("analysis", 0),
             "nc_action": nc_counts.get("action", 0),
+            "nc_closed": nc_counts.get("closed", 0),
             "nc_critical_open": critical_open,
             "instruments_expiring": calib.search_count([("state", "=", "expiring")]),
             "instruments_expired": calib.search_count([("state", "=", "expired")]),
