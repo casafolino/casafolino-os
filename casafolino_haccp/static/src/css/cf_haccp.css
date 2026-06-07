@@ -547,6 +547,10 @@
     gap: 14px;
 }
 
+.cf-haccp-recall-chain-first {
+    margin-bottom: 14px;
+}
+
 .cf-haccp-recall-card {
     border: 1px solid var(--cf-haccp-border);
     border-radius: 10px;
@@ -597,9 +601,40 @@
     font-weight: 800;
 }
 
+.cf-haccp-recall-strip {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr repeat(3, minmax(90px, .55fr));
+    gap: 10px;
+    padding: 12px 14px;
+    background: #F5E6C8;
+    border-bottom: 1px solid var(--cf-haccp-border);
+}
+
+.cf-haccp-recall-strip div {
+    min-width: 0;
+}
+
+.cf-haccp-recall-strip span {
+    display: block;
+    color: var(--cf-haccp-muted);
+    font-size: 10px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+.cf-haccp-recall-strip strong {
+    display: block;
+    overflow: hidden;
+    color: var(--cf-haccp-brown);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .cf-haccp-recall-flow {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     padding: 14px;
 }
@@ -622,6 +657,10 @@
 
 .cf-haccp-flow-wide {
     grid-column: span 2;
+}
+
+.cf-haccp-impact-section {
+    border-left: 4px solid var(--cf-haccp-blue) !important;
 }
 
 .cf-haccp-flow-row {
@@ -652,6 +691,18 @@
 .cf-haccp-chip-list {
     display: grid;
     gap: 8px;
+}
+
+.cf-haccp-chip-list-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cf-haccp-chip-list-compact .cf-haccp-lot-chip {
+    margin-bottom: 0;
+}
+
+.cf-haccp-recall-matches-secondary {
+    opacity: .92;
 }
 
 .cf-haccp-more-btn {
@@ -1056,8 +1107,14 @@
 
 @media (max-width: 1100px) {
     .cf-haccp-hero,
-    .cf-haccp-main-grid {
+    .cf-haccp-main-grid,
+    .cf-haccp-recall-flow,
+    .cf-haccp-recall-strip,
+    .cf-haccp-recall-matches {
         grid-template-columns: 1fr;
+    }
+    .cf-haccp-flow-wide {
+        grid-column: span 1;
     }
     .cf-haccp-kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1071,6 +1128,9 @@
     .cf-haccp-kpi-grid { grid-template-columns: 1fr; }
     .cf-trace-row,
     .cf-trace-route {
+        grid-template-columns: 1fr;
+    }
+    .cf-haccp-chip-list-compact {
         grid-template-columns: 1fr;
     }
 }
