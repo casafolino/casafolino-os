@@ -875,26 +875,8 @@ wss.on('connection', (ws, req) => {
           }
 
           if (openAiMsg.type === 'input_audio_buffer.speech_started') {
-            if (!openAiResponseActive) {
-              log('debug', 'Ignoring speech_started because no OpenAI response is active');
-              return;
-            }
-            const now = Date.now();
-            if (now - lastSpeechStartedAt < config.bargeInMinIntervalMs) {
-              log('debug', 'Ignoring duplicate/noisy speech_started event', { elapsed_ms: now - lastSpeechStartedAt });
-              return;
-            }
-            lastSpeechStartedAt = now;
-            log('info', 'Detected user barge-in / speech started. Interrupting agent response...');
-            if (streamSid) {
-              ws.send(JSON.stringify({
-                event: 'clear',
-                streamSid: streamSid
-              }));
-            }
-            openAiWs.send(JSON.stringify({
-              type: 'response.cancel'
-            }));
+            log('debug', 'OpenAI speech_started received; automatic interruption is disabled');
+            return;
           }
 
           if (openAiMsg.type === 'conversation.item.input_audio_transcription.completed') {
@@ -905,13 +887,20 @@ wss.on('connection', (ws, req) => {
               .replace(/\s+/g, ' ')
               .trim()
               .toLowerCase();
+            const meaningfulWords = normalizedTranscript
+              .split(' ')
+              .filter(word => word.length >= 3);
 
             if (!itemId || respondedTranscriptionItems.has(itemId)) {
               return;
             }
             respondedTranscriptionItems.add(itemId);
 
-            if (normalizedTranscript.length < 4 || ['si', 'sì', 'ok', 'eh', 'ah', 'mh', 'mmm'].includes(normalizedTranscript)) {
+            if (
+              normalizedTranscript.length < 12 ||
+              meaningfulWords.length < 2 ||
+              ['si', 'sì', 'ok', 'eh', 'ah', 'mh', 'mmm', 'no'].includes(normalizedTranscript)
+            ) {
               log('info', 'Ignoring short/noisy OpenAI transcription turn', { transcript: transcriptText });
               return;
             }
