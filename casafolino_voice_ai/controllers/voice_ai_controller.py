@@ -55,6 +55,14 @@ class CasaFolinoVoiceAIController(http.Controller):
             return '%d:%02d:%02d' % (hours, minutes, sec)
         return '%d:%02d' % (minutes, sec)
 
+    def _call_duration_seconds(self, call):
+        if call.duration_seconds:
+            return call.duration_seconds
+        if not call.started_at:
+            return 0
+        end_at = call.ended_at or fields.Datetime.now()
+        return max(0, int((end_at - call.started_at).total_seconds()))
+
     def _call_reason(self, call):
         text = (call.summary or call.next_action or '').strip()
         if text:
@@ -75,7 +83,8 @@ class CasaFolinoVoiceAIController(http.Controller):
         failed_calls = calls.filtered(lambda call: call.state == 'failed')
         transferred_calls = calls.filtered(lambda call: call.state == 'transferred')
         inbound_calls = calls.filtered(lambda call: call.direction == 'inbound')
-        durations = [call.duration_seconds for call in calls if call.duration_seconds]
+        call_durations = {call.id: self._call_duration_seconds(call) for call in calls}
+        durations = [duration for duration in call_durations.values() if duration]
         total_duration = sum(durations)
         avg_duration = round(total_duration / len(durations)) if durations else 0
         rows = []
@@ -93,7 +102,7 @@ class CasaFolinoVoiceAIController(http.Controller):
                 'outcome': dict(call._fields['outcome'].selection).get(call.outcome, call.outcome or ''),
                 'agent': call.agent_id.display_name or '',
                 'reason': self._call_reason(call),
-                'duration': self._format_duration(call.duration_seconds),
+                'duration': self._format_duration(call_durations.get(call.id, 0)),
                 'next_action': (call.next_action or '').strip(),
                 'url': '/web#id=%s&model=casafolino.voice.call&view_type=form' % call.id,
             })
