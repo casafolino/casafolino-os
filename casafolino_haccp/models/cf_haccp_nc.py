@@ -100,13 +100,17 @@ class CfHaccpNc(models.Model):
     def dashboard_lot_search(self, query):
         query = (query or "").strip()
         if not query:
-            return {"query": "", "products": [], "lots": [], "traces": [], "summary": {}}
+            return {
+                "query": "",
+                "products": [],
+                "lots": [],
+                "chains": [],
+                "summary": {},
+            }
 
         Product = self.env["product.product"].sudo()
         Lot = self.env["stock.lot"].sudo()
-        MoveLine = self.env["stock.move.line"].sudo()
         Production = self.env["mrp.production"].sudo()
-        Trace = self.env["cf.haccp.tracciabilita"].sudo()
 
         products = Product.search([
             "|", "|",
@@ -127,29 +131,29 @@ class CfHaccpNc(models.Model):
             ("move_raw_ids.move_line_ids.lot_id", "in", lots.ids or [0])
         ], limit=80)
         produced_lots = consumed_productions.mapped("lot_producing_id")
-        all_lots = lots | produced_lots
+        direct_produced_lots = Production.search([
+            ("lot_producing_id", "in", lots.ids or [0])
+        ], limit=80).mapped("lot_producing_id")
+        all_lots = lots | produced_lots | direct_produced_lots
         all_products = products | all_lots.mapped("product_id")
 
-        traces = Trace.browse()
-        for lot in all_lots[:40]:
-            trace = Trace.search([("lot_id", "=", lot.id)], limit=1)
-            if not trace:
-                trace = Trace.create({"lot_id": lot.id, "lotto_pf": lot.name})
-            trace.action_build_timeline_from_lot()
-            traces |= trace
-
-        outgoing_lines = MoveLine.search([
-            ("lot_id", "in", all_lots.ids or [0]),
-            ("picking_id.picking_type_id.code", "=", "outgoing"),
-        ], limit=120)
+        chains = [self._dashboard_lot_chain(lot) for lot in all_lots[:30]]
+        delivery_names = {
+            delivery["name"]
+            for chain in chains
+            for delivery in chain["deliveries"] + chain["impacted_deliveries"]
+        }
 
         return {
             "query": query,
             "summary": {
                 "products": len(all_products),
                 "lots": len(all_lots),
-                "traces": len(traces),
-                "deliveries": len(outgoing_lines.mapped("picking_id")),
+                "productions": sum(
+                    len(chain["productions"]) + len(chain["impacted_productions"])
+                    for chain in chains
+                ),
+                "deliveries": len(delivery_names),
             },
             "products": [
                 {
@@ -157,7 +161,6 @@ class CfHaccpNc(models.Model):
                     "name": product.display_name,
                     "sku": product.default_code or "",
                     "barcode": product.barcode or "",
-                    "url": "/odoo/product.product/%s" % product.id,
                 }
                 for product in all_products[:20]
             ],
@@ -166,20 +169,107 @@ class CfHaccpNc(models.Model):
                     "id": lot.id,
                     "name": lot.name,
                     "product": lot.product_id.display_name,
-                    "url": "/odoo/stock.lot/%s" % lot.id,
-                    "trace_url": "/odoo/cf.haccp.tracciabilita/%s" % (
-                        Trace.search([("lot_id", "=", lot.id)], limit=1).id
-                    ),
                 }
                 for lot in all_lots[:40]
             ],
-            "traces": [
-                {
-                    "id": trace.id,
-                    "name": trace.display_name,
-                    "lot": trace.lot_id.name if trace.lot_id else trace.lotto_pf,
-                    "url": "/odoo/cf.haccp.tracciabilita/%s" % trace.id,
-                }
-                for trace in traces[:40]
-            ],
+            "chains": chains,
         }
+
+    def _dashboard_lot_chain(self, lot):
+        MoveLine = self.env["stock.move.line"].sudo()
+        Production = self.env["mrp.production"].sudo()
+
+        produced = Production.search([("lot_producing_id", "=", lot.id)], limit=40)
+        consumed = Production.search([
+            ("move_raw_ids.move_line_ids.lot_id", "=", lot.id)
+        ], limit=80)
+
+        raw_lots = produced.mapped("move_raw_ids.move_line_ids.lot_id")
+        finished_lots = consumed.mapped("lot_producing_id")
+        outgoing_lots = lot | finished_lots
+
+        incoming_lines = MoveLine.search([
+            ("lot_id", "=", lot.id),
+            ("picking_id.picking_type_id.code", "=", "incoming"),
+        ], limit=40)
+        outgoing_lines = MoveLine.search([
+            ("lot_id", "in", outgoing_lots.ids or [0]),
+            ("picking_id.picking_type_id.code", "=", "outgoing"),
+        ], limit=160)
+
+        direct_outgoing = outgoing_lines.filtered(lambda line: line.lot_id == lot)
+        impacted_outgoing = outgoing_lines.filtered(lambda line: line.lot_id != lot)
+
+        return {
+            "id": lot.id,
+            "lot": lot.name or "",
+            "product": lot.product_id.display_name or "",
+            "sku": lot.product_id.default_code or "",
+            "barcode": lot.product_id.barcode or "",
+            "role": self._dashboard_lot_role(produced, consumed),
+            "suppliers": self._dashboard_pickings(incoming_lines.mapped("picking_id")),
+            "productions": self._dashboard_productions(produced),
+            "raw_lots": self._dashboard_lots(raw_lots),
+            "deliveries": self._dashboard_deliveries(direct_outgoing.mapped("picking_id")),
+            "impacted_lots": self._dashboard_lots(finished_lots),
+            "impacted_productions": self._dashboard_productions(consumed),
+            "impacted_deliveries": self._dashboard_deliveries(impacted_outgoing.mapped("picking_id")),
+        }
+
+    def _dashboard_lot_role(self, produced, consumed):
+        if produced and consumed:
+            return "Prodotto finito e materia prima"
+        if produced:
+            return "Prodotto finito"
+        if consumed:
+            return "Materia prima"
+        return "Lotto movimentato"
+
+    def _dashboard_lots(self, lots):
+        return [
+            {
+                "id": lot.id,
+                "name": lot.name or "",
+                "product": lot.product_id.display_name or "",
+                "sku": lot.product_id.default_code or "",
+            }
+            for lot in lots[:80]
+        ]
+
+    def _dashboard_productions(self, productions):
+        return [
+            {
+                "id": production.id,
+                "name": production.display_name or production.name or "",
+                "product": production.product_id.display_name or "",
+                "lot": production.lot_producing_id.name or "",
+                "qty": production.product_qty,
+                "state": production.state or "",
+                "date": str(production.date_finished or production.date_start or "")[:19],
+            }
+            for production in productions[:80]
+        ]
+
+    def _dashboard_pickings(self, pickings):
+        return [
+            {
+                "id": picking.id,
+                "name": picking.display_name or picking.name or "",
+                "partner": picking.partner_id.display_name or "",
+                "date": str(picking.date_done or picking.scheduled_date or "")[:19],
+                "state": picking.state or "",
+            }
+            for picking in pickings[:80]
+        ]
+
+    def _dashboard_deliveries(self, pickings):
+        deliveries = self._dashboard_pickings(pickings)
+        seen = set()
+        unique = []
+        for delivery in deliveries:
+            key = delivery["id"]
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(delivery)
+        return unique

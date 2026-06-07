@@ -102,6 +102,15 @@ class CfHaccpDashboard extends Component {
         }
     }
 
+    async onLotDrill(ev) {
+        const query = ev.currentTarget.dataset.query;
+        if (!query) {
+            return;
+        }
+        this.state.lotSearchQuery = query;
+        await this.onLotSearch();
+    }
+
     onLotSearchInput(ev) {
         this.state.lotSearchQuery = ev.target.value;
         if (!this.state.lotSearchQuery) {

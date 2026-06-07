@@ -79,52 +79,135 @@
                             <div class="cf-haccp-search-summary">
                                 <span><t t-esc="state.lotSearchResult.summary.products"/> prodotti</span>
                                 <span><t t-esc="state.lotSearchResult.summary.lots"/> lotti</span>
-                                <span><t t-esc="state.lotSearchResult.summary.traces"/> cronostorie</span>
+                                <span><t t-esc="state.lotSearchResult.summary.productions"/> produzioni</span>
                                 <span><t t-esc="state.lotSearchResult.summary.deliveries"/> consegne</span>
                             </div>
-                            <div class="cf-haccp-search-grid">
-                                <div>
-                                    <h3>Prodotti</h3>
+                            <div class="cf-haccp-recall-matches">
+                                <div class="cf-haccp-recall-block">
+                                    <h3>Corrispondenze prodotto</h3>
                                     <t t-if="state.lotSearchResult.products.length">
                                         <t t-foreach="state.lotSearchResult.products" t-as="product" t-key="product.id">
-                                            <a class="cf-haccp-search-row" t-att-href="product.url">
+                                            <div class="cf-haccp-search-row">
                                                 <strong><t t-esc="product.name"/></strong>
                                                 <small>SKU <t t-esc="product.sku || '-'"/> · Barcode <t t-esc="product.barcode || '-'"/></small>
-                                            </a>
+                                            </div>
                                         </t>
                                     </t>
                                     <t t-else="">
                                         <div class="cf-haccp-search-empty">Nessun prodotto</div>
                                     </t>
                                 </div>
-                                <div>
-                                    <h3>Lotti</h3>
+                                <div class="cf-haccp-recall-block">
+                                    <h3>Lotti trovati</h3>
                                     <t t-if="state.lotSearchResult.lots.length">
                                         <t t-foreach="state.lotSearchResult.lots" t-as="lot" t-key="lot.id">
-                                            <a class="cf-haccp-search-row" t-att-href="lot.trace_url">
+                                            <button type="button" class="cf-haccp-lot-chip" t-att-data-query="lot.name" t-on-click="onLotDrill">
                                                 <strong><t t-esc="lot.name"/></strong>
                                                 <small><t t-esc="lot.product"/></small>
-                                            </a>
+                                            </button>
                                         </t>
                                     </t>
                                     <t t-else="">
                                         <div class="cf-haccp-search-empty">Nessun lotto</div>
                                     </t>
                                 </div>
-                                <div>
-                                    <h3>Cronostorie</h3>
-                                    <t t-if="state.lotSearchResult.traces.length">
-                                        <t t-foreach="state.lotSearchResult.traces" t-as="trace" t-key="trace.id">
-                                            <a class="cf-haccp-search-row" t-att-href="trace.url">
-                                                <strong><t t-esc="trace.lot"/></strong>
-                                                <small><t t-esc="trace.name"/></small>
-                                            </a>
-                                        </t>
+                            </div>
+                            <div class="cf-haccp-recall-chain">
+                                <t t-if="state.lotSearchResult.chains.length">
+                                    <t t-foreach="state.lotSearchResult.chains" t-as="chain" t-key="chain.id">
+                                        <article class="cf-haccp-recall-card">
+                                            <header class="cf-haccp-recall-head">
+                                                <div>
+                                                    <span><t t-esc="chain.role"/></span>
+                                                    <h3><t t-esc="chain.lot"/></h3>
+                                                    <small><t t-esc="chain.product"/> · SKU <t t-esc="chain.sku || '-'"/></small>
+                                                </div>
+                                                <button type="button" t-att-data-query="chain.lot" t-on-click="onLotDrill">Aggiorna pista</button>
+                                            </header>
+                                            <div class="cf-haccp-recall-flow">
+                                                <section>
+                                                    <h4>Origine / ricezione</h4>
+                                                    <t t-if="chain.suppliers.length">
+                                                        <t t-foreach="chain.suppliers" t-as="supplier" t-key="supplier.id">
+                                                            <div class="cf-haccp-flow-row">
+                                                                <strong><t t-esc="supplier.name"/></strong>
+                                                                <small><t t-esc="supplier.partner || 'Fornitore non indicato'"/> · <t t-esc="supplier.date || '-'"/></small>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else=""><div class="cf-haccp-search-empty">Nessuna ricezione collegata</div></t>
+                                                </section>
+                                                <section>
+                                                    <h4>Produzione del lotto</h4>
+                                                    <t t-if="chain.productions.length">
+                                                        <t t-foreach="chain.productions" t-as="production" t-key="production.id">
+                                                            <div class="cf-haccp-flow-row">
+                                                                <strong><t t-esc="production.name"/></strong>
+                                                                <small><t t-esc="production.product"/> · <t t-esc="production.date || '-'"/> · <t t-esc="production.state"/></small>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else=""><div class="cf-haccp-search-empty">Non risulta lotto prodotto</div></t>
+                                                </section>
+                                                <section>
+                                                    <h4>Materie prime usate</h4>
+                                                    <t t-if="chain.raw_lots.length">
+                                                        <div class="cf-haccp-chip-list">
+                                                            <t t-foreach="chain.raw_lots" t-as="raw" t-key="raw.id">
+                                                                <button type="button" class="cf-haccp-lot-chip cf-chip-warn" t-att-data-query="raw.name" t-on-click="onLotDrill">
+                                                                    <strong><t t-esc="raw.name"/></strong>
+                                                                    <small><t t-esc="raw.product"/></small>
+                                                                </button>
+                                                            </t>
+                                                        </div>
+                                                    </t>
+                                                    <t t-else=""><div class="cf-haccp-search-empty">Nessuna materia prima letta dalla produzione</div></t>
+                                                </section>
+                                                <section>
+                                                    <h4>Vendite / clienti diretti</h4>
+                                                    <t t-if="chain.deliveries.length">
+                                                        <t t-foreach="chain.deliveries" t-as="delivery" t-key="delivery.id">
+                                                            <div class="cf-haccp-flow-row">
+                                                                <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
+                                                                <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else=""><div class="cf-haccp-search-empty">Nessuna vendita diretta trovata</div></t>
+                                                </section>
+                                                <section class="cf-haccp-flow-wide">
+                                                    <h4>Se questo lotto e materia prima: prodotti finiti impattati</h4>
+                                                    <t t-if="chain.impacted_lots.length">
+                                                        <div class="cf-haccp-chip-list">
+                                                            <t t-foreach="chain.impacted_lots" t-as="impactLot" t-key="impactLot.id">
+                                                                <button type="button" class="cf-haccp-lot-chip cf-chip-impact" t-att-data-query="impactLot.name" t-on-click="onLotDrill">
+                                                                    <strong><t t-esc="impactLot.name"/></strong>
+                                                                    <small><t t-esc="impactLot.product"/></small>
+                                                                </button>
+                                                            </t>
+                                                        </div>
+                                                    </t>
+                                                    <t t-else=""><div class="cf-haccp-search-empty">Nessun prodotto finito impattato</div></t>
+                                                </section>
+                                                <section class="cf-haccp-flow-wide">
+                                                    <h4>Clienti potenzialmente coinvolti dai prodotti impattati</h4>
+                                                    <t t-if="chain.impacted_deliveries.length">
+                                                        <t t-foreach="chain.impacted_deliveries" t-as="delivery" t-key="delivery.id">
+                                                            <div class="cf-haccp-flow-row">
+                                                                <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
+                                                                <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else=""><div class="cf-haccp-search-empty">Nessuna consegna cliente collegata all'impatto</div></t>
+                                                </section>
+                                            </div>
+                                        </article>
                                     </t>
-                                    <t t-else="">
-                                        <div class="cf-haccp-search-empty">Nessuna cronostoria</div>
-                                    </t>
-                                </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="cf-haccp-search-empty">Nessuna catena di tracciabilita trovata.</div>
+                                </t>
                             </div>
                         </div>
                     </t>
