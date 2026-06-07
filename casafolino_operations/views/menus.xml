@@ -16,6 +16,139 @@
         <field name="padding">4</field>
     </record>
 
+    <!-- Recall Views -->
+    <record id="view_cf_recall_session_list" model="ir.ui.view">
+        <field name="name">cf.recall.session.list</field>
+        <field name="model">cf.recall.session</field>
+        <field name="arch" type="xml">
+            <list string="Sessioni Recall">
+                <field name="reference"/>
+                <field name="session_type"/>
+                <field name="lot_id"/>
+                <field name="state"/>
+                <field name="traceability_pct"/>
+                <field name="date_start"/>
+                <field name="operator_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_recall_session_form" model="ir.ui.view">
+        <field name="name">cf.recall.session.form</field>
+        <field name="model">cf.recall.session</field>
+        <field name="arch" type="xml">
+            <form string="Sessione Recall">
+                <header>
+                    <button name="action_run" type="object" string="Esegui Recall" class="btn-primary"
+                            invisible="state == 'done'"/>
+                    <button name="action_generate_customer_documents" type="object"
+                            string="Rigenera email e avviso"/>
+                    <button name="action_print_customer_notice" type="object"
+                            string="Stampa avviso cliente" class="btn-secondary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,running,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="reference"/>
+                        <h1><field name="reference"/></h1>
+                    </div>
+                    <group>
+                        <group string="Parametri Recall">
+                            <field name="session_type" widget="badge"/>
+                            <field name="lot_id"/>
+                            <field name="direction"/>
+                            <field name="operator_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Risultati">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration_seconds"/>
+                            <field name="nodes_count"/>
+                            <field name="traceability_pct"/>
+                        </group>
+                    </group>
+                    <group string="Riepilogo BRC / IFS">
+                        <field name="result_summary" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="MO Coinvolti" name="productions">
+                            <field name="production_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name" string="Riferimento"/>
+                                    <field name="product_id"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Lotti Tracciati" name="lots">
+                            <field name="lot_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                    <field name="company_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Spedizioni" name="pickings">
+                            <field name="picking_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="scheduled_date"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Partner Coinvolti" name="partners">
+                            <field name="partner_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="email"/>
+                                    <field name="phone"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Email Cliente" name="customer_email">
+                            <group>
+                                <field name="customer_notice_subject"/>
+                                <field name="customer_notice_html" nolabel="1" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="Avviso GDO Stampabile" name="gdo_notice">
+                            <field name="gdo_notice_html" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="Note" name="notes">
+                            <field name="notes" nolabel="1" placeholder="Note aggiuntive..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Recall Reports -->
+    <record id="action_report_cf_recall_customer_notice" model="ir.actions.report">
+        <field name="name">Avviso richiamo cliente</field>
+        <field name="model">cf.recall.session</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_operations.report_cf_recall_customer_notice_document</field>
+        <field name="report_file">casafolino_operations.report_cf_recall_customer_notice_document</field>
+        <field name="print_report_name">'Avviso Richiamo - %s' % (object.reference)</field>
+    </record>
+
+    <template id="report_cf_recall_customer_notice_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div t-raw="doc.gdo_notice_html"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
     <!-- Production Actions -->
     <record id="action_cf_production_jobs" model="ir.actions.act_window">
         <field name="name">Commesse Produzione</field>
