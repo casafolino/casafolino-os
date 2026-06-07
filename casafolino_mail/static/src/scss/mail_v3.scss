@@ -365,11 +365,19 @@ $mv3-line-height: 1.45;
     &:hover { background: #F8F8F6; }
     &--selected { background: #EEF2E6; border-left: 3px solid $mv3-primary; }
 
+    &__topline {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
     &__header {
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-bottom: 4px;
+        min-width: 0;
     }
 
     &__account-badge {
@@ -390,6 +398,14 @@ $mv3-line-height: 1.45;
     &__silent-gap {
         font-size: 11px;
         color: #A0522D;
+        white-space: nowrap;
+    }
+
+    &__date {
+        color: #6f756c;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
         white-space: nowrap;
     }
 
@@ -414,6 +430,28 @@ $mv3-line-height: 1.45;
         gap: 6px;
         margin-top: 6px;
         flex-wrap: wrap;
+    }
+}
+
+.mv3-thread-group {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px 6px;
+    border-bottom: 1px solid #dfe4da;
+    background: #f5f7f2;
+    color: #586150;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+
+    &__count {
+        color: #8a9284;
+        font-weight: 700;
     }
 }
 
