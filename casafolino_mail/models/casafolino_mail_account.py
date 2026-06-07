@@ -439,8 +439,12 @@ class CasafolinoMailAccount(models.Model):
 
     @api.model
     def _cron_fetch_all_accounts(self):
-        """Fetch incrementale per tutti gli account connessi."""
-        accounts = self.sudo().search([('state', '=', 'connected'), ('active', '=', True)])
+        """Fetch incrementale per tutti gli account attivi.
+
+        Gli errori IMAP temporanei mettono l'account in ``error``. Limitare il
+        cron a ``connected`` crea un deadlock: l'account non viene piu ritentato.
+        """
+        accounts = self.sudo().search([('active', '=', True)])
         for account in accounts:
             try:
                 account._fetch_emails()
