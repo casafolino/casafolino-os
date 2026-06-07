@@ -1009,8 +1009,15 @@
                                     <span>Tocca a noi</span>
                                     <span class="cf-pc-pill tone-red" t-out="filteredToReplyRows.length"/>
                                 </div>
-                                <t t-foreach="filteredToReplyRows" t-as="row" t-key="'to-reply-' + row.id">
-                                    <div t-attf-class="cf-pc-inbox-thread-card #{state.selectedMessageId === row.id ? 'active' : ''} #{row.urgency === 'high' ? 'urgent' : ''}" t-on-click="() => this.selectMessage(row.id)">
+                                <t t-foreach="groupedToReplyRows" t-as="item" t-key="'to-reply-' + item.key">
+                                    <div t-if="item.type === 'date_group'" class="cf-pc-thread-date-title">
+                                        <span t-out="item.label"/>
+                                        <span t-out="item.count"/>
+                                    </div>
+                                    <t t-if="item.type === 'row'" t-set="row" t-value="item.row"/>
+                                    <div t-if="item.type === 'row'"
+                                         t-attf-class="cf-pc-inbox-thread-card #{state.selectedMessageId === row.id ? 'active' : ''} #{row.urgency === 'high' ? 'urgent' : ''}"
+                                         t-on-click="() => this.selectMessage(row.id)">
                                         <div class="cf-pc-thread-check" t-on-click.stop="() => this.toggleMessageCheck(row.id)">
                                             <input type="checkbox" t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : ''"/>
                                         </div>
@@ -1098,8 +1105,15 @@
                                     <span>In attesa cliente</span>
                                     <span class="cf-pc-pill tone-amber" t-out="filteredWaitingRows.length"/>
                                 </div>
-                                <t t-foreach="filteredWaitingRows" t-as="row" t-key="'waiting-' + row.id">
-                                    <div t-attf-class="cf-pc-inbox-thread-card waiting #{state.selectedMessageId === row.id ? 'active' : ''}" t-on-click="() => this.selectMessage(row.id)">
+                                <t t-foreach="groupedWaitingRows" t-as="item" t-key="'waiting-' + item.key">
+                                    <div t-if="item.type === 'date_group'" class="cf-pc-thread-date-title">
+                                        <span t-out="item.label"/>
+                                        <span t-out="item.count"/>
+                                    </div>
+                                    <t t-if="item.type === 'row'" t-set="row" t-value="item.row"/>
+                                    <div t-if="item.type === 'row'"
+                                         t-attf-class="cf-pc-inbox-thread-card waiting #{state.selectedMessageId === row.id ? 'active' : ''}"
+                                         t-on-click="() => this.selectMessage(row.id)">
                                         <div class="cf-pc-thread-check" t-on-click.stop="() => this.toggleMessageCheck(row.id)">
                                             <input type="checkbox" t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : ''"/>
                                         </div>

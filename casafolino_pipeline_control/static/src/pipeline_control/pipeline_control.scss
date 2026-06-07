@@ -1775,6 +1775,29 @@
                 justify-content: space-between;
                 align-items: center;
             }
+
+            .cf-pc-thread-date-title {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 7px 14px 5px;
+                border-top: 1px solid #edf1ea;
+                border-bottom: 1px solid #dfe6da;
+                background: #f6f8f4;
+                color: #596656;
+                font-size: 10.5px;
+                font-weight: 850;
+                letter-spacing: 0;
+                text-transform: uppercase;
+
+                span:last-child {
+                    color: #8b9587;
+                    font-weight: 750;
+                }
+            }
         }
     }
 

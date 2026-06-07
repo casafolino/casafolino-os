@@ -3763,12 +3763,15 @@ class CfPipelineControl(models.AbstractModel):
     def _format_mail_item(self, msg):
         partner = msg.partner_id
         lead = msg.lead_id
+        date_bucket = self._datetime_bucket(msg.email_date)
         return {
             'id': msg.id,
             'model': msg._name,
             'title': partner.display_name if partner else (msg.sender_name or msg.sender_email or 'Email senza partner'),
             'subtitle': msg.subject or 'Senza oggetto',
-            'meta': self._date_label(msg.email_date),
+            'meta': self._datetime_label_it(msg.email_date),
+            'date_bucket': date_bucket['key'],
+            'date_bucket_label': date_bucket['label'],
             'tone': 'red' if msg.ai_urgency == 'high' or msg.ai_action_required else 'amber',
             'badges': self._compact([
                 'tocca a noi',
@@ -4912,6 +4915,47 @@ class CfPipelineControl(models.AbstractModel):
         if isinstance(value, str):
             return value[:10]
         return fields.Date.to_string(value) if not hasattr(value, 'hour') else fields.Datetime.to_string(value)[:16]
+
+    def _as_user_datetime(self, value):
+        if not value:
+            return False
+        if isinstance(value, str):
+            value = fields.Datetime.to_datetime(value)
+        if not hasattr(value, 'hour'):
+            value = datetime.combine(value, time.min)
+        return fields.Datetime.context_timestamp(self, value)
+
+    def _datetime_label_it(self, value):
+        dt = self._as_user_datetime(value)
+        if not dt:
+            return ''
+        bucket = self._datetime_bucket(value)['key']
+        if bucket == 'today':
+            return dt.strftime('%H:%M')
+        if bucket in ('this_week', 'last_week'):
+            weekdays = ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom']
+            months = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic']
+            return '%s %d %s' % (weekdays[dt.weekday()], dt.day, months[dt.month - 1])
+        months = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic']
+        return '%d %s %d' % (dt.day, months[dt.month - 1], dt.year)
+
+    def _datetime_bucket(self, value):
+        dt = self._as_user_datetime(value)
+        if not dt:
+            return {'key': 'older', 'label': 'Il resto'}
+
+        now = fields.Datetime.context_timestamp(self, fields.Datetime.now())
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = today_start - timedelta(days=today_start.weekday())
+        last_week_start = week_start - timedelta(days=7)
+
+        if dt >= today_start:
+            return {'key': 'today', 'label': 'Oggi'}
+        if dt >= week_start:
+            return {'key': 'this_week', 'label': 'Questa settimana'}
+        if dt >= last_week_start:
+            return {'key': 'last_week', 'label': 'Scorsa settimana'}
+        return {'key': 'older', 'label': 'Il resto'}
 
     def _compact(self, values):
         return [value for value in values if value]

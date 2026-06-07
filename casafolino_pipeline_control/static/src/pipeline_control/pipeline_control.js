@@ -918,6 +918,14 @@ export class CFPipelineControl extends Component {
         return this.filterInboxRows(this.state.data.inbox?.waiting_customer || []);
     }
 
+    get groupedToReplyRows() {
+        return this.groupInboxRows(this.filteredToReplyRows);
+    }
+
+    get groupedWaitingRows() {
+        return this.groupInboxRows(this.filteredWaitingRows);
+    }
+
     get allInboxRows() {
         return [
             ...(this.state.data.inbox?.to_reply || []),
@@ -1011,6 +1019,41 @@ export class CFPipelineControl extends Component {
             return rows.filter((row) => row.has_attachments);
         }
         return rows;
+    }
+
+    groupInboxRows(rows) {
+        const buckets = [
+            { key: "today", label: _t("Oggi"), rows: [] },
+            { key: "this_week", label: _t("Questa settimana"), rows: [] },
+            { key: "last_week", label: _t("Scorsa settimana"), rows: [] },
+            { key: "older", label: _t("Il resto"), rows: [] },
+        ];
+        const byKey = Object.fromEntries(buckets.map((bucket) => [bucket.key, bucket]));
+        for (const row of rows || []) {
+            const key = row.date_bucket || "older";
+            (byKey[key] || byKey.older).rows.push(row);
+        }
+
+        const items = [];
+        for (const bucket of buckets) {
+            if (!bucket.rows.length) {
+                continue;
+            }
+            items.push({
+                type: "date_group",
+                key: "date-group-" + bucket.key,
+                label: bucket.label,
+                count: bucket.rows.length,
+            });
+            for (const row of bucket.rows) {
+                items.push({
+                    type: "row",
+                    key: "row-" + row.id,
+                    row,
+                });
+            }
+        }
+        return items;
     }
 }
 
