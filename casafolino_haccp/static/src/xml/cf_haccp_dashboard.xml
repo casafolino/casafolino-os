@@ -86,11 +86,16 @@
                                 <div class="cf-haccp-recall-block">
                                     <h3>Corrispondenze prodotto</h3>
                                     <t t-if="state.lotSearchResult.products.length">
-                                        <t t-foreach="state.lotSearchResult.products" t-as="product" t-key="product.id">
+                                        <t t-foreach="visibleSearchItems(state.lotSearchResult.products)" t-as="product" t-key="product.id">
                                             <div class="cf-haccp-search-row">
                                                 <strong><t t-esc="product.name"/></strong>
                                                 <small>SKU <t t-esc="product.sku || '-'"/> · Barcode <t t-esc="product.barcode || '-'"/></small>
                                             </div>
+                                        </t>
+                                        <t t-if="hiddenSearchCount(state.lotSearchResult.products)">
+                                            <button type="button" class="cf-haccp-more-btn" t-on-click="onShowAllSearch">
+                                                Mostra altri <t t-esc="hiddenSearchCount(state.lotSearchResult.products)"/> prodotti
+                                            </button>
                                         </t>
                                     </t>
                                     <t t-else="">
@@ -100,10 +105,15 @@
                                 <div class="cf-haccp-recall-block">
                                     <h3>Lotti trovati</h3>
                                     <t t-if="state.lotSearchResult.lots.length">
-                                        <t t-foreach="state.lotSearchResult.lots" t-as="lot" t-key="lot.id">
+                                        <t t-foreach="visibleSearchItems(state.lotSearchResult.lots)" t-as="lot" t-key="lot.id">
                                             <button type="button" class="cf-haccp-lot-chip" t-att-data-query="lot.name" t-on-click="onLotDrill">
                                                 <strong><t t-esc="lot.name"/></strong>
                                                 <small><t t-esc="lot.product"/></small>
+                                            </button>
+                                        </t>
+                                        <t t-if="hiddenSearchCount(state.lotSearchResult.lots)">
+                                            <button type="button" class="cf-haccp-more-btn" t-on-click="onShowAllSearch">
+                                                Mostra altri <t t-esc="hiddenSearchCount(state.lotSearchResult.lots)"/> lotti
                                             </button>
                                         </t>
                                     </t>
@@ -114,7 +124,7 @@
                             </div>
                             <div class="cf-haccp-recall-chain">
                                 <t t-if="state.lotSearchResult.chains.length">
-                                    <t t-foreach="state.lotSearchResult.chains" t-as="chain" t-key="chain.id">
+                                    <t t-foreach="visibleSearchItems(state.lotSearchResult.chains)" t-as="chain" t-key="chain.id">
                                         <article class="cf-haccp-recall-card">
                                             <header class="cf-haccp-recall-head">
                                                 <div>
@@ -203,6 +213,11 @@
                                                 </section>
                                             </div>
                                         </article>
+                                    </t>
+                                    <t t-if="hiddenSearchCount(state.lotSearchResult.chains)">
+                                        <button type="button" class="cf-haccp-more-btn cf-haccp-more-wide" t-on-click="onShowAllSearch">
+                                            Mostra altre <t t-esc="hiddenSearchCount(state.lotSearchResult.chains)"/> catene di richiamo
+                                        </button>
                                     </t>
                                 </t>
                                 <t t-else="">

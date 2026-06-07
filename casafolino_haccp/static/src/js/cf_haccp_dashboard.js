@@ -17,6 +17,7 @@ class CfHaccpDashboard extends Component {
             lotSearchLoading: false,
             lotSearchError: null,
             lotSearchResult: null,
+            lotSearchExpanded: false,
         });
         this.action = useService("action");
         onWillStart(async () => { await this._load(); });
@@ -95,6 +96,7 @@ class CfHaccpDashboard extends Component {
                 kwargs: {},
             });
             this.state.lotSearchResult = result;
+            this.state.lotSearchExpanded = false;
         } catch (e) {
             this.state.lotSearchError = "Ricerca lotto non riuscita.";
         } finally {
@@ -111,11 +113,26 @@ class CfHaccpDashboard extends Component {
         await this.onLotSearch();
     }
 
+    onShowAllSearch() {
+        this.state.lotSearchExpanded = true;
+    }
+
+    visibleSearchItems(items) {
+        const values = items || [];
+        return this.state.lotSearchExpanded ? values : values.slice(0, 6);
+    }
+
+    hiddenSearchCount(items) {
+        const values = items || [];
+        return this.state.lotSearchExpanded ? 0 : Math.max(values.length - 6, 0);
+    }
+
     onLotSearchInput(ev) {
         this.state.lotSearchQuery = ev.target.value;
         if (!this.state.lotSearchQuery) {
             this.state.lotSearchResult = null;
             this.state.lotSearchError = null;
+            this.state.lotSearchExpanded = false;
         }
     }
 

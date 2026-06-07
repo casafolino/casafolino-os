@@ -654,6 +654,25 @@
     gap: 8px;
 }
 
+.cf-haccp-more-btn {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid var(--cf-haccp-accent);
+    border-radius: 8px;
+    background: #F5E6C8;
+    color: var(--cf-haccp-brown);
+    font-weight: 850;
+    text-align: center;
+}
+
+.cf-haccp-more-btn:hover {
+    background: #EEDDAF;
+}
+
+.cf-haccp-more-wide {
+    margin-top: 2px;
+}
+
 .cf-chip-warn {
     border-left: 4px solid var(--cf-haccp-orange);
 }
