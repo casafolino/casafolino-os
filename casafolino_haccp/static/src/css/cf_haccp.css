@@ -249,6 +249,111 @@
     gap: 12px;
 }
 
+.cf-haccp-search-panel {
+    margin: 18px 0 22px;
+    padding: 16px;
+    border: 1px solid var(--cf-haccp-border);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(62,37,24,.06);
+}
+
+.cf-haccp-searchbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+.cf-haccp-searchbar input {
+    min-height: 48px;
+    border: 1px solid var(--cf-haccp-border);
+    border-radius: 8px;
+    padding: 0 14px;
+    color: var(--cf-haccp-text);
+    font-size: 15px;
+    outline: none;
+}
+
+.cf-haccp-searchbar input:focus {
+    border-color: var(--cf-haccp-accent);
+    box-shadow: 0 0 0 3px rgba(90,110,58,.14);
+}
+
+.cf-haccp-searchbar button {
+    min-height: 48px;
+    border: 0;
+    border-radius: 8px;
+    padding: 0 20px;
+    background: var(--cf-haccp-brown);
+    color: #F5E6C8;
+    font-weight: 800;
+}
+
+.cf-haccp-search-error {
+    margin-top: 10px;
+    color: var(--cf-haccp-red);
+    font-weight: 700;
+}
+
+.cf-haccp-search-results {
+    margin-top: 14px;
+}
+
+.cf-haccp-search-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.cf-haccp-search-summary span {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #F5E6C8;
+    color: var(--cf-haccp-brown);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.cf-haccp-search-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cf-haccp-search-grid h3 {
+    margin: 0 0 8px;
+    color: var(--cf-haccp-brown);
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.cf-haccp-search-row {
+    display: block;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--cf-haccp-border);
+    border-radius: 8px;
+    color: var(--cf-haccp-text);
+    text-decoration: none;
+}
+
+.cf-haccp-search-row:hover {
+    border-color: var(--cf-haccp-accent);
+    background: #FBFAF6;
+}
+
+.cf-haccp-search-row strong,
+.cf-haccp-search-row small {
+    display: block;
+}
+
+.cf-haccp-search-row small,
+.cf-haccp-search-empty {
+    color: var(--cf-haccp-muted);
+    font-size: 12px;
+}
+
 .cf-haccp-spinner {
     width: 30px;
     height: 30px;

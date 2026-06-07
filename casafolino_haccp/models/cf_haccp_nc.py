@@ -95,3 +95,90 @@ class CfHaccpNc(models.Model):
                 else "green"
             ),
         }
+
+    @api.model
+    def dashboard_lot_search(self, query):
+        query = (query or "").strip()
+        if not query:
+            return {"query": "", "products": [], "lots": [], "traces": [], "summary": {}}
+
+        Product = self.env["product.product"].sudo()
+        Lot = self.env["stock.lot"].sudo()
+        MoveLine = self.env["stock.move.line"].sudo()
+        Production = self.env["mrp.production"].sudo()
+        Trace = self.env["cf.haccp.tracciabilita"].sudo()
+
+        products = Product.search([
+            "|", "|",
+            ("barcode", "ilike", query),
+            ("default_code", "ilike", query),
+            ("name", "ilike", query),
+        ], limit=20)
+        lots = Lot.search([
+            "|", "|",
+            ("name", "ilike", query),
+            ("ref", "ilike", query),
+            ("product_id", "in", products.ids or [0]),
+        ], limit=40)
+        if not lots and products:
+            lots = Lot.search([("product_id", "in", products.ids)], limit=40)
+
+        consumed_productions = Production.search([
+            ("move_raw_ids.move_line_ids.lot_id", "in", lots.ids or [0])
+        ], limit=80)
+        produced_lots = consumed_productions.mapped("lot_producing_id")
+        all_lots = lots | produced_lots
+        all_products = products | all_lots.mapped("product_id")
+
+        traces = Trace.browse()
+        for lot in all_lots[:40]:
+            trace = Trace.search([("lot_id", "=", lot.id)], limit=1)
+            if not trace:
+                trace = Trace.create({"lot_id": lot.id, "lotto_pf": lot.name})
+            traces |= trace
+
+        outgoing_lines = MoveLine.search([
+            ("lot_id", "in", all_lots.ids or [0]),
+            ("picking_id.picking_type_id.code", "=", "outgoing"),
+        ], limit=120)
+
+        return {
+            "query": query,
+            "summary": {
+                "products": len(all_products),
+                "lots": len(all_lots),
+                "traces": len(traces),
+                "deliveries": len(outgoing_lines.mapped("picking_id")),
+            },
+            "products": [
+                {
+                    "id": product.id,
+                    "name": product.display_name,
+                    "sku": product.default_code or "",
+                    "barcode": product.barcode or "",
+                    "url": "/odoo/product.product/%s" % product.id,
+                }
+                for product in all_products[:20]
+            ],
+            "lots": [
+                {
+                    "id": lot.id,
+                    "name": lot.name,
+                    "product": lot.product_id.display_name,
+                    "url": "/odoo/stock.lot/%s" % lot.id,
+                    "trace_url": "/odoo/cf.haccp.tracciabilita/%s" % (
+                        Trace.search([("lot_id", "=", lot.id)], limit=1).id
+                    ),
+                }
+                for lot in all_lots[:40]
+            ],
+            "traces": [
+                {
+                    "id": trace.id,
+                    "name": trace.display_name,
+                    "lot": trace.lot_id.name if trace.lot_id else trace.lotto_pf,
+                    "url": "/odoo/cf.haccp.tracciabilita/%s" % trace.id,
+                }
+                for trace in traces[:40]
+            ],
+        }

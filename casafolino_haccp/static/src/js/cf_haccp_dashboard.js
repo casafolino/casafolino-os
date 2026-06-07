@@ -9,7 +9,15 @@ class CfHaccpDashboard extends Component {
     static props = ["*"];
 
     setup() {
-        this.state = useState({ data: null, loading: true, error: null });
+        this.state = useState({
+            data: null,
+            loading: true,
+            error: null,
+            lotSearchQuery: "",
+            lotSearchLoading: false,
+            lotSearchError: null,
+            lotSearchResult: null,
+        });
         this.action = useService("action");
         onWillStart(async () => { await this._load(); });
     }
@@ -65,6 +73,41 @@ class CfHaccpDashboard extends Component {
     onRefresh() {
         this.state.loading = true;
         this._load();
+    }
+
+    async onLotSearch(ev) {
+        if (ev) {
+            ev.preventDefault();
+        }
+        const query = (this.state.lotSearchQuery || "").trim();
+        if (!query) {
+            this.state.lotSearchResult = null;
+            this.state.lotSearchError = "Inserisci barcode, SKU o lotto.";
+            return;
+        }
+        this.state.lotSearchLoading = true;
+        this.state.lotSearchError = null;
+        try {
+            const result = await rpc("/web/dataset/call_kw", {
+                model: "cf.haccp.nc",
+                method: "dashboard_lot_search",
+                args: [query],
+                kwargs: {},
+            });
+            this.state.lotSearchResult = result;
+        } catch (e) {
+            this.state.lotSearchError = "Ricerca lotto non riuscita.";
+        } finally {
+            this.state.lotSearchLoading = false;
+        }
+    }
+
+    onLotSearchInput(ev) {
+        this.state.lotSearchQuery = ev.target.value;
+        if (!this.state.lotSearchQuery) {
+            this.state.lotSearchResult = null;
+            this.state.lotSearchError = null;
+        }
     }
 
     onOpenNcOpen() {

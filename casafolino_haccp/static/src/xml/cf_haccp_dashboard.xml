@@ -61,6 +61,75 @@
                     </div>
                 </section>
 
+                <section class="cf-haccp-search-panel">
+                    <form class="cf-haccp-searchbar" t-on-submit="onLotSearch">
+                        <input type="search"
+                               placeholder="Cerca barcode, SKU prodotto o lotto..."
+                               t-att-value="state.lotSearchQuery"
+                               t-on-input="onLotSearchInput"/>
+                        <button type="submit" t-att-disabled="state.lotSearchLoading">
+                            <t t-esc="state.lotSearchLoading ? 'Cerco...' : 'Cerca'"/>
+                        </button>
+                    </form>
+                    <t t-if="state.lotSearchError">
+                        <div class="cf-haccp-search-error"><t t-esc="state.lotSearchError"/></div>
+                    </t>
+                    <t t-if="state.lotSearchResult">
+                        <div class="cf-haccp-search-results">
+                            <div class="cf-haccp-search-summary">
+                                <span><t t-esc="state.lotSearchResult.summary.products"/> prodotti</span>
+                                <span><t t-esc="state.lotSearchResult.summary.lots"/> lotti</span>
+                                <span><t t-esc="state.lotSearchResult.summary.traces"/> cronostorie</span>
+                                <span><t t-esc="state.lotSearchResult.summary.deliveries"/> consegne</span>
+                            </div>
+                            <div class="cf-haccp-search-grid">
+                                <div>
+                                    <h3>Prodotti</h3>
+                                    <t t-if="state.lotSearchResult.products.length">
+                                        <t t-foreach="state.lotSearchResult.products" t-as="product" t-key="product.id">
+                                            <a class="cf-haccp-search-row" t-att-href="product.url">
+                                                <strong><t t-esc="product.name"/></strong>
+                                                <small>SKU <t t-esc="product.sku || '-'"/> · Barcode <t t-esc="product.barcode || '-'"/></small>
+                                            </a>
+                                        </t>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="cf-haccp-search-empty">Nessun prodotto</div>
+                                    </t>
+                                </div>
+                                <div>
+                                    <h3>Lotti</h3>
+                                    <t t-if="state.lotSearchResult.lots.length">
+                                        <t t-foreach="state.lotSearchResult.lots" t-as="lot" t-key="lot.id">
+                                            <a class="cf-haccp-search-row" t-att-href="lot.trace_url">
+                                                <strong><t t-esc="lot.name"/></strong>
+                                                <small><t t-esc="lot.product"/></small>
+                                            </a>
+                                        </t>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="cf-haccp-search-empty">Nessun lotto</div>
+                                    </t>
+                                </div>
+                                <div>
+                                    <h3>Cronostorie</h3>
+                                    <t t-if="state.lotSearchResult.traces.length">
+                                        <t t-foreach="state.lotSearchResult.traces" t-as="trace" t-key="trace.id">
+                                            <a class="cf-haccp-search-row" t-att-href="trace.url">
+                                                <strong><t t-esc="trace.lot"/></strong>
+                                                <small><t t-esc="trace.name"/></small>
+                                            </a>
+                                        </t>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="cf-haccp-search-empty">Nessuna cronostoria</div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </section>
+
                 <section class="cf-haccp-kpi-grid">
                     <button class="cf-haccp-kpi cf-kpi-warn" t-on-click="onOpenReceiptPending">
                         <span>Ricezioni aperte</span>
