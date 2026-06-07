@@ -26,6 +26,8 @@ const config = {
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+  humanTransferUri: process.env.HUMAN_TRANSFER_URI || 'human_chain',
+  sipDomain: process.env.TWILIO_SIP_DOMAIN || 'casafolino.sip.twilio.com',
   publicBridgeUrl: stripTrailingSlash(process.env.PUBLIC_BRIDGE_URL || ''),
   logLevel: process.env.LOG_LEVEL || 'info',
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 10000),
@@ -255,6 +257,20 @@ function sendTwiML(res, twiml) {
   res.end(twiml);
 }
 
+function buildHumanTransferTwiML() {
+  const sipDomain = escapeXml(config.sipDomain);
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="it-IT" voice="alice">Ti passo un operatore.</Say>
+  <Dial timeout="20"><Sip>sip:201@${sipDomain}</Sip></Dial>
+  <Dial timeout="20"><Sip>sip:202@${sipDomain}</Sip></Dial>
+  <Dial timeout="20"><Sip>sip:203@${sipDomain}</Sip></Dial>
+  <Dial timeout="25"><Sip>sip:205@${sipDomain}</Sip></Dial>
+  <Say language="it-IT" voice="alice">Nessun operatore e disponibile al momento. Riprova piu tardi.</Say>
+  <Hangup/>
+</Response>`;
+}
+
 function withDb(path) {
   const url = new URL(`${config.odooBaseUrl}${path}`);
   url.searchParams.set('db', config.odooDb);
@@ -386,13 +402,24 @@ async function handleTwilioOutbound(req, res, url) {
 async function handleTwilioTransfer(req, res, url) {
   const target = url.searchParams.get('target') || config.humanTransferUri || 'tel:+390000000000';
   log('info', 'Twilio call transfer TwiML requested', { target });
+
+  if (target === 'human_chain') {
+    sendTwiML(res, buildHumanTransferTwiML());
+    return;
+  }
   
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial>${target}</Dial>
+  <Dial>${escapeXml(target)}</Dial>
 </Response>`;
   
   sendTwiML(res, twiml);
+}
+
+async function handleTwilioFallback(req, res) {
+  const body = await readFormUrlEncoded(req);
+  log('warn', 'Twilio fallback TwiML requested', { callSid: body.CallSid, from: body.From });
+  sendTwiML(res, buildHumanTransferTwiML());
 }
 
 async function router(req, res) {
@@ -458,6 +485,11 @@ async function router(req, res) {
       return;
     }
 
+    if (req.method === 'POST' && url.pathname === '/twilio/fallback') {
+      await handleTwilioFallback(req, res);
+      return;
+    }
+
     sendJson(res, 404, { ok: false, error: 'not found' });
   } catch (error) {
     log('error', 'request failed', { message: error.message });
@@ -492,6 +524,7 @@ wss.on('connection', (ws, req) => {
   let deepgramInputBuffer = Buffer.alloc(0);
   let lastLocalBargeInAt = 0;
   let openAiResponseActive = false;
+  let openAiAudioActive = false;
   let callState = 'connecting';
   let transcript = [];
   
@@ -780,11 +813,13 @@ wss.on('connection', (ws, req) => {
           }
 
           if (openAiMsg.type === 'input_audio_buffer.speech_started') {
-            if (!openAiResponseActive) {
-              log('debug', 'Ignoring speech_started because no OpenAI response is active');
+            if (!openAiResponseActive || !openAiAudioActive) {
+              log('debug', 'Ignoring speech_started because no OpenAI audio is actively streaming');
               return;
             }
-            log('info', 'Detected user barge-in during active response. Interrupting agent response...');
+            log('info', 'Detected user barge-in during active audio. Interrupting agent response...');
+            openAiAudioActive = false;
+            openAiResponseActive = false;
             if (streamSid) {
               ws.send(JSON.stringify({
                 event: 'clear',
@@ -797,6 +832,7 @@ wss.on('connection', (ws, req) => {
           }
           
           if ((openAiMsg.type === 'response.audio.delta' || openAiMsg.type === 'response.output_audio.delta') && openAiMsg.delta && streamSid) {
+            openAiAudioActive = true;
             if (!ws.firstAudioSent) {
               ws.firstAudioSent = true;
               log('info', 'Streaming first audio delta chunk to Twilio');
@@ -820,8 +856,13 @@ wss.on('connection', (ws, req) => {
             }
           }
           
+          if (openAiMsg.type === 'response.output_audio.done' || openAiMsg.type === 'response.audio.done') {
+            openAiAudioActive = false;
+          }
+
           if (openAiMsg.type === 'response.done') {
             openAiResponseActive = false;
+            openAiAudioActive = false;
           }
 
           if (openAiMsg.type === 'response.done' && openAiMsg.response?.output) {
