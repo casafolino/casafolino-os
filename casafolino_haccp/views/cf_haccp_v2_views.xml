@@ -293,17 +293,17 @@
 
                         <section class="cf-trace-search-strip">
                             <div>
-                                <label>Lotto Odoo</label>
+                                <span class="o_form_label">Lotto Odoo</span>
                                 <field name="lot_id"
                                        options="{'no_create': True}"
                                        placeholder="Seleziona lotto Odoo..."/>
                             </div>
                             <div>
-                                <label>Data dossier</label>
+                                <span class="o_form_label">Data dossier</span>
                                 <field name="date"/>
                             </div>
                             <div>
-                                <label>Ordine produzione</label>
+                                <span class="o_form_label">Ordine produzione</span>
                                 <field name="production_id"/>
                             </div>
                         </section>
