@@ -26,6 +26,8 @@ access_cf_haccp_etichettatura_user,cf.haccp.etichettatura.log user,model_cf_hacc
 access_cf_haccp_etichettatura_mgr,cf.haccp.etichettatura.log manager,model_cf_haccp_etichettatura_log,base.group_system,1,1,1,1
 access_cf_haccp_tracciabilita_user,cf.haccp.tracciabilita user,model_cf_haccp_tracciabilita,base.group_user,1,1,1,0
 access_cf_haccp_tracciabilita_mgr,cf.haccp.tracciabilita manager,model_cf_haccp_tracciabilita,base.group_system,1,1,1,1
+access_cf_haccp_lot_recall_search_user,cf.haccp.lot.recall.search user,model_cf_haccp_lot_recall_search,base.group_user,1,1,1,0
+access_cf_haccp_lot_recall_search_mgr,cf.haccp.lot.recall.search manager,model_cf_haccp_lot_recall_search,base.group_system,1,1,1,1
 access_cf_haccp_pest_user,cf.haccp.pest.control user,model_cf_haccp_pest_control,base.group_user,1,1,1,0
 access_cf_haccp_pest_mgr,cf.haccp.pest.control manager,model_cf_haccp_pest_control,base.group_system,1,1,1,1
 access_cf_haccp_formazione_user,cf.haccp.formazione user,model_cf_haccp_formazione,base.group_user,1,1,1,0

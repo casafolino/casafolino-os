@@ -84,6 +84,69 @@
         <field name="res_model">cf.haccp.tracciabilita</field>
         <field name="view_mode">list,form</field>
     </record>
+    <record id="view_cf_haccp_lot_recall_search_form" model="ir.ui.view">
+        <field name="name">cf.haccp.lot.recall.search.form</field>
+        <field name="model">cf.haccp.lot.recall.search</field>
+        <field name="arch" type="xml">
+            <form string="Ricerca lotti / ritiro">
+                <header>
+                    <button name="action_search_lots" type="object"
+                            string="Cerca e ricostruisci"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_products" type="object"
+                                class="oe_stat_button" icon="fa-cubes">
+                            <field name="product_count" widget="statinfo" string="Prodotti"/>
+                        </button>
+                        <button name="action_open_lots" type="object"
+                                class="oe_stat_button" icon="fa-barcode">
+                            <field name="lot_count" widget="statinfo" string="Lotti"/>
+                        </button>
+                        <button name="action_open_traces" type="object"
+                                class="oe_stat_button" icon="fa-history">
+                            <field name="trace_count" widget="statinfo" string="Cronostorie"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="query"/>
+                        <h1><field name="query" placeholder="Barcode, SKU prodotto, nome prodotto, lotto materia prima o lotto prodotto finito"/></h1>
+                    </div>
+                    <group>
+                        <group string="Oggetti trovati">
+                            <field name="product_ids" widget="many2many_tags" readonly="1"/>
+                            <field name="lot_ids" widget="many2many_tags" readonly="1"/>
+                            <field name="trace_ids" widget="many2many_tags" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Mappa richiamo / vita lotto">
+                        <field name="result_html" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_cf_haccp_lot_recall_search_list" model="ir.ui.view">
+        <field name="name">cf.haccp.lot.recall.search.list</field>
+        <field name="model">cf.haccp.lot.recall.search</field>
+        <field name="arch" type="xml">
+            <list string="Ricerche lotti / ritiri">
+                <field name="write_date"/>
+                <field name="query"/>
+                <field name="product_count"/>
+                <field name="lot_count"/>
+                <field name="trace_count"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_cf_haccp_lot_recall_search" model="ir.actions.act_window">
+        <field name="name">Ricerca lotti / ritiro</field>
+        <field name="res_model">cf.haccp.lot.recall.search</field>
+        <field name="view_mode">form,list</field>
+        <field name="context">{}</field>
+    </record>
     <record id="action_cf_haccp_pest" model="ir.actions.act_window">
         <field name="name">Pest Control</field>
         <field name="res_model">cf.haccp.pest.control</field>
@@ -134,14 +197,16 @@
               parent="menu_cf_haccp_registri" action="action_cf_haccp_ccp_log" sequence="3"/>
     <menuitem id="menu_cf_haccp_etichettatura" name="Etichettatura"
               parent="menu_cf_haccp_registri" action="action_cf_haccp_etichettatura" sequence="4"/>
+    <menuitem id="menu_cf_haccp_lot_recall_search" name="Ricerca lotti / ritiro"
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_lot_recall_search" sequence="5"/>
     <menuitem id="menu_cf_haccp_tracciabilita" name="Tracciabilita"
-              parent="menu_cf_haccp_registri" action="action_cf_haccp_tracciabilita" sequence="5"/>
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_tracciabilita" sequence="6"/>
     <menuitem id="menu_cf_haccp_pest" name="Pest Control"
-              parent="menu_cf_haccp_registri" action="action_cf_haccp_pest" sequence="6"/>
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_pest" sequence="7"/>
     <menuitem id="menu_cf_haccp_formazione" name="Formazione"
-              parent="menu_cf_haccp_registri" action="action_cf_haccp_formazione" sequence="7"/>
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_formazione" sequence="8"/>
     <menuitem id="menu_cf_haccp_igiene" name="Igiene Personale"
-              parent="menu_cf_haccp_registri" action="action_cf_haccp_igiene" sequence="8"/>
+              parent="menu_cf_haccp_registri" action="action_cf_haccp_igiene" sequence="9"/>
     <menuitem id="menu_cf_haccp_config" name="Configurazione"
               parent="menu_cf_haccp_root" sequence="99" groups="base.group_system"/>
     <menuitem id="menu_cf_haccp_raw_materials" name="Materie Prime"

@@ -140,6 +140,8 @@ class CfHaccpTracciabilita(models.Model):
                     production.display_name,
                     "Prodotto finito generato",
                     production.state,
+                    "mrp.production",
+                    production.id,
                 )
             )
         for production in consumed:
@@ -150,6 +152,8 @@ class CfHaccpTracciabilita(models.Model):
                     production.display_name,
                     "Lotto usato come materia prima",
                     production.state,
+                    "mrp.production",
+                    production.id,
                 )
             )
         for line in move_lines:
@@ -166,6 +170,8 @@ class CfHaccpTracciabilita(models.Model):
                         (" · " + partner) if partner else "",
                     ),
                     line.state,
+                    "stock.picking" if picking else "stock.move.line",
+                    picking.id if picking else line.id,
                 )
             )
         for quarantine in quarantines:
@@ -176,6 +182,8 @@ class CfHaccpTracciabilita(models.Model):
                     quarantine.display_name,
                     quarantine.state,
                     "attenzione",
+                    "cf.haccp.quarantine",
+                    quarantine.id,
                 )
             )
         for nc in ncs:
@@ -186,6 +194,8 @@ class CfHaccpTracciabilita(models.Model):
                     nc.display_name,
                     nc.state,
                     nc.severity if "severity" in nc._fields else "",
+                    "cf.haccp.nc",
+                    nc.id,
                 )
             )
 
@@ -198,14 +208,15 @@ class CfHaccpTracciabilita(models.Model):
             )
 
         items = []
-        for date, kind, title, detail, status in rows:
+        for date, kind, title, detail, status, model, record_id in rows:
             date_text = fields.Datetime.to_string(date) if date else ""
+            href = self._record_url(model, record_id)
             items.append(
                 "<li class='cf-lot-timeline-item'>"
                 "<div class='cf-lot-timeline-date'>%s</div>"
                 "<div class='cf-lot-timeline-card'>"
                 "<strong>%s</strong>"
-                "<span>%s</span>"
+                "<a class='cf-lot-timeline-link' href='%s'>%s</a>"
                 "<small>%s</small>"
                 "<em>%s</em>"
                 "</div>"
@@ -213,12 +224,16 @@ class CfHaccpTracciabilita(models.Model):
                 % (
                     escape(date_text),
                     escape(kind or ""),
+                    escape(href),
                     escape(title or ""),
                     escape(detail or ""),
                     escape(status or ""),
                 )
             )
         return "<ol class='cf-lot-timeline'>%s</ol>" % "".join(items)
+
+    def _record_url(self, model, record_id):
+        return "/odoo/%s/%s" % (model, record_id)
 
     def _picking_label(self, picking):
         if not picking:

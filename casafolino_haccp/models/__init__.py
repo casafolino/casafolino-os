@@ -12,6 +12,7 @@ from . import cf_haccp_sanification
 from . import cf_haccp_ccp_log
 from . import cf_haccp_etichettatura
 from . import cf_haccp_tracciabilita
+from . import cf_haccp_lot_recall_search
 from . import cf_haccp_pest
 from . import cf_haccp_formazione
 from . import cf_haccp_igiene
