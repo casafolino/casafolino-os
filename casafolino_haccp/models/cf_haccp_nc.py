@@ -135,6 +135,7 @@ class CfHaccpNc(models.Model):
             trace = Trace.search([("lot_id", "=", lot.id)], limit=1)
             if not trace:
                 trace = Trace.create({"lot_id": lot.id, "lotto_pf": lot.name})
+            trace.action_build_timeline_from_lot()
             traces |= trace
 
         outgoing_lines = MoveLine.search([
