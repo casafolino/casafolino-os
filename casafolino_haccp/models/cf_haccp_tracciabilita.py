@@ -49,83 +49,26 @@ class CfHaccpTracciabilita(models.Model):
         string="Produzioni",
         compute="_compute_trace_counts",
     )
-    delivery_count = fields.Integer(
-        string="Consegne",
-        compute="_compute_trace_counts",
-    )
-    customer_count = fields.Integer(
-        string="Clienti",
-        compute="_compute_trace_counts",
-    )
-    raw_lot_count = fields.Integer(
-        string="Lotti MP",
-        compute="_compute_trace_counts",
-    )
-    nc_count = fields.Integer(
-        string="NC",
-        compute="_compute_trace_counts",
-    )
-    quarantine_count = fields.Integer(
-        string="Quarantene",
-        compute="_compute_trace_counts",
-    )
-    recall_status = fields.Selection(
-        [
-            ("ok", "Presidiato"),
-            ("watch", "Da valutare"),
-            ("block", "Bloccante"),
-        ],
-        string="Stato richiamo",
-        compute="_compute_trace_counts",
-    )
-    recall_scope = fields.Char(
-        string="Perimetro richiamo",
-        compute="_compute_trace_counts",
-    )
 
     @api.depends("lot_id")
     def _compute_trace_counts(self):
         MoveLine = self.env["stock.move.line"].sudo()
         Production = self.env["mrp.production"].sudo()
-        Quarantine = self.env["cf.haccp.quarantine"].sudo()
-        Nc = self.env["cf.haccp.nc"].sudo()
         for rec in self:
             if not rec.lot_id:
                 rec.move_line_count = 0
                 rec.picking_count = 0
                 rec.production_count = 0
-                rec.delivery_count = 0
-                rec.customer_count = 0
-                rec.raw_lot_count = 0
-                rec.nc_count = 0
-                rec.quarantine_count = 0
-                rec.recall_status = "watch"
-                rec.recall_scope = "Seleziona un lotto"
                 continue
             move_lines = MoveLine.search([("lot_id", "=", rec.lot_id.id)])
-            outgoing = move_lines.filtered(
-                lambda line: line.picking_id.picking_type_id.code == "outgoing"
-            )
-            produced = Production.search([("lot_producing_id", "=", rec.lot_id.id)])
-            consumed = Production.search(
-                [("move_raw_ids.move_line_ids.lot_id", "=", rec.lot_id.id)]
-            )
-            raw_lots = (produced | consumed).mapped("move_raw_ids.move_line_ids.lot_id")
-            quarantines = Quarantine.search([("lot_id", "=", rec.lot_id.id)])
-            ncs = Nc.search([("lot_id", "=", rec.lot_id.id)])
             rec.move_line_count = len(move_lines)
             rec.picking_count = len(move_lines.mapped("picking_id"))
-            rec.production_count = len(produced | consumed)
-            rec.delivery_count = len(outgoing.mapped("picking_id"))
-            rec.customer_count = len(outgoing.mapped("picking_id.partner_id"))
-            rec.raw_lot_count = len(raw_lots)
-            rec.nc_count = len(ncs)
-            rec.quarantine_count = len(quarantines)
-            rec.recall_status = "block" if quarantines or ncs else "ok"
-            rec.recall_scope = "%s clienti · %s consegne · %s lotti MP" % (
-                rec.customer_count,
-                rec.delivery_count,
-                rec.raw_lot_count,
+            rec.production_count = Production.search_count(
+                [
+                    "|",
+                    ("lot_producing_id", "=", rec.lot_id.id),
+                    ("move_raw_ids.move_line_ids.lot_id", "=", rec.lot_id.id),
+                ]
             )
 
     @api.onchange("lot_id")
@@ -344,22 +287,5 @@ class CfHaccpTracciabilita(models.Model):
                 ("lot_producing_id", "=", self.lot_id.id),
                 ("move_raw_ids.move_line_ids.lot_id", "=", self.lot_id.id),
             ],
-            "target": "current",
-        }
-
-    def action_open_lot_deliveries(self):
-        self.ensure_one()
-        if not self.lot_id:
-            raise UserError("Seleziona prima un lotto Odoo.")
-        lines = self.env["stock.move.line"].sudo().search([
-            ("lot_id", "=", self.lot_id.id),
-            ("picking_id.picking_type_id.code", "=", "outgoing"),
-        ])
-        return {
-            "type": "ir.actions.act_window",
-            "name": "Consegne del lotto",
-            "res_model": "stock.picking",
-            "view_mode": "list,form",
-            "domain": [("id", "in", lines.mapped("picking_id").ids)],
             "target": "current",
         }

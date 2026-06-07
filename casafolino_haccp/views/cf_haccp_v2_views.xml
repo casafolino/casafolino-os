@@ -267,11 +267,6 @@
                                 invisible="not lot_id">
                             <field name="production_count" widget="statinfo" string="Produzioni"/>
                         </button>
-                        <button name="action_open_lot_deliveries" type="object"
-                                class="oe_stat_button" icon="fa-truck"
-                                invisible="not lot_id">
-                            <field name="delivery_count" widget="statinfo" string="Consegne"/>
-                        </button>
                     </div>
                     <div class="cf-trace-dossier">
                         <section class="cf-trace-hero">
@@ -283,11 +278,8 @@
                                 </div>
                             </div>
                             <div class="cf-trace-status">
-                                <field name="recall_status" widget="badge"
-                                       decoration-success="recall_status == 'ok'"
-                                       decoration-warning="recall_status == 'watch'"
-                                       decoration-danger="recall_status == 'block'"/>
-                                <span><field name="recall_scope" readonly="1" nolabel="1"/></span>
+                                <strong>Presidiato</strong>
+                                <span>Vista audit per richiamo, ritiro e tracciabilita completa</span>
                             </div>
                         </section>
 
@@ -318,20 +310,12 @@
                                 <strong><field name="production_count" readonly="1" nolabel="1"/></strong>
                             </div>
                             <div class="cf-trace-kpi">
-                                <span>Consegne</span>
-                                <strong><field name="delivery_count" readonly="1" nolabel="1"/></strong>
+                                <span>Trasferimenti</span>
+                                <strong><field name="picking_count" readonly="1" nolabel="1"/></strong>
                             </div>
                             <div class="cf-trace-kpi">
-                                <span>Clienti</span>
-                                <strong><field name="customer_count" readonly="1" nolabel="1"/></strong>
-                            </div>
-                            <div class="cf-trace-kpi">
-                                <span>Lotti MP</span>
-                                <strong><field name="raw_lot_count" readonly="1" nolabel="1"/></strong>
-                            </div>
-                            <div class="cf-trace-kpi cf-trace-kpi-risk">
-                                <span>NC / Quarantene</span>
-                                <strong><field name="nc_count" readonly="1" nolabel="1"/> / <field name="quarantine_count" readonly="1" nolabel="1"/></strong>
+                                <span>Destinatari</span>
+                                <strong><field name="partner_ids" widget="many2many_tags" nolabel="1"/></strong>
                             </div>
                         </section>
 
