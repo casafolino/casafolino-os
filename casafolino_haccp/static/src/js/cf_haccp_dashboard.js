@@ -127,6 +127,7 @@ class CfHaccpDashboard extends Component {
         if (!lotId) {
             return;
         }
+        this.state.recallCreated = null;
         this.state.recallCreatingLotId = lotId;
         this.state.lotSearchError = null;
         try {
@@ -144,7 +145,7 @@ class CfHaccpDashboard extends Component {
             this.state.inlineDetail = {
                 type: "Richiamo creato",
                 title: action.reference,
-                subtitle: action.summary || "Sessione richiamo creata.",
+                subtitle: this._recallSubtitle(action),
                 model: action.model,
                 resId: action.id,
             };
@@ -153,6 +154,13 @@ class CfHaccpDashboard extends Component {
         } finally {
             this.state.recallCreatingLotId = null;
         }
+    }
+
+    _recallSubtitle(action) {
+        if (!action) {
+            return "";
+        }
+        return `${action.lots || 0} lotti · ${action.productions || 0} produzioni · ${action.pickings || 0} spedizioni · ${action.partners || 0} clienti`;
     }
 
     onInspectItem(ev) {

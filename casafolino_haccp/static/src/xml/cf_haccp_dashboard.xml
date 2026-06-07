@@ -82,6 +82,21 @@
                                 <span><t t-esc="state.lotSearchResult.summary.productions"/> produzioni</span>
                                 <span><t t-esc="state.lotSearchResult.summary.deliveries"/> consegne</span>
                             </div>
+                            <t t-if="state.recallCreated">
+                                <div class="cf-haccp-recall-created">
+                                    <div>
+                                        <span>Richiamo creato</span>
+                                        <strong><t t-esc="state.recallCreated.reference"/></strong>
+                                        <small>
+                                            <t t-esc="state.recallCreated.lots"/> lotti ·
+                                            <t t-esc="state.recallCreated.productions"/> produzioni ·
+                                            <t t-esc="state.recallCreated.pickings"/> spedizioni ·
+                                            <t t-esc="state.recallCreated.partners"/> clienti
+                                        </small>
+                                    </div>
+                                    <button type="button" t-on-click="onOpenInlineDetailInOdoo">Apri richiamo in Odoo</button>
+                                </div>
+                            </t>
                             <div class="cf-haccp-recall-chain cf-haccp-recall-chain-first">
                                 <t t-if="state.lotSearchResult.chains.length">
                                     <t t-foreach="visibleSearchItems(state.lotSearchResult.chains)" t-as="chain" t-key="chain.id">
