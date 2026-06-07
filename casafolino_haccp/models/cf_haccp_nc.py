@@ -138,6 +138,7 @@ class CfHaccpNc(models.Model):
         all_products = products | all_lots.mapped("product_id")
 
         chains = [self._dashboard_lot_chain(lot) for lot in all_lots[:30]]
+        chains = sorted(chains, key=self._dashboard_chain_score, reverse=True)
         delivery_names = {
             delivery["name"]
             for chain in chains
@@ -174,6 +175,17 @@ class CfHaccpNc(models.Model):
             ],
             "chains": chains,
         }
+
+    def _dashboard_chain_score(self, chain):
+        return (
+            len(chain["raw_lots"]) * 12
+            + len(chain["impacted_lots"]) * 12
+            + len(chain["deliveries"]) * 6
+            + len(chain["impacted_deliveries"]) * 6
+            + len(chain["productions"]) * 4
+            + len(chain["impacted_productions"]) * 4
+            + len(chain["suppliers"]) * 2
+        )
 
     def _dashboard_lot_chain(self, lot):
         MoveLine = self.env["stock.move.line"].sudo()
