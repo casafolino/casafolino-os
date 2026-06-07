@@ -267,32 +267,98 @@
                                 invisible="not lot_id">
                             <field name="production_count" widget="statinfo" string="Produzioni"/>
                         </button>
+                        <button name="action_open_lot_deliveries" type="object"
+                                class="oe_stat_button" icon="fa-truck"
+                                invisible="not lot_id">
+                            <field name="delivery_count" widget="statinfo" string="Consegne"/>
+                        </button>
                     </div>
-                    <div class="oe_title">
-                        <label for="lotto_pf"/>
-                        <h1><field name="lotto_pf"/></h1>
+                    <div class="cf-trace-dossier">
+                        <section class="cf-trace-hero">
+                            <div>
+                                <div class="cf-trace-kicker">Dossier richiamo lotto</div>
+                                <h1><field name="lotto_pf" nolabel="1"/></h1>
+                                <div class="cf-trace-product">
+                                    <field name="product_id" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                            <div class="cf-trace-status">
+                                <field name="recall_status" widget="badge"
+                                       decoration-success="recall_status == 'ok'"
+                                       decoration-warning="recall_status == 'watch'"
+                                       decoration-danger="recall_status == 'block'"/>
+                                <span><field name="recall_scope" readonly="1" nolabel="1"/></span>
+                            </div>
+                        </section>
+
+                        <section class="cf-trace-search-strip">
+                            <div>
+                                <label>Lotto Odoo</label>
+                                <field name="lot_id"
+                                       options="{'no_create': True}"
+                                       placeholder="Seleziona lotto Odoo..."/>
+                            </div>
+                            <div>
+                                <label>Data dossier</label>
+                                <field name="date"/>
+                            </div>
+                            <div>
+                                <label>Ordine produzione</label>
+                                <field name="production_id"/>
+                            </div>
+                        </section>
+
+                        <section class="cf-trace-kpi-grid">
+                            <div class="cf-trace-kpi">
+                                <span>Movimenti</span>
+                                <strong><field name="move_line_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="cf-trace-kpi">
+                                <span>Produzioni</span>
+                                <strong><field name="production_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="cf-trace-kpi">
+                                <span>Consegne</span>
+                                <strong><field name="delivery_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="cf-trace-kpi">
+                                <span>Clienti</span>
+                                <strong><field name="customer_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="cf-trace-kpi">
+                                <span>Lotti MP</span>
+                                <strong><field name="raw_lot_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="cf-trace-kpi cf-trace-kpi-risk">
+                                <span>NC / Quarantene</span>
+                                <strong><field name="nc_count" readonly="1" nolabel="1"/> / <field name="quarantine_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                        </section>
+
+                        <section class="cf-trace-grid">
+                            <div class="cf-trace-panel">
+                                <div class="cf-trace-panel-head">Origine e materie prime</div>
+                                <group>
+                                    <field name="lotto_mp" placeholder="Lotti materia prima usati"/>
+                                    <field name="lotto_pf"/>
+                                </group>
+                            </div>
+                            <div class="cf-trace-panel">
+                                <div class="cf-trace-panel-head">Vendite e destinatari</div>
+                                <field name="partner_ids" widget="many2many_tags" nolabel="1"/>
+                            </div>
+                        </section>
+
+                        <section class="cf-trace-panel cf-trace-notes">
+                            <div class="cf-trace-panel-head">Note ispettive</div>
+                            <field name="note" nolabel="1" placeholder="Note per audit, richiamo o ritiro..."/>
+                        </section>
+
+                        <section class="cf-trace-panel cf-trace-timeline-panel">
+                            <div class="cf-trace-panel-head">Cronostoria cliccabile del lotto</div>
+                            <field name="timeline_html" nolabel="1" readonly="1"/>
+                        </section>
                     </div>
-                    <group>
-                        <group string="Lotti">
-                            <field name="lot_id"
-                                   options="{'no_create': True}"
-                                   placeholder="Seleziona un lotto Odoo..."/>
-                            <field name="product_id" readonly="1"/>
-                            <field name="date"/>
-                            <field name="lotto_mp"/>
-                            <field name="lotto_pf"/>
-                            <field name="production_id"/>
-                        </group>
-                        <group string="Destinatari">
-                            <field name="partner_ids" widget="many2many_tags"/>
-                        </group>
-                    </group>
-                    <group string="Note">
-                        <field name="note" nolabel="1"/>
-                    </group>
-                    <group string="Cronostoria Lotto Odoo">
-                        <field name="timeline_html" nolabel="1" readonly="1"/>
-                    </group>
                 </sheet>
                 <chatter/>
             </form>
