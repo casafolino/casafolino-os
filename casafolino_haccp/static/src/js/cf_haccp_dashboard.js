@@ -19,6 +19,8 @@ class CfHaccpDashboard extends Component {
             lotSearchResult: null,
             lotSearchExpanded: false,
             recallCreatingLotId: null,
+            recallCreated: null,
+            inlineDetail: null,
         });
         this.action = useService("action");
         onWillStart(async () => { await this._load(); });
@@ -98,6 +100,8 @@ class CfHaccpDashboard extends Component {
             });
             this.state.lotSearchResult = result;
             this.state.lotSearchExpanded = false;
+            this.state.recallCreated = null;
+            this.state.inlineDetail = null;
         } catch (e) {
             this.state.lotSearchError = "Ricerca lotto non riuscita.";
         } finally {
@@ -136,7 +140,14 @@ class CfHaccpDashboard extends Component {
                 this.state.lotSearchError = action.error;
                 return;
             }
-            await this.action.doAction(action);
+            this.state.recallCreated = action;
+            this.state.inlineDetail = {
+                type: "Richiamo creato",
+                title: action.reference,
+                subtitle: action.summary || "Sessione richiamo creata.",
+                model: action.model,
+                resId: action.id,
+            };
         } catch (e) {
             this.state.lotSearchError = "Creazione richiamo non riuscita.";
         } finally {
@@ -144,15 +155,26 @@ class CfHaccpDashboard extends Component {
         }
     }
 
-    async onOpenRecord(ev) {
-        const model = ev.currentTarget.dataset.model;
-        const resId = Number(ev.currentTarget.dataset.resId || 0);
+    onInspectItem(ev) {
+        this.state.inlineDetail = {
+            type: ev.currentTarget.dataset.kind || "Dettaglio",
+            title: ev.currentTarget.dataset.title || "Dettaglio",
+            subtitle: ev.currentTarget.dataset.subtitle || "",
+            model: ev.currentTarget.dataset.model || "",
+            resId: Number(ev.currentTarget.dataset.resId || 0),
+        };
+    }
+
+    async onOpenInlineDetailInOdoo() {
+        const detail = this.state.inlineDetail || {};
+        const model = detail.model;
+        const resId = Number(detail.resId || 0);
         if (!model || !resId) {
             return;
         }
         await this.action.doAction({
             type: "ir.actions.act_window",
-            name: ev.currentTarget.dataset.title || "Dettaglio",
+            name: detail.title || "Dettaglio",
             res_model: model,
             res_id: resId,
             view_mode: "form",

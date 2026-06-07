@@ -132,8 +132,10 @@
                                                             <button type="button" class="cf-haccp-flow-row cf-haccp-flow-action"
                                                                     t-att-data-model="production.model"
                                                                     t-att-data-res-id="production.id"
+                                                                    data-kind="Ordine di produzione"
                                                                     t-att-data-title="production.name"
-                                                                    t-on-click="onOpenRecord">
+                                                                    t-att-data-subtitle="production.product + ' · ' + (production.date || '-') + ' · ' + production.state"
+                                                                    t-on-click="onInspectItem">
                                                                 <strong><t t-esc="production.name"/></strong>
                                                                 <small><t t-esc="production.product"/> · <t t-esc="production.date || '-'"/> · <t t-esc="production.state"/></small>
                                                             </button>
@@ -149,16 +151,20 @@
                                                                 <button type="button" class="cf-haccp-flow-main"
                                                                         t-att-data-model="delivery.model"
                                                                         t-att-data-res-id="delivery.id"
+                                                                        data-kind="Documento vendita/consegna"
                                                                         t-att-data-title="delivery.name"
-                                                                        t-on-click="onOpenRecord">
+                                                                        t-att-data-subtitle="(delivery.partner || 'Cliente non indicato') + ' · ' + (delivery.date || '-')"
+                                                                        t-on-click="onInspectItem">
                                                                     <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
                                                                     <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
                                                                 </button>
                                                                 <button t-if="delivery.partner_id" type="button" class="cf-haccp-mini-link"
                                                                         t-att-data-model="delivery.partner_model"
                                                                         t-att-data-res-id="delivery.partner_id"
+                                                                        data-kind="Cliente"
                                                                         t-att-data-title="delivery.partner"
-                                                                        t-on-click="onOpenRecord">Cliente</button>
+                                                                        t-att-data-subtitle="delivery.name"
+                                                                        t-on-click="onInspectItem">Cliente</button>
                                                             </div>
                                                         </t>
                                                     </t>
@@ -211,8 +217,10 @@
                                                             <button type="button" class="cf-haccp-flow-row cf-haccp-flow-action"
                                                                     t-att-data-model="production.model"
                                                                     t-att-data-res-id="production.id"
+                                                                    data-kind="Produzione impattata"
                                                                     t-att-data-title="production.name"
-                                                                    t-on-click="onOpenRecord">
+                                                                    t-att-data-subtitle="production.product + ' · lotto ' + (production.lot || '-')"
+                                                                    t-on-click="onInspectItem">
                                                                 <strong><t t-esc="production.name"/></strong>
                                                                 <small><t t-esc="production.product"/> · lotto <t t-esc="production.lot || '-'"/></small>
                                                             </button>
@@ -228,16 +236,20 @@
                                                                 <button type="button" class="cf-haccp-flow-main"
                                                                         t-att-data-model="delivery.model"
                                                                         t-att-data-res-id="delivery.id"
+                                                                        data-kind="Documento cliente coinvolto"
                                                                         t-att-data-title="delivery.name"
-                                                                        t-on-click="onOpenRecord">
+                                                                        t-att-data-subtitle="(delivery.partner || 'Cliente non indicato') + ' · ' + (delivery.date || '-')"
+                                                                        t-on-click="onInspectItem">
                                                                     <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
                                                                     <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
                                                                 </button>
                                                                 <button t-if="delivery.partner_id" type="button" class="cf-haccp-mini-link"
                                                                         t-att-data-model="delivery.partner_model"
                                                                         t-att-data-res-id="delivery.partner_id"
+                                                                        data-kind="Cliente coinvolto"
                                                                         t-att-data-title="delivery.partner"
-                                                                        t-on-click="onOpenRecord">Cliente</button>
+                                                                        t-att-data-subtitle="delivery.name"
+                                                                        t-on-click="onInspectItem">Cliente</button>
                                                             </div>
                                                         </t>
                                                     </t>
@@ -256,6 +268,20 @@
                                     <div class="cf-haccp-search-empty">Nessuna catena di tracciabilita trovata.</div>
                                 </t>
                             </div>
+                            <t t-if="state.inlineDetail">
+                                <div class="cf-haccp-inline-detail">
+                                    <div>
+                                        <span><t t-esc="state.inlineDetail.type"/></span>
+                                        <strong><t t-esc="state.inlineDetail.title"/></strong>
+                                        <small><t t-esc="state.inlineDetail.subtitle"/></small>
+                                    </div>
+                                    <button type="button"
+                                            t-if="state.inlineDetail.model and state.inlineDetail.resId"
+                                            t-on-click="onOpenInlineDetailInOdoo">
+                                        Apri in Odoo
+                                    </button>
+                                </div>
+                            </t>
                             <div class="cf-haccp-recall-matches cf-haccp-recall-matches-secondary">
                                 <div class="cf-haccp-recall-block">
                                     <h3>Altri prodotti trovati</h3>

@@ -308,11 +308,14 @@ class CfHaccpNc(models.Model):
         })
         session.action_run()
         return {
-            "type": "ir.actions.act_window",
-            "name": "Richiamo lotti interessati",
-            "res_model": "cf.recall.session",
-            "res_id": session.id,
-            "view_mode": "form",
-            "views": [[False, "form"]],
-            "target": "current",
+            "id": session.id,
+            "model": "cf.recall.session",
+            "reference": session.reference,
+            "state": session.state,
+            "summary": session.result_summary or "",
+            "traceability": session.traceability_pct,
+            "lots": len(session.lot_ids),
+            "productions": len(session.production_ids),
+            "pickings": len(session.picking_ids),
+            "partners": len(session.partner_ids),
         }
