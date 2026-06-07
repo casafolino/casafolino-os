@@ -18,7 +18,7 @@ export class CFComposeAIPanel extends Component {
             language: null,
             signature: null,
             quickReplies: [],
-            currentTab: "tone",
+            currentTab: "replies",
         });
 
         this.debouncedLangDetect = useDebounced(this._detectLanguage.bind(this), 800);
@@ -34,8 +34,11 @@ export class CFComposeAIPanel extends Component {
         await Promise.all([
             this._refreshSignature(partnerId),
             this._refreshTone(threadId, "", partnerId),
-            threadId ? this._refreshQuickReplies(threadId, partnerId) : Promise.resolve(),
+            this._refreshQuickReplies(threadId, partnerId),
         ]);
+        if (!this.state.quickReplies.length) {
+            this.state.currentTab = "tone";
+        }
     }
 
     async _refreshTone(threadId, body, partnerId) {
@@ -111,6 +114,10 @@ export class CFComposeAIPanel extends Component {
 
     onApplyQuickReply(reply) {
         this.props.onApplyBody?.(reply.text);
+    }
+
+    onAppendQuickReply(reply) {
+        this.props.onAppendBody?.("<p>" + (reply.text || "") + "</p>");
     }
 
     onBodyChanged(text) {

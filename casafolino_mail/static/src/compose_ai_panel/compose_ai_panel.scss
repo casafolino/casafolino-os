@@ -1,17 +1,18 @@
 /* CFComposeAIPanel — Brief #6.4 */
 
 .cf-ai-panel {
-    width: 280px;
+    width: 100%;
     background: var(--cf-warm-bg-section, #FBFAF6);
-    border-left: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 7px;
     display: flex;
     flex-direction: column;
     transition: width 0.2s ease;
-    overflow-y: auto;
+    overflow: hidden;
     max-height: 100%;
 
     &.cf-ai-panel-collapsed {
-        width: 32px;
+        width: 100%;
         .cf-ai-panel-body, .cf-ai-panel-title { display: none; }
     }
 }
@@ -63,6 +64,31 @@
 }
 
 .cf-ai-section { padding: 10px; font-size: 12px; }
+
+.cf-ai-command-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+    border-bottom: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+}
+
+.cf-ai-command-strip__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #34402f;
+    font-size: 11px;
+    font-weight: 700;
+
+    i {
+        color: #5A6E3A;
+    }
+}
 
 .cf-ai-loading {
     color: var(--color-text-secondary, #6B6B68);
@@ -128,6 +154,12 @@
     }
 }
 
+.cf-ai-reply-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
 .cf-ai-hint {
     color: var(--color-text-secondary, #6B6B68);
     font-style: italic;
@@ -136,7 +168,6 @@
 
 @media (max-width: 1200px) {
     .cf-ai-panel {
-        width: 32px;
-        .cf-ai-panel-body, .cf-ai-panel-title { display: none; }
+        width: 100%;
     }
 }

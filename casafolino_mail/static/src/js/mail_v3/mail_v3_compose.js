@@ -122,6 +122,8 @@ export class ComposeWizard extends Component {
             showBgColorPicker: false,
             // Signature
             signatureHtml: this.props.prefilled?.signature_html || '',
+            // AI command center
+            aiPanelOpen: true,
             // Snippet autocomplete
             snippetVisible: false,
             snippetResults: [],
@@ -639,6 +641,23 @@ export class ComposeWizard extends Component {
 
     onSnippetClick(snippet) {
         this._applySnippet(snippet);
+    }
+
+    get aiContextLabel() {
+        const to = this.state.to || 'destinatario';
+        const subject = this.state.subject || 'senza oggetto';
+        return `${to} - ${subject}`;
+    }
+
+    insertOpening(text) {
+        const html = `<p>${text}</p><p></p>`;
+        this.applyAIBody(html + this._signatureBlockHtml());
+    }
+
+    _signatureBlockHtml() {
+        return this.state.signatureHtml
+            ? '<br><div class="mv3-signature-separator" contenteditable="true">' + this.state.signatureHtml + '</div>'
+            : '';
     }
 
     // ── Preview Modal ───────────────────────────────────────

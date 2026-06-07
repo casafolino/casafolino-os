@@ -986,14 +986,18 @@ class MailV3Controller(http.Controller):
 
         # Load signature
         if account_id:
-            sig = request.env['casafolino.mail.signature'].search([
-                ('account_id', '=', account_id),
-                ('is_default', '=', True),
-            ], limit=1)
+            account = request.env['casafolino.mail.account'].browse(account_id)
+            Signature = request.env['casafolino.mail.signature'].sudo()
+            sig = Signature._ensure_official_for_account(account)
             if not sig:
-                sig = request.env['casafolino.mail.signature'].search([
+                sig = Signature.search([
                     ('account_id', '=', account_id),
+                    ('is_default', '=', True),
                 ], limit=1)
+                if not sig:
+                    sig = Signature.search([
+                        ('account_id', '=', account_id),
+                    ], limit=1)
             if sig:
                 prefilled['signature_html'] = sig.body_html or ''
 

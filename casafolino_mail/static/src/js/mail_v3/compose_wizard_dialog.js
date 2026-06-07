@@ -37,12 +37,15 @@ export class ComposeWizardDialog extends Component {
         onWillStart(async () => {
             try {
                 const prepareParams = {
-                    mode: 'new',
+                    mode: this.props.mode || 'new',
                     prefilled_body: '',
                 };
                 // Pass caller-resolved account_id to prepare endpoint
                 if (this.props.accountId) {
                     prepareParams.account_id = this.props.accountId;
+                }
+                if (this.props.replyToId) {
+                    prepareParams.reply_to_id = this.props.replyToId;
                 }
 
                 const result = await rpc('/cf/mail/v3/compose/prepare', prepareParams);

@@ -229,6 +229,37 @@
                      t-att-value="state.subject" t-on-input="onSubjectChange"/>
             </div>
 
+            <div class="mv3-ai-topbar">
+              <div class="mv3-ai-topbar__head">
+                <div>
+                  <span class="mv3-ai-topbar__eyebrow"><i class="fa fa-magic"/> AI operativa</span>
+                  <strong>Prossima mossa suggerita</strong>
+                  <small t-out="aiContextLabel"/>
+                </div>
+                <div class="mv3-ai-topbar__actions">
+                  <button type="button" class="btn btn-sm btn-primary"
+                          t-on-click="() => this.insertOpening('Dear Team, thank you very much for your interest in CasaFolino. We would be pleased to explore a possible collaboration and understand your market, distribution channels and product categories of interest.')">
+                    <i class="fa fa-reply"/> Risposta commerciale
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          t-on-click="() => this.insertOpening('Dear Team, thank you for your message. I would be glad to schedule a short call to better understand your needs and define the most suitable next steps together.')">
+                    <i class="fa fa-calendar"/> Proponi call
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          t-on-click="() => this.insertOpening('Dear Team, as a next step we can share our catalogue and collect your company details, target channel, import requirements and estimated volumes before preparing a focused proposal.')">
+                    <i class="fa fa-book"/> Catalogo + dati
+                  </button>
+                </div>
+              </div>
+              <CFComposeAIPanel
+                  partnerId="aiPanelPartnerId"
+                  threadId="aiPanelThreadId"
+                  threadModel="props.prefilled?.thread_model || ''"
+                  getBody="() => this.getBodyForAI()"
+                  onApplyBody="(text) => this.applyAIBody(text)"
+                  onAppendBody="(text) => this.appendAIBody(text)"/>
+            </div>
+
             <!-- Rich body editor (contenteditable) -->
             <div class="mv3-compose__editor-wrap"
                  t-on-dragover="onDragOver"
@@ -287,14 +318,6 @@
               <t t-out="state.error"/>
             </div>
           </div>
-
-          <!-- Brief #6.4 — AI Assist Panel (right side) -->
-          <CFComposeAIPanel
-              partnerId="aiPanelPartnerId"
-              threadId="aiPanelThreadId"
-              getBody="() => this.getBodyForAI()"
-              onApplyBody="(text) => this.applyAIBody(text)"
-              onAppendBody="(text) => this.appendAIBody(text)"/>
 
           <!-- Footer -->
           <div class="mv3-compose__footer">

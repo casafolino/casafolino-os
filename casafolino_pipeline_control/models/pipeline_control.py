@@ -3985,6 +3985,8 @@ class CfPipelineControl(models.AbstractModel):
                 'default_partner_id': partner.id if partner else False,
                 'default_thread_id': msg.id,
                 'default_thread_model': 'casafolino.mail.message',
+                'default_reply_to_id': msg.id,
+                'default_mode': 'reply',
             },
         }
 

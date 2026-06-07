@@ -78,32 +78,33 @@ class CFMailComposeAI(models.AbstractModel):
 
     @api.model
     def cf_get_signature(self, partner_id=None):
-        user = self.env.user
+        account = self._get_user_account()
+        signature = self.env['casafolino.mail.signature'].sudo()._ensure_official_for_account(account) if account else False
+        signature_html = signature.body_html if signature else self._sig_short(self.env.user)
         if not partner_id:
-            return {'signature_html': self._sig_short(user), 'reason': 'default'}
+            return {'signature_html': signature_html, 'reason': 'Firma ufficiale account'}
         partner = self.env['res.partner'].browse(partner_id)
         mail_count = self.env['casafolino.mail.message'].search_count([
             ('partner_id', '=', partner_id)])
         is_intl = partner.country_id and partner.country_id.code != 'IT'
         is_new = mail_count < 5
-        lang = (partner.lang or 'en')[:2] if is_intl else 'it'
         if is_new:
             return {
-                'signature_html': self._sig_extended(user, lang),
+                'signature_html': signature_html,
                 'reason': 'Partner nuovo%s' % (' + estero' if is_intl else ''),
             }
         return {
-            'signature_html': self._sig_short(user, lang),
+            'signature_html': signature_html,
             'reason': 'Partner fidelizzato%s' % (' + estero' if is_intl else ''),
         }
 
     @api.model
     def cf_suggest_quick_replies(self, thread_id=None, partner_id=None):
         if not thread_id:
-            return {'replies': []}
+            return {'replies': self._fallback_replies('', partner_id)}
         thread_summary = self._summarize_thread(thread_id, max_messages=5)
         if not thread_summary:
-            return {'replies': []}
+            return {'replies': self._fallback_replies('', partner_id)}
         partner = self.env['res.partner'].browse(partner_id) if partner_id else None
         prompt = (
             "You are an export sales assistant for CasaFolino (Italian gourmet food).\n"
@@ -118,7 +119,7 @@ class CFMailComposeAI(models.AbstractModel):
             return {'replies': (data.get('replies') or [])[:3]}
         except Exception as e:
             _logger.warning("cf_suggest_quick_replies failed: %s", e)
-            return {'replies': []}
+            return {'replies': self._fallback_replies(thread_summary, partner_id)}
 
     @api.model
     def cf_score_snippets(self, snippet_ids=None, context_text='', partner_id=None):
@@ -202,9 +203,15 @@ class CFMailComposeAI(models.AbstractModel):
         return resp.json().get('choices', [{}])[0].get('message', {}).get('content', '')
 
     def _summarize_thread(self, thread_id, max_messages=3):
-        msgs = self.env['casafolino.mail.message'].search([
-            ('thread_id', '=', thread_id)
-        ], limit=max_messages, order='email_date desc')
+        if not thread_id:
+            return ''
+        Message = self.env['casafolino.mail.message']
+        msg = Message.browse(thread_id)
+        if msg.exists():
+            domain = [('thread_id', '=', msg.thread_id.id)] if msg.thread_id else [('id', '=', msg.id)]
+        else:
+            domain = [('thread_id', '=', thread_id)]
+        msgs = Message.search(domain, limit=max_messages, order='email_date desc')
         if not msgs:
             return ''
         lines = []
@@ -213,6 +220,65 @@ class CFMailComposeAI(models.AbstractModel):
                 m.sender_email or '?', m.subject or '(no subject)',
                 (m.body_plain or m.body_html or '')[:200]))
         return '\n'.join(lines)
+
+    def _fallback_replies(self, context_text='', partner_id=None):
+        text = (context_text or '').lower()
+        partner = self.env['res.partner'].browse(partner_id) if partner_id else self.env['res.partner']
+        name = partner.name if partner and partner.exists() else 'there'
+        if any(token in text for token in ['sample', 'campion', 'taste', 'feedback']):
+            return [
+                {
+                    'short_label': 'Conferma campioni',
+                    'text': 'Dear %s, thank you for your feedback. We have taken note of the points you mentioned and will align internally on the next sample version. I will come back to you with the next steps shortly.' % name,
+                    'tone': 'formal',
+                },
+                {
+                    'short_label': 'Apri task campione',
+                    'text': 'Create a sample follow-up task with product, requested changes, deadline, owner and next customer update.',
+                    'tone': 'diretto',
+                },
+            ]
+        if any(token in text for token in ['distribut', 'meeting request', 'fine food', 'catalog', 'price list']):
+            return [
+                {
+                    'short_label': 'Risposta commerciale',
+                    'text': 'Dear %s, thank you very much for your interest in CasaFolino. We would be pleased to explore a possible collaboration and understand your distribution channels, target customers and product categories of interest.' % name,
+                    'tone': 'formal',
+                },
+                {
+                    'short_label': 'Proponi call',
+                    'text': 'I would be glad to schedule a short call this week to introduce CasaFolino, understand your market needs and define the most suitable next steps.',
+                    'tone': 'cordiale',
+                },
+                {
+                    'short_label': 'Catalogo + dati',
+                    'text': 'As a next step, we can share our catalogue and ask for company details, target channel, import requirements and estimated volumes before preparing a focused proposal.',
+                    'tone': 'diretto',
+                },
+            ]
+        return [
+            {
+                'short_label': 'Rispondi bene',
+                'text': 'Thank you for your message. I will review the details and come back to you shortly with the most appropriate next steps.',
+                'tone': 'cordiale',
+            },
+            {
+                'short_label': 'Chiedi dettagli',
+                'text': 'Could you please share a few more details about your request, including target products, market, timing and any specific requirements?',
+                'tone': 'formal',
+            },
+            {
+                'short_label': 'Crea follow-up',
+                'text': 'Create a follow-up task with owner, deadline, customer objective and the next promised action.',
+                'tone': 'diretto',
+            },
+        ]
+
+    def _get_user_account(self):
+        return self.env['casafolino.mail.account'].sudo().search([
+            ('responsible_user_id', '=', self.env.uid),
+            ('active', '=', True),
+        ], limit=1)
 
     def _heuristic_lang_detect(self, text):
         text_lower = text.lower()

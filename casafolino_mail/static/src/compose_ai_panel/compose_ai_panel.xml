@@ -13,6 +13,20 @@
         </div>
 
         <div t-if="!state.collapsed" class="cf-ai-panel-body">
+            <div class="cf-ai-command-strip">
+                <div class="cf-ai-command-strip__item">
+                    <i class="fa fa-check-circle"/>
+                    <span>Rispondi al cliente</span>
+                </div>
+                <div class="cf-ai-command-strip__item">
+                    <i class="fa fa-user-plus"/>
+                    <span>Valuta anagrafica</span>
+                </div>
+                <div class="cf-ai-command-strip__item">
+                    <i class="fa fa-tasks"/>
+                    <span>Apri task/follow-up</span>
+                </div>
+            </div>
 
             <div class="cf-ai-tabs">
                 <button t-on-click="() => this.onTabChange('tone')"
@@ -73,12 +87,16 @@
                         <div class="cf-ai-reply-card">
                             <div class="cf-ai-reply-label" t-out="reply.short_label"/>
                             <div class="cf-ai-reply-text" t-out="reply.text"/>
-                            <button t-on-click="() => this.onApplyQuickReply(reply)"
-                                    class="btn btn-sm btn-outline-primary">Usa</button>
+                            <div class="cf-ai-reply-actions">
+                                <button t-on-click="() => this.onApplyQuickReply(reply)"
+                                        class="btn btn-sm btn-outline-primary">Sostituisci</button>
+                                <button t-on-click="() => this.onAppendQuickReply(reply)"
+                                        class="btn btn-sm btn-primary">Aggiungi</button>
+                            </div>
                         </div>
                     </t>
                 </t>
-                <p t-else="" class="cf-ai-hint">Solo in modalita reply.</p>
+                <p t-else="" class="cf-ai-hint">Apro comunque suggerimenti base se il thread non e ancora collegato.</p>
             </div>
 
         </div>

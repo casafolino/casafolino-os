@@ -1059,6 +1059,58 @@ $mv3-line-height: 1.45;
     }
 }
 
+.mv3-ai-topbar {
+    margin: 8px 0 10px;
+    border: 1px solid #DDE5D6;
+    border-radius: 8px;
+    background: #F8FAF4;
+    overflow: hidden;
+}
+
+.mv3-ai-topbar__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #E5EBDD;
+
+    strong {
+        display: block;
+        font-size: 13px;
+        color: #27311f;
+    }
+
+    small {
+        display: block;
+        margin-top: 2px;
+        color: #6E786F;
+        font-size: 11px;
+        max-width: 360px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.mv3-ai-topbar__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 2px;
+    color: #5A6E3A;
+    font-size: 10px;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.mv3-ai-topbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
 // ── Toolbar (Outlook-style) ────────────────────────────
 .mv3-toolbar {
     display: flex;

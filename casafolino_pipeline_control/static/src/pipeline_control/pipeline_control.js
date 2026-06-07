@@ -583,6 +583,8 @@ export class CFPipelineControl extends Component {
             partnerId: context.default_partner_id || false,
             threadId: context.default_thread_id || false,
             threadModel: context.default_thread_model || false,
+            replyToId: context.default_reply_to_id || false,
+            mode: context.default_mode || "new",
         });
         return true;
     }
