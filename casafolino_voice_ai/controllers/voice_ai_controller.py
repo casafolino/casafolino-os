@@ -3,6 +3,9 @@ import html
 import hmac
 import urllib.error
 import urllib.request
+from datetime import datetime, time
+from markupsafe import Markup
+import pytz
 
 from odoo import fields, http
 from odoo.http import request
@@ -27,6 +30,218 @@ class CasaFolinoVoiceAIController(http.Controller):
     @http.route('/voice_ai/health', type='http', auth='public', methods=['GET'], csrf=False)
     def health(self):
         return request.make_json_response({'ok': True, 'service': 'casafolino_voice_ai'})
+
+    def _today_domain_bounds(self):
+        tz_name = request.env.context.get('tz') or request.env.user.tz or 'UTC'
+        tz = pytz.timezone(tz_name)
+        local_today = fields.Date.context_today(request.env.user)
+        local_start = tz.localize(datetime.combine(local_today, time.min))
+        local_end = tz.localize(datetime.combine(local_today, time.max))
+        return (
+            local_start.astimezone(pytz.UTC).replace(tzinfo=None),
+            local_end.astimezone(pytz.UTC).replace(tzinfo=None),
+        )
+
+    def _format_call_time(self, value):
+        if not value:
+            return ''
+        return fields.Datetime.context_timestamp(request.env.user, value).strftime('%H:%M')
+
+    def _format_duration(self, seconds):
+        seconds = int(seconds or 0)
+        minutes, sec = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        if hours:
+            return '%d:%02d:%02d' % (hours, minutes, sec)
+        return '%d:%02d' % (minutes, sec)
+
+    def _call_reason(self, call):
+        text = (call.summary or call.next_action or '').strip()
+        if text:
+            return text[:140] + ('...' if len(text) > 140 else '')
+        if call.outcome:
+            return dict(call._fields['outcome'].selection).get(call.outcome, call.outcome)
+        if call.route_action:
+            return dict(call._fields['route_action'].selection).get(call.route_action, call.route_action)
+        return 'In attesa di riepilogo'
+
+    def _dashboard_payload(self):
+        Call = request.env['casafolino.voice.call'].sudo()
+        start, end = self._today_domain_bounds()
+        domain = [('started_at', '>=', start), ('started_at', '<=', end)]
+        calls = Call.search(domain, order='started_at desc, id desc', limit=80)
+        active_calls = calls.filtered(lambda call: call.state == 'active')
+        completed_calls = calls.filtered(lambda call: call.state == 'completed')
+        failed_calls = calls.filtered(lambda call: call.state == 'failed')
+        transferred_calls = calls.filtered(lambda call: call.state == 'transferred')
+        inbound_calls = calls.filtered(lambda call: call.direction == 'inbound')
+        durations = [call.duration_seconds for call in calls if call.duration_seconds]
+        total_duration = sum(durations)
+        avg_duration = round(total_duration / len(durations)) if durations else 0
+        rows = []
+        for call in calls:
+            caller = call.partner_id.display_name or call.phone or 'Sconosciuto'
+            rows.append({
+                'id': call.id,
+                'name': call.name,
+                'time': self._format_call_time(call.started_at),
+                'caller': caller,
+                'phone': call.phone or '',
+                'direction': dict(call._fields['direction'].selection).get(call.direction, call.direction or ''),
+                'state': dict(call._fields['state'].selection).get(call.state, call.state or ''),
+                'state_key': call.state or '',
+                'outcome': dict(call._fields['outcome'].selection).get(call.outcome, call.outcome or ''),
+                'agent': call.agent_id.display_name or '',
+                'reason': self._call_reason(call),
+                'duration': self._format_duration(call.duration_seconds),
+                'next_action': (call.next_action or '').strip(),
+                'url': '/web#id=%s&model=casafolino.voice.call&view_type=form' % call.id,
+            })
+        return {
+            'generated_at': fields.Datetime.context_timestamp(request.env.user, fields.Datetime.now()).strftime('%H:%M:%S'),
+            'date': fields.Date.context_today(request.env.user).strftime('%d/%m/%Y'),
+            'stats': {
+                'total': len(calls),
+                'active': len(active_calls),
+                'completed': len(completed_calls),
+                'failed': len(failed_calls),
+                'transferred': len(transferred_calls),
+                'inbound': len(inbound_calls),
+                'avg_duration': self._format_duration(avg_duration),
+                'total_duration': self._format_duration(total_duration),
+            },
+            'calls': rows,
+        }
+
+    @http.route('/voice_ai/dashboard/data', type='http', auth='user', methods=['GET'], csrf=False)
+    def voice_ai_dashboard_data(self, **kwargs):
+        return request.make_json_response(self._dashboard_payload())
+
+    @http.route('/voice_ai/dashboard', type='http', auth='user', methods=['GET'], csrf=False)
+    def voice_ai_dashboard(self, **kwargs):
+        payload = self._dashboard_payload()
+        html_page = """
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dashboard Voice AI CasaFolino</title>
+  <style>
+    :root { --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f8fafc; --brand:#0f766e; --warm:#b45309; --bad:#b91c1c; --ok:#15803d; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .wrap { max-width:1440px; margin:0 auto; padding:20px; }
+    .top { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; }
+    h1 { margin:0; font-size:26px; line-height:1.2; }
+    .sub { color:var(--muted); margin-top:5px; font-size:14px; }
+    .actions { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; box-shadow:0 0 0 4px rgba(34,197,94,.14); }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+    .stat { background:white; border:1px solid var(--line); border-radius:8px; padding:15px; min-height:92px; }
+    .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .value { font-size:30px; font-weight:700; margin-top:8px; }
+    .value.small { font-size:24px; }
+    .panel { background:white; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line); }
+    .panel-title { font-size:17px; font-weight:650; }
+    table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:13px; }
+    th { color:var(--muted); font-weight:600; background:#fbfdff; }
+    tbody tr:hover { background:#f9fafb; }
+    a { color:#0f766e; text-decoration:none; font-weight:600; }
+    .pill { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; font-size:12px; font-weight:600; background:#f3f4f6; color:#374151; white-space:nowrap; }
+    .active { background:#dcfce7; color:var(--ok); }
+    .failed { background:#fee2e2; color:var(--bad); }
+    .transferred { background:#e0f2fe; color:#0369a1; }
+    .completed { background:#ecfdf5; color:#047857; }
+    .reason { color:#374151; line-height:1.35; }
+    .muted { color:var(--muted); }
+    .empty { padding:32px; text-align:center; color:var(--muted); }
+    @media (max-width: 1000px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .hide-sm { display:none; } }
+    @media (max-width: 720px) { .wrap { padding:12px; } .top { align-items:flex-start; flex-direction:column; } .grid { grid-template-columns:1fr; } table { min-width:900px; } .panel { overflow:auto; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Dashboard Voice AI</h1>
+        <div class="sub">Chiamate del giorno <span id="dash-date"></span></div>
+      </div>
+      <div class="actions"><span class="dot"></span><span>Live, aggiornamento ogni 5 secondi</span><span id="updated"></span></div>
+    </div>
+    <div class="grid">
+      <div class="stat"><div class="label">Chiamate oggi</div><div class="value" id="stat-total">0</div></div>
+      <div class="stat"><div class="label">In corso</div><div class="value" id="stat-active">0</div></div>
+      <div class="stat"><div class="label">Trasferite</div><div class="value" id="stat-transferred">0</div></div>
+      <div class="stat"><div class="label">Durata media</div><div class="value small" id="stat-avg">0:00</div></div>
+      <div class="stat"><div class="label">Inbound</div><div class="value" id="stat-inbound">0</div></div>
+      <div class="stat"><div class="label">Completate</div><div class="value" id="stat-completed">0</div></div>
+      <div class="stat"><div class="label">Fallite</div><div class="value" id="stat-failed">0</div></div>
+      <div class="stat"><div class="label">Tempo totale</div><div class="value small" id="stat-total-duration">0:00</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Chiamate recenti di oggi</div>
+        <div class="muted" id="row-count"></div>
+      </div>
+      <div id="table-wrap"></div>
+    </div>
+  </div>
+  <script>
+    const initialData = __PAYLOAD__;
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function render(data) {
+      document.getElementById('dash-date').textContent = data.date || '';
+      document.getElementById('updated').textContent = 'Aggiornato ' + (data.generated_at || '');
+      document.getElementById('stat-total').textContent = data.stats.total;
+      document.getElementById('stat-active').textContent = data.stats.active;
+      document.getElementById('stat-transferred').textContent = data.stats.transferred;
+      document.getElementById('stat-avg').textContent = data.stats.avg_duration;
+      document.getElementById('stat-inbound').textContent = data.stats.inbound;
+      document.getElementById('stat-completed').textContent = data.stats.completed;
+      document.getElementById('stat-failed').textContent = data.stats.failed;
+      document.getElementById('stat-total-duration').textContent = data.stats.total_duration;
+      document.getElementById('row-count').textContent = data.calls.length + ' righe';
+      if (!data.calls.length) {
+        document.getElementById('table-wrap').innerHTML = '<div class="empty">Nessuna chiamata registrata oggi.</div>';
+        return;
+      }
+      const rows = data.calls.map(call => `
+        <tr>
+          <td style="width:82px">${esc(call.time)}</td>
+          <td style="width:120px"><a href="${esc(call.url)}">${esc(call.name)}</a></td>
+          <td style="width:220px"><strong>${esc(call.caller)}</strong><br><span class="muted">${esc(call.phone)}</span></td>
+          <td style="width:110px"><span class="pill ${esc(call.state_key)}">${esc(call.state)}</span></td>
+          <td class="hide-sm" style="width:100px">${esc(call.direction)}</td>
+          <td style="width:105px">${esc(call.duration)}</td>
+          <td><div class="reason">${esc(call.reason)}</div>${call.next_action ? `<div class="muted">${esc(call.next_action)}</div>` : ''}</td>
+          <td class="hide-sm" style="width:135px">${esc(call.outcome || call.agent)}</td>
+        </tr>`).join('');
+      document.getElementById('table-wrap').innerHTML = `
+        <table>
+          <thead><tr><th>Ora</th><th>Chiamata</th><th>Da chi</th><th>Stato</th><th class="hide-sm">Tipo</th><th>Durata</th><th>Motivo / riepilogo</th><th class="hide-sm">Esito</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+    async function refresh() {
+      try {
+        const res = await fetch('/voice_ai/dashboard/data', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        render(await res.json());
+      } catch (err) {}
+    }
+    render(initialData);
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
+        """
+        return request.make_response(
+            Markup(html_page.replace('__PAYLOAD__', json.dumps(payload))),
+            headers=[('Content-Type', 'text/html; charset=utf-8')],
+        )
 
     @http.route('/voice_ai/config', type='http', auth='public', methods=['GET'], csrf=False)
     def bridge_config(self, **kwargs):

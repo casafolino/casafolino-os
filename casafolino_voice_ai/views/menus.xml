@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_voice_ai_root" name="Voice AI" sequence="35"/>
+    <record id="action_voice_ai_dashboard" model="ir.actions.act_url">
+        <field name="name">Dashboard live</field>
+        <field name="url">/voice_ai/dashboard</field>
+        <field name="target">self</field>
+    </record>
+    <menuitem id="menu_voice_ai_dashboard" name="Dashboard live" parent="menu_voice_ai_root" action="action_voice_ai_dashboard" sequence="5"/>
     <menuitem id="menu_voice_ai_calls" name="Chiamate AI" parent="menu_voice_ai_root" action="action_voice_call" sequence="10"/>
     <record id="action_voice_ai_simulator" model="ir.actions.act_url">
         <field name="name">Simulatore chiamate</field>
