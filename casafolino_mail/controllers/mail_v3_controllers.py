@@ -1753,8 +1753,8 @@ class MailV3Controller(http.Controller):
 
         attachments = []
         seen = set()
-        for _kind, terms in groups:
-            att = self._find_first_attachment(terms)
+        for kind, terms in groups:
+            att = self._find_best_attachment(kind, lang, terms)
             if att and att.id not in seen:
                 seen.add(att.id)
                 attachments.append({
@@ -1777,26 +1777,81 @@ class MailV3Controller(http.Controller):
             return base + [' en ', '_en', '-en', 'english', 'inglese']
         return base
 
-    def _find_first_attachment(self, terms):
+    def _find_best_attachment(self, kind, lang, terms):
         Attachment = request.env['ir.attachment'].sudo()
+        candidates = {}
 
         # Prefer Documents records when available because commercial PDFs are
         # normally managed there; fall back to ir.attachment for older setups.
         if 'documents.document' in request.env.registry:
             Document = request.env['documents.document'].sudo()
             for term in terms:
-                docs = Document.search([('name', 'ilike', term)], limit=8, order='write_date desc')
+                docs = Document.search([('name', 'ilike', term)], limit=20, order='write_date desc')
                 for doc in docs:
                     att = doc.attachment_id
                     if att and self._attachment_looks_sendable(att):
-                        return att
+                        candidates[att.id] = att
 
         for term in terms:
-            atts = Attachment.search([('name', 'ilike', term)], limit=8, order='write_date desc')
+            atts = Attachment.search([('name', 'ilike', term)], limit=20, order='write_date desc')
             for att in atts:
                 if self._attachment_looks_sendable(att):
-                    return att
-        return False
+                    candidates[att.id] = att
+
+        if not candidates:
+            return False
+        scored = sorted(
+            candidates.values(),
+            key=lambda att: (self._attachment_language_score(att, kind, lang), att.write_date or fields.Datetime.now()),
+            reverse=True,
+        )
+        return scored[0]
+
+    @staticmethod
+    def _attachment_language_score(att, kind, lang):
+        name = (' %s ' % (att.name or '').lower()).replace('.', ' ').replace('_', ' ').replace('-', ' ')
+        score = 0
+        if kind == 'catalog':
+            if 'catalogue' in name:
+                score += 8
+            if 'catalogo' in name or 'catalog' in name:
+                score += 5
+        else:
+            if 'price list' in name or 'pricelist' in name:
+                score += 8
+            if 'listino' in name or 'prezzi' in name:
+                score += 5
+
+        lang_rules = {
+            'en_US': {
+                'positive': [' english ', ' inglese ', ' en ', ' uk ', ' international '],
+                'negative': [' spanish ', ' espanol ', ' español ', ' spagnolo ', ' es ', ' castellano '],
+            },
+            'it_IT': {
+                'positive': [' italian ', ' italiano ', ' it '],
+                'negative': [' english ', ' inglese ', ' en ', ' spanish ', ' espanol ', ' español ', ' es '],
+            },
+            'es_ES': {
+                'positive': [' spanish ', ' espanol ', ' español ', ' spagnolo ', ' es '],
+                'negative': [' english ', ' inglese ', ' en ', ' italian ', ' italiano ', ' it '],
+            },
+            'fr_FR': {
+                'positive': [' french ', ' francese ', ' fr '],
+                'negative': [' english ', ' inglese ', ' en ', ' spanish ', ' es ', ' italian ', ' it '],
+            },
+            'de_DE': {
+                'positive': [' german ', ' tedesco ', ' de '],
+                'negative': [' english ', ' en ', ' spanish ', ' es ', ' italian ', ' it '],
+            },
+        }
+        rules = lang_rules.get(lang) or {}
+        for marker in rules.get('positive', []):
+            if marker in name:
+                score += 100
+        for marker in rules.get('negative', []):
+            if marker in name:
+                score -= 80
+        return score
 
     @staticmethod
     def _attachment_looks_sendable(att):

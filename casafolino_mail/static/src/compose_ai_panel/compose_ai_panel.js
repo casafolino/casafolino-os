@@ -113,11 +113,60 @@ export class CFComposeAIPanel extends Component {
     }
 
     onApplyQuickReply(reply) {
-        this.props.onApplyBody?.(this._textToHtml(reply.text));
+        this.props.onApplyBody?.(this._textToHtml(this._extractEmailText(reply.text)));
     }
 
     onAppendQuickReply(reply) {
-        this.props.onAppendBody?.(this._textToHtml(reply.text));
+        this.props.onPrependBody?.(this._textToHtml(this._extractEmailText(reply.text)));
+    }
+
+    async onCreateTask(reply, assignee) {
+        try {
+            const result = await this.orm.call(
+                "cf.mail.compose.ai", "cf_create_internal_task", [],
+                { thread_id: this.props.threadId || null, reply_text: reply.text || "", assignee });
+            const assigneeName = result.assignee || assignee;
+            this.notification.add(`Task creato per ${assigneeName}`, { type: "success" });
+        } catch (e) {
+            this.notification.add("Task non creato", { type: "danger" });
+        }
+    }
+
+    getReplyEmailText(reply) {
+        return this._extractEmailText(reply?.text || "");
+    }
+
+    getReplyActions(reply) {
+        const text = reply?.text || "";
+        const upper = text.toUpperCase();
+        if (!upper.includes("AZIONI INTERNE")) {
+            return [];
+        }
+        const beforeEmail = upper.includes("EMAIL PRONTA")
+            ? text.slice(0, upper.indexOf("EMAIL PRONTA"))
+            : text;
+        return beforeEmail
+            .replace(/AZIONI INTERNE/ig, "")
+            .split(/\n+/)
+            .map((line) => line.trim().replace(/^-+\s*/, ""))
+            .filter(Boolean)
+            .slice(0, 5);
+    }
+
+    _extractEmailText(text) {
+        const raw = text || "";
+        const marker = raw.toUpperCase().indexOf("EMAIL PRONTA");
+        if (marker >= 0) {
+            return raw.slice(marker + "EMAIL PRONTA".length).trim();
+        }
+        if (raw.toUpperCase().includes("AZIONI INTERNE")) {
+            const lines = raw.split(/\n+/).filter((line) => {
+                const clean = line.trim();
+                return clean && !clean.toUpperCase().includes("AZIONI INTERNE") && !clean.startsWith("-");
+            });
+            return lines.join("\n").trim();
+        }
+        return raw.trim();
     }
 
     _textToHtml(text) {

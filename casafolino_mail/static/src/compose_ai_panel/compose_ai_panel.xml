@@ -86,12 +86,30 @@
                     <t t-foreach="state.quickReplies" t-as="reply" t-key="reply_index">
                         <div class="cf-ai-reply-card">
                             <div class="cf-ai-reply-label" t-out="reply.short_label"/>
-                            <div class="cf-ai-reply-text" t-out="reply.text"/>
+                            <div t-if="getReplyActions(reply).length" class="cf-ai-reply-actions-plan">
+                                <div class="cf-ai-plan-title">Azioni interne</div>
+                                <ul>
+                                    <li t-foreach="getReplyActions(reply)" t-as="action" t-key="action_index"
+                                        t-out="action"/>
+                                </ul>
+                                <div class="cf-ai-task-actions">
+                                    <button t-on-click="() => this.onCreateTask(reply, 'antonio')"
+                                            class="btn btn-sm btn-outline-secondary">
+                                        <i class="fa fa-tasks"/> Task Antonio
+                                    </button>
+                                    <button t-on-click="() => this.onCreateTask(reply, 'martina')"
+                                            class="btn btn-sm btn-outline-secondary">
+                                        <i class="fa fa-user-plus"/> Task Martina
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="cf-ai-email-title">Email pronta</div>
+                            <div class="cf-ai-reply-text" t-out="getReplyEmailText(reply)"/>
                             <div class="cf-ai-reply-actions">
                                 <button t-on-click="() => this.onApplyQuickReply(reply)"
                                         class="btn btn-sm btn-outline-primary">Sostituisci</button>
                                 <button t-on-click="() => this.onAppendQuickReply(reply)"
-                                        class="btn btn-sm btn-primary">Aggiungi</button>
+                                        class="btn btn-sm btn-primary">Aggiungi sopra</button>
                             </div>
                         </div>
                     </t>

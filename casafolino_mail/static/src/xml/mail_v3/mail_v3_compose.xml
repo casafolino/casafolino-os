@@ -261,6 +261,7 @@
                   threadModel="props.prefilled?.thread_model || ''"
                   getBody="() => this.getBodyForAI()"
                   onApplyBody="(text) => this.applyAIBody(text)"
+                  onPrependBody="(text) => this.prependAIBody(text)"
                   onAppendBody="(text) => this.appendAIBody(text)"/>
             </div>
 

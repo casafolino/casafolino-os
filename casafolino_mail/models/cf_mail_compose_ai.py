@@ -1,9 +1,11 @@
 import json
 import logging
+from datetime import timedelta
 
 import requests as req
 
 from odoo import models, fields, api
+from odoo.tools import html_escape
 
 _logger = logging.getLogger(__name__)
 
@@ -155,6 +157,27 @@ class CFMailComposeAI(models.AbstractModel):
         except Exception as e:
             _logger.warning("cf_score_snippets failed: %s", e)
             return {'scored_ids': [{'id': s, 'score': 0.5, 'why': ''} for s in snippet_ids]}
+
+    @api.model
+    def cf_create_internal_task(self, thread_id=None, reply_text='', assignee='antonio'):
+        msg = self.env['casafolino.mail.message'].sudo().browse(thread_id) if thread_id else False
+        subject = msg.subject if msg and msg.exists() else 'Follow-up commerciale'
+        assignee_email = 'martina.sinopoli@casafolino.com' if assignee == 'martina' else 'antonio@casafolino.com'
+        user = self.env['res.users'].sudo().search([
+            '|', ('login', '=', assignee_email), ('email', '=', assignee_email)
+        ], limit=1)
+        task_vals = {
+            'name': 'Follow-up export: %s' % (subject or 'mail cliente'),
+            'description': self._task_description_from_reply(reply_text, msg),
+            'date_deadline': fields.Date.context_today(self) + timedelta(days=2),
+        }
+        if user:
+            task_vals['user_ids'] = [(6, 0, [user.id])]
+        partner = msg.partner_id if msg and msg.exists() else self.env['res.partner']
+        if partner:
+            task_vals['partner_id'] = partner.id
+        task = self.env['project.task'].sudo().create(task_vals)
+        return {'task_id': task.id, 'name': task.name, 'assignee': user.name if user else assignee}
 
     # === Helpers ===
 
@@ -360,6 +383,34 @@ class CFMailComposeAI(models.AbstractModel):
             if len(text) < 450 or 'AZIONI INTERNE' not in text.upper():
                 return True
         return False
+
+    def _task_description_from_reply(self, reply_text, msg=False):
+        actions = self._extract_actions(reply_text)
+        customer = ''
+        if msg and msg.exists():
+            customer = '%s <%s>' % (msg.sender_name or '', msg.sender_email or '')
+        lines = [
+            '<p><strong>Origine:</strong> %s</p>' % html_escape(customer or 'Composer AI'),
+            '<p><strong>Oggetto:</strong> %s</p>' % html_escape((msg.subject or '') if msg and msg.exists() else ''),
+            '<p><strong>Azioni suggerite:</strong></p>',
+            '<ul>',
+        ]
+        for action in actions or ['Preparare risposta cliente e prossima azione.']:
+            lines.append('<li>%s</li>' % html_escape(action))
+        lines.append('</ul>')
+        return ''.join(lines)
+
+    def _extract_actions(self, reply_text):
+        text = reply_text or ''
+        if 'EMAIL PRONTA' in text:
+            text = text.split('EMAIL PRONTA', 1)[0]
+        text = text.replace('AZIONI INTERNE', '')
+        actions = []
+        for line in text.splitlines():
+            clean = line.strip().lstrip('-').strip()
+            if clean:
+                actions.append(clean)
+        return actions[:6]
 
     def _get_user_account(self):
         return self.env['casafolino.mail.account'].sudo().search([

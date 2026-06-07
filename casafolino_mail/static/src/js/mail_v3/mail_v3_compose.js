@@ -831,15 +831,39 @@ export class ComposeWizard extends Component {
         return this.state.body || '';
     }
     applyAIBody(text) {
-        this.state.body = text;
+        const quoteHtml = this._extractQuotedReplyHtml(this.state.body || '');
+        this.state.body = text + this._signatureBlockHtml() + (quoteHtml ? '<br>' + quoteHtml : '');
         if (this.editorRef.el) {
-            this.editorRef.el.innerHTML = text;
+            this.editorRef.el.innerHTML = this.state.body;
         }
+        this._syncBody();
     }
     appendAIBody(text) {
         this.state.body = (this.state.body || '') + text;
         if (this.editorRef.el) {
             this.editorRef.el.innerHTML = this.state.body;
         }
+        this._syncBody();
+    }
+    prependAIBody(text) {
+        this.state.body = text + this._signatureBlockHtml() + '<br>' + (this.state.body || '');
+        if (this.editorRef.el) {
+            this.editorRef.el.innerHTML = this.state.body;
+        }
+        this._syncBody();
+    }
+    _extractQuotedReplyHtml(html) {
+        const body = html || '';
+        const marker = body.match(/(<p[^>]*>\s*)?(Il|On)\s+\d{4}-\d{2}-\d{2}/i);
+        const candidates = [
+            body.search(/<blockquote[\s>]/i),
+            body.search(/border-left\s*:/i),
+            marker ? marker.index : -1,
+        ].filter((idx) => idx >= 0);
+        if (!candidates.length) {
+            return '';
+        }
+        const idx = Math.min(...candidates);
+        return body.slice(idx);
     }
 }
