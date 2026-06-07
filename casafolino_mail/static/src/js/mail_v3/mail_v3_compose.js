@@ -1,6 +1,7 @@
 /** @odoo-module **/
 import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
+import { useService } from "@web/core/utils/hooks";
 import { CFComposeAIPanel } from "@casafolino_mail/compose_ai_panel/compose_ai_panel";
 
 // ── Constants (before class so static refs work) ────────
@@ -87,6 +88,7 @@ export class ComposeWizard extends Component {
     static COLOR_PALETTE = COLOR_PALETTE;
 
     setup() {
+        this.notification = useService("notification");
         this.editorRef = useRef("editor");
         this.state = useState({
             to: this.props.prefilled?.to || '',
@@ -503,10 +505,33 @@ export class ComposeWizard extends Component {
                 this._syncBody();
             }
             this._appendTemplateAttachments(res.attachments || []);
+            if (res.attachments?.length) {
+                this.notification.add(`${res.attachments.length} allegato/i catalogo inseriti`, { type: "success" });
+            } else if (tpl.default_attachment_policy && tpl.default_attachment_policy !== 'none') {
+                this.notification.add("Template applicato, ma nessun allegato catalogo/listino trovato in Odoo", { type: "warning" });
+            }
             this.state.showTemplatePanel = false;
         } catch (e) {
             console.error('[mail v3] template apply error:', e);
+            this.notification.add("Template catalogo non applicato", { type: "danger" });
         }
+    }
+
+    async applyTemplateByPolicy(policy) {
+        if (!this.state.templates.length) {
+            await this._loadTemplates();
+        }
+        const lang = this.state.templateLangFilter || this.state.detectedLang || 'en_US';
+        const candidates = this.state.templates.filter(t => t.default_attachment_policy === policy);
+        const tpl =
+            candidates.find(t => t.language === lang) ||
+            candidates.find(t => t.language === 'en_US') ||
+            candidates[0];
+        if (!tpl) {
+            this.notification.add("Nessun template catalogo configurato", { type: "warning" });
+            return;
+        }
+        await this.applyTemplate(tpl);
     }
 
     _appendTemplateAttachments(attachments) {
@@ -652,6 +677,43 @@ export class ComposeWizard extends Component {
     insertOpening(text) {
         const html = `<p>${text}</p><p></p>`;
         this.applyAIBody(html + this._signatureBlockHtml());
+    }
+
+    insertExportManagerDraft(kind = 'qualification') {
+        const drafts = {
+            qualification: [
+                'Dear Team,',
+                '',
+                'thank you very much for reaching out and for your interest in CasaFolino. Your focus on premium Italian food distribution in the UAE sounds aligned with the type of international partnership we are open to evaluating.',
+                '',
+                'Before sending a generic proposal, I would prefer to understand your commercial structure a little better: your main channels, the product categories you are most interested in, and whether you already import Italian specialty food products into the UAE.',
+                '',
+                'Once we have this context, we can share the most relevant CasaFolino catalogue selection and discuss the best next step, including a short introductory call or a meeting during Fine Food Australia if convenient.',
+                '',
+                'Best regards,',
+            ].join('\n'),
+            call: [
+                'Dear Team,',
+                '',
+                'thank you for your message and for the clear introduction of Noor Al Huda Trading LLC. We would be pleased to explore whether there is a concrete fit between your UAE distribution network and CasaFolino products.',
+                '',
+                'To move efficiently, I suggest a short introductory call where we can understand your customer base, target channels, product priorities and any import requirements we should consider.',
+                '',
+                'In parallel, we can share our catalogue so you can start reviewing the range and identify the categories with the strongest potential for your clients.',
+                '',
+                'Please let me know a suitable time for a short call.',
+                '',
+                'Best regards,',
+            ].join('\n'),
+        };
+        this.applyAIBody(this._plainTextToHtml(drafts[kind] || drafts.qualification) + this._signatureBlockHtml());
+    }
+
+    _plainTextToHtml(text) {
+        return (text || '')
+            .split(/\n{2,}/)
+            .map(part => '<p>' + part.replace(/\n/g, '<br/>') + '</p>')
+            .join('');
     }
 
     _signatureBlockHtml() {

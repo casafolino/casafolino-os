@@ -113,11 +113,18 @@ export class CFComposeAIPanel extends Component {
     }
 
     onApplyQuickReply(reply) {
-        this.props.onApplyBody?.(reply.text);
+        this.props.onApplyBody?.(this._textToHtml(reply.text));
     }
 
     onAppendQuickReply(reply) {
-        this.props.onAppendBody?.("<p>" + (reply.text || "") + "</p>");
+        this.props.onAppendBody?.(this._textToHtml(reply.text));
+    }
+
+    _textToHtml(text) {
+        return (text || "")
+            .split(/\n{2,}/)
+            .map((part) => "<p>" + part.replace(/\n/g, "<br/>") + "</p>")
+            .join("");
     }
 
     onBodyChanged(text) {

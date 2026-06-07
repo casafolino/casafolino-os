@@ -238,16 +238,20 @@
                 </div>
                 <div class="mv3-ai-topbar__actions">
                   <button type="button" class="btn btn-sm btn-primary"
-                          t-on-click="() => this.insertOpening('Dear Team, thank you very much for your interest in CasaFolino. We would be pleased to explore a possible collaboration and understand your market, distribution channels and product categories of interest.')">
+                          t-on-click="() => this.insertExportManagerDraft('qualification')">
                     <i class="fa fa-reply"/> Risposta commerciale
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-secondary"
-                          t-on-click="() => this.insertOpening('Dear Team, thank you for your message. I would be glad to schedule a short call to better understand your needs and define the most suitable next steps together.')">
+                          t-on-click="() => this.insertExportManagerDraft('call')">
                     <i class="fa fa-calendar"/> Proponi call
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-secondary"
-                          t-on-click="() => this.insertOpening('Dear Team, as a next step we can share our catalogue and collect your company details, target channel, import requirements and estimated volumes before preparing a focused proposal.')">
-                    <i class="fa fa-book"/> Catalogo + dati
+                          t-on-click="() => this.applyTemplateByPolicy('catalog')">
+                    <i class="fa fa-book"/> Inserisci catalogo
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          t-on-click="() => this.applyTemplateByPolicy('catalog_price_list')">
+                    <i class="fa fa-list-alt"/> Catalogo + listino
                   </button>
                 </div>
               </div>

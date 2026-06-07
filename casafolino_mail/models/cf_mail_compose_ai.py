@@ -107,16 +107,28 @@ class CFMailComposeAI(models.AbstractModel):
             return {'replies': self._fallback_replies('', partner_id)}
         partner = self.env['res.partner'].browse(partner_id) if partner_id else None
         prompt = (
-            "You are an export sales assistant for CasaFolino (Italian gourmet food).\n"
+            "You are not a generic email assistant. You are CasaFolino's senior Export Manager "
+            "and Commercial Back Office Manager working for Antonio Folino.\n"
+            "Your job is to remove work from Antonio: analyze the opportunity, decide the next "
+            "commercial move, identify missing data, and draft an excellent reply.\n\n"
             "Thread (most recent first):\n%s\n"
             "Recipient: %s\n\n"
-            "Suggest 2-3 quick reply options (1-3 sentences each, business-appropriate).\n"
+            "Create 3 operational answer cards. Each card must include:\n"
+            "1) an internal action checklist for CasaFolino (2-4 bullets),\n"
+            "2) a complete polished email draft ready to send (120-180 words),\n"
+            "3) explicit next step: call, qualification data, catalogue/sample/meeting.\n"
+            "Do NOT create short SMS-style replies. Do NOT invent prices, dates, certifications, "
+            "attachments or promises. If catalogue/price list is useful, say it will be shared "
+            "after/with qualification data.\n"
             'Return JSON ONLY: {"replies": [{"short_label": "<3-5 words>", '
             '"text": "<full reply>", "tone": "cordiale|formal|diretto"}]}'
-        ) % (thread_summary[:1500], partner.name if partner else 'recipient')
+        ) % (thread_summary[:2500], partner.name if partner else 'recipient')
         try:
-            data = self._call_groq_json(prompt, max_tokens=600)
-            return {'replies': (data.get('replies') or [])[:3]}
+            data = self._call_groq_json(prompt, max_tokens=1800)
+            replies = (data.get('replies') or [])[:3]
+            if self._replies_are_too_weak(replies):
+                replies = self._fallback_replies(thread_summary, partner_id)
+            return {'replies': replies}
         except Exception as e:
             _logger.warning("cf_suggest_quick_replies failed: %s", e)
             return {'replies': self._fallback_replies(thread_summary, partner_id)}
@@ -224,42 +236,108 @@ class CFMailComposeAI(models.AbstractModel):
     def _fallback_replies(self, context_text='', partner_id=None):
         text = (context_text or '').lower()
         partner = self.env['res.partner'].browse(partner_id) if partner_id else self.env['res.partner']
-        name = partner.name if partner and partner.exists() else 'there'
+        name = partner.name if partner and partner.exists() else 'Team'
         if any(token in text for token in ['sample', 'campion', 'taste', 'feedback']):
             return [
                 {
-                    'short_label': 'Conferma campioni',
-                    'text': 'Dear %s, thank you for your feedback. We have taken note of the points you mentioned and will align internally on the next sample version. I will come back to you with the next steps shortly.' % name,
+                    'short_label': 'Campioni: piano',
+                    'text': (
+                        'AZIONI INTERNE\n'
+                        '- Aprire/aggiornare task campionatura con prodotto, feedback ricevuto e owner.\n'
+                        '- Chiedere a produzione/R&D se la modifica e fattibile prima di promettere tempi.\n'
+                        '- Pianificare un follow-up scritto con prossimo step e data interna.\n\n'
+                        'EMAIL PRONTA\n'
+                        'Dear %s,\n\n'
+                        'thank you very much for your detailed feedback. We have taken note of each point and I will align internally with our product and production team before confirming the most appropriate next step.\n\n'
+                        'To avoid any misunderstanding, I will review the requested adjustments, verify feasibility on our side and then come back to you with a clear update on the next sample version or proposed solution.\n\n'
+                        'In the meantime, if there are any priority requirements from your buying or quality team, please share them with us so we can include them in the internal evaluation.\n\n'
+                        'Best regards,'
+                    ) % name,
                     'tone': 'formal',
                 },
                 {
-                    'short_label': 'Apri task campione',
-                    'text': 'Create a sample follow-up task with product, requested changes, deadline, owner and next customer update.',
+                    'short_label': 'Follow-up tecnico',
+                    'text': (
+                        'AZIONI INTERNE\n'
+                        '- Trasformare la mail in task campione con scadenza e responsabile.\n'
+                        '- Collegare dossier/lead e allegare eventuali foto o note cliente.\n'
+                        '- Preparare una risposta dopo conferma tecnica, senza inventare tempi.\n\n'
+                        'EMAIL PRONTA\n'
+                        'Dear %s,\n\n'
+                        'thank you for sharing these observations. I confirm that we will treat them as an internal technical follow-up, so the next answer you receive from us will be based on a checked position rather than a generic reply.\n\n'
+                        'I am forwarding the points to the relevant team and will come back with a structured update covering feasibility, any clarification needed and the next operational step.\n\n'
+                        'This way we can keep the project moving while making sure the answer is precise and useful for your team.\n\n'
+                        'Best regards,'
+                    ) % name,
                     'tone': 'diretto',
                 },
             ]
         if any(token in text for token in ['distribut', 'meeting request', 'fine food', 'catalog', 'price list']):
             return [
                 {
-                    'short_label': 'Risposta commerciale',
-                    'text': 'Dear %s, thank you very much for your interest in CasaFolino. We would be pleased to explore a possible collaboration and understand your distribution channels, target customers and product categories of interest.' % name,
+                    'short_label': 'Qualifica export',
+                    'text': (
+                        'AZIONI INTERNE\n'
+                        '- Trattare come opportunita export/distribuzione e creare o collegare lead.\n'
+                        '- Qualificare canale: HORECA, retail, food service, importazione e area UAE.\n'
+                        '- Preparare catalogo, ma chiedere prima focus prodotti e profilo distributivo.\n'
+                        '- Proporre call/meeting per capire potenziale reale e prossimi step.\n\n'
+                        'EMAIL PRONTA\n'
+                        'Dear %s,\n\n'
+                        'thank you very much for reaching out and for your interest in CasaFolino. Your focus on premium Italian food distribution in the UAE sounds aligned with the type of international partnership we are open to evaluating.\n\n'
+                        'Before sending a generic proposal, I would prefer to understand your commercial structure a little better: your main channels (HORECA, retail, food service or gourmet stores), the product categories you are most interested in, and whether you already import Italian specialty food products into the UAE.\n\n'
+                        'Once we have this context, we can share the most relevant CasaFolino catalogue selection and discuss the best next step, including a short introductory call or a meeting during Fine Food Australia if convenient.\n\n'
+                        'Best regards,'
+                    ) % name,
                     'tone': 'formal',
                 },
                 {
-                    'short_label': 'Proponi call',
-                    'text': 'I would be glad to schedule a short call this week to introduce CasaFolino, understand your market needs and define the most suitable next steps.',
+                    'short_label': 'Call + catalogo',
+                    'text': (
+                        'AZIONI INTERNE\n'
+                        '- Inviare risposta calda ma qualificante.\n'
+                        '- Allegare catalogo se disponibile, senza listino prima della qualifica.\n'
+                        '- Chiedere prodotti target, volumi indicativi e clienti serviti.\n'
+                        '- Mettere reminder per follow-up entro 3-5 giorni.\n\n'
+                        'EMAIL PRONTA\n'
+                        'Dear %s,\n\n'
+                        'thank you for your message and for the clear introduction of Noor Al Huda Trading LLC. We would be pleased to explore whether there is a concrete fit between your UAE distribution network and CasaFolino products.\n\n'
+                        'To move efficiently, I suggest a short call where we can understand your customer base, the product families you are looking for, and the type of positioning you want to build in the UAE market.\n\n'
+                        'In parallel, we can share our catalogue so you can start reviewing the range and identify the categories with the strongest potential for your clients.\n\n'
+                        'Please let me know a suitable time for a short introductory call.\n\n'
+                        'Best regards,'
+                    ) % name,
                     'tone': 'cordiale',
                 },
                 {
-                    'short_label': 'Catalogo + dati',
-                    'text': 'As a next step, we can share our catalogue and ask for company details, target channel, import requirements and estimated volumes before preparing a focused proposal.',
+                    'short_label': 'Backoffice dati',
+                    'text': (
+                        'AZIONI INTERNE\n'
+                        '- Richiedere dati azienda e buyer/import manager.\n'
+                        '- Verificare se serve creazione anagrafica e dossier UAE.\n'
+                        '- Preparare catalogo mirato e successivo task commerciale.\n'
+                        '- Non inviare listino completo prima di capire canale e volumi.\n\n'
+                        'EMAIL PRONTA\n'
+                        'Dear %s,\n\n'
+                        'thank you for contacting CasaFolino. We can certainly evaluate the opportunity, and I would like to collect the right information first so that our reply is useful and not generic.\n\n'
+                        'Could you please share your company profile, the main customer segments you serve in the UAE, the product categories you are interested in, and any import or labelling requirements we should consider?\n\n'
+                        'Based on this information, we will prepare the most relevant CasaFolino catalogue selection and define the next step together, whether that is a call, a meeting or a more focused commercial proposal.\n\n'
+                        'Best regards,'
+                    ) % name,
                     'tone': 'diretto',
                 },
             ]
         return [
             {
                 'short_label': 'Rispondi bene',
-                'text': 'Thank you for your message. I will review the details and come back to you shortly with the most appropriate next steps.',
+                'text': (
+                    'AZIONI INTERNE\n'
+                    '- Capire se e commerciale, logistica, admin o materiali.\n'
+                    '- Collegare contatto/lead/dossier prima di archiviare la mail.\n'
+                    '- Creare task se esiste una promessa o un follow-up.\n\n'
+                    'EMAIL PRONTA\n'
+                    'Thank you for your message. I will review the details carefully and come back with the most appropriate next step, so we can move forward in a clear and useful way.'
+                ),
                 'tone': 'cordiale',
             },
             {
@@ -273,6 +351,15 @@ class CFMailComposeAI(models.AbstractModel):
                 'tone': 'diretto',
             },
         ]
+
+    def _replies_are_too_weak(self, replies):
+        if not replies:
+            return True
+        for reply in replies:
+            text = (reply.get('text') or '').strip()
+            if len(text) < 450 or 'AZIONI INTERNE' not in text.upper():
+                return True
+        return False
 
     def _get_user_account(self):
         return self.env['casafolino.mail.account'].sudo().search([
