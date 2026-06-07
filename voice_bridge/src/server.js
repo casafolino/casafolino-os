@@ -48,6 +48,7 @@ Rileva dinamicamente la lingua parlata dal cliente fin dal primo turno di conver
 Parla con ritmo telefonico leggermente piu rapido del normale, senza pause lunghe. Dopo aver raccolto il nome, chiama il cliente per nome in modo naturale e non eccessivo.
 Non chiedere tutti i dati insieme: all'inizio chiedi solo nome, cognome ed email. Dopo qualche scambio, quando e naturale, chiedi l'azienda e poi il telefono se serve per il riepilogo o per una richiamata.
 Non interrompere il cliente mentre sta elencando dati come nome, email, telefono, azienda o dettagli dell'ordine: aspetta che finisca, poi conferma in modo breve. Evita micro-risposte come "grazie" dopo ogni singolo frammento.
+Non parlare da sola e non riempire i silenzi: dopo ogni domanda aspetta una risposta chiara del cliente. Se senti solo rumore, respiro, parole isolate o audio incompleto, resta in ascolto.
 
 Il tuo scopo è assistere i clienti che chiamano, rispondere alle loro domande sui prodotti di CasaFolino, verificare lo stato dell'ordine, gestire contatti e richieste commerciali (lead), o aprire segnalazioni di assistenza.
 
@@ -558,6 +559,7 @@ wss.on('connection', (ws, req) => {
   let lastSpeechStartedAt = 0;
   let lastDeepgramClearAt = 0;
   let openAiResponseActive = false;
+  const respondedTranscriptionItems = new Set();
   let fallbackRedirected = false;
   
   log('info', 'New Twilio WebSocket media-stream connection established', { jobId });
@@ -765,11 +767,20 @@ wss.on('connection', (ws, req) => {
                   format: {
                     type: 'audio/pcmu'
                   },
+                  noise_reduction: {
+                    type: 'near_field'
+                  },
+                  transcription: {
+                    model: 'gpt-4o-mini-transcribe',
+                    language: 'it'
+                  },
                   turn_detection: {
                     type: 'server_vad',
                     threshold: config.vadThreshold,
                     prefix_padding_ms: config.vadPrefixPaddingMs,
-                    silence_duration_ms: config.vadSilenceDurationMs
+                    silence_duration_ms: config.vadSilenceDurationMs,
+                    create_response: false,
+                    interrupt_response: false
                   }
                 },
                 output: {
@@ -833,6 +844,7 @@ wss.on('connection', (ws, req) => {
             'response.output_audio.delta',
             'input_audio_buffer.speech_started',
             'input_audio_buffer.speech_stopped',
+            'conversation.item.input_audio_transcription.delta',
             'rate_limits.updated'
           ];
           if (!silentEvents.includes(openAiMsg.type)) {
@@ -868,6 +880,32 @@ wss.on('connection', (ws, req) => {
             openAiWs.send(JSON.stringify({
               type: 'response.cancel'
             }));
+          }
+
+          if (openAiMsg.type === 'conversation.item.input_audio_transcription.completed') {
+            const itemId = openAiMsg.item_id || openAiMsg.item?.id;
+            const transcriptText = String(openAiMsg.transcript || '').trim();
+            const normalizedTranscript = transcriptText
+              .replace(/[.,!?;:()\[\]{}'"`]/g, '')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLowerCase();
+
+            if (!itemId || respondedTranscriptionItems.has(itemId)) {
+              return;
+            }
+            respondedTranscriptionItems.add(itemId);
+
+            if (normalizedTranscript.length < 4 || ['si', 'sì', 'ok', 'eh', 'ah', 'mh', 'mmm'].includes(normalizedTranscript)) {
+              log('info', 'Ignoring short/noisy OpenAI transcription turn', { transcript: transcriptText });
+              return;
+            }
+
+            transcript.push(`Cliente: ${transcriptText}`);
+            log('info', 'Transcript update: Cliente: ' + transcriptText);
+            if (openAiWs.readyState === WebSocket.OPEN) {
+              openAiWs.send(JSON.stringify({ type: 'response.create' }));
+            }
           }
           
           if ((openAiMsg.type === 'response.audio.delta' || openAiMsg.type === 'response.output_audio.delta') && openAiMsg.delta && streamSid) {
