@@ -13,7 +13,8 @@ const config = {
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
-  humanTransferUri: process.env.HUMAN_TRANSFER_URI || '',
+  humanTransferUri: process.env.HUMAN_TRANSFER_URI || 'human_chain',
+  sipDomain: process.env.TWILIO_SIP_DOMAIN || 'casafolino.sip.twilio.com',
   publicBridgeUrl: stripTrailingSlash(process.env.PUBLIC_BRIDGE_URL || ''),
   logLevel: process.env.LOG_LEVEL || 'info',
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 10000),
@@ -264,6 +265,20 @@ function sendTwiML(res, twiml) {
   res.end(twiml);
 }
 
+function buildHumanTransferTwiML() {
+  const sipDomain = escapeXml(config.sipDomain);
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="it-IT" voice="alice">Ti passo un operatore.</Say>
+  <Dial timeout="20"><Sip>sip:201@${sipDomain}</Sip></Dial>
+  <Dial timeout="20"><Sip>sip:202@${sipDomain}</Sip></Dial>
+  <Dial timeout="20"><Sip>sip:203@${sipDomain}</Sip></Dial>
+  <Dial timeout="25"><Sip>sip:205@${sipDomain}</Sip></Dial>
+  <Say language="it-IT" voice="alice">Nessun operatore e disponibile al momento. Riprova piu tardi.</Say>
+  <Hangup/>
+</Response>`;
+}
+
 function withDb(path) {
   const url = new URL(`${config.odooBaseUrl}${path}`);
   url.searchParams.set('db', config.odooDb);
@@ -416,16 +431,16 @@ async function redirectLiveCallToFallback(callSid, reason = 'openai_error') {
 async function handleTwilioFallback(req, res, url) {
   const reason = url.searchParams.get('reason') || 'temporary_unavailable';
   log('warn', 'Twilio fallback TwiML requested', { reason });
-  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say language="it-IT" voice="alice">Buongiorno, sono Giulia di CasaFolino. In questo momento sto avendo un problema tecnico temporaneo sulla linea. Non si preoccupi: abbiamo registrato la chiamata e la invitiamo a richiamare tra qualche minuto. Grazie da CasaFolino.</Say>
-</Response>`;
-  sendTwiML(res, twiml);
+  sendTwiML(res, buildHumanTransferTwiML());
 }
 
 async function handleTwilioTransfer(req, res, url) {
   const target = url.searchParams.get('target') || config.humanTransferUri;
   log('info', 'Twilio call transfer TwiML requested', { target });
+  if (target === 'human_chain') {
+    sendTwiML(res, buildHumanTransferTwiML());
+    return;
+  }
   if (!target || !/^(tel:|sip:)/i.test(target.trim())) {
     log('error', 'Twilio transfer requested without a valid human target', { target });
     const twiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Say language="it-IT">Mi dispiace, al momento non riesco a trasferire la chiamata. Resti pure in linea con Giulia.</Say></Response>';
@@ -435,7 +450,7 @@ async function handleTwilioTransfer(req, res, url) {
   
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial>${target}</Dial>
+  <Dial>${escapeXml(target)}</Dial>
 </Response>`;
   
   sendTwiML(res, twiml);
