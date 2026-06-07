@@ -92,7 +92,15 @@
                                                     <h3><t t-esc="chain.lot"/></h3>
                                                     <small><t t-esc="chain.product"/> · SKU <t t-esc="chain.sku || '-'"/></small>
                                                 </div>
-                                                <button type="button" t-att-data-query="chain.lot" t-on-click="onLotDrill">Riapri questa pista</button>
+                                                <div class="cf-haccp-recall-actions">
+                                                    <button type="button" t-att-data-query="chain.lot" t-on-click="onLotDrill">Riapri pista</button>
+                                                    <button type="button" class="cf-haccp-recall-primary"
+                                                            t-att-data-lot-id="chain.id"
+                                                            t-on-click="onCreateRecall"
+                                                            t-att-disabled="state.recallCreatingLotId == chain.id">
+                                                        <t t-esc="state.recallCreatingLotId == chain.id ? 'Creo richiamo...' : 'Crea richiamo'"/>
+                                                    </button>
+                                                </div>
                                             </header>
                                             <div class="cf-haccp-recall-strip">
                                                 <div>
@@ -121,10 +129,14 @@
                                                     <h4>Ordini di produzione</h4>
                                                     <t t-if="chain.productions.length">
                                                         <t t-foreach="visibleSearchItems(chain.productions)" t-as="production" t-key="production.id">
-                                                            <div class="cf-haccp-flow-row">
+                                                            <button type="button" class="cf-haccp-flow-row cf-haccp-flow-action"
+                                                                    t-att-data-model="production.model"
+                                                                    t-att-data-res-id="production.id"
+                                                                    t-att-data-title="production.name"
+                                                                    t-on-click="onOpenRecord">
                                                                 <strong><t t-esc="production.name"/></strong>
                                                                 <small><t t-esc="production.product"/> · <t t-esc="production.date || '-'"/> · <t t-esc="production.state"/></small>
-                                                            </div>
+                                                            </button>
                                                         </t>
                                                     </t>
                                                     <t t-else=""><div class="cf-haccp-search-empty">Nessun ordine di produzione diretto</div></t>
@@ -133,9 +145,20 @@
                                                     <h4>Venduto a</h4>
                                                     <t t-if="chain.deliveries.length">
                                                         <t t-foreach="visibleSearchItems(chain.deliveries)" t-as="delivery" t-key="delivery.id">
-                                                            <div class="cf-haccp-flow-row">
-                                                                <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
-                                                                <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
+                                                            <div class="cf-haccp-flow-row cf-haccp-flow-split">
+                                                                <button type="button" class="cf-haccp-flow-main"
+                                                                        t-att-data-model="delivery.model"
+                                                                        t-att-data-res-id="delivery.id"
+                                                                        t-att-data-title="delivery.name"
+                                                                        t-on-click="onOpenRecord">
+                                                                    <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
+                                                                    <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
+                                                                </button>
+                                                                <button t-if="delivery.partner_id" type="button" class="cf-haccp-mini-link"
+                                                                        t-att-data-model="delivery.partner_model"
+                                                                        t-att-data-res-id="delivery.partner_id"
+                                                                        t-att-data-title="delivery.partner"
+                                                                        t-on-click="onOpenRecord">Cliente</button>
                                                             </div>
                                                         </t>
                                                     </t>
@@ -185,10 +208,14 @@
                                                     <h4>Produzioni impattate</h4>
                                                     <t t-if="chain.impacted_productions.length">
                                                         <t t-foreach="visibleSearchItems(chain.impacted_productions)" t-as="production" t-key="production.id">
-                                                            <div class="cf-haccp-flow-row">
+                                                            <button type="button" class="cf-haccp-flow-row cf-haccp-flow-action"
+                                                                    t-att-data-model="production.model"
+                                                                    t-att-data-res-id="production.id"
+                                                                    t-att-data-title="production.name"
+                                                                    t-on-click="onOpenRecord">
                                                                 <strong><t t-esc="production.name"/></strong>
                                                                 <small><t t-esc="production.product"/> · lotto <t t-esc="production.lot || '-'"/></small>
-                                                            </div>
+                                                            </button>
                                                         </t>
                                                     </t>
                                                     <t t-else=""><div class="cf-haccp-search-empty">Nessuna produzione impattata</div></t>
@@ -197,9 +224,20 @@
                                                     <h4>Clienti coinvolti</h4>
                                                     <t t-if="chain.impacted_deliveries.length">
                                                         <t t-foreach="visibleSearchItems(chain.impacted_deliveries)" t-as="delivery" t-key="delivery.id">
-                                                            <div class="cf-haccp-flow-row">
-                                                                <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
-                                                                <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
+                                                            <div class="cf-haccp-flow-row cf-haccp-flow-split">
+                                                                <button type="button" class="cf-haccp-flow-main"
+                                                                        t-att-data-model="delivery.model"
+                                                                        t-att-data-res-id="delivery.id"
+                                                                        t-att-data-title="delivery.name"
+                                                                        t-on-click="onOpenRecord">
+                                                                    <strong><t t-esc="delivery.partner || 'Cliente non indicato'"/></strong>
+                                                                    <small><t t-esc="delivery.name"/> · <t t-esc="delivery.date || '-'"/></small>
+                                                                </button>
+                                                                <button t-if="delivery.partner_id" type="button" class="cf-haccp-mini-link"
+                                                                        t-att-data-model="delivery.partner_model"
+                                                                        t-att-data-res-id="delivery.partner_id"
+                                                                        t-att-data-title="delivery.partner"
+                                                                        t-on-click="onOpenRecord">Cliente</button>
                                                             </div>
                                                         </t>
                                                     </t>

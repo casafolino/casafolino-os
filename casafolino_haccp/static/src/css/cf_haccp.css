@@ -591,6 +591,13 @@
     color: rgba(245,230,200,.78);
 }
 
+.cf-haccp-recall-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .cf-haccp-recall-head button {
     flex: 0 0 auto;
     border: 1px solid rgba(245,230,200,.35);
@@ -599,6 +606,16 @@
     background: rgba(255,255,255,.08);
     color: #F5E6C8;
     font-weight: 800;
+}
+
+.cf-haccp-recall-head .cf-haccp-recall-primary {
+    border-color: #F5E6C8;
+    background: #F5E6C8;
+    color: var(--cf-haccp-brown);
+}
+
+.cf-haccp-recall-head button:disabled {
+    opacity: .62;
 }
 
 .cf-haccp-recall-strip {
@@ -666,6 +683,45 @@
 .cf-haccp-flow-row {
     padding: 9px 0;
     border-bottom: 1px solid rgba(232,229,220,.85);
+}
+
+.cf-haccp-flow-action,
+.cf-haccp-flow-main {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+}
+
+.cf-haccp-flow-action {
+    display: block;
+}
+
+.cf-haccp-flow-action:hover,
+.cf-haccp-flow-main:hover {
+    color: var(--cf-haccp-accent);
+}
+
+.cf-haccp-flow-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-haccp-mini-link {
+    min-height: 28px;
+    border: 1px solid var(--cf-haccp-border);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--cf-haccp-brown);
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.cf-haccp-mini-link:hover {
+    border-color: var(--cf-haccp-accent);
+    background: #F5E6C8;
 }
 
 .cf-haccp-flow-row:last-child {

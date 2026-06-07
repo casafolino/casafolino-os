@@ -18,6 +18,7 @@ class CfHaccpDashboard extends Component {
             lotSearchError: null,
             lotSearchResult: null,
             lotSearchExpanded: false,
+            recallCreatingLotId: null,
         });
         this.action = useService("action");
         onWillStart(async () => { await this._load(); });
@@ -115,6 +116,49 @@ class CfHaccpDashboard extends Component {
 
     onShowAllSearch() {
         this.state.lotSearchExpanded = true;
+    }
+
+    async onCreateRecall(ev) {
+        const lotId = Number(ev.currentTarget.dataset.lotId || 0);
+        if (!lotId) {
+            return;
+        }
+        this.state.recallCreatingLotId = lotId;
+        this.state.lotSearchError = null;
+        try {
+            const action = await rpc("/web/dataset/call_kw", {
+                model: "cf.haccp.nc",
+                method: "dashboard_create_lot_recall",
+                args: [lotId],
+                kwargs: {},
+            });
+            if (action && action.error) {
+                this.state.lotSearchError = action.error;
+                return;
+            }
+            await this.action.doAction(action);
+        } catch (e) {
+            this.state.lotSearchError = "Creazione richiamo non riuscita.";
+        } finally {
+            this.state.recallCreatingLotId = null;
+        }
+    }
+
+    async onOpenRecord(ev) {
+        const model = ev.currentTarget.dataset.model;
+        const resId = Number(ev.currentTarget.dataset.resId || 0);
+        if (!model || !resId) {
+            return;
+        }
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: ev.currentTarget.dataset.title || "Dettaglio",
+            res_model: model,
+            res_id: resId,
+            view_mode: "form",
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 
     visibleSearchItems(items) {

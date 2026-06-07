@@ -252,6 +252,7 @@ class CfHaccpNc(models.Model):
         return [
             {
                 "id": production.id,
+                "model": "mrp.production",
                 "name": production.display_name or production.name or "",
                 "product": production.product_id.display_name or "",
                 "lot": production.lot_producing_id.name or "",
@@ -266,7 +267,10 @@ class CfHaccpNc(models.Model):
         return [
             {
                 "id": picking.id,
+                "model": "stock.picking",
                 "name": picking.display_name or picking.name or "",
+                "partner_id": picking.partner_id.id or False,
+                "partner_model": "res.partner" if picking.partner_id else "",
                 "partner": picking.partner_id.display_name or "",
                 "date": str(picking.date_done or picking.scheduled_date or "")[:19],
                 "state": picking.state or "",
@@ -285,3 +289,30 @@ class CfHaccpNc(models.Model):
             seen.add(key)
             unique.append(delivery)
         return unique
+
+    @api.model
+    def dashboard_create_lot_recall(self, lot_id):
+        lot = self.env["stock.lot"].sudo().browse(int(lot_id or 0)).exists()
+        if not lot:
+            return {"error": "Lotto non trovato."}
+
+        Recall = self.env["cf.recall.session"].sudo()
+        session = Recall.create({
+            "lot_id": lot.id,
+            "direction": "both",
+            "session_type": "real",
+            "notes": (
+                "Richiamo creato dalla dashboard HACCP per il lotto %s.\n"
+                "Verificare clienti, produzioni e lotti collegati prima dell'invio comunicazioni."
+            ) % (lot.name or ""),
+        })
+        session.action_run()
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Richiamo lotti interessati",
+            "res_model": "cf.recall.session",
+            "res_id": session.id,
+            "view_mode": "form",
+            "views": [[False, "form"]],
+            "target": "current",
+        }
