@@ -124,39 +124,37 @@ def main():
         processed = 0
         for move in moves:
             processed += 1
+            move_name = move.name
+            move_id = move.id
             try:
                 with cr.savepoint():
+                    skip_move = False
                     if args.only_mismatches:
                         xml_content = move._cf_get_fatturapa_xml_attachment_content()
                         parsed = move._cf_parse_fatturapa_xml(xml_content) if xml_content else {}
                         xml_total = parsed.get("amount_total")
                         if xml_total is None:
                             move._cf_validate_fatturapa_xml_amounts(parsed=parsed)
-                            print(f"SKIP {move.name} id={move.id}: XML mancante/non parsabile", flush=True)
-                            if not args.dry_run and args.commit_every and processed % args.commit_every == 0:
-                                cr.commit()
-                                print(f"PROGRESS commit: processate={processed} corrette={fixed}", flush=True)
-                            continue
-                        if float_compare(move.amount_total, float(xml_total), precision_rounding=move.currency_id.rounding) == 0:
-                            print(f"SKIP {move.name} id={move.id}: gia' corrisponde a XML {float(xml_total):.2f}", flush=True)
-                            if not args.dry_run and args.commit_every and processed % args.commit_every == 0:
-                                cr.commit()
-                                print(f"PROGRESS commit: processate={processed} corrette={fixed}", flush=True)
-                            continue
+                            print(f"SKIP {move_name} id={move_id}: XML mancante/non parsabile", flush=True)
+                            skip_move = True
+                        elif float_compare(move.amount_total, float(xml_total), precision_rounding=move.currency_id.rounding) == 0:
+                            print(f"SKIP {move_name} id={move_id}: gia' corrisponde a XML {float(xml_total):.2f}", flush=True)
+                            skip_move = True
 
-                    fixed += move._cf_fix_fatturapa_xml_lines(restrict_europa=not args.all_vendors)
-                    move.invalidate_recordset()
-                    print(
-                        "AFTER "
-                        f"{move.name} id={move.id} state={move.state} payment={move.payment_state} "
-                        f"total={move.amount_total:.2f} xml={move.cf_fatturapa_xml_amount_total:.2f} "
-                        f"check={move.cf_fatturapa_xml_check_state}",
-                        flush=True,
-                    )
-                    if move.cf_fatturapa_xml_check_message:
-                        print(f"  {move.cf_fatturapa_xml_check_message}", flush=True)
+                    if not skip_move:
+                        fixed += move._cf_fix_fatturapa_xml_lines(restrict_europa=not args.all_vendors)
+                        move.invalidate_recordset()
+                        print(
+                            "AFTER "
+                            f"{move.name} id={move.id} state={move.state} payment={move.payment_state} "
+                            f"total={move.amount_total:.2f} xml={move.cf_fatturapa_xml_amount_total:.2f} "
+                            f"check={move.cf_fatturapa_xml_check_state}",
+                            flush=True,
+                        )
+                        if move.cf_fatturapa_xml_check_message:
+                            print(f"  {move.cf_fatturapa_xml_check_message}", flush=True)
             except Exception as exc:
-                print(f"ERROR {move.name} id={move.id}: {exc}", flush=True)
+                print(f"ERROR {move_name} id={move_id}: {exc}", flush=True)
             if not args.dry_run and args.commit_every and processed % args.commit_every == 0:
                 cr.commit()
                 print(f"PROGRESS commit: processate={processed} corrette={fixed}", flush=True)
