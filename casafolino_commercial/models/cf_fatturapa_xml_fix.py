@@ -424,10 +424,10 @@ class AccountMove(models.Model):
             },
         }
 
-    def _cf_fix_fatturapa_xml_lines(self):
+    def _cf_fix_fatturapa_xml_lines(self, restrict_europa=True):
         fixed_count = 0
         for move in self:
-            if not move._cf_is_europa_commerciale_partner(move.partner_id):
+            if restrict_europa and not move._cf_is_europa_commerciale_partner(move.partner_id):
                 continue
             if move.payment_state not in ("not_paid", "partial", "in_payment"):
                 move.message_post(body=_("Riallineamento XML saltato: fattura gia' pagata o riconciliata."))
@@ -500,7 +500,7 @@ class AccountMove(models.Model):
             move._cf_validate_fatturapa_xml_amounts(parsed=parsed)
             fixed_count += 1
             move.message_post(body=_(
-                "Riallineamento XML Europa Commerciale completato: righe %(lines)s, totale precedente %(old).2f, totale attuale %(new).2f, totale XML %(xml).2f.",
+                "Riallineamento XML FatturaPA completato: righe %(lines)s, totale precedente %(old).2f, totale attuale %(new).2f, totale XML %(xml).2f.",
                 lines=touched,
                 old=old_total,
                 new=move.amount_total,
