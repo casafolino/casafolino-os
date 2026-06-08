@@ -140,10 +140,31 @@ def main():
                         elif float_compare(move.amount_total, float(xml_total), precision_rounding=move.currency_id.rounding) == 0:
                             print(f"SKIP {move_name} id={move_id}: gia' corrisponde a XML {float(xml_total):.2f}", flush=True)
                             skip_move = True
+                        else:
+                            xml_lines = parsed.get("lines") or []
+                            product_lines = move.invoice_line_ids.filtered(
+                                lambda line: line.display_type == "product"
+                                and line.name != "Arrotondamento XML FatturaPA"
+                            )
+                            if len(xml_lines) != len(product_lines):
+                                move._cf_validate_fatturapa_xml_amounts(parsed=parsed)
+                                print(
+                                    "SKIP "
+                                    f"{move_name} id={move_id}: righe XML {len(xml_lines)}, "
+                                    f"righe Odoo {len(product_lines)}; correzione automatica saltata",
+                                    flush=True,
+                                )
+                                skip_move = True
 
                     if not skip_move:
-                        fixed += move._cf_fix_fatturapa_xml_lines(restrict_europa=not args.all_vendors)
+                        fixed_now = move._cf_fix_fatturapa_xml_lines(restrict_europa=not args.all_vendors)
+                        if not fixed_now:
+                            print(f"SKIP {move_name} id={move_id}: correzione automatica non applicabile", flush=True)
+                            skip_move = True
+                        else:
+                            fixed += fixed_now
                         move.invalidate_recordset()
+                    if not skip_move:
                         print(
                             "AFTER "
                             f"{move.name} id={move.id} state={move.state} payment={move.payment_state} "
