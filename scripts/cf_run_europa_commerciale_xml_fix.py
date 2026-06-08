@@ -49,9 +49,9 @@ def main():
             where = [
                 "am.move_type IN ('in_invoice', 'in_refund')",
                 "am.state != 'cancel'",
-                "(ia.mimetype = 'text/xml' OR ia.name ILIKE '%.xml%')",
+                "(ia.mimetype = 'text/xml' OR ia.name ILIKE %s)",
             ]
-            params = []
+            params = ["%.xml%"]
             if not args.include_paid:
                 where.append("am.payment_state IN ('not_paid', 'partial', 'in_payment')")
             if args.invoice:
