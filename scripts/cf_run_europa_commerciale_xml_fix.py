@@ -133,9 +133,15 @@ def main():
                         if xml_total is None:
                             move._cf_validate_fatturapa_xml_amounts(parsed=parsed)
                             print(f"SKIP {move.name} id={move.id}: XML mancante/non parsabile", flush=True)
+                            if not args.dry_run and args.commit_every and processed % args.commit_every == 0:
+                                cr.commit()
+                                print(f"PROGRESS commit: processate={processed} corrette={fixed}", flush=True)
                             continue
                         if float_compare(move.amount_total, float(xml_total), precision_rounding=move.currency_id.rounding) == 0:
                             print(f"SKIP {move.name} id={move.id}: gia' corrisponde a XML {float(xml_total):.2f}", flush=True)
+                            if not args.dry_run and args.commit_every and processed % args.commit_every == 0:
+                                cr.commit()
+                                print(f"PROGRESS commit: processate={processed} corrette={fixed}", flush=True)
                             continue
 
                     fixed += move._cf_fix_fatturapa_xml_lines(restrict_europa=not args.all_vendors)
