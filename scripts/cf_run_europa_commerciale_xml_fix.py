@@ -7,6 +7,28 @@ from odoo.tools import config
 from odoo.tools.float_utils import float_compare
 
 
+def _filter_unreconciled_payable_moves(env, moves):
+    if not moves:
+        return moves
+    env.cr.execute("""
+        SELECT DISTINCT aml.move_id
+          FROM account_move_line aml
+          JOIN account_account aa ON aa.id = aml.account_id
+          LEFT JOIN account_partial_reconcile apr_debit ON apr_debit.debit_move_id = aml.id
+          LEFT JOIN account_partial_reconcile apr_credit ON apr_credit.credit_move_id = aml.id
+         WHERE aml.move_id = ANY(%s)
+           AND aa.account_type IN ('asset_receivable', 'liability_payable')
+           AND (
+                aml.reconciled
+                OR aml.full_reconcile_id IS NOT NULL
+                OR apr_debit.id IS NOT NULL
+                OR apr_credit.id IS NOT NULL
+           )
+    """, [moves.ids])
+    reconciled_ids = {row[0] for row in env.cr.fetchall()}
+    return moves.filtered(lambda move: move.id not in reconciled_ids)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Riallinea fatture fornitore ai valori XML FatturaPA.")
     parser.add_argument("-d", "--database", required=True)
@@ -45,6 +67,8 @@ def main():
             if args.invoice:
                 domain.append(("name", "=", args.invoice))
             moves = env["account.move"].search(domain, order="invoice_date, name, id", limit=args.limit)
+            if not args.include_paid:
+                moves = _filter_unreconciled_payable_moves(env, moves)
         else:
             where = [
                 "am.move_type IN ('in_invoice', 'in_refund')",
@@ -54,6 +78,23 @@ def main():
             params = ["%.xml%"]
             if not args.include_paid:
                 where.append("am.payment_state IN ('not_paid', 'partial', 'in_payment')")
+                where.append("""
+                    NOT EXISTS (
+                        SELECT 1
+                          FROM account_move_line aml
+                          JOIN account_account aa ON aa.id = aml.account_id
+                          LEFT JOIN account_partial_reconcile apr_debit ON apr_debit.debit_move_id = aml.id
+                          LEFT JOIN account_partial_reconcile apr_credit ON apr_credit.credit_move_id = aml.id
+                         WHERE aml.move_id = am.id
+                           AND aa.account_type IN ('asset_receivable', 'liability_payable')
+                           AND (
+                                aml.reconciled
+                                OR aml.full_reconcile_id IS NOT NULL
+                                OR apr_debit.id IS NOT NULL
+                                OR apr_credit.id IS NOT NULL
+                           )
+                    )
+                """)
             if args.invoice:
                 where.append("am.name = %s")
                 params.append(args.invoice)
