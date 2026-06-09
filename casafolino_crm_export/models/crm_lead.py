@@ -189,21 +189,19 @@ class CrmLead(models.Model):
     def write(self, vals):
         # Detect stage change for standby exit logic
         old_stage_ids = {}
-        if 'stage_id' in vals:
-            standby_stage = self.env['crm.stage'].search([('name', '=', 'Standby')], limit=1)
-            if standby_stage:
-                for lead in self:
-                    old_stage_ids[lead.id] = lead.stage_id.id
+        standby_stage = self.env.ref('casafolino_crm_export.stage_standby', raise_if_not_found=False)
+        if 'stage_id' in vals and standby_stage:
+            for lead in self:
+                old_stage_ids[lead.id] = lead.stage_id.id
 
         res = super().write(vals)
 
         if 'stage_id' in vals:
             new_stage = self.env['crm.stage'].browse(vals['stage_id'])
             if new_stage.exists():
-                standby_stage = self.env['crm.stage'].search([('name', '=', 'Standby')], limit=1)
                 for lead in self:
                     # Auto-set probability from stage (skip Standby = keep current)
-                    if new_stage.name == 'Standby':
+                    if standby_stage and new_stage.id == standby_stage.id:
                         pass  # mantiene probabilità attuale
                     elif new_stage.cf_probability_default is not False:
                         lead.probability = new_stage.cf_probability_default
@@ -231,13 +229,13 @@ class CrmLead(models.Model):
 
     @api.model
     def _cron_move_to_standby(self):
-        standby_stage = self.env['crm.stage'].search([('name', '=', 'Standby')], limit=1)
+        standby_stage = self.env.ref('casafolino_crm_export.stage_standby', raise_if_not_found=False)
         if not standby_stage:
             _logger.warning('CasaFolino: stage Standby non trovato, cron skip.')
             return
 
-        won_stage = self.env['crm.stage'].search([('name', '=', 'Vinta')], limit=1)
-        lost_stage = self.env['crm.stage'].search([('name', '=', 'Persa')], limit=1)
+        won_stage = self.env.ref('casafolino_crm_export.stage_vinta', raise_if_not_found=False)
+        lost_stage = self.env.ref('casafolino_crm_export.stage_persa', raise_if_not_found=False)
         excluded_ids = [s.id for s in (won_stage, lost_stage, standby_stage) if s]
 
         cutoff = fields.Date.context_today(self) - timedelta(days=30)
@@ -352,9 +350,13 @@ class CrmLead(models.Model):
 
     @api.depends('casafolino_days_since_last_activity', 'stage_id')
     def _compute_casafolino_no_activity_warning(self):
-        won_lost_names = ('Vinta', 'Persa')
+        terminal_stages = (
+            self.env.ref('casafolino_crm_export.stage_vinta', raise_if_not_found=False)
+            | self.env.ref('casafolino_crm_export.stage_persa', raise_if_not_found=False)
+        )
+        terminal_ids = terminal_stages.ids
         for lead in self:
-            if lead.stage_id and lead.stage_id.name in won_lost_names:
+            if lead.stage_id and lead.stage_id.id in terminal_ids:
                 lead.casafolino_no_activity_warning = False
             else:
                 lead.casafolino_no_activity_warning = lead.casafolino_days_since_last_activity > 30
@@ -491,18 +493,19 @@ class CrmLead(models.Model):
 
     def action_kanban_archive(self):
         """Archive lead from kanban — move to Persa stage."""
-        lost_stage = self.env['crm.stage'].search([('name', '=', 'Persa')], limit=1)
+        lost_stage = self.env.ref('casafolino_crm_export.stage_persa', raise_if_not_found=False)
         if lost_stage:
+            lost_reason = self.env.ref('casafolino_crm_export.lost_reason_kanban_archive', raise_if_not_found=False)
             self.write({
                 'stage_id': lost_stage.id,
-                'lost_reason_id': self.env['crm.lost.reason'].search(
-                    [('name', '=', 'Archiviato dal kanban')], limit=1).id or False,
+                'lost_reason_id': lost_reason.id if lost_reason else False,
             })
 
     # ------------------------------------------------------------------
     # Compute
     # ------------------------------------------------------------------
 
+    @api.depends('cf_rotting_days')
     def _compute_cf_rotting_days_display(self):
         for lead in self:
             days = lead.cf_rotting_days
@@ -518,6 +521,7 @@ class CrmLead(models.Model):
         for lead in self:
             lead.cf_forecast_value = (lead.expected_revenue or 0) * (lead.probability or 0) / 100
 
+    @api.depends('date_last_stage_update')
     def _compute_cf_days_in_stage(self):
         today = fields.Date.today()
         for lead in self:
@@ -526,15 +530,37 @@ class CrmLead(models.Model):
             else:
                 lead.cf_days_in_stage = 0
 
+    @api.depends('activity_ids', 'activity_ids.date_deadline', 'activity_ids.summary',
+                 'activity_ids.activity_type_id')
     def _compute_cf_next_activity(self):
+        if not self.ids:
+            for lead in self:
+                lead.cf_next_activity_summary = False
+                lead.cf_next_activity_date = False
+            return
+        self.env.cr.execute("""
+            SELECT DISTINCT ON (res_id)
+                res_id, summary, date_deadline, activity_type_id
+            FROM mail_activity
+            WHERE res_model = 'crm.lead'
+              AND res_id IN %s
+            ORDER BY res_id, date_deadline ASC
+        """, (tuple(self.ids),))
+        rows = {row[0]: row for row in self.env.cr.fetchall()}
+        type_ids = [r[3] for r in rows.values() if r[3]]
+        type_names = {}
+        if type_ids:
+            self.env.cr.execute(
+                "SELECT id, name FROM mail_activity_type WHERE id IN %s",
+                (tuple(type_ids),)
+            )
+            type_names = dict(self.env.cr.fetchall())
         for lead in self:
-            activity = self.env['mail.activity'].search([
-                ('res_model', '=', 'crm.lead'),
-                ('res_id', '=', lead.id),
-            ], order='date_deadline asc', limit=1)
-            if activity:
-                lead.cf_next_activity_summary = activity.summary or activity.activity_type_id.name
-                lead.cf_next_activity_date = activity.date_deadline
+            row = rows.get(lead.id)
+            if row:
+                _, summary, deadline, type_id = row
+                lead.cf_next_activity_summary = summary or type_names.get(type_id, '')
+                lead.cf_next_activity_date = deadline
             else:
                 lead.cf_next_activity_summary = False
                 lead.cf_next_activity_date = False
@@ -625,7 +651,7 @@ class CrmLead(models.Model):
 
             lead.cf_lead_score = max(0, min(100, score))
 
-    @api.depends('write_date', 'stage_id')
+    @api.depends('cf_date_last_contact', 'create_date', 'stage_id')
     def _compute_cf_rotting(self):
         today = date.today()
         for lead in self:
@@ -634,8 +660,10 @@ class CrmLead(models.Model):
                 lead.cf_rotting_state = 'ok'
                 continue
 
-            if lead.write_date:
-                delta = (today - lead.write_date.date()).days
+            if lead.cf_date_last_contact:
+                delta = (today - lead.cf_date_last_contact).days
+            elif lead.create_date:
+                delta = (today - lead.create_date.date()).days
             else:
                 delta = 0
 
@@ -754,24 +782,30 @@ class CrmLead(models.Model):
 
     @api.model
     def get_cf_dashboard_data(self):
-        leads = self.search([('type', '=', 'opportunity')])
         today = date.today()
+        self.env.cr.execute("""
+            SELECT
+                COALESCE(SUM(expected_revenue), 0)                          AS total_revenue,
+                COALESCE(SUM(CASE WHEN s.is_won IS NOT TRUE THEN l.expected_revenue ELSE 0 END), 0)
+                                                                            AS total_forecast,
+                COALESCE(AVG(l.cf_lead_score), 0)                          AS avg_score,
+                COUNT(*)                                                     AS total_leads,
+                COUNT(*) FILTER (WHERE l.cf_rotting_state IN ('danger','dead'))
+                                                                            AS rotting_count,
+                COUNT(*) FILTER (WHERE l.cf_date_next_followup = %s)       AS followup_today
+            FROM crm_lead l
+            LEFT JOIN crm_stage s ON s.id = l.stage_id
+            WHERE l.type = 'opportunity'
+              AND l.active = TRUE
+        """, (today,))
+        row = self.env.cr.dictfetchone()
         return {
-            'total_revenue': sum(leads.mapped('expected_revenue')),
-            'total_forecast': sum(leads.filtered(
-                lambda l: l.stage_id and not l.stage_id.is_won
-            ).mapped('expected_revenue')),
-            'avg_score': (
-                sum(leads.mapped('cf_lead_score')) / len(leads)
-                if leads else 0
-            ),
-            'total_leads': len(leads),
-            'rotting_count': len(leads.filtered(
-                lambda l: l.cf_rotting_state in ('danger', 'dead')
-            )),
-            'followup_today': len(leads.filtered(
-                lambda l: l.cf_date_next_followup == today
-            )),
+            'total_revenue': float(row['total_revenue']),
+            'total_forecast': float(row['total_forecast']),
+            'avg_score': float(row['avg_score']),
+            'total_leads': row['total_leads'],
+            'rotting_count': row['rotting_count'],
+            'followup_today': row['followup_today'],
         }
 
     def action_compose_email_f8(self):
