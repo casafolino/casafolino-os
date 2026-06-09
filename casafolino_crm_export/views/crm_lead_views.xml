@@ -58,6 +58,10 @@
                 <field name="casafolino_has_overdue_followup"/>
                 <field name="casafolino_no_activity_warning"/>
                 <field name="casafolino_days_since_last_activity"/>
+                <field name="cf_has_next_action"/>
+                <field name="cf_is_rotting"/>
+                <field name="cf_days_in_stage"/>
+                <field name="cf_fair_id"/>
                 <field name="casafolino_origin_fair_tag_id"/>
                 <field name="casafolino_relative_last_activity"/>
                 <field name="casafolino_stage_position"/>
@@ -72,7 +76,7 @@
                     colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="cf-crm-card cf-enriched #{record.casafolino_owner_avatar_class.raw_value}">
+                        <div t-attf-class="cf-crm-card cf-enriched #{record.casafolino_owner_avatar_class.raw_value} #{record.cf_is_rotting.raw_value ? 'cf-card-rotting' : ''} #{!record.cf_has_next_action.raw_value ? 'cf-card-no-action' : ''}">
                             <!-- Header: title + category + revenue -->
                             <div class="cf-card-header">
                                 <span class="cf-card-title">
@@ -101,19 +105,22 @@
                                 <t t-out="record.casafolino_stage_label.raw_value"/>
                             </div>
 
-                            <!-- Dynamic badges (max 3) -->
+                            <!-- Dynamic badges -->
                             <div class="cf-badges">
+                                <t t-if="!record.cf_has_next_action.raw_value">
+                                    <span class="cf-badge cf-badge-no-action" title="Nessuna azione pianificata">⚡ no azione</span>
+                                </t>
+                                <t t-if="record.cf_is_rotting.raw_value">
+                                    <span class="cf-badge cf-badge-rotting"><t t-out="record.cf_days_in_stage.raw_value"/>gg in fase</span>
+                                </t>
                                 <t t-if="record.casafolino_has_overdue_followup.raw_value">
                                     <span class="cf-badge cf-badge-danger">follow-up dovuto</span>
                                 </t>
                                 <t t-if="record.casafolino_unread_mail_count.raw_value > 0">
                                     <span class="cf-badge cf-badge-info"><t t-out="record.casafolino_unread_mail_count.raw_value"/> mail nuove</span>
                                 </t>
-                                <t t-if="record.casafolino_no_activity_warning.raw_value">
-                                    <span class="cf-badge cf-badge-warning">no attività <t t-out="record.casafolino_days_since_last_activity.raw_value"/>gg</span>
-                                </t>
-                                <t t-if="record.casafolino_origin_fair_tag_id.raw_value">
-                                    <span class="cf-badge cf-badge-fair"><field name="casafolino_origin_fair_tag_id"/></span>
+                                <t t-if="record.cf_fair_id.raw_value">
+                                    <span class="cf-badge cf-badge-fair">🏛 <t t-out="record.cf_fair_id.value"/></span>
                                 </t>
                             </div>
 
@@ -492,19 +499,23 @@
         <field name="arch" type="xml">
             <xpath expr="//search" position="inside">
                 <separator/>
+                <filter string="Senza Azione" name="cf_no_next_action"
+                        domain="[('cf_has_next_action','=',False),('stage_id.is_won','=',False)]"/>
+                <filter string="In Ritardo" name="cf_is_rotting"
+                        domain="[('cf_is_rotting','=',True)]"/>
+                <separator/>
                 <filter string="Standby" name="cf_stage_standby" domain="[('stage_id.name','=','Standby')]"/>
                 <filter string="Inattivi 30gg+" name="cf_inactive_30" domain="[('cf_date_last_contact','&lt;', (context_today() - datetime.timedelta(days=30)).strftime('%%Y-%%m-%%d'))]"/>
                 <separator/>
                 <filter string="Mail nuova" name="cf_unread_mail" domain="[('casafolino_has_unread_mail', '=', True)]"/>
                 <filter string="Follow-up dovuto" name="cf_overdue_followup" domain="[('activity_ids.date_deadline', '&lt;', context_today().strftime('%%Y-%%m-%%d'))]"/>
-                <filter string="No attività &gt; 30gg" name="cf_no_activity" domain="[('casafolino_days_since_last_activity', '&gt;', 30), ('stage_id.name', 'not in', ['Vinta', 'Persa'])]"/>
-                <filter string="Da fiera" name="cf_fair_origin" domain="[('tag_ids.cf_category', '=', 'fair')]"/>
+                <filter string="Da fiera" name="cf_fair_origin" domain="[('cf_fair_id','!=',False)]"/>
                 <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter string="Tag" name="group_tag" context="{'group_by': 'tag_ids'}"/>
                     <filter string="Operatore" name="group_user" context="{'group_by': 'user_id'}"/>
                     <filter string="Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
-                    <filter string="Fiera origine" name="group_fair" context="{'group_by': 'casafolino_origin_fair_tag_id'}"/>
+                    <filter string="Fiera" name="group_fair" context="{'group_by': 'cf_fair_id'}"/>
                 </group>
             </xpath>
         </field>

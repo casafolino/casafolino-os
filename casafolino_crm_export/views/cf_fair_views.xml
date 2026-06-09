@@ -3,9 +3,9 @@
 
     <!-- Action -->
     <record id="action_cf_fair" model="ir.actions.act_window">
-        <field name="name">Fiere</field>
+        <field name="name">Fiere &amp; ROI</field>
         <field name="res_model">cf.export.fair</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,pivot,form</field>
     </record>
 
     <!-- ============================================================
@@ -19,18 +19,43 @@
             <list>
                 <field name="name"/>
                 <field name="date_start"/>
-                <field name="date_end"/>
                 <field name="location"/>
                 <field name="country_id"/>
                 <field name="state" widget="badge"
                        decoration-success="state in ('active','done')"
                        decoration-warning="state == 'followup'"
                        decoration-info="state in ('planned','confirmed')"/>
-                <field name="lead_count"/>
-                <field name="budget"/>
-                <field name="revenue_generated"/>
-                <field name="roi"/>
+                <field name="lead_count" string="Lead Tot."/>
+                <field name="lead_count_won" string="Vinti"
+                       decoration-success="lead_count_won > 0"/>
+                <field name="budget" string="Budget €"/>
+                <field name="revenue_won" string="Ricavo Vinto €"
+                       decoration-success="revenue_won > 0"/>
+                <field name="roi_won" string="ROI % (vinto)"
+                       decoration-success="roi_won >= 100"
+                       decoration-warning="roi_won &gt; 0 and roi_won &lt; 100"
+                       decoration-danger="roi_won == 0"/>
             </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         PIVOT — ROI per fiera
+         ============================================================ -->
+
+    <record id="cf_fair_view_pivot" model="ir.ui.view">
+        <field name="name">cf.export.fair.pivot</field>
+        <field name="model">cf.export.fair</field>
+        <field name="arch" type="xml">
+            <pivot string="ROI Fiere" disable_linking="False">
+                <field name="name" type="row"/>
+                <field name="country_id" type="row"/>
+                <field name="lead_count" type="measure"/>
+                <field name="lead_count_won" type="measure"/>
+                <field name="budget" type="measure"/>
+                <field name="revenue_won" type="measure"/>
+                <field name="roi_won" type="measure"/>
+            </pivot>
         </field>
     </record>
 
@@ -53,6 +78,11 @@
                                 class="oe_stat_button" icon="fa-handshake-o">
                             <field name="lead_count" widget="statinfo" string="Trattative"/>
                         </button>
+                        <button name="action_view_leads" type="object"
+                                class="oe_stat_button" icon="fa-trophy"
+                                invisible="lead_count_won == 0">
+                            <field name="lead_count_won" widget="statinfo" string="Vinti"/>
+                        </button>
                     </div>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Nome Fiera"/></h1>
@@ -64,10 +94,12 @@
                             <field name="location"/>
                             <field name="country_id"/>
                         </group>
-                        <group>
+                        <group string="ROI">
                             <field name="budget"/>
-                            <field name="revenue_generated"/>
-                            <field name="roi"/>
+                            <field name="revenue_generated" string="Ricavo Atteso €"/>
+                            <field name="revenue_won" string="Ricavo Vinto €"/>
+                            <field name="roi" string="ROI % (atteso)"/>
+                            <field name="roi_won" string="ROI % (vinto)"/>
                         </group>
                     </group>
                     <group string="Note">

@@ -113,6 +113,25 @@
     background: rgba(90, 110, 58, 0.12);
     color: #5A6E3A;
 }
+.cf-badge-rotting {
+    background: #FEE2E2;
+    color: #B91C1C;
+    font-weight: 600;
+}
+.cf-badge-no-action {
+    background: #FFF7ED;
+    color: #C2410C;
+    font-weight: 600;
+}
+
+/* ─── Card states ─── */
+.cf-card-rotting {
+    border-left: 3px solid #EF4444 !important;
+    background: rgba(254, 226, 226, 0.18);
+}
+.cf-card-no-action {
+    border-top: 2px dashed #F97316;
+}
 
 /* ─── Footer ─── */
 .cf-card-footer {

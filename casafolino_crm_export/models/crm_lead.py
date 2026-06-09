@@ -182,11 +182,45 @@ class CrmLead(models.Model):
         index=True,
     )
 
+    # --- Pipeline Intelligence (BLOCCO 2) ---
+    cf_has_next_action = fields.Boolean(
+        string='Ha Prossima Azione',
+        compute='_compute_cf_has_next_action',
+        store=True,
+    )
+    cf_is_rotting = fields.Boolean(
+        string='In Ritardo',
+        compute='_compute_cf_is_rotting',
+        store=True,
+    )
+
     # ------------------------------------------------------------------
-    # Write override — probability from stage + standby exit
+    # Write override — probability from stage + standby exit + STAGE GATE
     # ------------------------------------------------------------------
 
     def write(self, vals):
+        if 'stage_id' in vals:
+            new_stage = self.env['crm.stage'].browse(vals['stage_id'])
+            if new_stage.exists():
+                for lead in self:
+                    if new_stage.cf_requires_sample and not lead.cf_sample_ids:
+                        raise UserError(
+                            'Per passare alla fase "%s" è necessario un campione collegato.\n'
+                            'Crea una campionatura dal pulsante "Campionature" prima di continuare.'
+                            % new_stage.name
+                        )
+                    if new_stage.cf_requires_sale_order:
+                        has_order = bool(
+                            self.env['sale.order'].sudo().search(
+                                [('opportunity_id', '=', lead.id)], limit=1)
+                        )
+                        if not has_order:
+                            raise UserError(
+                                'Per passare alla fase "%s" è necessario un ordine di vendita collegato.\n'
+                                'Crea o collega un\'offerta/ordine prima di continuare.'
+                                % new_stage.name
+                            )
+
         # Detect stage change for standby exit logic
         old_stage_ids = {}
         if 'stage_id' in vals:
@@ -649,6 +683,23 @@ class CrmLead(models.Model):
                 lead.cf_rotting_state = 'danger'
             else:
                 lead.cf_rotting_state = 'dead'
+
+    @api.depends('activity_ids', 'activity_ids.active')
+    def _compute_cf_has_next_action(self):
+        for lead in self:
+            lead.cf_has_next_action = bool(lead.activity_ids)
+
+    @api.depends('cf_days_in_stage', 'stage_id', 'stage_id.cf_rotting_threshold',
+                 'cf_rotting_state', 'stage_id.is_won')
+    def _compute_cf_is_rotting(self):
+        for lead in self:
+            if lead.stage_id and lead.stage_id.is_won:
+                lead.cf_is_rotting = False
+                continue
+            threshold = (lead.stage_id.cf_rotting_threshold or 14) if lead.stage_id else 14
+            days_over = lead.cf_days_in_stage > threshold
+            state_bad = lead.cf_rotting_state in ('warning', 'danger', 'dead')
+            lead.cf_is_rotting = days_over or state_bad
 
     # ------------------------------------------------------------------
     # Actions
