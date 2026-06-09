@@ -74,6 +74,14 @@ export class ReadingPane extends Component {
         if (this.props.onSnooze) this.props.onSnooze();
     }
 
+    onKeepAndLink() {
+        if (this.props.onKeepAndLink) this.props.onKeepAndLink();
+    }
+
+    onReplyAndPipeline() {
+        if (this.props.onReplyAndPipeline) this.props.onReplyAndPipeline();
+    }
+
     onCreateLead() {
         if (this.props.onCreateLead) this.props.onCreateLead();
     }

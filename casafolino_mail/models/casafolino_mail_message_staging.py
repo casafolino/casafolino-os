@@ -1545,6 +1545,167 @@ class CasafolinoMailMessage(models.Model):
             if best_score >= 2:
                 vals['lang'] = best_lang
 
+    # ── BLOCCO 1: Tieni con DEDUP anagrafica + Reply & Pipeline ────────
+
+    _GENERIC_DOMAINS = {
+        'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+        'icloud.com', 'mail.com', 'protonmail.com', 'live.com', 'msn.com',
+        'gmx.de', 'web.de', 'libero.it', 'virgilio.it', 'alice.it',
+        't-online.de', 'wanadoo.fr', 'orange.fr', 'free.fr',
+    }
+
+    def _dedup_or_create_company_contact(self):
+        """Trova o crea res.partner azienda + contatto figlio con DEDUP.
+
+        DEDUP logica:
+        1. Cerca contatto per email esatta → usa quello, agganciando parent se manca
+        2. Se no contatto, cerca azienda per dominio email (se non generico)
+        3. Crea contatto (+ azienda se mancante)
+        Ritorna: {partner: res.partner, company: res.partner|None,
+                  created_contact: bool, created_company: bool}
+        """
+        self.ensure_one()
+        Partner = self.env['res.partner'].sudo()
+        email_addr, name = self._get_contact_email_and_name()
+        if not email_addr:
+            return None
+
+        domain = email_addr.split('@')[1].lower() if '@' in email_addr else ''
+        is_generic = domain in self._GENERIC_DOMAINS
+
+        # 1. DEDUP contatto per email esatta
+        contact = Partner.search([('email', '=ilike', email_addr)], limit=1)
+
+        # 2. DEDUP azienda per dominio (se non generico)
+        company = None
+        created_company = False
+        if not is_generic and domain:
+            company = Partner.search([
+                ('is_company', '=', True),
+                ('website', 'ilike', domain),
+            ], limit=1)
+            if not company:
+                # cerca per nome derivato dal dominio
+                company_name_guess = domain.split('.')[0].capitalize()
+                company = Partner.search([
+                    ('is_company', '=', True),
+                    ('name', 'ilike', company_name_guess),
+                ], limit=1)
+            if not company:
+                # crea azienda
+                company_vals = {
+                    'name': domain.split('.')[0].capitalize(),
+                    'is_company': True,
+                    'website': 'https://www.' + domain,
+                }
+                company = Partner.create(company_vals)
+                created_company = True
+
+        # 3. Crea contatto se non trovato
+        created_contact = False
+        if not contact:
+            contact_vals = {'name': name or email_addr, 'email': email_addr}
+            if company:
+                contact_vals['parent_id'] = company.id
+                contact_vals['is_company'] = False
+            self._enrich_partner_vals(contact_vals)
+            contact = Partner.create(contact_vals)
+            created_contact = True
+        elif company and not contact.parent_id and not contact.is_company:
+            # Aggancia parent mancante
+            contact.parent_id = company.id
+
+        if company and not contact.parent_id and contact.parent_id != company:
+            pass  # già gestito sopra
+
+        return {
+            'partner': contact,
+            'company': company,
+            'created_contact': created_contact,
+            'created_company': created_company,
+        }
+
+    def action_keep_and_link_partner(self):
+        """Tieni email + crea/aggancia anagrafica azienda + contatto con DEDUP."""
+        self.ensure_one()
+        result = self._dedup_or_create_company_contact()
+
+        # Esegui azione keep standard
+        self.action_keep()
+
+        if result:
+            contact = result['partner']
+            if contact and not self.partner_id:
+                self.write({'partner_id': contact.id, 'match_type': 'manual'})
+            return {
+                'partner_id': contact.id if contact else False,
+                'partner_name': contact.name if contact else '',
+                'company_id': result['company'].id if result['company'] else False,
+                'company_name': result['company'].name if result['company'] else '',
+                'created_contact': result['created_contact'],
+                'created_company': result['created_company'],
+            }
+        return {'partner_id': False, 'created_contact': False, 'created_company': False}
+
+    def action_reply_and_pipeline(self):
+        """Crea crm.lead in fase 1 + marca keep + ritorna dati per aprire composer."""
+        self.ensure_one()
+
+        # Assicura anagrafica
+        result = self._dedup_or_create_company_contact()
+        contact = result['partner'] if result else None
+        if not contact and self.partner_id:
+            contact = self.partner_id
+        if contact and not self.partner_id:
+            self.write({'partner_id': contact.id, 'match_type': 'manual'})
+
+        # Trova prima fase del team Export CRM
+        team = self.env['crm.team'].search([('name', 'ilike', 'Export')], limit=1)
+        stage = False
+        if team:
+            stage = self.env['crm.stage'].search(
+                [('team_id', '=', team.id)], order='sequence', limit=1)
+        if not stage:
+            stage = self.env['crm.stage'].search([], order='sequence', limit=1)
+
+        # Crea lead
+        lead_vals = {
+            'name': self.subject or ('Lead da ' + (self.sender_email or '')),
+            'partner_id': contact.id if contact else False,
+            'email_from': self.sender_email,
+            'stage_id': stage.id if stage else False,
+            'team_id': team.id if team else False,
+            'source_email_id': self.id,
+        }
+        try:
+            lead_vals['source_id'] = self.env.ref('utm.utm_source_email').id
+        except Exception:
+            pass
+
+        lead = self.env['crm.lead'].create(lead_vals)
+
+        # Log su chatter del partner
+        if contact:
+            contact.sudo().message_post(
+                body='Lead creato da email: <b>%s</b> → <a href="/odoo/crm/%d">%s</a>' % (
+                    self.subject or self.sender_email, lead.id, lead.name),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+
+        # Marca email come keep
+        self.action_keep()
+        self.write({'lead_id': lead.id})
+
+        return {
+            'lead_id': lead.id,
+            'lead_name': lead.name,
+            'partner_id': contact.id if contact else False,
+            'partner_name': contact.name if contact else '',
+            'created_contact': result['created_contact'] if result else False,
+            'created_company': result['created_company'] if result else False,
+        }
+
     def action_launch_007(self):
         """Lancia Agente 007 sul partner collegato."""
         self.ensure_one()

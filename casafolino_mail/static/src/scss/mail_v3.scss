@@ -2484,6 +2484,21 @@ $mv3-line-height: 1.45;
         &:hover { background: #DDDCF8; }
     }
 
+    &--green {
+        background: #E8F5E9;
+        color: #1B5E20;
+        border-color: transparent;
+        &:hover { background: #C8E6C9; }
+    }
+
+    &--orange {
+        background: #FFF3E0;
+        color: #E65100;
+        border-color: transparent;
+        font-weight: 600;
+        &:hover { background: #FFE0B2; }
+    }
+
     &--red {
         background: #FCEBEB;
         color: #A32D2D;

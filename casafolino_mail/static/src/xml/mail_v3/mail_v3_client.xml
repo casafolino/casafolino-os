@@ -172,6 +172,8 @@
               onForward.bind="openForward"
               onAiReply.bind="openReplyAssistant"
               onSnooze.bind="openSnoozePopup"
+              onKeepAndLink.bind="onKeepAndLink"
+              onReplyAndPipeline.bind="onReplyAndPipeline"
               onCreateLead.bind="onSenderCreateLead"
               onCreateProject.bind="onSenderCreateProject"
               onDismissSender.bind="onQuickDismissSender"

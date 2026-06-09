@@ -66,6 +66,12 @@
                   </button>
                   <div class="mv3-qa-separator"/>
                   <!-- Group 2: CRM actions -->
+                  <button class="mv3-qa-btn mv3-qa-btn--green" t-on-click="onKeepAndLink">
+                    <i class="fa fa-bookmark"/> Tieni
+                  </button>
+                  <button class="mv3-qa-btn mv3-qa-btn--orange" t-on-click="onReplyAndPipeline">
+                    <i class="fa fa-paper-plane"/> Rispondi e Pipeline
+                  </button>
                   <button class="mv3-qa-btn mv3-qa-btn--blue" t-on-click="onCreateLead">
                     <i class="fa fa-bullseye"/> Crea Lead
                   </button>

@@ -358,6 +358,30 @@ class MailV3Controller(http.Controller):
         getattr(msg, method)()
         return {'success': True}
 
+    # ── BLOCCO 1: Keep + Link partner & Reply + Pipeline ──────────────
+
+    @http.route('/cf/mail/v3/message/<int:msg_id>/keep_and_link_partner', type='json', auth='user')
+    def message_keep_and_link_partner(self, msg_id, **kw):
+        msg = request.env['casafolino.mail.message'].browse(msg_id)
+        if not msg.exists():
+            return {'success': False, 'error': 'Message not found'}
+        if msg.account_id.id not in self._get_user_account_ids():
+            return {'success': False, 'error': 'Not your message'}
+        result = msg.action_keep_and_link_partner()
+        result['success'] = True
+        return result
+
+    @http.route('/cf/mail/v3/message/<int:msg_id>/reply_and_pipeline', type='json', auth='user')
+    def message_reply_and_pipeline(self, msg_id, **kw):
+        msg = request.env['casafolino.mail.message'].browse(msg_id)
+        if not msg.exists():
+            return {'success': False, 'error': 'Message not found'}
+        if msg.account_id.id not in self._get_user_account_ids():
+            return {'success': False, 'error': 'Not your message'}
+        result = msg.action_reply_and_pipeline()
+        result['success'] = True
+        return result
+
     # ── Delete Single Message ───────────────────────────────────────
 
     @http.route('/cf/mail/v3/message/delete_single', type='json', auth='user')

@@ -24,6 +24,7 @@ export class MailV3Client extends Component {
 
     setup() {
         this.actionService = useService("action");
+        this.notificationService = useService("notification");
 
         this.state = useState({
             accounts: [],
@@ -1235,6 +1236,57 @@ export class MailV3Client extends Component {
                 default_partner_id: partnerId || false,
             },
         });
+    }
+
+    // ── BLOCCO 1: Tieni + Link Anagrafica ──────────────────────────
+
+    async onKeepAndLink() {
+        const msgId = this._getSelectedMsgId();
+        if (!msgId) return;
+        try {
+            const res = await rpc('/cf/mail/v3/message/' + msgId + '/keep_and_link_partner');
+            if (res && res.success) {
+                const parts = [];
+                if (res.created_company && res.company_name) parts.push('Azienda creata: ' + res.company_name);
+                if (res.created_contact && res.partner_name) parts.push('Contatto creato: ' + res.partner_name);
+                if (!res.created_company && !res.created_contact && res.partner_name) parts.push('Agganciato: ' + res.partner_name);
+                this.notificationService.add(parts.join(' · ') || 'Email tenuta', { type: 'success', title: 'Tieni' });
+                if (this.state.selectedThreadId) {
+                    const r = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/messages');
+                    this.state.messages = r.messages || [];
+                }
+            }
+        } catch (e) {
+            console.error('[mail v3] keep_and_link error:', e);
+        }
+    }
+
+    // ── BLOCCO 1: Rispondi e metti in Pipeline ──────────────────────
+
+    async onReplyAndPipeline() {
+        const msgId = this._getSelectedMsgId();
+        if (!msgId) return;
+        try {
+            const res = await rpc('/cf/mail/v3/message/' + msgId + '/reply_and_pipeline');
+            if (res && res.success) {
+                const parts = [];
+                if (res.lead_name) parts.push('Lead: ' + res.lead_name);
+                if (res.created_contact && res.partner_name) parts.push('Contatto: ' + res.partner_name);
+                this.notificationService.add(parts.join(' · ') || 'Lead creato', { type: 'success', title: 'Pipeline' });
+                // Apri composer F8 in reply
+                await this._openComposeWizard('reply', msgId);
+            }
+        } catch (e) {
+            console.error('[mail v3] reply_and_pipeline error:', e);
+        }
+    }
+
+    _getSelectedMsgId() {
+        const msgs = this.state.messages;
+        if (!msgs || msgs.length === 0) return null;
+        // Ultimo messaggio inbound o comunque l'ultimo
+        const inbound = [...msgs].reverse().find(m => m.direction === 'inbound' || m.direction_computed === 'inbound');
+        return (inbound || msgs[msgs.length - 1]).id;
     }
 
     // ── Quick Action: Dismiss current sender from reading pane ──

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier v2 · Cockpit account — CasaFolino OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brown:#6B4A1E;--brown-d:#523715;--gold:#C8A43A;--gold-d:#A8862a;
+  --cream:#F5E6C8;--cream-l:#FBF4E6;--paper:#FFFDF9;
+  --ink:#2B2118;--muted:#8C7B64;--line:#E8DcC4;
+  --green:#3F8A4F;--purple:#8B5CF6;
+  --comm:#3F8A4F;--prod:#7a8a3f;--log:#3f7a8a;--admin:#8B5CF6;
+  --warn:#C8762a;--hot:#C0492f;--ok:#3F8A4F;
+  --shadow:0 2px 10px rgba(75,53,20,.07),0 1px 2px rgba(75,53,20,.05);
+  --shadow-lg:0 12px 34px rgba(75,53,20,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-l);color:var(--ink);font-size:13.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.serif{font-family:'Fraunces',Georgia,serif}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* HEADER */
+.head{background:var(--brown);color:var(--cream);padding:16px 24px;flex-shrink:0}
+.head .top{display:flex;align-items:flex-start;gap:15px}
+.avatar{width:46px;height:46px;border-radius:12px;background:var(--gold);color:var(--brown-d);display:grid;place-items:center;font-weight:700;font-family:'Fraunces',serif;font-size:18px;flex-shrink:0}
+.head h1{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1.1}
+.head .who{font-size:12.5px;opacity:.78;margin-top:3px}
+.head .badges{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.bdg{background:rgba(255,255,255,.12);padding:6px 12px;border-radius:9px;font-size:10.5px;opacity:.9}
+.bdg b{display:block;font-family:'Fraunces',serif;font-size:13px;margin-top:1px;opacity:1}
+.statusline{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.statusline .where{font-size:12.5px;opacity:.9}
+.statusline .where b{opacity:1}
+.tag{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:9px;font-size:12px;font-weight:600}
+.tag.block{background:rgba(192,73,47,.92);color:#fff}
+.tag.next{background:rgba(200,164,58,.22);color:var(--cream)}
+.lens-note{font-size:10.5px;opacity:.62;margin-top:11px}
+
+/* TOOLBAR */
+.bar{display:flex;align-items:center;gap:10px;padding:11px 24px;background:var(--paper);border-bottom:1px solid var(--line);flex-shrink:0;flex-wrap:wrap}
+.bar .lbl{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.ws{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:9px;font-size:12.5px;font-weight:500;background:var(--cream-l);border:1px solid var(--line);color:var(--brown)}
+.ws .pg{width:6px;height:6px;border-radius:50%}
+.ws.on{background:var(--brown);color:var(--cream);border-color:var(--brown)}
+.sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.dep{font-size:11.5px;padding:5px 11px;border-radius:20px;background:var(--cream-l);border:1px solid var(--line);color:var(--muted);font-weight:500;display:flex;align-items:center;gap:6px}
+.dep i{width:8px;height:8px;border-radius:50%}
+.dep.on{color:#fff;border-color:transparent}
+.dep.on.comm{background:var(--comm)}.dep.on.prod{background:var(--prod)}.dep.on.log{background:var(--log)}.dep.on.admin{background:var(--admin)}.dep.on.all{background:var(--brown)}
+
+/* BODY layout */
+.body{flex:1;display:flex;overflow:hidden}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+.rail{width:300px;flex-shrink:0;border-left:1px solid var(--line);background:var(--paper);overflow-y:auto;padding:18px 16px 30px}
+
+/* sections */
+.sec{margin-bottom:22px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.sec-h .t{font-family:'Fraunces',serif;font-size:16px;display:flex;align-items:center;gap:9px}
+.sec-h .t .c{font-size:10px;background:var(--cream);color:var(--brown);padding:1px 8px;border-radius:20px;font-family:'Inter';font-weight:600}
+.add{font-size:11.5px;font-weight:600;background:var(--cream);color:var(--brown);padding:6px 12px;border-radius:8px}
+.add:hover{background:var(--gold);color:var(--brown-d)}
+
+/* item card */
+.it{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow);margin-bottom:10px}
+.it .ih{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.it .nm{font-weight:600;font-size:13.5px}
+.it .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.stat{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+.stat.ok{background:#e9f3ec;color:var(--ok)}
+.stat.wait{background:#fbf0e3;color:var(--warn)}
+.stat.done{background:var(--cream);color:var(--brown)}
+.stat.rej{background:#fbe9e4;color:var(--hot)}
+
+/* version trail */
+.trail{display:flex;align-items:center;gap:0;margin-top:11px;flex-wrap:wrap}
+.vstep{display:flex;align-items:center}
+.vchip{display:flex;flex-direction:column;align-items:center;gap:3px}
+.vdot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff}
+.vdot.rej{background:var(--hot)}.vdot.ok{background:var(--ok)}.vdot.cur{background:var(--gold);color:var(--brown-d);box-shadow:0 0 0 3px rgba(200,164,58,.25)}
+.vcap{font-size:9.5px;color:var(--muted);max-width:78px;text-align:center;line-height:1.2}
+.vline{width:26px;height:2px;background:var(--line);margin:0 4px;margin-bottom:16px}
+
+/* tasks */
+.task{display:flex;align-items:center;gap:11px;padding:10px 13px;background:var(--paper);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;box-shadow:var(--shadow)}
+.task .chk{width:18px;height:18px;border-radius:5px;border:2px solid var(--line);flex-shrink:0}
+.task.fatto .chk{background:var(--ok);border-color:var(--ok)}
+.task .tt{flex:1}
+.task .tt .n{font-weight:500;font-size:13px}
+.task.fatto .tt .n{text-decoration:line-through;color:var(--muted)}
+.task .tt .d{font-size:11px;color:var(--muted)}
+.deplab{font-size:9.5px;font-weight:700;color:#fff;padding:2px 9px;border-radius:6px}
+.deplab.comm{background:var(--comm)}.deplab.prod{background:var(--prod)}.deplab.log{background:var(--log)}.deplab.admin{background:var(--admin)}
+.who{font-size:11px;color:var(--muted);min-width:62px;text-align:right}
+
+/* mails */
+.mailbox{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:5px 0;box-shadow:var(--shadow)}
+.mrow{display:flex;align-items:center;gap:10px;padding:9px 15px;border-bottom:1px solid var(--line);font-size:12.5px}
+.mrow:last-child{border:none}
+.mdir{font-size:9px;font-weight:700;padding:1px 7px;border-radius:6px}
+.mdir.in{background:var(--cream);color:var(--brown)}.mdir.out{background:#e9f3ec;color:var(--ok)}
+.mrow .ms{flex:1}.mrow .mt{font-size:11px;color:var(--muted)}
+
+/* workstream overview (all) */
+.wsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.wscard{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);cursor:pointer;transition:.15s;border-top:3px solid var(--gold)}
+.wscard:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.wscard h4{font-family:'Fraunces',serif;font-size:15px;margin-bottom:3px}
+.wscard .ph{font-size:11.5px;color:var(--muted)}
+.wprog{height:6px;border-radius:4px;background:var(--line);margin:11px 0 8px;overflow:hidden}
+.wprog i{display:block;height:100%;background:var(--gold)}
+.wscard .blk{font-size:11px;color:var(--hot);font-weight:600}
+.wscard .ok{font-size:11px;color:var(--ok);font-weight:600}
+
+/* RAIL */
+.rail h3{font-family:'Fraunces',serif;font-size:14px;margin-bottom:11px;display:flex;align-items:center;gap:7px}
+.panel{background:var(--cream-l);border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:13px}
+.blk{display:flex;gap:9px;padding:8px 0;border-top:1px solid var(--line);font-size:12px}
+.blk:first-child{border:none}
+.blk .ic{color:var(--hot);font-weight:700}
+.blk .bt b{font-weight:600}
+.blk .bt .s{font-size:10.5px;color:var(--muted)}
+.ms-item{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:12px}
+.ms-item:first-child{border:none}
+.ms-item .dt{color:var(--muted);font-size:11px;white-space:nowrap}
+.wl{margin:8px 0}
+.wl .t{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.wl .track{height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+.wl .track i{display:block;height:100%}
+.vol{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-top:1px solid var(--line)}
+.vol:first-child{border:none}.vol b{font-family:'Fraunces',serif}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--brown);color:var(--cream);padding:12px 20px;border-radius:11px;box-shadow:var(--shadow-lg);font-size:13px;z-index:60;opacity:0;transition:.3s}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="head">
+    <div class="top">
+      <div class="avatar serif">AW</div>
+      <div>
+        <h1 class="serif">AL WASL GENERAL TRADING CO.</h1>
+        <div class="who">Khalid Rahman · Purchasing Manager · Dubai, UAE · cliente in sviluppo dal 06/2025</div>
+      </div>
+      <div class="badges">
+        <div class="bdg">Fase<b>Sviluppo PL</b></div>
+        <div class="bdg">Owner<b>Antonio</b></div>
+        <div class="bdg">Aperto da<b>~1 anno</b></div>
+        <div class="bdg">Mail<b>326</b></div>
+        <div class="bdg">Valore stim.<b>€ 90k/anno</b></div>
+      </div>
+    </div>
+    <div class="statusline">
+      <span class="where">📍 <b>Dove siamo:</b> ricetta pistacchio v3 in approvazione cliente, Round 2 campioni in produzione.</span>
+      <span class="tag block">⚠ Blocca: validazione scheda tecnica v3 (Qualità)</span>
+      <span class="tag next">▸ Prossimo: spedire Round 2 entro 18 giu</span>
+    </div>
+    <div class="lens-note">🔗 Lente, non contenitore — ogni workstream è un cf.initiative; ricette, campioni, etichette, mail e task sono dati nativi Odoo collegati via partner_id.</div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="bar">
+    <span class="lbl">Cantieri</span>
+    <button class="ws" data-ws="all" onclick="setWs('all')">🏠 Tutto l'account</button>
+    <button class="ws on" data-ws="pist" onclick="setWs('pist')"><span class="pg" style="background:var(--warn)"></span>Crema Pistacchio PL</button>
+    <button class="ws" data-ws="chili" onclick="setWs('chili')"><span class="pg" style="background:var(--gold)"></span>Crispy Chili 90g</button>
+    <button class="ws" data-ws="honey" onclick="setWs('honey')"><span class="pg" style="background:var(--ok)"></span>Miele UAE</button>
+    <span class="sep"></span>
+    <span class="lbl">Reparto</span>
+    <button class="dep on all" data-dep="all" onclick="setDep('all')">Tutti</button>
+    <button class="dep" data-dep="comm" onclick="setDep('comm')"><i style="background:var(--comm)"></i>Commerciale</button>
+    <button class="dep" data-dep="prod" onclick="setDep('prod')"><i style="background:var(--prod)"></i>Produzione</button>
+    <button class="dep" data-dep="log" onclick="setDep('log')"><i style="background:var(--log)"></i>Logistica</button>
+    <button class="dep" data-dep="admin" onclick="setDep('admin')"><i style="background:var(--admin)"></i>Amministrazione</button>
+  </div>
+
+  <div class="body">
+    <div class="content" id="content"></div>
+
+    <!-- RAIL -->
+    <div class="rail">
+      <h3 class="serif">⚠ Cosa blocca ora</h3>
+      <div class="panel" id="blockers"></div>
+
+      <h3 class="serif">▸ Prossimi traguardi</h3>
+      <div class="panel">
+        <div class="ms-item"><span>Approvazione ricetta v3</span><span class="dt">15 giu</span></div>
+        <div class="ms-item"><span>Spedizione Round 2 campioni</span><span class="dt">18 giu</span></div>
+        <div class="ms-item"><span>Esecutivo etichette stampa</span><span class="dt">20 giu</span></div>
+        <div class="ms-item"><span>Primo ordine PL stimato</span><span class="dt">luglio</span></div>
+      </div>
+
+      <h3 class="serif">Carico per reparto</h3>
+      <div class="panel">
+        <div class="wl"><div class="t"><span>Produzione</span><span>3 task</span></div><div class="track"><i style="width:75%;background:var(--prod)"></i></div></div>
+        <div class="wl"><div class="t"><span>Commerciale</span><span>2 task</span></div><div class="track"><i style="width:50%;background:var(--comm)"></i></div></div>
+        <div class="wl"><div class="t"><span>Amministrazione</span><span>2 task</span></div><div class="track"><i style="width:50%;background:var(--admin)"></i></div></div>
+        <div class="wl"><div class="t"><span>Logistica</span><span>1 task</span></div><div class="track"><i style="width:25%;background:var(--log)"></i></div></div>
+      </div>
+
+      <h3 class="serif">Volume account</h3>
+      <div class="panel">
+        <div class="vol"><span>Mail scambiate</span><b>326</b></div>
+        <div class="vol"><span>Ricette personalizzate</span><b>7</b></div>
+        <div class="vol"><span>Round campionatura</span><b>4</b></div>
+        <div class="vol"><span>Revisioni etichette</span><b>9</b></div>
+        <div class="vol"><span>Documenti</span><b>23</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var ws='pist', dep='all';
+var DEP_NM={comm:'Commerciale',prod:'Produzione',log:'Logistica',admin:'Amministrazione'};
+
+var WS={
+  pist:{name:'Crema Pistacchio PL',
+    recipes:[{nm:'Crema Pistacchio · zucchero -20%',dept:'prod',by:'Maria · Lab/R&D',
+      trail:[{v:'v1',c:'rej',cap:'troppo dolce'},{v:'v2',c:'rej',cap:'viscosità alta'},{v:'v3',c:'cur',cap:'in approvazione'}]}],
+    samples:[{nm:'Round 1 · 4 SKU',meta:'inviato 04/26 · feedback ricevuto',stat:'done',sl:'done'},
+             {nm:'Round 2 · 3 SKU',meta:'in produzione · Teresa',stat:'wait',sl:'wait'}],
+    labels:[{nm:'Etichetta Pistacchio PL',dept:'prod',by:'Anna',
+      trail:[{v:'A',c:'rej',cap:'testo EN'},{v:'B',c:'rej',cap:'+ AR / halal'},{v:'C',c:'cur',cap:'ingredienti, in stampa'}]}],
+    tasks:[
+      {n:'Preparare Round 2 campioni',d:'scad. 13 giu',dep:'prod',who:'Teresa',done:false},
+      {n:'Validare scheda tecnica v3',d:'scad. 12 giu · BLOCCA',dep:'prod',who:'Maria',done:false},
+      {n:'Esecutivo stampa etichetta Rev C',d:'scad. 11 giu',dep:'prod',who:'Anna',done:true},
+      {n:'Confermare prezzo PL al cliente',d:'scad. 14 giu · BLOCCA',dep:'comm',who:'Josefina',done:false},
+      {n:'Creare codici prodotto + listino PL',d:'scad. 16 giu',dep:'admin',who:'Admin',done:false},
+      {n:'Proforma campioni Round 2',d:'scad. 13 giu',dep:'admin',who:'Admin',done:false},
+      {n:'Prenotare corriere Round 2 (DHL Dubai)',d:'scad. 17 giu',dep:'log',who:'Logistica',done:false}
+    ],
+    mailTotal:326,mailHere:41,
+    mails:[
+      {dir:'in',s:'Re: recipe v3 — almost there, less sweet OK',t:'10 giu'},
+      {dir:'out',s:'Recipe v3 technical sheet + sample plan',t:'09 giu'},
+      {dir:'in',s:'Label: please add Arabic + halal mark',t:'05 giu'}
+    ]},
+  chili:{name:'Crispy Chili 90g',
+    recipes:[{nm:'Crispy Chili · meno olio',dept:'prod',by:'Maria',
+      trail:[{v:'v1',c:'ok',cap:'approvata'}]}],
+    samples:[{nm:'Round 1 · 2 SKU',meta:'inviato · in attesa feedback',stat:'wait',sl:'wait'}],
+    labels:[{nm:'Etichetta Crispy Chili',dept:'prod',by:'Anna',trail:[{v:'A',c:'cur',cap:'in bozza'}]}],
+    tasks:[
+      {n:'Definire formato 90g vs 110g',d:'scad. 20 giu',dep:'comm',who:'Antonio',done:false},
+      {n:'Quotazione EXW formato 90g',d:'scad. 18 giu',dep:'admin',who:'Admin',done:false}
+    ],
+    mailTotal:326,mailHere:12,
+    mails:[{dir:'in',s:'Interested in smaller jar 90g',t:'02 giu'},{dir:'out',s:'Proposal 90g format + pricing',t:'03 giu'}]},
+  honey:{name:'Linea Miele UAE',
+    recipes:[],
+    samples:[{nm:'Round 1 · miele zenzero',meta:'pronto alla spedizione',stat:'ok',sl:'ok'}],
+    labels:[{nm:'Etichetta Miele EN/AR',dept:'prod',by:'Anna',trail:[{v:'A',c:'ok',cap:'approvata'}]}],
+    tasks:[{n:'Spedire campione miele zenzero',d:'scad. 12 giu',dep:'log',who:'Logistica',done:false}],
+    mailTotal:326,mailHere:8,
+    mails:[{dir:'in',s:'Honey range for premium retail',t:'28 mag'}]}
+};
+
+var BLOCKERS={
+  pist:[{t:'Validazione scheda tecnica v3',s:'Produzione · Maria · ferma da 3 gg'},
+        {t:'Conferma prezzo PL',s:'Commerciale · Josefina · ferma da 5 gg'}],
+  chili:[{t:'Decisione formato 90/110g',s:'Commerciale · Antonio · ferma da 2 gg'}],
+  honey:[],
+  all:[{t:'Validazione scheda tecnica v3',s:'Pistacchio · Maria · 3 gg'},
+       {t:'Conferma prezzo PL',s:'Pistacchio · Josefina · 5 gg'},
+       {t:'Decisione formato 90/110g',s:'Chili · Antonio · 2 gg'}]
+};
+
+function trailHTML(tr){
+  var h='<div class="trail">';
+  tr.forEach(function(s,i){
+    if(i>0)h+='<div class="vline"></div>';
+    h+='<div class="vstep"><div class="vchip"><div class="vdot '+s.c+'">'+(s.c==='rej'?'✗':s.c==='ok'?'✓':s.v)+'</div><div class="vcap">'+s.v+' · '+s.cap+'</div></div></div>';
+  });
+  return h+'</div>';
+}
+function depMatch(d){return dep==='all'||d===dep}
+
+function render(){
+  var c=document.getElementById('content');
+  // blockers rail
+  var bl=BLOCKERS[ws]||[]; var bh='';
+  if(bl.length===0)bh='<div style="font-size:12px;color:var(--ok);font-weight:600">✓ Nessun blocco attivo</div>';
+  bl.forEach(function(b){bh+='<div class="blk"><span class="ic">⚠</span><div class="bt"><b>'+b.t+'</b><div class="s">'+b.s+'</div></div></div>'});
+  document.getElementById('blockers').innerHTML=bh;
+
+  if(ws==='all'){
+    c.innerHTML='<div class="sec"><div class="sec-h"><div class="t serif">🏠 Cantieri attivi su questo account<span class="c">3</span></div></div><div class="wsgrid">'+
+      wsCard('pist','Crema Pistacchio PL','Sviluppo ricetta · v3',62,'⚠ scheda tecnica + prezzo da chiudere','blk')+
+      wsCard('chili','Crispy Chili 90g','Definizione formato',35,'⚠ formato da decidere','blk')+
+      wsCard('honey','Linea Miele UAE','Campione pronto',80,'✓ pronto alla spedizione','ok')+
+      '</div></div>';
+    return;
+  }
+
+  var w=WS[ws]; var h='';
+  // ricette
+  h+='<div class="sec"><div class="sec-h"><div class="t serif">📋 Ricette personalizzate<span class="c">'+w.recipes.length+'</span></div><button class="add" onclick="toast(\'Nuova ricetta\')">+ Ricetta</button></div>';
+  if(w.recipes.length===0)h+='<div style="font-size:12px;color:var(--muted)">Nessuna ricetta in questo cantiere.</div>';
+  w.recipes.forEach(function(r){
+    var dim=!depMatch(r.dept);
+    h+='<div class="it" style="'+(dim?'opacity:.4':'')+'"><div class="ih"><div><div class="nm">'+r.nm+'</div><div class="meta">'+r.by+'</div></div><span class="deplab '+r.dept+'">'+DEP_NM[r.dept]+'</span></div>'+trailHTML(r.trail)+'</div>';
+  });
+  h+='</div>';
+  // campionature
+  h+='<div class="sec"><div class="sec-h"><div class="t serif">🧪 Campionature<span class="c">'+w.samples.length+'</span></div><button class="add" onclick="toast(\'Nuovo round\')">+ Round</button></div>';
+  w.samples.forEach(function(s){
+    var dim=!(dep==='all'||dep==='prod'||(dep==='log'&&s.sl==='wait'));
+    h+='<div class="it" style="'+(dim?'opacity:.4':'')+'"><div class="ih"><div><div class="nm">'+s.nm+'</div><div class="meta">'+s.meta+'</div></div><span class="stat '+s.stat+'">'+(s.stat==='ok'?'pronto':s.stat==='done'?'concluso':'in corso')+'</span></div></div>';
+  });
+  h+='</div>';
+  // etichette
+  h+='<div class="sec"><div class="sec-h"><div class="t serif">🏷️ Etichette<span class="c">'+w.labels.length+'</span></div><button class="add" onclick="toast(\'Nuova revisione\')">+ Revisione</button></div>';
+  w.labels.forEach(function(l){
+    var dim=!depMatch(l.dept);
+    h+='<div class="it" style="'+(dim?'opacity:.4':'')+'"><div class="ih"><div><div class="nm">'+l.nm+'</div><div class="meta">'+l.by+'</div></div><span class="deplab '+l.dept+'">'+DEP_NM[l.dept]+'</span></div>'+trailHTML(l.trail)+'</div>';
+  });
+  h+='</div>';
+  // task
+  var tks=w.tasks.filter(function(t){return depMatch(t.dep)});
+  h+='<div class="sec"><div class="sec-h"><div class="t serif">✓ Task per reparto<span class="c">'+tks.length+(dep!=='all'?' · '+DEP_NM[dep]:'')+'</span></div><button class="add" onclick="toast(\'Nuovo task → assegna reparto\')">+ Task</button></div>';
+  tks.forEach(function(t){
+    h+='<div class="task '+(t.done?'fatto':'')+'"><div class="chk">'+(t.done?'':'')+'</div><div class="tt"><div class="n">'+t.n+'</div><div class="d">'+t.d+'</div></div><span class="deplab '+t.dep+'">'+DEP_NM[t.dep]+'</span><span class="who">'+t.who+'</span></div>';
+  });
+  h+='</div>';
+  // mail
+  if(dep==='all'||dep==='comm'){
+    h+='<div class="sec"><div class="sec-h"><div class="t serif">✉ Mail collegate<span class="c">'+w.mailHere+' di '+w.mailTotal+'</span></div><button class="add" onclick="toast(\'Scrivi (F8)\')">+ Scrivi</button></div><div class="mailbox">';
+    w.mails.forEach(function(m){h+='<div class="mrow"><span class="mdir '+m.dir+'">'+(m.dir==='in'?'IN':'OUT')+'</span><span class="ms">'+m.s+'</span><span class="mt">'+m.t+'</span></div>'});
+    h+='</div><div style="font-size:11px;color:var(--muted);margin-top:7px">Solo le '+w.mailHere+' mail di questo cantiere — non tutte le 326 dell\'account.</div></div>';
+  }
+  c.innerHTML=h;
+}
+function wsCard(k,nm,ph,prog,blk,cls){
+  return '<div class="wscard" onclick="setWs(\''+k+'\')"><h4 class="serif">'+nm+'</h4><div class="ph">'+ph+'</div><div class="wprog"><i style="width:'+prog+'%"></i></div><div class="'+cls+'">'+blk+'</div></div>';
+}
+function setWs(k){ws=k;document.querySelectorAll('.ws').forEach(function(e){e.classList.toggle('on',e.dataset.ws===k)});render()}
+function setDep(d){dep=d;document.querySelectorAll('.dep').forEach(function(e){e.className='dep'+(e.dataset.dep===d?' on '+d:'')});render();if(d!=='all')toast('Vista '+DEP_NM[d])}
+var tT;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show')},2400)}
+render();
+</script>
+</body>
+</html>
