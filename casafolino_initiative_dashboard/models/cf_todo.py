@@ -23,6 +23,10 @@ class CfTodo(models.Model):
         'res.users', string='Assegnato a',
     )
     sequence = fields.Integer(default=10)
+    stage_id = fields.Many2one(
+        'cf.initiative.stage', string='Fase staffetta',
+        ondelete='set null', index=True,
+    )
 
     _sql_constraints = [
         ('name_not_empty', "CHECK(length(trim(name)) > 0)",

@@ -16,6 +16,12 @@ class CfInitiativeTemplate(models.Model):
                                 'template_id', 'atom_id', string='Atomi')
     description = fields.Text()
 
+    # Staffetta
+    stage_line_ids = fields.One2many(
+        'cf.initiative.template.stage', 'template_id', string='Fasi staffetta',
+    )
+    is_micro = fields.Boolean(default=False, string='Micro-progetto')
+
     _sql_constraints = [
         ('code_uniq', 'unique(code)', 'Il codice template deve essere univoco.'),
         ('family_variant_uniq', 'unique(family_id, variant_id)',

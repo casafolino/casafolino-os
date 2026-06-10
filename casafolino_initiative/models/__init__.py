@@ -1,3 +1,5 @@
+from . import cf_initiative_template_stage
+from . import cf_initiative_stage
 from . import cf_initiative_tag
 from . import cf_initiative_family
 from . import cf_initiative_variant
