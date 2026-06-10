@@ -1,0 +1,658 @@
+// CasaFolino Cockpit — Design Tokens
+$ck-brown: #6B4A1E;
+$ck-gold: #C8A43A;
+$ck-cream: #F5E6C8;
+$ck-bg: #FAF7F2;
+$ck-white: #ffffff;
+
+// Base
+.ck-cockpit {
+  min-height: 100vh;
+  background: $ck-bg;
+  font-family: system-ui, sans-serif;
+}
+
+// Layout containers
+.ck-regia,
+.ck-dossier {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
+}
+
+// Header row inside regia
+.ck-regia__header {
+  margin-bottom: 20px;
+}
+
+.ck-regia__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ck-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: $ck-brown;
+  margin: 0;
+}
+
+// Daily line
+.ck-daily-line {
+  background: rgba($ck-gold, 0.1);
+  border-left: 3px solid $ck-gold;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 10px;
+
+  .ck-daily-line__label {
+    font-weight: 600;
+    color: $ck-brown;
+    margin-right: 6px;
+  }
+}
+
+// Filter pills
+.ck-filter-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.ck-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  background: $ck-white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+
+  &--active {
+    border-color: $ck-gold;
+    background: rgba($ck-gold, 0.12);
+    color: darken($ck-brown, 5%);
+  }
+
+  &--stuck.ck-pill--active {
+    border-color: #E53E3E;
+    background: rgba(229, 62, 62, 0.08);
+  }
+
+  &--deadline.ck-pill--active {
+    border-color: #3182ce;
+    background: rgba(49, 130, 206, 0.08);
+  }
+}
+
+.ck-pill__count {
+  margin-left: 5px;
+  font-weight: 700;
+}
+
+// Traffic light dot
+.ck-tl {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &--red    { background: #E53E3E; }
+  &--orange { background: #ED8936; }
+  &--yellow { background: #ECC94B; }
+  &--green  { background: #48BB78; }
+  &--neutral { background: #ccc; }
+}
+
+// Project list rows
+.ck-project-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ck-project-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: rgba($ck-gold, 0.08);
+  }
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    border-bottom: none;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    margin-bottom: 10px;
+    background: $ck-white;
+  }
+}
+
+.ck-project-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ck-project-row__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.ck-project-row__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ck-project-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.ck-project-client {
+  font-size: 12px;
+  color: #888;
+}
+
+.ck-project-stage {
+  font-size: 12px;
+  color: $ck-brown;
+}
+
+// Progress bar
+.ck-progress-wrap {
+  height: 4px;
+  background: #e8e0d4;
+  border-radius: 2px;
+  flex-grow: 1;
+  min-width: 60px;
+
+  &--sm {
+    min-width: 40px;
+  }
+}
+
+.ck-progress-bar {
+  height: 100%;
+  background: $ck-gold;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+// Avatar
+.ck-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $ck-brown;
+  color: $ck-cream;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--lg {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+  }
+
+  &--xs {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+}
+
+// Badge
+.ck-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-left: 6px;
+  background: #f0f0f0;
+  color: #555;
+
+  &--micro    { background: #E9D8FD; color: #553C9A; }
+  &--template { background: rgba($ck-brown, 0.1); color: $ck-brown; }
+  &--muted    { background: #f0f0f0; color: #777; }
+}
+
+// Buttons
+.ck-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: filter 0.12s;
+
+  &:hover {
+    filter: brightness(0.92);
+  }
+
+  &--primary {
+    background: $ck-brown;
+    color: $ck-cream;
+  }
+
+  &--gold {
+    background: $ck-gold;
+    color: $ck-white;
+    font-weight: 600;
+  }
+
+  &--ghost {
+    background: transparent;
+    border: 1px solid #ccc;
+    color: $ck-brown;
+  }
+}
+
+// Section cards
+.ck-section {
+  background: $ck-white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  &--muted {
+    background: #fafafa;
+    box-shadow: none;
+  }
+}
+
+.ck-section__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $ck-brown;
+  margin: 0 0 12px 0;
+}
+
+// Initiative cards
+.ck-init-card {
+  border: 1px solid #e8ddd0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+
+  &--expanded {
+    border-color: $ck-gold;
+  }
+}
+
+.ck-init-card__header {
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.12s;
+
+  &:hover {
+    background: rgba($ck-gold, 0.05);
+  }
+}
+
+.ck-init-card__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.ck-init-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ck-init-card__body {
+  padding: 12px 16px 16px;
+  border-top: 1px solid #f0e8dc;
+  background: #fdfaf6;
+}
+
+// Stage bar
+.ck-stage-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  padding: 12px 0;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.ck-stage-seg {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+
+  &--done    { background: #C6F6D5; color: #276749; }
+  &--active  { background: rgba($ck-gold, 0.25); color: darken($ck-brown, 5%); font-weight: 700; }
+  &--pending { background: #f0f0f0; color: #999; }
+  &--skipped { background: #f0f0f0; color: #999; }
+}
+
+.ck-stage-seg__name {
+  font-weight: 500;
+}
+
+.ck-stage-seg__user {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+// Tasks
+.ck-tasks {
+  margin: 12px 0;
+}
+
+.ck-tasks__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: $ck-brown;
+  margin: 0 0 8px 0;
+}
+
+.ck-task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f0e8;
+}
+
+.ck-task-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.ck-task-name {
+  &--done {
+    text-decoration: line-through;
+    color: #aaa;
+  }
+}
+
+.ck-close-stage {
+  padding: 12px 0 4px;
+  text-align: right;
+}
+
+// Stage days indicator
+.ck-stage-days {
+  font-size: 11px;
+  color: #888;
+
+  &--alert {
+    color: #E53E3E;
+    font-weight: 600;
+  }
+}
+
+// Dossier header
+.ck-dossier__header {
+  padding: 16px 24px;
+  background: $ck-cream;
+  border-bottom: 2px solid $ck-gold;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-radius: 0 0 8px 8px;
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+  }
+}
+
+.ck-partner-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ck-partner-hero__info {
+  flex: 1;
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 20px;
+    color: $ck-brown;
+  }
+}
+
+.ck-partner-meta {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ck-partner-hero__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+}
+
+.ck-dossier__body {
+  padding-top: 4px;
+}
+
+// Closed initiatives row
+.ck-closed-row {
+  padding: 6px 0;
+  font-size: 13px;
+  color: #888;
+
+  i {
+    color: #48BB78;
+    margin-right: 6px;
+  }
+}
+
+// Message groups
+.ck-msg-group {
+  border-bottom: 1px solid #f0e8dc;
+}
+
+.ck-msg-group__hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover {
+    background: rgba($ck-gold, 0.04);
+  }
+}
+
+.ck-msg-subject {
+  flex: 1;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.ck-msg-group__body {
+  padding: 8px 0 8px 16px;
+}
+
+.ck-msg-row {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 12px;
+  align-items: baseline;
+
+  &--out {
+    color: $ck-brown;
+    background: rgba($ck-gold, 0.05);
+  }
+}
+
+.ck-msg-date,
+.ck-msg-dir {
+  flex-shrink: 0;
+  color: #999;
+}
+
+.ck-msg-from {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.ck-msg-snippet {
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+// Documents
+.ck-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ck-doc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  background: #faf8f4;
+  border: 1px solid #ece4d8;
+  transition: background 0.12s;
+
+  &:hover {
+    background: #f0e8da;
+  }
+}
+
+.ck-doc-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.ck-doc-date {
+  font-size: 11px;
+  color: #999;
+}
+
+// Overlay / dialog
+.ck-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.ck-dialog {
+  background: $ck-white;
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 480px;
+  width: 90%;
+
+  h3 {
+    margin: 0 0 8px 0;
+    color: $ck-brown;
+  }
+
+  p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #555;
+  }
+}
+
+.ck-dialog__textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.ck-dialog__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+// Loading state
+.ck-loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px;
+  color: $ck-gold;
+}
+
+// Empty states
+.ck-empty {
+  padding: 20px;
+  text-align: center;
+  color: #aaa;
+  font-style: italic;
+
+  &--sm {
+    padding: 8px 0;
+  }
+}

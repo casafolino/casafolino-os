@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_cockpit.CockpitRegia">
+    <div class="ck-regia">
+      <div class="ck-regia__header">
+        <div class="ck-regia__title-row">
+          <h1 class="ck-title">Regia</h1>
+          <button class="ck-btn ck-btn--ghost" t-on-click="refresh">
+            <i class="fa fa-refresh"/> Aggiorna
+          </button>
+        </div>
+        <div t-if="props.dailyLineEnabled" class="ck-daily-line">
+          <span class="ck-daily-line__label">Oggi:</span>
+          <span class="ck-daily-line__content">(AI briefing — prossimamente)</span>
+        </div>
+        <div class="ck-filter-pills">
+          <button t-att-class="'ck-pill' + (state.filter === 'all' ? ' ck-pill--active' : '')"
+                  t-on-click="setFilterAll">
+            Tutti <span class="ck-pill__count" t-out="counters.all"/>
+          </button>
+          <button t-att-class="'ck-pill ck-pill--stuck' + (state.filter === 'stuck' ? ' ck-pill--active' : '')"
+                  t-on-click="setFilterStuck">
+            <i class="fa fa-exclamation-triangle"/> Fermi
+            <span class="ck-pill__count" t-out="counters.stuck"/>
+          </button>
+          <button t-att-class="'ck-pill ck-pill--deadline' + (state.filter === 'deadline' ? ' ck-pill--active' : '')"
+                  t-on-click="setFilterDeadline">
+            <i class="fa fa-calendar"/> In scadenza
+            <span class="ck-pill__count" t-out="counters.deadline"/>
+          </button>
+        </div>
+      </div>
+
+      <div t-if="state.loading" class="ck-loading">
+        <i class="fa fa-spinner fa-spin fa-2x"/>
+      </div>
+
+      <div t-if="!state.loading" class="ck-project-list">
+        <div t-if="filteredProjects.length === 0" class="ck-empty">
+          Nessun progetto attivo.
+        </div>
+        <t t-foreach="filteredProjects" t-as="proj" t-key="proj.id">
+          <div class="ck-project-row" t-on-click="() => this.onProjectClick(proj)">
+            <div t-att-class="'ck-tl ' + this.getTrafficClass(proj.traffic_light)"/>
+            <div class="ck-project-row__main">
+              <div class="ck-project-row__name">
+                <span class="ck-project-name" t-out="proj.name"/>
+                <span t-if="proj.template_id" class="ck-badge ck-badge--template"
+                      t-out="proj.template_id[1]"/>
+              </div>
+              <div class="ck-project-row__sub">
+                <span t-if="proj.partner_id" class="ck-project-client" t-out="proj.partner_id[1]"/>
+                <span t-if="proj.current_stage_id" class="ck-project-stage">
+                  <i class="fa fa-arrow-right"/> <t t-out="proj.current_stage_id[1]"/>
+                </span>
+                <span t-if="proj._stageDays !== null and proj._stageDays !== undefined"
+                      t-att-class="'ck-stage-days' + (proj._stageDays > 7 ? ' ck-stage-days--alert' : '')"
+                      t-out="this.formatStageDays(proj._stageDays)"/>
+              </div>
+            </div>
+            <div class="ck-progress-wrap">
+              <div class="ck-progress-bar"
+                   t-att-style="'width:' + (proj.progress || 0) + '%'"/>
+            </div>
+            <div t-if="proj._stageUser" class="ck-avatar"
+                 t-att-title="proj._stageUser[1]"
+                 t-out="this.getInitials(proj._stageUser[1])"/>
+          </div>
+        </t>
+      </div>
+    </div>
+  </t>
+</templates>

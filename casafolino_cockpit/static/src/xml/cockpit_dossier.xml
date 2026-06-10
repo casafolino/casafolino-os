@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_cockpit.CockpitDossier">
+    <div class="ck-dossier">
+
+      <!-- Feedback dialog -->
+      <div t-if="state.feedbackDialog" class="ck-overlay">
+        <div class="ck-dialog">
+          <h3>Feedback fase</h3>
+          <p>Nota prima di passare il testimone:</p>
+          <textarea class="ck-dialog__textarea" t-on-input="onFeedbackInput"
+                    rows="4" placeholder="Note sulla fase..."/>
+          <div class="ck-dialog__actions">
+            <button class="ck-btn ck-btn--primary" t-on-click="submitFeedback">Conferma e passa</button>
+            <button class="ck-btn ck-btn--ghost" t-on-click="cancelFeedback">Annulla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="ck-dossier__header">
+        <button class="ck-btn ck-btn--ghost" t-on-click="props.onBack">
+          <i class="fa fa-arrow-left"/> Regia
+        </button>
+        <div t-if="state.partner" class="ck-partner-hero">
+          <div class="ck-avatar ck-avatar--lg" t-out="this.getInitials(state.partner.name)"/>
+          <div class="ck-partner-hero__info">
+            <h2 t-out="state.partner.name"/>
+            <div class="ck-partner-meta">
+              <span t-if="state.partner.country_id" t-out="state.partner.country_id[1]"/>
+              <t t-if="state.partner.user_id"> — <t t-out="state.partner.user_id[1]"/></t>
+              <span class="ck-badge" t-out="activeInitiatives.length + ' attivi'"/>
+              <span class="ck-badge ck-badge--muted" t-out="closedInitiatives.length + ' chiusi'"/>
+            </div>
+          </div>
+          <div class="ck-partner-hero__actions">
+            <button class="ck-btn ck-btn--primary" t-on-click="openNewProjectWizard">
+              <i class="fa fa-plus"/> Nuovo progetto
+            </button>
+            <button class="ck-btn ck-btn--ghost" t-on-click="openNativePartner">
+              <i class="fa fa-external-link"/> Apri scheda nativa
+            </button>
+            <button class="ck-btn ck-btn--ghost" t-on-click="refresh">
+              <i class="fa fa-refresh"/>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div t-if="state.loading" class="ck-loading"><i class="fa fa-spinner fa-spin fa-2x"/></div>
+
+      <div t-if="!state.loading" class="ck-dossier__body">
+
+        <!-- Progetti attivi -->
+        <section class="ck-section">
+          <h3 class="ck-section__title">Progetti attivi</h3>
+          <div t-if="activeInitiatives.length === 0" class="ck-empty">Nessun progetto attivo.</div>
+          <t t-foreach="activeInitiatives" t-as="init" t-key="init.id">
+            <div t-att-class="'ck-init-card' + (state.expandedInitId === init.id ? ' ck-init-card--expanded' : '')">
+              <div class="ck-init-card__header" t-on-click="() => this.toggleExpanded(init.id)">
+                <div class="ck-init-card__title">
+                  <span t-out="init.name"/>
+                  <span t-if="init.template_id" class="ck-badge ck-badge--template"
+                        t-out="init.template_id[1]"/>
+                </div>
+                <div class="ck-init-card__meta">
+                  <div class="ck-progress-wrap ck-progress-wrap--sm">
+                    <div class="ck-progress-bar" t-att-style="'width:' + (init.progress||0) + '%'"/>
+                  </div>
+                  <span t-out="(init.progress||0) + '%'"/>
+                  <i t-att-class="state.expandedInitId === init.id ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                </div>
+              </div>
+
+              <div t-if="state.expandedInitId === init.id" class="ck-init-card__body">
+                <!-- Stage bar -->
+                <div t-if="init._stages and init._stages.length > 0" class="ck-stage-bar">
+                  <t t-foreach="init._stages" t-as="stage" t-key="stage.id">
+                    <div t-att-class="'ck-stage-seg ck-stage-seg--' + (stage.state || 'pending')">
+                      <div class="ck-stage-seg__name" t-out="stage.name"/>
+                      <div t-if="stage.user_id" class="ck-stage-seg__user"
+                           t-out="this.getInitials(stage.user_id[1])"
+                           t-att-title="stage.user_id[1]"/>
+                    </div>
+                  </t>
+                </div>
+
+                <!-- Current stage tasks -->
+                <div t-if="init.current_stage_id" class="ck-tasks">
+                  <h4 class="ck-tasks__title">Task — <t t-out="init.current_stage_id[1]"/></h4>
+                  <t t-set="csid" t-value="init.current_stage_id[0]"/>
+                  <t t-set="stageTodos" t-value="(init._todos || []).filter(t => t.stage_id and t.stage_id[0] === csid)"/>
+                  <div t-if="stageTodos.length === 0" class="ck-empty ck-empty--sm">Nessun task.</div>
+                  <t t-foreach="stageTodos" t-as="todo" t-key="todo.id">
+                    <div class="ck-task-row">
+                      <label class="ck-task-label">
+                        <input type="checkbox"
+                               t-att-checked="!!todo.done"
+                               t-on-change="() => this.toggleTodo(todo)"/>
+                        <span t-att-class="'ck-task-name' + (todo.done ? ' ck-task-name--done' : '')"
+                              t-out="todo.name"/>
+                      </label>
+                      <span t-if="todo.assigned_user_id" class="ck-avatar ck-avatar--xs"
+                            t-out="this.getInitials(todo.assigned_user_id[1])"
+                            t-att-title="todo.assigned_user_id[1]"/>
+                    </div>
+                  </t>
+                </div>
+
+                <!-- Close stage -->
+                <t t-set="currentStage"
+                   t-value="(init._stages || []).find(s => init.current_stage_id and s.id === init.current_stage_id[0])"/>
+                <div t-if="currentStage" class="ck-close-stage">
+                  <button class="ck-btn ck-btn--gold"
+                          t-on-click="() => this.closeStage(currentStage)">
+                    <i class="fa fa-flag-checkered"/> Chiudi fase e passa il testimone
+                  </button>
+                </div>
+              </div>
+            </div>
+          </t>
+        </section>
+
+        <!-- Progetti chiusi -->
+        <section t-if="closedInitiatives.length > 0" class="ck-section ck-section--muted">
+          <h3 class="ck-section__title">Chiusi (<t t-out="closedInitiatives.length"/>)</h3>
+          <t t-foreach="closedInitiatives" t-as="init" t-key="init.id">
+            <div class="ck-closed-row">
+              <i class="fa fa-check-circle"/> <span t-out="init.name"/>
+            </div>
+          </t>
+        </section>
+
+        <!-- Conversazioni -->
+        <section class="ck-section">
+          <h3 class="ck-section__title">Conversazioni email</h3>
+          <div t-if="state.messages.length === 0" class="ck-empty">Nessuna email.</div>
+          <t t-foreach="state.messages" t-as="group" t-as-index="idx" t-key="group.subject">
+            <div class="ck-msg-group">
+              <div class="ck-msg-group__hdr" t-on-click="() => this.toggleMessageGroup(idx)">
+                <span class="ck-msg-subject" t-out="group.subject"/>
+                <span class="ck-badge ck-badge--muted" t-out="group.msgs.length + ' msg'"/>
+                <i t-att-class="group.expanded ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+              </div>
+              <div t-if="group.expanded" class="ck-msg-group__body">
+                <t t-foreach="group.msgs" t-as="msg" t-key="msg.id">
+                  <div t-att-class="'ck-msg-row' + (msg.direction === 'outbound' ? ' ck-msg-row--out' : '')">
+                    <span class="ck-msg-date" t-out="this.formatDate(msg.email_date)"/>
+                    <span class="ck-msg-dir" t-out="msg.direction === 'outbound' ? '→' : '←'"/>
+                    <span class="ck-msg-from" t-out="msg.sender_name || msg.sender_email || ''"/>
+                    <span class="ck-msg-snippet"
+                          t-out="(msg.body_plain || '').slice(0,80)"/>
+                  </div>
+                </t>
+              </div>
+            </div>
+          </t>
+        </section>
+
+        <!-- Documenti -->
+        <section class="ck-section">
+          <h3 class="ck-section__title">Documenti</h3>
+          <div t-if="state.attachments.length === 0" class="ck-empty">Nessun documento.</div>
+          <div class="ck-doc-list">
+            <t t-foreach="state.attachments" t-as="att" t-key="att.id">
+              <a class="ck-doc-row"
+                 t-att-href="'/web/content/' + att.id + '?download=true'"
+                 target="_blank">
+                <i class="fa fa-paperclip"/>
+                <span class="ck-doc-name" t-out="att.name"/>
+                <span class="ck-doc-date" t-out="this.formatDate(att.create_date)"/>
+              </a>
+            </t>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </t>
+</templates>

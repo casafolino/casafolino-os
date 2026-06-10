@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_casafolino_cockpit" model="ir.actions.client">
+        <field name="name">Cockpit</field>
+        <field name="tag">casafolino_cockpit.CockpitMain</field>
+    </record>
+
+    <menuitem
+        id="menu_casafolino_cockpit_root"
+        name="Cockpit"
+        sequence="2"
+        web_icon="casafolino_cockpit,static/description/icon.png"
+        groups="casafolino_cockpit.cf_cockpit_beta_group"
+        action="action_casafolino_cockpit"/>
+</odoo>
