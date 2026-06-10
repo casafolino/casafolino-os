@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Template 1: Ordine Commerciale Completo (OC Quick Win) -->
+        <record id="template_staffetta_oc_quick" model="cf.initiative.template">
+            <field name="name">OC Quick Win — Staffetta</field>
+            <field name="code">OC_QUICK_STF</field>
+            <field name="family_id" ref="family_oc"/>
+            <field name="variant_id" ref="variant_oc_quick"/>
+            <field name="description">Ordine commerciale rapido con passaggio testimone: commerciale → backoffice → produzione → logistica</field>
+            <field name="is_micro" eval="False"/>
+            <field name="stage_line_ids" eval="[
+                (0, 0, {'sequence': 10, 'name': 'Briefing commerciale', 'role': 'commerciale',
+                        'task_names': 'Raccogliere requisiti cliente\nConfermare quantità e SKU\nDefinire data consegna richiesta',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+                (0, 0, {'sequence': 20, 'name': 'Inserimento ordine', 'role': 'backoffice',
+                        'task_names': 'Creare ordine di vendita\nInviare conferma d\'ordine al cliente\nVerificare disponibilità magazzino',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 30, 'name': 'Produzione / Picking', 'role': 'produzione',
+                        'task_names': 'Avviare ordine produzione\nControllo qualità lotto\nChiudere produzione',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 40, 'name': 'Spedizione', 'role': 'logistica',
+                        'task_names': 'Preparare colli\nStampare DDT\nConsegnare a corriere',
+                        'optional': False, 'require_feedback': False, 'require_shipment': True}),
+                (0, 0, {'sequence': 50, 'name': 'Fatturazione', 'role': 'amministrazione',
+                        'task_names': 'Emettere fattura\nInviare fattura al cliente',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+            ]"/>
+        </record>
+
+        <!-- Template 2: Evento / Fiera Small -->
+        <record id="template_staffetta_ev_small" model="cf.initiative.template">
+            <field name="name">Evento Small — Staffetta</field>
+            <field name="code">EV_SMALL_STF</field>
+            <field name="family_id" ref="family_ev"/>
+            <field name="variant_id" ref="variant_ev_small"/>
+            <field name="description">Degustazione o evento piccolo con staffetta commerciale → produzione → logistica</field>
+            <field name="is_micro" eval="False"/>
+            <field name="stage_line_ids" eval="[
+                (0, 0, {'sequence': 10, 'name': 'Pianificazione evento', 'role': 'commerciale',
+                        'task_names': 'Confermare data e location\nDefinire prodotti da esporre\nStima quantità campioni',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+                (0, 0, {'sequence': 20, 'name': 'Preparazione materiali', 'role': 'produzione',
+                        'task_names': 'Preparare campioni\nVerificare materiale promozionale\nImballare kit evento',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 30, 'name': 'Spedizione / Trasporto', 'role': 'logistica',
+                        'task_names': 'Organizzare spedizione\nConfermare arrivo materiali',
+                        'optional': False, 'require_feedback': False, 'require_shipment': True}),
+                (0, 0, {'sequence': 40, 'name': 'Post-evento', 'role': 'commerciale',
+                        'task_names': 'Raccogliere contatti acquisiti\nAggiornare CRM\nSeguire lead post-evento',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+            ]"/>
+        </record>
+
+        <!-- Template 3: Evento / Fiera Full (internazionale) -->
+        <record id="template_staffetta_ev_full" model="cf.initiative.template">
+            <field name="name">Fiera Internazionale — Staffetta</field>
+            <field name="code">EV_FULL_STF</field>
+            <field name="family_id" ref="family_ev"/>
+            <field name="variant_id" ref="variant_ev_full"/>
+            <field name="description">Fiera internazionale completa: briefing → etichette → produzione → logistica → post-fiera</field>
+            <field name="is_micro" eval="False"/>
+            <field name="stage_line_ids" eval="[
+                (0, 0, {'sequence': 10, 'name': 'Briefing fiera', 'role': 'commerciale',
+                        'task_names': 'Confermare partecipazione\nDefinire catalogo prodotti\nStima budget stand',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+                (0, 0, {'sequence': 20, 'name': 'Etichette export', 'role': 'etichette',
+                        'task_names': 'Verificare normativa paese target\nOrdinare etichette lingua locale\nApprovare bozze etichette',
+                        'optional': True, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 30, 'name': 'Produzione campioni', 'role': 'produzione',
+                        'task_names': 'Produrre lotto campioni\nEtichettare campioni\nConfezione finale',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 40, 'name': 'Logistica internazionale', 'role': 'logistica',
+                        'task_names': 'Organizzare spedizione internazionale\nDocumenti doganali\nTracking consegna stand',
+                        'optional': False, 'require_feedback': False, 'require_shipment': True}),
+                (0, 0, {'sequence': 50, 'name': 'Follow-up commerciale', 'role': 'commerciale',
+                        'task_names': 'Report contatti raccolti\nInserire lead nel CRM\nInviare campioni follow-up',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+                (0, 0, {'sequence': 60, 'name': 'Rendiconto fiera', 'role': 'amministrazione',
+                        'task_names': 'Raccogliere fatture spese\nChiudere budget fiera',
+                        'optional': True, 'require_feedback': False, 'require_shipment': False}),
+            ]"/>
+        </record>
+
+        <!-- Template 4: Campionatura Express -->
+        <record id="template_staffetta_ce_express" model="cf.initiative.template">
+            <field name="name">Campionatura Express — Staffetta</field>
+            <field name="code">CE_EXPRESS_STF</field>
+            <field name="family_id" ref="family_ce"/>
+            <field name="variant_id" ref="variant_ce_express"/>
+            <field name="description">Campionatura rapida: backoffice → produzione → etichette → spedizione</field>
+            <field name="is_micro" eval="False"/>
+            <field name="stage_line_ids" eval="[
+                (0, 0, {'sequence': 10, 'name': 'Richiesta campionatura', 'role': 'backoffice',
+                        'task_names': 'Registrare richiesta campioni\nConfermare SKU richiesti\nDefinire quantità',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 20, 'name': 'Preparazione campioni', 'role': 'produzione',
+                        'task_names': 'Selezionare lotto\nPreparare campioni\nControllo qualità',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 30, 'name': 'Etichettatura', 'role': 'etichette',
+                        'task_names': 'Stampare etichette campione\nEtichettare prodotti',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 40, 'name': 'Spedizione campioni', 'role': 'logistica',
+                        'task_names': 'Imballare campioni\nPrenotare corriere\nInviare tracking al cliente',
+                        'optional': False, 'require_feedback': False, 'require_shipment': True}),
+            ]"/>
+        </record>
+
+        <!-- Template 5: Campionatura Complex (micro-progetto padre) -->
+        <record id="template_staffetta_ce_complex" model="cf.initiative.template">
+            <field name="name">Campionatura Complex — Staffetta</field>
+            <field name="code">CE_COMPLEX_STF</field>
+            <field name="family_id" ref="family_ce"/>
+            <field name="variant_id" ref="variant_ce_complex"/>
+            <field name="description">Campionatura complessa con etichetta custom: commerciale → grafica etichette → produzione → logistica</field>
+            <field name="is_micro" eval="True"/>
+            <field name="stage_line_ids" eval="[
+                (0, 0, {'sequence': 10, 'name': 'Brief campionatura', 'role': 'commerciale',
+                        'task_names': 'Raccogliere specifiche etichetta\nConfermare formato e materiale\nDefinire scadenza',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+                (0, 0, {'sequence': 20, 'name': 'Design etichetta', 'role': 'etichette',
+                        'task_names': 'Creare bozza grafica\nApprovazione interna\nInviare per approvazione cliente',
+                        'optional': False, 'require_feedback': True, 'require_shipment': False}),
+                (0, 0, {'sequence': 30, 'name': 'Stampa etichette', 'role': 'etichette',
+                        'task_names': 'Ordinare stampa\nVerificare resa colori\nRicevere etichette stampate',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 40, 'name': 'Produzione e etichettatura', 'role': 'produzione',
+                        'task_names': 'Produrre lotto\nApplicare etichette custom\nControllo qualità finale',
+                        'optional': False, 'require_feedback': False, 'require_shipment': False}),
+                (0, 0, {'sequence': 50, 'name': 'Spedizione', 'role': 'logistica',
+                        'task_names': 'Preparare spedizione\nStampare documenti\nConsegnare a corriere',
+                        'optional': False, 'require_feedback': False, 'require_shipment': True}),
+            ]"/>
+        </record>
+
+    </data>
+</odoo>
