@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         ACTION: Cabina di regia
+    ============================================================ -->
+    <record id="action_cf_initiative_cabina" model="ir.actions.act_window">
+        <field name="name">Cabina di regia</field>
+        <field name="res_model">cf.initiative</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('template_id', '!=', False), ('state', 'not in', ['done', 'cancelled'])]</field>
+        <field name="context">{'search_default_cf_active': 1}</field>
+    </record>
+
+    <!-- ACTION: Wizard crea progetto da template -->
+    <record id="action_cf_initiative_create_wizard" model="ir.actions.act_window">
+        <field name="name">Nuovo Progetto da Template</field>
+        <field name="res_model">cf.initiative.create.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ============================================================
+         LIST VIEW: Cabina di regia
+    ============================================================ -->
+    <record id="view_cf_initiative_cabina_list" model="ir.ui.view">
+        <field name="name">cf.initiative.cabina.list</field>
+        <field name="model">cf.initiative</field>
+        <field name="arch" type="xml">
+            <list string="Cabina di regia"
+                  default_order="traffic_light desc, days_in_stage desc">
+                <field name="traffic_light" widget="badge"
+                       decoration-danger="traffic_light == 'red'"
+                       decoration-warning="traffic_light == 'yellow'"
+                       decoration-success="traffic_light == 'green'"
+                       string="Semaforo"/>
+                <field name="name" string="Progetto"/>
+                <field name="partner_id"/>
+                <field name="template_id" widget="badge"/>
+                <field name="current_stage_id" string="Fase attuale"/>
+                <field name="baton_user_id" widget="many2one_avatar_user" string="Testimone"/>
+                <field name="days_in_stage" string="Giorni in fase"/>
+                <field name="progress" widget="progressbar" string="Progresso"/>
+                <field name="date_deadline" string="Scadenza"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         KANBAN VIEW: Cabina di regia (raggruppata per baton_user_id)
+    ============================================================ -->
+    <record id="view_cf_initiative_cabina_kanban" model="ir.ui.view">
+        <field name="name">cf.initiative.cabina.kanban</field>
+        <field name="model">cf.initiative</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="baton_user_id" class="o_kanban_small_column">
+                <field name="traffic_light"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="current_stage_id"/>
+                <field name="days_in_stage"/>
+                <field name="progress"/>
+                <field name="baton_user_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="d-flex align-items-center mb-1">
+                                <span t-if="record.traffic_light.raw_value == 'red'"
+                                      class="badge text-bg-danger me-2">Rosso</span>
+                                <span t-if="record.traffic_light.raw_value == 'yellow'"
+                                      class="badge text-bg-warning me-2">Giallo</span>
+                                <span t-if="record.traffic_light.raw_value == 'green'"
+                                      class="badge text-bg-success me-2">Verde</span>
+                                <strong><t t-esc="record.name.value"/></strong>
+                            </div>
+                            <div class="text-muted small">
+                                <t t-esc="record.partner_id.value"/>
+                            </div>
+                            <div class="mt-1">
+                                <span class="badge text-bg-secondary">
+                                    <t t-esc="record.current_stage_id.value or 'Nessuna fase'"/>
+                                </span>
+                            </div>
+                            <div class="mt-1 text-muted small">
+                                <t t-esc="record.days_in_stage.value"/> gg in fase
+                            </div>
+                            <div class="mt-2">
+                                <div class="progress" style="height:8px;">
+                                    <div class="progress-bar"
+                                         t-attf-style="width: #{record.progress.raw_value}%"/>
+                                </div>
+                                <small><t t-esc="record.progress.raw_value"/>%</small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         SEARCH VIEW: Cabina di regia
+    ============================================================ -->
+    <record id="view_cf_initiative_cabina_search" model="ir.ui.view">
+        <field name="name">cf.initiative.cabina.search</field>
+        <field name="model">cf.initiative</field>
+        <field name="arch" type="xml">
+            <search string="Cabina di regia">
+                <field name="name" string="Progetto"/>
+                <field name="partner_id"/>
+                <field name="baton_user_id"/>
+                <filter name="fermi" string="Fermi (giallo + rosso)"
+                        domain="[('traffic_light', 'in', ['yellow', 'red'])]"/>
+                <filter name="miei" string="Miei"
+                        domain="[('baton_user_id', '=', uid)]"/>
+                <filter name="micro" string="Micro-progetti"
+                        domain="[('template_id.is_micro', '=', True)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_partner" string="Cliente"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_baton" string="Testimone"
+                            context="{'group_by': 'baton_user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         INHERIT FORM cf.initiative — pagina Staffetta
+    ============================================================ -->
+    <record id="view_cf_initiative_form_staffetta" model="ir.ui.view">
+        <field name="name">cf.initiative.form.staffetta</field>
+        <field name="model">cf.initiative</field>
+        <field name="inherit_id" ref="casafolino_initiative.view_cf_initiative_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <!-- Smart button: micro-progetti figli -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_children" type="object"
+                        class="oe_stat_button" icon="fa-sitemap"
+                        invisible="template_id == False or template_id.is_micro == True">
+                    <field name="child_count" widget="statinfo" string="Micro"/>
+                </button>
+                <button name="action_open_create_wizard_child" type="object"
+                        class="oe_stat_button" icon="fa-plus"
+                        invisible="template_id == False or template_id.is_micro == True"
+                        string="+ Micro">
+                </button>
+            </xpath>
+
+            <!-- Pagina Staffetta nel notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Staffetta" name="staffetta">
+
+                    <!-- KPI bar -->
+                    <div class="o_row mb-3">
+                        <group col="4">
+                            <field name="traffic_light" widget="badge"
+                                   decoration-danger="traffic_light == 'red'"
+                                   decoration-warning="traffic_light == 'yellow'"
+                                   decoration-success="traffic_light == 'green'"
+                                   string="Semaforo"/>
+                            <field name="current_stage_id" string="Fase attuale" readonly="1"/>
+                            <field name="days_in_stage" string="Giorni in fase" readonly="1"/>
+                            <field name="progress" widget="progressbar" string="Progresso"/>
+                        </group>
+                    </div>
+
+                    <div class="o_row mb-2">
+                        <group col="2">
+                            <field name="template_id" string="Template staffetta"/>
+                            <field name="date_deadline" string="Scadenza"/>
+                        </group>
+                    </div>
+
+                    <!-- Lista fasi -->
+                    <field name="stage_ids">
+                        <list editable="bottom" decoration-success="state == 'done'"
+                              decoration-muted="state == 'skipped'"
+                              decoration-info="state == 'active'">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name" string="Fase"/>
+                            <field name="role" string="Ruolo"/>
+                            <field name="user_id" widget="many2one_avatar_user" string="Owner"/>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'done'"
+                                   decoration-info="state == 'active'"
+                                   decoration-muted="state == 'skipped'"
+                                   string="Stato"/>
+                            <field name="days_in_stage" string="Gg"/>
+                            <field name="feedback" string="Feedback" optional="show"/>
+                            <button name="action_complete_stage" type="object"
+                                    string="Chiudi e passa testimone"
+                                    class="btn btn-sm btn-primary"
+                                    invisible="state != 'active'"/>
+                            <button name="action_skip_stage" type="object"
+                                    string="Salta"
+                                    class="btn btn-sm btn-secondary"
+                                    invisible="optional == False or state != 'pending'"/>
+                        </list>
+                    </field>
+
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- ============================================================
+         WIZARD VIEW: crea progetto da template
+    ============================================================ -->
+    <record id="view_cf_initiative_create_wizard_form" model="ir.ui.view">
+        <field name="name">cf.initiative.create.wizard.form</field>
+        <field name="model">cf.initiative.create.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nuovo Progetto da Template">
+                <sheet>
+                    <group col="2">
+                        <field name="template_id"/>
+                        <field name="partner_id"/>
+                        <field name="date_deadline"/>
+                        <field name="parent_id" invisible="template_id.is_micro == False"/>
+                    </group>
+                    <separator string="Fasi staffetta"/>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name" string="Fase"/>
+                            <field name="role" string="Ruolo"/>
+                            <field name="user_id" string="Assegnatario"/>
+                            <field name="include" string="Includi"/>
+                            <field name="optional"/>
+                            <field name="require_feedback" string="Feedback"/>
+                            <field name="require_shipment" string="Spedizione"/>
+                            <field name="task_names" string="Task" optional="show"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="Crea Progetto" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         MENUITEM: Cabina di regia (sequence=1, primo nel menu)
+    ============================================================ -->
+    <menuitem id="menu_initiative_cabina"
+              name="Cabina di regia"
+              parent="casafolino_initiative.menu_initiative_root"
+              action="action_cf_initiative_cabina"
+              sequence="1"/>
+
+    <!-- MENUITEM: Nuovo Progetto da Template -->
+    <menuitem id="menu_initiative_create_wizard"
+              name="Nuovo Progetto da Template"
+              parent="casafolino_initiative.menu_initiative_root"
+              action="action_cf_initiative_create_wizard"
+              sequence="3"/>
+
+</odoo>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_staffetta_button" model="ir.ui.view">
+        <field name="name">res.partner.staffetta.button</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_initiatives" type="object"
+                        class="oe_stat_button" icon="fa-sitemap">
+                    <field name="initiative_count" widget="statinfo" string="Progetti"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
