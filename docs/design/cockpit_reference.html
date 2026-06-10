@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cockpit CasaFolino — design reference v5</title>
+<style>
+/* ============================================================
+   COCKPIT CASAFOLINO — DESIGN SOURCE OF TRUTH v5
+   v4 + assegnazione task rapida, chat di contesto (@menzioni),
+   pipeline con regola "prossima azione", inbox con attesa
+   risposta + pannello contesto cliente.
+   Ogni blocco è marcato COMPONENT: <nome> per il mapping OWL.
+   La chat mappa su mail.message/chatter nativo Odoo (lens).
+   ============================================================ */
+:root {
+  --bg: #F5F6F8; --panel: #FFFFFF; --soft: #F8F9FB; --line: #E8EAEE;
+  --ink: #1F2328; --muted: #6B7280; --faint: #9AA1AB; --dark: #15202B;
+  --green: #1D9E75;  --green-bg: #E1F5EE;  --green-ink: #085041;
+  --amber: #EF9F27;  --amber-bg: #FAEEDA;  --amber-ink: #854F0B;
+  --red:   #E24B4A;  --red-bg:   #FCEBEB;  --red-ink:   #9E1F19;
+  --violet:#6D5BD0;  --violet-bg:#EEEDFE;  --violet-ink:#3C3489;
+  --pink:  #C2497A;  --pink-bg:  #FBEAF0;  --pink-ink:  #72243E;
+  --blue:  #2F6FDB;  --blue-bg:  #EAF1FC;  --blue-ink:  #1D4FA3;
+  --r-lg: 16px; --r-md: 12px; --r-sm: 9px;
+  --shadow: 0 1px 2px rgba(16,24,40,.05);
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; margin: 0; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+button, input, select { font: inherit; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-size: 21px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 4px; }
+h2 { font-size: 15px; font-weight: 600; margin-bottom: 0; }
+.eyebrow { color: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: .04em; margin: 0 0 3px; text-transform: uppercase; }
+.subtitle { color: var(--muted); font-size: 13px; margin: 0; }
+.muted { color: var(--muted); font-size: 12px; }
+.num { font-variant-numeric: tabular-nums; } /* numeri tabulari ovunque ci siano valori */
+
+.page { display: grid; grid-template-columns: 72px minmax(0,1fr); min-height: 100vh; }
+
+/* ---------- COMPONENT: Rail (6 voci) ---------- */
+.rail { background: var(--dark); padding: 14px 12px; }
+.logo { align-items: center; background: #fff; border-radius: 12px; color: var(--dark); display: inline-flex; font-size: 13px; font-weight: 800; height: 44px; justify-content: center; margin-bottom: 20px; width: 44px; }
+.rail nav { display: grid; gap: 9px; }
+.rail a { align-items: center; color: #8E99A8; cursor: pointer; display: flex; flex-direction: column; font-size: 10px; font-weight: 600; gap: 4px; position: relative; }
+.rail a span { align-items: center; border-radius: 12px; display: inline-flex; font-size: 12px; font-weight: 700; height: 40px; justify-content: center; width: 44px; transition: background .12s; }
+.rail a:hover span { background: rgba(255,255,255,.08); }
+.rail a.active { color: #fff; }
+.rail a.active span { background: rgba(255,255,255,.14); color: #fff; }
+.rail .unread { background: var(--red); border-radius: 50%; height: 8px; position: absolute; right: 6px; top: -2px; width: 8px; }
+
+.main { min-width: 0; padding: 18px 20px; max-width: 1280px; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ---------- Condivisi: Topbar / Btn / Chip / Metric / Panel / Avatar ---------- */
+.topbar { align-items: center; display: grid; gap: 14px; grid-template-columns: minmax(0,1fr) auto; margin-bottom: 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.btn { align-items: center; border: none; border-radius: 10px; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 600; justify-content: center; min-height: 36px; padding: 0 14px; white-space: nowrap; transition: opacity .12s; }
+.btn:hover { opacity: .88; }
+.btn.primary { background: var(--ink); color: #fff; }
+.btn.ghost { background: var(--panel); border: 1px solid var(--line); color: var(--ink); }
+.btn.sm { border-radius: 8px; font-size: 12px; min-height: 30px; padding: 0 11px; }
+.chip { align-items: center; border-radius: 999px; display: inline-flex; font-size: 11.5px; font-weight: 600; min-height: 24px; padding: 0 11px; white-space: nowrap; }
+.chip.green{background:var(--green-bg);color:var(--green-ink);} .chip.amber{background:var(--amber-bg);color:var(--amber-ink);}
+.chip.red{background:var(--red-bg);color:var(--red-ink);} .chip.violet{background:var(--violet-bg);color:var(--violet-ink);}
+.chip.pink{background:var(--pink-bg);color:var(--pink-ink);} .chip.blue{background:var(--blue-bg);color:var(--blue-ink);}
+.chip.neutral{background:var(--soft);border:1px solid var(--line);color:var(--muted);}
+.chip.clickable{cursor:pointer;} .chip.on{outline:2px solid var(--ink);}
+.summary { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0,1fr)); margin-bottom: 12px; }
+.summary.four { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.metric, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); }
+.metric { padding: 13px 15px; cursor: pointer; }
+.metric span { color: var(--muted); display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.metric strong { display: block; font-size: 22px; font-weight: 650; line-height: 1.1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.metric strong.red { color: var(--red-ink); } .metric strong.amber { color: var(--amber-ink); }
+.metric small { color: var(--faint); font-size: 11.5px; font-weight: 500; }
+.metric.alert { background: var(--red-bg); border-color: transparent; }
+.metric.alert span, .metric.alert small { color: #B05552; }
+.panel { margin-bottom: 12px; min-width: 0; padding: 15px 16px; }
+.section-head { align-items: center; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 12px; }
+.avatar { align-items: center; border-radius: 50%; display: inline-flex; flex-shrink: 0; font-size: 11px; font-weight: 700; height: 30px; justify-content: center; width: 30px; }
+.avatar.blue{background:var(--violet-bg);color:var(--violet-ink);} .avatar.green{background:var(--green-bg);color:var(--green-ink);}
+.avatar.amber{background:var(--amber-bg);color:var(--amber-ink);} .avatar.pink{background:var(--pink-bg);color:var(--pink-ink);}
+.avatar.ink{background:var(--ink);color:#fff;}
+.avatar.sm { font-size: 10px; height: 24px; width: 24px; }
+
+/* ============ REGIA ============ */
+.dailyline { align-items: baseline; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); display: flex; gap: 8px; margin-bottom: 12px; padding: 11px 15px; }
+.dailyline b { font-weight: 650; } .dailyline p { color: var(--muted); font-size: 13px; margin: 0; }
+.regia-list { display: grid; gap: 8px; }
+.regia-row { align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); cursor: pointer; display: grid; gap: 14px; grid-template-columns: 12px minmax(0,1.6fr) auto 120px minmax(0,.9fr); padding: 12px 16px; transition: border-color .12s, transform .08s; }
+.regia-row:hover { border-color: #C9CED6; transform: translateY(-1px); }
+.dot { border-radius: 50%; height: 10px; width: 10px; flex-shrink: 0; }
+.dot.green{background:var(--green);} .dot.amber{background:var(--amber);} .dot.red{background:var(--red);}
+.regia-row .what strong { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+.regia-row .what p { color: var(--muted); font-size: 12px; margin: 0; }
+.regia-row .what b.alert { color: var(--red-ink); font-weight: 600; }
+.bar { background: var(--line); border-radius: 4px; height: 6px; overflow: hidden; }
+.bar i { border-radius: 4px; display: block; height: 100%; }
+.bar i.green{background:var(--green);} .bar i.amber{background:var(--amber);} .bar i.red{background:var(--red);}
+.who { align-items: center; display: flex; gap: 9px; justify-content: flex-end; min-width: 0; }
+.who .name { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who .role { color: var(--faint); display: block; font-size: 11px; font-weight: 500; }
+
+/* ============ PIPELINE ============ */
+.kb-board { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0,1fr)); }
+.kb-col { background: var(--soft); border: 1px solid var(--line); border-radius: var(--r-lg); display: flex; flex-direction: column; min-height: 420px; padding: 10px; }
+.kb-head { align-items: baseline; display: flex; gap: 8px; justify-content: space-between; margin: 2px 4px 10px; }
+.kb-head h3 { font-size: 12px; font-weight: 650; margin: 0; }
+.kb-head .kmeta { color: var(--faint); font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.kb-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); cursor: pointer; display: grid; gap: 7px; margin-bottom: 8px; padding: 11px 12px; }
+.kb-card:hover { border-color: #C9CED6; }
+.kb-card strong { font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+.kb-card .kval { font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+/* COMPONENT: NextActionLine — regola Pipedrive: ogni lead ha la prossima azione */
+.kb-card .knext { align-items: center; color: var(--muted); display: flex; font-size: 11px; font-weight: 500; gap: 5px; }
+.kb-card .knext.missing { color: var(--red-ink); font-weight: 600; }
+.kb-card.no-action { border-color: #F3C2BF; }
+.kb-card .kfoot { align-items: center; display: flex; gap: 6px; justify-content: space-between; }
+.kb-card .kdays { color: var(--faint); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kb-card.rotting .kdays { color: var(--red-ink); }
+.kb-card.won-hint { border-style: dashed; box-shadow: none; cursor: default; background: transparent; }
+.kb-card.won-hint p { color: var(--faint); font-size: 11.5px; line-height: 1.4; margin: 0; }
+/* COMPONENT: ColumnFooter — totale pesato per colonna */
+.kb-foot { border-top: 1px solid var(--line); color: var(--faint); font-size: 10.5px; font-weight: 600; margin-top: auto; padding: 8px 4px 0; font-variant-numeric: tabular-nums; }
+
+/* ============ INBOX ============ */
+.inbox-grid { align-items: start; display: grid; gap: 12px; grid-template-columns: minmax(260px,.42fr) minmax(0,1fr) minmax(220px,.38fr); }
+.mail-list { display: grid; gap: 8px; }
+/* COMPONENT: InboxSections — Da decidere / In attesa di risposta */
+.inbox-sect { align-items: center; color: var(--faint); display: flex; font-size: 11px; font-weight: 650; gap: 7px; letter-spacing: .03em; margin: 4px 2px 2px; text-transform: uppercase; }
+.inbox-sect .chip { min-height: 20px; padding: 0 8px; font-size: 10.5px; }
+.mail-item { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); cursor: pointer; display: grid; gap: 5px; padding: 11px 13px; text-align: left; width: 100%; }
+.mail-item.sel { border-color: var(--ink); }
+.mail-top { align-items: baseline; display: flex; gap: 8px; justify-content: space-between; }
+.mail-top .sender { font-size: 12.5px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-top .time { color: var(--faint); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.mail-item .subject { font-size: 12.5px; font-weight: 500; }
+.mail-item .snippet { color: var(--muted); display: -webkit-box; font-size: 11.5px; line-height: 1.4; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.mail-item .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.mail-item .tags .chip { font-size: 10.5px; min-height: 20px; padding: 0 8px; }
+.mail-item.waiting { border-left: 3px solid var(--amber); }
+.mail-card { background: var(--soft); border-radius: var(--r-md); padding: 13px 15px; margin-bottom: 12px; }
+.mail-card .mhead { align-items: baseline; display: flex; gap: 10px; justify-content: space-between; margin-bottom: 7px; }
+.mail-card .mhead strong { font-size: 14px; font-weight: 650; }
+.mail-card .meta { color: var(--faint); font-size: 11.5px; margin-bottom: 8px; }
+.mail-card .mbody { font-size: 13px; line-height: 1.55; margin: 0; }
+/* COMPONENT: TriageBar — azioni a un click + snooze */
+.triage { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+/* COMPONENT: ReplyBox — risposta inline con bozza AI */
+.replybox { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; }
+.replybox .rb-head { align-items: center; display: flex; gap: 8px; justify-content: space-between; margin-bottom: 8px; }
+.replybox .rb-head b { font-size: 12px; font-weight: 650; }
+.replybox p.draft { background: var(--soft); border-radius: var(--r-sm); color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0 0 9px; padding: 10px 12px; }
+.ai-suggest { background: var(--blue-bg); border-radius: var(--r-md); display: grid; gap: 8px; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; padding: 11px 13px; margin-top: 12px; }
+.ai-suggest p { color: var(--blue-ink); font-size: 12.5px; margin: 0; }
+.ai-suggest p b { font-weight: 650; }
+/* COMPONENT: ContextPanel — chi è, che progetto ha, dove siamo */
+.ctx { display: grid; gap: 10px; }
+.ctx .ctx-block { background: var(--soft); border-radius: var(--r-md); padding: 11px 13px; }
+.ctx .ctx-block h4 { color: var(--faint); font-size: 10.5px; font-weight: 650; letter-spacing: .03em; margin: 0 0 7px; text-transform: uppercase; }
+.ctx .ctx-row { align-items: baseline; display: flex; font-size: 12.5px; gap: 8px; justify-content: space-between; padding: 2px 0; }
+.ctx .ctx-row span { color: var(--muted); font-size: 11.5px; }
+.ctx .ctx-row b { font-weight: 600; text-align: right; }
+.ctx p.mini { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
+
+/* ============ DOSSIER ============ */
+.dovesiamo p.body { font-size: 13.5px; line-height: 1.55; margin: 0 0 12px; }
+.ball-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+.ball { border-radius: var(--r-md); padding: 11px 13px; }
+.ball strong { display: block; font-size: 11.5px; font-weight: 650; letter-spacing: .02em; margin-bottom: 6px; text-transform: uppercase; }
+.ball p { font-size: 12.5px; line-height: 1.5; margin: 0 0 3px; }
+.ball.ours{background:var(--red-bg);} .ball.ours strong,.ball.ours p{color:var(--red-ink);}
+.ball.theirs{background:var(--green-bg);} .ball.theirs strong,.ball.theirs p{color:var(--green-ink);}
+.project { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); display: grid; gap: 13px; margin-bottom: 10px; padding: 15px 16px; }
+.project .phead { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.project .phead strong { flex: 1; font-size: 14px; font-weight: 650; min-width: 180px; }
+.staffetta { display: grid; gap: 5px; grid-template-columns: repeat(6, minmax(0,1fr)); }
+.sseg { border-radius: 4px; height: 7px; background: var(--line); }
+.sseg.done{background:var(--green);} .sseg.current{background:var(--amber);}
+.stlabels { display: grid; gap: 5px; grid-template-columns: repeat(6, minmax(0,1fr)); margin-top: 5px; }
+.stlabels span { color: var(--faint); font-size: 10px; font-weight: 500; line-height: 1.3; text-align: center; }
+.stlabels span.current { color: var(--ink); font-weight: 650; }
+.ptasks { background: var(--soft); border-radius: var(--r-md); padding: 11px 13px; }
+.ptasks .ttitle { font-size: 12px; font-weight: 650; margin-bottom: 7px; }
+.ptasks .ttitle em { color: var(--muted); font-style: normal; font-weight: 500; }
+.ptask { align-items: center; display: flex; font-size: 13px; gap: 9px; padding: 4px 0; }
+.ptask input { accent-color: var(--green); cursor: pointer; height: 16px; width: 16px; }
+.ptask.done { color: var(--faint); text-decoration: line-through; }
+.pactions { display: flex; flex-wrap: wrap; gap: 8px; }
+.closed { align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); display: flex; gap: 10px; opacity: .6; padding: 10px 14px; }
+.closed b { flex: 1; font-size: 13px; font-weight: 600; }
+.layout { align-items: start; display: grid; gap: 12px; grid-template-columns: minmax(0,1.15fr) minmax(310px,.85fr); }
+.tabs { background: var(--soft); border-radius: 11px; display: grid; gap: 4px; grid-template-columns: repeat(4, minmax(0,1fr)); margin-bottom: 12px; padding: 4px; }
+.tabs button { background: transparent; border: none; border-radius: 8px; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight: 600; min-height: 32px; padding: 0 8px; }
+.tabs button.active { background: var(--panel); box-shadow: var(--shadow); color: var(--ink); }
+.tab { display: none; } .tab.active { display: block; }
+.item-list { display: grid; gap: 8px; }
+.item { background: var(--soft); border-radius: var(--r-md); padding: 11px 13px; }
+.item-top { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.item strong { display: block; font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.item p { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 0; }
+.thread-count { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 9px; white-space: nowrap; }
+.event { display: grid; gap: 10px; grid-template-columns: 52px minmax(0,1fr); }
+.event .edate { color: var(--faint); font-size: 11.5px; font-weight: 600; padding-top: 1px; }
+.right-grid { display: grid; gap: 12px; min-width: 0; }
+
+/* COMPONENT: ProjectChat — chat ancorata al progetto, @menzioni (= chatter Odoo) */
+.pchat { display: grid; gap: 8px; }
+.msg { display: grid; gap: 8px; grid-template-columns: 30px minmax(0,1fr); }
+.msg .mbody { background: var(--soft); border-radius: 4px 14px 14px 14px; padding: 9px 12px; }
+.msg .mwho { font-size: 11.5px; font-weight: 650; margin-bottom: 2px; }
+.msg .mwho time { color: var(--faint); font-weight: 500; margin-left: 6px; }
+.msg .mtext { font-size: 12.5px; line-height: 1.5; }
+.msg .mtext .mention { background: var(--blue-bg); border-radius: 5px; color: var(--blue-ink); font-weight: 600; padding: 0 4px; }
+.msg.me { grid-template-columns: minmax(0,1fr) 30px; }
+.msg.me .mbody { background: var(--blue-bg); border-radius: 14px 4px 14px 14px; }
+.msg.me .mtext { color: var(--blue-ink); }
+.chat-input { align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; display: flex; gap: 8px; padding: 5px 6px 5px 16px; }
+.chat-input input { background: transparent; border: none; flex: 1; font-size: 13px; min-width: 0; outline: none; }
+.chat-input .btn { border-radius: 999px; }
+
+/* ============ TASK ============ */
+.task-filters { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+/* COMPONENT: QuickAssign — crea e assegna in una riga */
+.quick-assign { align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); display: grid; gap: 8px; grid-template-columns: minmax(0,1fr) auto auto auto auto; margin-bottom: 14px; padding: 7px 8px 7px 16px; }
+.quick-assign input { background: transparent; border: none; font-size: 13px; min-width: 0; outline: none; }
+.quick-assign select { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 600; min-height: 30px; padding: 0 8px; }
+.tgroup-title { align-items: center; display: flex; font-size: 12px; font-weight: 650; gap: 8px; margin: 14px 2px 8px; }
+.tgroup-title.red { color: var(--red-ink); }
+.task-row { align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); display: grid; gap: 12px; grid-template-columns: auto minmax(0,1.5fr) auto minmax(0,.8fr); padding: 11px 14px; }
+.task-row.late { border-color: #F3C2BF; }
+.task-row input { accent-color: var(--green); cursor: pointer; height: 17px; width: 17px; }
+.task-row .twhat strong { display: block; font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.task-row .twhat p { color: var(--muted); font-size: 11.5px; margin: 0; }
+.task-row .tdue { color: var(--faint); font-size: 11.5px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.task-row.late .tdue { color: var(--red-ink); }
+
+/* ============ MESSAGGI ============ */
+/* COMPONENT: MentionsInbox — tutto ciò che ti riguarda, raggruppato per contesto */
+.mthread { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); cursor: pointer; display: grid; gap: 9px; margin-bottom: 8px; padding: 12px 14px; }
+.mthread.unread { border-left: 3px solid var(--blue); }
+.mthread .mt-head { align-items: baseline; display: flex; gap: 8px; justify-content: space-between; }
+.mthread .mt-head b { font-size: 13px; font-weight: 650; }
+.mthread .mt-head time { color: var(--faint); font-size: 11px; font-weight: 600; }
+.mthread .mt-last { align-items: baseline; display: flex; gap: 7px; }
+.mthread .mt-last .mwho { color: var(--ink); font-size: 12px; font-weight: 650; white-space: nowrap; }
+.mthread .mt-last p { color: var(--muted); font-size: 12.5px; line-height: 1.45; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mthread .mt-last p .mention { background: var(--blue-bg); border-radius: 5px; color: var(--blue-ink); font-weight: 600; padding: 0 4px; }
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1180px) {
+  .summary, .summary.four { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .layout { grid-template-columns: 1fr; }
+  .inbox-grid { grid-template-columns: minmax(240px,.45fr) minmax(0,1fr); }
+  .inbox-grid .ctx { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .kb-board { grid-template-columns: repeat(5, minmax(190px,1fr)); overflow-x: auto; padding-bottom: 6px; }
+}
+@media (max-width: 820px) {
+  .page { grid-template-columns: 1fr; }
+  .rail { bottom: 0; left: 0; padding: 8px 12px; position: fixed; right: 0; z-index: 10; }
+  .logo { display: none; }
+  .rail nav { display: flex; justify-content: space-between; }
+  .rail a span { height: 38px; width: 38px; }
+  .main { padding: 14px 14px 96px; }
+  .topbar { grid-template-columns: 1fr; }
+  .actions { justify-content: flex-start; }
+  .summary, .summary.four, .ball-grid, .tabs { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .inbox-grid { grid-template-columns: 1fr; }
+  .inbox-grid .ctx { grid-template-columns: 1fr; }
+  .regia-row { grid-template-columns: 12px minmax(0,1fr); }
+  .regia-row .chip { display: none; }
+  .regia-row .bar, .regia-row .who { grid-column: 2; }
+  .who { justify-content: flex-start; }
+  .stlabels span { font-size: 8.5px; }
+  .task-row { grid-template-columns: auto minmax(0,1fr); }
+  .task-row .chip, .task-row .tdue { grid-column: 2; justify-self: start; text-align: left; }
+  .quick-assign { grid-template-columns: 1fr; padding: 10px 12px; }
+  .ai-suggest { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+
+  <!-- COMPONENT: Rail — 6 voci, pallino rosso = non letti -->
+  <aside class="rail" aria-label="Navigazione">
+    <div class="logo">CF</div>
+    <nav>
+      <a id="nav-regia" class="active" onclick="show('regia')"><span>RE</span>Regia</a>
+      <a id="nav-inbox" onclick="show('inbox')"><span>IN</span>Inbox</a>
+      <a id="nav-pipeline" onclick="show('pipeline')"><span>PL</span>Pipeline</a>
+      <a id="nav-dossier" onclick="show('dossier')"><span>DO</span>Dossier</a>
+      <a id="nav-task" onclick="show('task')"><span>TA</span>Task</a>
+      <a id="nav-messaggi" onclick="show('messaggi')"><i class="unread"></i><span>ME</span>Messaggi</a>
+    </nav>
+  </aside>
+
+  <section class="main">
+
+  <!-- ============================ REGIA ============================ -->
+  <div class="screen active" id="regia">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sala controllo</p>
+        <h1>Regia</h1>
+        <p class="subtitle">Dove sono i progetti, chi ha il testimone, da quanto. I fermi salgono in cima da soli.</p>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" type="button">Solo fermi</button>
+        <button class="btn primary" type="button">Nuovo progetto</button>
+      </div>
+    </header>
+    <section class="summary four">
+      <article class="metric"><span>Progetti attivi</span><strong>11</strong><small>su 7 clienti</small></article>
+      <article class="metric alert"><span>Fermi</span><strong class="red">3</strong><small>testimone fermo 3+ giorni</small></article>
+      <article class="metric"><span>In scadenza</span><strong class="amber">2</strong><small>deadline entro 7 giorni</small></article>
+      <article class="metric"><span>Handoff settimana</span><strong>9</strong><small>passaggi di testimone</small></article>
+    </section>
+    <section class="dailyline">
+      <p><b>Oggi:</b> campionatura Gourmet Handels spedita (DHL in transito), ricetta pistacchio approvata da Maria, 2 progetti fermi su etichette in attesa di Anna, nessuna scadenza mancata.</p>
+    </section>
+    <section class="regia-list">
+      <article class="regia-row" onclick="show('dossier')">
+        <span class="dot red"></span>
+        <div class="what"><strong>Etichetta PL · Nordic Foods AB</strong><p>Fase: bozza grafica · <b class="alert">fermo da 8 gg</b></p></div>
+        <span class="chip violet">micro</span>
+        <div class="bar"><i class="red" style="width:40%"></i></div>
+        <div class="who"><div><span class="name">Anna Macrì</span><span class="role">Etichette</span></div><span class="avatar amber">AM</span></div>
+      </article>
+      <article class="regia-row" onclick="show('dossier')">
+        <span class="dot amber"></span>
+        <div class="what"><strong>Ricetta personalizzata · Al Tamimi UAE</strong><p>Fase: prova laboratorio · <b class="alert">fermo da 4 gg</b></p></div>
+        <span class="chip violet">micro</span>
+        <div class="bar"><i class="amber" style="width:55%"></i></div>
+        <div class="who"><div><span class="name">Maria Mirabelli</span><span class="role">Produzione</span></div><span class="avatar green">MM</span></div>
+      </article>
+      <article class="regia-row" onclick="show('dossier')">
+        <span class="dot green"></span>
+        <div class="what"><strong>Prima fornitura PL · Gourmet Handels AT</strong><p>Fase: logistica campionatura · attivo oggi</p></div>
+        <span class="chip blue">Prima fornitura</span>
+        <div class="bar"><i class="green" style="width:65%"></i></div>
+        <div class="who"><div><span class="name">Anna Macrì</span><span class="role">Logistica</span></div><span class="avatar amber">AM</span></div>
+      </article>
+      <article class="regia-row" onclick="show('dossier')">
+        <span class="dot green"></span>
+        <div class="what"><strong>Riordino mieli Q3 · Gourmet Handels AT</strong><p>Fase: conferma volumi · attivo ieri</p></div>
+        <span class="chip blue">Riordino</span>
+        <div class="bar"><i class="green" style="width:15%"></i></div>
+        <div class="who"><div><span class="name">Josefina Lazzaro</span><span class="role">Commerciale</span></div><span class="avatar blue">JL</span></div>
+      </article>
+    </section>
+  </div>
+
+  <!-- ============================ INBOX ============================ -->
+  <div class="screen" id="inbox">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sala controllo</p>
+        <h1>Inbox</h1>
+        <p class="subtitle">L'AI classifica e propone, tu decidi. E nessuna mail inviata resta senza risposta dimenticata.</p>
+      </div>
+      <div class="actions">
+        <span class="chip red">12 da decidere</span>
+        <span class="chip amber">4 in attesa di risposta</span>
+        <button class="btn ghost" type="button">Archiviate</button>
+      </div>
+    </header>
+
+    <div class="inbox-grid">
+      <!-- COMPONENT: MailList con sezioni -->
+      <section class="mail-list">
+        <p class="inbox-sect">Da decidere <span class="chip red">12</span></p>
+        <button class="mail-item sel" type="button">
+          <div class="mail-top"><span class="sender">Nordic Foods AB</span><span class="time">09:18</span></div>
+          <span class="subject">Label proof — feedback and one change</span>
+          <span class="snippet">Thanks for the artwork. We approve the design but need the Swedish ingredient list updated before print...</span>
+          <span class="tags"><span class="chip amber">Etichette</span><span class="chip blue">Cliente attivo</span></span>
+        </button>
+        <button class="mail-item" type="button">
+          <div class="mail-top"><span class="sender">Bel Gusto GmbH</span><span class="time">Ieri</span></div>
+          <span class="subject">Sample request — honey line</span>
+          <span class="snippet">Following our meeting at Tuttofood, we would like to receive samples of the flavoured honey range...</span>
+          <span class="tags"><span class="chip green">Campioni</span><span class="chip violet">Nuovo prospect</span></span>
+        </button>
+
+        <!-- COMPONENT: WaitingSection — mail nostre senza risposta, follow-up proposto -->
+        <p class="inbox-sect">In attesa di risposta <span class="chip amber">4</span></p>
+        <button class="mail-item waiting" type="button">
+          <div class="mail-top"><span class="sender">→ REWE Group</span><span class="time">6 gg fa</span></div>
+          <span class="subject">Updated offer — flavoured honey</span>
+          <span class="snippet">Nessuna risposta da 6 giorni · follow-up suggerito pronto</span>
+          <span class="tags"><span class="chip amber">Follow-up pronto</span></span>
+        </button>
+        <button class="mail-item waiting" type="button">
+          <div class="mail-top"><span class="sender">→ Maple Fine Foods</span><span class="time">4 gg fa</span></div>
+          <span class="subject">Catalogue + export info</span>
+          <span class="snippet">Nessuna risposta da 4 giorni · rilancio tra 1 giorno</span>
+          <span class="tags"><span class="chip neutral">Rilancio ven</span></span>
+        </button>
+      </section>
+
+      <!-- COMPONENT: MailWork -->
+      <section class="panel" style="margin-bottom:0;">
+        <div class="mail-card">
+          <div class="mhead"><strong>Label proof — feedback and one change</strong><span class="chip amber">Etichette</span></div>
+          <p class="meta">Da: purchasing@nordicfoods.se · 10/06 09:18</p>
+          <p class="mbody">Thanks for the artwork. We approve the design but need the Swedish ingredient list updated before print. Could you send the corrected version by Friday?</p>
+        </div>
+
+        <!-- COMPONENT: TriageBar — tutto a un click, snooze incluso -->
+        <div class="triage">
+          <button class="btn primary sm" type="button">Aggancia al progetto Etichetta PL</button>
+          <button class="btn ghost sm" type="button">Rispondi</button>
+          <button class="btn ghost sm" type="button">Snooze 3 gg</button>
+          <button class="btn ghost sm" type="button">Archivia</button>
+        </div>
+
+        <!-- COMPONENT: ReplyBox — bozza AI pronta, modifichi e invii -->
+        <div class="replybox">
+          <div class="rb-head"><b>Bozza risposta (AI)</b><span class="chip neutral">via Odoo · template export EN</span></div>
+          <p class="draft">Dear Erik, thank you for the approval. We will send the corrected Swedish ingredient list by Thursday, so you have it one day ahead of the print deadline. Best regards, Martina</p>
+          <div class="triage" style="margin:0;">
+            <button class="btn primary sm" type="button">Invia</button>
+            <button class="btn ghost sm" type="button">Modifica</button>
+          </div>
+        </div>
+
+        <!-- COMPONENT: AISuggestTask — conferma umana sempre -->
+        <div class="ai-suggest">
+          <p><b>Richiesta operativa rilevata:</b> "lista ingredienti svedese entro venerdì" → task per Anna (Etichette), scadenza gio 12/06?</p>
+          <button class="btn primary sm" type="button">Crea task</button>
+          <button class="btn ghost sm" type="button">Ignora</button>
+        </div>
+      </section>
+
+      <!-- COMPONENT: ContextPanel — il vantaggio sui big: i TUOI dati accanto alla mail -->
+      <aside class="ctx">
+        <div class="ctx-block">
+          <h4>Cliente</h4>
+          <div class="ctx-row"><span>Azienda</span><b>Nordic Foods AB</b></div>
+          <div class="ctx-row"><span>Mercato</span><b>Svezia · Retail</b></div>
+          <div class="ctx-row"><span>Owner</span><b>Josefina</b></div>
+          <div class="ctx-row"><span>Pipeline</span><b>Cliente attivo</b></div>
+        </div>
+        <div class="ctx-block">
+          <h4>Progetto attivo</h4>
+          <div class="ctx-row"><span>Etichetta PL</span><b>Fase 2 di 4</b></div>
+          <div class="ctx-row"><span>Testimone</span><b>Anna · 8 gg ⚠</b></div>
+        </div>
+        <div class="ctx-block">
+          <h4>Dove siamo</h4>
+          <p class="mini">Design approvato, manca solo la lista ingredienti svedese per andare in stampa. Deadline cliente: venerdì.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ============================ PIPELINE ============================ -->
+  <div class="screen" id="pipeline">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sala controllo</p>
+        <h1>Pipeline commerciale</h1>
+        <p class="subtitle">Regola fissa: nessun lead senza prossima azione. Chi non ce l'ha si evidenzia da solo.</p>
+      </div>
+      <div class="actions">
+        <span class="chip neutral clickable on">Tutti</span>
+        <span class="chip neutral clickable">Antonio</span>
+        <span class="chip neutral clickable">Josefina</span>
+        <span class="chip red clickable">Senza azione · 2</span>
+        <button class="btn primary" type="button">Nuovo lead</button>
+      </div>
+    </header>
+
+    <!-- COMPONENT: PipelineBoard — card con NextActionLine, colonne con totale pesato -->
+    <section class="kb-board">
+      <div class="kb-col">
+        <div class="kb-head"><h3>Primo Contatto</h3><span class="kmeta">8 · € 64k</span></div>
+        <article class="kb-card">
+          <strong>Bel Gusto GmbH · DE</strong>
+          <span class="kval num">€ 18.000</span>
+          <span class="knext">→ Inviare campioni mieli · gio 12/06</span>
+          <div class="kfoot"><span class="kdays">3 gg in fase</span><span class="avatar sm blue">JL</span></div>
+        </article>
+        <article class="kb-card no-action">
+          <strong>Maple Fine Foods · CA</strong>
+          <span class="kval num">€ 12.000</span>
+          <span class="knext missing">⚠ Nessuna prossima azione</span>
+          <div class="kfoot"><span class="kdays">1 gg in fase</span><span class="avatar sm blue">JL</span></div>
+        </article>
+        <div class="kb-foot">Ponderato (10%): € 6.4k</div>
+      </div>
+      <div class="kb-col">
+        <div class="kb-head"><h3>Interesse</h3><span class="kmeta">5 · € 96k</span></div>
+        <article class="kb-card">
+          <strong>REWE Group · DE</strong>
+          <span class="kval num">€ 55.000</span>
+          <span class="knext">→ Follow-up offerta miele · oggi</span>
+          <div class="kfoot"><span class="kdays">6 gg in fase</span><span class="avatar sm amber">AF</span></article>
+        <article class="kb-card rotting no-action">
+          <strong>Gulf Trading · SA</strong>
+          <span class="kval num">€ 22.000</span>
+          <span class="knext missing">⚠ Nessuna prossima azione</span>
+          <div class="kfoot"><span class="kdays">⚠ 18 gg in fase</span><span class="avatar sm blue">JL</span></div>
+        </article>
+        <div class="kb-foot">Ponderato (25%): € 24k</div>
+      </div>
+      <div class="kb-col">
+        <div class="kb-head"><h3>Trattativa</h3><span class="kmeta">4 · € 121k</span></div>
+        <article class="kb-card">
+          <strong>Carrefour FR</strong>
+          <span class="kval num">€ 38.000</span>
+          <span class="knext">→ Campionatura in preparazione · oggi</span>
+          <div class="kfoot"><span class="kdays">4 gg in fase</span><span class="avatar sm blue">JL</span></div>
+        </article>
+        <article class="kb-card">
+          <strong>Whole Foods · US</strong>
+          <span class="kval num">€ 47.000</span>
+          <span class="knext">→ Call condizioni export · mer 11/06</span>
+          <div class="kfoot"><span class="kdays">2 gg in fase</span><span class="avatar sm amber">AF</span></div>
+        </article>
+        <div class="kb-foot">Ponderato (50%): € 60.5k</div>
+      </div>
+      <div class="kb-col">
+        <div class="kb-head"><h3>Negoziazione</h3><span class="kmeta">3 · € 104k</span></div>
+        <article class="kb-card">
+          <strong>Gourmet Handels · AT</strong>
+          <span class="kval num">€ 48.000</span>
+          <span class="knext">→ Controproposta prezzo · ven 13/06</span>
+          <div class="kfoot"><span class="kdays">2 gg in fase</span><span class="avatar sm blue">JL</span></div>
+        </article>
+        <article class="kb-card">
+          <strong>BILLA · AT</strong>
+          <span class="kval num">€ 41.000</span>
+          <span class="knext">→ Audit fornitore · 6-10 lug</span>
+          <div class="kfoot"><span class="kdays">5 gg in fase</span><span class="avatar sm amber">AF</span></div>
+        </article>
+        <div class="kb-foot">Ponderato (75%): € 78k</div>
+      </div>
+      <div class="kb-col">
+        <div class="kb-head"><h3>Vinto</h3><span class="kmeta">2 · € 63k</span></div>
+        <article class="kb-card">
+          <strong>Eataly Canada</strong>
+          <span class="kval num">€ 35.000</span>
+          <div class="kfoot"><span class="chip green" style="min-height:20px;font-size:10.5px;">Progetto aperto</span><span class="avatar sm blue">JL</span></div>
+        </article>
+        <article class="kb-card won-hint">
+          <p>Lead vinto → il sistema propone il template (Prima fornitura, Riordino, Campionatura) e parte la staffetta.</p>
+        </article>
+        <div class="kb-foot">Chiuso questo mese: € 63k</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================ DOSSIER ============================ -->
+  <div class="screen" id="dossier">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Dossier cliente export</p>
+        <h1>Gourmet Handels GmbH</h1>
+        <p class="subtitle">Austria · Retail / Private Label · Owner: Josefina</p>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" type="button" onclick="show('regia')">← Regia</button>
+        <button class="btn ghost" type="button">Scheda nativa</button>
+        <button class="btn primary" type="button">Nuovo progetto</button>
+      </div>
+    </header>
+
+    <section class="summary">
+      <article class="metric"><span>Pipeline CRM</span><strong>Negoziazione</strong><small>€ 48.000 stimati</small></article>
+      <article class="metric"><span>Owner</span><strong>Josefina</strong><small>Commerciale export</small></article>
+      <article class="metric"><span>Progetti attivi</span><strong>2</strong><small>+ 1 chiuso ad aprile</small></article>
+      <article class="metric"><span>Testimone</span><strong>Anna</strong><small>Logistica · da 2 giorni</small></article>
+      <article class="metric"><span>Email</span><strong>247</strong><small>ultimo contatto 2 gg fa</small></article>
+    </section>
+
+    <section class="panel dovesiamo">
+      <div class="section-head">
+        <div><p class="eyebrow">Sintesi AI</p><h2>Dove siamo</h2></div>
+        <span class="chip neutral">Aggiornata 2 ore fa</span>
+      </div>
+      <p class="body">Buyer interessato a 6 SKU creme spalmabili in private label. Campionatura consegnata il 14/05, feedback positivo su pistacchio e nocciola. Trattativa aperta sul prezzo pallet EXW: loro chiedono −8%, ultima nostra controproposta −4% con MOQ a 2 pallet.</p>
+      <div class="ball-grid">
+        <div class="ball ours"><strong>Aspettano da noi</strong><p>Controproposta prezzo finale pallet</p><p>Scheda tecnica pistacchio aggiornata</p></div>
+        <div class="ball theirs"><strong>Aspettiamo da loro</strong><p>Conferma volumi annui per SKU</p><p>Approvazione mockup etichetta PL</p></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><p class="eyebrow">Progetti a staffetta</p><h2>Lavoro in corso</h2></div>
+        <span class="chip amber">Testimone: Anna · 2 gg</span>
+      </div>
+
+      <article class="project">
+        <div class="phead">
+          <strong>Prima fornitura PL — 6 SKU creme spalmabili</strong>
+          <span class="chip blue">Fase 4 di 6 · Logistica</span>
+        </div>
+        <div>
+          <div class="staffetta"><i class="sseg done"></i><i class="sseg done"></i><i class="sseg done"></i><i class="sseg current"></i><i class="sseg"></i><i class="sseg"></i></div>
+          <div class="stlabels">
+            <span>Commerciale<br>Josefina</span><span>Backoffice<br>Martina</span><span>Produzione<br>Maria</span>
+            <span class="current">Logistica<br>Anna</span><span>Etichette<br>Anna</span><span>Amministr.<br>Esterno</span>
+          </div>
+        </div>
+        <div class="ptasks">
+          <div class="ttitle">Task fase corrente <em>· la chiusura passa il testimone a Martina</em></div>
+          <label class="ptask done"><input type="checkbox" checked> Preparare campionatura 6 SKU + colli</label>
+          <label class="ptask"><input type="checkbox"> Spedire e registrare tracking</label>
+          <label class="ptask"><input type="checkbox"> Confermare consegna al cliente</label>
+        </div>
+
+        <!-- COMPONENT: ProjectChat — la chat vive sul progetto (= chatter Odoo con @menzioni) -->
+        <div class="pchat">
+          <div class="msg">
+            <span class="avatar sm blue">JL</span>
+            <div class="mbody">
+              <div class="mwho">Josefina <time>ieri 18:40</time></div>
+              <div class="mtext"><span class="mention">@Anna</span> il buyer chiede consegna campioni entro mercoledì prossimo: riusciamo a spedire domani?</div>
+            </div>
+          </div>
+          <div class="msg">
+            <span class="avatar sm amber">AM</span>
+            <div class="mbody">
+              <div class="mwho">Anna <time>oggi 08:15</time></div>
+              <div class="mtext">Colli pronti, ritiro DHL prenotato per le 14. Tracking lo registro appena parte 👍</div>
+            </div>
+          </div>
+          <div class="msg me">
+            <div class="mbody">
+              <div class="mwho">Antonio <time>oggi 08:22</time></div>
+              <div class="mtext">Perfetto. <span class="mention">@Martina</span> appena c'è il tracking manda la mail di cortesia al buyer col template export.</div>
+            </div>
+            <span class="avatar sm ink">AF</span>
+          </div>
+          <div class="chat-input">
+            <input placeholder="Scrivi al team · @ per menzionare" type="text">
+            <button class="btn primary sm" type="button">Invia</button>
+          </div>
+        </div>
+
+        <div class="pactions">
+          <button class="btn primary" type="button">Chiudi fase e passa il testimone</button>
+          <button class="btn ghost" type="button">Apri progetto nativo</button>
+        </div>
+      </article>
+
+      <article class="closed">
+        <span class="chip green">Chiuso</span>
+        <b>Primo ordine crispy chili — aprile 2026</b>
+        <span class="muted">Fatturato · docs export archiviati</span>
+      </article>
+    </section>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="section-head"><div><p class="eyebrow">Workspace</p><h2>Aree di lavoro</h2></div></div>
+        <nav class="tabs" aria-label="Sezioni dossier">
+          <button class="active" data-tab="mail" type="button">Mail</button>
+          <button data-tab="task" type="button">Task</button>
+          <button data-tab="docs" type="button">Documenti</button>
+          <button data-tab="timeline" type="button">Timeline</button>
+        </nav>
+        <section class="tab active" id="mail">
+          <div class="item-list">
+            <article class="item">
+              <div class="item-top"><strong>Pricing &amp; MOQ</strong><span class="thread-count">38 email</span></div>
+              <p>Trattativa in corso: loro −8%, nostra controproposta −4% con MOQ 2 pallet. Ultima parola a noi.</p>
+            </article>
+            <article class="item">
+              <div class="item-top"><strong>Campionatura</strong><span class="thread-count">112 email</span></div>
+              <p>Chiusa con esito positivo: pistacchio e nocciola approvati, fico da rivedere.</p>
+            </article>
+            <article class="item">
+              <div class="item-top"><strong>Etichette private label</strong><span class="thread-count">21 email</span></div>
+              <p>Mockup inviato il 06/06, in attesa di approvazione del buyer.</p>
+            </article>
+          </div>
+        </section>
+        <section class="tab" id="task">
+          <div class="item-list">
+            <article class="item">
+              <div class="item-top"><strong>Spedire e registrare tracking</strong><span class="chip amber">Logistica</span></div>
+              <p>Prima fornitura PL · fase corrente · Anna</p>
+            </article>
+          </div>
+        </section>
+        <section class="tab" id="docs">
+          <div class="item-list">
+            <article class="item">
+              <div class="item-top"><strong>Scheda tecnica pistacchio v3.pdf</strong><span class="chip green">Aggiornata</span></div>
+              <p>02/06 · collegata a Prima fornitura PL</p>
+            </article>
+            <article class="item">
+              <div class="item-top"><strong>Mockup etichetta.pdf</strong><span class="chip amber">In approvazione</span></div>
+              <p>06/06 · inviato al buyer, risposta attesa</p>
+            </article>
+          </div>
+        </section>
+        <section class="tab" id="timeline">
+          <div class="item-list">
+            <article class="item event"><span class="edate">08/03</span><div><strong>Primo contatto</strong><p>Fiera Anuga, scanner badge → lead creato.</p></div></article>
+            <article class="item event"><span class="edate">14/05</span><div><strong>Campionatura consegnata</strong><p>6 SKU, feedback positivo.</p></div></article>
+            <article class="item event"><span class="edate">08/06</span><div><strong>Handoff a Logistica</strong><p>Testimone passato ad Anna.</p></div></article>
+          </div>
+        </section>
+      </section>
+
+      <aside class="right-grid">
+        <section class="panel">
+          <div class="section-head">
+            <div><p class="eyebrow">AI commerciale</p><h2>Prossimi step consigliati</h2></div>
+            <span class="chip blue">Priorità alta</span>
+          </div>
+          <div class="item-list">
+            <article class="ai-step"><span class="num">1</span><div><strong>Chiudere il prezzo entro venerdì</strong><p>Controproposta −5% vincolata a conferma volumi annui scritti.</p></div></article>
+            <article class="ai-step"><span class="num">2</span><div><strong>Sbloccare l'etichetta</strong><p>Mockup fermo da 4 giorni: sollecito con deadline tecnica stampa.</p></div></article>
+            <article class="ai-step"><span class="num">3</span><div><strong>Preallertare amministrazione</strong><p>Condizioni export Austria pronte prima della firma.</p></div></article>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ============================ TASK ============================ -->
+  <div class="screen" id="task">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sala controllo</p>
+        <h1>Task</h1>
+        <p class="subtitle">Crea, assegna, controlla. Ognuno riceve i suoi via mail e nel digest delle 8:00.</p>
+      </div>
+    </header>
+
+    <!-- COMPONENT: QuickAssign — crea e assegna in una riga, da qualsiasi schermata -->
+    <div class="quick-assign">
+      <input placeholder="Nuovo task… es. Aggiornare listino DACH" type="text">
+      <select><option>@ Anna</option><option>@ Josefina</option><option>@ Martina</option><option>@ Maria</option><option>@ Teresa</option></select>
+      <select><option>Progetto…</option><option>Prima fornitura PL · Gourmet</option><option>Etichetta PL · Nordic</option></select>
+      <select><option>Scadenza…</option><option>Oggi</option><option>Domani</option><option>Ven 13/06</option></select>
+      <button class="btn primary sm" type="button">Assegna</button>
+    </div>
+
+    <div class="task-filters">
+      <span class="chip neutral clickable on">Tutti</span>
+      <span class="chip neutral clickable">Antonio</span>
+      <span class="chip neutral clickable">Josefina</span>
+      <span class="chip neutral clickable">Martina</span>
+      <span class="chip neutral clickable">Maria</span>
+      <span class="chip neutral clickable">Anna</span>
+    </div>
+
+    <p class="tgroup-title red">● In ritardo · 2</p>
+    <div class="item-list">
+      <article class="task-row late">
+        <input type="checkbox">
+        <div class="twhat"><strong>Bozza grafica etichetta Nordic Foods</strong><p>Etichetta PL · fase bozza grafica · scaduto da 3 gg</p></div>
+        <span class="chip amber">Anna · Etichette</span>
+        <span class="tdue">scad. 07/06</span>
+      </article>
+      <article class="task-row late">
+        <input type="checkbox">
+        <div class="twhat"><strong>Esito prova laboratorio pistacchio UAE</strong><p>Ricetta personalizzata · Al Tamimi · feedback obbligatorio</p></div>
+        <span class="chip green">Maria · Produzione</span>
+        <span class="tdue">scad. 08/06</span>
+      </article>
+    </div>
+
+    <p class="tgroup-title">Oggi · 3</p>
+    <div class="item-list">
+      <article class="task-row">
+        <input type="checkbox">
+        <div class="twhat"><strong>Spedire e registrare tracking campionatura</strong><p>Prima fornitura PL · Gourmet Handels · fase corrente</p></div>
+        <span class="chip amber">Anna · Logistica</span>
+        <span class="tdue">oggi</span>
+      </article>
+      <article class="task-row">
+        <input type="checkbox">
+        <div class="twhat"><strong>Confermare volumi e listino vigente</strong><p>Riordino mieli Q3 · Gourmet Handels</p></div>
+        <span class="chip blue">Josefina · Commerciale</span>
+        <span class="tdue">oggi</span>
+      </article>
+      <article class="task-row">
+        <input type="checkbox">
+        <div class="twhat"><strong>Preparare colli campionatura Carrefour</strong><p>Campionatura · Carrefour FR · 8 SKU</p></div>
+        <span class="chip pink">Martina · Backoffice</span>
+        <span class="tdue">oggi</span>
+      </article>
+    </div>
+
+    <p class="tgroup-title">Questa settimana · 4</p>
+    <div class="item-list">
+      <article class="task-row">
+        <input type="checkbox">
+        <div class="twhat"><strong>Lista ingredienti svedese aggiornata</strong><p>Etichetta PL · Nordic Foods · da mail 10/06</p></div>
+        <span class="chip amber">Anna · Etichette</span>
+        <span class="tdue">gio 12/06</span>
+      </article>
+      <article class="task-row">
+        <input type="checkbox">
+        <div class="twhat"><strong>Schede tecniche linea mieli per Bel Gusto</strong><p>Campionatura · Bel Gusto GmbH</p></div>
+        <span class="chip pink">Martina · Backoffice</span>
+        <span class="tdue">gio 12/06</span>
+      </article>
+    </div>
+  </div>
+
+  <!-- ============================ MESSAGGI ============================ -->
+  <div class="screen" id="messaggi">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sala controllo</p>
+        <h1>Messaggi</h1>
+        <p class="subtitle">Le conversazioni del team, sempre ancorate a un cliente o a un progetto. Mai più "dove l'avevamo detto?".</p>
+      </div>
+      <div class="actions">
+        <span class="chip blue">2 non letti</span>
+        <span class="chip neutral clickable on">Tutti</span>
+        <span class="chip neutral clickable">Menzioni @me</span>
+      </div>
+    </header>
+
+    <!-- COMPONENT: MentionsInbox — thread raggruppati per contesto -->
+    <article class="mthread unread" onclick="show('dossier')">
+      <div class="mt-head"><b>Prima fornitura PL · Gourmet Handels</b><time>oggi 08:22</time></div>
+      <div class="mt-last"><span class="mwho">Antonio:</span><p><span class="mention">@Martina</span> appena c'è il tracking manda la mail di cortesia al buyer col template export.</p></div>
+    </article>
+    <article class="mthread unread">
+      <div class="mt-head"><b>Etichetta PL · Nordic Foods</b><time>oggi 07:50</time></div>
+      <div class="mt-last"><span class="mwho">Anna:</span><p><span class="mention">@Antonio</span> per la lista svedese mi serve la conferma del fornitore lecitina: la versione nuova è senza soia?</p></div>
+    </article>
+    <article class="mthread">
+      <div class="mt-head"><b>Ricetta personalizzata · Al Tamimi</b><time>ieri 17:05</time></div>
+      <div class="mt-last"><span class="mwho">Maria:</span><p>Seconda prova in corso, esito domani mattina. La prima era troppo dolce per il target UAE.</p></div>
+    </article>
+    <article class="mthread">
+      <div class="mt-head"><b>Campionatura · Carrefour FR</b><time>ieri 11:30</time></div>
+      <div class="mt-last"><span class="mwho">Martina:</span><p>Lista 8 SKU confermata con Josefina, colli pronti per giovedì.</p></div>
+    </article>
+  </div>
+
+  </section>
+</main>
+
+<script>
+const SCREENS = ['regia','inbox','pipeline','dossier','task','messaggi'];
+function show(id){
+  SCREENS.forEach(s => {
+    document.getElementById(s).classList.toggle('active', s === id);
+    document.getElementById('nav-' + s).classList.toggle('active', s === id);
+  });
+  window.scrollTo(0, 0);
+}
+const buttons = document.querySelectorAll('.tabs button');
+const tabs = document.querySelectorAll('.tab');
+buttons.forEach((button) => {
+  button.addEventListener('click', () => {
+    buttons.forEach((item) => item.classList.remove('active'));
+    tabs.forEach((item) => item.classList.remove('active'));
+    button.classList.add('active');
+    document.getElementById(button.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
