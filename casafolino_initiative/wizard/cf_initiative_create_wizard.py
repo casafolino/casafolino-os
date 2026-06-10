@@ -54,6 +54,7 @@ class CfInitiativeCreateWizard(models.TransientModel):
         })
 
         first_active = None
+        first_active_line = None
         for line in self.line_ids.sorted('sequence'):
             state = 'skipped' if not line.include else 'pending'
             stage = self.env['cf.initiative.stage'].create({
@@ -69,10 +70,11 @@ class CfInitiativeCreateWizard(models.TransientModel):
             })
             if state == 'pending' and not first_active:
                 first_active = stage
+                first_active_line = line
 
         if first_active:
             first_active.write({'state': 'active', 'date_start': fields.Datetime.now()})
-            self._generate_tasks(first_active)
+            self._generate_tasks(first_active, first_active_line)
             self._send_notification(first_active, initiative)
 
         initiative.action_start()
@@ -98,11 +100,12 @@ class CfInitiativeCreateWizard(models.TransientModel):
             var = self.env['cf.initiative.variant'].search([], limit=1)
         return var.id if var else False
 
-    def _generate_tasks(self, stage):
-        if not stage.task_names:
+    def _generate_tasks(self, stage, wizard_line=None):
+        task_names = wizard_line.task_names if wizard_line else None
+        if not task_names:
             return
         initiative = stage.initiative_id
-        for line in stage.task_names.strip().split('\n'):
+        for line in task_names.strip().split('\n'):
             name = line.strip()
             if not name:
                 continue
