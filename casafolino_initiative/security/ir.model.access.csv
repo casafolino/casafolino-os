@@ -14,3 +14,9 @@ access_cf_initiative_atom_line_manager,cf.initiative.atom.line.manager,model_cf_
 access_cf_initiative_tag_user,cf.initiative.tag.user,model_cf_initiative_tag,group_initiative_user,1,0,0,0
 access_cf_initiative_tag_manager,cf.initiative.tag.manager,model_cf_initiative_tag,group_initiative_manager,1,1,1,1
 access_cf_initiative_wizard_user,cf.initiative.wizard.user,model_cf_initiative_wizard,group_initiative_user,1,1,1,1
+access_cf_initiative_template_stage_user,cf.initiative.template.stage user,model_cf_initiative_template_stage,casafolino_initiative.group_initiative_user,1,0,0,0
+access_cf_initiative_template_stage_manager,cf.initiative.template.stage manager,model_cf_initiative_template_stage,casafolino_initiative.group_initiative_manager,1,1,1,1
+access_cf_initiative_stage_user,cf.initiative.stage user,model_cf_initiative_stage,casafolino_initiative.group_initiative_user,1,1,1,0
+access_cf_initiative_stage_manager,cf.initiative.stage manager,model_cf_initiative_stage,casafolino_initiative.group_initiative_manager,1,1,1,1
+access_cf_initiative_create_wizard_user,cf.initiative.create.wizard user,model_cf_initiative_create_wizard,base.group_user,1,1,1,1
+access_cf_initiative_create_wizard_line_user,cf.initiative.create.wizard.line user,model_cf_initiative_create_wizard_line,base.group_user,1,1,1,1

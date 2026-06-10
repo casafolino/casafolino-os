@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Iniziative',
-    'version': '18.0.1.0.1',
+    'version': '18.0.2.0.0',
     'summary': 'Sistema Iniziative — orchestrazione oggetti Odoo con famiglie, atomi e tag campagna',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -23,6 +23,8 @@
         'data/cf_initiative_variant_data.xml',
         'data/cf_initiative_template_data.xml',
         'data/cf_initiative_tag_data.xml',
+        'data/mail_templates.xml',
+        'data/cf_initiative_template_staffetta_data.xml',
         'views/cf_initiative_views.xml',
         'views/cf_initiative_family_views.xml',
         'views/cf_initiative_variant_views.xml',
@@ -32,8 +34,11 @@
         'views/cf_initiative_wizard_views.xml',
         'views/inherited_views.xml',
         'views/menus.xml',
+        'views/cf_initiative_staffetta_views.xml',
+        'views/res_partner_staffetta_views.xml',
     ],
     'installable': True,
     'application': True,
+    'post_init_hook': 'post_init_hook',
     'license': 'LGPL-3',
 }
