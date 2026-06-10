@@ -1,4 +1,5 @@
 from . import calendar_event_ext
+from . import cf_initiative_stage_ext
 from . import cf_initiative
 from . import cf_initiative_tag
 from . import cf_sample_request

@@ -37,7 +37,6 @@ class CfInitiativeStage(models.Model):
     require_feedback = fields.Boolean(default=False, string='Feedback obbligatorio')
     optional = fields.Boolean(default=False)
     require_shipment = fields.Boolean(default=False, string='Richiede spedizione')
-    task_ids = fields.One2many('cf.todo', 'stage_id', string='Task')
     days_in_stage = fields.Integer(
         compute='_compute_days_in_stage', string='Giorni in fase',
     )
@@ -55,7 +54,7 @@ class CfInitiativeStage(models.Model):
         if self.state != 'active':
             raise UserError(_('Solo la fase attiva può essere chiusa.'))
 
-        open_tasks = self.task_ids.filtered(lambda t: not t.done)
+        open_tasks = self.env['cf.todo'].search([('stage_id', '=', self.id), ('done', '=', False)])
         if open_tasks:
             raise UserError(
                 _('Impossibile chiudere la fase: %d task ancora aperti.\n%s') % (
