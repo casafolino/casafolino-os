@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+<t t-name="casafolino_treasury.CfTreasuryTurnover">
+<div class="cf-turnover o_action" style="background:#f0f2f5;min-height:100vh;font-family:system-ui,sans-serif;">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 py-3"
+         style="background:#1a1f2e;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);">
+        <div class="d-flex align-items-center gap-3">
+            <span class="fa fa-bar-chart" style="font-size:18px;color:#d7e2bd;"/>
+            <h4 class="mb-0 fw-bold" style="font-size:17px;">Fatturato e Spese</h4>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button class="btn btn-sm" style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                    t-on-click="onPresetMonth">Mese</button>
+            <button class="btn btn-sm" style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                    t-on-click="onPresetQuarter">90 gg</button>
+            <button class="btn btn-sm" style="background:#2d3348;color:#d1d5db;border:1px solid #3d4560;"
+                    t-on-click="onPresetYear">Anno</button>
+            <input type="date" class="form-control form-control-sm" style="width:136px;"
+                   t-att-value="state.dateFrom" t-on-change="onDateFrom"/>
+            <input type="date" class="form-control form-control-sm" style="width:136px;"
+                   t-att-value="state.dateTo" t-on-change="onDateTo"/>
+            <button class="btn btn-sm" style="background:#5A6E3A;color:#fff;border:1px solid #5A6E3A;"
+                    t-on-click="onApply">Applica</button>
+        </div>
+    </div>
+
+    <t t-if="state.loading">
+        <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+            <div class="spinner-border" style="color:#5A6E3A;"/>
+        </div>
+    </t>
+    <t t-elif="state.error">
+        <div class="alert alert-danger m-4"><t t-esc="state.error"/></div>
+    </t>
+    <t t-elif="state.data">
+    <div class="px-4 py-4">
+
+        <div class="mb-3" style="color:#6b7280;font-size:12px;">
+            Periodo <strong><t t-esc="state.data.period.date_from"/></strong> - <strong><t t-esc="state.data.period.date_to"/></strong>.
+            Confronto con <strong><t t-esc="state.data.period.previous_date_from"/></strong> - <strong><t t-esc="state.data.period.previous_date_to"/></strong>.
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-lg-4">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9ca3af;letter-spacing:.6px;">Fatturato</div>
+                    <div style="font-size:24px;font-weight:800;color:#5A6E3A;"><t t-esc="formatAmount(state.data.revenue.total.current)"/></div>
+                    <div t-attf-class="small fw-bold #{deltaClass(state.data.revenue.total)}">
+                        <t t-esc="deltaSymbol(state.data.revenue.total)"/><t t-esc="formatAmount(state.data.revenue.total.delta)"/>
+                        (<t t-esc="state.data.revenue.total.pct"/>%)
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9ca3af;letter-spacing:.6px;">Spese fornitori</div>
+                    <div style="font-size:24px;font-weight:800;color:#b45309;"><t t-esc="formatAmount(state.data.expenses.total.current)"/></div>
+                    <div t-attf-class="small fw-bold #{deltaClass(state.data.expenses.total, true)}">
+                        <t t-esc="deltaSymbol(state.data.expenses.total)"/><t t-esc="formatAmount(state.data.expenses.total.delta)"/>
+                        (<t t-esc="state.data.expenses.total.pct"/>%)
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9ca3af;letter-spacing:.6px;">Margine netto</div>
+                    <div style="font-size:24px;font-weight:800;color:#1f2937;"><t t-esc="formatAmount(state.data.margin.current)"/></div>
+                    <div t-attf-class="small fw-bold #{deltaClass(state.data.margin)}">
+                        <t t-esc="deltaSymbol(state.data.margin)"/><t t-esc="formatAmount(state.data.margin.delta)"/>
+                        (<t t-esc="state.data.margin.pct"/>%)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-6">
+                <div style="background:#fff;border-radius:8px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div style="font-size:13px;font-weight:700;color:#374151;">Fatturato per registro</div>
+                        <div style="font-size:11px;color:#9ca3af;">Fatture clienti e note credito</div>
+                    </div>
+                    <t t-if="!state.data.revenue.rows.length">
+                        <div class="text-muted small">Nessun fatturato nel periodo.</div>
+                    </t>
+                    <t t-else="">
+                    <div style="overflow-x:auto;">
+                    <table class="table table-sm table-hover mb-0" style="font-size:12px;min-width:580px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>Registro</th>
+                                <th class="text-end">Periodo</th>
+                                <th class="text-end">Anno prec.</th>
+                                <th class="text-end">Delta</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.revenue.rows" t-as="row" t-key="row.id">
+                            <tr>
+                                <td class="fw-500"><t t-esc="row.name"/></td>
+                                <td class="text-end fw-bold" style="color:#5A6E3A;"><t t-esc="formatAmount(row.current)"/></td>
+                                <td class="text-end text-muted"><t t-esc="formatAmount(row.previous)"/></td>
+                                <td t-attf-class="text-end fw-bold #{deltaClass(row)}">
+                                    <t t-esc="deltaSymbol(row)"/><t t-esc="formatAmount(row.delta)"/>
+                                </td>
+                                <td t-attf-class="text-end #{deltaClass(row)}"><t t-esc="row.pct"/>%</td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                    </t>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-6">
+                <div style="background:#fff;border-radius:8px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div style="font-size:13px;font-weight:700;color:#374151;">Spese fornitori per conto</div>
+                        <div style="font-size:11px;color:#9ca3af;">Conti economici di costo</div>
+                    </div>
+                    <t t-if="!state.data.expenses.rows.length">
+                        <div class="text-muted small">Nessuna spesa fornitore nel periodo.</div>
+                    </t>
+                    <t t-else="">
+                    <div style="overflow-x:auto;">
+                    <table class="table table-sm table-hover mb-0" style="font-size:12px;min-width:580px;">
+                        <thead style="color:#9ca3af;">
+                            <tr>
+                                <th>Conto</th>
+                                <th class="text-end">Periodo</th>
+                                <th class="text-end">Anno prec.</th>
+                                <th class="text-end">Delta</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.expenses.rows" t-as="row" t-key="row.id">
+                            <tr>
+                                <td class="fw-500"><t t-esc="row.name"/></td>
+                                <td class="text-end fw-bold" style="color:#b45309;"><t t-esc="formatAmount(row.current)"/></td>
+                                <td class="text-end text-muted"><t t-esc="formatAmount(row.previous)"/></td>
+                                <td t-attf-class="text-end fw-bold #{deltaClass(row, true)}">
+                                    <t t-esc="deltaSymbol(row)"/><t t-esc="formatAmount(row.delta)"/>
+                                </td>
+                                <td t-attf-class="text-end #{deltaClass(row, true)}"><t t-esc="row.pct"/>%</td>
+                            </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </div>
+    </t>
+</div>
+</t>
+</templates>

@@ -75,12 +75,15 @@
     <menuitem id="menu_cf_treasury_categories" name="Analisi per Categoria"
               parent="menu_cf_treasury_root"
               action="action_cf_treasury_categories" sequence="8"/>
+    <menuitem id="menu_cf_treasury_turnover" name="Fatturato e Spese"
+              parent="menu_cf_treasury_root"
+              action="action_cf_treasury_turnover" sequence="9"/>
     <menuitem id="menu_cf_treasury_snapshots" name="Snapshots"
               parent="menu_cf_treasury_root"
-              action="action_cf_treasury_snapshots" sequence="9"/>
+              action="action_cf_treasury_snapshots" sequence="10"/>
     <menuitem id="menu_cf_treasury_export" name="Esporta XLS"
               parent="menu_cf_treasury_root"
-              action="action_cf_treasury_export" sequence="10"/>
+              action="action_cf_treasury_export" sequence="11"/>
     <menuitem id="menu_cf_doc_footer_root" name="Documenti" sequence="45"
               web_icon="casafolino_commercial,static/description/icon.png"/>
     <menuitem id="menu_cf_doc_footer_blocks" name="Blocchi Documento"

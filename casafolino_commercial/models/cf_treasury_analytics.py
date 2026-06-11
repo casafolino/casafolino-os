@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, api
+from odoo import models, api, fields
 from datetime import date, timedelta
 
 
@@ -28,6 +28,136 @@ class CfTreasuryAnalytics(models.Model):
             groupby=[],
         )
         return (groups[0]["amount_untaxed"] or 0.0) if groups else 0.0
+
+    @staticmethod
+    def _shift_year(d, years=-1):
+        try:
+            return d.replace(year=d.year + years)
+        except ValueError:
+            return d.replace(month=2, day=28, year=d.year + years)
+
+    @api.model
+    def _period_delta(self, current, previous):
+        delta = round(current - previous, 2)
+        pct = round(delta / abs(previous) * 100, 1) if previous else 0.0
+        return {
+            "current": round(current, 2),
+            "previous": round(previous, 2),
+            "delta": delta,
+            "pct": pct,
+            "up": delta >= 0,
+        }
+
+    @api.model
+    def _group_amounts(self, records, group_field, amount_field):
+        grouped = {}
+        for group in records:
+            key = group.get(group_field)
+            record_id = key[0] if key else 0
+            label = key[1] if key else "Non classificato"
+            grouped[record_id] = {
+                "id": record_id,
+                "name": label,
+                "amount": group.get(amount_field) or 0.0,
+            }
+        return grouped
+
+    @api.model
+    def get_period_turnover_expense_analysis(self, date_from=None, date_to=None):
+        """Fatturato per registro e spese fornitori per conto, con confronto YoY."""
+        today = date.today()
+        d_to = fields.Date.to_date(date_to) if date_to else today
+        d_from = fields.Date.to_date(date_from) if date_from else d_to.replace(day=1)
+        if d_from > d_to:
+            d_from, d_to = d_to, d_from
+
+        prev_from = self._shift_year(d_from)
+        prev_to = self._shift_year(d_to)
+
+        def _revenue_by_journal(start, end):
+            return self._group_amounts(
+                self.env["account.move"].read_group(
+                    domain=[
+                        ("move_type", "in", ("out_invoice", "out_refund")),
+                        ("state", "=", "posted"),
+                        ("invoice_date", ">=", str(start)),
+                        ("invoice_date", "<=", str(end)),
+                    ],
+                    fields=["journal_id", "amount_untaxed_signed:sum"],
+                    groupby=["journal_id"],
+                    orderby="amount_untaxed_signed:sum desc",
+                    lazy=False,
+                ),
+                "journal_id",
+                "amount_untaxed_signed",
+            )
+
+        def _supplier_expenses_by_account(start, end):
+            groups = self.env["account.move.line"].read_group(
+                domain=[
+                    ("move_id.move_type", "in", ("in_invoice", "in_refund")),
+                    ("move_id.state", "=", "posted"),
+                    ("move_id.invoice_date", ">=", str(start)),
+                    ("move_id.invoice_date", "<=", str(end)),
+                    ("display_type", "=", False),
+                    ("account_id.account_type", "in", [
+                        "expense",
+                        "expense_depreciation",
+                        "expense_direct_cost",
+                    ]),
+                ],
+                fields=["account_id", "balance:sum"],
+                groupby=["account_id"],
+                orderby="balance:sum desc",
+                lazy=False,
+            )
+            return self._group_amounts(groups, "account_id", "balance")
+
+        def _merge(curr, prev):
+            rows = []
+            keys = set(curr) | set(prev)
+            for key in keys:
+                curr_row = curr.get(key) or prev.get(key)
+                curr_amount = curr.get(key, {}).get("amount", 0.0)
+                prev_amount = prev.get(key, {}).get("amount", 0.0)
+                comparison = self._period_delta(curr_amount, prev_amount)
+                rows.append({
+                    "id": key,
+                    "name": curr_row["name"],
+                    **comparison,
+                })
+            return sorted(rows, key=lambda r: (abs(r["current"]), abs(r["previous"])), reverse=True)
+
+        revenue_curr = _revenue_by_journal(d_from, d_to)
+        revenue_prev = _revenue_by_journal(prev_from, prev_to)
+        expenses_curr = _supplier_expenses_by_account(d_from, d_to)
+        expenses_prev = _supplier_expenses_by_account(prev_from, prev_to)
+
+        revenue_total = sum(v["amount"] for v in revenue_curr.values())
+        revenue_prev_total = sum(v["amount"] for v in revenue_prev.values())
+        expenses_total = sum(v["amount"] for v in expenses_curr.values())
+        expenses_prev_total = sum(v["amount"] for v in expenses_prev.values())
+
+        return {
+            "period": {
+                "date_from": str(d_from),
+                "date_to": str(d_to),
+                "previous_date_from": str(prev_from),
+                "previous_date_to": str(prev_to),
+            },
+            "revenue": {
+                "total": self._period_delta(revenue_total, revenue_prev_total),
+                "rows": _merge(revenue_curr, revenue_prev),
+            },
+            "expenses": {
+                "total": self._period_delta(expenses_total, expenses_prev_total),
+                "rows": _merge(expenses_curr, expenses_prev),
+            },
+            "margin": self._period_delta(
+                revenue_total - expenses_total,
+                revenue_prev_total - expenses_prev_total,
+            ),
+        }
 
     # ------------------------------------------------------------------
     # 1. Confronto YoY / MoM / QoQ

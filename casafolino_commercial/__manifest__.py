@@ -35,6 +35,8 @@
             'casafolino_commercial/static/src/js/cf_treasury_clients.js',
             'casafolino_commercial/static/src/xml/cf_treasury_categories.xml',
             'casafolino_commercial/static/src/js/cf_treasury_categories.js',
+            'casafolino_commercial/static/src/xml/cf_treasury_turnover.xml',
+            'casafolino_commercial/static/src/js/cf_treasury_turnover.js',
         ],
     },
     'installable': True,
