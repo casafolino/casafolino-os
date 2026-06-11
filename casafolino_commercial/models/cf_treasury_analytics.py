@@ -99,7 +99,7 @@ class CfTreasuryAnalytics(models.Model):
                     ("move_id.state", "=", "posted"),
                     ("move_id.invoice_date", ">=", str(start)),
                     ("move_id.invoice_date", "<=", str(end)),
-                    ("display_type", "=", False),
+                    ("display_type", "in", (False, "product")),
                     ("account_id.account_type", "in", [
                         "expense",
                         "expense_depreciation",
