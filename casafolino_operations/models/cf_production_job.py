@@ -81,3 +81,83 @@ class CfProductionJob(models.Model):
         })
         self.production_id = mo
         return {"type":"ir.actions.act_window","name":"Ordine Produzione","res_model":"mrp.production","res_id":mo.id,"view_mode":"form"}
+
+    @api.model
+    def action_setup_creme_workcenters(self):
+        Workcenter = self.env["mrp.workcenter"].with_context(active_test=False)
+        specs = [
+            {
+                "name": "Miscelazione Creme",
+                "time_stop": 20.0,
+                "note": """
+                    <p>Linea creme - opzione A.</p>
+                    <ul>
+                        <li>Batch standard: 300 kg = 1200 vasetti.</li>
+                        <li>Durata batch: 80 minuti, pari a 0,0667 minuti per vasetto.</li>
+                        <li>Costo lavoro: 18 EUR/ora, pari a 0,0200 EUR per vasetto.</li>
+                        <li>Pulizia standard indicativa: 20 minuti se cambio prodotto.</li>
+                    </ul>
+                """,
+            },
+            {
+                "name": "Invasettatura Creme",
+                "time_stop": 0.0,
+                "note": """
+                    <p>Capacita riferimento: 1200 vasetti/ora.</p>
+                    <ul>
+                        <li>Durata batch: 60 minuti, pari a 0,0500 minuti per vasetto.</li>
+                        <li>Costo lavoro: 18 EUR/ora, pari a 0,0150 EUR per vasetto.</li>
+                    </ul>
+                """,
+            },
+            {
+                "name": "Tappatura Manuale",
+                "time_stop": 0.0,
+                "note": """
+                    <p>Capacita riferimento: 1000 vasetti/ora.</p>
+                    <ul>
+                        <li>Durata batch: 72 minuti, pari a 0,0600 minuti per vasetto.</li>
+                        <li>Costo lavoro: 18 EUR/ora, pari a 0,0180 EUR per vasetto.</li>
+                    </ul>
+                """,
+            },
+            {
+                "name": "Etichettatura",
+                "time_stop": 0.0,
+                "note": """
+                    <p>Capacita riferimento: 1200 vasetti/ora.</p>
+                    <ul>
+                        <li>Durata batch: 60 minuti, pari a 0,0500 minuti per vasetto.</li>
+                        <li>Costo lavoro: 18 EUR/ora, pari a 0,0150 EUR per vasetto.</li>
+                    </ul>
+                """,
+            },
+            {
+                "name": "Imballaggio e Pallettizzazione",
+                "time_stop": 0.0,
+                "note": """
+                    <p>Capacita riferimento: 1200 vasetti in 30 minuti.</p>
+                    <ul>
+                        <li>Durata batch: 30 minuti, pari a 0,0250 minuti per vasetto.</li>
+                        <li>Costo lavoro: 18 EUR/ora, pari a 0,0075 EUR per vasetto.</li>
+                    </ul>
+                """,
+            },
+        ]
+        common_vals = {
+            "active": True,
+            "default_capacity": 1.0,
+            "costs_hour": 18.0,
+            "time_efficiency": 100.0,
+            "oee_target": 100.0,
+            "time_start": 0.0,
+        }
+        for spec in specs:
+            vals = dict(common_vals, time_stop=spec["time_stop"], note=spec["note"])
+            workcenters = Workcenter.search([("name", "=", spec["name"])], order="id")
+            if workcenters:
+                workcenters[0].write(vals)
+                if len(workcenters) > 1:
+                    workcenters[1:].write({"active": False})
+            else:
+                Workcenter.create(dict(vals, name=spec["name"]))
