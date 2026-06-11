@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Commercial',
-    'version': '18.0.2.4.0',
+    'version': '18.0.2.4.3',
     'post_init_hook': '_post_init_bank_resilience',
     'category': 'CasaFolino',
     'summary': 'GDO, Private Label, Tesoreria e Blocchi Documento',
@@ -8,6 +8,8 @@
     'depends': ['base', 'mail', 'sale_management', 'product', 'account', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
+        'data/account_tax_data.xml',
+        'data/cf_fatturapa_xml_fix_actions.xml',
         'wizards/sale_discount_wizard.xml',
         'wizards/cf_bank_resilience_runner.xml',
         'data/cf_treasury_cron.xml',

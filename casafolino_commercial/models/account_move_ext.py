@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from odoo import api, models, fields, _
 import logging
 _logger = logging.getLogger(__name__)
@@ -149,6 +151,27 @@ class AccountMoveExt(models.Model):
 class AccountMoveLineExt(models.Model):
     _inherit = 'account.move.line'
 
+    cf_vendor_bill_quantity_six_decimals = fields.Float(
+        string='Quantita',
+        compute='_compute_cf_vendor_bill_decimal_fields',
+        inverse='_inverse_cf_vendor_bill_quantity_six_decimals',
+        digits=(16, 6),
+        readonly=False,
+    )
+    cf_vendor_bill_price_unit_six_decimals = fields.Float(
+        string='Prezzo',
+        compute='_compute_cf_vendor_bill_decimal_fields',
+        inverse='_inverse_cf_vendor_bill_price_unit_six_decimals',
+        digits=(16, 6),
+        readonly=False,
+    )
+    cf_vendor_bill_discount_six_decimals = fields.Float(
+        string='Sconto %',
+        compute='_compute_cf_vendor_bill_decimal_fields',
+        inverse='_inverse_cf_vendor_bill_discount_six_decimals',
+        digits=(16, 6),
+        readonly=False,
+    )
     cf_price_subtotal_six_decimals = fields.Float(
         string='Imponibile',
         compute='_compute_cf_price_subtotal_six_decimals',
@@ -156,7 +179,38 @@ class AccountMoveLineExt(models.Model):
         readonly=True,
     )
 
-    @api.depends('price_subtotal')
+    @api.depends('quantity', 'price_unit', 'discount')
+    def _compute_cf_vendor_bill_decimal_fields(self):
+        for line in self:
+            line.cf_vendor_bill_quantity_six_decimals = line.quantity
+            line.cf_vendor_bill_price_unit_six_decimals = line.price_unit
+            line.cf_vendor_bill_discount_six_decimals = line.discount
+
+    def _inverse_cf_vendor_bill_quantity_six_decimals(self):
+        for line in self:
+            line.quantity = line.cf_vendor_bill_quantity_six_decimals
+
+    def _inverse_cf_vendor_bill_price_unit_six_decimals(self):
+        for line in self:
+            line.price_unit = line.cf_vendor_bill_price_unit_six_decimals
+
+    def _inverse_cf_vendor_bill_discount_six_decimals(self):
+        for line in self:
+            line.discount = line.cf_vendor_bill_discount_six_decimals
+
+    @api.depends('quantity', 'price_unit', 'discount', 'display_type')
     def _compute_cf_price_subtotal_six_decimals(self):
         for line in self:
-            line.cf_price_subtotal_six_decimals = line.price_subtotal
+            if line.display_type:
+                line.cf_price_subtotal_six_decimals = 0.0
+                continue
+            try:
+                quantity = Decimal(str(line.quantity or 0.0))
+                price_unit = Decimal(str(line.price_unit or 0.0))
+                discount = Decimal(str(line.discount or 0.0))
+            except (InvalidOperation, ValueError):
+                line.cf_price_subtotal_six_decimals = line.price_subtotal
+                continue
+
+            subtotal = quantity * price_unit * (Decimal("1.0") - (discount / Decimal("100.0")))
+            line.cf_price_subtotal_six_decimals = float(subtotal)
