@@ -160,9 +160,12 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
         for production in productions:
             entries = self._production_component_entries(production)
             for product, qty, uom, reserved_qty in entries:
-                key = (product.id, uom.id)
+                product_uom = product.uom_id
+                qty = self._normalize_component_qty(product, qty, uom)
+                reserved_qty = self._normalize_component_qty(product, reserved_qty, uom)
+                key = product.id
                 totals[key]["product_id"] = product.id
-                totals[key]["product_uom_id"] = uom.id
+                totals[key]["product_uom_id"] = product_uom.id
                 totals[key]["required_qty"] += qty
                 totals[key]["reserved_qty"] += reserved_qty
                 totals[key]["production_names"].add(production.name or production.display_name)
@@ -174,7 +177,7 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
         for values in totals.values():
             product = Product.browse(values["product_id"])
             uom = Uom.browse(values["product_uom_id"])
-            available_qty = product.uom_id._compute_quantity(product.qty_available, uom)
+            available_qty = product.qty_available
             purchase_qty = max(values["required_qty"] - available_qty, 0.0)
             production_names = sorted(values["production_names"])
             display_values = self._prepare_display_quantities(
@@ -202,6 +205,26 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
             })
 
         return sorted(lines, key=lambda vals: vals["purchase_qty"], reverse=True)
+
+    @api.model
+    def _normalize_component_qty(self, product, qty, source_uom):
+        product_uom = product.uom_id
+        if not qty or source_uom == product_uom:
+            return qty or 0.0
+
+        # Some imported BOM/MO lines have a kg label while the numeric quantity is
+        # already expressed in the product's gram stock UoM. Treat those as grams
+        # to avoid impossible values such as 454356 kg of Carnaroli.
+        if (
+            self._is_gram_uom(product_uom)
+            and self._is_kg_uom(source_uom)
+            and abs(qty) >= 1000
+        ):
+            return qty
+
+        if source_uom.category_id == product_uom.category_id:
+            return source_uom._compute_quantity(qty, product_uom)
+        return qty
 
     @api.model
     def _prepare_display_quantities(self, uom, required_qty, available_qty, reserved_qty, purchase_qty):
@@ -243,6 +266,11 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
     def _is_gram_uom(self, uom):
         name = (uom.name or "").strip().lower()
         return name in {"g", "gr", "gram", "grams", "grammo", "grammi"}
+
+    @api.model
+    def _is_kg_uom(self, uom):
+        name = (uom.name or "").strip().lower()
+        return name in {"kg", "kgs", "kilogram", "kilograms", "chilogrammo", "chilogrammi"}
 
     @api.model
     def _is_unit_uom(self, uom):
