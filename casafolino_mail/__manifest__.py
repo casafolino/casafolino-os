@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail Inbox V2',
-    'version': '18.0.19.3.0',
+    'version': '18.0.19.4.0',
     'summary': 'Pipeline fetch RAW → classificazione → MESSAGE + Cartelle + Mass Actions + Multi-utente per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
