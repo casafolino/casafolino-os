@@ -5,6 +5,13 @@
         sequence="15"
         web_icon="casafolino_mail,static/description/icon_new.png"/>
 
+    <record id="menu_casafolino_mail_root" model="ir.ui.menu">
+        <field name="parent_id" eval="False"/>
+        <field name="name">Mail Inbox V2</field>
+        <field name="sequence">15</field>
+        <field name="web_icon">casafolino_mail,static/description/icon_new.png</field>
+    </record>
+
     <menuitem id="menu_casafolino_mail_my_mailbox"
         name="Inbox V2"
         parent="menu_casafolino_mail_root"
