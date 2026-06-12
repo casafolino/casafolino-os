@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail Templates',
-    'version': '18.0.0.1.0',
+    'version': '18.0.0.2.0',
     'summary': 'Gestione template email centralizzata in Mail Hub con tag, snippet e wizard fiera',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
