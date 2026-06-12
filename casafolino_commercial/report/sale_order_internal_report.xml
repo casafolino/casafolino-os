@@ -36,6 +36,10 @@
                                     <strong>Consegna richiesta:</strong>
                                     <span t-field="doc.commitment_date" t-options="{'widget': 'date'}"/>
                                 </div>
+                                <div>
+                                    <strong>Totale cartoni:</strong>
+                                    <span t-out="doc._get_internal_carton_total()" t-options="{'widget': 'float', 'precision': 2}"/>
+                                </div>
                             </div>
                         </div>
 
@@ -57,6 +61,7 @@
                                 <tr>
                                     <th style="width: 13%;">Codice</th>
                                     <th>Prodotto / descrizione</th>
+                                    <th class="text-end" style="width: 12%;">Cartoni</th>
                                     <th class="text-end" style="width: 15%;">Quantita</th>
                                     <th style="width: 14%;">U.M.</th>
                                 </tr>
@@ -64,12 +69,12 @@
                             <tbody>
                                 <t t-foreach="doc.order_line" t-as="line">
                                     <tr t-if="line.display_type == 'line_section'" class="table-secondary">
-                                        <td colspan="4">
+                                        <td colspan="5">
                                             <strong t-field="line.name"/>
                                         </td>
                                     </tr>
                                     <tr t-elif="line.display_type == 'line_note'">
-                                        <td colspan="4">
+                                        <td colspan="5">
                                             <em t-field="line.name"/>
                                         </td>
                                     </tr>
@@ -79,6 +84,9 @@
                                         </td>
                                         <td>
                                             <span t-field="line.name"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-if="line.product_packaging_id" t-field="line.product_packaging_qty"/>
                                         </td>
                                         <td class="text-end">
                                             <span t-field="line.product_uom_qty"/>

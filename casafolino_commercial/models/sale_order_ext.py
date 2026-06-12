@@ -143,3 +143,8 @@ class SaleOrderExt(models.Model):
         return self.env.ref(
             'casafolino_commercial.action_report_sale_order_internal_no_prices'
         ).report_action(self)
+
+    def _get_internal_carton_total(self):
+        self.ensure_one()
+        lines = self.order_line.filtered(lambda line: not line.display_type)
+        return sum(lines.mapped('product_packaging_qty'))
