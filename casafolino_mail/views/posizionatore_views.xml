@@ -184,7 +184,7 @@ action = {
     <menuitem id="menu_cf_mail_posizionatore"
               name="Posizionatore"
               parent="casafolino_mail.menu_casafolino_mail_root"
-              action="action_cf_mail_posizionatore"
+              action="action_mail_v3_client"
               sequence="2"/>
 
 </odoo>
