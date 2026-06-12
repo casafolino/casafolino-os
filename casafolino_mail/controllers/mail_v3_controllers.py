@@ -337,7 +337,8 @@ class MailV3Controller(http.Controller):
             msg = messages.filtered(lambda m: (m.direction_computed or m.direction) == 'inbound')[:1] or messages[:1]
 
         partner = (msg.partner_id if msg else False) or thread.partner_ids[:1]
-        company = partner.commercial_partner_id if partner else request.env['res.partner']
+        search_partner = partner.commercial_partner_id if partner else request.env['res.partner']
+        company = search_partner if search_partner and search_partner.is_company else request.env['res.partner']
         sender_email = (msg.sender_email if msg else '') or ''
         sender_name = (msg.sender_name if msg else '') or sender_email or (thread.main_participant or '')
         subject = (msg.subject if msg else '') or thread.subject or sender_name or 'Email CasaFolino'
@@ -390,8 +391,8 @@ class MailV3Controller(http.Controller):
             if msg and msg.lead_id:
                 return {'success': True, 'action': act('crm.lead', 'Lead', res_id=msg.lead_id.id)}
             lead_domain = [('type', '=', 'opportunity')]
-            if company:
-                lead_domain.append(('partner_id', 'child_of', company.id))
+            if search_partner:
+                lead_domain.append(('partner_id', 'child_of', search_partner.id))
             lead = request.env['crm.lead'].sudo().search(lead_domain, order='write_date desc, id desc', limit=1)
             if lead:
                 return {'success': True, 'action': act('crm.lead', 'Pipeline', res_id=lead.id)}
@@ -406,8 +407,8 @@ class MailV3Controller(http.Controller):
             if msg and msg.cf_project_id:
                 return {'success': True, 'action': act('project.project', 'Dossier', res_id=msg.cf_project_id.id)}
             dossier_domain = [('cf_status_dossier', '!=', False)]
-            if company:
-                dossier_domain.append(('partner_id', 'child_of', company.id))
+            if search_partner:
+                dossier_domain.append(('partner_id', 'child_of', search_partner.id))
             project = request.env['project.project'].sudo().search(dossier_domain, order='write_date desc, id desc', limit=1)
             if project:
                 return {'success': True, 'action': act('project.project', 'Dossier', res_id=project.id)}
