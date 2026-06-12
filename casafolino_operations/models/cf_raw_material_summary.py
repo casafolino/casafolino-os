@@ -177,7 +177,7 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
         for values in totals.values():
             product = Product.browse(values["product_id"])
             uom = Uom.browse(values["product_uom_id"])
-            available_qty = product.qty_available
+            available_qty = max(product.qty_available, 0.0)
             purchase_qty = max(values["required_qty"] - available_qty, 0.0)
             production_names = sorted(values["production_names"])
             display_values = self._prepare_display_quantities(
