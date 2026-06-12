@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
+from html import escape
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -26,6 +27,17 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
         readonly=True,
     )
     note = fields.Text(readonly=True)
+    summary_html = fields.Html(
+        string="Sintesi",
+        compute="_compute_summary_html",
+        sanitize=False,
+        readonly=True,
+    )
+    sale_order_count = fields.Integer(compute="_compute_summary_counts")
+    production_count = fields.Integer(compute="_compute_summary_counts")
+    material_count = fields.Integer(compute="_compute_summary_counts")
+    purchase_line_count = fields.Integer(compute="_compute_summary_counts")
+    available_line_count = fields.Integer(compute="_compute_summary_counts")
 
     @api.model
     def default_get(self, fields_list):
@@ -61,6 +73,45 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
         return self.env.ref(
             "casafolino_operations.report_cf_raw_material_summary"
         ).report_action(self)
+
+    @api.depends("sale_order_ids", "production_ids", "line_ids", "line_ids.need_purchase")
+    def _compute_summary_counts(self):
+        for rec in self:
+            rec.sale_order_count = len(rec.sale_order_ids)
+            rec.production_count = len(rec.production_ids)
+            rec.material_count = len(rec.line_ids)
+            rec.purchase_line_count = len(rec.line_ids.filtered("need_purchase"))
+            rec.available_line_count = rec.material_count - rec.purchase_line_count
+
+    @api.depends(
+        "sale_order_ids",
+        "production_ids",
+        "line_ids",
+        "line_ids.need_purchase",
+        "line_ids.purchase_qty",
+    )
+    def _compute_summary_html(self):
+        for rec in self:
+            cards = [
+                ("Ordini vendita", rec.sale_order_count),
+                ("Ordini produzione", rec.production_count),
+                ("Materie prime", rec.material_count),
+                ("Da acquistare", rec.purchase_line_count),
+                ("Gia coperte", rec.available_line_count),
+            ]
+            rec.summary_html = "".join([
+                '<div class="d-flex flex-wrap gap-2 mb-3">',
+                *[
+                    (
+                        '<div class="border rounded p-2 bg-light" style="min-width:120px;">'
+                        f'<div class="text-muted" style="font-size:12px;">{escape(label)}</div>'
+                        f'<div class="fw-bold" style="font-size:22px; line-height:1.1;">{value}</div>'
+                        '</div>'
+                    )
+                    for label, value in cards
+                ],
+                '</div>',
+            ])
 
     @api.model
     def _find_productions_from_sale_orders(self, sale_orders):
@@ -125,18 +176,33 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
             uom = Uom.browse(values["product_uom_id"])
             available_qty = product.uom_id._compute_quantity(product.qty_available, uom)
             purchase_qty = max(values["required_qty"] - available_qty, 0.0)
+            production_names = sorted(values["production_names"])
             lines.append({
                 "product_id": product.id,
+                "product_code": product.default_code or "",
+                "product_category_id": product.categ_id.id,
                 "product_uom_id": uom.id,
                 "required_qty": values["required_qty"],
                 "available_qty": available_qty,
                 "reserved_qty": values["reserved_qty"],
                 "purchase_qty": purchase_qty,
+                "need_purchase": purchase_qty > 0.0,
+                "availability_state": "shortage" if purchase_qty > 0.0 else "covered",
                 "source_count": values["source_count"],
-                "production_names": ", ".join(sorted(values["production_names"])),
+                "production_summary": self._short_origin_summary(production_names),
+                "production_names": ", ".join(production_names),
             })
 
         return sorted(lines, key=lambda vals: vals["purchase_qty"], reverse=True)
+
+    @api.model
+    def _short_origin_summary(self, production_names):
+        visible = production_names[:3]
+        hidden_count = max(len(production_names) - len(visible), 0)
+        summary = ", ".join(visible)
+        if hidden_count:
+            summary = _("%s + altri %s") % (summary, hidden_count)
+        return summary
 
     @api.model
     def _production_component_entries(self, production):
@@ -196,10 +262,35 @@ class CfRawMaterialSummaryLine(models.TransientModel):
         ondelete="cascade",
     )
     product_id = fields.Many2one("product.product", string="Materia Prima", readonly=True)
+    product_code = fields.Char(string="Codice", readonly=True)
+    product_category_id = fields.Many2one("product.category", string="Categoria", readonly=True)
     product_uom_id = fields.Many2one("uom.uom", string="UdM", readonly=True)
-    required_qty = fields.Float(string="Quantita richiesta", readonly=True)
-    available_qty = fields.Float(string="Disponibile", readonly=True)
-    reserved_qty = fields.Float(string="Gia riservata", readonly=True)
-    purchase_qty = fields.Float(string="Da acquistare", readonly=True)
-    source_count = fields.Integer(string="Righe origine", readonly=True)
-    production_names = fields.Char(string="Ordini di Produzione", readonly=True)
+    required_qty = fields.Float(
+        string="Serve",
+        digits="Product Unit of Measure",
+        readonly=True,
+    )
+    available_qty = fields.Float(
+        string="In magazzino",
+        digits="Product Unit of Measure",
+        readonly=True,
+    )
+    reserved_qty = fields.Float(
+        string="Gia riservata",
+        digits="Product Unit of Measure",
+        readonly=True,
+    )
+    purchase_qty = fields.Float(
+        string="Da acquistare",
+        digits="Product Unit of Measure",
+        readonly=True,
+    )
+    need_purchase = fields.Boolean(string="Da acquistare", readonly=True)
+    availability_state = fields.Selection(
+        [("shortage", "Da acquistare"), ("covered", "Coperto")],
+        string="Stato",
+        readonly=True,
+    )
+    source_count = fields.Integer(string="Righe", readonly=True)
+    production_summary = fields.Char(string="Origine", readonly=True)
+    production_names = fields.Char(string="Dettaglio MO", readonly=True)

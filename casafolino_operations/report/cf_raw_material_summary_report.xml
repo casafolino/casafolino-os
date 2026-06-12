@@ -14,7 +14,97 @@
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
                     <div class="page">
+                        <style>
+                            .cf-summary-box { display:inline-block; min-width:110px; margin:0 8px 10px 0; padding:8px 10px; border:1px solid #d8dee4; border-radius:4px; }
+                            .cf-summary-label { color:#6b7280; font-size:11px; text-transform:uppercase; }
+                            .cf-summary-value { font-size:20px; font-weight:bold; line-height:1.1; }
+                            .cf-section-title { margin-top:18px; padding:6px 8px; background:#f3f4f6; font-weight:bold; border-left:4px solid #374151; }
+                            .cf-muted { color:#6b7280; }
+                            .cf-shortage { color:#991b1b; font-weight:bold; }
+                            .cf-covered { color:#166534; font-weight:bold; }
+                        </style>
                         <h2>Resoconto Materie Prime</h2>
+                        <div>
+                            <div class="cf-summary-box">
+                                <div class="cf-summary-label">Ordini vendita</div>
+                                <div class="cf-summary-value"><span t-esc="doc.sale_order_count"/></div>
+                            </div>
+                            <div class="cf-summary-box">
+                                <div class="cf-summary-label">Ordini produzione</div>
+                                <div class="cf-summary-value"><span t-esc="doc.production_count"/></div>
+                            </div>
+                            <div class="cf-summary-box">
+                                <div class="cf-summary-label">Materie prime</div>
+                                <div class="cf-summary-value"><span t-esc="doc.material_count"/></div>
+                            </div>
+                            <div class="cf-summary-box">
+                                <div class="cf-summary-label">Da acquistare</div>
+                                <div class="cf-summary-value"><span t-esc="doc.purchase_line_count"/></div>
+                            </div>
+                        </div>
+                        <p t-if="doc.note" class="cf-muted">
+                            <span t-esc="doc.note"/>
+                        </p>
+
+                        <div class="cf-section-title">Materie prime da acquistare</div>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Codice</th>
+                                    <th>Materia prima</th>
+                                    <th class="text-end">Da acquistare</th>
+                                    <th>UdM</th>
+                                    <th class="text-end">Serve</th>
+                                    <th class="text-end">In magazzino</th>
+                                    <th>Origine</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids.filtered('need_purchase')" t-as="line">
+                                    <td><span t-esc="line.product_code"/></td>
+                                    <td><span t-field="line.product_id"/></td>
+                                    <td class="text-end cf-shortage"><span t-field="line.purchase_qty"/></td>
+                                    <td><span t-field="line.product_uom_id"/></td>
+                                    <td class="text-end"><span t-field="line.required_qty"/></td>
+                                    <td class="text-end"><span t-field="line.available_qty"/></td>
+                                    <td><span t-field="line.production_summary"/></td>
+                                </tr>
+                                <tr t-if="not doc.line_ids.filtered('need_purchase')">
+                                    <td colspan="7" class="cf-covered">Tutte le materie prime risultano coperte dalla disponibilita attuale.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="cf-section-title">Fabbisogno completo</div>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Stato</th>
+                                    <th>Codice</th>
+                                    <th>Materia prima</th>
+                                    <th class="text-end">Serve</th>
+                                    <th class="text-end">In magazzino</th>
+                                    <th class="text-end">Da acquistare</th>
+                                    <th>UdM</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td>
+                                        <span t-if="line.need_purchase" class="cf-shortage">Da acquistare</span>
+                                        <span t-else="" class="cf-covered">Coperto</span>
+                                    </td>
+                                    <td><span t-esc="line.product_code"/></td>
+                                    <td><span t-field="line.product_id"/></td>
+                                    <td class="text-end"><span t-field="line.required_qty"/></td>
+                                    <td class="text-end"><span t-field="line.available_qty"/></td>
+                                    <td class="text-end"><span t-field="line.purchase_qty"/></td>
+                                    <td><span t-field="line.product_uom_id"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="cf-section-title">Origini</div>
                         <p t-if="doc.sale_order_ids">
                             <strong>Ordini vendita:</strong>
                             <span t-esc="', '.join(doc.sale_order_ids.mapped('name'))"/>
@@ -23,33 +113,6 @@
                             <strong>Ordini produzione:</strong>
                             <span t-esc="', '.join(doc.production_ids.mapped('name'))"/>
                         </p>
-                        <p t-if="doc.note">
-                            <span t-esc="doc.note"/>
-                        </p>
-                        <table class="table table-sm o_main_table">
-                            <thead>
-                                <tr>
-                                    <th>Materia prima</th>
-                                    <th class="text-end">Richiesta</th>
-                                    <th class="text-end">Disponibile</th>
-                                    <th class="text-end">Riservata</th>
-                                    <th class="text-end">Da acquistare</th>
-                                    <th>UdM</th>
-                                    <th>MO</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="doc.line_ids" t-as="line">
-                                    <td><span t-field="line.product_id"/></td>
-                                    <td class="text-end"><span t-field="line.required_qty"/></td>
-                                    <td class="text-end"><span t-field="line.available_qty"/></td>
-                                    <td class="text-end"><span t-field="line.reserved_qty"/></td>
-                                    <td class="text-end"><span t-field="line.purchase_qty"/></td>
-                                    <td><span t-field="line.product_uom_id"/></td>
-                                    <td><span t-field="line.production_names"/></td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </t>
             </t>
