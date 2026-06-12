@@ -87,4 +87,39 @@
         parent="menu_casafolino_mail_config"
         sequence="4"
         action="action_casafolino_mail_folder_rule"/>
+
+    <!-- Mail Inbox V2 is the only user-facing entry point. -->
+    <record id="menu_casafolino_mail_analytics" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_lead_score" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_sla" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_orphan" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_snippet" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_decision_history" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_folder_rules" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_config" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_accounts" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_folders_admin" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_folder_rules_admin" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 </odoo>
