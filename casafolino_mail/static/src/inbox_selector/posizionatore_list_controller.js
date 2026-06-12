@@ -1,7 +1,9 @@
 /** @odoo-module **/
+import { onMounted } from "@odoo/owl";
 import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
 import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
 import { CFInboxSelector, cfInboxSelectorState } from "@casafolino_mail/inbox_selector/inbox_selector";
 
 export class CFPosizionatoreListController extends ListController {
@@ -13,8 +15,16 @@ export class CFPosizionatoreListController extends ListController {
 
     setup() {
         super.setup();
+        this.action = useService("action");
         this._unsubscribe = cfInboxSelectorState.subscribe((newUserId) => {
             this._reloadForUser(newUserId);
+        });
+        onMounted(() => {
+            if (!this.props.context?.cf_keep_posizionatore_list) {
+                this.action.doAction("casafolino_mail.action_mail_v3_client", {
+                    clearBreadcrumbs: true,
+                });
+            }
         });
     }
 
