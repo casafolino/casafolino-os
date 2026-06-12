@@ -304,6 +304,19 @@ class MailV3Controller(http.Controller):
             ('is_deleted', '=', False),
         ], order='email_date asc')
 
+        missing_body = messages.filtered(
+            lambda m: not m.body_downloaded and m.imap_folder and m.imap_uid
+        )
+        if missing_body:
+            missing_body[:5].with_context(cf_skip_mail_attachments=True)._ensure_body_downloaded()
+            messages.invalidate_recordset([
+                'body_html',
+                'body_plain',
+                'body_downloaded',
+                'fetch_state',
+                'fetch_error_msg',
+            ])
+
         result = []
         for m in messages:
             result.append({
@@ -352,8 +365,49 @@ class MailV3Controller(http.Controller):
         search_partner = partner.commercial_partner_id if partner else request.env['res.partner']
         company = search_partner if search_partner and search_partner.is_company else request.env['res.partner']
         sender_email = (msg.sender_email if msg else '') or ''
-        sender_name = (msg.sender_name if msg else '') or sender_email or (thread.main_participant or '')
+        try:
+            participants = json.loads(thread.participant_emails or '[]')
+        except (json.JSONDecodeError, TypeError):
+            participants = []
+        sender_name = (msg.sender_name if msg else '') or sender_email or (participants[0] if participants else '')
         subject = (msg.subject if msg else '') or thread.subject or sender_name or 'Email CasaFolino'
+
+        def link_partner(partner_record):
+            if not partner_record:
+                return
+            if partner_record.id not in thread.partner_ids.ids:
+                thread.write({'partner_ids': [(4, partner_record.id)]})
+            same_sender = messages.filtered(
+                lambda m: sender_email and (m.sender_email or '').lower().strip() == sender_email.lower().strip()
+            )
+            if same_sender:
+                same_sender.write({'partner_id': partner_record.id})
+
+        def find_contact_by_email(email):
+            if not email:
+                return request.env['res.partner']
+            return request.env['res.partner'].sudo().search([
+                ('email', '=ilike', email.strip()),
+                ('is_company', '=', False),
+            ], limit=1)
+
+        def domain_company_name(email):
+            if '@' not in (email or ''):
+                return sender_name or subject
+            domain = email.split('@')[-1].lower().strip()
+            root = domain.split('.')[0]
+            return root.replace('-', ' ').replace('_', ' ').title() or domain
+
+        def find_company_for_email(email):
+            if not email or '@' not in email:
+                return request.env['res.partner']
+            domain = email.split('@')[-1].lower().strip()
+            return request.env['res.partner'].sudo().search([
+                ('is_company', '=', True),
+                '|',
+                ('email', '=ilike', '%@' + domain),
+                ('website', 'ilike', domain),
+            ], limit=1)
 
         def act(res_model, name, view_mode='form', res_id=False, domain=None, context=None, target='current'):
             views = [[False, mode.strip()] for mode in (view_mode or 'form').split(',') if mode.strip()]
@@ -377,21 +431,43 @@ class MailV3Controller(http.Controller):
 
         if service in ('contact', 'partner'):
             if partner and not partner.is_company:
+                link_partner(partner)
                 return {'success': True, 'action': act('res.partner', 'Contatto', res_id=partner.id)}
-            defaults = {'default_name': sender_name, 'default_email': sender_email, 'default_is_company': False}
+            existing = find_contact_by_email(sender_email)
+            if existing:
+                link_partner(existing)
+                return {'success': True, 'action': act('res.partner', 'Contatto', res_id=existing.id)}
+            vals = {
+                'name': sender_name or (sender_email.split('@')[0] if sender_email else subject),
+                'email': sender_email,
+                'is_company': False,
+            }
             if company:
-                defaults['default_parent_id'] = company.id
-            return {'success': True, 'action': act('res.partner', 'Crea contatto', context=defaults)}
+                vals['parent_id'] = company.id
+            contact = request.env['res.partner'].sudo().create(vals)
+            link_partner(contact)
+            return {'success': True, 'action': act('res.partner', 'Contatto creato', res_id=contact.id)}
 
         if service == 'company':
             if company:
+                link_partner(company)
                 return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
-            domain_name = sender_email.split('@')[-1].split('.')[0].title() if '@' in sender_email else sender_name
-            return {'success': True, 'action': act('res.partner', 'Crea azienda', context={
-                'default_name': domain_name,
-                'default_email': sender_email,
-                'default_is_company': True,
-            })}
+            existing_company = find_company_for_email(sender_email)
+            if existing_company:
+                link_partner(existing_company)
+                return {'success': True, 'action': act('res.partner', 'Azienda', res_id=existing_company.id)}
+            company = request.env['res.partner'].sudo().create({
+                'name': domain_company_name(sender_email),
+                'email': sender_email,
+                'is_company': True,
+            })
+            contact = partner if partner and not partner.is_company else find_contact_by_email(sender_email)
+            if contact and not contact.parent_id:
+                contact.sudo().write({'parent_id': company.id})
+                link_partner(contact)
+            else:
+                link_partner(company)
+            return {'success': True, 'action': act('res.partner', 'Azienda creata', res_id=company.id)}
 
         if service == 'create_lead':
             if not msg:
