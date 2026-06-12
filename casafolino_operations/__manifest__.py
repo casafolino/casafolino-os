@@ -8,8 +8,10 @@
     'data': [
         'security/ir.model.access.csv',
         'views/cf_production_views.xml',
+        'views/cf_raw_material_summary_views.xml',
         'views/cf_recall_views.xml',
         'views/cf_recall_wizard_views.xml',
+        'report/cf_raw_material_summary_report.xml',
         'views/menus.xml',
     ],
     'installable': True,

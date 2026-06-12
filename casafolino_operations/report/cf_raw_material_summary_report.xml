@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_cf_raw_material_summary" model="ir.actions.report">
+        <field name="name">Resoconto Materie Prime</field>
+        <field name="model">cf.raw.material.summary.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_operations.report_cf_raw_material_summary_template</field>
+        <field name="report_file">casafolino_operations.report_cf_raw_material_summary_template</field>
+        <field name="print_report_name">'Resoconto materie prime'</field>
+    </record>
+
+    <template id="report_cf_raw_material_summary_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Resoconto Materie Prime</h2>
+                        <p t-if="doc.sale_order_ids">
+                            <strong>Ordini vendita:</strong>
+                            <span t-esc="', '.join(doc.sale_order_ids.mapped('name'))"/>
+                        </p>
+                        <p>
+                            <strong>Ordini produzione:</strong>
+                            <span t-esc="', '.join(doc.production_ids.mapped('name'))"/>
+                        </p>
+                        <p t-if="doc.note">
+                            <span t-esc="doc.note"/>
+                        </p>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Materia prima</th>
+                                    <th class="text-end">Richiesta</th>
+                                    <th class="text-end">Disponibile</th>
+                                    <th class="text-end">Riservata</th>
+                                    <th class="text-end">Da acquistare</th>
+                                    <th>UdM</th>
+                                    <th>MO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td><span t-field="line.product_id"/></td>
+                                    <td class="text-end"><span t-field="line.required_qty"/></td>
+                                    <td class="text-end"><span t-field="line.available_qty"/></td>
+                                    <td class="text-end"><span t-field="line.reserved_qty"/></td>
+                                    <td class="text-end"><span t-field="line.purchase_qty"/></td>
+                                    <td><span t-field="line.product_uom_id"/></td>
+                                    <td><span t-field="line.production_names"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

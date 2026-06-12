@@ -4,3 +4,5 @@ access_cf_prod_job_mgr,cf.production.job manager,model_cf_production_job,base.gr
 access_cf_recall_session_user,cf.recall.session user,model_cf_recall_session,base.group_user,1,1,1,0
 access_cf_recall_session_mgr,cf.recall.session manager,model_cf_recall_session,base.group_system,1,1,1,1
 access_cf_recall_wizard_user,cf.recall.wizard user,model_cf_recall_wizard,base.group_user,1,1,1,1
+access_cf_raw_material_summary_wizard_user,cf.raw.material.summary.wizard user,model_cf_raw_material_summary_wizard,base.group_user,1,1,1,1
+access_cf_raw_material_summary_line_user,cf.raw.material.summary.line user,model_cf_raw_material_summary_line,base.group_user,1,1,1,1
