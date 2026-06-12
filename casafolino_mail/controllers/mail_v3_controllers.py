@@ -356,11 +356,15 @@ class MailV3Controller(http.Controller):
         subject = (msg.subject if msg else '') or thread.subject or sender_name or 'Email CasaFolino'
 
         def act(res_model, name, view_mode='form', res_id=False, domain=None, context=None, target='current'):
+            views = [[False, mode.strip()] for mode in (view_mode or 'form').split(',') if mode.strip()]
+            if not views:
+                views = [[False, 'form']]
             action = {
                 'type': 'ir.actions.act_window',
                 'name': name,
                 'res_model': res_model,
                 'view_mode': view_mode,
+                'views': views,
                 'target': target,
                 'context': context or {},
             }

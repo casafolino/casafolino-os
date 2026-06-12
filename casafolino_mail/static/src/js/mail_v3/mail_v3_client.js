@@ -391,7 +391,7 @@ export class MailV3Client extends Component {
                 message_id: msg ? msg.id : false,
             });
             if (res && res.success && res.action) {
-                this.actionService.doAction(res.action);
+                await this.actionService.doAction(res.action);
             } else if (res && res.error) {
                 this.notification.add(res.error, { type: 'warning' });
             }
