@@ -193,6 +193,7 @@
               onSnooze.bind="openSnoozePopup"
               onCreateLead.bind="onSenderCreateLead"
               onCreateProject.bind="onSenderCreateProject"
+              onOpenService.bind="openServiceAction"
               onDismissSender.bind="onQuickDismissSender"
               onDeleteEmail.bind="onDeleteEmail"/>
           </div>
@@ -214,26 +215,34 @@
       <main t-if="state.topView === 'crm'" class="mv3-cockpit-board">
         <section class="mv3-board-hero">
           <div><span>CRM/Pipeline</span><h2>Opportunita nate dalle email</h2></div>
-          <button class="mv3-cockpit-primary" t-on-click="() => this.openTopView('triage')"><i class="fa fa-inbox"/> Torna alla inbox</button>
+          <div class="mv3-board-actions">
+            <button class="mv3-cockpit-secondary" t-on-click="() => this.openServiceAction('create_lead')"><i class="fa fa-plus"/> Crea lead</button>
+            <button class="mv3-cockpit-primary" t-on-click="() => this.openServiceAction('pipeline')"><i class="fa fa-bullseye"/> Apri pipeline</button>
+            <button class="mv3-cockpit-primary" t-on-click="() => this.openTopView('triage')"><i class="fa fa-inbox"/> Torna alla inbox</button>
+          </div>
         </section>
         <section class="mv3-pipeline-board">
-          <div class="mv3-pipeline-col"><header>Da qualificare <strong>3</strong></header><article><strong t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().subject) || 'Seleziona una mail'"/><span>Contatto, azienda e dossier dalla conversazione.</span></article></div>
-          <div class="mv3-pipeline-col"><header>Qualifica <strong>5</strong></header><article><strong>Buyer / Export</strong><span>Attivita e ultimo follow-up collegati.</span></article></div>
-          <div class="mv3-pipeline-col"><header>Offerta <strong>2</strong></header><article><strong>Preventivo da inviare</strong><span>Apri composer da Odoo.</span></article></div>
-          <div class="mv3-pipeline-col"><header>Follow-up <strong>4</strong></header><article><strong>Nessuna risposta</strong><span>Snooze e attivita silenziose.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Da qualificare <strong>3</strong></header><article t-on-click="() => this.openServiceAction('pipeline')"><strong t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().subject) || 'Seleziona una mail'"/><span>Contatto, azienda e dossier dalla conversazione.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Qualifica <strong>5</strong></header><article t-on-click="() => this.openServiceAction('contact')"><strong>Buyer / Export</strong><span>Attivita e ultimo follow-up collegati.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Offerta <strong>2</strong></header><article t-on-click="openReplyFromSelected"><strong>Preventivo da inviare</strong><span>Apri composer da Odoo.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Follow-up <strong>4</strong></header><article t-on-click="() => this.openServiceAction('activity')"><strong>Nessuna risposta</strong><span>Snooze e attivita silenziose.</span></article></div>
         </section>
       </main>
 
       <main t-if="state.topView === 'dossier'" class="mv3-cockpit-board">
         <section class="mv3-board-hero mv3-board-hero--dossier">
           <div><span>Dossier</span><h2 t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().main_participant) || 'Fascicolo operativo'"/></div>
-          <button class="mv3-cockpit-primary" t-on-click="openReplyFromSelected"><i class="fa fa-reply"/> Rispondi in Odoo</button>
+          <div class="mv3-board-actions">
+            <button class="mv3-cockpit-secondary" t-on-click="() => this.openServiceAction('pipeline')"><i class="fa fa-bullseye"/> Pipeline</button>
+            <button class="mv3-cockpit-primary" t-on-click="() => this.openServiceAction('dossier')"><i class="fa fa-folder-open"/> Apri dossier</button>
+            <button class="mv3-cockpit-primary" t-on-click="openReplyFromSelected"><i class="fa fa-reply"/> Rispondi in Odoo</button>
+          </div>
         </section>
         <section class="mv3-dossier-grid">
-          <article><label>Mail collegate</label><strong t-out="state.messages.length || 0"/><span>Conversazione, allegati e storico.</span></article>
-          <article><label>Fase pipeline</label><strong>Da qualificare</strong><span>Aggiorna lead e prossima attivita.</span></article>
-          <article><label>Documenti</label><strong>Cataloghi / Offerte</strong><span>Collega file dal messaggio o dal CRM.</span></article>
-          <article><label>Azioni</label><button t-on-click="openReplyFromSelected">Composer</button><button t-on-click="() => this.openTopView('crm')">Pipeline</button></article>
+          <article t-on-click="() => this.openServiceAction('dossier')"><label>Mail collegate</label><strong t-out="state.messages.length || 0"/><span>Conversazione, allegati e storico.</span></article>
+          <article t-on-click="() => this.openServiceAction('pipeline')"><label>Fase pipeline</label><strong>Da qualificare</strong><span>Aggiorna lead e prossima attivita.</span></article>
+          <article t-on-click="() => this.openServiceAction('dossier')"><label>Documenti</label><strong>Cataloghi / Offerte</strong><span>Collega file dal messaggio o dal CRM.</span></article>
+          <article><label>Azioni</label><button t-on-click="openReplyFromSelected">Composer</button><button t-on-click="() => this.openServiceAction('pipeline')">Pipeline</button><button t-on-click="() => this.openServiceAction('activity')">Attivita</button></article>
         </section>
       </main>
 

@@ -312,12 +312,120 @@ class MailV3Controller(http.Controller):
                 'intent_detected': getattr(m, 'intent_detected', '') or '',
                 'partner_id': m.partner_id.id if m.partner_id else False,
                 'partner_name': m.partner_id.name if m.partner_id else '',
+                'lead_id': m.lead_id.id if m.lead_id else False,
+                'lead_name': m.lead_id.name if m.lead_id else '',
+                'cf_project_id': m.cf_project_id.id if m.cf_project_id else False,
+                'cf_project_name': m.cf_project_id.name if m.cf_project_id else '',
                 'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''}
                                     for a in m.attachment_ids],
                 'message_id_rfc': m.message_id_rfc or '',
             })
 
         return {'messages': result}
+
+    @http.route('/cf/mail/v3/thread/<int:thread_id>/service_action', type='json', auth='user')
+    def thread_service_action(self, thread_id, **kw):
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not self._check_thread_ownership(thread):
+            return {'success': False, 'error': 'Not your thread'}
+
+        service = kw.get('service') or ''
+        message_id = int(kw.get('message_id') or 0)
+        messages = thread.message_ids.filtered(lambda m: not m.is_deleted)
+        msg = messages.filtered(lambda m: m.id == message_id)[:1] if message_id else request.env['casafolino.mail.message']
+        if not msg:
+            msg = messages.filtered(lambda m: (m.direction_computed or m.direction) == 'inbound')[:1] or messages[:1]
+
+        partner = (msg.partner_id if msg else False) or thread.partner_ids[:1]
+        company = partner.commercial_partner_id if partner else request.env['res.partner']
+        sender_email = (msg.sender_email if msg else '') or ''
+        sender_name = (msg.sender_name if msg else '') or sender_email or (thread.main_participant or '')
+        subject = (msg.subject if msg else '') or thread.subject or sender_name or 'Email CasaFolino'
+
+        def act(res_model, name, view_mode='form', res_id=False, domain=None, context=None, target='current'):
+            action = {
+                'type': 'ir.actions.act_window',
+                'name': name,
+                'res_model': res_model,
+                'view_mode': view_mode,
+                'target': target,
+                'context': context or {},
+            }
+            if res_id:
+                action['res_id'] = res_id
+                action['views'] = [[False, 'form']]
+            if domain is not None:
+                action['domain'] = domain
+            return action
+
+        if service in ('contact', 'partner'):
+            if partner and not partner.is_company:
+                return {'success': True, 'action': act('res.partner', 'Contatto', res_id=partner.id)}
+            defaults = {'default_name': sender_name, 'default_email': sender_email, 'default_is_company': False}
+            if company:
+                defaults['default_parent_id'] = company.id
+            return {'success': True, 'action': act('res.partner', 'Crea contatto', context=defaults)}
+
+        if service == 'company':
+            if company:
+                return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
+            domain_name = sender_email.split('@')[-1].split('.')[0].title() if '@' in sender_email else sender_name
+            return {'success': True, 'action': act('res.partner', 'Crea azienda', context={
+                'default_name': domain_name,
+                'default_email': sender_email,
+                'default_is_company': True,
+            })}
+
+        if service == 'create_lead':
+            if not msg:
+                return {'success': False, 'error': 'Seleziona una mail prima di creare il lead'}
+            return {'success': True, 'action': act(
+                'casafolino.mail.create.lead.wizard',
+                'Crea lead da email',
+                target='new',
+                context={'default_message_id': msg.id},
+            )}
+
+        if service in ('pipeline', 'lead'):
+            if msg and msg.lead_id:
+                return {'success': True, 'action': act('crm.lead', 'Lead', res_id=msg.lead_id.id)}
+            lead_domain = [('type', '=', 'opportunity')]
+            if company:
+                lead_domain.append(('partner_id', 'child_of', company.id))
+            lead = request.env['crm.lead'].sudo().search(lead_domain, order='write_date desc, id desc', limit=1)
+            if lead:
+                return {'success': True, 'action': act('crm.lead', 'Pipeline', res_id=lead.id)}
+            return {'success': True, 'action': act('crm.lead', 'Pipeline CasaFolino', view_mode='kanban,list,form', domain=lead_domain, context={
+                'default_type': 'opportunity',
+                'default_partner_id': partner.id if partner else False,
+                'default_name': subject,
+                'default_email_from': sender_email,
+            })}
+
+        if service == 'dossier':
+            if msg and msg.cf_project_id:
+                return {'success': True, 'action': act('project.project', 'Dossier', res_id=msg.cf_project_id.id)}
+            dossier_domain = [('cf_status_dossier', '!=', False)]
+            if company:
+                dossier_domain.append(('partner_id', 'child_of', company.id))
+            project = request.env['project.project'].sudo().search(dossier_domain, order='write_date desc, id desc', limit=1)
+            if project:
+                return {'success': True, 'action': act('project.project', 'Dossier', res_id=project.id)}
+            return {'success': True, 'action': act('project.project', 'Dossier CasaFolino', view_mode='list,form', domain=dossier_domain, context={
+                'default_cf_status_dossier': 'exploration',
+                'default_partner_id': partner.id if partner else False,
+                'default_name': subject,
+            })}
+
+        if service == 'activity':
+            model_id = request.env['ir.model']._get_id('casafolino.mail.thread')
+            return {'success': True, 'action': act('mail.activity', 'Nuova attivita', target='new', context={
+                'default_res_model_id': model_id,
+                'default_res_id': thread.id,
+                'default_summary': subject,
+            })}
+
+        return {'success': False, 'error': 'Servizio non riconosciuto'}
 
     @http.route('/cf/mail/v3/thread/<int:thread_id>/mark_all_read', type='json', auth='user')
     def thread_mark_all_read(self, thread_id, **kw):

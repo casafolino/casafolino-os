@@ -378,16 +378,37 @@ export class MailV3Client extends Component {
         ) || (this.state.messages || [])[0] || null;
     }
 
-    onThreadService(threadId, service) {
+    async openServiceAction(service, msgId = null) {
+        if (!this.state.selectedThreadId) return;
+        if (service === 'composer') {
+            this.openReplyFromSelected();
+            return;
+        }
+        try {
+            const msg = msgId ? { id: msgId } : this.getSelectedMessage();
+            const res = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/service_action', {
+                service,
+                message_id: msg ? msg.id : false,
+            });
+            if (res && res.success && res.action) {
+                this.actionService.doAction(res.action);
+            } else if (res && res.error) {
+                this.notification.add(res.error, { type: 'warning' });
+            }
+        } catch (e) {
+            console.error('[mail v3] service action error:', e);
+            this.notification.add('Azione servizio non disponibile', { type: 'danger' });
+        }
+    }
+
+    async onThreadService(threadId, service) {
         if (threadId && this.state.selectedThreadId !== threadId) {
-            this.selectThread(threadId);
+            await this.selectThread(threadId);
         }
         if (service === 'composer') {
-            setTimeout(() => this.openReplyFromSelected(), 250);
-        } else if (service === 'dossier') {
-            this.state.topView = 'dossier';
-        } else if (service === 'pipeline') {
-            this.state.topView = 'crm';
+            this.openReplyFromSelected();
+        } else {
+            await this.openServiceAction(service);
         }
     }
 
@@ -1253,39 +1274,14 @@ export class MailV3Client extends Component {
         this.loadThreads();
     }
 
-    onSenderCreateLead() {
+    async onSenderCreateLead() {
         this.state.senderDecisionVisible = false;
-        const partnerId = this.state.selectedPartner;
-        const threadId = this.state.selectedThreadId;
-        this.actionService.doAction({
-            type: 'ir.actions.act_window',
-            res_model: 'casafolino.mail.create.lead.wizard',
-            view_mode: 'form',
-            views: [[false, 'form']],
-            target: 'new',
-            context: {
-                default_partner_id: partnerId || false,
-                default_thread_id: threadId || false,
-            },
-        });
+        await this.openServiceAction('create_lead');
     }
 
-    onSenderCreateProject() {
+    async onSenderCreateProject() {
         this.state.senderDecisionVisible = false;
-        const email = this.state.senderDecisionEmail;
-        const threadId = this.state.selectedThreadId;
-        const partnerId = this.state.selectedPartner;
-        this.actionService.doAction({
-            type: 'ir.actions.act_window',
-            res_model: 'cf.initiative',
-            views: [[false, 'form']],
-            target: 'current',
-            context: {
-                default_source_email: email,
-                default_source_thread_id: threadId,
-                default_partner_id: partnerId || false,
-            },
-        });
+        await this.openServiceAction('dossier');
     }
 
     // ── Quick Action: Dismiss current sender from reading pane ──
