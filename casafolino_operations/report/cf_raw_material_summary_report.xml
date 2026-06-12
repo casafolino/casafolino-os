@@ -63,10 +63,10 @@
                                 <tr t-foreach="doc.line_ids.filtered('need_purchase')" t-as="line">
                                     <td><span t-esc="line.product_code"/></td>
                                     <td><span t-field="line.product_id"/></td>
-                                    <td class="text-end cf-shortage"><span t-field="line.purchase_qty"/></td>
-                                    <td><span t-field="line.product_uom_id"/></td>
-                                    <td class="text-end"><span t-field="line.required_qty"/></td>
-                                    <td class="text-end"><span t-field="line.available_qty"/></td>
+                                    <td class="text-end cf-shortage"><span t-esc="line.purchase_qty_display"/></td>
+                                    <td><span t-esc="line.display_uom_name"/></td>
+                                    <td class="text-end"><span t-esc="line.required_qty_display"/></td>
+                                    <td class="text-end"><span t-esc="line.available_qty_display"/></td>
                                     <td><span t-field="line.production_summary"/></td>
                                 </tr>
                                 <tr t-if="not doc.line_ids.filtered('need_purchase')">
@@ -96,10 +96,10 @@
                                     </td>
                                     <td><span t-esc="line.product_code"/></td>
                                     <td><span t-field="line.product_id"/></td>
-                                    <td class="text-end"><span t-field="line.required_qty"/></td>
-                                    <td class="text-end"><span t-field="line.available_qty"/></td>
-                                    <td class="text-end"><span t-field="line.purchase_qty"/></td>
-                                    <td><span t-field="line.product_uom_id"/></td>
+                                    <td class="text-end"><span t-esc="line.required_qty_display"/></td>
+                                    <td class="text-end"><span t-esc="line.available_qty_display"/></td>
+                                    <td class="text-end"><span t-esc="line.purchase_qty_display"/></td>
+                                    <td><span t-esc="line.display_uom_name"/></td>
                                 </tr>
                             </tbody>
                         </table>
