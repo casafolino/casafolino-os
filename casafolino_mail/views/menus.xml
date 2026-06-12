@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_casafolino_mail_root"
-        name="Mail CRM"
+        name="Mail Inbox V2"
         sequence="15"
-        web_icon="casafolino_mail,static/description/icon.png"/>
+        web_icon="casafolino_mail,static/description/icon_new.png"/>
 
     <menuitem id="menu_casafolino_mail_my_mailbox"
-        name="La Mia Casella"
+        name="Inbox V2"
         parent="menu_casafolino_mail_root"
         sequence="0"
         action="action_mail_v3_client"/>
