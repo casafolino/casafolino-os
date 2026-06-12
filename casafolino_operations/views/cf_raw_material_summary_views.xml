@@ -38,9 +38,7 @@
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_cf_raw_material_summary_wizard_form"/>
         <field name="target">new</field>
-        <field name="context">{'active_model': 'mrp.production'}</field>
-        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
-        <field name="binding_view_types">list,form</field>
+        <field name="binding_model_id" eval="False"/>
     </record>
 
     <record id="action_cf_raw_material_summary_sale" model="ir.actions.act_window">
@@ -49,8 +47,46 @@
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_cf_raw_material_summary_wizard_form"/>
         <field name="target">new</field>
-        <field name="context">{'active_model': 'sale.order'}</field>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+    <record id="action_cf_raw_material_summary_mrp_server" model="ir.actions.server">
+        <field name="name">Resoconto Materie Prime</field>
+        <field name="model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = {
+    "type": "ir.actions.act_window",
+    "name": "Resoconto Materie Prime",
+    "res_model": "cf.raw.material.summary.wizard",
+    "view_mode": "form",
+    "view_id": env.ref("casafolino_operations.view_cf_raw_material_summary_wizard_form").id,
+    "target": "new",
+    "context": {
+        "active_model": "mrp.production",
+        "active_ids": records.ids,
+    },
+}</field>
+    </record>
+
+    <record id="action_cf_raw_material_summary_sale_server" model="ir.actions.server">
+        <field name="name">Resoconto Materie Prime</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = {
+    "type": "ir.actions.act_window",
+    "name": "Resoconto Materie Prime",
+    "res_model": "cf.raw.material.summary.wizard",
+    "view_mode": "form",
+    "view_id": env.ref("casafolino_operations.view_cf_raw_material_summary_wizard_form").id,
+    "target": "new",
+    "context": {
+        "active_model": "sale.order",
+        "active_ids": records.ids,
+    },
+}</field>
     </record>
 </odoo>
