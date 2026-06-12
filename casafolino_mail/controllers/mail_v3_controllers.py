@@ -152,7 +152,17 @@ class MailV3Controller(http.Controller):
             domain.append(('is_snoozed', '=', True))
         elif folder == 'trash':
             domain = [d for d in domain if d[0] != 'is_archived']
-            domain.append(('is_archived', '=', True))
+            trash_msgs = request.env['casafolino.mail.message'].search([
+                ('account_id', 'in', account_ids),
+                ('is_deleted', '=', True),
+            ])
+            domain.append(('id', 'in', trash_msgs.mapped('thread_id').ids or [0]))
+        else:
+            visible_msgs = request.env['casafolino.mail.message'].search([
+                ('account_id', 'in', account_ids),
+                ('is_deleted', '=', False),
+            ])
+            domain.append(('id', 'in', visible_msgs.mapped('thread_id').ids or [0]))
 
         # V14: Folder-based filtering (numeric folder_id)
         folder_id = kw.get('folder_id')
@@ -181,10 +191,12 @@ class MailV3Controller(http.Controller):
             external = [p for p in participants if company_domain not in p]
             main_participant = external[0] if external else (participants[0] if participants else '')
 
-            last_msg = request.env['casafolino.mail.message'].search([
-                ('thread_id', '=', t.id),
-                ('is_deleted', '=', False),
-            ], order='email_date desc', limit=1)
+            last_msg_domain = [('thread_id', '=', t.id)]
+            if folder == 'trash':
+                last_msg_domain.append(('is_deleted', '=', True))
+            else:
+                last_msg_domain.append(('is_deleted', '=', False))
+            last_msg = request.env['casafolino.mail.message'].search(last_msg_domain, order='email_date desc', limit=1)
 
             preview = ''
             if last_msg and last_msg.snippet:
@@ -231,7 +243,7 @@ class MailV3Controller(http.Controller):
                 lead_open = bool(lead)
 
             # Badge data: keep state and lead name from messages
-            active_msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            active_msgs = t.message_ids.filtered(lambda m: m.is_deleted) if folder == 'trash' else t.message_ids.filtered(lambda m: not m.is_deleted)
             has_keep_message = any(
                 m.state in ('keep', 'auto_keep') for m in active_msgs
             )
@@ -482,11 +494,20 @@ class MailV3Controller(http.Controller):
         if not msg:
             return {'success': False, 'error': 'Message not found or no access'}
         thread = msg.thread_id
-        msg.unlink()
-        thread_deleted = False
-        if thread and thread.exists() and not thread.message_ids:
-            thread.unlink()
-            thread_deleted = True
+        trash_folder = request.env['casafolino.mail.folder'].search([
+            ('account_id', '=', msg.account_id.id),
+            ('system_code', '=', 'trash'),
+        ], limit=1)
+        vals = {
+            'is_deleted': True,
+            'is_deleted_at': fields.Datetime.now(),
+        }
+        if trash_folder:
+            vals['folder_id'] = trash_folder.id
+        msg.write(vals)
+        if thread and thread.exists():
+            thread._recompute_aggregates()
+        thread_deleted = bool(thread and thread.exists() and not thread.message_ids.filtered(lambda m: not m.is_deleted))
         return {'success': True, 'thread_deleted': thread_deleted}
 
     # ── Draft CRUD ───────────────────────────────────────────────────

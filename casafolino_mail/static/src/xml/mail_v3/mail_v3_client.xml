@@ -145,7 +145,7 @@
         </div>
 
         <!-- Thread list -->
-        <div t-if="!state.searchResults">
+        <div t-if="!state.searchResults" class="mv3-thread-list-host">
           <ThreadList
             threads="state.threads"
             accounts="state.accounts"
