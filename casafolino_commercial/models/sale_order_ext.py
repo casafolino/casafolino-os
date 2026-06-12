@@ -137,3 +137,9 @@ class SaleOrderExt(models.Model):
                 'default_discount': self.order_line[0].discount if self.order_line else 0,
             },
         }
+
+    def action_print_internal_no_prices(self):
+        self.ensure_one()
+        return self.env.ref(
+            'casafolino_commercial.action_report_sale_order_internal_no_prices'
+        ).report_action(self)

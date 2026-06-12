@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_sale_order_internal_no_prices" model="ir.actions.report">
+        <field name="name">Produzione / Magazzino senza prezzi</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">casafolino_commercial.report_sale_order_internal_no_prices</field>
+        <field name="report_file">casafolino_commercial.report_sale_order_internal_no_prices</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Scheda produzione magazzino - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_sale_order_internal_no_prices">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-4">
+                            <div class="col-7">
+                                <h2 class="mb-1">
+                                    <span t-if="doc.state in ('draft', 'sent')">Preventivo</span>
+                                    <span t-else="">Ordine</span>
+                                    <span> per produzione/magazzino</span>
+                                </h2>
+                                <div class="text-muted">Documento interno senza prezzi</div>
+                            </div>
+                            <div class="col-5 text-end">
+                                <h3 class="mb-1" t-field="doc.name"/>
+                                <div t-if="doc.date_order">
+                                    <strong>Data:</strong>
+                                    <span t-field="doc.date_order" t-options="{'widget': 'date'}"/>
+                                </div>
+                                <div t-if="doc.commitment_date">
+                                    <strong>Consegna richiesta:</strong>
+                                    <span t-field="doc.commitment_date" t-options="{'widget': 'date'}"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>Cliente</strong>
+                                <div t-field="doc.partner_id"
+                                     t-options="{'widget': 'contact', 'fields': ['name', 'address'], 'no_marker': True}"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Destinazione</strong>
+                                <div t-field="doc.partner_shipping_id"
+                                     t-options="{'widget': 'contact', 'fields': ['name', 'address'], 'no_marker': True}"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 13%;">Codice</th>
+                                    <th>Prodotto / descrizione</th>
+                                    <th class="text-end" style="width: 15%;">Quantita</th>
+                                    <th style="width: 14%;">U.M.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.order_line" t-as="line">
+                                    <tr t-if="line.display_type == 'line_section'" class="table-secondary">
+                                        <td colspan="4">
+                                            <strong t-field="line.name"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-elif="line.display_type == 'line_note'">
+                                        <td colspan="4">
+                                            <em t-field="line.name"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-else="">
+                                        <td>
+                                            <span t-if="line.product_id.default_code" t-field="line.product_id.default_code"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="line.name"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.product_uom_qty"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="line.product_uom"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt-4" t-if="doc.note">
+                            <div class="col-12">
+                                <strong>Note operative</strong>
+                                <div class="mt-2" t-field="doc.note"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
