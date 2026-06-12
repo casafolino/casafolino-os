@@ -177,6 +177,13 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
             available_qty = product.uom_id._compute_quantity(product.qty_available, uom)
             purchase_qty = max(values["required_qty"] - available_qty, 0.0)
             production_names = sorted(values["production_names"])
+            display_values = self._prepare_display_quantities(
+                uom,
+                values["required_qty"],
+                available_qty,
+                values["reserved_qty"],
+                purchase_qty,
+            )
             lines.append({
                 "product_id": product.id,
                 "product_code": product.default_code or "",
@@ -191,9 +198,69 @@ class CfRawMaterialSummaryWizard(models.TransientModel):
                 "source_count": values["source_count"],
                 "production_summary": self._short_origin_summary(production_names),
                 "production_names": ", ".join(production_names),
+                **display_values,
             })
 
         return sorted(lines, key=lambda vals: vals["purchase_qty"], reverse=True)
+
+    @api.model
+    def _prepare_display_quantities(self, uom, required_qty, available_qty, reserved_qty, purchase_qty):
+        display_uom = self._display_uom(uom)
+        quantities = {
+            "required_qty": required_qty,
+            "available_qty": available_qty,
+            "reserved_qty": reserved_qty,
+            "purchase_qty": purchase_qty,
+        }
+        if display_uom != uom:
+            quantities = {
+                key: uom._compute_quantity(value, display_uom)
+                for key, value in quantities.items()
+            }
+
+        unit_like = self._is_unit_uom(display_uom)
+        return {
+            "display_uom_name": display_uom.name,
+            "required_qty_display": self._format_display_qty(quantities["required_qty"], unit_like),
+            "available_qty_display": self._format_display_qty(quantities["available_qty"], unit_like),
+            "reserved_qty_display": self._format_display_qty(quantities["reserved_qty"], unit_like),
+            "purchase_qty_display": self._format_display_qty(quantities["purchase_qty"], unit_like),
+        }
+
+    @api.model
+    def _display_uom(self, uom):
+        if not self._is_gram_uom(uom):
+            return uom
+        kg_uom = self.env["uom.uom"].search([
+            ("category_id", "=", uom.category_id.id),
+            ("name", "in", ["kg", "Kg", "KG", "Kilogram", "Kilograms", "Chilogrammo", "Chilogrammi"]),
+        ], limit=1)
+        if kg_uom:
+            return kg_uom
+        return uom
+
+    @api.model
+    def _is_gram_uom(self, uom):
+        name = (uom.name or "").strip().lower()
+        return name in {"g", "gr", "gram", "grams", "grammo", "grammi"}
+
+    @api.model
+    def _is_unit_uom(self, uom):
+        name = (uom.name or "").strip().lower()
+        category = (uom.category_id.name or "").strip().lower()
+        return (
+            name in {"unit", "units", "unita", "unità", "pz", "pezzo", "pezzi"}
+            or category in {"unit", "units", "unita", "unità"}
+        )
+
+    @api.model
+    def _format_display_qty(self, qty, unit_like=False):
+        if unit_like:
+            return str(int(round(qty or 0.0)))
+        value = f"{qty or 0.0:.3f}".rstrip("0").rstrip(".")
+        if value == "-0":
+            value = "0"
+        return value.replace(".", ",")
 
     @api.model
     def _short_origin_summary(self, production_names):
@@ -285,6 +352,11 @@ class CfRawMaterialSummaryLine(models.TransientModel):
         digits="Product Unit of Measure",
         readonly=True,
     )
+    required_qty_display = fields.Char(string="Serve", readonly=True)
+    available_qty_display = fields.Char(string="In magazzino", readonly=True)
+    reserved_qty_display = fields.Char(string="Gia riservata", readonly=True)
+    purchase_qty_display = fields.Char(string="Da acquistare", readonly=True)
+    display_uom_name = fields.Char(string="UdM", readonly=True)
     need_purchase = fields.Boolean(string="Da acquistare", readonly=True)
     availability_state = fields.Selection(
         [("shortage", "Da acquistare"), ("covered", "Coperto")],

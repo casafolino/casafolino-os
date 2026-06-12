@@ -14,10 +14,10 @@
                                 <list create="0" edit="0" delete="0" default_order="purchase_qty desc">
                                     <field name="product_code" optional="show"/>
                                     <field name="product_id"/>
-                                    <field name="purchase_qty" sum="Totale da acquistare"/>
-                                    <field name="product_uom_id"/>
-                                    <field name="required_qty" optional="show"/>
-                                    <field name="available_qty" optional="show"/>
+                                    <field name="purchase_qty_display"/>
+                                    <field name="display_uom_name"/>
+                                    <field name="required_qty_display" optional="show"/>
+                                    <field name="available_qty_display" optional="show"/>
                                     <field name="production_summary"/>
                                 </list>
                             </field>
@@ -30,11 +30,11 @@
                                     <field name="availability_state" widget="badge"/>
                                     <field name="product_code" optional="show"/>
                                     <field name="product_id"/>
-                                    <field name="required_qty" sum="Totale serve"/>
-                                    <field name="available_qty"/>
-                                    <field name="reserved_qty" optional="hide"/>
-                                    <field name="purchase_qty" sum="Totale da acquistare"/>
-                                    <field name="product_uom_id"/>
+                                    <field name="required_qty_display"/>
+                                    <field name="available_qty_display"/>
+                                    <field name="reserved_qty_display" optional="hide"/>
+                                    <field name="purchase_qty_display"/>
+                                    <field name="display_uom_name"/>
                                     <field name="source_count" optional="hide"/>
                                     <field name="production_summary"/>
                                 </list>
@@ -48,8 +48,8 @@
                             <field name="line_ids" nolabel="1">
                                 <list create="0" edit="0" delete="0">
                                     <field name="product_id"/>
-                                    <field name="required_qty"/>
-                                    <field name="product_uom_id"/>
+                                    <field name="required_qty_display"/>
+                                    <field name="display_uom_name"/>
                                     <field name="production_names"/>
                                 </list>
                             </field>
