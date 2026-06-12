@@ -70,6 +70,10 @@
                 <i class="fa fa-folder-open"/>
                 <span class="cf-qa-label">Nuovo Dossier</span>
             </button>
+            <button t-on-click="onOpenMailInbox" class="cf-qa cf-qa-primary-mail">
+                <i class="fa fa-inbox"/>
+                <span class="cf-qa-label">Mail Inbox V2</span>
+            </button>
             <button t-on-click="onNewLead" class="cf-qa">
                 <i class="fa fa-bullseye"/>
                 <span class="cf-qa-label">Nuovo Lead</span>
@@ -164,6 +168,11 @@
 
             <p class="cf-section-label">Sezioni</p>
             <div class="cf-sections-grid">
+                <div t-on-click="onOpenMailInbox" class="cf-section-card">
+                    <i class="fa fa-inbox cf-section-icon" style="color: #246B4F;"/>
+                    <p class="cf-section-title">Mail Inbox V2</p>
+                    <p class="cf-section-subtitle">Mail, composer e servizi CRM</p>
+                </div>
                 <div t-on-click="onOpenPipeline" class="cf-section-card">
                     <i class="fa fa-tasks cf-section-icon" style="color: #2E5AAC;"/>
                     <p class="cf-section-title">Pipeline Lead</p>

@@ -8,6 +8,7 @@ import { registry } from "@web/core/registry";
 const CLUSTERS = ["crm", "produzione", "haccp", "tesoreria"];
 const QUICK_LINKS = [
     { id: "home", label: "Home", action: "onSwitchCRM" },
+    { id: "mail", label: "Mail", action: "onOpenMailInbox" },
     { id: "pipeline", label: "Pipeline", action: "onOpenPipeline" },
     { id: "projects", label: "Dossier", action: "onOpenProjects" },
     { id: "fairs", label: "Fiere", action: "onOpenFairs" },
@@ -217,6 +218,19 @@ export class CFWorkspace extends Component {
                 res_model: "project.project",
                 views: [[false, "kanban"], [false, "list"], [false, "form"]],
                 domain: [["cf_status_dossier", "!=", false]],
+                target: "current",
+            });
+        }
+    }
+
+    async onOpenMailInbox() {
+        try {
+            await this.action.doAction("casafolino_mail.action_mail_v3_client");
+        } catch {
+            await this.action.doAction({
+                type: "ir.actions.client",
+                name: "Mail Inbox V2",
+                tag: "cf_mail_v3_client",
                 target: "current",
             });
         }
