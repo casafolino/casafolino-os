@@ -88,27 +88,22 @@ export class CFScrivaniaCommerciale extends Component {
 
     async onOpenPosizionatore() {
         try {
-            await this.action.doAction("casafolino_mail.action_cf_mail_posizionatore");
+            await this.action.doAction("casafolino_mail.action_mail_v3_client");
         } catch {
             await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "casafolino.mail.message",
-                views: [[false, "list"], [false, "form"]],
-                domain: [["cf_project_id", "=", false], ["partner_id", "!=", false]],
-                target: "current",
+                type: "ir.actions.client",
+                tag: "cf_mail_v3_client",
             });
         }
     }
 
     async onOpenMiaCasella() {
         try {
-            await this.action.doAction("casafolino_mail.action_casafolino_mail_my_mailbox");
+            await this.action.doAction("casafolino_mail.action_mail_v3_client");
         } catch {
             await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "casafolino.mail.message",
-                views: [[false, "list"], [false, "form"]],
-                target: "current",
+                type: "ir.actions.client",
+                tag: "cf_mail_v3_client",
             });
         }
     }
