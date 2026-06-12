@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from email.utils import getaddresses
 from datetime import timedelta
 
 from odoo import http, fields
@@ -12,6 +13,17 @@ _SUBJECT_PREFIX_RE = re.compile(
     r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
     re.IGNORECASE,
 )
+
+_PUBLIC_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'hotmail.it',
+    'hotmail.co.uk', 'live.com', 'live.it', 'msn.com', 'yahoo.com', 'yahoo.it',
+    'yahoo.co.uk', 'yahoo.de', 'yahoo.fr', 'yahoo.es', 'icloud.com', 'me.com',
+    'mac.com', 'libero.it', 'virgilio.it', 'alice.it', 'tin.it', 'tim.it',
+    'tiscali.it', 'aol.com', 'protonmail.com', 'mail.com', 'gmx.com', 'gmx.de',
+    'web.de', 't-online.de', 'freenet.de', 'arcor.de', 'orange.fr',
+    'wanadoo.fr', 'free.fr', 'laposte.net', 'pec.it', 'legalmail.it',
+    'arubapec.it', 'postecert.it',
+}
 
 
 def _normalize_subject(subject):
@@ -372,6 +384,60 @@ class MailV3Controller(http.Controller):
         sender_name = (msg.sender_name if msg else '') or sender_email or (participants[0] if participants else '')
         subject = (msg.subject if msg else '') or thread.subject or sender_name or 'Email CasaFolino'
 
+        def clean_email(email):
+            email = (email or '').strip().lower()
+            if '<' in email or '>' in email:
+                parsed = getaddresses([email])
+                email = parsed[0][1].strip().lower() if parsed else email
+            return email if '@' in email else ''
+
+        internal_domains = set(
+            request.env['casafolino.mail.message']._get_internal_domains()
+        )
+
+        def email_domain(email):
+            email = clean_email(email)
+            return email.split('@')[-1] if '@' in email else ''
+
+        def is_business_domain(domain):
+            domain = (domain or '').lower().strip()
+            return bool(domain and domain not in internal_domains and domain not in _PUBLIC_EMAIL_DOMAINS)
+
+        def parse_email_list(raw):
+            pairs = []
+            for name, email in getaddresses([raw or '']):
+                email = clean_email(email)
+                if email:
+                    pairs.append((name.strip(), email))
+            return pairs
+
+        def thread_people():
+            people = {}
+            for item in messages:
+                pairs = []
+                if item.sender_email:
+                    pairs.append((item.sender_name or '', item.sender_email))
+                pairs += parse_email_list(item.recipient_emails)
+                pairs += parse_email_list(item.cc_emails)
+                for name, email in pairs:
+                    email = clean_email(email)
+                    domain = email_domain(email)
+                    if not email or domain in internal_domains:
+                        continue
+                    people.setdefault(email, {
+                        'email': email,
+                        'name': name or email.split('@')[0],
+                        'domain': domain,
+                    })
+            return list(people.values())
+
+        people = thread_people()
+        sender_email = clean_email(sender_email)
+        sender_domain = email_domain(sender_email)
+        business_domain = sender_domain if is_business_domain(sender_domain) else ''
+        if not business_domain:
+            business_domain = next((p['domain'] for p in people if is_business_domain(p['domain'])), '')
+
         def link_partner(partner_record):
             if not partner_record:
                 return
@@ -391,23 +457,116 @@ class MailV3Controller(http.Controller):
                 ('is_company', '=', False),
             ], limit=1)
 
-        def domain_company_name(email):
-            if '@' not in (email or ''):
+        def domain_company_name(domain):
+            if not domain:
                 return sender_name or subject
-            domain = email.split('@')[-1].lower().strip()
             root = domain.split('.')[0]
             return root.replace('-', ' ').replace('_', ' ').title() or domain
 
-        def find_company_for_email(email):
-            if not email or '@' not in email:
+        def find_company_for_domain(domain):
+            if not is_business_domain(domain):
                 return request.env['res.partner']
-            domain = email.split('@')[-1].lower().strip()
-            return request.env['res.partner'].sudo().search([
+            Partner = request.env['res.partner'].sudo()
+            company = Partner.search([
                 ('is_company', '=', True),
                 '|',
                 ('email', '=ilike', '%@' + domain),
                 ('website', 'ilike', domain),
             ], limit=1)
+            if company:
+                return company
+            contact = Partner.search([
+                ('email', '=ilike', '%@' + domain),
+                ('is_company', '=', False),
+                ('parent_id', '!=', False),
+            ], limit=1)
+            if contact and contact.parent_id:
+                return contact.parent_id.commercial_partner_id or contact.parent_id
+            root_contact = Partner.search([
+                ('email', '=ilike', '%@' + domain),
+                ('is_company', '=', False),
+                ('parent_id', '=', False),
+            ], limit=1)
+            if root_contact and root_contact.commercial_partner_id and root_contact.commercial_partner_id.is_company:
+                return root_contact.commercial_partner_id
+            return request.env['res.partner']
+
+        def ensure_company_for_domain(domain):
+            if not is_business_domain(domain):
+                return request.env['res.partner']
+            existing = find_company_for_domain(domain)
+            if existing:
+                return existing
+            return request.env['res.partner'].sudo().create({
+                'name': domain_company_name(domain),
+                'email': sender_email if email_domain(sender_email) == domain else False,
+                'website': domain,
+                'is_company': True,
+            })
+
+        def ensure_contact(email, name, company_record):
+            email = clean_email(email)
+            if not email:
+                return request.env['res.partner']
+            contact = find_contact_by_email(email)
+            vals = {}
+            if contact:
+                if company_record and contact.parent_id != company_record:
+                    vals['parent_id'] = company_record.id
+                if name and (not contact.name or contact.name == email):
+                    vals['name'] = name
+                if vals:
+                    contact.write(vals)
+                return contact
+            vals = {
+                'name': name or email.split('@')[0],
+                'email': email,
+                'is_company': False,
+                'type': 'contact',
+            }
+            if company_record:
+                vals['parent_id'] = company_record.id
+            return request.env['res.partner'].sudo().create(vals)
+
+        def link_domain_to_crm(company_record, contact_records):
+            partners_to_link = request.env['res.partner']
+            if company_record:
+                partners_to_link |= company_record
+            partners_to_link |= contact_records
+            if partners_to_link:
+                missing = [p.id for p in partners_to_link if p.id not in thread.partner_ids.ids]
+                if missing:
+                    thread.write({'partner_ids': [(4, pid) for pid in missing]})
+            if business_domain:
+                domain_msgs = request.env['casafolino.mail.message'].sudo().search([
+                    ('account_id', '=', thread.account_id.id),
+                    ('is_deleted', '=', False),
+                    '|', '|', '|',
+                    ('sender_domain', '=', business_domain),
+                    ('sender_email', '=ilike', '%@' + business_domain),
+                    ('recipient_emails', 'ilike', business_domain),
+                    ('cc_emails', 'ilike', business_domain),
+                ], limit=500)
+                contact_by_email = {c.email.lower(): c for c in contact_records if c.email}
+                for item in domain_msgs:
+                    item_sender = clean_email(item.sender_email)
+                    contact = contact_by_email.get(item_sender)
+                    if contact:
+                        item.write({'partner_id': contact.id})
+                    elif company_record and not item.partner_id:
+                        item.write({'partner_id': company_record.id})
+
+        def ensure_domain_network():
+            company_record = ensure_company_for_domain(business_domain)
+            contacts = request.env['res.partner']
+            for person in people:
+                if person['domain'] != business_domain:
+                    continue
+                contacts |= ensure_contact(person['email'], person['name'], company_record)
+            if sender_email and email_domain(sender_email) == business_domain:
+                contacts |= ensure_contact(sender_email, sender_name, company_record)
+            link_domain_to_crm(company_record, contacts)
+            return company_record, contacts
 
         def act(res_model, name, view_mode='form', res_id=False, domain=None, context=None, target='current'):
             views = [[False, mode.strip()] for mode in (view_mode or 'form').split(',') if mode.strip()]
@@ -430,6 +589,13 @@ class MailV3Controller(http.Controller):
             return action
 
         if service in ('contact', 'partner'):
+            if business_domain:
+                company, contacts = ensure_domain_network()
+                contact = contacts.filtered(lambda c: clean_email(c.email) == sender_email)[:1] or contacts[:1]
+                if contact:
+                    return {'success': True, 'action': act('res.partner', 'Contatto', res_id=contact.id)}
+                if company:
+                    return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
             if partner and not partner.is_company:
                 link_partner(partner)
                 return {'success': True, 'action': act('res.partner', 'Contatto', res_id=partner.id)}
@@ -449,15 +615,35 @@ class MailV3Controller(http.Controller):
             return {'success': True, 'action': act('res.partner', 'Contatto creato', res_id=contact.id)}
 
         if service == 'company':
+            if business_domain:
+                company, contacts = ensure_domain_network()
+                if company:
+                    return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
+                contact = contacts[:1]
+                if contact:
+                    return {'success': True, 'action': act('res.partner', 'Contatto', res_id=contact.id)}
             if company:
                 link_partner(company)
                 return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
-            existing_company = find_company_for_email(sender_email)
+            if not is_business_domain(sender_domain):
+                contact = find_contact_by_email(sender_email)
+                if not contact and sender_email:
+                    contact = request.env['res.partner'].sudo().create({
+                        'name': sender_name or sender_email.split('@')[0],
+                        'email': sender_email,
+                        'is_company': False,
+                        'type': 'contact',
+                    })
+                if contact:
+                    link_partner(contact)
+                    return {'success': True, 'action': act('res.partner', 'Contatto', res_id=contact.id)}
+                return {'success': False, 'error': 'Dominio aziendale non riconosciuto'}
+            existing_company = find_company_for_domain(sender_domain)
             if existing_company:
                 link_partner(existing_company)
                 return {'success': True, 'action': act('res.partner', 'Azienda', res_id=existing_company.id)}
             company = request.env['res.partner'].sudo().create({
-                'name': domain_company_name(sender_email),
+                'name': domain_company_name(sender_domain),
                 'email': sender_email,
                 'is_company': True,
             })
