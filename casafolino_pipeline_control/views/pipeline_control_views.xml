@@ -380,6 +380,12 @@
         <field name="context">{'default_view': 'dossiers'}</field>
     </record>
 
+    <record id="action_cf_pipeline_tasks" model="ir.actions.client">
+        <field name="name">Sala Controllo</field>
+        <field name="tag">casafolino_pipeline_control</field>
+        <field name="context">{'default_view': 'control'}</field>
+    </record>
+
     <record id="casafolino_crm_export.action_project_dashboard_360" model="ir.actions.client">
         <field name="name">Dossier / Progetti</field>
         <field name="tag">casafolino_pipeline_control</field>
