@@ -12,7 +12,10 @@
       <div t-if="!props.loading and props.messages and props.messages.length > 0" class="mv3-reading-pane__content">
         <!-- Header -->
         <div class="mv3-reading-pane__header">
-          <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
+          <div>
+            <div class="mv3-reading-pane__eyebrow">Mail aperta</div>
+            <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
+          </div>
           <t t-set="timeGap" t-value="this.getTimeGap()"/>
           <div t-if="timeGap" t-att-class="'mv3-time-gap mv3-time-gap--' + timeGap.severity">
             <t t-out="timeGap.icon + ' ' + timeGap.text"/>
@@ -53,6 +56,14 @@
               </div>
               <!-- V12.7: Quick actions — 3 grouped button bars -->
               <div class="mv3-quick-actions">
+                <div class="mv3-service-grid">
+                  <button class="mv3-service-card"><span>CO</span><strong>Crea contatto</strong><small>Persona dal mittente e note.</small></button>
+                  <button class="mv3-service-card"><span>AZ</span><strong>Crea azienda</strong><small>Dominio, paese e relazione.</small></button>
+                  <button class="mv3-service-card" t-on-click="onCreateLead"><span>PL</span><strong>Fase pipeline</strong><small>Lead, qualifica, offerta.</small></button>
+                  <button class="mv3-service-card" t-on-click="onCreateProject"><span>DO</span><strong>Dossier</strong><small>Mail, allegati, documenti.</small></button>
+                  <button class="mv3-service-card" t-on-click="() => this.onSnooze(msg.id)"><span>AT</span><strong>Attivita</strong><small>Follow-up silenzioso.</small></button>
+                  <button class="mv3-service-card" t-on-click="onDismissSender"><span>RG</span><strong>Regola mittente</strong><small>Keep, review, discard.</small></button>
+                </div>
                 <div class="mv3-quick-actions__row">
                   <!-- Group 1: Communicate -->
                   <button class="mv3-qa-btn" t-on-click="() => this.onReply(msg.id)">

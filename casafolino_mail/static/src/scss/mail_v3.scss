@@ -12,12 +12,202 @@ $mv3-line-height: 1.45;
 
 // ── Layout ────────────────────────────────────────────────
 .mv3-client {
-    display: flex;
+    display: grid;
+    grid-template-rows: 58px 1fr;
     height: 100vh;
     font-size: $mv3-font-base;
     line-height: $mv3-line-height;
     font-family: system-ui, -apple-system, sans-serif;
-    background: $mv3-bg;
+    background:
+        linear-gradient(135deg, rgba(38, 79, 153, .10), rgba(15, 118, 110, .08) 42%, rgba(161, 92, 7, .08)),
+        #eef3f6;
+    color: #1f2937;
+    overflow: hidden;
+}
+
+.mv3-cockpit-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px;
+    background: #253342;
+    color: #fff;
+    border-bottom: 1px solid #17212c;
+    min-width: 0;
+}
+
+.mv3-cockpit-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 230px;
+
+    strong {
+        display: block;
+        line-height: 1.1;
+    }
+
+    span {
+        display: block;
+        color: #dbeafe;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+}
+
+.mv3-cockpit-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: grid !important;
+    place-items: center;
+    color: #17212c !important;
+    background: linear-gradient(135deg, #8ee0a1, #56b6c2 55%, #f7c948);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .45);
+    flex: 0 0 34px;
+}
+
+.mv3-cockpit-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    flex: 1;
+}
+
+.mv3-cockpit-tab,
+.mv3-cockpit-primary {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    min-height: 34px;
+    padding: 0 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.mv3-cockpit-tab {
+    color: #dbeafe;
+    background: transparent;
+
+    &:hover,
+    &.active {
+        color: #fff;
+        background: rgba(255, 255, 255, .14);
+        border-color: rgba(255, 255, 255, .16);
+    }
+}
+
+.mv3-cockpit-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    justify-content: center;
+    color: #17212c;
+    background: #f7c948;
+    border-color: rgba(255, 255, 255, .24);
+}
+
+.mv3-cockpit-shell {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 250px minmax(350px, 440px) minmax(440px, 1fr);
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
+}
+
+.mv3-cockpit-sidebar,
+.mv3-client__thread-list,
+.mv3-client__main-area,
+.mv3-cockpit-board {
+    background: rgba(255, 255, 255, .92);
+    border: 1px solid #cfd8e3;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(31, 41, 55, .08);
+    min-width: 0;
+}
+
+.mv3-cockpit-sidebar {
+    padding: 12px;
+    overflow: auto;
+}
+
+.mv3-cockpit-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin: 10px 0 14px;
+
+    div {
+        padding: 9px 7px;
+        border: 1px solid #cfd8e3;
+        border-radius: 8px;
+        background: #f8fbf9;
+    }
+
+    strong {
+        display: block;
+        font-size: 17px;
+        color: #246b4f;
+        line-height: 1;
+    }
+
+    span {
+        display: block;
+        margin-top: 4px;
+        color: #667085;
+        font-size: 11px;
+    }
+}
+
+.mv3-cockpit-filter-title {
+    margin: 12px 0 7px;
+    color: #667085;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.mv3-cockpit-filter,
+.mv3-cockpit-account {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 9px;
+    text-align: left;
+    color: #344054;
+
+    &:hover,
+    &.active {
+        background: #e8f7ef;
+        border-color: #b7e4c7;
+        color: #246b4f;
+    }
+}
+
+.mv3-cockpit-account {
+    justify-content: flex-start;
+
+    small {
+        display: block;
+        color: #667085;
+        font-size: 11px;
+    }
+}
+
+.mv3-account-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #246b4f;
+    flex: 0 0 9px;
 }
 
 .mv3-client__sidebar-left {
@@ -37,17 +227,17 @@ $mv3-line-height: 1.45;
 }
 
 .mv3-client__thread-list {
-    width: 420px;
-    flex: 0 0 420px;
+    width: auto;
+    flex: initial;
     border-right: 1px solid $mv3-border;
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
 // Main area: reading pane (top) + 360 panel (bottom)
 .mv3-client__main-area {
-    flex: 1;
+    flex: initial;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -55,8 +245,280 @@ $mv3-line-height: 1.45;
 
 .mv3-client__reading-pane {
     flex: 1;
-    background: $mv3-bg;
+    background: #f8fbf9;
     overflow-y: auto;
+}
+
+.mv3-reading-pane__eyebrow {
+    color: #667085;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.mv3-thread-list__header {
+    background: #f8fbf9;
+    border-bottom-color: #cfd8e3 !important;
+}
+
+.mv3-thread-item {
+    border-bottom-color: #d9e1ea !important;
+
+    &:hover {
+        background: #f8fbf9 !important;
+    }
+
+    &--selected {
+        background: #fff6d7 !important;
+        box-shadow: inset 3px 0 0 #a15c07;
+    }
+}
+
+.mv3-thread-item__services {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.mv3-service-pill {
+    min-height: 24px;
+    padding: 0 7px;
+    border-radius: 999px;
+    border: 1px solid #d0d5dd;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    color: #344054;
+
+    &--contact { color: #0f766e; border-color: #99f6e4; }
+    &--company { color: #264f99; border-color: #bfd0fb; }
+    &--pipeline { color: #246b4f; border-color: #b7e4c7; }
+    &--dossier { color: #6941c6; border-color: #d9d6fe; }
+    &--composer { color: #a15c07; border-color: #fedf89; }
+    &--open { color: #026aa2; border-color: #b9e6fe; }
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(31, 41, 55, .12);
+    }
+}
+
+.mv3-service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.mv3-service-card {
+    min-height: 72px;
+    border: 1px solid #cfd8e3;
+    border-radius: 8px;
+    background: #fff;
+    padding: 9px;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 9px;
+    text-align: left;
+    color: #1f2937;
+
+    span {
+        grid-row: 1 / span 2;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #e8f7ef;
+        color: #246b4f;
+        font-size: 11px;
+        font-weight: 900;
+    }
+
+    strong {
+        font-size: 12px;
+        line-height: 1.2;
+    }
+
+    small {
+        color: #667085;
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    &:hover {
+        border-color: #246b4f;
+        box-shadow: 0 2px 8px rgba(31, 41, 55, .08);
+    }
+}
+
+.mv3-cockpit-board {
+    margin: 12px;
+    padding: 14px;
+    overflow: auto;
+}
+
+.mv3-board-hero {
+    min-height: 118px;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #253342, #0f766e);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    &--dossier {
+        background: linear-gradient(135deg, #253342, #6941c6);
+    }
+
+    span {
+        color: #dbeafe;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: .05em;
+    }
+
+    h2 {
+        margin: 4px 0 0;
+        font-size: 24px;
+        line-height: 1.15;
+    }
+}
+
+.mv3-pipeline-board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+.mv3-pipeline-col {
+    min-height: 380px;
+    border: 1px solid #cfd8e3;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+
+    header {
+        min-height: 44px;
+        padding: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 800;
+        background: #eaf3ff;
+        color: #264f99;
+    }
+
+    &:nth-child(2) header { background: #fff6d7; color: #a15c07; }
+    &:nth-child(3) header { background: #ecfdf3; color: #246b4f; }
+    &:nth-child(4) header { background: #f6f2ff; color: #6941c6; }
+
+    article {
+        margin: 10px;
+        padding: 12px;
+        border: 1px solid #d9e1ea;
+        border-radius: 8px;
+        background: #f8fbf9;
+
+        strong,
+        span {
+            display: block;
+        }
+
+        span {
+            margin-top: 6px;
+            color: #667085;
+        }
+    }
+}
+
+.mv3-dossier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(170px, 1fr));
+    gap: 12px;
+
+    article {
+        min-height: 160px;
+        border: 1px solid #cfd8e3;
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+    }
+
+    label {
+        display: block;
+        color: #667085;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    strong {
+        display: block;
+        margin-top: 9px;
+        font-size: 18px;
+        color: #1f2937;
+    }
+
+    span {
+        display: block;
+        margin-top: 8px;
+        color: #667085;
+    }
+
+    button {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        min-height: 34px;
+        border-radius: 8px;
+        border: 1px solid #cfd8e3;
+        background: #f8fbf9;
+        font-weight: 800;
+    }
+}
+
+@media (max-width: 1180px) {
+    .mv3-cockpit-shell {
+        grid-template-columns: 220px minmax(320px, 400px) minmax(360px, 1fr);
+    }
+
+    .mv3-service-grid,
+    .mv3-dossier-grid {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 860px) {
+    .mv3-client {
+        grid-template-rows: auto 1fr;
+    }
+
+    .mv3-cockpit-top {
+        flex-wrap: wrap;
+        padding: 10px;
+    }
+
+    .mv3-cockpit-shell {
+        grid-template-columns: 1fr;
+        overflow: auto;
+    }
+
+    .mv3-cockpit-sidebar {
+        max-height: 260px;
+    }
+
+    .mv3-pipeline-board,
+    .mv3-dossier-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 // Bottom 360 panel (replaces right sidebar)

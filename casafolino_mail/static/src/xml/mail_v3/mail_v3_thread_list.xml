@@ -55,6 +55,14 @@
                 <t t-out="'\ud83d\udcbc Lead aperto'"/>
               </span>
             </div>
+            <div class="mv3-thread-item__services" t-on-click.stop="">
+              <button class="mv3-service-pill mv3-service-pill--open" t-on-click="() => this.selectThread(thread.id)">Apri mail</button>
+              <button class="mv3-service-pill mv3-service-pill--contact" t-on-click="() => this.openService(thread.id, 'contact')">+ Contatto</button>
+              <button class="mv3-service-pill mv3-service-pill--company" t-on-click="() => this.openService(thread.id, 'company')">+ Azienda</button>
+              <button class="mv3-service-pill mv3-service-pill--pipeline" t-on-click="() => this.openService(thread.id, 'pipeline')">Pipeline</button>
+              <button class="mv3-service-pill mv3-service-pill--dossier" t-on-click="() => this.openService(thread.id, 'dossier')">Dossier</button>
+              <button class="mv3-service-pill mv3-service-pill--composer" t-on-click="() => this.openService(thread.id, 'composer')">Rispondi</button>
+            </div>
           </div>
         </t>
         <!-- Infinite scroll footer -->

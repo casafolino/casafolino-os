@@ -108,6 +108,8 @@ export class MailV3Client extends Component {
             // V17: Browser notifications
             notificationsEnabled: false,
             notifUnreadCount: 0,
+            // Inbox V2 cockpit shell
+            topView: 'triage',
         });
 
         this._notifier = new MailV3Notifications({
@@ -347,6 +349,55 @@ export class MailV3Client extends Component {
 
     onOpenRules() {
         this.actionService.doAction('casafolino_mail.action_casafolino_mail_folder_rule');
+    }
+
+    openTopView(view) {
+        if (view === 'composer') {
+            this.openComposeNew();
+            return;
+        }
+        if (view === 'config') {
+            this.openSettings();
+            return;
+        }
+        this.state.topView = view || 'triage';
+        if (view === 'review') {
+            this.state.activeFolder = 'inbox';
+        } else if (view === 'keep') {
+            this.state.activeFolder = 'inbox';
+        }
+    }
+
+    getSelectedThread() {
+        return (this.state.threads || []).find(t => t.id === this.state.selectedThreadId) || null;
+    }
+
+    getSelectedMessage() {
+        return (this.state.messages || []).find(
+            m => m.direction === 'inbound' || m.direction_computed === 'inbound'
+        ) || (this.state.messages || [])[0] || null;
+    }
+
+    onThreadService(threadId, service) {
+        if (threadId && this.state.selectedThreadId !== threadId) {
+            this.selectThread(threadId);
+        }
+        if (service === 'composer') {
+            setTimeout(() => this.openReplyFromSelected(), 250);
+        } else if (service === 'dossier') {
+            this.state.topView = 'dossier';
+        } else if (service === 'pipeline') {
+            this.state.topView = 'crm';
+        }
+    }
+
+    openReplyFromSelected() {
+        const msg = this.getSelectedMessage();
+        if (msg) {
+            this.openReply(msg.id);
+        } else {
+            this.openComposeNew();
+        }
     }
 
     async _loadScheduled() {
