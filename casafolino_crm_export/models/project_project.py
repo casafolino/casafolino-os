@@ -171,10 +171,6 @@ class ProjectProject(models.Model):
     # Related inline lists (read-only computed Many2many)
     # ------------------------------------------------------------------
 
-    cf_dossier_mail_ids = fields.Many2many(
-        'casafolino.mail.message', compute='_compute_cf_dossier_mail_ids',
-        string='Mail dossier',
-    )
     cf_dossier_sample_ids = fields.Many2many(
         'cf.export.sample', compute='_compute_cf_dossier_sample_ids',
         string='Campionature dossier',
@@ -541,23 +537,6 @@ class ProjectProject(models.Model):
     def _compute_cf_actor_count(self):
         for rec in self:
             rec.cf_actor_count = len(rec.cf_actor_ids)
-
-    @api.depends('partner_id', 'cf_contact_ids', 'cf_contact_ids.email_normalized')
-    def _compute_cf_dossier_mail_ids(self):
-        for rec in self:
-            try:
-                MailMsg = self.env.get('casafolino.mail.message')
-                if not MailMsg:
-                    rec.cf_dossier_mail_ids = False
-                    continue
-                domain = rec._cf_mail_domain()
-                if domain:
-                    rec.cf_dossier_mail_ids = MailMsg.search(
-                        domain, order='email_date desc', limit=200)
-                else:
-                    rec.cf_dossier_mail_ids = False
-            except Exception:
-                rec.cf_dossier_mail_ids = False
 
     def _cf_mail_domain(self):
         """Build search domain for casafolino.mail.message matching

@@ -622,31 +622,4 @@
         </field>
     </record>
 
-    <!-- ============================================================
-         PREMIUM FORM — Email tab (moved from casafolino_mail to break circular dep)
-         ============================================================ -->
-
-    <record id="view_crm_lead_form_premium_mail_hub" model="ir.ui.view">
-        <field name="name">crm.lead.form.cf.premium.mail.hub</field>
-        <field name="model">crm.lead</field>
-        <field name="inherit_id" ref="cf_crm_lead_view_form_premium"/>
-        <field name="priority">99</field>
-        <field name="arch" type="xml">
-            <xpath expr="//page[@name='emails']" position="replace">
-                <page string="Email" name="emails">
-                    <field name="lead_message_ids" nolabel="1">
-                        <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
-                            <field name="email_date"/>
-                            <field name="direction" widget="badge"/>
-                            <field name="sender_email"/>
-                            <field name="subject"/>
-                            <field name="state" widget="badge"/>
-                            <field name="is_read" widget="boolean_toggle"/>
-                        </list>
-                    </field>
-                </page>
-            </xpath>
-        </field>
-    </record>
-
 </odoo>

@@ -115,13 +115,8 @@ class ProjectProjectPipelineControl(models.Model):
         string='Ordini collegati',
         readonly=True,
     )
-    cf360_mail_ids = fields.Many2many(
-        'casafolino.mail.message',
-        compute='_compute_cf360_mail_ids',
-        string='Mail dossier',
-    )
     cf360_mail_count = fields.Integer(
-        compute='_compute_cf360_mail_ids',
+        compute='_compute_cf360_mail_count',
         string='Mail dossier',
     )
     cf360_task_count = fields.Integer(
@@ -185,16 +180,9 @@ class ProjectProjectPipelineControl(models.Model):
             project.cf360_task_count = len(project.task_ids)
             project.cf360_document_count = len(getattr(project, 'cf_dossier_attachment_ids', []))
 
-    @api.depends('partner_id')
-    def _compute_cf360_mail_ids(self):
-        Mail = self.env['casafolino.mail.message']
+    def _compute_cf360_mail_count(self):
         for project in self:
-            domain = [('cf_project_id', '=', project.id)]
-            if project.partner_id:
-                domain = ['|', ('cf_project_id', '=', project.id), ('partner_id', '=', project.partner_id.id)]
-            mails = Mail.search(domain, order='email_date desc, id desc', limit=200)
-            project.cf360_mail_ids = mails
-            project.cf360_mail_count = len(mails)
+            project.cf360_mail_count = 0
 
     def action_open_project_dashboard_360(self):
         """Legacy project button: the active operational view is now the dossier form."""
@@ -277,27 +265,23 @@ class ProjectProjectPipelineControl(models.Model):
 
     def action_reply_last_email_f8(self):
         self.ensure_one()
-        last_mail = self.cf360_mail_ids[:1]
-        partner = last_mail.partner_id if last_mail else self.partner_id
-        partner_email = ''
+        partner = self.partner_id
+        partner_email = partner.email if partner else ''
         subject = '[%s] ' % (self.name or '')
-        if last_mail:
-            partner_email = last_mail.sender_email or (partner.email if partner else '')
-            raw_subject = last_mail.subject or self.name or ''
-            subject = raw_subject if raw_subject.lower().startswith('re:') else 'Re: %s' % raw_subject
-        elif partner:
-            partner_email = partner.email or ''
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_mail.compose_f8',
+            'type': 'ir.actions.act_window',
+            'name': 'Scrivi email',
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
             'context': {
-                'default_partner_email': partner_email,
+                'default_model': 'project.project',
+                'default_res_ids': [self.id],
+                'default_composition_mode': 'comment',
+                'default_partner_ids': [partner.id] if partner else [],
                 'default_subject': subject,
                 'default_body': '<p>Buongiorno,</p><p>le rispondo in merito al dossier <strong>%s</strong>.</p><p></p>' % (self.name or ''),
-                'default_partner_id': partner.id if partner else False,
-                'default_thread_id': self.id,
-                'default_thread_model': 'project.project',
-                'default_project_id': self.id,
+                'default_email_to': partner_email,
             },
         }
 
@@ -2152,7 +2136,7 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
     _name = 'cf.pipeline.create.dossier.wizard'
     _description = 'Crea dossier direttamente da email'
 
-    message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
+    message_id = fields.Integer(string='Email legacy', readonly=True)
     partner_id = fields.Many2one('res.partner', string='Cliente')
     partner_name = fields.Char(string='Nome cliente (Nuovo)')
     partner_email = fields.Char(string='Email cliente')
@@ -2169,9 +2153,12 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return res
         msg_id = self.env.context.get('default_message_id')
         if msg_id:
-            msg = self.env['casafolino.mail.message'].browse(msg_id).exists()
+            msg = Mail.browse(msg_id).exists()
             if msg:
                 res.update({
                     'message_id': msg.id,
@@ -2437,7 +2424,7 @@ class CfPipelineLinkLeadWizard(models.TransientModel):
     _name = 'cf.pipeline.link.lead.wizard'
     _description = 'Collega email commerciale a lead'
 
-    message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
+    message_id = fields.Integer(string='Email legacy', readonly=True)
     partner_id = fields.Many2one('res.partner', string='Cliente', readonly=True)
     lead_id = fields.Many2one('crm.lead', string='Lead', required=True)
     apply_to_thread = fields.Boolean(string='Collega tutto il thread', default=True)
@@ -2447,7 +2434,10 @@ class CfPipelineLinkLeadWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        message = self.env['casafolino.mail.message'].browse(self.env.context.get('default_message_id')).exists()
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return res
+        message = Mail.browse(self.env.context.get('default_message_id')).exists()
         if message:
             res.update({
                 'message_id': message.id,
@@ -2459,10 +2449,23 @@ class CfPipelineLinkLeadWizard(models.TransientModel):
 
     def action_link(self):
         self.ensure_one()
-        messages = self.message_id
-        if self.apply_to_thread and self.message_id.thread_id:
-            messages = self.env['casafolino.mail.message'].search([
-                ('thread_id', '=', self.message_id.thread_id.id),
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Mail V2 disinstallata',
+                    'message': 'Il collegamento email legacy non è più disponibile.',
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        message = Mail.browse(self.message_id).exists()
+        messages = message
+        if self.apply_to_thread and message.thread_id:
+            messages = Mail.search([
+                ('thread_id', '=', message.thread_id.id),
                 ('is_deleted', '=', False),
             ])
         messages.write({'lead_id': self.lead_id.id})
@@ -2495,19 +2498,22 @@ class CfPipelineSnoozeWizard(models.TransientModel):
     _name = 'cf.pipeline.snooze.wizard'
     _description = 'Posticipa thread commerciale'
 
-    message_id = fields.Many2one('casafolino.mail.message', string='Email', required=True, readonly=True)
-    thread_id = fields.Many2one('casafolino.mail.thread', string='Thread', readonly=True)
+    message_id = fields.Integer(string='Email legacy', readonly=True)
+    thread_id = fields.Integer(string='Thread legacy', readonly=True)
     wake_at = fields.Datetime(string='Rientra il', required=True)
     note = fields.Char(string='Nota')
 
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        message = self.env['casafolino.mail.message'].browse(self.env.context.get('default_message_id')).exists()
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return res
+        message = Mail.browse(self.env.context.get('default_message_id')).exists()
         if message:
             res.update({
                 'message_id': message.id,
-                'thread_id': message.thread_id.id if message.thread_id else False,
+                'thread_id': message.thread_id.id if message.thread_id else 0,
                 'wake_at': fields.Datetime.now() + timedelta(days=1),
                 'note': 'Posticipato da Inbox Commerciale',
             })
@@ -2515,36 +2521,15 @@ class CfPipelineSnoozeWizard(models.TransientModel):
 
     def action_snooze(self):
         self.ensure_one()
-        if not self.thread_id:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Thread richiesto',
-                    'message': 'Questa email non ha ancora un thread V3.',
-                    'type': 'warning',
-                    'sticky': False,
-                },
-            }
-        self.env['casafolino.mail.snooze'].create({
-            'thread_id': self.thread_id.id,
-            'user_id': self.env.user.id,
-            'snooze_type': 'until_date',
-            'wake_at': self.wake_at,
-            'snoozed_at': fields.Datetime.now(),
-            'note': self.note or 'Posticipato da Inbox Commerciale',
-        })
-        self.thread_id.write({'is_snoozed': True})
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': 'Thread posticipato',
-                'message': 'La conversazione rientra nella data scelta.',
-                'type': 'success',
+                'title': 'Mail V2 disinstallata',
+                'message': 'Il posticipo thread legacy non è più disponibile.',
+                'type': 'warning',
                 'sticky': False,
             },
-            'reload': True,
         }
 
 
