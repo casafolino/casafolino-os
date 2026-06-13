@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cf_dossier_upsert_wizard_form" model="ir.ui.view">
+        <field name="name">cf.dossier.upsert.wizard.form</field>
+        <field name="model">cf.dossier.upsert.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Dossier 360">
+                <sheet>
+                    <group>
+                        <group string="Dossier">
+                            <field name="project_id" options="{'no_create': True}"/>
+                            <field name="template_id"/>
+                            <field name="name"/>
+                            <field name="status" widget="radio" options="{'horizontal': true}"/>
+                            <field name="priority" widget="radio" options="{'horizontal': true}"/>
+                            <field name="user_id"/>
+                        </group>
+                        <group string="Cliente">
+                            <field name="partner_id" invisible="create_partner"/>
+                            <field name="create_partner" invisible="partner_id"/>
+                            <field name="new_partner_name" invisible="not create_partner"/>
+                            <field name="country_id"/>
+                            <field name="buyer_name"/>
+                            <field name="buyer_email"/>
+                            <field name="buyer_phone"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Brief commerciale" name="brief">
+                            <group>
+                                <group>
+                                    <field name="dossier_lang"/>
+                                    <field name="volume_target"/>
+                                    <field name="volume_unit"/>
+                                    <field name="margin_target"/>
+                                    <field name="value_estimate"/>
+                                </group>
+                                <group>
+                                    <field name="incoterms"/>
+                                    <field name="payment_term"/>
+                                    <field name="certification_ids" widget="many2many_tags"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Pipeline" name="pipeline">
+                            <group>
+                                <field name="create_or_link_lead"/>
+                                <field name="lead_id" invisible="not create_or_link_lead"/>
+                                <field name="lead_name" invisible="not create_or_link_lead"/>
+                                <field name="stage_id" invisible="not create_or_link_lead"/>
+                                <field name="expected_revenue" invisible="not create_or_link_lead"/>
+                                <field name="currency_id" invisible="1"/>
+                            </group>
+                        </page>
+
+                        <page string="Prossima azione" name="next_action">
+                            <group>
+                                <field name="next_action"/>
+                                <field name="next_action_date"/>
+                                <field name="internal_notes"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object"
+                            string="Salva e apri Vista 360" class="btn-primary"/>
+                    <button special="cancel" string="Annulla" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cf_dossier_upsert_wizard" model="ir.actions.act_window">
+        <field name="name">Nuovo Dossier 360</field>
+        <field name="res_model">cf.dossier.upsert.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_status': 'active', 'default_create_or_link_lead': True}</field>
+    </record>
+
+    <!-- Keep existing JS buttons that call the commercial project wizard, but route them to the 360-aware wizard. -->
+    <record id="action_cf_commercial_project_wizard" model="ir.actions.act_window">
+        <field name="name">Nuovo Dossier 360</field>
+        <field name="res_model">cf.dossier.upsert.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_status': 'active', 'default_create_or_link_lead': True}</field>
+    </record>
+
+</odoo>

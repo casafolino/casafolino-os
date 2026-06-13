@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="cf_erp_login_layout" inherit_id="web.login_layout" priority="99">
+        <xpath expr="//t[@t-call='website.layout']" position="replace">
+            <t t-call="web.frontend_layout">
+                <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
+                <t t-set="body_classname" t-value="'cf-erp-login-body'"/>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+
+                <main class="cf-erp-login">
+                    <section class="cf-erp-login__brand">
+                        <div class="cf-erp-login__mark">
+                            <img src="/casafolino_home/static/description/icon.png" alt="CasaFolino OS"/>
+                        </div>
+                        <p class="cf-erp-login__eyebrow">CasaFolino OS</p>
+                        <h1>ERP CasaFolino</h1>
+                        <p class="cf-erp-login__copy">
+                            Ambiente gestionale riservato per coordinare commerciale,
+                            produzione, qualita, amministrazione e logistica.
+                        </p>
+                        <div class="cf-erp-login__signals" aria-label="Aree operative">
+                            <span>CRM</span>
+                            <span>Produzione</span>
+                            <span>HACCP</span>
+                            <span>Tesoreria</span>
+                        </div>
+                    </section>
+
+                    <section class="cf-erp-login__panel" aria-label="Accesso ERP">
+                        <div class="cf-erp-login__panel-header">
+                            <p>Accesso riservato</p>
+                            <h2>Entra nella scrivania</h2>
+                        </div>
+                        <div class="cf-erp-login__form">
+                            <t t-out="0"/>
+                        </div>
+                    </section>
+                </main>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="cf_erp_login_form" inherit_id="web.login" priority="99">
+        <xpath expr="//form[@role='form']" position="before">
+            <div class="cf-erp-login__notice">
+                Solo personale autorizzato CasaFolino.
+            </div>
+        </xpath>
+        <xpath expr="//button[@type='submit' and contains(@class, 'btn-primary')]" position="replace">
+            <button type="submit" class="btn btn-primary cf-erp-login__submit">Accedi all'ERP</button>
+        </xpath>
+    </template>
+</odoo>

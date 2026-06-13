@@ -16,9 +16,9 @@
         <field name="tag">cf_scrivania_admin</field>
     </record>
 
-    <!-- Root menu: Workspace CasaFolino — sole visible tile in apps grid -->
+    <!-- Root menu: Sala Controllo — sole visible cockpit in apps grid -->
     <menuitem id="menu_cf_home_root"
-              name="Workspace CasaFolino"
+              name="Sala Controllo"
               action="action_scrivania_commerciale"
               sequence="1"
               web_icon="casafolino_home,static/description/icon.png"/>

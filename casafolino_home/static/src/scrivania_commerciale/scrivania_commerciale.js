@@ -52,19 +52,31 @@ export class CFScrivaniaCommerciale extends Component {
         return String(Math.round(value));
     }
 
+    async _crmLeadFormViews() {
+        if (this.crmLeadFormViewId === undefined) {
+            try {
+                this.crmLeadFormViewId = await this.orm.call(
+                    "crm.lead",
+                    "casafolino_get_premium_form_view_id",
+                    []
+                );
+            } catch (err) {
+                console.warn("Premium lead form view lookup failed:", err);
+                this.crmLeadFormViewId = false;
+            }
+        }
+        return [[this.crmLeadFormViewId || false, "form"]];
+    }
+
+    async _crmLeadViewsWithPipeline() {
+        const formViews = await this._crmLeadFormViews();
+        return [[false, "kanban"], [false, "list"], formViews[0]];
+    }
+
     // === Quick actions ===
 
     async onNewProject() {
-        await this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "project.project",
-            views: [[false, "form"]],
-            target: "current",
-            context: {
-                default_cf_status_dossier: "active",
-                default_user_id: user.userId,
-            },
-        });
+        await this.action.doAction("casafolino_crm_export.action_cf_dossier_upsert_wizard");
     }
 
     async onNewLead() {
@@ -78,7 +90,7 @@ export class CFScrivaniaCommerciale extends Component {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
-                views: [[false, "form"]],
+                views: await this._crmLeadFormViews(),
                 target: "current",
                 context: {
                     default_type: "lead",
@@ -133,7 +145,7 @@ export class CFScrivaniaCommerciale extends Component {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                views: await this._crmLeadViewsWithPipeline(),
                 domain: [["type", "=", "lead"], ["active", "=", true]],
                 target: "current",
             });

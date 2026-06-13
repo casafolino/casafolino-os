@@ -79,13 +79,13 @@
                         <input type="text" class="cf-warm-input"
                                placeholder="Nome azienda"
                                t-att-value="state.newPartnerName"
-                               t-on-input="onNewPartnerChange"/>
+                               t-on-input="onNewPartnerNameInput"/>
                         <input type="email" class="cf-warm-input"
                                placeholder="Email"
                                t-att-value="state.newPartnerEmail"
-                               t-on-input="onNewPartnerChange"/>
+                               t-on-input="onNewPartnerEmailInput"/>
                         <select class="cf-warm-input"
-                                t-on-change="onNewPartnerChange">
+                                t-on-change="onNewPartnerCountryChange">
                             <option value="">Paese</option>
                             <t t-foreach="state.countriesList" t-as="c" t-key="c.id">
                                 <option t-att-value="c.id"
@@ -111,7 +111,7 @@
                 </div>
                 <t t-if="state.originType === 'fair'">
                     <select class="cf-warm-input cf-warm-sub-input"
-                            t-on-change="onOriginFairChange">
+                            t-on-change="onFairTagChange">
                         <option value="">Seleziona fiera...</option>
                         <t t-foreach="state.fairTagsList" t-as="ft" t-key="ft.id">
                             <option t-att-value="ft.id"
@@ -125,7 +125,7 @@
                     <input type="text" class="cf-warm-input cf-warm-sub-input"
                            placeholder="Nome agente..."
                            t-att-value="state.agentSearchQuery"
-                           t-on-input="onAgentSearchInput"/>
+                           t-on-input="onAgentInputChange"/>
                 </t>
             </div>
 
@@ -197,7 +197,7 @@
                 <div class="cf-warm-section-label">Prossima azione</div>
                 <div class="cf-warm-activity-grid">
                     <select class="cf-warm-input"
-                            t-on-change="onNextActivityChange">
+                            t-on-change="onActivityTypeChange">
                         <option value="">Tipo</option>
                         <option value="email" t-att-selected="state.nextActivityType === 'email'">Email</option>
                         <option value="call" t-att-selected="state.nextActivityType === 'call'">Chiamata</option>
@@ -207,10 +207,10 @@
                     <input type="text" class="cf-warm-input"
                            placeholder="Sommario"
                            t-att-value="state.nextActivitySummary"
-                           t-on-input="onNextActivityChange"/>
+                           t-on-input="onActivitySummaryInput"/>
                     <input type="date" class="cf-warm-input"
                            t-att-value="state.nextActivityDate"
-                           t-on-change="onNextActivityChange"/>
+                           t-on-change="onActivityDateChange"/>
                 </div>
             </div>
 
@@ -247,8 +247,8 @@
                 <div class="cf-warm-footer-buttons">
                     <button class="cf-warm-btn-secondary" t-on-click="onCancel">Annulla</button>
                     <button class="cf-warm-btn-primary" t-on-click="onCreateLead"
-                            t-att-disabled="state.saving">
-                        <t t-if="state.saving">Creazione...</t>
+                            t-att-disabled="state.loading">
+                        <t t-if="state.loading">Creazione...</t>
                         <t t-else="">Crea lead</t>
                     </button>
                 </div>

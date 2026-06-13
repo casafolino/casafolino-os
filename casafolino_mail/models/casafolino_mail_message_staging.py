@@ -1070,6 +1070,7 @@ class CasafolinoMailMessage(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Crea Lead da Email',
             'res_model': 'casafolino.mail.create.lead.wizard',
+            'views': [(False, 'form')],
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_message_id': self.id},

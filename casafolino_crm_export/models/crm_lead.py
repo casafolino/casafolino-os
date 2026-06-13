@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
@@ -186,6 +187,12 @@ class CrmLead(models.Model):
     # Write override — probability from stage + standby exit
     # ------------------------------------------------------------------
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        leads = super().create(vals_list)
+        leads._cf_ensure_partner_mail_tracking()
+        return leads
+
     def write(self, vals):
         # Detect stage change for standby exit logic
         old_stage_ids = {}
@@ -212,7 +219,22 @@ class CrmLead(models.Model):
                     if standby_stage and old_stage_ids.get(lead.id) == standby_stage.id and new_stage.id != standby_stage.id:
                         lead.cf_date_last_contact = fields.Date.context_today(self)
 
+        if {'partner_id', 'email_from'}.intersection(vals):
+            self._cf_ensure_partner_mail_tracking()
+
         return res
+
+    def _cf_ensure_partner_mail_tracking(self):
+        """Enable Mail Hub history import as soon as a lead has a real contact email."""
+        for lead in self:
+            partner = lead.partner_id
+            if (
+                partner
+                and 'mail_tracked' in partner._fields
+                and partner.email
+                and not partner.mail_tracked
+            ):
+                partner.sudo().write({'mail_tracked': True})
 
     # ------------------------------------------------------------------
     # message_post override — update cf_date_last_contact on email
@@ -236,7 +258,9 @@ class CrmLead(models.Model):
             _logger.warning('CasaFolino: stage Standby non trovato, cron skip.')
             return
 
-        won_stage = self.env['crm.stage'].search([('name', '=', 'Vinta')], limit=1)
+        won_stage = self.env['crm.stage'].search([
+            ('name', 'in', ['Vinta', 'Convertita in dossier'])
+        ], limit=1)
         lost_stage = self.env['crm.stage'].search([('name', '=', 'Persa')], limit=1)
         excluded_ids = [s.id for s in (won_stage, lost_stage, standby_stage) if s]
 
@@ -352,7 +376,7 @@ class CrmLead(models.Model):
 
     @api.depends('casafolino_days_since_last_activity', 'stage_id')
     def _compute_casafolino_no_activity_warning(self):
-        won_lost_names = ('Vinta', 'Persa')
+        won_lost_names = ('Vinta', 'Convertita in dossier', 'Persa')
         for lead in self:
             if lead.stage_id and lead.stage_id.name in won_lost_names:
                 lead.casafolino_no_activity_warning = False
@@ -541,23 +565,11 @@ class CrmLead(models.Model):
 
     @api.depends('partner_id', 'message_ids')
     def _compute_cf_email_count(self):
-        MailMessage = self.env['mail.message']
+        HubMsg = self.env.get('casafolino.mail.message')
         for lead in self:
-            if lead.partner_id:
-                lead.cf_email_count = MailMessage.search_count([
-                    '|',
-                    '&', ('partner_ids', 'in', lead.partner_id.id),
-                         ('message_type', 'in', ['email', 'email_outgoing']),
-                    '&', ('res_id', '=', lead.id),
-                    '&', ('model', '=', 'crm.lead'),
-                         ('message_type', 'in', ['email', 'email_outgoing']),
-                ])
-            else:
-                lead.cf_email_count = MailMessage.search_count([
-                    ('res_id', '=', lead.id),
-                    ('model', '=', 'crm.lead'),
-                    ('message_type', '!=', 'notification'),
-                ])
+            lead.cf_email_count = HubMsg.search_count(
+                lead._cf_mail_history_domain()
+            ) if HubMsg else 0
 
     @api.depends('partner_id', 'message_ids')
     def _compute_cf_partner_emails(self):
@@ -578,6 +590,26 @@ class CrmLead(models.Model):
                     ('model', '=', 'crm.lead'),
                     ('message_type', '!=', 'notification'),
                 ], order='date desc', limit=100)
+
+    def _cf_mail_history_domain(self):
+        self.ensure_one()
+        domains = [[('lead_id', '=', self.id)]]
+        if 'source_email_id' in self._fields and self.source_email_id:
+            domains.append([('id', '=', self.source_email_id.id)])
+        if self.partner_id:
+            domains.append([('partner_id', '=', self.partner_id.id)])
+        emails = []
+        for value in [self.email_from, self.partner_id.email if self.partner_id else False]:
+            if value:
+                emails.append(value.strip().lower())
+        for email in sorted(set(emails)):
+            domains.append([
+                '|', '|',
+                ('sender_email', '=ilike', email),
+                ('recipient_emails', 'ilike', email),
+                ('cc_emails', 'ilike', email),
+            ])
+        return expression.OR(domains) if domains else [('id', '=', 0)]
 
     @api.depends('cf_sample_ids')
     def _compute_cf_sample_count(self):
@@ -654,6 +686,15 @@ class CrmLead(models.Model):
     # Actions
     # ------------------------------------------------------------------
 
+    @api.model
+    def casafolino_get_premium_form_view_id(self):
+        """Return the CasaFolino premium lead form view for JS actions."""
+        view = self.env.ref(
+            'casafolino_crm_export.cf_crm_lead_view_form_premium',
+            raise_if_not_found=False,
+        )
+        return view.id if view else False
+
     def _ensure_project_360(self):
         """Return a linked dossier project, creating one when missing."""
         self.ensure_one()
@@ -704,16 +745,18 @@ class CrmLead(models.Model):
 
     def action_view_partner_emails(self):
         self.ensure_one()
+        self._cf_ensure_partner_mail_tracking()
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Email Contatto',
-            'res_model': 'mail.message',
+            'name': 'Mail — %s' % (self.display_name or self.name),
+            'res_model': 'casafolino.mail.message',
             'view_mode': 'list,form',
-            'domain': [
-                ('partner_ids', 'in', self.partner_id.id),
-                ('message_type', 'in', ['email', 'email_outgoing']),
-            ],
-            'context': {'default_partner_ids': [self.partner_id.id]},
+            'views': [(False, 'list'), (False, 'form')],
+            'domain': self._cf_mail_history_domain(),
+            'context': {
+                'default_lead_id': self.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+            },
         }
 
     def action_send_email(self):

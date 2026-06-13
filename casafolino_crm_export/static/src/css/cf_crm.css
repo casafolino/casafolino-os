@@ -258,6 +258,251 @@
     font-weight: 600;
     text-align: right;
     flex: 1;
+}
+
+/* ════════════════════════════════════════════
+   Pipeline interna moderna
+   ════════════════════════════════════════════ */
+
+.cf-premium-form {
+    --cf-pipe-ink: #172033;
+    --cf-pipe-muted: #647084;
+    --cf-pipe-line: #d9dee8;
+    --cf-pipe-soft: #f5f7fb;
+    --cf-pipe-blue: #1f66d1;
+    --cf-pipe-green: #16845f;
+    --cf-pipe-amber: #b96f16;
+}
+
+.cf-premium-form .o_form_sheet {
+    max-width: none !important;
+    width: calc(100% - 48px) !important;
+    margin: 18px 24px !important;
+    border: 1px solid var(--cf-pipe-line) !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+}
+
+.cf-premium-form .o_form_statusbar {
+    background: #ffffff;
+    border-bottom: 1px solid var(--cf-pipe-line);
+    padding: 10px 16px;
+}
+
+.cf-premium-form .cf-kpi-banner {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    background: #ffffff;
+    border: 0;
+    padding: 0;
+    margin: 0 0 18px;
+}
+
+.cf-premium-form .cf-kpi-item {
+    border: 1px solid var(--cf-pipe-line);
+    border-radius: 8px;
+    background: #fbfcfe;
+    padding: 14px 16px;
+    text-align: left;
+}
+
+.cf-premium-form .cf-kpi-value {
+    color: var(--cf-pipe-ink);
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.cf-premium-form .cf-kpi-label {
+    color: var(--cf-pipe-muted);
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.cf-premium-form .cf-contact-card {
+    border: 1px solid var(--cf-pipe-line);
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 18px;
+    margin-bottom: 18px;
+}
+
+.cf-premium-form .cf-deal-name,
+.cf-premium-form .cf-deal-name input {
+    color: var(--cf-pipe-ink) !important;
+    font-size: 24px !important;
+    line-height: 1.15;
+}
+
+.cf-premium-form .cf-company-name {
+    color: var(--cf-pipe-blue);
+    font-size: 14px;
+}
+
+.cf-premium-form .cf-contact-meta {
+    flex-wrap: wrap;
+    gap: 12px;
+    color: var(--cf-pipe-muted);
+}
+
+.cf-premium-form .cf-contact-meta span {
+    border: 1px solid #e8edf5;
+    border-radius: 8px;
+    background: #fbfcfe;
+    padding: 6px 8px;
+}
+
+.cf-premium-form .cf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    gap: 18px;
+    margin: 0;
+}
+
+.cf-premium-form .cf-main-col,
+.cf-premium-form .cf-sidebar-col {
+    width: auto;
+    max-width: none;
+    flex: none;
+    padding: 0 !important;
+}
+
+.cf-premium-form .cf-sidebar-col {
+    background: transparent;
+    border-left: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.cf-premium-form .o_notebook {
+    border: 1px solid var(--cf-pipe-line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.cf-premium-form .o_notebook .nav.nav-tabs {
+    border-bottom: 1px solid var(--cf-pipe-line);
+    background: #fbfcfe;
+    padding: 0 12px;
+}
+
+.cf-premium-form .o_notebook .tab-pane {
+    padding: 16px;
+}
+
+.cf-lead-cockpit {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(180px, .8fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.cf-lead-action-card {
+    border: 1px solid var(--cf-pipe-line);
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 16px;
+    min-height: 150px;
+    display: grid;
+    align-content: space-between;
+    gap: 12px;
+}
+
+.cf-lead-action-card.primary {
+    background: #f4f8ff;
+    border-color: rgba(31, 102, 209, .28);
+}
+
+.cf-lead-action-card strong {
+    display: block;
+    color: var(--cf-pipe-ink);
+    font-size: 16px;
+    line-height: 1.3;
+    min-height: 22px;
+}
+
+.cf-lead-action-card p {
+    color: var(--cf-pipe-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 6px 0 0;
+}
+
+.cf-lead-eyebrow,
+.cf-lead-section-title {
+    display: block;
+    color: var(--cf-pipe-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+    margin-bottom: 6px;
+}
+
+.cf-lead-section-title {
+    color: var(--cf-pipe-ink);
+    font-size: 14px;
+    margin: 6px 0 10px;
+}
+
+.cf-premium-form .cf-prop-card {
+    border: 1px solid var(--cf-pipe-line);
+    border-radius: 8px;
+    box-shadow: none;
+    padding: 16px;
+    margin: 0;
+}
+
+.cf-premium-form .cf-prop-title {
+    color: var(--cf-pipe-ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+}
+
+.cf-premium-form .cf-prop-row {
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.cf-premium-form .cf-prop-label {
+    color: var(--cf-pipe-muted);
+    min-width: 120px;
+}
+
+.cf-premium-form .cf-prop-value {
+    color: var(--cf-pipe-ink);
+    text-align: right;
+}
+
+.cf-premium-form .btn-primary {
+    background: var(--cf-pipe-blue);
+    border-color: var(--cf-pipe-blue);
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.cf-premium-form .btn-secondary {
+    border-color: var(--cf-pipe-line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--cf-pipe-ink);
+    font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+    .cf-premium-form .cf-layout,
+    .cf-lead-cockpit {
+        grid-template-columns: 1fr;
+    }
+
+    .cf-premium-form .cf-kpi-banner {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
     margin-left: 8px;
 }
 /* Compact field rendering inside prop rows */

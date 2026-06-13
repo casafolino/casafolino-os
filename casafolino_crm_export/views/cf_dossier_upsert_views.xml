@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="project_project_form_dossier_upsert_button" model="ir.ui.view">
+        <field name="name">project.project.form.dossier.upsert.button</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="casafolino_crm_export.project_project_form_casafolino"/>
+        <field name="priority">110</field>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_open_dossier_upsert_wizard"
+                        type="object"
+                        string="Aggiorna Dossier 360"
+                        icon="fa-pencil"
+                        class="btn btn-primary"
+                        invisible="not cf_status_dossier"/>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_cf_new_dossier_360" name="Nuovo Dossier 360"
+              parent="menu_cf_export_root" action="action_cf_dossier_upsert_wizard"
+              sequence="24"/>
+
+</odoo>

@@ -193,20 +193,24 @@ class CrmLeadCardScanner(models.Model):
                 mail_vals['email_cc'] = cc_email
 
             mail = self.env['mail.mail'].create(mail_vals)
+            self._make_outgoing_mail_visible_in_chatter(mail)
+            if partner:
+                mail.mail_message_id.partner_ids = [(4, partner.id)]
             attachment_ids = template.attachment_ids.ids + self._get_fair_attachment_ids()
             if card_attachment:
                 attachment_ids.append(card_attachment.id)
             if attachment_ids:
                 mail.attachment_ids = [(4, aid) for aid in attachment_ids]
             mail.send()
-            lead.message_post(
-                body=_(
-                    'Email automatica inviata con template "%(template)s" (%(lang)s).',
-                    template=template.name,
-                    lang=language,
-                ),
-                message_type='comment',
-                subtype_xmlid='mail.mt_note',
+            self._post_sent_email_note(
+                lead,
+                subject,
+                partner.email,
+                cc_email,
+                body_html,
+                _('Email automatica inviata con template "%(template)s" (%(lang)s).',
+                  template=template.name,
+                  lang=language),
             )
             return True
         except Exception as e:
@@ -232,6 +236,9 @@ class CrmLeadCardScanner(models.Model):
         try:
             mail_id = template.send_mail(lead.id, force_send=False)
             mail = self.env['mail.mail'].browse(mail_id)
+            self._make_outgoing_mail_visible_in_chatter(mail)
+            if partner:
+                mail.mail_message_id.partner_ids = [(4, partner.id)]
 
             # CC
             cc_email = ICP.get_param('casafolino.crm_export.fair_cc_email', '')
@@ -250,11 +257,52 @@ class CrmLeadCardScanner(models.Model):
                 mail.attachment_ids = [(4, aid) for aid in attachment_ids]
 
             mail.send()
+            self._post_sent_email_note(
+                lead,
+                mail.subject or template.subject or '',
+                mail.email_to or partner.email,
+                mail.email_cc or '',
+                mail.body_html or '',
+                _('Email automatica inviata.'),
+            )
             return True
         except Exception as e:
             _logger.warning('TUTTOFOOD email send failed for lead %s: %s', lead.id, e)
             self._schedule_failed_email_activity(lead, e)
             return False
+
+    def _post_sent_email_note(self, lead, subject, email_to, email_cc, body_html, intro):
+        """Add a readable copy of the sent email to the lead chatter."""
+        lead.message_post(
+            body=(
+                '<p><strong>%s</strong></p>'
+                '<p><strong>A:</strong> %s<br/>'
+                '<strong>CC:</strong> %s<br/>'
+                '<strong>Oggetto:</strong> %s</p>'
+                '<hr/>%s'
+            ) % (
+                intro,
+                email_to or '',
+                email_cc or '',
+                subject or '',
+                body_html or '',
+            ),
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+
+    def _make_outgoing_mail_visible_in_chatter(self, mail):
+        """Mark direct mail.mail messages so the lead chatter shows the sent email."""
+        subtype = self.env.ref('mail.mt_comment', raise_if_not_found=False)
+        if not mail.mail_message_id:
+            return
+        vals = {}
+        if subtype and not mail.mail_message_id.subtype_id:
+            vals['subtype_id'] = subtype.id
+        if mail.body_html and not mail.mail_message_id.body:
+            vals['body'] = mail.body_html
+        if vals:
+            mail.mail_message_id.write(vals)
 
     def _get_card_scan_fair(self, fair_id=None):
         if fair_id:

@@ -39,6 +39,7 @@ class CardScannerWidget extends Component {
         this.fileInputRef = useRef("fileInput");
         this.notification = useService("notification");
         this.action = useService("action");
+        this.orm = useService("orm");
         this.loadScannerInit();
     }
 
@@ -56,6 +57,22 @@ class CardScannerWidget extends Component {
     _syncFairName() {
         const fair = this.state.fairs.find((item) => item.id === this.state.fairId);
         this.state.fairName = fair?.name || "";
+    }
+
+    async _crmLeadFormViews() {
+        if (this.crmLeadFormViewId === undefined) {
+            try {
+                this.crmLeadFormViewId = await this.orm.call(
+                    "crm.lead",
+                    "casafolino_get_premium_form_view_id",
+                    []
+                );
+            } catch (err) {
+                console.warn("Premium lead form view lookup failed:", err);
+                this.crmLeadFormViewId = false;
+            }
+        }
+        return [[this.crmLeadFormViewId || false, "form"]];
     }
 
     onFairChange(ev) {
@@ -159,12 +176,12 @@ class CardScannerWidget extends Component {
         }
     }
 
-    onOpenLead() {
+    async onOpenLead() {
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "crm.lead",
             res_id: this.state.leadId,
-            views: [[false, "form"]],
+            views: await this._crmLeadFormViews(),
             target: "current",
         });
     }

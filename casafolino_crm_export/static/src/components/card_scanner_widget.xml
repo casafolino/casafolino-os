@@ -14,16 +14,10 @@
                     <h2><t t-esc="state.fairName || 'Card Scanner Fiere'"/></h2>
                     <p class="text-muted">Scansiona un biglietto da visita per creare un lead e inviare il follow-up</p>
                     <div class="cf-scanner-fair-select mb-3">
-                        <label class="form-label">Fiera</label>
-                        <select class="form-select form-select-lg" t-on-change="onFairChange">
-                            <option value="">Seleziona fiera</option>
-                            <t t-foreach="state.fairs" t-as="fair" t-key="fair.id">
-                                <option t-att-value="fair.id" t-att-selected="state.fairId === fair.id">
-                                    <t t-esc="fair.name"/>
-                                    <t t-if="fair.template_count"> · <t t-esc="fair.template_count"/> template</t>
-                                </option>
-                            </t>
-                        </select>
+                        <div class="cf-scanner-fair-badge">
+                            <span class="text-muted">Fiera attiva</span>
+                            <strong><t t-esc="state.fairName || 'TUTTOFOOD Milano 2026'"/></strong>
+                        </div>
                     </div>
                     <button class="btn btn-primary btn-lg cf-scanner-btn" t-on-click="onCaptureClick">
                         <i class="fa fa-camera me-2"/>Nuovo lead da biglietto

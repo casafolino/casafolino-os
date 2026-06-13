@@ -6,11 +6,11 @@
          ============================================================ -->
 
     <record id="action_cf_crm_all" model="ir.actions.act_window">
-        <field name="name">Tutte le Pipeline</field>
+        <field name="name">Pipeline Commerciale</field>
         <field name="res_model">crm.lead</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[('type','=','opportunity')]</field>
-        <field name="context">{'default_type': 'opportunity'}</field>
+        <field name="domain">[('type','in',('lead','opportunity')), ('active','=',True)]</field>
+        <field name="context">{'default_type': 'lead'}</field>
     </record>
 
     <record id="action_crm_lead_antonio" model="ir.actions.act_window">
@@ -161,14 +161,14 @@
     <record id="cf_crm_lead_view_form_premium" model="ir.ui.view">
         <field name="name">crm.lead.form.cf.premium</field>
         <field name="model">crm.lead</field>
-        <field name="priority">99</field>
+        <field name="priority">1</field>
         <field name="arch" type="xml">
             <form string="Trattativa Export" class="cf-premium-form">
                 <header>
                     <button name="action_compose_email_f8" string="Scrivi mail"
                         type="object" icon="fa-envelope" class="oe_highlight"
                         invisible="not partner_id"/>
-                    <button name="action_open_project_360" string="Progetto 360°"
+                    <button name="action_open_project_360" string="Crea / apri dossier 360"
                         type="object" class="oe_highlight"/>
                     <button name="action_mark_contacted" string="Contatto Registrato"
                         type="object" class="btn-primary"/>
@@ -280,6 +280,44 @@
                             <notebook>
                                 <!-- Tab: Attività -->
                                 <page string="Attività" name="activities">
+                                    <div class="cf-lead-cockpit">
+                                        <div class="cf-lead-action-card primary">
+                                            <div>
+                                                <span class="cf-lead-eyebrow">Prossima mossa</span>
+                                                <strong>
+                                                    <field name="cf_next_activity_summary" readonly="1"/>
+                                                </strong>
+                                                <p>Ogni lead deve dire subito cosa fare: richiamare, inviare listino, collegare mail o aprire dossier.</p>
+                                            </div>
+                                            <button name="action_schedule_followup" type="object"
+                                                string="Pianifica follow-up"
+                                                class="btn btn-primary"/>
+                                        </div>
+                                        <div class="cf-lead-action-card">
+                                            <span class="cf-lead-eyebrow">Mail</span>
+                                            <strong><field name="cf_email_count" readonly="1"/> collegate</strong>
+                                            <p>Thread commerciale, risposte e allegati collegati al lead.</p>
+                                            <button name="action_view_partner_emails" type="object"
+                                                string="Apri mail" class="btn btn-secondary"/>
+                                        </div>
+                                        <div class="cf-lead-action-card">
+                                            <span class="cf-lead-eyebrow">Dossier</span>
+                                            <strong>
+                                                <field name="cf_project_id" readonly="1"/>
+                                            </strong>
+                                            <p>Apri la Vista 360 quando il funnel diventa profondo.</p>
+                                            <button name="action_open_project_360" type="object"
+                                                string="Vista 360" class="btn btn-secondary"/>
+                                        </div>
+                                        <div class="cf-lead-action-card">
+                                            <span class="cf-lead-eyebrow">Contatto</span>
+                                            <strong><field name="partner_id" readonly="1"/></strong>
+                                            <p><field name="email_from" widget="email" readonly="1"/> · <field name="phone" widget="phone" readonly="1"/></p>
+                                            <button name="action_mark_contacted" type="object"
+                                                string="Segna contattato" class="btn btn-secondary"/>
+                                        </div>
+                                    </div>
+                                    <div class="cf-lead-section-title">Attività aperte</div>
                                     <field name="activity_ids"/>
                                 </page>
 
@@ -344,6 +382,44 @@
 
                         <!-- RIGHT: SIDEBAR -->
                         <div class="col-lg-4 cf-sidebar-col">
+                            <!-- Conversione dossier -->
+                            <div class="cf-prop-card">
+                                <div class="cf-prop-title">Checklist dossier</div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Contatto collegato</span>
+                                    <span class="cf-prop-value">
+                                        <field name="partner_id" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Interesse / prodotti</span>
+                                    <span class="cf-prop-value">
+                                        <field name="tag_ids" widget="many2many_tags" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Prossima azione</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_next_activity_summary" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Valore / forecast</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_forecast_value" widget="monetary" readonly="1"/>
+                                    </span>
+                                </div>
+                                <div class="cf-prop-row">
+                                    <span class="cf-prop-label">Dossier collegato</span>
+                                    <span class="cf-prop-value">
+                                        <field name="cf_project_id" readonly="1"/>
+                                    </span>
+                                </div>
+                                <button name="action_open_project_360" type="object"
+                                        string="Crea / apri dossier 360"
+                                        class="btn btn-primary w-100 mt-2"/>
+                            </div>
+
                             <!-- Deal Info -->
                             <div class="cf-prop-card">
                                 <div class="cf-prop-title">Informazioni Deal</div>
@@ -492,7 +568,7 @@
                 <separator/>
                 <filter string="Mail nuova" name="cf_unread_mail" domain="[('casafolino_has_unread_mail', '=', True)]"/>
                 <filter string="Follow-up dovuto" name="cf_overdue_followup" domain="[('activity_ids.date_deadline', '&lt;', context_today().strftime('%%Y-%%m-%%d'))]"/>
-                <filter string="No attività &gt; 30gg" name="cf_no_activity" domain="[('casafolino_days_since_last_activity', '&gt;', 30), ('stage_id.name', 'not in', ['Vinta', 'Persa'])]"/>
+                <filter string="No attività &gt; 30gg" name="cf_no_activity" domain="[('casafolino_days_since_last_activity', '&gt;', 30), ('stage_id.name', 'not in', ['Vinta', 'Convertita in dossier', 'Persa'])]"/>
                 <filter string="Da fiera" name="cf_fair_origin" domain="[('tag_ids.cf_category', '=', 'fair')]"/>
                 <separator/>
                 <group expand="0" string="Raggruppa per">
@@ -626,7 +702,16 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='emails']" position="replace">
                 <page string="Email" name="emails">
-                    <field name="lead_message_ids" nolabel="1">
+                    <div class="o_row mb-3">
+                        <button name="action_import_email_history" type="object"
+                            string="Aggiorna storico email" class="btn btn-primary btn-sm"
+                            invisible="not partner_id"
+                            confirm="Scaricare lo storico email mirato per il contatto di questo lead?"/>
+                        <button name="action_send_email" type="object"
+                            string="Scrivi Email" class="btn btn-secondary btn-sm"
+                            invisible="not partner_id"/>
+                    </div>
+                    <field name="cf_mail_history_ids" nolabel="1">
                         <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
                             <field name="email_date"/>
                             <field name="direction" widget="badge"/>

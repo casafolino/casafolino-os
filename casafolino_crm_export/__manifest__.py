@@ -41,8 +41,10 @@
         'views/cf_fair_views.xml',
         'views/res_config_settings_views.xml',
         'wizard/commercial_project_wizard_views.xml',
+        'wizard/cf_dossier_upsert_wizard_views.xml',
         'views/crm_lead_wizard_action.xml',
         'views/menus.xml',
+        'views/cf_dossier_upsert_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

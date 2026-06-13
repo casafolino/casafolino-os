@@ -239,6 +239,17 @@
                                        string="Contatto"/>
                             </list>
                         </field>
+                        <separator string="Storico mail cliente"/>
+                        <field name="cf_partner_message_ids" mode="list"
+                               readonly="1">
+                            <list>
+                                <field name="date" string="Data"/>
+                                <field name="subject" string="Oggetto"/>
+                                <field name="author_id" string="Da"/>
+                                <field name="email_from" string="Email"/>
+                                <field name="message_type" string="Tipo"/>
+                            </list>
+                        </field>
                     </page>
 
                     <page string="Checkpoint" name="cf_checkpoint">

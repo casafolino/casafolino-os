@@ -229,6 +229,10 @@ class ProjectProject(models.Model):
     cf_partner_mails_count = fields.Integer(
         compute='_compute_partner_mails', string='Mail partner',
     )
+    cf_partner_message_ids = fields.Many2many(
+        'mail.message', compute='_compute_partner_mails',
+        string='Storico mail partner',
+    )
     cf_sibling_dossiers_ids = fields.Many2many(
         'project.project', compute='_compute_sibling_dossiers',
         string='Altri dossier stesso cliente',
@@ -482,31 +486,37 @@ class ProjectProject(models.Model):
     def _compute_partner_mails(self):
         MM = self.env['mail.message']
         for p in self:
-            related_ids = p._get_all_related_partner_ids()
-            if not related_ids:
+            domain = p._cf_partner_message_domain()
+            if not domain:
                 p.cf_partner_mails_count = 0
+                p.cf_partner_message_ids = False
                 continue
-            p.cf_partner_mails_count = MM.search_count([
-                '|',
-                ('author_id', 'in', related_ids),
-                ('partner_ids', 'in', related_ids),
-            ])
+            messages = MM.search(domain, order='date desc, id desc', limit=200)
+            p.cf_partner_mails_count = len(messages)
+            p.cf_partner_message_ids = messages
 
-    def action_view_partner_mails(self):
+    def _cf_partner_message_domain(self):
         self.ensure_one()
         related_ids = self._get_all_related_partner_ids()
         if not related_ids:
+            return None
+        return [
+            '|',
+            ('author_id', 'in', related_ids),
+            ('partner_ids', 'in', related_ids),
+        ]
+
+    def action_view_partner_mails(self):
+        self.ensure_one()
+        domain = self._cf_partner_message_domain()
+        if not domain:
             return False
         return {
             'type': 'ir.actions.act_window',
             'name': _('Mail di %s') % (self.partner_id.name or 'cliente'),
             'res_model': 'mail.message',
             'view_mode': 'list,form',
-            'domain': [
-                '|',
-                ('author_id', 'in', related_ids),
-                ('partner_ids', 'in', related_ids),
-            ],
+            'domain': domain,
         }
 
     @api.depends('partner_id')
@@ -829,7 +839,7 @@ class ProjectProject(models.Model):
                 'active_id': self.id,
                 'active_model': 'project.project',
             },
-            'target': 'main',
+            'target': 'current',
         }
 
     @api.depends('partner_id')
@@ -914,14 +924,29 @@ class ProjectProject(models.Model):
         }
 
     def _cf_serialize_project(self):
+        initiative = self.initiative_id
         return {
             'id': self.id,
             'name': self.name or '',
+            'initiative_id': initiative.id if initiative else False,
+            'initiative_name': initiative.name if initiative else '',
+            'lavagna_enabled': bool(initiative and initiative.lavagna_enabled),
             'status_dossier': self.cf_status_dossier or 'exploration',
             'dossier_priority': self.cf_dossier_priority or 'medium',
+            'dossier_value_estimate': self.cf_dossier_value_estimate or 0,
+            'project_type': self.cf_project_type or '',
             'next_action': self.cf_next_action or '',
             'next_action_date': fields.Date.to_string(self.cf_next_action_date)
                 if self.cf_next_action_date else '',
+            'dossier_lang': self.cf_dossier_lang or '',
+            'volume_target': self.cf_volume_target or 0,
+            'volume_unit': self.cf_volume_unit or '',
+            'margin_target': self.cf_margin_target or 0,
+            'incoterms': self.cf_incoterms or '',
+            'payment_term': self.cf_payment_term or '',
+            'moq': self.cf_moq or '',
+            'lead_time': self.cf_lead_time or 0,
+            'shelf_life': self.cf_shelf_life or 0,
             'mail_count': self._cf_get_mail_count(),
             'contact_count': len(self.cf_contact_ids),
             'lead_count': self.cf_lead_count,

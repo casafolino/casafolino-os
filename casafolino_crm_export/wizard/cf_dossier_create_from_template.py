@@ -45,10 +45,13 @@ class CfDossierCreateFromTemplate(models.TransientModel):
             })
 
         return {
-            'type': 'ir.actions.act_window',
-            'name': project.name,
-            'res_model': 'project.project',
-            'res_id': project.id,
-            'view_mode': 'form',
+            'type': 'ir.actions.client',
+            'tag': 'casafolino_crm_export.project_dashboard',
+            'name': 'Vista 360° — %s' % project.name,
             'target': 'current',
+            'context': {
+                'active_id': project.id,
+                'active_model': 'project.project',
+                'default_project_id': project.id,
+            },
         }
