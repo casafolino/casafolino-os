@@ -11,7 +11,6 @@ import { WorkspaceDetail } from "./components/workspace_detail";
 import { WorkspaceFeed } from "./components/workspace_feed";
 import { WorkspaceLead } from "./lead/workspace_lead";
 import { WorkspaceProj } from "./proj/workspace_proj";
-import { WorkspaceMail } from "./mail/workspace_mail";
 import { WorkspaceCal } from "./cal/workspace_cal";
 import { WorkspaceQa } from "./qa/workspace_qa";
 
@@ -27,7 +26,6 @@ class CfWorkspaceMain extends Component {
         WorkspaceFeed,
         WorkspaceLead,
         WorkspaceProj,
-        WorkspaceMail,
         WorkspaceCal,
         WorkspaceQa,
     };
@@ -89,10 +87,6 @@ class CfWorkspaceMain extends Component {
         }
         if (item && item.id === "projects") {
             this.state.page = "proj";
-            return;
-        }
-        if (item && item.id === "mail") {
-            this.state.page = "mail";
             return;
         }
         if (item && item.id === "agenda") {

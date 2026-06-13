@@ -1,10 +1,10 @@
 /** @odoo-module **/
 /**
- * F2.6.4: Panel "Mail" — timeline of casafolino_mail.message for partner.
+ * Legacy mail timeline panel. Mail V2 has been removed, so compose/open actions
+ * fall back to native partner chatter.
  */
 import { Component, useEnv } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
-import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 export class LavagnaPanelMailThread extends Component {
     static template = "casafolino_initiative_dashboard.LavagnaPanelMailThread";
@@ -33,31 +33,30 @@ export class LavagnaPanelMailThread extends Component {
     }
 
     onMailClick(mail) {
-        // Navigate to mail app
-        this.actionService.doAction('casafolino_mail.action_mail_v3_client');
+        if (mail && mail.partner_id) {
+            this.actionService.doAction({
+                type: "ir.actions.act_window",
+                res_model: "res.partner",
+                res_id: mail.partner_id,
+                views: [[false, "form"]],
+                target: "current",
+            });
+        }
     }
 
     async onCompose() {
         const init = this.env.lavagnaState.data ? this.env.lavagnaState.data.initiative : {};
         const partnerId = init.partner_id || false;
-        let partnerEmail = '';
-        if (partnerId) {
-            try {
-                const [partner] = await this.orm.read('res.partner', [partnerId], ['email']);
-                partnerEmail = partner.email || '';
-            } catch {}
+        if (!partnerId) {
+            this.notificationService.add("Nessun partner collegato", { type: "warning" });
+            return;
         }
-
-        this.dialogService.add(ComposeWizardDialog, {
-            partnerEmail: partnerEmail,
-            defaultSubject: '',
-            partnerId: partnerId || null,
-            threadId: init.id || null,
-            threadModel: 'cf.initiative',
-            onSent: () => {
-                this.notificationService.add('Mail inviata', { type: 'success' });
-                this.env.actions.refreshData();
-            },
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            res_model: "res.partner",
+            res_id: partnerId,
+            views: [[false, "form"]],
+            target: "current",
         });
     }
 

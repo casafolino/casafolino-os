@@ -15,7 +15,7 @@ class CrmLeadPipelineControl(models.Model):
     cf_pc_task_count = fields.Integer(string='Task dossier', compute='_compute_cf_pc_counts')
 
     def _compute_cf_pc_counts(self):
-        Mail = self.env['casafolino.mail.message']
+        Mail = self.env.get('casafolino.mail.message')
         Sale = self.env['sale.order']
         Task = self.env['project.task']
         has_opportunity = 'opportunity_id' in Sale._fields
@@ -23,7 +23,7 @@ class CrmLeadPipelineControl(models.Model):
             lead.cf_pc_mail_count = Mail.search_count([
                 ('lead_id', '=', lead.id),
                 ('is_deleted', '=', False),
-            ])
+            ]) if Mail else 0
             lead.cf_pc_quote_count = Sale.search_count([
                 ('opportunity_id', '=', lead.id),
                 ('state', 'in', ['draft', 'sent']),

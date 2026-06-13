@@ -9,7 +9,6 @@
         'mass_mailing',
         'crm',
         'casafolino_commercial',
-        'casafolino_mail_stats',
     ],
     'data': [
         'security/ir.model.access.csv',

@@ -2,7 +2,6 @@
 import { Component, useEnv } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { rpc } from "@web/core/network/rpc";
-import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 const SHORT_NAMES = {
     'Task in Scouting': 'Scouting',
@@ -29,7 +28,6 @@ export class LavagnaKpiRail extends Component {
     setup() {
         this.env = useEnv();
         this.actionService = useService("action");
-        this.dialogService = useService("dialog");
         this.notificationService = useService("notification");
     }
 
@@ -172,24 +170,16 @@ export class LavagnaKpiRail extends Component {
 
     async _openMail(initName) {
         const partnerId = this.initiative.partner_id || false;
-        let partnerEmail = '';
-        if (partnerId) {
-            try {
-                const [partner] = await this.orm.read('res.partner', [partnerId], ['email']);
-                partnerEmail = partner.email || '';
-            } catch {}
+        if (!partnerId) {
+            this.notificationService.add('Nessun partner collegato', { type: 'warning' });
+            return;
         }
-
-        this.dialogService.add(ComposeWizardDialog, {
-            partnerEmail: partnerEmail,
-            defaultSubject: 'Re: ' + initName,
-            partnerId: partnerId || null,
-            threadId: this.initiative.id || null,
-            threadModel: 'cf.initiative',
-            onSent: () => {
-                this.notificationService.add('Mail inviata', { type: 'success' });
-                this.env.actions.refreshData();
-            },
+        this.actionService.doAction({
+            type: 'ir.actions.act_window',
+            res_model: 'res.partner',
+            res_id: partnerId,
+            views: [[false, 'form']],
+            target: 'current',
         });
     }
 }

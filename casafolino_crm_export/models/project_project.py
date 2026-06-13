@@ -665,21 +665,24 @@ class ProjectProject(models.Model):
         return self._cf_compose_message_action('mail.mt_note')
 
     def action_compose_email_f8(self):
-        """Open F8 Outlook-style composer via client action."""
+        """Open the native Odoo composer after Mail V2 removal."""
         self.ensure_one()
         primary = self.cf_contact_ids.filtered('is_primary')[:1]
         partner = primary.partner_id or self.partner_id if primary else self.partner_id
         email = partner.email if partner else ''
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_mail.compose_f8',
+            'type': 'ir.actions.act_window',
+            'name': _('Scrivi email'),
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
             'context': {
-                'default_partner_email': email,
+                'default_model': 'project.project',
+                'default_res_ids': [self.id],
+                'default_composition_mode': 'comment',
+                'default_partner_ids': [partner.id] if partner else [],
                 'default_subject': '[%s] ' % (self.name or ''),
-                'default_partner_id': partner.id if partner else False,
-                'default_thread_id': self.id,
-                'default_thread_model': 'project.project',
-                'default_project_id': self.id,
+                'default_email_to': email,
             },
         }
 

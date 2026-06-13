@@ -4,7 +4,6 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
-import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 export class CFPipelineControl extends Component {
     static template = "casafolino_pipeline_control.CFPipelineControl";
@@ -460,15 +459,7 @@ export class CFPipelineControl extends Component {
         if (!result || result.tag !== "casafolino_mail.compose_f8") {
             return false;
         }
-        const context = result.context || {};
-        this.dialog.add(ComposeWizardDialog, {
-            partnerEmail: context.default_partner_email || "",
-            defaultSubject: context.default_subject || "",
-            defaultBody: context.default_body || "",
-            partnerId: context.default_partner_id || false,
-            threadId: context.default_thread_id || false,
-            threadModel: context.default_thread_model || false,
-        });
+        this.notification.add(_t("Mail V2 è stata disinstallata."), { type: "warning" });
         return true;
     }
 

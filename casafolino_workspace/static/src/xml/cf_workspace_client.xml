@@ -17,8 +17,6 @@
                           t-on-click="() => this.onNavigate('lead')">Lead</span>
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'proj' ? 'active' : ''}"
                           t-on-click="() => this.onNavigate('proj')">Progetti</span>
-                    <span t-attf-class="cf-ws-nav-item #{state.page === 'mail' ? 'active' : ''}"
-                          t-on-click="() => this.onNavigate('mail')">Mail</span>
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'cal' ? 'active' : ''}"
                           t-on-click="() => this.onNavigate('cal')">Agenda</span>
                     <span t-attf-class="cf-ws-nav-item #{state.page === 'qa' ? 'active' : ''}"
@@ -83,13 +81,6 @@
         <t t-elif="state.page === 'cal'">
             <div class="cf-ws-body">
                 <WorkspaceCal onGoHome.bind="onGoHome"/>
-            </div>
-        </t>
-
-        <!-- MAIL SECTION -->
-        <t t-elif="state.page === 'mail'">
-            <div class="cf-ws-body">
-                <WorkspaceMail onGoHome.bind="onGoHome"/>
             </div>
         </t>
 

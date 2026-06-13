@@ -8,7 +8,6 @@ DB="${CF_DB:-folinofood_stage}"
 CONTAINER="odoo-app"
 
 MODULES=(
-    casafolino_mail
     casafolino_crm_export
     casafolino_supplier_qual
     casafolino_gdo

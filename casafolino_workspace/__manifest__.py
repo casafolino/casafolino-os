@@ -6,7 +6,7 @@
     "category": "Productivity",
     "summary": "Scrivania operativa CasaFolino",
     "author": "CasaFolino Srls",
-    "depends": ["base", "web", "mail", "calendar", "crm", "project", "account", "stock", "casafolino_mail"],
+    "depends": ["base", "web", "mail", "calendar", "crm", "project", "account", "stock"],
     "data": [
         "security/ir.model.access.csv",
         "data/workspace_projects_seed.xml",
@@ -28,9 +28,6 @@
             "casafolino_workspace/static/src/xml/workspace_lead.xml",
             "casafolino_workspace/static/src/js/proj/workspace_proj.js",
             "casafolino_workspace/static/src/xml/workspace_proj.xml",
-            "casafolino_workspace/static/src/css/workspace_mail.css",
-            "casafolino_workspace/static/src/js/mail/workspace_mail.js",
-            "casafolino_workspace/static/src/xml/workspace_mail.xml",
             "casafolino_workspace/static/src/css/workspace_cal.css",
             "casafolino_workspace/static/src/js/cal/workspace_cal.js",
             "casafolino_workspace/static/src/xml/workspace_cal.xml",
