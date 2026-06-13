@@ -96,7 +96,9 @@ class AmazonOffer(models.Model):
             )
             return response["feedId"]
 
-        offers_to_sync = self.filtered(lambda offer: offer.sku)
+        offers_to_sync = self.filtered(
+            lambda offer: offer.sku and not offer.sku.upper().endswith("AMZ")
+        )
         if not offers_to_sync:
             return
 
