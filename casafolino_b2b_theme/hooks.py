@@ -15,7 +15,7 @@ def _post_init_hook(env):
     logo = base64.b64encode(logo_path.read_bytes()) if logo_path.exists() else False
     company_values = {
         "name": "CasaFolino Srl Societa' Benefit",
-        "phone": "+39 0968 407195",
+        "phone": "+39 0968 18 88 076",
         "email": "info@casafolino.com",
         "website": "https://casafolino.com",
         "street": "Via Prunia, 1",
@@ -90,10 +90,10 @@ def _post_init_hook(env):
     ).write({"active": False})
 
     replacements = {
-        "+1 555-555-5556": "+39 0968 407195",
-        "+1 555-555-5555": "+39 0968 407195",
-        "+1%20555-555-5556": "+39%200968%20407195",
-        "+1%20555-555-5555": "+39%200968%20407195",
+        "+1 555-555-5556": "+39 0968 18 88 076",
+        "+1 555-555-5555": "+39 0968 18 88 076",
+        "+1%20555-555-5556": "+39%200968%2018%2088%20076",
+        "+1%20555-555-5555": "+39%200968%2018%2088%20076",
         "info@yourcompany.example.com": "info@casafolino.com",
         "Nome azienda": "CasaFolino Srl Societa' Benefit",
         "YourLogo": "CasaFolino",

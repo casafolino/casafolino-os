@@ -8,10 +8,12 @@
     "depends": ["website_sale", "sale_management", "contacts", "portal", "auth_signup", "mass_mailing", "casafolino_pipeline_control"],
     "data": [
         "data/website.xml",
+        "data/company_contact.xml",
         "data/mailing_list.xml",
         "data/mail_templates.xml",
         "views/res_partner_views.xml",
         "views/product_template_views.xml",
+        "views/website_footer.xml",
         "views/templates.xml",
     ],
     "assets": {

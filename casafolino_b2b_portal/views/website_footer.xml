@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="layout_footer" model="ir.ui.view">
-        <field name="name">CasaFolino B2B Footer</field>
+    <record id="layout_footer_b2b_legal" model="ir.ui.view">
+        <field name="name">CasaFolino B2B Legal Footer</field>
         <field name="type">qweb</field>
-        <field name="key">casafolino_b2b_theme.layout_footer</field>
+        <field name="key">casafolino_b2b_portal.layout_footer_b2b_legal</field>
         <field name="inherit_id" ref="website.layout"/>
         <field name="website_id" ref="casafolino_b2b_portal.website_b2b_casafolino"/>
+        <field name="active">True</field>
         <field name="arch" type="xml">
             <xpath expr="//div[@id='footer']" position="replace">
                 <div id="footer" class="cf-b2b-odoo-footer" t-if="not no_footer">

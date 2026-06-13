@@ -62,6 +62,12 @@
                         <div class="cf-erp-login__form">
                             <t t-out="0"/>
                         </div>
+                        <div class="cf-erp-login__legal" aria-label="Dati societari CasaFolino">
+                            <strong>CasaFolino Srl Societa' Benefit</strong>
+                            <span>Via Prunia, 1 - 88046 Lamezia Terme (CZ)</span>
+                            <span>P.IVA IT03783120797</span>
+                            <a href="tel:+3909681888076">+39 0968 18 88 076</a>
+                        </div>
                     </section>
                 </main>
             </t>

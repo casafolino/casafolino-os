@@ -136,6 +136,27 @@
     display: block !important;
 }
 
+.cf-erp-login__legal {
+    display: grid;
+    gap: 4px;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(24, 34, 49, .10);
+    color: #536173;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.cf-erp-login__legal strong {
+    color: #182231;
+}
+
+.cf-erp-login__legal a {
+    color: #12715b;
+    font-weight: 700;
+    text-decoration: none;
+}
+
 .cf-erp-login__form .form-label,
 .cf-erp-login__form .col-form-label {
     color: #334155;

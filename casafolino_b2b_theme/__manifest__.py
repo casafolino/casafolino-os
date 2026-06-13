@@ -11,6 +11,7 @@
         "casafolino_b2b_portal",
     ],
     "data": [
+        "data/company_contact.xml",
         "views/website_layout.xml",
     ],
     "assets": {
