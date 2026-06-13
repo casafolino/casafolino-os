@@ -664,7 +664,7 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-server.listen(config.port, () => {
+server.listen(config.port, '127.0.0.1', () => {
   log('info', 'CasaFolino Twilio-OpenAI Voice Bridge listening', {
     port: config.port,
     odoo: config.odooBaseUrl,
