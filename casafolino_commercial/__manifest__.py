@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Commercial',
-    'version': '18.0.2.4.3',
+    'version': '18.0.2.4.4',
     'post_init_hook': '_post_init_bank_resilience',
     'category': 'CasaFolino',
     'summary': 'GDO, Private Label, Tesoreria e Blocchi Documento',
