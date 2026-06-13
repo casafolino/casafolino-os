@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<templates xml:space="preserve">
-    <t t-name="casafolino_crm_export.ComposeF8Action">
-        <div class="d-none"/>
-    </t>
-</templates>
