@@ -4,7 +4,6 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
 import { _t } from "@web/core/l10n/translation";
-import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 const STATUS_LABELS = {
     exploration: "Esplorativo",
@@ -56,7 +55,6 @@ export class CFProjectDashboard extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
-        this.dialog = useService("dialog");
 
         this.state = useState({
             isLoading: true,
@@ -168,11 +166,13 @@ export class CFProjectDashboard extends Component {
     }
 
     async onQuickActionMail() {
-        const partnerEmail = this.state.data?.partner?.email || "";
-        this.dialog.add(ComposeWizardDialog, {
-            partnerEmail,
-            onSent: () => this.onRefresh(),
-        });
+        const projectId = this.state.data?.project?.id;
+        if (!projectId) {
+            this.notification.add(_t("Nessun dossier collegato"), { type: "warning" });
+            return;
+        }
+        const action = await this.orm.call("project.project", "action_compose_email_f8", [[projectId]]);
+        await this.action.doAction(action);
     }
 
     async onQuickActionSample() {
@@ -321,15 +321,7 @@ export class CFProjectDashboard extends Component {
     }
 
     async onQuickReply(mailEntry) {
-        if (!mailEntry.partner_id) return;
-        this.dialog.add(ComposeWizardDialog, {
-            partnerEmail: mailEntry.sender_email || '',
-            defaultSubject: mailEntry.subject ? 'Re: ' + mailEntry.subject : '',
-            partnerId: mailEntry.partner_id || null,
-            threadId: mailEntry.partner_id || null,
-            threadModel: 'res.partner',
-            onSent: () => this.onRefresh(),
-        });
+        await this.onQuickActionMail();
     }
 }
 
