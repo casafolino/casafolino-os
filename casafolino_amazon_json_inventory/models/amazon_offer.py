@@ -11,6 +11,7 @@ from odoo.addons.sale_amazon import utils as amazon_utils
 
 
 _logger = logging.getLogger(__name__)
+FBM_SKU_PREFIXES = ("MIE", "CRM", "RCF", "SPE", "MOU")
 
 
 class AmazonOffer(models.Model):
@@ -97,7 +98,11 @@ class AmazonOffer(models.Model):
             return response["feedId"]
 
         offers_to_sync = self.filtered(
-            lambda offer: offer.sku and not offer.sku.upper().endswith("AMZ")
+            lambda offer: (
+                offer.sku
+                and not offer.sku.upper().endswith("AMZ")
+                and offer.sku.upper().startswith(FBM_SKU_PREFIXES)
+            )
         )
         if not offers_to_sync:
             return
