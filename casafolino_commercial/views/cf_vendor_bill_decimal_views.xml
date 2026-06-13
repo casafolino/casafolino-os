@@ -6,30 +6,35 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='quantity']" position="after">
+                <field name="cf_vendor_bill_quantity_six_decimals"
+                       string="Quantita"
+                       column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='quantity']" position="attributes">
+                <attribute name="column_invisible">parent.move_type in ['in_invoice', 'in_refund']</attribute>
+            </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_unit']" position="after">
-                <field name="price_unit"
+                <field name="cf_vendor_bill_price_unit_six_decimals"
                        string="Prezzo"
-                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_unit']" position="attributes">
                 <attribute name="column_invisible">parent.move_type in ['in_invoice', 'in_refund']</attribute>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='discount']" position="after">
-                <field name="discount"
+                <field name="cf_vendor_bill_discount_six_decimals"
                        string="Disc.%"
                        width="50px"
                        optional="hide"
-                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='discount']" position="attributes">
                 <attribute name="column_invisible">parent.move_type in ['in_invoice', 'in_refund']</attribute>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_subtotal']" position="after">
-                <field name="price_subtotal"
+                <field name="cf_price_subtotal_six_decimals"
                        string="Imponibile"
-                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_subtotal']" position="attributes">
