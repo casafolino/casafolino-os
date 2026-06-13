@@ -13,6 +13,18 @@ class CasafolinoMailResponseMetric(models.TransientModel):
     @api.model
     def get_analytics(self, days=30, account_ids=None):
         """Compute response time analytics for the team."""
+        if account_ids == []:
+            return {
+                'period_days': days,
+                'account_stats': [],
+                'top_partners': [],
+                'total_inbound': 0,
+                'total_outbound': 0,
+                'active_threads': 0,
+                'archived_threads': 0,
+                'hot_partners': 0,
+            }
+
         now = fields.Datetime.now()
         cutoff = now - timedelta(days=days)
 

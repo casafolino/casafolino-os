@@ -15,10 +15,12 @@ const config = {
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
   publicBridgeUrl: stripTrailingSlash(process.env.PUBLIC_BRIDGE_URL || ''),
   logLevel: process.env.LOG_LEVEL || 'info',
-  requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 10000),
+  requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 25000),
+  outboundPollIntervalMs: Number(process.env.OUTBOUND_POLL_INTERVAL_MS || 30000),
 };
 
 const activeCalls = new Map();
+let outboundPollRunning = false;
 
 const BASE_INSTRUCTIONS = `
 Sei Viola di CasaFolino, l'assistente virtuale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
@@ -142,6 +144,11 @@ async function pollOutboundCalls() {
   if (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioPhoneNumber) {
     return;
   }
+  if (outboundPollRunning) {
+    log('debug', 'Skipping outbound poll because previous poll is still running');
+    return;
+  }
+  outboundPollRunning = true;
   try {
     const bridgeConfig = await odooRequest('/voice_ai/config');
     if (!bridgeConfig.allow_outbound) {
@@ -190,6 +197,8 @@ async function pollOutboundCalls() {
     
   } catch (error) {
     log('error', 'Outbound poller error', { message: error.message });
+  } finally {
+    outboundPollRunning = false;
   }
 }
 
@@ -673,10 +682,14 @@ server.listen(config.port, '127.0.0.1', () => {
     has_twilio: Boolean(config.twilioAccountSid),
   });
   
-  // Start the background outbound poller loop (every 15 seconds)
+  // Start the background outbound poller loop.
   if (config.twilioAccountSid && config.twilioAuthToken && config.twilioPhoneNumber) {
-    log('info', 'Outbound Queue Poller started');
-    setInterval(pollOutboundCalls, 15000);
+    log('info', 'Outbound Queue Poller started', {
+      interval_ms: config.outboundPollIntervalMs,
+      request_timeout_ms: config.requestTimeoutMs,
+    });
+    setInterval(pollOutboundCalls, config.outboundPollIntervalMs);
+    pollOutboundCalls();
   } else {
     log('warn', 'Outbound Queue Poller NOT started (missing Twilio credentials in .env)');
   }

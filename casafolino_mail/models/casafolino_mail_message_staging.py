@@ -53,6 +53,11 @@ class CasafolinoMailMessage(models.Model):
     account_id = fields.Many2one('casafolino.mail.account', string='Account',
                                   required=True, ondelete='cascade')
     message_id_rfc = fields.Char('Message-ID RFC 2822', index=True)
+    email_message_id = fields.Char(
+        'Email Message-ID',
+        related='message_id_rfc',
+        readonly=True,
+    )
     imap_uid = fields.Char('UID IMAP')
     imap_folder = fields.Char('Cartella IMAP')
     direction = fields.Selection([

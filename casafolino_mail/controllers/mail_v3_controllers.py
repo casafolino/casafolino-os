@@ -54,6 +54,23 @@ class MailV3Controller(http.Controller):
             ('active', '=', True),
         ]).ids
 
+    def _normalize_account_ids(self, account_ids=None):
+        """Return requested account ids intersected with the current user's accounts."""
+        user_accounts = self._get_user_account_ids()
+        if not user_accounts:
+            return []
+        if not account_ids:
+            return user_accounts
+        if isinstance(account_ids, (int, str)):
+            account_ids = [account_ids]
+        normalized = []
+        for account_id in account_ids:
+            try:
+                normalized.append(int(account_id))
+            except (TypeError, ValueError):
+                continue
+        return [account_id for account_id in normalized if account_id in user_accounts]
+
     def _check_thread_ownership(self, thread):
         """Return True if thread belongs to current user's accounts."""
         return thread.exists() and thread.account_id.id in self._get_user_account_ids()
@@ -62,22 +79,15 @@ class MailV3Controller(http.Controller):
 
     @http.route('/cf/mail/v3/threads/list', type='json', auth='user')
     def threads_list(self, **kw):
-        user_accounts = self._get_user_account_ids()
-        if not user_accounts:
+        account_ids = self._normalize_account_ids(kw.get('account_ids'))
+        if not account_ids:
             return {'threads': [], 'total': 0}
 
-        account_ids = kw.get('account_ids')
         state = kw.get('state', 'keep')
         limit = min(int(kw.get('limit', 50)), 200)
         offset = int(kw.get('offset', 0))
         filters = kw.get('filters', {})
         folder = kw.get('folder')
-
-        # Intersect requested accounts with user's own accounts
-        if account_ids:
-            account_ids = [a for a in account_ids if a in user_accounts]
-        else:
-            account_ids = user_accounts
 
         domain = [('account_id', 'in', account_ids)]
 
@@ -1753,12 +1763,12 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/analytics', type='json', auth='user')
     def analytics(self, **kw):
         days = int(kw.get('days', 30))
-        user_accounts = self._get_user_account_ids()
-        account_ids = kw.get('account_ids')
-        if account_ids:
-            account_ids = [a for a in account_ids if a in user_accounts]
-        else:
-            account_ids = user_accounts
+        account_ids = self._normalize_account_ids(kw.get('account_ids'))
+        if not account_ids:
+            return request.env['casafolino.mail.response.metric'].get_analytics(
+                days=days,
+                account_ids=[],
+            )
         Metric = request.env['casafolino.mail.response.metric']
         return Metric.get_analytics(days=days, account_ids=account_ids)
 
@@ -3171,11 +3181,10 @@ class MailV3Controller(http.Controller):
     @http.route('/cf/mail/v3/mass_action/folders_for_move', type='json', auth='user')
     def mass_action_folders_for_move(self, **kw):
         """Get folders available for move, excluding current folder."""
-        account_ids = kw.get('account_ids', [])
+        account_ids = self._normalize_account_ids(kw.get('account_ids'))
         exclude_folder_id = kw.get('exclude_folder_id')
-
         if not account_ids:
-            account_ids = self._get_user_account_ids()
+            return {'folders': []}
 
         domain = [('account_id', 'in', account_ids)]
         if exclude_folder_id:
