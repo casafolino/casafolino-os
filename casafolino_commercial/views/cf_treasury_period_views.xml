@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==== Fatturato clienti per periodo ==== -->
+    <record id="view_cf_treasury_revenue_period_list" model="ir.ui.view">
+        <field name="name">account.move.cf.treasury.revenue.period.list</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <list string="Fatturato per periodo" create="false">
+                <field name="invoice_date"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="invoice_origin"/>
+                <field name="invoice_date_due"/>
+                <field name="amount_untaxed_signed" sum="Imponibile"/>
+                <field name="amount_total_signed" sum="Totale"/>
+                <field name="payment_state"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_treasury_revenue_period_pivot" model="ir.ui.view">
+        <field name="name">account.move.cf.treasury.revenue.period.pivot</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <pivot string="Fatturato per periodo">
+                <field name="invoice_date" type="row" interval="month"/>
+                <field name="partner_id" type="row"/>
+                <field name="journal_id" type="col"/>
+                <field name="amount_untaxed_signed" type="measure"/>
+                <field name="amount_total_signed" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_cf_treasury_revenue_period_graph" model="ir.ui.view">
+        <field name="name">account.move.cf.treasury.revenue.period.graph</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <graph string="Fatturato per periodo" type="bar">
+                <field name="invoice_date" interval="month"/>
+                <field name="amount_untaxed_signed" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_cf_treasury_revenue_period_search" model="ir.ui.view">
+        <field name="name">account.move.cf.treasury.revenue.period.search</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <search string="Cerca fatturato">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="invoice_origin"/>
+                <field name="invoice_date"/>
+                <filter string="Mese corrente" name="this_month"
+                        domain="[('invoice_date', '&gt;=', context_today().strftime('%Y-%m-01')), ('invoice_date', '&lt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Anno corrente" name="this_year"
+                        domain="[('invoice_date', '&gt;=', context_today().strftime('%Y-01-01')), ('invoice_date', '&lt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Fatture" name="only_invoices" domain="[('move_type', '=', 'out_invoice')]"/>
+                <filter string="Note credito" name="only_refunds" domain="[('move_type', '=', 'out_refund')]"/>
+                <separator/>
+                <filter string="Cliente" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                <filter string="Mese fattura" name="group_invoice_month" context="{'group_by': 'invoice_date:month'}"/>
+                <filter string="Registro" name="group_journal" context="{'group_by': 'journal_id'}"/>
+                <filter string="Stato pagamento" name="group_payment_state" context="{'group_by': 'payment_state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_cf_treasury_revenue_period" model="ir.actions.act_window">
+        <field name="name">Fatturato</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="domain">[('move_type', 'in', ('out_invoice', 'out_refund')), ('state', '=', 'posted')]</field>
+        <field name="context">{'search_default_this_year': 1, 'search_default_group_invoice_month': 1}</field>
+        <field name="search_view_id" ref="view_cf_treasury_revenue_period_search"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_cf_treasury_revenue_period_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_cf_treasury_revenue_period_graph')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_cf_treasury_revenue_period_list')})
+        ]"/>
+    </record>
+
+    <!-- ==== Ordini vendita per periodo ==== -->
+    <record id="view_cf_treasury_sale_period_list" model="ir.ui.view">
+        <field name="name">sale.order.cf.treasury.period.list</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <list string="Ordini per periodo" create="false">
+                <field name="date_order"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="amount_untaxed" sum="Imponibile"/>
+                <field name="amount_total" sum="Totale"/>
+                <field name="invoice_status"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_treasury_sale_period_pivot" model="ir.ui.view">
+        <field name="name">sale.order.cf.treasury.period.pivot</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <pivot string="Ordini per periodo">
+                <field name="date_order" type="row" interval="month"/>
+                <field name="partner_id" type="row"/>
+                <field name="user_id" type="col"/>
+                <field name="amount_untaxed" type="measure"/>
+                <field name="amount_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_cf_treasury_sale_period_graph" model="ir.ui.view">
+        <field name="name">sale.order.cf.treasury.period.graph</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <graph string="Ordini per periodo" type="bar">
+                <field name="date_order" interval="month"/>
+                <field name="amount_untaxed" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_cf_treasury_sale_period_search" model="ir.ui.view">
+        <field name="name">sale.order.cf.treasury.period.search</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <search string="Cerca ordini">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="date_order"/>
+                <filter string="Mese corrente" name="this_month"
+                        domain="[('date_order', '&gt;=', context_today().strftime('%Y-%m-01 00:00:00')), ('date_order', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                <filter string="Anno corrente" name="this_year"
+                        domain="[('date_order', '&gt;=', context_today().strftime('%Y-01-01 00:00:00')), ('date_order', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                <filter string="Preventivi" name="draft_orders" domain="[('state', 'in', ('draft', 'sent'))]"/>
+                <filter string="Ordini confermati" name="confirmed_orders" domain="[('state', 'in', ('sale', 'done'))]"/>
+                <separator/>
+                <filter string="Cliente" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                <filter string="Mese ordine" name="group_order_month" context="{'group_by': 'date_order:month'}"/>
+                <filter string="Venditore" name="group_user" context="{'group_by': 'user_id'}"/>
+                <filter string="Stato" name="group_state" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_cf_treasury_sale_period" model="ir.actions.act_window">
+        <field name="name">Ordini</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="domain">[('state', '!=', 'cancel')]</field>
+        <field name="context">{'search_default_this_year': 1, 'search_default_group_order_month': 1}</field>
+        <field name="search_view_id" ref="view_cf_treasury_sale_period_search"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_cf_treasury_sale_period_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_cf_treasury_sale_period_graph')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_cf_treasury_sale_period_list')})
+        ]"/>
+    </record>
+</odoo>
