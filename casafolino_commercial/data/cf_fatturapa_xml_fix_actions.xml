@@ -8,4 +8,14 @@
         <field name="state">code</field>
         <field name="code">action = records.cf_action_fix_europa_commerciale_fatturapa_xml()</field>
     </record>
+
+    <record id="action_cf_fix_purchase_fatturapa_xml" model="ir.actions.server">
+        <field name="name">CF: Ricalcola importi XML acquisto (6 dec.)</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.cf_action_fix_purchase_fatturapa_xml()</field>
+    </record>
 </odoo>

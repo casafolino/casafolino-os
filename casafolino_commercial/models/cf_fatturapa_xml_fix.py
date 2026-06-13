@@ -424,6 +424,28 @@ class AccountMove(models.Model):
             },
         }
 
+    def cf_action_fix_purchase_fatturapa_xml(self):
+        invalid_moves = self.filtered(lambda move: move.move_type not in ("in_invoice", "in_refund"))
+        if invalid_moves:
+            raise UserError(_("Questa azione e' disponibile solo per fatture e note di credito fornitore."))
+
+        moves = self.filtered(lambda move: move.move_type in ("in_invoice", "in_refund"))
+        if not moves:
+            raise UserError(_("Seleziona almeno una fattura fornitore."))
+
+        fixed = moves._cf_fix_fatturapa_xml_lines(restrict_europa=False)
+        skipped = len(moves) - fixed
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Ricalcolo XML acquisti"),
+                "message": _("Fatture riallineate: %(fixed)s. Saltate/non modificabili: %(skipped)s.", fixed=fixed, skipped=skipped),
+                "sticky": True,
+                "type": "success" if fixed else "warning",
+            },
+        }
+
     def _cf_fix_fatturapa_xml_lines(self, restrict_europa=True):
         fixed_count = 0
         for move in self:
