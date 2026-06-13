@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CasaFolino OS — Console unificata (reference completa)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ECE7DC; --panel:#FFFFFF; --soft:#FBFCFA; --tint:#FFFEF9;
+  --ink:#1D2520; --muted:#657066; --faint:#94998F;
+  --line:#DDDED4; --line-soft:#E7E6DC;
+  --gold:#B17B27; --gold-bright:#C8A43A; --gold-bg:#F7EFDC;
+  --green:#2F6B4F; --green-deep:#27412F; --green-bg:#E6F0E9;
+  --plum:#6B4A66; --plum-bg:#F0E8EF;
+  --amber:#A46416; --amber-bg:#F7EAD8;
+  --red:#B13C32; --red-bg:#F6E2DF;
+  --blue:#355F8B; --blue-bg:#E7EFF6;
+  --op-antonio:#2F6B4F; --op-josefina:#6B4A66; --op-martina:#6B4A1E;
+  --r-lg:16px; --r-md:12px; --r-sm:9px;
+  --shadow:0 1px 2px rgba(27,31,35,.06), 0 8px 24px rgba(27,31,35,.05);
+  --shadow-hover:0 2px 4px rgba(27,31,35,.08), 0 14px 34px rgba(27,31,35,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:13.5px;line-height:1.45}
+.app{display:grid;grid-template-columns:236px 1fr;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.side{background:linear-gradient(180deg,#2B4636,#27412F);color:#E9EBE4;display:flex;flex-direction:column;padding:18px 14px}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 8px 22px}
+.cf-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--gold-bright),var(--gold));display:grid;place-items:center;font-family:Fraunces,serif;font-weight:600;color:#3A2A0C;font-size:18px}
+.brand .word{font-family:Fraunces,serif;font-size:18px;font-weight:600;line-height:1;color:#FBF8F0}
+.brand .word small{display:block;font-family:Inter;font-size:10px;letter-spacing:2.5px;color:#9DB0A0;font-weight:600;margin-top:3px}
+.nav{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-sm);color:#C5D0C6;text-decoration:none;font-weight:500;font-size:13.5px;cursor:pointer;transition:background .15s,color .15s}
+.nav a .ic{width:18px;text-align:center;font-size:15px;opacity:.92}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.active{background:rgba(200,164,58,.16);color:#FBF1D8;box-shadow:inset 3px 0 0 var(--gold-bright)}
+.nav a.active .ic{color:var(--gold-bright)}
+.side-foot{margin-top:auto;padding:14px 10px 4px;border-top:1px solid rgba(255,255,255,.08);color:#8FA292;font-size:11px}
+.side-foot b{color:#C8A43A;font-family:Fraunces,serif;font-weight:500}
+
+/* TOPBAR */
+.main{display:flex;flex-direction:column;min-width:0}
+.top{height:60px;display:flex;align-items:center;gap:18px;padding:0 22px;background:rgba(255,255,255,.62);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.top .title{font-family:Fraunces,serif;font-size:19px;font-weight:600}
+.top .title em{font-style:normal;color:var(--gold)}
+.search{flex:1;max-width:440px;margin:0 auto;position:relative}
+.search input{width:100%;height:38px;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:0 14px 0 36px;font:inherit;color:var(--ink)}
+.search input::placeholder{color:var(--faint)}
+.search:before{content:"⌕";position:absolute;left:12px;top:8px;font-size:17px;color:var(--faint)}
+.intake{height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold-bright),var(--gold));color:#3A2A0C;font-weight:600;padding:0 16px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;box-shadow:0 1px 2px rgba(120,86,20,.3)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--plum);color:#fff;display:grid;place-items:center;font-weight:600;font-size:13px}
+
+/* SCREEN */
+.screen{padding:20px 22px 0;overflow:auto;flex:1;display:none;flex-direction:column}
+.screen.active{display:flex}
+.screen-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:600}
+.screen-head h1{font-family:Fraunces,serif;font-weight:600;font-size:25px;margin:4px 0 0}
+.headstats{display:flex;gap:22px}
+.headstat .n{font-family:Fraunces,serif;font-size:22px;font-weight:600}
+.headstat .n.gold{color:var(--gold)}
+.headstat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+
+/* generic panel */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow)}
+.panel-h{padding:13px 15px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between}
+.panel-h b{font-size:13px}
+.panel-h .pill{font-size:10.5px;font-weight:600;border-radius:20px;padding:2px 9px;background:var(--soft);border:1px solid var(--line);color:var(--muted)}
+.panel-b{padding:13px 15px}
+
+/* ---------- REGIA ---------- */
+.regia{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:14px;padding-bottom:24px;align-items:start}
+.li{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line-soft)}
+.li:last-child{border-bottom:none}
+.li .who{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:700}
+.li .tx{flex:1;min-width:0}
+.li .tx b{font-weight:600;font-size:12.5px}
+.li .tx span{display:block;color:var(--muted);font-size:11.5px}
+.li .age{font-size:10.5px;color:var(--faint);white-space:nowrap}
+.li .age.hot{color:var(--red);font-weight:600}
+.o-antonio{background:var(--op-antonio)} .o-josefina{background:var(--op-josefina)} .o-martina{background:var(--op-martina)}
+.ritmo{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px 15px}
+.ritmo .k{background:var(--soft);border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:11px}
+.ritmo .k .v{font-family:Fraunces,serif;font-size:21px;font-weight:600}
+.ritmo .k .v.g{color:var(--green)} .ritmo .k .v.gold{color:var(--gold)} .ritmo .k .v.r{color:var(--red)}
+.ritmo .k .lb{font-size:11px;color:var(--muted)}
+.ai .ai-i{display:flex;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line-soft)}
+.ai .ai-i:last-child{border-bottom:none}
+.ai .spark{width:22px;height:22px;border-radius:7px;background:var(--gold-bg);color:var(--gold);display:grid;place-items:center;font-size:12px;flex:none}
+.ai .ai-i p{margin:0;font-size:12.5px}.ai .ai-i p b{font-weight:600}
+.intake-card .opt{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line-soft);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;background:var(--soft)}
+.intake-card .opt:hover{border-color:var(--gold);background:var(--gold-bg)}
+.intake-card .opt .em{font-size:16px}
+.span2{grid-column:span 2}
+
+/* ---------- INBOX ---------- */
+.inbox3{display:grid;grid-template-columns:300px 1fr 290px;gap:14px;flex:1;min-height:0;padding-bottom:20px}
+.mailcol{display:flex;flex-direction:column;min-height:0}
+.mailqueue{overflow:auto}
+.mailtabs{display:flex;gap:6px;margin-bottom:12px}
+.mailtabs .t{font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--muted);cursor:pointer}
+.mailtabs .t.on{background:var(--green);color:#fff;border-color:var(--green)}
+.mi{padding:11px 13px;border-bottom:1px solid var(--line-soft);cursor:pointer;background:var(--panel)}
+.mi:first-child{border-top-left-radius:var(--r-md);border-top-right-radius:var(--r-md)}
+.mi.sel{background:var(--gold-bg);box-shadow:inset 3px 0 0 var(--gold)}
+.mi .r1{display:flex;justify-content:space-between;align-items:center}
+.mi .r1 b{font-size:12.5px}
+.mi .r1 .tg{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px;border-radius:5px}
+.tg.lead{background:var(--green-bg);color:var(--green)} .tg.quote{background:var(--blue-bg);color:var(--blue)} .tg.spam{background:#EEEFE9;color:var(--faint)}
+.mi .sub{font-size:12px;margin-top:3px}.mi .sn{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mailbody .from{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.mailbody h3{font-family:Fraunces,serif;font-size:17px;margin:0 0 10px}
+.mailbody .bd{font-size:13px;color:#33392F;line-height:1.6}
+.aibox{margin-top:14px;background:var(--gold-bg);border:1px solid #E8D6AC;border-radius:var(--r-sm);padding:11px 13px}
+.aibox .lab{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--gold);text-transform:uppercase}
+.replybar{margin-top:14px;display:flex;gap:8px}
+.replybar input{flex:1;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;background:var(--soft)}
+.btn{height:38px;border:none;border-radius:9px;padding:0 15px;font-weight:600;font-size:12.5px;cursor:pointer}
+.btn.g{background:var(--green);color:#fff}.btn.gold{background:linear-gradient(135deg,var(--gold-bright),var(--gold));color:#3A2A0C}
+.ctx .row{padding:9px 0;border-bottom:1px dashed var(--line-soft);font-size:12px}
+.ctx .row:last-child{border:none}.ctx .row .k{color:var(--muted);font-size:11px}.ctx .row b{font-weight:600}
+
+/* ---------- PIPELINE ---------- */
+.board{display:flex;gap:14px;overflow-x:auto;padding-bottom:22px;flex:1;align-items:flex-start}
+.col{flex:0 0 250px;background:var(--soft);border:1px solid var(--line-soft);border-radius:var(--r-md);display:flex;flex-direction:column;max-height:100%}
+.col-head{padding:12px 13px 10px;border-bottom:1px solid var(--line-soft)}
+.col-head .row1{display:flex;align-items:center;justify-content:space-between}
+.col-name{font-weight:600;font-size:12.5px}
+.count{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:600;border-radius:20px;padding:1px 8px}
+.col-total{font-size:11.5px;color:var(--muted);margin-top:3px}.col-total b{color:var(--ink);font-weight:600}
+.col-body{padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:9px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px;box-shadow:var(--shadow);cursor:grab;transition:transform .14s,box-shadow .14s,border-color .14s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);border-color:#D2CBB8}
+.card .c-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.co{display:flex;align-items:center;gap:7px;min-width:0}.flag{font-size:14px}
+.co b{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.owner{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:9px;font-weight:700}
+.c-meta{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+.tag{font-size:10.5px;font-weight:500;color:var(--muted);background:var(--tint);border:1px solid var(--line-soft);border-radius:6px;padding:2px 7px}
+.temp{font-size:10.5px;font-weight:600;border-radius:6px;padding:2px 7px}
+.t-calda{background:var(--red-bg);color:var(--red)}.t-tiepida{background:var(--amber-bg);color:var(--amber)}.t-fredda{background:#EEEFE9;color:var(--faint)}
+.c-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:9px;border-top:1px solid var(--line-soft)}
+.val{font-family:Fraunces,serif;font-weight:600;font-size:14px;color:var(--green)}
+.days{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--faint)}
+.dot{width:6px;height:6px;border-radius:50%}.dot.warm{background:var(--amber)}.dot.hot{background:var(--red)}.dot.ok{background:#CFCFC4}
+.col.won{background:var(--green-bg);border-color:#CBE0D1}.col.won .col-head{border-color:#CBE0D1}
+
+/* ---------- DOSSIER ---------- */
+.dossier{display:grid;grid-template-columns:1fr 320px;gap:14px;padding-bottom:24px;align-items:start}
+.dhead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.dhead .logo{width:52px;height:52px;border-radius:14px;background:var(--green-bg);color:var(--green);display:grid;place-items:center;font-family:Fraunces,serif;font-weight:600;font-size:20px}
+.dhead h2{font-family:Fraunces,serif;font-size:22px;margin:0}
+.dhead .sub{color:var(--muted);font-size:12.5px}
+.dpills{display:flex;gap:7px;margin-left:auto}
+.dpill{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--green-bg);color:var(--green)}
+.dpill.gold{background:var(--gold-bg);color:var(--gold)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs .tb{padding:9px 13px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs .tb.on{color:var(--ink);border-color:var(--gold)}
+.timeline{position:relative;padding-left:24px}
+.timeline:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl{position:relative;padding:10px 0}
+.tl:before{content:"";position:absolute;left:-20px;top:14px;width:11px;height:11px;border-radius:50%;background:var(--panel);border:2px solid var(--gold)}
+.tl.green:before{border-color:var(--green)}.tl.blue:before{border-color:var(--blue)}.tl.plum:before{border-color:var(--plum)}
+.tl .t1{font-weight:600;font-size:13px}.tl .t2{color:var(--muted);font-size:11.5px}
+.tl .when{font-size:10.5px;color:var(--faint)}
+.facts .f{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line-soft);font-size:12.5px}
+.facts .f:last-child{border:none}.facts .f .k{color:var(--muted)}.facts .f b{font-weight:600}
+.dec{display:flex;gap:9px;padding:10px 0;border-bottom:1px dashed var(--line-soft)}
+.dec:last-child{border:none}.dec .mk{width:8px;height:8px;border-radius:50%;background:var(--amber);margin-top:5px;flex:none}
+.dec p{margin:0;font-size:12.5px}.dec p span{display:block;color:var(--muted);font-size:11px}
+
+/* ---------- TASK ---------- */
+.tasks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding-bottom:24px;align-items:start}
+.tk{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line-soft)}
+.tk:last-child{border:none}
+.cbx{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line);margin-top:2px;flex:none}
+.tk .tt b{font-weight:600;font-size:12.5px}.tk .tt span{display:block;color:var(--muted);font-size:11px}
+.tk .who{width:20px;height:20px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center;margin-left:auto;flex:none}
+.due{font-size:10px;font-weight:600;color:var(--amber)}.due.hot{color:var(--red)}
+
+/* ---------- MESSAGGI ---------- */
+.msgs{max-width:760px;padding-bottom:24px}
+.msg{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid var(--line-soft)}
+.msg .av{width:30px;height:30px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;flex:none}
+.msg .bo b{font-weight:600;font-size:12.5px}.msg .bo .tm{color:var(--faint);font-size:10.5px;margin-left:6px}
+.msg .bo p{margin:4px 0 0;font-size:12.5px;color:#33392F}
+.relay{background:var(--gold-bg);border:1px solid #E8D6AC;border-radius:8px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--gold);display:inline-block;margin-top:6px}
+
+/* ---- Pipeline Export (da screenshot) ---- */
+.pbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:14px}
+.pbar .lead{font-family:Fraunces,serif;font-size:22px;font-weight:600}
+.pbar .lead small{font-family:Inter;font-size:13px;color:var(--muted);font-weight:500;margin-left:8px}
+.vtoggle{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:3px}
+.vtoggle button{border:none;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer}
+.vtoggle button.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+.btn-new{height:38px;border:none;border-radius:10px;background:var(--green);color:#fff;font-weight:600;padding:0 16px;font-size:13px;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:15px 17px;box-shadow:var(--shadow)}
+.kpi .lb{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi .v{font-family:Fraunces,serif;font-size:29px;font-weight:600;margin:7px 0 3px}
+.kpi .d{font-size:11.5px;color:var(--muted)}
+.kpi .d.up{color:var(--green)} .kpi .d.down{color:var(--red)}
+.filters{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.fchip{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;padding:7px 13px;border-radius:20px;background:var(--panel);border:1px solid var(--line);color:var(--ink);cursor:pointer}
+.fchip.on{background:var(--green);color:#fff;border-color:var(--green)}
+.fsep{width:1px;height:20px;background:var(--line);margin:0 3px}
+.fsort{margin-left:auto;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:7px 13px;background:var(--panel);cursor:pointer}
+.board-exp{display:flex;gap:16px;overflow-x:auto;padding-bottom:22px;flex:1;align-items:flex-start}
+.ecol{flex:0 0 312px;display:flex;flex-direction:column;max-height:100%}
+.ecol-head{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 12px}
+.ecol-head .nm{display:flex;align-items:center;font-weight:600;font-size:14px}
+.cdot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:9px}
+.cdot.gray{background:#9AA199}.cdot.blue{background:var(--blue)}.cdot.amber{background:var(--gold-bright)}.cdot.orange{background:#C2622E}.cdot.green{background:var(--green)}
+.ecol-head .meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px;font-weight:600}
+.ecol-body{display:flex;flex-direction:column;gap:13px;overflow-y:auto}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow);transition:transform .14s,box-shadow .14s}
+.pcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+.pcard.stag{background:#FCEFEE;border-color:#E9C9C4;box-shadow:inset 4px 0 0 var(--red),var(--shadow)}
+.pcard.warm{background:#FCF6E4;border-color:#EAD9A6;box-shadow:inset 4px 0 0 var(--gold-bright),var(--shadow)}
+.pc-top{display:flex;align-items:flex-start;gap:12px}
+.pc-av{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:none}
+.pc-nm b{font-weight:600;font-size:14.5px;display:block;line-height:1.2}
+.pc-nm span{font-size:12px;color:var(--muted)}
+.pc-st{margin-left:auto;width:12px;height:12px;border-radius:50%;flex:none;margin-top:3px}
+.pc-st.red{background:var(--red)}.pc-st.yellow{background:var(--gold-bright)}
+.pc-rev{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.pc-rev .big{font-family:Fraunces,serif;font-size:17px;color:var(--green);font-weight:600}
+.pc-rev .wait{color:var(--amber);font-weight:600}
+.pc-rev .pos{color:var(--green);font-weight:600}
+.scorebar{display:flex;align-items:center;gap:10px;margin-top:11px}
+.scorebar .track{flex:1;height:5px;border-radius:5px;background:var(--line-soft);overflow:hidden}
+.scorebar .fill{height:100%;border-radius:5px;background:var(--green)}
+.scorebar .fill.r{background:var(--red)}.scorebar .fill.a{background:var(--gold-bright)}
+.scorebar .sc{font-size:12px;font-weight:600;color:var(--muted);min-width:20px;text-align:right}
+.pc-foot{display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line-soft);flex-wrap:wrap}
+.gg{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--green);background:var(--green-bg);border-radius:7px;padding:3px 9px}
+.gg.bad{color:var(--red);background:transparent;padding-left:0}
+.gg.warn{color:var(--amber);background:transparent;padding-left:0}
+.ptag{font-size:11px;font-weight:600;border-radius:7px;padding:3px 9px;border:1px solid var(--line);color:var(--muted)}
+.ptag.halal{border-color:#9DBBE4;color:var(--blue)}
+.addcard{border:1.5px dashed var(--line);border-radius:var(--r-md);padding:14px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer}
+/* ---- Inbox: settimane + data/ora ---- */
+.weekhead{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--faint);padding:13px 13px 7px;background:var(--soft)}
+.mi .dt{font-size:10.5px;color:var(--faint);white-space:nowrap;font-weight:500}
+.mi .r2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px}
+/* ---- AI seria (woven everywhere) ---- */
+.aibar{flex:1;max-width:540px;margin:0 auto;position:relative}
+.aibar input{width:100%;height:38px;border:1px solid #E8D6AC;background:linear-gradient(0deg,var(--gold-bg),#FFFDF6);border-radius:10px;padding:0 14px 0 38px;font:inherit;color:var(--ink)}
+.aibar input::placeholder{color:#9A7B3C}
+.aibar:before{content:"✦";position:absolute;left:13px;top:9px;font-size:15px;color:var(--gold)}
+.ai-line{display:flex;align-items:center;gap:7px;margin-top:11px;font-size:11.5px;color:#7A551A;background:var(--gold-bg);border:1px solid #EAD9A6;border-radius:8px;padding:6px 10px}
+.ai-line .sp{color:var(--gold);font-weight:700}
+.ai-panel{background:linear-gradient(180deg,#FFFDF6,#FFF8E8)!important;border-color:#EAD9A6!important}
+.ai-panel .panel-h{border-color:#EAD9A6}
+.ai-conf{display:flex;gap:8px;margin-top:11px}
+.ai-conf .ok{background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-weight:600;font-size:12px;cursor:pointer}
+.ai-conf .no{background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:7px 13px;font-weight:600;font-size:12px;cursor:pointer}
+.ai-why{font-size:11.5px;color:var(--muted);margin-top:8px}.ai-why b{color:var(--ink)}
+.ext{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.ext .e{font-size:11px;background:var(--panel);border:1px solid #EAD9A6;border-radius:7px;padding:3px 9px}
+.ext .e b{color:var(--gold)}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-thumb{background:#D3D2C5;border-radius:10px;border:3px solid var(--bg)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand"><div class="cf-mark">CF</div><div class="word">CasaFolino<small>OS · COMMERCIALE</small></div></div>
+    <nav class="nav">
+      <a class="active" data-go="regia"><span class="ic">⌂</span> Regia</a>
+      <a data-go="inbox"><span class="ic">✉</span> Inbox</a>
+      <a data-go="pipeline"><span class="ic">◧</span> Pipeline</a>
+      <a data-go="dossier"><span class="ic">▤</span> Dossier</a>
+      <a data-go="task"><span class="ic">◷</span> Task</a>
+      <a data-go="messaggi"><span class="ic">◇</span> Messaggi</a>
+    </nav>
+    <div class="side-foot">Dal <b>1962</b> · export 20+ paesi</div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="title">Casa<em>Folino</em></div>
+      <div class="aibar"><input placeholder="Chiedi a CasaFolino AI:  «scrivi follow-up a Hofer» · «chi non sento da 30gg» · «forecast Q3»…"></div>
+      <button class="intake"><span>⚡</span> Intake 30s</button>
+      <div class="avatar">AF</div>
+    </header>
+
+    <!-- ============ REGIA ============ -->
+    <section class="screen active" data-screen="regia">
+      <div class="screen-head">
+        <div><div class="eyebrow">Sala controllo · oggi</div><h1>Regia</h1></div>
+        <div class="headstats">
+          <div class="headstat"><div class="n">23</div><div class="l">Deal attivi</div></div>
+          <div class="headstat"><div class="n gold">9</div><div class="l">Follow-up oggi</div></div>
+          <div class="headstat"><div class="n">27</div><div class="l">Mail da smistare</div></div>
+        </div>
+      </div>
+      <div class="regia">
+        <div class="panel">
+          <div class="panel-h"><b>Tocca a noi</b><span class="pill">7 azioni</span></div>
+          <div class="panel-b">
+            <div class="li"><div class="who o-josefina">J</div><div class="tx"><b>Gourmet Handels GmbH</b><span>Rispondere alla richiesta listino</span></div><div class="age hot">4 gg</div></div>
+            <div class="li"><div class="who o-antonio">A</div><div class="tx"><b>Hofer (Aldi Süd)</b><span>Quotazione da inviare</span></div><div class="age">oggi</div></div>
+            <div class="li"><div class="who o-antonio">A</div><div class="tx"><b>Toronto Specialty Foods</b><span>Follow-up 2 dovuto</span></div><div class="age hot">6 gg</div></div>
+            <div class="li"><div class="who o-martina">M</div><div class="tx"><b>Coop Italia</b><span>Sollecito quotazione</span></div><div class="age hot">9 gg</div></div>
+            <div class="li"><div class="who o-josefina">J</div><div class="tx"><b>Whole Foods Canada</b><span>Apri dossier Crispy Chili</span></div><div class="age">2 gg</div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="panel">
+            <div class="panel-h"><b>Clienti caldi</b><span class="pill" style="color:var(--red)">5</span></div>
+            <div class="panel-b">
+              <div class="li"><div class="tx"><b>REWE Group</b><span>Trattativa · € 48.200</span></div><span class="temp t-calda">calda</span></div>
+              <div class="li"><div class="tx"><b>Bindawood</b><span>Qualificata · € 24.000</span></div><span class="temp t-calda">calda</span></div>
+              <div class="li"><div class="tx"><b>Gourmet Handels</b><span>Da qualificare</span></div><span class="temp t-calda">calda</span></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><b>Bloccati</b><span class="pill" style="color:var(--amber)">3</span></div>
+            <div class="panel-b">
+              <div class="li"><div class="tx"><b>Coop Italia</b><span>Ferma in quotazione</span></div><div class="age hot">9 gg</div></div>
+              <div class="li"><div class="tx"><b>Spinneys</b><span>Nessuna risposta</span></div><div class="age">8 gg</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="panel ai">
+            <div class="panel-h"><b>Prossimi step consigliati</b><span class="pill" style="color:var(--gold)">AI</span></div>
+            <div class="panel-b">
+              <div class="ai-i"><div class="spark">✦</div><p>Riproponi a <b>Edeka</b> il follow-up post-fiera: aperta 2 mail, non ha risposto.</p></div>
+              <div class="ai-i"><div class="spark">✦</div><p><b>Partner simili</b> a REWE: valuta contatto con <b>Kaufland DE</b> (stesso profilo).</p></div>
+              <div class="ai-i"><div class="spark">✦</div><p><b>Bindawood</b> è caldo da 3 gg: invia listino HoReCa prima che si raffreddi.</p></div>
+            </div>
+          </div>
+          <div class="panel intake-card">
+            <div class="panel-h"><b>Intake rapido</b><span class="pill">30 sec</span></div>
+            <div class="panel-b">
+              <div class="opt"><span class="em">📞</span><div><b style="font-size:12.5px">Chiamata nuova</b></div></div>
+              <div class="opt"><span class="em">✉</span><div><b style="font-size:12.5px">Mail in arrivo → lead</b></div></div>
+              <div class="opt"><span class="em">🪪</span><div><b style="font-size:12.5px">Biglietto da fiera</b></div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><b>Ritmo operativo</b></div>
+            <div class="ritmo">
+              <div class="k"><div class="v g">14h</div><div class="lb">Tempo medio 1ª risposta</div></div>
+              <div class="k"><div class="v gold">€ 248.900</div><div class="lb">Valore pipeline</div></div>
+              <div class="k"><div class="v">31%</div><div class="lb">Conversione qualifica</div></div>
+              <div class="k"><div class="v r">3</div><div class="lb">Deal a rischio</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ INBOX ============ -->
+    <section class="screen" data-screen="inbox">
+      <div class="screen-head"><div><div class="eyebrow">3 caselle · Groq AI triage</div><h1>Inbox</h1></div>
+        <div class="headstats"><div class="headstat"><div class="n gold">27</div><div class="l">Da smistare</div></div><div class="headstat"><div class="n">5</div><div class="l">Caldi non letti</div></div></div></div>
+      <div class="inbox3">
+        <div class="mailcol">
+          <div class="mailtabs"><span class="t on">Triage</span><span class="t">Keep CRM</span><span class="t">Review</span></div>
+          <div class="mailqueue panel" style="flex:1;overflow:auto">
+            <div class="weekhead">Questa settimana</div>
+            <div class="mi sel"><div class="r1"><b>Laura Bianchi · REWE</b><span class="dt">oggi · 09:24</span></div><div class="sub">Richiesta listino linea premium</div><div class="r2"><span class="sn">Buongiorno, saremmo interessati…</span><span class="tg quote">quotaz.</span></div></div>
+            <div class="mi"><div class="r1"><b>Gourmet Handels</b><span class="dt">oggi · 08:10</span></div><div class="sub">Follow-up fiera Anuga</div><div class="r2"><span class="sn">Grazie per l'incontro allo stand…</span><span class="tg lead">lead</span></div></div>
+            <div class="mi"><div class="r1"><b>Whole Foods CA</b><span class="dt">mer 11 giu · 17:42</span></div><div class="sub">Crispy Chili – schede tecniche</div><div class="r2"><span class="sn">Could you share the spec sheets…</span><span class="tg quote">quotaz.</span></div></div>
+            <div class="weekhead">Settimana scorsa</div>
+            <div class="mi"><div class="r1"><b>Spinneys · Dubai</b><span class="dt">ven 6 giu · 11:05</span></div><div class="sub">Disponibilità campioni</div><div class="r2"><span class="sn">We would like to evaluate…</span><span class="tg lead">lead</span></div></div>
+            <div class="mi"><div class="r1"><b>newsletter@pack…</b><span class="dt">gio 5 giu · 14:03</span></div><div class="sub">Promo fornitore packaging</div><div class="r2"><span class="sn">Offerta del mese su…</span><span class="tg spam">scarta</span></div></div>
+          </div>
+        </div>
+        <div class="mailcol"><div class="panel" style="flex:1"><div class="panel-b mailbody">
+          <div class="from"><b>Laura Bianchi</b><span style="color:var(--muted);font-size:11.5px">l.bianchi@rewe-group.com · 2h fa</span></div>
+          <h3>Richiesta listino linea premium</h3>
+          <div class="bd">Buongiorno,<br>a seguito dell'incontro in fiera saremmo interessati a ricevere il listino della linea premium di creme spalmabili, con MOQ e condizioni EXW Lamezia. Valutiamo un primo ordine per il canale retail DACH.<br><br>Cordiali saluti,<br>Laura Bianchi — Buyer, REWE Group</div>
+          <div class="aibox"><div class="lab">✦ AI · estrazione</div>
+            <div class="ext"><span class="e">Intent: <b>richiesta listino</b></span><span class="e">Prodotti: <b>creme premium</b></span><span class="e">Canale: <b>retail DACH</b></span><span class="e" style="border-color:#E9C9C4;color:var(--red)">Manca: <b>MOQ deciso</b></span></div>
+            <div class="ai-why"><b>Match:</b> deal <b>REWE · Trattativa (€48.200)</b> — stesso dominio, owner Antonio. <b>Mossa suggerita:</b> allega listino HoReCa + scheda creme.</div>
+            <div style="margin-top:10px;font-size:12.5px;color:#33392F"><b>Bozza AI:</b> «Gentile Laura, in allegato il listino premium con MOQ 48 pz (multipli da 6) e condizioni EXW Lamezia. Restiamo a disposizione per il primo ordine retail DACH…»</div>
+            <div class="ai-conf"><button class="ok">Usa bozza →</button><button class="no">Modifica</button><button class="no">Scarta</button></div>
+          </div>
+          <div class="replybar"><input placeholder="Rispondi a Laura…"><button class="btn g">Invia</button><button class="btn gold">Apri F8</button></div>
+        </div></div></div>
+        <div class="mailcol"><div class="panel ctx" style="flex:1"><div class="panel-h"><b>Contesto</b><span class="pill">collegato</span></div><div class="panel-b">
+          <div class="row"><div class="k">Azienda</div><b>REWE Group 🇩🇪</b></div>
+          <div class="row"><div class="k">Owner</div><b style="color:var(--green)">Antonio</b></div>
+          <div class="row"><div class="k">Pipeline</div><b>Trattativa · € 48.200</b></div>
+          <div class="row"><div class="k">Prossima attività</div><b>Inviare listino — oggi</b></div>
+          <div class="row"><div class="k">Storico mail CRM</div><b>8 messaggi</b></div>
+          <div style="margin-top:12px;display:flex;gap:8px"><button class="btn g" style="flex:1">Apri dossier</button><button class="btn gold" style="flex:1">→ Lead</button></div>
+        </div></div></div>
+      </div>
+    </section>
+
+    <!-- ============ PIPELINE ============ -->
+    <section class="screen" data-screen="pipeline">
+      <div class="pbar">
+        <div class="lead">Pipeline Export<small>— 38 trattative attive</small></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="vtoggle"><button class="on">Kanban</button><button>Lista</button><button>Forecast</button></div>
+          <button class="btn-new">+ Nuova Trattativa</button>
+        </div>
+      </div>
+      <div class="filters">
+        <span class="fchip on">Tutte</span>
+        <span class="fchip">🌱 Standard</span>
+        <span class="fchip">⭐ Premium</span>
+        <span class="fsep"></span>
+        <span class="fchip">🔴 Stagnanti</span>
+        <span class="fchip">⭐ Alta priorità</span>
+        <span class="fchip">🏆 Vinte</span>
+        <span class="fchip">🌐 Responsabile</span>
+        <span class="fchip">🏷 Tag</span>
+        <span class="fsort">↕ Ordina: AI Score ↓</span>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="lb">Forecast totale</div><div class="v">€ 284K</div><div class="d up">↑ +12% vs mese scorso</div></div>
+        <div class="kpi"><div class="lb">Trattative attive</div><div class="v">38</div><div class="d">di cui 5 stagnanti</div></div>
+        <div class="kpi"><div class="lb">Vinte (30gg)</div><div class="v">7</div><div class="d up">↑ +3 vs periodo prec.</div></div>
+        <div class="kpi"><div class="lb">Win rate</div><div class="v">34%</div><div class="d down">↓ -4% vs media</div></div>
+        <div class="kpi"><div class="lb">Campionature attive</div><div class="v">11</div><div class="d">4 in attesa feedback</div></div>
+      </div>
+      <div class="board-exp">
+
+        <div class="ecol">
+          <div class="ecol-head"><span class="nm"><span class="cdot gray"></span>Rimprendere</span><span class="meta"><span>5</span><span>€18K</span></span></div>
+          <div class="ecol-body">
+            <div class="pcard stag">
+              <div class="pc-top"><div class="pc-av" style="background:#6B4A66">HF</div><div class="pc-nm"><b>Halal Foods GmbH</b><span>Berlino, Germania</span></div><span class="pc-st red"></span></div>
+              <div class="pc-rev"><span>Fatturato atteso</span><span class="big">€ 8.400</span></div>
+              <div class="scorebar"><div class="track"><div class="fill r" style="width:22%"></div></div><span class="sc">22</span></div>
+              <div class="ai-line"><span class="sp">✦</span> AI: fermo da 32gg — riattiva con sollecito listino oggi</div>
+              <div class="pc-foot"><span class="gg bad">💀 32gg stagnante</span><span class="ptag halal">Halal</span></div>
+            </div>
+            <div class="pcard warm">
+              <div class="pc-top"><div class="pc-av" style="background:#355F8B">BM</div><div class="pc-nm"><b>Boucherie Moderne</b><span>Lione, Francia</span></div><span class="pc-st yellow"></span></div>
+              <div class="pc-rev"><span>Fatturato atteso</span><span class="big">€ 3.200</span></div>
+              <div class="scorebar"><div class="track"><div class="fill a" style="width:45%"></div></div><span class="sc">45</span></div>
+              <div class="pc-foot"><span class="gg warn">⚠ 11gg</span><span class="ptag">Bio</span></div>
+            </div>
+            <div class="addcard">+ Aggiungi trattativa</div>
+          </div>
+        </div>
+
+        <div class="ecol">
+          <div class="ecol-head"><span class="nm"><span class="cdot blue"></span>Primo contatto</span><span class="meta"><span>8</span><span>€52K</span></span></div>
+          <div class="ecol-body">
+            <div class="pcard">
+              <div class="pc-top"><div class="pc-av" style="background:#3A4D2A">GF</div><div class="pc-nm"><b>Gulf Fresh Trading</b><span>Dubai, UAE</span></div><span class="pc-st red"></span></div>
+              <div class="pc-rev"><span>Fatturato atteso</span><span class="big">€ 22.000</span></div>
+              <div class="pc-rev" style="margin-top:6px"><span>Responsabile</span><b style="color:var(--ink)">Josefina R.</b></div>
+              <div class="scorebar"><div class="track"><div class="fill" style="width:68%"></div></div><span class="sc">68</span></div>
+              <div class="pc-foot"><span class="gg">✓ 3gg</span><span class="ptag halal">Halal</span><span class="ptag">Kosher</span></div>
+            </div>
+            <div class="pcard">
+              <div class="pc-top"><div class="pc-av" style="background:#C2622E">SC</div><div class="pc-nm"><b>Saveurs du Castillon</b><span>Bordeaux, Francia</span></div></div>
+              <div class="pc-rev"><span>Fatturato atteso</span><span class="big">€ 9.600</span></div>
+              <div class="scorebar"><div class="track"><div class="fill" style="width:55%"></div></div><span class="sc">55</span></div>
+              <div class="pc-foot"><span class="gg">✓ 5gg</span><span class="ptag">Bio</span></div>
+            </div>
+            <div class="addcard">+ Aggiungi trattativa</div>
+          </div>
+        </div>
+
+        <div class="ecol">
+          <div class="ecol-head"><span class="nm"><span class="cdot amber"></span>Campionatura</span><span class="meta"><span>7</span><span>€76K</span></span></div>
+          <div class="ecol-body">
+            <div class="pcard">
+              <div class="pc-top"><div class="pc-av" style="background:#6B4A66">MF</div><div class="pc-nm"><b>Maison Folini SA</b><span>Ginevra, Svizzera</span></div><span class="pc-st red"></span></div>
+              <div class="pc-rev"><span>Campionatura</span><span class="wait">⏳ In attesa feedback</span></div>
+              <div class="pc-rev" style="margin-top:6px"><span>Fatturato atteso</span><span class="big">€ 34.000</span></div>
+              <div class="scorebar"><div class="track"><div class="fill" style="width:72%"></div></div><span class="sc">72</span></div>
+              <div class="ai-line"><span class="sp">✦</span> AI: campione spedito 2gg fa — sollecita feedback gentile</div>
+              <div class="pc-foot"><span class="gg">✓ 2gg</span><span class="ptag">IFS</span></div>
+            </div>
+            <div class="pcard">
+              <div class="pc-top"><div class="pc-av" style="background:#B13C32">EB</div><div class="pc-nm"><b>El Buen Sabor S.L.</b><span>Madrid, Spagna</span></div></div>
+              <div class="pc-rev"><span>Campionatura</span><span class="pos">✓ Feedback positivo</span></div>
+              <div class="pc-rev" style="margin-top:6px"><span>Fatturato atteso</span><span class="big">€ 18.500</span></div>
+              <div class="scorebar"><div class="track"><div class="fill" style="width:85%"></div></div><span class="sc">85</span></div>
+              <div class="pc-foot"><span class="gg">✓ 1gg</span><span class="ptag">Bio</span></div>
+            </div>
+            <div class="addcard">+ Aggiungi trattativa</div>
+          </div>
+        </div>
+
+        <div class="ecol">
+          <div class="ecol-head"><span class="nm"><span class="cdot orange"></span>Negoziazione Ordine</span><span class="meta"><span>6</span><span>€94K</span></span></div>
+          <div class="ecol-body">
+            <div class="pcard">
+              <div class="pc-top"><div class="pc-av" style="background:#355F8B">DF</div><div class="pc-nm"><b>Deutsche Feinkost AG</b><span>Monaco, Germania</span></div><span class="pc-st red"></span></div>
+              <div class="pc-rev"><span>Fatturato atteso</span><span class="big">€ 48.000</span></div>
+              <div class="scorebar"><div class="track"><div class="fill" style="width:88%"></div></div><span class="sc">88</span></div>
+              <div class="ai-line"><span class="sp">✦</span> AI: score 88, pronto a chiudere — invia conferma ordine</div>
+              <div class="pc-foot"><span class="gg">✓ oggi</span><span class="ptag">IFS</span><span class="ptag">BRC</span></div>
+            </div>
+            <div class="addcard">+ Aggiungi trattativa</div>
+          </div>
+        </div>
+
+        <div class="ecol">
+          <div class="ecol-head"><span class="nm"><span class="cdot green"></span>Chiuse / Vinte</span><span class="meta"><span>7</span><span>€184K</span></span></div>
+          <div class="ecol-body">
+            <div class="pcard" style="border-color:#CBE0D1;background:var(--green-bg)">
+              <div class="pc-top"><div class="pc-av" style="background:var(--green)">AP</div><div class="pc-nm"><b>Alpine Provisions</b><span>Zurigo, Svizzera</span></div></div>
+              <div class="pc-rev"><span>Ordine chiuso</span><span class="big">€ 41.300</span></div>
+              <div class="pc-foot"><span class="gg">🏆 Vinta</span><span class="ptag">IFS</span></div>
+            </div>
+            <div class="addcard">+ Aggiungi trattativa</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ DOSSIER ============ -->
+    <section class="screen" data-screen="dossier">
+      <div class="screen-head"><div><div class="eyebrow">Cliente 360 · la lente</div><h1>Dossier</h1></div></div>
+      <div class="dhead">
+        <div class="logo">WF</div>
+        <div><h2>Whole Foods Canada</h2><div class="sub">🇨🇦 Canada · Broker: Junior · Owner: Josefina</div></div>
+        <div class="dpills"><span class="dpill">Cliente attivo</span><span class="dpill gold">2 dossier aperti</span></div>
+      </div>
+      <div class="dossier">
+        <div>
+          <div class="tabs"><span class="tb on">Vita cliente</span><span class="tb">Mail</span><span class="tb">Offerte</span><span class="tb">Campioni</span><span class="tb">Documenti</span><span class="tb">Persone</span></div>
+          <div class="panel"><div class="panel-b"><div class="timeline">
+            <div class="tl green"><div class="t1">Offerta SO078 inviata</div><div class="t2">Listino premium Crispy Chili — € 36.800</div><div class="when">oggi · 09:40</div></div>
+            <div class="tl"><div class="t1">Campionatura spedita</div><div class="t2">3 referenze Crispy Chili · corriere DHL</div><div class="when">2 gg fa</div></div>
+            <div class="tl plum"><div class="t1">Etichetta in lavorazione</div><div class="t2">Adattamento bilingue EN/FR per mercato CA</div><div class="when">4 gg fa</div></div>
+            <div class="tl blue"><div class="t1">Email ricevuta: interesse linea premium</div><div class="t2">Da: purchasing@wholefoods.ca</div><div class="when">6 gg fa</div></div>
+            <div class="tl"><div class="t1">Richiesta quotazione fornitore</div><div class="t2">Verifica costi materia prima peperoncino</div><div class="when">8 gg fa</div></div>
+            <div class="tl green"><div class="t1">Lead creato da fiera</div><div class="t2">SIAL Canada Montréal · stand B12</div><div class="when">3 sett. fa</div></div>
+          </div></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="panel ai-panel"><div class="panel-h"><b>✦ AI · Dove siamo</b><span class="pill" style="background:var(--gold-bg);color:var(--gold);border-color:#EAD9A6">sintesi relazione</span></div><div class="panel-b">
+            <div style="font-size:12.5px;color:#33392F">Relazione attiva da <b>3 settimane</b>: lead da SIAL Montréal → campioni Crispy Chili spediti → feedback atteso. Offerta SO078 (€36.800) inviata oggi. <b>Rischio:</b> etichetta bilingue CA non ancora validata.</div>
+            <div class="ai-line"><span class="sp">✦</span> Prossima mossa: sollecita conferma MOQ + chiudi validazione etichetta con Maria.</div>
+            <div class="ai-conf"><button class="ok">Crea task →</button><button class="no">Scrivi tu</button></div>
+          </div></div>
+          <div class="panel"><div class="panel-h"><b>Dossier attivo</b><span class="pill gold" style="background:var(--gold-bg);color:var(--gold)">Crispy Chili</span></div><div class="panel-b facts">
+            <div class="f"><span class="k">Linea</span><b>Crispy Chili premium</b></div>
+            <div class="f"><span class="k">Valore</span><b style="color:var(--green)">€ 36.800</b></div>
+            <div class="f"><span class="k">Fase</span><b>Pronta dossier</b></div>
+            <div class="f"><span class="k">Certificazioni</span><b>BRC · Halal</b></div>
+          </div></div>
+          <div class="panel"><div class="panel-h"><b>Decisioni aperte</b><span class="pill" style="color:var(--amber)">2</span></div><div class="panel-b">
+            <div class="dec"><span class="mk"></span><p>Conferma MOQ per mercato CA<span>in attesa da Josefina</span></p></div>
+            <div class="dec"><span class="mk"></span><p>Validare etichetta bilingue<span>qualità — Maria Mirabelli</span></p></div>
+          </div></div>
+          <div class="panel"><div class="panel-h"><b>Facce</b></div><div class="panel-b" style="display:flex;gap:14px;font-size:11.5px;color:var(--muted)">
+            <div><b style="display:block;color:var(--ink);font-family:Fraunces,serif;font-size:18px">12</b>mail</div>
+            <div><b style="display:block;color:var(--ink);font-family:Fraunces,serif;font-size:18px">3</b>offerte</div>
+            <div><b style="display:block;color:var(--ink);font-family:Fraunces,serif;font-size:18px">2</b>campioni</div>
+            <div><b style="display:block;color:var(--ink);font-family:Fraunces,serif;font-size:18px">6</b>documenti</div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TASK ============ -->
+    <section class="screen" data-screen="task">
+      <div class="screen-head"><div><div class="eyebrow">Cosa fare · oggi e delegato</div><h1>Task</h1></div>
+        <div class="headstats"><div class="headstat"><div class="n gold">6</div><div class="l">Per oggi</div></div><div class="headstat"><div class="n">4</div><div class="l">In attesa di altri</div></div></div></div>
+      <div class="tasks">
+        <div class="panel"><div class="panel-h"><b>Oggi</b><span class="pill">6</span></div><div class="panel-b">
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Inviare listino REWE</b><span>Trattativa · €48.200</span></div><span class="who o-antonio">A</span></div>
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Quotazione Hofer</b><span>Listino retail DACH</span><span class="due hot">scade oggi</span></div><span class="who o-antonio">A</span></div>
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Apri dossier Crispy Chili</b><span>Whole Foods CA</span></div><span class="who o-josefina">J</span></div>
+        </div></div>
+        <div class="panel"><div class="panel-h"><b>In attesa di altri</b><span class="pill">4</span></div><div class="panel-b">
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Validare etichetta EN/FR</b><span>aspetto Maria (qualità)</span><span class="due">da 2 gg</span></div><span class="who o-martina">M</span></div>
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Conferma MOQ Bindawood</b><span>aspetto produzione</span></div><span class="who o-josefina">J</span></div>
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Costi peperoncino</b><span>aspetto fornitore</span><span class="due hot">da 8 gg</span></div><span class="who o-antonio">A</span></div>
+        </div></div>
+        <div class="panel"><div class="panel-h"><b>Questa settimana</b><span class="pill">8</span></div><div class="panel-b">
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Follow-up post-Tuttofood</b><span>~80 contatti</span></div><span class="who o-josefina">J</span></div>
+          <div class="tk"><span class="cbx"></span><div class="tt"><b>Campionatura Maison Gourmet</b><span>Lyon · custom</span></div><span class="who o-martina">M</span></div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- ============ MESSAGGI ============ -->
+    <section class="screen" data-screen="messaggi">
+      <div class="screen-head"><div><div class="eyebrow">Squadra · staffetta</div><h1>Messaggi</h1></div></div>
+      <div class="msgs panel"><div class="panel-b">
+        <div class="msg"><div class="av o-josefina">J</div><div class="bo"><b>Josefina Lazzaro</b><span class="tm">10:24</span><p>REWE ha chiesto il listino premium, l'ho messo in Trattativa. Antonio, lo segui tu? Loro spingono sul DACH.</p><span class="relay">↳ passa a Antonio · Trattativa REWE</span></div></div>
+        <div class="msg"><div class="av o-antonio">A</div><div class="bo"><b>Antonio Folino</b><span class="tm">10:31</span><p>Sì preso. Mando listino HoReCa + scheda creme oggi. Martina, prepara i codici EAN per l'assortimento misto.</p></div></div>
+        <div class="msg"><div class="av o-martina">M</div><div class="bo"><b>Martina Sinopoli</b><span class="tm">11:02</span><p>Codici pronti. Per Whole Foods CA l'etichetta bilingue è da validare con Maria prima di chiudere il dossier.</p><span class="relay">↳ passa a Qualità · etichetta Crispy Chili</span></div></div>
+      </div></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var navs=document.querySelectorAll('.nav a');
+  var screens=document.querySelectorAll('.screen');
+  navs.forEach(function(n){
+    n.addEventListener('click',function(e){
+      e.preventDefault();
+      var go=n.getAttribute('data-go');
+      navs.forEach(function(a){a.classList.toggle('active',a===n)});
+      screens.forEach(function(s){s.classList.toggle('active',s.getAttribute('data-screen')===go)});
+    });
+  });
+  // dossier tabs (visual only)
+  document.querySelectorAll('.tabs').forEach(function(tabs){
+    tabs.querySelectorAll('.tb').forEach(function(tb){
+      tb.addEventListener('click',function(){
+        tabs.querySelectorAll('.tb').forEach(function(x){x.classList.toggle('on',x===tb)});
+      });
+    });
+  });
+  document.querySelectorAll('.mailtabs .t').forEach(function(t){
+    t.addEventListener('click',function(){
+      document.querySelectorAll('.mailtabs .t').forEach(function(x){x.classList.toggle('on',x===t)});
+    });
+  });
+})();
+</script>
+</body>
+</html>
