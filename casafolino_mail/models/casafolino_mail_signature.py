@@ -13,7 +13,7 @@ class CasafolinoMailSignature(models.Model):
 
     name = fields.Char('Nome', required=True)
     account_id = fields.Many2one('casafolino.mail.account', string='Account',
-                                  required=True, ondelete='cascade')
+                                  ondelete='cascade')
     body_html = fields.Html('Firma HTML', sanitize=False)
     is_default = fields.Boolean('Default', default=False)
     include_in_reply = fields.Boolean('Includi in risposte', default=True)
