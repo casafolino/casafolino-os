@@ -22,7 +22,7 @@ class CasafolinoMailSignature(models.Model):
     @api.constrains('is_default', 'account_id')
     def _check_unique_default(self):
         for sig in self:
-            if sig.is_default:
+            if sig.is_default and sig.account_id:
                 others = self.search([
                     ('account_id', '=', sig.account_id.id),
                     ('is_default', '=', True),
