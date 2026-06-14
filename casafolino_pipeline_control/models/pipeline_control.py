@@ -1052,7 +1052,10 @@ class CfPipelineControl(models.AbstractModel):
         stats = {lead_id: {'inbound': 0, 'outbound': 0, 'last_date': False} for lead_id in lead_ids}
         if not lead_ids:
             return stats
-        messages = self.env['casafolino.mail.message'].search([
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return stats
+        messages = Mail.search([
             ('lead_id', 'in', lead_ids),
             ('is_deleted', '=', False),
         ], order='email_date desc, id desc', limit=2000)
@@ -1092,7 +1095,10 @@ class CfPipelineControl(models.AbstractModel):
     def _lead_ids_with_mail(self, lead_ids):
         if not lead_ids:
             return set()
-        groups = self.env['casafolino.mail.message'].read_group(
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return set()
+        groups = Mail.read_group(
             [('lead_id', 'in', lead_ids), ('direction_computed', '=', 'inbound')],
             ['lead_id'],
             ['lead_id'],
@@ -1968,7 +1974,8 @@ class CfPipelineControl(models.AbstractModel):
         timeline = []
         import datetime
 
-        emails = self.env['casafolino.mail.message'].search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50)
+        Mail = self.env.get('casafolino.mail.message')
+        emails = Mail.search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50) if Mail else []
         for email in emails:
             attachments = self.env['ir.attachment'].search([
                 ('res_model', '=', 'casafolino.mail.message'),
@@ -2363,7 +2370,8 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
         import datetime
 
         # 1. Custom Emails: casafolino.mail.message
-        emails = self.env['casafolino.mail.message'].search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50)
+        Mail = self.env.get('casafolino.mail.message')
+        emails = Mail.search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50) if Mail else []
         for email in emails:
             attachments = self.env['ir.attachment'].search([
                 ('res_model', '=', 'casafolino.mail.message'),
