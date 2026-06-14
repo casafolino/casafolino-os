@@ -10,7 +10,6 @@
         'sale',
         'project',
         'casafolino_crm_export',
-        'casafolino_mail',
         'casafolino_project',
     ],
     'data': [

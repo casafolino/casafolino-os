@@ -785,14 +785,18 @@ class CrmLead(models.Model):
         self.ensure_one()
         email = self.partner_id.email if self.partner_id else (self.email_from or '')
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_mail.compose_f8',
+            'type': 'ir.actions.act_window',
+            'name': 'Scrivi email',
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
             'context': {
-                'default_partner_email': email,
+                'default_model': 'crm.lead',
+                'default_res_ids': [self.id],
+                'default_composition_mode': 'comment',
+                'default_partner_ids': [self.partner_id.id] if self.partner_id else [],
                 'default_subject': 'Re: %s' % (self.name or ''),
-                'default_partner_id': self.partner_id.id if self.partner_id else False,
-                'default_thread_id': self.id,
-                'default_thread_model': 'crm.lead',
+                'default_email_to': email,
             },
         }
 

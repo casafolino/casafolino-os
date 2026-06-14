@@ -167,12 +167,16 @@ class ResPartner(models.Model):
     def action_compose_email_f8(self):
         self.ensure_one()
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_mail.compose_f8',
+            'type': 'ir.actions.act_window',
+            'name': _('Scrivi email'),
+            'res_model': 'mail.compose.message',
+            'view_mode': 'form',
+            'target': 'new',
             'context': {
-                'default_partner_email': self.email or '',
-                'default_partner_id': self.id,
-                'default_thread_id': self.id,
-                'default_thread_model': 'res.partner',
+                'default_model': 'res.partner',
+                'default_res_ids': [self.id],
+                'default_composition_mode': 'comment',
+                'default_partner_ids': [self.id],
+                'default_email_to': self.email or '',
             },
         }
