@@ -467,6 +467,24 @@ export class CFPipelineControl extends Component {
         }
     }
 
+    async mailPolicyAction(row, policyAction) {
+        if (!row || !row.id) {
+            this.notification.add(_t("Email non disponibile"), { type: "warning" });
+            return;
+        }
+        try {
+            const result = await this.orm.call("cf.pipeline.control", "mail_policy_action", [row.id, policyAction]);
+            if (result) {
+                await this.action.doAction(result);
+                if (result.reload) {
+                    await this.loadData();
+                }
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
     async leadQuickAction(item, quickAction) {
         if (!item || !item.id) {
             this.notification.add(_t("Lead non disponibile"), { type: "warning" });

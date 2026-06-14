@@ -6,6 +6,21 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+FREE_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com',
+    'yahoo.com', 'yahoo.it', 'yahoo.fr', 'yahoo.de', 'yahoo.es', 'yahoo.co.uk',
+    'hotmail.com', 'hotmail.it', 'hotmail.fr', 'hotmail.de', 'hotmail.es',
+    'outlook.com', 'outlook.it', 'outlook.fr', 'outlook.de',
+    'live.com', 'live.it', 'msn.com',
+    'libero.it', 'tiscali.it', 'virgilio.it', 'alice.it', 'tin.it',
+    'icloud.com', 'me.com', 'mac.com',
+    'aol.com',
+    'gmx.de', 'gmx.at', 'gmx.com', 'gmx.net',
+    'web.de', 't-online.de',
+    'protonmail.com', 'proton.me',
+    'pec.it',
+}
+
 
 class CrmLeadPipelineControl(models.Model):
     _inherit = 'crm.lead'
@@ -367,6 +382,141 @@ class CfPipelineControl(models.AbstractModel):
         })
         msg.write({'partner_id': partner.id})
         return True
+
+    @api.model
+    def mail_policy_action(self, message_id, policy_action):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
+
+        sender_email = (msg.sender_email or '').lower().strip()
+        sender_domain = (msg.sender_domain or '').lower().strip()
+        if not sender_email:
+            return self._notify('Mittente mancante', 'Non posso creare una regola senza email mittente.', 'warning')
+
+        if policy_action == 'keep_domain':
+            if not sender_domain:
+                return self._notify('Dominio mancante', 'Non posso creare una regola dominio per questo mittente.', 'warning')
+            if sender_domain in FREE_EMAIL_DOMAINS:
+                result = self._apply_mail_sender_policy(msg, 'keep_sender')
+                result['params']['message'] = (
+                    'Dominio pubblico %s: ho tenuto solo il mittente %s.'
+                    % (sender_domain, sender_email)
+                )
+                return result
+            return self._apply_mail_sender_policy(msg, 'keep_domain')
+
+        if policy_action == 'keep_sender':
+            return self._apply_mail_sender_policy(msg, 'keep_sender')
+
+        if policy_action == 'discard_domain':
+            if not sender_domain:
+                return self._notify('Dominio mancante', 'Non posso scartare per dominio questo mittente.', 'warning')
+            if sender_domain in FREE_EMAIL_DOMAINS:
+                result = self._apply_mail_sender_policy(msg, 'discard_sender')
+                result['params']['message'] = (
+                    'Dominio pubblico %s: ho scartato solo il mittente %s.'
+                    % (sender_domain, sender_email)
+                )
+                return result
+            return self._apply_mail_sender_policy(msg, 'discard_domain')
+
+        if policy_action == 'discard_sender':
+            return self._apply_mail_sender_policy(msg, 'discard_sender')
+
+        return self._notify('Azione non disponibile', policy_action, 'warning')
+
+    def _apply_mail_sender_policy(self, msg, policy_action):
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        sender_email = (msg.sender_email or '').lower().strip()
+        sender_domain = (msg.sender_domain or '').lower().strip()
+        now = fields.Datetime.now()
+
+        is_domain = policy_action.endswith('_domain')
+        is_keep = policy_action.startswith('keep')
+        pattern_type = 'domain' if is_domain else 'email_exact'
+        pattern_value = sender_domain if is_domain else sender_email
+        policy_target = sender_domain if is_domain else sender_email
+        action = 'auto_keep' if is_keep else 'auto_discard'
+        state = 'auto_keep' if is_keep else 'auto_discard'
+        policy_label = 'Auto-keep' if is_keep else 'Auto-discard'
+
+        policy = Policy.search([
+            ('pattern_type', '=', pattern_type),
+            ('pattern_value', '=', pattern_value),
+            ('action', '=', action),
+        ], limit=1)
+        if not policy:
+            policy = Policy.create({
+                'name': '%s Console CRM: %s' % (policy_label, policy_target),
+                'pattern_type': pattern_type,
+                'pattern_value': pattern_value,
+                'action': action,
+                'priority': 85 if is_keep else 90,
+                'auto_create_partner': bool(is_keep),
+                'default_owner_id': self.env.user.id if is_keep else False,
+                'notes': 'Creata da Console CRM il %s da %s' % (
+                    fields.Date.today(), self.env.user.name),
+            })
+
+        domain = [('direction', '=', 'inbound')]
+        if is_domain:
+            domain.append(('sender_domain', '=ilike', sender_domain))
+        else:
+            domain.append(('sender_email', '=ilike', sender_email))
+
+        if is_keep:
+            domain.append(('state', 'in', ['new', 'review', 'discard', 'auto_discard']))
+            vals = {
+                'state': state,
+                'policy_applied_id': policy.id,
+                'is_archived': False,
+                'is_deleted': False,
+                'triage_user_id': self.env.user.id,
+                'triage_date': now,
+            }
+        else:
+            domain.append(('state', 'in', ['new', 'review', 'keep', 'auto_keep']))
+            vals = {
+                'state': state,
+                'policy_applied_id': policy.id,
+                'is_archived': True,
+                'is_deleted': True,
+                'triage_user_id': self.env.user.id,
+                'triage_date': now,
+            }
+
+        messages = self.env['casafolino.mail.message'].sudo().search(domain)
+        if messages:
+            messages.write(vals)
+            if is_keep:
+                for record in messages.filtered(lambda m: not m.partner_id):
+                    self._resolve_or_create_partner_from_message(record)
+
+        title = 'Regola creata'
+        verb = 'tenute' if is_keep else 'scartate'
+        target = 'dominio %s' % sender_domain if is_domain else 'mittente %s' % sender_email
+        return self._notify(
+            title,
+            '%s email %s per %s.' % (len(messages), verb, target),
+            'success',
+            reload=True,
+        )
+
+    def _resolve_or_create_partner_from_message(self, msg):
+        sender_email = (msg.sender_email or '').lower().strip()
+        if not sender_email:
+            return False
+        partner = self.env['res.partner'].sudo().search([
+            ('email', '=ilike', sender_email),
+        ], limit=1)
+        if not partner:
+            partner = self.env['res.partner'].sudo().create({
+                'name': msg.sender_name or sender_email.split('@')[0],
+                'email': sender_email,
+            })
+        msg.sudo().write({'partner_id': partner.id, 'match_type': 'exact'})
+        return partner
 
     @api.model
     def search_context_records(self, category, query, limit=5):

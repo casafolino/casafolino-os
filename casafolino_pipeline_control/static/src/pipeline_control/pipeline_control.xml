@@ -400,14 +400,17 @@
                 <t t-elif="state.activeView === 'inbox'">
                     <div class="cf-pc-inbox-vc">
                         <section class="cf-pc-inbox-command">
-                            <button t-if="selectedMessage" class="btn btn-success btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                            <button t-if="selectedMessage" class="btn btn-success btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_domain')">
                                 <i class="fa fa-check"/> Tieni dominio
                             </button>
-                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_sender')">
                                 Tieni persona
                             </button>
-                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'archive')">
+                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'discard_sender')">
                                 Scarta
+                            </button>
+                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'discard_domain')">
+                                Scarta dominio
                             </button>
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">
                                 Reply all
@@ -493,7 +496,7 @@
                             <main class="cf-pc-inbox-vc-reader">
                                 <t t-if="selectedMessage">
                                     <div class="cf-pc-vc-thread-toolbar">
-                                        <button class="btn btn-success btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                        <button class="btn btn-success btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_domain')">
                                             Tieni + crea CRM
                                         </button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Rispondi</button>
@@ -598,7 +601,7 @@
                                         <strong>Nome</strong>
                                         <span>Match deterministico</span>
                                     </div>
-                                    <button t-if="selectedMessage" class="btn btn-primary btn-sm w-100" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                    <button t-if="selectedMessage" class="btn btn-primary btn-sm w-100" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_domain')">
                                         Crea azienda + contatti
                                     </button>
                                 </section>
