@@ -86,9 +86,9 @@ export class ComposeWizardDialog extends Component {
         });
     }
 
-    onComposeSent() {
+    onComposeSent(result) {
         this.props.close();
-        if (this.props.onSent) this.props.onSent();
+        if (this.props.onSent) this.props.onSent(result);
     }
 
     onComposeClose() {

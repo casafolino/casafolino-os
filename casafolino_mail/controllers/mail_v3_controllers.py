@@ -755,7 +755,11 @@ class MailV3Controller(http.Controller):
             try:
                 r = http_requests.post(
                     'https://api.groq.com/openai/v1/chat/completions',
-                    headers={'Authorization': 'Bearer %s' % api_key, 'Content-Type': 'application/json'},
+                    headers={
+                        'Authorization': 'Bearer %s' % api_key,
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0',
+                    },
                     json={
                         'model': 'llama-3.3-70b-versatile',
                         'messages': [{'role': 'user', 'content': prompt}],
@@ -791,7 +795,7 @@ class MailV3Controller(http.Controller):
 
     @http.route('/cf/mail/v3/compose/open', type='json', auth='user')
     def compose_open(self, **kw):
-        """Return action dict to open compose wizard with pre-filled values."""
+        """Return the F8 composer action with pre-filled values."""
         account_id = kw.get('account_id')
         mode = kw.get('mode', 'new')
         reply_to_id = kw.get('reply_to_id')
@@ -839,10 +843,9 @@ class MailV3Controller(http.Controller):
             ctx['default_body_html'] = prefilled_body
 
         return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'casafolino.mail.compose.wizard',
-            'view_mode': 'form',
-            'target': 'new',
+            'type': 'ir.actions.client',
+            'name': 'Composer F8',
+            'tag': 'casafolino_mail.compose_f8',
             'context': ctx,
         }
 

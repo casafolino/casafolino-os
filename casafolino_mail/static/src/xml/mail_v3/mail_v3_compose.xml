@@ -55,6 +55,46 @@
           </div>
         </div>
 
+        <!-- AI Reply Panel -->
+        <div t-if="state.showAiPanel" class="mv3-ai-panel">
+          <div class="mv3-ai-panel__header">
+            <strong>AI risposta</strong>
+            <button class="btn btn-sm btn-link" t-on-click="toggleAiPanel" title="Chiudi AI">
+              <i class="fa fa-chevron-left"/>
+            </button>
+          </div>
+          <div class="mv3-ai-panel__actions">
+            <button class="btn btn-sm btn-outline-primary w-100"
+                    t-on-click="generateAiDrafts"
+                    t-att-disabled="state.aiLoading">
+              <i t-att-class="state.aiLoading ? 'fa fa-spinner fa-spin' : 'fa fa-magic'"/>
+              Rigenera bozze
+            </button>
+          </div>
+          <div t-if="state.aiError" class="mv3-ai-panel__error" t-out="state.aiError"/>
+          <div t-if="state.aiLoading" class="mv3-ai-panel__empty">Sto preparando le risposte...</div>
+          <div class="mv3-ai-panel__list">
+            <t t-foreach="state.aiDrafts" t-as="draft" t-key="draft.tipo">
+              <div class="mv3-ai-panel__item">
+                <div class="mv3-ai-panel__item-header">
+                  <span t-out="draft.tipo || 'Bozza'"/>
+                </div>
+                <div class="mv3-ai-panel__text" t-out="draft.testo"/>
+                <div class="mv3-ai-panel__buttons">
+                  <button class="btn btn-sm btn-primary"
+                          t-on-click="() => this.insertAiDraft(draft, true)">Usa</button>
+                  <button class="btn btn-sm btn-outline-secondary"
+                          t-on-click="() => this.insertAiDraft(draft, false)">Inserisci</button>
+                </div>
+              </div>
+            </t>
+            <div t-if="!state.aiLoading and !state.aiError and state.aiDrafts.length === 0"
+                 class="mv3-ai-panel__empty">
+              Nessuna bozza AI generata
+            </div>
+          </div>
+        </div>
+
         <!-- Materials Panel -->
         <div t-if="state.showMaterialPanel" class="mv3-material-panel">
           <div class="mv3-material-panel__header">
@@ -101,6 +141,10 @@
               <button t-if="!state.showMaterialPanel" class="btn btn-sm btn-outline-secondary me-2"
                       t-on-click="toggleMaterialPanel" title="Materiali tracciabili">
                 <i class="fa fa-folder-open-o"/>
+              </button>
+              <button t-if="canUseAiReply and !state.showAiPanel" class="btn btn-sm btn-outline-secondary me-2"
+                      t-on-click="toggleAiPanel" title="AI risposta">
+                <i class="fa fa-magic"/>
               </button>
               <h4>
                 <t t-if="props.mode === 'reply'">Rispondi</t>
@@ -202,6 +246,9 @@
             </div>
             <div class="mv3-toolbar__sep"/>
             <div class="mv3-toolbar__group">
+              <button t-if="canUseAiReply" class="mv3-toolbar__btn" t-on-click="toggleAiPanel" title="AI risposta">
+                <i class="fa fa-magic"/>
+              </button>
               <button class="mv3-toolbar__btn" t-on-click="cmdLink" title="Inserisci link">
                 <i class="fa fa-link"/>
               </button>

@@ -20,7 +20,8 @@
                            prefilled="state.prefilled"
                            accountId="state.accountId"
                            mode="state.mode"
-                           onSent="() => this.onComposeSent()"
+                           replyToId="props.replyToId"
+                           onSent="(result) => this.onComposeSent(result)"
                            onClose="() => this.onComposeClose()"/>
         </Dialog>
     </t>

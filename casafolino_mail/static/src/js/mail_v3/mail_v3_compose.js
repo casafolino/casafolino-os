@@ -111,6 +111,11 @@ export class ComposeWizard extends Component {
             detectedLang: '',
             hoveredTemplate: null,
             hoveredPreviewHtml: '',
+            // AI reply
+            showAiPanel: false,
+            aiLoading: false,
+            aiDrafts: [],
+            aiError: '',
             // Materials panel
             showMaterialPanel: false,
             materials: [],
@@ -400,6 +405,7 @@ export class ComposeWizard extends Component {
         this.state.showTemplatePanel = !this.state.showTemplatePanel;
         if (this.state.showTemplatePanel) {
             this.state.showMaterialPanel = false;
+            this.state.showAiPanel = false;
         }
     }
 
@@ -407,10 +413,72 @@ export class ComposeWizard extends Component {
         this.state.showMaterialPanel = !this.state.showMaterialPanel;
         if (this.state.showMaterialPanel) {
             this.state.showTemplatePanel = false;
+            this.state.showAiPanel = false;
         }
         if (this.state.showMaterialPanel && !this.state.materials.length) {
             this._loadMaterials();
         }
+    }
+
+    // ── AI Reply Panel ──────────────────────────────────────
+
+    get canUseAiReply() {
+        return Boolean(this.props.replyToId);
+    }
+
+    toggleAiPanel() {
+        this.state.showAiPanel = !this.state.showAiPanel;
+        if (this.state.showAiPanel) {
+            this.state.showTemplatePanel = false;
+            this.state.showMaterialPanel = false;
+            if (!this.state.aiDrafts.length && !this.state.aiLoading) {
+                this.generateAiDrafts();
+            }
+        }
+    }
+
+    async generateAiDrafts() {
+        if (!this.props.replyToId) return;
+        this.state.aiLoading = true;
+        this.state.aiError = '';
+        try {
+            const res = await rpc('/cf/mail/v3/message/' + this.props.replyToId + '/reply_assistant');
+            if (res.error) {
+                this.state.aiError = res.error;
+                this.state.aiDrafts = [];
+            } else {
+                this.state.aiDrafts = res.bozze || [];
+            }
+        } catch (e) {
+            this.state.aiError = 'AI non disponibile: ' + (e.message || e);
+            this.state.aiDrafts = [];
+        } finally {
+            this.state.aiLoading = false;
+        }
+    }
+
+    insertAiDraft(draft, replace = false) {
+        const text = draft?.testo || '';
+        if (!text || !this.editorRef.el) return;
+        const html = this._plainTextToHtml(text);
+        if (replace) {
+            this.editorRef.el.innerHTML = html;
+            if (this.state.signatureHtml) {
+                this._appendSignature(this.state.signatureHtml);
+            }
+            this._syncBody();
+        } else {
+            this._execCommand('insertHTML', html + '<p><br></p>');
+        }
+        this.state.showAiPanel = false;
+    }
+
+    _plainTextToHtml(text) {
+        const paragraphs = String(text || '')
+            .split(/\n{2,}/)
+            .map(p => p.trim())
+            .filter(Boolean);
+        return paragraphs.map(p => '<p>' + this._escapeHtml(p).replace(/\n/g, '<br/>') + '</p>').join('');
     }
 
     async _loadTemplates() {
@@ -629,9 +697,9 @@ export class ComposeWizard extends Component {
         await this.autosave();
 
         try {
-            const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/send');
+            const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/send_undoable');
             if (res.success) {
-                if (this.props.onSent) this.props.onSent();
+                if (this.props.onSent) this.props.onSent(res);
             } else {
                 this.state.error = res.error || 'Errore invio';
             }

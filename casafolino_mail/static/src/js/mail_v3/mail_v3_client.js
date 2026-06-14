@@ -9,6 +9,7 @@ import { ThreadList } from "./mail_v3_thread_list";
 import { ReadingPane } from "./mail_v3_reading_pane";
 import { Sidebar360 } from "./mail_v3_sidebar_360";
 import { ReplyAssistant } from "./mail_v3_reply_assistant";
+import { ComposeWizardDialog } from "./compose_wizard_dialog";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
@@ -17,6 +18,7 @@ export class MailV3Client extends Component {
 
     setup() {
         this.actionService = useService("action");
+        this.dialog = useService("dialog");
 
         this.state = useState({
             accounts: [],
@@ -266,24 +268,27 @@ export class MailV3Client extends Component {
             ? this.state.selectedAccountIds[0]
             : (this.state.accounts.length > 0 ? this.state.accounts[0].id : null);
 
-        try {
-            const action = await rpc('/cf/mail/v3/compose/open', {
-                account_id: accountId,
-                mode: mode,
-                reply_to_id: replyToId || false,
-                prefilled_body: prefilled_body || '',
-            });
-            await this.actionService.doAction(action, {
-                onClose: async () => {
-                    await this.loadThreads();
-                    if (this.state.selectedThreadId) {
-                        await this.selectThread(this.state.selectedThreadId);
-                    }
-                },
-            });
-        } catch (e) {
-            console.error('[mail v3] compose open error:', e);
-        }
+        this.dialog.add(ComposeWizardDialog, {
+            accountId,
+            mode,
+            replyToId: replyToId || false,
+            defaultBody: prefilled_body || '',
+            onSent: async (result) => {
+                if (result?.outbox_id) {
+                    this.showUndoToast(result.outbox_id);
+                }
+                await this.loadThreads();
+                if (this.state.selectedThreadId) {
+                    await this.selectThread(this.state.selectedThreadId);
+                }
+            },
+            onClose: async () => {
+                await this.loadThreads();
+                if (this.state.selectedThreadId) {
+                    await this.selectThread(this.state.selectedThreadId);
+                }
+            },
+        });
     }
 
     // ── Reply Assistant ─────────────────────────────────────────
