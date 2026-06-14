@@ -66,7 +66,7 @@ class CrmLeadPipelineControl(models.Model):
     def _cf_pc_open_dashboard(self, default_view):
         return {
             'type': 'ir.actions.client',
-            'name': 'Sala Controllo',
+            'name': 'Console CRM',
             'tag': 'casafolino_pipeline_control',
             'target': 'current',
             'context': {'default_view': default_view},
@@ -1237,7 +1237,7 @@ class CfPipelineControl(models.AbstractModel):
             }
         if quick_action == 'archive':
             msg.action_archive()
-            return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla sala controllo.', reload=True)
+            return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla Console CRM.', reload=True)
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     @api.model

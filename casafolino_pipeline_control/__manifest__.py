@@ -1,8 +1,8 @@
 {
-    'name': 'CasaFolino Pipeline Control',
-    'version': '18.0.1.17.0',
+    'name': 'CasaFolino Console CRM',
+    'version': '18.0.1.18.0',
     'category': 'CasaFolino',
-    'summary': 'Sala controllo export: follow-up, inbox commerciale, pipeline e dossier',
+    'summary': 'Console CRM export: follow-up, inbox commerciale, pipeline e dossier',
     'author': 'CasaFolino S.R.L.',
     'depends': [
         'crm',

@@ -5,7 +5,7 @@
     <div class="cf-pipeline-control">
         <div t-if="state.loading" class="cf-pc-loading">
             <i class="fa fa-spinner fa-spin"/>
-            <span>Caricamento sala controllo...</span>
+            <span>Caricamento Console CRM...</span>
         </div>
 
         <div t-elif="state.error" class="cf-pc-error">
@@ -21,7 +21,7 @@
             <aside class="cf-pc-sidebar">
                 <div class="cf-pc-brand">
                     <strong>Pipeline Export</strong>
-                    <span>Sala controllo operativa</span>
+                    <span>Console CRM operativa</span>
                 </div>
                 <div class="cf-pc-nav">
                     <t t-foreach="navItems" t-as="nav" t-key="nav.id">
@@ -40,7 +40,7 @@
             <main class="cf-pc-main">
                 <div class="cf-pc-topbar">
                     <div>
-                        <h1 t-if="state.activeView === 'control'">Sala Controllo</h1>
+                        <h1 t-if="state.activeView === 'control'">Console CRM</h1>
                         <h1 t-elif="state.activeView === 'followup'">Follow-up</h1>
                         <h1 t-elif="state.activeView === 'fair'">Post-Fiera</h1>
                         <h1 t-elif="state.activeView === 'inbox'">Inbox Commerciale</h1>
@@ -398,6 +398,255 @@
                 </t>
 
                 <t t-elif="state.activeView === 'inbox'">
+                    <div class="cf-pc-inbox-vc">
+                        <section class="cf-pc-inbox-command">
+                            <button t-if="selectedMessage" class="btn btn-success btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                <i class="fa fa-check"/> Tieni dominio
+                            </button>
+                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                Tieni persona
+                            </button>
+                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'archive')">
+                                Scarta
+                            </button>
+                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">
+                                Reply all
+                            </button>
+                            <button class="btn btn-light btn-sm">
+                                Template
+                            </button>
+                            <button class="btn btn-light btn-sm">
+                                Materiali
+                            </button>
+                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')">
+                                + Lead
+                            </button>
+                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_dossier')">
+                                + Dossier
+                            </button>
+                            <span class="cf-pc-inbox-command-spacer"/>
+                            <div class="cf-pc-inbox-mode">
+                                <button class="btn btn-sm btn-light">Rapida</button>
+                                <button class="btn btn-sm btn-dark">Completa</button>
+                            </div>
+                        </section>
+
+                        <div class="cf-pc-inbox-vc-grid">
+                            <aside class="cf-pc-inbox-vc-list">
+                                <div class="cf-pc-inbox-vc-stats">
+                                    <div>
+                                        <strong t-out="allInboxRows.length"/>
+                                        <span>da lavorare</span>
+                                    </div>
+                                    <div>
+                                        <strong t-out="filteredToReplyRows.length"/>
+                                        <span>tocca a noi</span>
+                                    </div>
+                                    <div>
+                                        <strong t-out="filteredWaitingRows.length"/>
+                                        <span>follow-up</span>
+                                    </div>
+                                </div>
+                                <div class="cf-pc-inbox-vc-filters">
+                                    <t t-foreach="inboxFilterOptions" t-as="filter" t-key="'vc-filter-' + filter.id">
+                                        <button t-attf-class="btn btn-sm #{state.inboxFilter === filter.id ? 'btn-primary' : 'btn-light'}"
+                                                t-on-click="() => this.setInboxFilter(filter.id)">
+                                            <t t-out="filter.label"/>
+                                            <span class="cf-pc-mini-count" t-out="filter.count"/>
+                                        </button>
+                                    </t>
+                                </div>
+
+                                <div class="cf-pc-inbox-vc-scroll">
+                                    <t t-foreach="priorityInboxRows" t-as="row" t-key="'vc-row-' + row.id">
+                                        <article t-attf-class="cf-pc-inbox-vc-card #{state.selectedMessageId === row.id ? 'active' : ''}"
+                                                 t-on-click="() => this.selectMessage(row.id)">
+                                            <span t-attf-class="cf-pc-vc-score #{row.priority_score &lt; 80 ? 'mid' : ''}" t-out="row.priority_score"/>
+                                            <div>
+                                                <div class="cf-pc-vc-card-head">
+                                                    <span t-attf-class="cf-pc-vc-status #{row.partner_id ? 'known' : 'new'}">
+                                                        <t t-if="row.partner_id">Cliente noto</t>
+                                                        <t t-else="">Nuovo dominio</t>
+                                                    </span>
+                                                    <time t-out="row.meta"/>
+                                                </div>
+                                                <h3 t-out="row.subtitle || 'Email senza oggetto'"/>
+                                                <p class="cf-pc-vc-sender">
+                                                    <t t-out="row.title"/>
+                                                    <t t-if="row.sender_email"> · <t t-out="row.sender_email"/></t>
+                                                </p>
+                                                <p t-out="row.snippet"/>
+                                                <div class="cf-pc-vc-chips">
+                                                    <span t-if="row.needs_action">AI: azione</span>
+                                                    <span t-if="row.lead" t-out="row.lead"/>
+                                                    <span t-if="!row.lead">senza lead</span>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    </t>
+                                    <div class="cf-pc-empty" t-if="!priorityInboxRows.length">
+                                        Nessuna email commerciale da lavorare.
+                                    </div>
+                                </div>
+                            </aside>
+
+                            <main class="cf-pc-inbox-vc-reader">
+                                <t t-if="selectedMessage">
+                                    <div class="cf-pc-vc-thread-toolbar">
+                                        <button class="btn btn-success btn-sm" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                            Tieni + crea CRM
+                                        </button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Rispondi</button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Inoltra</button>
+                                        <button class="btn btn-light btn-sm">Allega materiale</button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'snooze')">Crea follow-up</button>
+                                    </div>
+
+                                    <div class="cf-pc-vc-reader-head">
+                                        <div>
+                                            <span class="cf-pc-vc-eyebrow">Thread commerciale · inbox CRM</span>
+                                            <h2 t-out="selectedMessage.subtitle || 'Email commerciale'"/>
+                                            <p>
+                                                <t t-out="selectedMessage.title"/>
+                                                <t t-if="selectedMessage.sender_email"> &lt;<t t-out="selectedMessage.sender_email"/>&gt;</t>
+                                                <t t-if="selectedMessage.meta"> · <t t-out="selectedMessage.meta"/></t>
+                                            </p>
+                                        </div>
+                                        <div class="cf-pc-vc-next">
+                                            <strong>Azione consigliata</strong>
+                                            <span t-if="!selectedMessage.partner_id">Tieni dominio, crea azienda e valuta lead in pipeline.</span>
+                                            <span t-else="">Rispondi, collega al lead e pianifica prossimo follow-up.</span>
+                                        </div>
+                                    </div>
+
+                                    <section class="cf-pc-vc-timeline">
+                                        <article>
+                                            <header>
+                                                <strong>Mail ricevuta</strong>
+                                                <time t-out="selectedMessage.meta"/>
+                                            </header>
+                                            <iframe t-att-srcdoc="state.selectedMessageBody" class="cf-pc-email-iframe" sandbox="allow-same-origin"/>
+                                        </article>
+                                        <article>
+                                            <header>
+                                                <strong>AI note</strong>
+                                                <time>Ora</time>
+                                            </header>
+                                            <p>
+                                                Richiesta commerciale da lavorare. Verifica contatto/azienda, scegli materiali e porta la conversazione in pipeline.
+                                            </p>
+                                        </article>
+                                    </section>
+
+                                    <section class="cf-pc-vc-compose">
+                                        <header>
+                                            <strong>Bozza risposta AI</strong>
+                                            <div class="cf-pc-ai-instruction-bar">
+                                                <input type="text" placeholder="Istruzione per AI..." t-att-value="state.aiInstruction"
+                                                       t-on-input="(ev) => this.state.aiInstruction = ev.target.value"
+                                                       t-on-keydown="(e) => e.key === 'Enter' &amp;&amp; this.generateAIDraft()"/>
+                                                <button class="btn btn-sm btn-light" t-on-click="generateAIDraft" t-att-disabled="state.aiDraftLoading ? 'disabled' : ''">
+                                                    <t t-if="state.aiDraftLoading"><i class="fa fa-spinner fa-spin"/> Scrittura...</t>
+                                                    <t t-else="">Genera</t>
+                                                </button>
+                                            </div>
+                                        </header>
+                                        <textarea t-att-value="state.aiDraftBody" t-on-input="(ev) => this.state.aiDraftBody = ev.target.value" placeholder="La bozza AI apparira qui. Puoi modificarla prima dell'invio."/>
+                                        <footer>
+                                            <button class="btn btn-light btn-sm">Template</button>
+                                            <button class="btn btn-light btn-sm">Link tracciabili</button>
+                                            <button class="btn btn-light btn-sm">Firma</button>
+                                            <button class="btn btn-primary btn-sm" t-on-click="sendAIDraft" t-att-disabled="(!state.aiDraftBody || state.aiDraftLoading) ? 'disabled' : ''">
+                                                Invia via SMTP
+                                            </button>
+                                        </footer>
+                                    </section>
+                                </t>
+                                <div class="cf-pc-reader-empty" t-else="">
+                                    <i class="fa fa-envelope-o"/>
+                                    <p>Seleziona un'email per lavorarla nella Console CRM.</p>
+                                </div>
+                            </main>
+
+                            <aside class="cf-pc-inbox-vc-brain">
+                                <section class="cf-pc-vc-panel cf-pc-vc-ai">
+                                    <div class="cf-pc-vc-panel-title">
+                                        <h3>AI Brain</h3>
+                                        <span>86%</span>
+                                    </div>
+                                    <p>Summary, azione consigliata, template e materiali saranno calcolati dal Brain aziendale sulle fonti autorizzate.</p>
+                                    <div class="cf-pc-vc-sources">
+                                        <span>Mail corrente</span>
+                                        <span>Thread simili</span>
+                                        <span>Materiali ufficiali</span>
+                                        <span>Template approvati</span>
+                                    </div>
+                                </section>
+
+                                <section class="cf-pc-vc-panel">
+                                    <h3>Resolver CRM</h3>
+                                    <div class="cf-pc-vc-resolver-row">
+                                        <strong>P.IVA/VAT</strong>
+                                        <span>Da verificare</span>
+                                    </div>
+                                    <div class="cf-pc-vc-resolver-row match">
+                                        <strong>Dominio</strong>
+                                        <span t-if="selectedMessage &amp;&amp; selectedMessage.partner_id">Partner collegato</span>
+                                        <span t-else="">Azienda proposta</span>
+                                    </div>
+                                    <div class="cf-pc-vc-resolver-row">
+                                        <strong>Nome</strong>
+                                        <span>Match deterministico</span>
+                                    </div>
+                                    <button t-if="selectedMessage" class="btn btn-primary btn-sm w-100" t-on-click="() => this.quickCreatePartner(selectedMessage)">
+                                        Crea azienda + contatti
+                                    </button>
+                                </section>
+
+                                <section class="cf-pc-vc-panel">
+                                    <h3>Pipeline</h3>
+                                    <p>Stage suggerito: primo contatto qualificato.</p>
+                                    <div class="cf-pc-vc-stage-picker">
+                                        <button class="btn btn-sm btn-light">Nuovo</button>
+                                        <button class="btn btn-sm btn-primary">Qualificato</button>
+                                        <button class="btn btn-sm btn-light">Offerta</button>
+                                    </div>
+                                    <button t-if="selectedMessage" class="btn btn-light btn-sm w-100" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')">
+                                        Crea opportunita
+                                    </button>
+                                </section>
+
+                                <section class="cf-pc-vc-panel">
+                                    <h3>Materiali suggeriti</h3>
+                                    <div class="cf-pc-vc-material">
+                                        <span class="cover green">CAT</span>
+                                        <div><strong>Catalogo Horeca 2026</strong><em>link tracciabile</em></div>
+                                        <input type="checkbox" checked="checked"/>
+                                    </div>
+                                    <div class="cf-pc-vc-material">
+                                        <span class="cover blue">LST</span>
+                                        <div><strong>Listino Export Q2</strong><em>validita attiva</em></div>
+                                        <input type="checkbox" checked="checked"/>
+                                    </div>
+                                    <div class="cf-pc-vc-material">
+                                        <span class="cover amber">TEC</span>
+                                        <div><strong>Schede tecniche</strong><em>PDF bundle</em></div>
+                                        <input type="checkbox"/>
+                                    </div>
+                                </section>
+
+                                <section class="cf-pc-vc-panel">
+                                    <h3>Template</h3>
+                                    <button class="cf-pc-vc-template active">Invio catalogo + listino export</button>
+                                    <button class="cf-pc-vc-template">Primo contatto export</button>
+                                    <button class="cf-pc-vc-template">Proposta call commerciale</button>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-elif="state.activeView === 'inbox_legacy'">
                     <div class="cf-pc-kpis">
                         <t t-foreach="state.data.inbox.kpis" t-as="kpi" t-key="'inbox-kpi-' + kpi.label">
                             <article class="cf-pc-kpi">

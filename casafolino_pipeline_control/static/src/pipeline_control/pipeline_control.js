@@ -648,10 +648,10 @@ export class CFPipelineControl extends Component {
 
     get navItems() {
         return [
-            { id: "control", label: "Sala Controllo", count: this.totalLaneCount },
+            { id: "control", label: "Console CRM", count: this.totalLaneCount },
             { id: "followup", label: "Follow-up", count: this.state.data.followup?.kpis?.[0]?.value || 0 },
             { id: "fair", label: "Post-Fiera", count: this.state.data.post_fair?.fair ? this.state.data.post_fair.kpis?.[0]?.value : 0 },
-            { id: "inbox", label: "Inbox", count: this.state.data.inbox?.kpis?.[0]?.value || 0 },
+            { id: "inbox", label: "Inbox Commerciale", count: this.state.data.inbox?.kpis?.[0]?.value || 0 },
             { id: "pipeline", label: "Pipeline", count: this.pipelineCount },
             { id: "dossiers", label: "Dossier", count: this.state.data.dossiers?.length || 0 },
         ];
@@ -689,6 +689,20 @@ export class CFPipelineControl extends Component {
             ...(this.state.data.inbox?.to_reply || []),
             ...(this.state.data.inbox?.waiting_customer || []),
         ];
+    }
+
+    get priorityInboxRows() {
+        const score = (row) => {
+            let value = 60;
+            if (row.urgency === "high") value += 24;
+            if (row.needs_action) value += 12;
+            if (!row.lead_id) value += 6;
+            if (row.partner_id) value += 5;
+            return Math.min(value, 98);
+        };
+        return this.filterInboxRows(this.allInboxRows)
+            .map((row) => ({ ...row, priority_score: score(row) }))
+            .sort((a, b) => b.priority_score - a.priority_score);
     }
 
     get dossierContinentOptions() {
