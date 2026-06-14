@@ -21,6 +21,8 @@ class ResPartnerMailExt(models.Model):
     # ── Mail Hub tracking fields ──
     mail_tracked = fields.Boolean('Mail Tracked', default=False,
         help='Se attivo, le nuove email vanno direttamente nel chatter')
+    mail_tracked_since = fields.Datetime('Tracking attivo dal', readonly=True,
+        help='Timestamp di attivazione mail_tracked. Mantenuto per compatibilita con viste e dati V2.')
     mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
     mail_last_sync = fields.Datetime('Ultimo sync email')
     mail_message_count = fields.Integer('Email',
