@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.ReplyAssistant">
+    <div class="mv3-modal-overlay" t-on-click="close">
+      <div class="mv3-reply-assistant" t-on-click.stop="">
+        <div class="mv3-reply-assistant__header">
+          <h4>🤖 Risposta Guidata AI</h4>
+          <button class="btn btn-sm btn-link" t-on-click="close">
+            <i class="fa fa-times"/>
+          </button>
+        </div>
+        <div class="mv3-reply-assistant__body">
+          <!-- Loading -->
+          <div t-if="state.loading" class="mv3-reply-assistant__loading">
+            <i class="fa fa-spinner fa-spin fa-2x"/>
+            <p>AI sta elaborando 3 bozze...</p>
+          </div>
+
+          <!-- Error -->
+          <div t-if="!state.loading and state.error" class="alert alert-danger">
+            <t t-out="state.error"/>
+          </div>
+
+          <!-- Draft cards -->
+          <div t-if="!state.loading and !state.error" class="mv3-reply-assistant__cards">
+            <t t-foreach="state.bozze" t-as="bozza" t-key="bozza.tipo">
+              <div class="mv3-reply-assistant__card"
+                   t-on-click="() => this.selectDraft(bozza)">
+                <div class="mv3-reply-assistant__card-header">
+                  <span class="mv3-reply-assistant__card-icon"
+                        t-out="this.getDraftIcon(bozza.tipo)"/>
+                  <strong t-out="bozza.tipo"/>
+                </div>
+                <div class="mv3-reply-assistant__card-body"
+                     t-out="bozza.testo"/>
+                <div class="mv3-reply-assistant__card-action">
+                  Usa questa bozza →
+                </div>
+              </div>
+            </t>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

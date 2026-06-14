@@ -222,6 +222,25 @@ export class CFWorkspace extends Component {
         }
     }
 
+    async onOpenMailInbox() {
+        try {
+            await this.action.doAction("casafolino_mail.action_mail_v3_client");
+        } catch {
+            try {
+                await this.action.doAction("casafolino_pipeline_control.action_cf_pipeline_inbox");
+            } catch {
+                await this.action.doAction({
+                    type: "ir.actions.act_window",
+                    res_model: "mail.activity",
+                    views: [[false, "list"], [false, "form"]],
+                    domain: [["user_id", "=", user.userId]],
+                    target: "current",
+                    name: "Mail CRM",
+                });
+            }
+        }
+    }
+
     async onOpenLavagna() {
         try {
             await this.action.doAction("casafolino_initiative.action_cf_initiative");

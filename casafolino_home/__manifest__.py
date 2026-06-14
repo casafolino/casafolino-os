@@ -13,6 +13,7 @@
         "casafolino_initiative",
         "casafolino_kpi",
         "casafolino_labels",
+        "casafolino_mail",
         "casafolino_operations",
         "casafolino_pipeline_control",
         "casafolino_product",

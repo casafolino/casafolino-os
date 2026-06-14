@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="casafolino_mail_snippet_picker_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.snippet.picker.form</field>
+        <field name="model">casafolino.mail.snippet.picker</field>
+        <field name="arch" type="xml">
+            <form string="Seleziona Snippet">
+                <group>
+                    <group string="Filtro">
+                        <field name="language"/>
+                        <field name="category"/>
+                        <field name="snippet_id"/>
+                    </group>
+                    <group string="Info">
+                        <field name="message_id" readonly="1" invisible="not message_id"/>
+                    </group>
+                </group>
+                <separator string="Anteprima"/>
+                <field name="preview" readonly="1" widget="text"
+                       placeholder="Seleziona uno snippet per vedere l'anteprima..."/>
+                <footer>
+                    <button name="action_copy_and_close" string="Copia negli appunti"
+                            type="object" class="btn btn-primary"
+                            invisible="not snippet_id"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_snippet_picker" model="ir.actions.act_window">
+        <field name="name">Seleziona Snippet</field>
+        <field name="res_model">casafolino.mail.snippet.picker</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

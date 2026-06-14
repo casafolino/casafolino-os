@@ -1,0 +1,142 @@
+/* CFComposeAIPanel — Brief #6.4 */
+
+.cf-ai-panel {
+    width: 280px;
+    background: var(--cf-warm-bg-section, #FBFAF6);
+    border-left: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.2s ease;
+    overflow-y: auto;
+    max-height: 100%;
+
+    &.cf-ai-panel-collapsed {
+        width: 32px;
+        .cf-ai-panel-body, .cf-ai-panel-title { display: none; }
+    }
+}
+
+.cf-ai-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.cf-ai-collapse-btn {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    cursor: pointer;
+    color: var(--color-text-secondary, #6B6B68);
+    border-radius: 4px;
+    &:hover { background: var(--color-background-secondary, #F0F0F0); }
+}
+
+.cf-ai-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    border-bottom: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+
+    button {
+        flex: 1;
+        font-size: 11px;
+        padding: 5px 4px;
+        background: transparent;
+        border: none;
+        color: var(--color-text-secondary, #6B6B68);
+        border-radius: 4px;
+        cursor: pointer;
+        white-space: nowrap;
+
+        &.active {
+            background: var(--color-background-primary, #FFFFFF);
+            color: var(--color-text-primary, #1A1A19);
+            font-weight: 500;
+        }
+        &[disabled] { opacity: 0.4; cursor: not-allowed; }
+    }
+}
+
+.cf-ai-section { padding: 10px; font-size: 12px; }
+
+.cf-ai-loading {
+    color: var(--color-text-secondary, #6B6B68);
+    font-style: italic;
+}
+
+.cf-ai-tone-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 12px;
+    margin-bottom: 6px;
+
+    &.cf-tone-formal { background: #E5E7EB; color: #1F2937; }
+    &.cf-tone-cordiale { background: #EAF3DE; color: #173404; }
+    &.cf-tone-diretto { background: #FAEEDA; color: #854F0B; }
+    &.cf-tone-urgente { background: #FEE2E2; color: #991B1B; }
+}
+
+.cf-ai-reasoning {
+    font-style: italic;
+    color: var(--color-text-secondary, #6B6B68);
+    margin: 4px 0;
+    font-size: 11px;
+}
+
+.cf-ai-lang-alert {
+    background: #FEF3C7;
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 6px;
+}
+
+.cf-ai-sig-preview {
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 6px;
+    padding: 8px;
+    margin: 6px 0;
+    font-size: 11px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.cf-ai-reply-card {
+    background: var(--color-background-primary, #FFFFFF);
+    border: 0.5px solid var(--color-border-tertiary, #E5E5E2);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+
+    .cf-ai-reply-label {
+        font-size: 11px;
+        font-weight: 500;
+        margin-bottom: 3px;
+    }
+    .cf-ai-reply-text {
+        font-size: 11px;
+        color: var(--color-text-secondary, #6B6B68);
+        margin-bottom: 6px;
+        line-height: 1.4;
+    }
+}
+
+.cf-ai-hint {
+    color: var(--color-text-secondary, #6B6B68);
+    font-style: italic;
+    font-size: 11px;
+}
+
+@media (max-width: 1200px) {
+    .cf-ai-panel {
+        width: 32px;
+        .cf-ai-panel-body, .cf-ai-panel-title { display: none; }
+    }
+}

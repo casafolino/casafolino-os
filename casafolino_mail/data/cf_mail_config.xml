@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="param_internal_domains" model="ir.config_parameter">
+        <field name="key">casafolino_mail.internal_domains</field>
+        <field name="value">casafolino.com</field>
+    </record>
+
+    <record id="param_outbound_auto_keep" model="ir.config_parameter">
+        <field name="key">casafolino_mail.outbound_auto_keep</field>
+        <field name="value">True</field>
+    </record>
+
+</odoo>

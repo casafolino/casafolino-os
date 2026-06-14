@@ -4,7 +4,7 @@
     'category': 'Sales/CRM',
     'summary': 'CRM Export B2B operatore-centrico con scoring, rotting, campionature, fiere e card scanner AI',
     'author': 'CasaFolino S.R.L.',
-    'depends': ['crm', 'sale', 'mail', 'contacts', 'documents', 'project', 'account', 'stock', 'casafolino_project', 'casafolino_initiative'],
+    'depends': ['crm', 'sale', 'mail', 'contacts', 'documents', 'project', 'account', 'stock', 'casafolino_mail', 'casafolino_project', 'casafolino_initiative'],
     'data': [
         'security/ir.model.access.csv',
         'data/cleanup_inherit.xml',
@@ -64,6 +64,8 @@
             'casafolino_crm_export/static/src/js/cf_wizard_new_dialog.js',
             'casafolino_crm_export/static/src/xml/cf_wizard_new.xml',
             'casafolino_crm_export/static/src/css/wizard_new.css',
+            'casafolino_crm_export/static/src/js/compose_f8_action.js',
+            'casafolino_crm_export/static/src/xml/compose_f8_action.xml',
         # 'casafolino_crm_export/static/src/project_dashboard/project_dashboard.js',
         # 'casafolino_crm_export/static/src/project_dashboard/project_dashboard.xml',
         # 'casafolino_crm_export/static/src/project_dashboard/project_dashboard.scss',

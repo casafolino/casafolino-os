@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_casafolino_mail_root"
+        name="Mail CRM"
+        sequence="15"
+        web_icon="casafolino_mail,static/description/icon.png"/>
+
+    <menuitem id="menu_casafolino_mail_my_mailbox"
+        name="La Mia Casella"
+        parent="menu_casafolino_mail_root"
+        sequence="0"
+        action="action_mail_v3_client"/>
+
+    <menuitem id="menu_casafolino_mail_analytics"
+        name="Analytics"
+        parent="menu_casafolino_mail_root"
+        sequence="0"
+        action="action_mail_v3_analytics"/>
+
+    <menuitem id="menu_casafolino_mail_lead_score"
+        name="Lead Scoring TOP 20"
+        parent="menu_casafolino_mail_root"
+        sequence="3"
+        action="action_casafolino_mail_lead_score"/>
+
+    <menuitem id="menu_casafolino_mail_sla"
+        name="SLA Buyer"
+        parent="menu_casafolino_mail_root"
+        sequence="5"
+        action="action_casafolino_mail_sla_partner"/>
+
+    <menuitem id="menu_casafolino_mail_orphan"
+        name="Buyer Senza Lead"
+        parent="menu_casafolino_mail_root"
+        sequence="6"
+        action="action_casafolino_mail_orphan_partner"/>
+
+    <!-- [DEPRECATED Brief #6.0] Triage Orfani menu removed -->
+
+    <menuitem id="menu_casafolino_mail_snippet"
+        name="Snippet Library"
+        parent="menu_casafolino_mail_root"
+        sequence="8"
+        action="action_casafolino_mail_snippet"/>
+
+    <menuitem id="menu_casafolino_mail_decision_history"
+        name="Storico Decisioni"
+        parent="menu_casafolino_mail_root"
+        sequence="9"
+        action="action_sender_decision_history"/>
+
+    <menuitem id="menu_casafolino_mail_folder_rules"
+        name="Regole Smistamento"
+        parent="menu_casafolino_mail_root"
+        sequence="10"
+        action="action_casafolino_mail_folder_rule"/>
+
+    <menuitem id="menu_casafolino_mail_config"
+        name="Configurazione"
+        parent="menu_casafolino_mail_root"
+        sequence="99"
+        groups="base.group_system"/>
+
+    <menuitem id="menu_casafolino_mail_accounts"
+        name="Account IMAP"
+        parent="menu_casafolino_mail_config"
+        sequence="1"
+        action="action_casafolino_mail_account"/>
+
+    <!-- [DEPRECATED Brief #6.0] Regole Mittenti menu removed -->
+
+    <menuitem id="menu_casafolino_mail_folders_admin"
+        name="Cartelle"
+        parent="menu_casafolino_mail_config"
+        sequence="3"
+        action="action_casafolino_mail_folder"/>
+
+    <menuitem id="menu_casafolino_mail_folder_rules_admin"
+        name="Regole Smistamento"
+        parent="menu_casafolino_mail_config"
+        sequence="4"
+        action="action_casafolino_mail_folder_rule"/>
+</odoo>

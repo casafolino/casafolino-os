@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ DECISION HISTORY — LIST ═══════════════════════════════════ -->
+
+    <record id="casafolino_mail_sender_decision_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender.decision.list</field>
+        <field name="model">casafolino.mail.sender.decision</field>
+        <field name="arch" type="xml">
+            <list string="Storico Decisioni" create="0">
+                <field name="triaged_at" string="Data"/>
+                <field name="partner_id" string="Partner"/>
+                <field name="sender_email" string="Email"/>
+                <field name="decision" string="Decisione" widget="badge"
+                       decoration-success="decision == 'lead_created'"
+                       decoration-info="decision == 'assigned'"
+                       decoration-warning="decision == 'replied'"
+                       decoration-danger="decision in ('ignored_sender', 'ignored_domain')"/>
+                <field name="triaged_by" string="Da"/>
+                <field name="lead_id" string="Lead" optional="show"/>
+                <!-- [Brief #6.0] sender_policy_id removed -->
+                <field name="active" string="Attiva"/>
+                <field name="notes" string="Note" optional="hide"/>
+                <button name="action_undo" string="Annulla" type="object"
+                        icon="fa-undo" class="btn-link"
+                        invisible="not active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ DECISION HISTORY — SEARCH ═════════════════════════════════ -->
+
+    <record id="casafolino_mail_sender_decision_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender.decision.search</field>
+        <field name="model">casafolino.mail.sender.decision</field>
+        <field name="arch" type="xml">
+            <search string="Storico Decisioni">
+                <field name="partner_id"/>
+                <field name="sender_email"/>
+                <filter name="active_only" string="Solo attive" domain="[('active', '=', True)]"/>
+                <separator/>
+                <filter name="lead_created" string="Lead creati"
+                        domain="[('decision', '=', 'lead_created')]"/>
+                <filter name="assigned" string="Assegnati"
+                        domain="[('decision', '=', 'assigned')]"/>
+                <filter name="replied" string="Risposti"
+                        domain="[('decision', '=', 'replied')]"/>
+                <filter name="ignored_sender" string="Mittente ignorato"
+                        domain="[('decision', '=', 'ignored_sender')]"/>
+                <filter name="ignored_domain" string="Dominio ignorato"
+                        domain="[('decision', '=', 'ignored_domain')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_decision" string="Decisione"
+                            context="{'group_by': 'decision'}"/>
+                    <filter name="group_user" string="Triaged da"
+                            context="{'group_by': 'triaged_by'}"/>
+                    <filter name="group_domain" string="Dominio"
+                            context="{'group_by': 'sender_domain'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══ DECISION — FORM ═══════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_sender_decision_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.sender.decision.form</field>
+        <field name="model">casafolino.mail.sender.decision</field>
+        <field name="arch" type="xml">
+            <form string="Dettaglio Decisione">
+                <div class="o_row mb-3">
+                    <button name="action_undo" string="Annulla decisione"
+                            type="object" class="btn btn-warning"
+                            invisible="not active"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="sender_email"/>
+                        <field name="sender_domain"/>
+                        <field name="decision" widget="badge"/>
+                        <field name="active"/>
+                    </group>
+                    <group>
+                        <field name="triaged_by"/>
+                        <field name="triaged_at"/>
+                        <field name="lead_id" invisible="decision != 'lead_created'"/>
+                        <field name="activity_id" invisible="decision != 'assigned'"/>
+                        <!-- [Brief #6.0] sender_policy_id removed -->
+                    </group>
+                </group>
+                <group string="Note">
+                    <field name="notes" nolabel="1"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ ACTIONS ═══════════════════════════════════════════════════ -->
+
+    <record id="action_sender_decision_history" model="ir.actions.act_window">
+        <field name="name">Storico Decisioni</field>
+        <field name="res_model">casafolino.mail.sender.decision</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_sender_decision_search"/>
+        <field name="context">{'search_default_active_only': 1}</field>
+    </record>
+
+</odoo>

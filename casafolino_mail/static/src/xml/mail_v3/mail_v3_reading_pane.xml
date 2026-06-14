@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+  <t t-name="casafolino_mail.ReadingPane">
+    <div class="mv3-reading-pane">
+      <div t-if="props.loading" class="mv3-reading-pane__loading">
+        <i class="fa fa-spinner fa-spin"/> Caricamento...
+      </div>
+      <div t-if="!props.loading and (!props.messages or props.messages.length === 0)" class="mv3-reading-pane__empty">
+        <i class="fa fa-envelope-o fa-3x" style="color:#ccc;"/>
+        <p>Seleziona una conversazione</p>
+      </div>
+      <div t-if="!props.loading and props.messages and props.messages.length > 0" class="mv3-reading-pane__content">
+        <!-- Header -->
+        <div class="mv3-reading-pane__header">
+          <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
+          <t t-set="timeGap" t-value="this.getTimeGap()"/>
+          <div t-if="timeGap" t-att-class="'mv3-time-gap mv3-time-gap--' + timeGap.severity">
+            <t t-out="timeGap.icon + ' ' + timeGap.text"/>
+          </div>
+        </div>
+        <!-- Messages -->
+        <div class="mv3-reading-pane__messages">
+          <t t-foreach="props.messages" t-as="msg" t-key="msg.id">
+            <div class="mv3-message" t-att-class="{'mv3-message--outbound': msg.direction === 'outbound'}">
+              <div class="mv3-message__header">
+                <div class="mv3-message__from">
+                  <strong t-out="msg.sender_name || msg.sender_email"/>
+                  <span class="mv3-message__email" t-out="'&lt;' + (msg.sender_email || '') + '&gt;'"/>
+                </div>
+                <div class="mv3-message__date" t-out="this.formatDate(msg.email_date)"/>
+              </div>
+              <div class="mv3-message__to" t-if="msg.recipient_emails">
+                A: <t t-out="msg.recipient_emails"/>
+              </div>
+              <div t-if="msg.intent_detected" class="mv3-message__intent">
+                <span class="mv3-badge mv3-badge--intent">
+                  <t t-out="msg.intent_detected"/>
+                </span>
+              </div>
+              <div class="mv3-message__body">
+                <iframe class="mv3-message__iframe"
+                        sandbox="allow-same-origin allow-popups"
+                        t-att-srcdoc="msg.body_html || msg.body_plain || '(nessun contenuto)'"/>
+              </div>
+              <div class="mv3-message__attachments" t-if="msg.attachment_ids and msg.attachment_ids.length > 0">
+                <t t-foreach="msg.attachment_ids" t-as="att" t-key="att.id">
+                  <a class="mv3-message__attachment"
+                     t-att-href="'/web/content/' + att.id + '?download=true'"
+                     target="_blank">
+                    <i class="fa fa-paperclip"/> <t t-out="att.name"/>
+                  </a>
+                </t>
+              </div>
+              <!-- V12.7: Quick actions — 3 grouped button bars -->
+              <div class="mv3-quick-actions">
+                <div class="mv3-quick-actions__row">
+                  <!-- Group 1: Communicate -->
+                  <button class="mv3-qa-btn" t-on-click="() => this.onReply(msg.id)">
+                    <i class="fa fa-reply"/> Rispondi
+                  </button>
+                  <button class="mv3-qa-btn" t-on-click="() => this.onForward(msg.id)">
+                    <i class="fa fa-share"/> Inoltra
+                  </button>
+                  <button class="mv3-qa-btn" t-on-click="() => this.onAiReply(msg.id)">
+                    <i class="fa fa-magic"/> AI
+                  </button>
+                  <div class="mv3-qa-separator"/>
+                  <!-- Group 2: CRM actions -->
+                  <button class="mv3-qa-btn mv3-qa-btn--blue" t-on-click="onCreateLead">
+                    <i class="fa fa-bullseye"/> Crea Lead
+                  </button>
+                  <button class="mv3-qa-btn mv3-qa-btn--purple" t-on-click="onCreateProject">
+                    <i class="fa fa-rocket"/> Crea Progetto
+                  </button>
+                  <button class="mv3-qa-btn mv3-qa-btn--red" t-on-click="onDismissSender">
+                    <i class="fa fa-ban"/> Dismetti mittente
+                  </button>
+                  <div class="mv3-qa-separator"/>
+                  <!-- Group 3: Organize -->
+                  <button class="mv3-qa-btn" t-on-click="() => this.onAction('toggle_star', msg.id)">
+                    <i t-att-class="msg.is_starred ? 'fa fa-star text-warning' : 'fa fa-star-o'"/> Preferito
+                  </button>
+                  <button class="mv3-qa-btn" t-on-click="() => this.onSnooze(msg.id)">
+                    <i class="fa fa-clock-o"/> Snooze
+                  </button>
+                  <button class="mv3-qa-btn" t-on-click="() => this.onAction('archive', msg.id)">
+                    <i class="fa fa-archive"/> Archivia
+                  </button>
+                  <button t-att-class="'mv3-qa-btn mv3-qa-btn--red-soft' + (state.deleteConfirmMsgId === msg.id ? ' mv3-qa-btn--armed' : '')"
+                          t-on-click="() => this.onDeleteEmail(msg.id)">
+                    <i class="fa fa-trash-o"/>
+                    <t t-if="state.deleteConfirmMsgId === msg.id">Conferma?</t>
+                    <t t-else="">Cancella</t>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </t>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

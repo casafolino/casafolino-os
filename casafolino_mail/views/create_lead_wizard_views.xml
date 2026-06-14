@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="casafolino_mail_create_lead_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.create.lead.wizard.form</field>
+        <field name="model">casafolino.mail.create.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Crea Lead da Email">
+                <group>
+                    <group string="Lead">
+                        <field name="name"/>
+                        <field name="partner_id"/>
+                        <field name="user_id"/>
+                        <field name="team_id"/>
+                        <field name="stage_id"/>
+                    </group>
+                    <group string="Dettagli">
+                        <field name="expected_revenue"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="priority" widget="priority"/>
+                        <field name="tag_ids" widget="many2many_tags"/>
+                    </group>
+                </group>
+                <separator string="Note"/>
+                <field name="description" placeholder="Note aggiuntive per il lead..."/>
+                <field name="message_id" invisible="1"/>
+                <footer>
+                    <button name="action_create_lead" string="Crea Lead"
+                            type="object" class="btn-primary"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
