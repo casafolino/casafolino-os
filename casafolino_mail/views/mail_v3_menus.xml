@@ -7,8 +7,8 @@
     <menuitem id="menu_mail_v3_root"
               name="Desk CRM"
               action="action_mail_v3_client"
-              parent="casafolino_mail.menu_casafolino_mail_root"
+              web_icon="casafolino_mail,static/description/icon.png"
               groups="group_mail_v3_beta"
-              sequence="1"/>
+              sequence="14"/>
   </data>
 </odoo>
