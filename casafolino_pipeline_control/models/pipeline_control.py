@@ -1,4 +1,5 @@
 import logging
+from email.utils import getaddresses
 from datetime import timedelta
 
 from odoo import api, fields, models
@@ -490,8 +491,12 @@ class CfPipelineControl(models.AbstractModel):
         if messages:
             messages.write(vals)
             if is_keep:
-                for record in messages.filtered(lambda m: not m.partner_id):
-                    self._resolve_or_create_partner_from_message(record)
+                for record in messages:
+                    self._resolve_or_create_partner_from_message(
+                        record,
+                        create_company=is_domain,
+                        create_participants=is_domain,
+                    )
 
         title = 'Regola creata'
         verb = 'tenute' if is_keep else 'scartate'
@@ -503,10 +508,15 @@ class CfPipelineControl(models.AbstractModel):
             reload=True,
         )
 
-    def _resolve_or_create_partner_from_message(self, msg):
+    def _resolve_or_create_partner_from_message(self, msg, create_company=False, create_participants=False):
         sender_email = (msg.sender_email or '').lower().strip()
         if not sender_email:
             return False
+        sender_domain = (msg.sender_domain or '').lower().strip()
+        company = False
+        if create_company and sender_domain and sender_domain not in FREE_EMAIL_DOMAINS:
+            company = self._resolve_or_create_company_from_domain(sender_domain)
+
         partner = self.env['res.partner'].sudo().search([
             ('email', '=ilike', sender_email),
         ], limit=1)
@@ -514,9 +524,75 @@ class CfPipelineControl(models.AbstractModel):
             partner = self.env['res.partner'].sudo().create({
                 'name': msg.sender_name or sender_email.split('@')[0],
                 'email': sender_email,
+                'parent_id': company.id if company else False,
+                'type': 'contact',
             })
+        elif company and not partner.parent_id and not partner.is_company:
+            partner.write({'parent_id': company.id})
         msg.sudo().write({'partner_id': partner.id, 'match_type': 'exact'})
+
+        if create_participants and company:
+            self._resolve_message_participants(msg, company, sender_domain)
         return partner
+
+    def _resolve_or_create_company_from_domain(self, domain):
+        Partner = self.env['res.partner'].sudo()
+        company = Partner.search([
+            ('is_company', '=', True),
+            '|',
+            ('website', 'ilike', domain),
+            ('email', 'ilike', '@' + domain),
+        ], limit=1)
+        if company:
+            return company
+
+        domain_root = domain.split('.')[0].replace('-', ' ').replace('_', ' ')
+        company_name = ' '.join(part.capitalize() for part in domain_root.split() if part) or domain
+        return Partner.create({
+            'name': company_name,
+            'is_company': True,
+            'website': 'https://%s' % domain,
+            'email': 'info@%s' % domain,
+        })
+
+    def _resolve_message_participants(self, msg, company, domain):
+        participants = self._extract_message_participants(msg)
+        Partner = self.env['res.partner'].sudo()
+        for name, email in participants:
+            if not email or '@' not in email:
+                continue
+            email = email.lower().strip()
+            if email.split('@')[-1] != domain:
+                continue
+            partner = Partner.search([('email', '=ilike', email)], limit=1)
+            if partner:
+                if not partner.parent_id and not partner.is_company:
+                    partner.write({'parent_id': company.id})
+                continue
+            Partner.create({
+                'name': name or email.split('@')[0],
+                'email': email,
+                'parent_id': company.id,
+                'type': 'contact',
+            })
+
+    def _extract_message_participants(self, msg):
+        raw_addresses = []
+        if msg.sender_email:
+            raw_addresses.append('%s <%s>' % (msg.sender_name or '', msg.sender_email))
+        if msg.recipient_emails:
+            raw_addresses.append(msg.recipient_emails)
+        if getattr(msg, 'cc_emails', False):
+            raw_addresses.append(msg.cc_emails)
+        seen = set()
+        participants = []
+        for name, email in getaddresses(raw_addresses):
+            email = (email or '').lower().strip()
+            if not email or email in seen:
+                continue
+            seen.add(email)
+            participants.append(((name or '').strip(), email))
+        return participants
 
     @api.model
     def search_context_records(self, category, query, limit=5):
