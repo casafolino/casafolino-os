@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="casafolino_mail.ComposeF8Action">
+        <div class="mv3-compose-action-placeholder"/>
+    </t>
+</templates>

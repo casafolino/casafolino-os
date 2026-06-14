@@ -241,18 +241,20 @@ class CasafolinoMailMaterialPickerWizard(models.TransientModel):
             ('active', '=', True),
         ], limit=1)
         return {
-            'type': 'ir.actions.act_window',
+            'type': 'ir.actions.client',
             'name': 'Rispondi con materiale',
-            'res_model': 'casafolino.mail.compose.wizard',
-            'view_mode': 'form',
-            'target': 'new',
+            'tag': 'casafolino_mail.compose_f8',
             'context': {
+                'default_mode': 'reply',
                 'default_account_id': account.id if account else False,
-                'default_to_emails': to_email,
+                'default_partner_email': to_email,
                 'default_cc_emails': msg.cc_emails or '',
                 'default_subject': self._reply_subject(msg.subject or ''),
                 'default_body_html': body,
                 'default_in_reply_to_message_id': msg.id,
+                'default_partner_id': partner.id if partner else False,
+                'default_thread_id': msg.id,
+                'default_thread_model': 'casafolino.mail.message',
             },
         }
 
