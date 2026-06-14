@@ -32,10 +32,13 @@ fi
 echo "==> Deploy su DB: $DB"
 echo "==> Moduli: $MOD_LIST"
 
-# Pulisci asset cache
-echo "==> Pulizia asset cache..."
-docker exec odoo-db psql -U odoo -d "$DB" \
-    -c "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';" 2>/dev/null || true
+if [ "${CF_CLEAR_ASSETS:-0}" = "1" ]; then
+    echo "==> Pulizia asset cache richiesta..."
+    docker exec odoo-db psql -U odoo -d "$DB" \
+        -c "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';" 2>/dev/null || true
+else
+    echo "==> Asset cache preservata (usa CF_CLEAR_ASSETS=1 per pulirla)."
+fi
 
 # Update moduli
 echo "==> Aggiornamento moduli..."
@@ -48,5 +51,10 @@ docker exec "$CONTAINER" odoo \
 # Restart
 echo "==> Restart container..."
 docker restart "$CONTAINER"
+
+if [ -x "./scripts/warmup_odoo.sh" ]; then
+    echo "==> Warmup Odoo..."
+    CF_DB="$DB" ./scripts/warmup_odoo.sh || true
+fi
 
 echo "==> Deploy completato."

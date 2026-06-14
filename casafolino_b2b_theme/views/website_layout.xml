@@ -34,11 +34,9 @@
                             <a href="https://casafolino.com">casafolino.com</a>
                         </section>
                     </div>
-                </div>
-            </xpath>
-            <xpath expr="//div[contains(@class, 'o_footer_copyright')]" position="replace">
-                <div class="cf-b2b-odoo-copyright" t-if="not no_footer">
-                    <span>Copyright (c) CasaFolino Srl Societa' Benefit</span>
+                    <div class="cf-b2b-odoo-copyright">
+                        <span>Copyright (c) CasaFolino Srl Societa' Benefit</span>
+                    </div>
                 </div>
             </xpath>
         </field>
