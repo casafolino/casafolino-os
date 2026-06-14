@@ -124,6 +124,10 @@ export class ComposeWizard extends Component {
             // Preview modal
             showPreviewModal: false,
             previewData: null,
+            // Scheduled send
+            showSchedulePanel: false,
+            scheduleAt: '',
+            scheduleError: '',
             // Font controls
             showFontSizeDropdown: false,
             showFontColorPicker: false,
@@ -683,6 +687,70 @@ export class ComposeWizard extends Component {
     closePreviewModal() {
         this.state.showPreviewModal = false;
         this.state.previewData = null;
+    }
+
+    // ── Scheduled Send ──────────────────────────────────────
+
+    toggleSchedulePanel() {
+        this.state.showSchedulePanel = !this.state.showSchedulePanel;
+        this.state.scheduleError = '';
+        if (this.state.showSchedulePanel && !this.state.scheduleAt) {
+            const dt = new Date(Date.now() + 60 * 60 * 1000);
+            dt.setMinutes(Math.ceil(dt.getMinutes() / 15) * 15, 0, 0);
+            this.state.scheduleAt = this._formatDatetimeLocal(dt);
+        }
+    }
+
+    onScheduleAtChange(ev) {
+        this.state.scheduleAt = ev.target.value;
+        this.state.scheduleError = '';
+    }
+
+    async scheduleSend() {
+        if (!this.state.to.trim()) {
+            this.state.scheduleError = 'Inserisci almeno un destinatario';
+            return;
+        }
+        if (!this.state.scheduleAt) {
+            this.state.scheduleError = 'Scegli data e ora';
+            return;
+        }
+        const scheduledDate = new Date(this.state.scheduleAt);
+        if (Number.isNaN(scheduledDate.getTime()) || scheduledDate <= new Date()) {
+            this.state.scheduleError = 'Scegli una data futura';
+            return;
+        }
+
+        this.state.sending = true;
+        this.state.error = '';
+        this.state.scheduleError = '';
+        await this.autosave();
+        try {
+            const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/schedule', {
+                scheduled_send_at: this._formatServerDatetime(scheduledDate),
+            });
+            if (res.success) {
+                if (this.props.onSent) this.props.onSent({ scheduled: true });
+            } else {
+                this.state.scheduleError = res.error || 'Errore programmazione';
+            }
+        } catch (e) {
+            this.state.scheduleError = 'Errore: ' + (e.message || e);
+        } finally {
+            this.state.sending = false;
+        }
+    }
+
+    _formatDatetimeLocal(date) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+            'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    _formatServerDatetime(date) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+            ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':00';
     }
 
     // ── Send / Discard ──────────────────────────────────────

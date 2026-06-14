@@ -953,6 +953,34 @@ $mv3-line-height: 1.45;
     }
 }
 
+.mv3-schedule-panel {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid $mv3-border;
+    border-radius: 7px;
+    background: #FAFAF8;
+
+    &__fields {
+        display: grid;
+        grid-template-columns: auto minmax(190px, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    label {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: #4c564f;
+    }
+
+    &__error {
+        color: #9f2d20;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+}
+
 // ── Main Compose Panel ─────────────────────────────────
 .mv3-compose {
     background: white;

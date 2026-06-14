@@ -358,6 +358,23 @@
             <div t-if="state.error" class="alert alert-danger mt-2">
               <t t-out="state.error"/>
             </div>
+
+            <div t-if="state.showSchedulePanel" class="mv3-schedule-panel">
+              <div class="mv3-schedule-panel__fields">
+                <label>Invia il</label>
+                <input type="datetime-local"
+                       class="form-control form-control-sm"
+                       t-att-value="state.scheduleAt"
+                       t-on-input="onScheduleAtChange"/>
+                <button class="btn btn-sm btn-primary"
+                        t-on-click="scheduleSend"
+                        t-att-disabled="state.sending">
+                  <i t-att-class="state.sending ? 'fa fa-spinner fa-spin' : 'fa fa-clock-o'"/>
+                  Programma
+                </button>
+              </div>
+              <div t-if="state.scheduleError" class="mv3-schedule-panel__error" t-out="state.scheduleError"/>
+            </div>
           </div>
 
           <!-- Footer -->
@@ -374,6 +391,10 @@
             </div>
             <div class="mv3-compose__footer-right">
               <button class="btn btn-sm btn-outline-secondary" t-on-click="discard">Annulla</button>
+              <button class="btn btn-sm btn-outline-secondary" t-on-click="toggleSchedulePanel">
+                <i class="fa fa-clock-o"/>
+                Programma
+              </button>
               <button class="btn btn-sm btn-primary" t-on-click="send" t-att-disabled="state.sending">
                 <i t-att-class="state.sending ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/>
                 Invia
