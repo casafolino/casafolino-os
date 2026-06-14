@@ -261,6 +261,114 @@
         }
     }
 
+    .cf-pc-discipline-panel {
+        margin-bottom: 16px;
+    }
+
+    .cf-pc-discipline-body {
+        display: grid;
+        grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+        gap: 12px;
+        padding: 10px;
+    }
+
+    .cf-pc-discipline-kpis {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .cf-pc-discipline-kpi {
+        min-height: 86px;
+        padding: 10px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+
+        span,
+        small {
+            display: block;
+            color: #667061;
+            font-size: 11px;
+            line-height: 1.25;
+        }
+
+        strong {
+            display: block;
+            margin: 6px 0;
+            font-size: 25px;
+            line-height: 1;
+        }
+
+        &.tone-red strong {
+            color: #a33c33;
+        }
+
+        &.tone-amber strong {
+            color: #a36a14;
+        }
+
+        &.tone-blue strong {
+            color: #2f5d8c;
+        }
+
+        &.tone-green strong {
+            color: #327347;
+        }
+    }
+
+    .cf-pc-discipline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        min-width: 0;
+    }
+
+    .cf-pc-discipline-row {
+        min-height: 50px;
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) auto auto auto;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid #e5e9e1;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .cf-pc-discipline-main {
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #20251f;
+        text-align: left;
+
+        strong,
+        small {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        small {
+            margin-top: 2px;
+            color: #667061;
+            font-size: 12px;
+        }
+    }
+
+    .cf-pc-discipline-issue {
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #fff3df;
+        color: #8d520c;
+        font-size: 11px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
     .cf-pc-lane-body {
         min-height: 120px;
         padding: 10px;
@@ -2146,6 +2254,10 @@
             grid-template-columns: 1fr;
         }
 
+        .cf-pc-discipline-body {
+            grid-template-columns: 1fr;
+        }
+
         .cf-pc-workbench,
         .cf-pc-workbench-grid {
             grid-template-columns: 1fr;
@@ -2188,6 +2300,19 @@
 
         .cf-pc-dossier-tools {
             grid-template-columns: 1fr;
+        }
+
+        .cf-pc-discipline-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cf-pc-discipline-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .cf-pc-discipline-issue,
+        .cf-pc-discipline-row .cf-pc-value {
+            display: none;
         }
 
         .cf-pc-board,

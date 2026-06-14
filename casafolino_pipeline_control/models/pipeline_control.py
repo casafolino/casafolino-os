@@ -344,6 +344,7 @@ class CfPipelineControl(models.AbstractModel):
         fair_id = self._normalize_fair_id(fair_id)
         return {
             'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
+            'discipline': self._safe_section('discipline', lambda: self._get_pipeline_discipline(today), {'kpis': [], 'rows': []}),
             'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
             'b2b_registrations': self._safe_section('b2b_registrations', lambda: self._get_b2b_registration_data(today), {'kpis': [], 'rows': []}),
             'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []}),
@@ -903,6 +904,64 @@ class CfPipelineControl(models.AbstractModel):
         except Exception:
             _logger.exception("Pipeline Control section %s failed", name)
             return fallback
+
+    def _get_pipeline_discipline(self, today):
+        Lead = self.env['crm.lead']
+        base_domain = [
+            ('type', '=', 'opportunity'),
+            ('active', '=', True),
+            ('stage_id.fold', '=', False),
+        ]
+        missing_followup_domain = base_domain + [('cf_date_next_followup', '=', False)]
+        overdue_followup_domain = base_domain + [('cf_date_next_followup', '<', today)]
+        missing_partner_domain = base_domain + [('partner_id', '=', False)]
+        missing_dossier_domain = base_domain + [('cf_project_id', '=', False)]
+
+        missing_followup = Lead.search(
+            missing_followup_domain,
+            order='expected_revenue desc, write_date desc, id desc',
+            limit=10,
+        )
+        rows = []
+        for lead in missing_followup:
+            item = self._format_lead_item(lead, today)
+            item['issue'] = 'Manca prossima azione'
+            item['suggested_action'] = 'Pianifica oggi'
+            rows.append(item)
+
+        return {
+            'kpis': [
+                {
+                    'key': 'missing_followup',
+                    'label': 'Senza prossima azione',
+                    'value': Lead.search_count(missing_followup_domain),
+                    'hint': 'Lead aperti da pianificare',
+                    'tone': 'red',
+                },
+                {
+                    'key': 'overdue_followup',
+                    'label': 'Follow-up scaduti',
+                    'value': Lead.search_count(overdue_followup_domain),
+                    'hint': 'Da recuperare prima',
+                    'tone': 'amber',
+                },
+                {
+                    'key': 'missing_partner',
+                    'label': 'Senza cliente',
+                    'value': Lead.search_count(missing_partner_domain),
+                    'hint': 'Da collegare ad anagrafica',
+                    'tone': 'blue',
+                },
+                {
+                    'key': 'missing_dossier',
+                    'label': 'Senza dossier',
+                    'value': Lead.search_count(missing_dossier_domain),
+                    'hint': 'Lead non promossi a progetto',
+                    'tone': 'green',
+                },
+            ],
+            'rows': rows,
+        }
 
     def _get_kpis(self, today, user):
         Lead = self.env['crm.lead']

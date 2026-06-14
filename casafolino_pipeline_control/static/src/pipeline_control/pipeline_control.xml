@@ -76,6 +76,59 @@
                         </t>
                     </div>
 
+                    <section class="cf-pc-panel cf-pc-discipline-panel">
+                        <header>
+                            <div>
+                                <h2>Disciplina pipeline</h2>
+                                <p>Lead aperti che hanno bisogno di una prossima mossa chiara.</p>
+                            </div>
+                            <button class="btn btn-sm btn-light" t-on-click="openPipelineDiscipline">
+                                <i class="fa fa-list"/>
+                                Apri elenco
+                            </button>
+                        </header>
+                        <div class="cf-pc-discipline-body">
+                            <div class="cf-pc-discipline-kpis">
+                                <t t-foreach="state.data.discipline.kpis" t-as="kpi" t-key="'discipline-kpi-' + kpi.key">
+                                    <div t-attf-class="cf-pc-discipline-kpi tone-#{kpi.tone}">
+                                        <span t-out="kpi.label"/>
+                                        <strong t-out="kpi.value"/>
+                                        <small t-out="kpi.hint"/>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="cf-pc-discipline-list">
+                                <t t-if="state.data.discipline.rows.length">
+                                    <t t-foreach="state.data.discipline.rows" t-as="item" t-key="'discipline-' + item.model + '-' + item.id">
+                                        <article class="cf-pc-discipline-row">
+                                            <button class="cf-pc-discipline-main" t-on-click="() => this.leadQuickAction(item, 'open')">
+                                                <strong t-out="item.title"/>
+                                                <small>
+                                                    <t t-out="item.subtitle"/>
+                                                    <t t-if="item.meta"> · <t t-out="item.meta"/></t>
+                                                </small>
+                                            </button>
+                                            <span class="cf-pc-discipline-issue" t-out="item.issue"/>
+                                            <span t-if="item.value" class="cf-pc-value">€ <t t-out="Math.round(item.value).toLocaleString('it-IT')"/></span>
+                                            <div class="cf-pc-row-actions">
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'open')" title="Apri">
+                                                    <i class="fa fa-folder-open-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-primary" t-on-click="() => this.leadQuickAction(item, 'today')" title="Metti a oggi">
+                                                    <i class="fa fa-calendar-check-o"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-light" t-on-click="() => this.leadQuickAction(item, 'followup7')" title="Follow-up tra 7 giorni">
+                                                    <i class="fa fa-calendar-plus-o"/>
+                                                </button>
+                                            </div>
+                                        </article>
+                                    </t>
+                                </t>
+                                <div t-else="" class="cf-pc-empty">Pipeline ordinata</div>
+                            </div>
+                        </div>
+                    </section>
+
                     <div class="cf-pc-board">
                         <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
                             <section class="cf-pc-lane">

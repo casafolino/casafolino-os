@@ -43,6 +43,7 @@ export class CFPipelineControl extends Component {
             aiInstruction: "",
             data: {
                 kpis: [],
+                discipline: { kpis: [], rows: [] },
                 lanes: [],
                 b2b_registrations: { kpis: [], rows: [] },
                 followup: { kpis: [], columns: [], routes: [], timeline: [] },
@@ -83,6 +84,11 @@ export class CFPipelineControl extends Component {
         return {
             ...normalized,
             kpis: asArray(normalized.kpis),
+            discipline: {
+                ...(normalized.discipline || {}),
+                kpis: asArray(normalized.discipline?.kpis),
+                rows: asArray(normalized.discipline?.rows),
+            },
             lanes: asArray(normalized.lanes).map((lane) => ({
                 ...lane,
                 items: asArray(lane.items),
@@ -675,6 +681,25 @@ export class CFPipelineControl extends Component {
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }
+    }
+
+    async openPipelineDiscipline() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Lead senza prossima azione"),
+            res_model: "crm.lead",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: [
+                ["type", "=", "opportunity"],
+                ["active", "=", true],
+                ["stage_id.fold", "=", false],
+                ["cf_date_next_followup", "=", false],
+            ],
+            context: {
+                default_type: "opportunity",
+            },
+        });
     }
 
     get selectedMessage() {
