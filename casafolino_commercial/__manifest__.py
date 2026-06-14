@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Commercial',
-    'version': '18.0.2.4.10',
+    'version': '18.0.2.5.0',
     'post_init_hook': '_post_init_bank_resilience',
     'category': 'CasaFolino',
     'summary': 'GDO, Private Label, Tesoreria e Blocchi Documento',
@@ -41,6 +41,7 @@
             'casafolino_commercial/static/src/js/cf_treasury_categories.js',
             'casafolino_commercial/static/src/xml/cf_treasury_turnover.xml',
             'casafolino_commercial/static/src/js/cf_treasury_turnover.js',
+            'casafolino_commercial/static/src/js/invoice_line_spread.js',
         ],
     },
     'installable': True,
