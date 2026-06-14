@@ -4,6 +4,7 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 export class CFPipelineControl extends Component {
     static template = "casafolino_pipeline_control.CFPipelineControl";
@@ -454,7 +455,7 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "mail_quick_action", [row.id, quickAction]);
             if (result) {
-                if (this.openComposeDialogFromAction(result)) {
+                if (await this.openComposeDialogFromAction(result)) {
                     return;
                 }
                 await this.action.doAction(result);
@@ -493,7 +494,7 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "lead_quick_action", [item.id, quickAction]);
             if (result) {
-                if (this.openComposeDialogFromAction(result)) {
+                if (await this.openComposeDialogFromAction(result)) {
                     return;
                 }
                 await this.action.doAction(result);
@@ -520,7 +521,7 @@ export class CFPipelineControl extends Component {
         try {
             const result = await this.orm.call("cf.pipeline.control", "record_quick_action", [item.model, item.res_id, quickAction]);
             if (result) {
-                if (this.openComposeDialogFromAction(result)) {
+                if (await this.openComposeDialogFromAction(result)) {
                     return;
                 }
                 await this.action.doAction(result);
@@ -533,11 +534,28 @@ export class CFPipelineControl extends Component {
         }
     }
 
-    openComposeDialogFromAction(result) {
+    async openComposeDialogFromAction(result) {
         if (!result || result.tag !== "casafolino_mail.compose_f8") {
             return false;
         }
-        this.notification.add(_t("Mail V2 è stata disinstallata."), { type: "warning" });
+        const ctx = result.context || {};
+        const replyToId = ctx.default_thread_model === "casafolino.mail.message"
+            ? ctx.default_thread_id
+            : (ctx.default_in_reply_to_message_id || false);
+        this.dialog.add(ComposeWizardDialog, {
+            accountId: ctx.default_account_id || false,
+            partnerEmail: ctx.default_partner_email || ctx.default_to_emails || "",
+            defaultSubject: ctx.default_subject || "",
+            defaultBody: ctx.default_body_html || "",
+            partnerId: ctx.default_partner_id || false,
+            threadId: ctx.default_thread_id || false,
+            threadModel: ctx.default_thread_model || "",
+            replyToId,
+            mode: ctx.default_mode || (replyToId ? "reply" : "new"),
+            onSent: async () => {
+                await this.loadData();
+            },
+        });
         return true;
     }
 

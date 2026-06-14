@@ -37,15 +37,15 @@ export class ComposeWizardDialog extends Component {
         onWillStart(async () => {
             try {
                 const prepareParams = {
-                    mode: 'new',
-                    prefilled_body: '',
+                    mode: this.props.mode || 'new',
+                    in_reply_to_message_id: this.props.replyToId || false,
                 };
                 // Pass caller-resolved account_id to prepare endpoint
                 if (this.props.accountId) {
                     prepareParams.account_id = this.props.accountId;
                 }
 
-                const result = await rpc('/cf/mail/v3/compose/prepare', prepareParams);
+                const result = await rpc('/cf/mail/v3/draft/create', prepareParams);
                 if (!result || !result.draft_id) {
                     this.state.error = 'Impossibile creare bozza mail';
                     return;
@@ -76,6 +76,7 @@ export class ComposeWizardDialog extends Component {
 
                 this.state.prefilled = pf;
                 this.state.accountId = pf.account_id || this.props.accountId || null;
+                this.state.mode = this.props.mode || 'new';
                 this.state.noAccount = !this.state.accountId;
             } catch (e) {
                 this.state.error = 'Errore preparazione composer: ' + (e.message || e);

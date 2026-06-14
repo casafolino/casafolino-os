@@ -19,7 +19,7 @@
                            draftId="state.draftId"
                            prefilled="state.prefilled"
                            accountId="state.accountId"
-                           mode="'new'"
+                           mode="state.mode"
                            onSent="() => this.onComposeSent()"
                            onClose="() => this.onComposeClose()"/>
         </Dialog>
