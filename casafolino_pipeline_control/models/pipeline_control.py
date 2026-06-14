@@ -1114,6 +1114,8 @@ class CfPipelineControl(models.AbstractModel):
         return columns
 
     def _get_inbox_data(self, user):
+        if not self.env.get('casafolino.mail.message'):
+            return self._empty_inbox_data()
         inbox, waiting = self._get_latest_commercial_threads(user)
         rows_to_reply = [self._format_mail_row(msg) for msg in inbox[:24]]
         rows_waiting = [self._format_mail_row(msg) for msg in waiting[:24]]
@@ -1156,6 +1158,19 @@ class CfPipelineControl(models.AbstractModel):
             'distribution_stats': stats_list,
             'to_reply': rows_to_reply,
             'waiting_customer': rows_waiting,
+        }
+
+    def _empty_inbox_data(self):
+        return {
+            'kpis': [
+                {'label': 'Tocca a noi', 'value': 0, 'hint': 'Mail V2 disinstallata'},
+                {'label': 'Tocca al cliente', 'value': 0, 'hint': 'Usa attivita e chatter Odoo'},
+                {'label': 'Senza lead', 'value': 0, 'hint': 'Nessuna inbox custom attiva'},
+                {'label': 'Urgenti', 'value': 0, 'hint': 'Nessuna urgenza email custom'},
+            ],
+            'distribution_stats': [],
+            'to_reply': [],
+            'waiting_customer': [],
         }
 
     @api.model
@@ -1300,7 +1315,9 @@ class CfPipelineControl(models.AbstractModel):
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     def _get_latest_commercial_threads(self, user):
-        Mail = self.env['casafolino.mail.message']
+        Mail = self.env.get('casafolino.mail.message')
+        if not Mail:
+            return [], []
         domain = [
             ('is_archived', '=', False),
             ('is_deleted', '=', False),
