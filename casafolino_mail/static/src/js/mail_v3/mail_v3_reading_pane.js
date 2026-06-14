@@ -82,6 +82,10 @@ export class ReadingPane extends Component {
         if (this.props.onCreateProject) this.props.onCreateProject();
     }
 
+    onOpenService(service, msgId) {
+        if (this.props.onOpenService) this.props.onOpenService(service, msgId);
+    }
+
     onDismissSender() {
         if (this.props.onDismissSender) this.props.onDismissSender();
     }

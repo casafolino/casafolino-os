@@ -12,7 +12,10 @@
       <div t-if="!props.loading and props.messages and props.messages.length > 0" class="mv3-reading-pane__content">
         <!-- Header -->
         <div class="mv3-reading-pane__header">
-          <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
+          <div>
+            <div class="mv3-reading-pane__eyebrow">Mail aperta</div>
+            <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
+          </div>
           <t t-set="timeGap" t-value="this.getTimeGap()"/>
           <div t-if="timeGap" t-att-class="'mv3-time-gap mv3-time-gap--' + timeGap.severity">
             <t t-out="timeGap.icon + ' ' + timeGap.text"/>
@@ -53,6 +56,14 @@
               </div>
               <!-- V12.7: Quick actions — 3 grouped button bars -->
               <div class="mv3-quick-actions">
+                <div class="mv3-service-grid">
+                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('contact', msg.id)"><span>CO</span><strong>Crea contatto</strong><small>Persona dal mittente e note.</small></button>
+                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('company', msg.id)"><span>AZ</span><strong>Crea azienda</strong><small>Dominio, paese e relazione.</small></button>
+                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('pipeline', msg.id)"><span>PL</span><strong>Fase pipeline</strong><small>Lead, qualifica, offerta.</small></button>
+                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('dossier', msg.id)"><span>DO</span><strong>Dossier</strong><small>Mail, allegati, documenti.</small></button>
+                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('activity', msg.id)"><span>AT</span><strong>Attivita</strong><small>Follow-up silenzioso.</small></button>
+                  <button class="mv3-service-card" t-on-click="onDismissSender"><span>RG</span><strong>Regola mittente</strong><small>Keep, review, discard.</small></button>
+                </div>
                 <div class="mv3-quick-actions__row">
                   <!-- Group 1: Communicate -->
                   <button class="mv3-qa-btn" t-on-click="() => this.onReply(msg.id)">
@@ -66,11 +77,11 @@
                   </button>
                   <div class="mv3-qa-separator"/>
                   <!-- Group 2: CRM actions -->
-                  <button class="mv3-qa-btn mv3-qa-btn--blue" t-on-click="onCreateLead">
+                  <button class="mv3-qa-btn mv3-qa-btn--blue" t-on-click="() => this.onOpenService('create_lead', msg.id)">
                     <i class="fa fa-bullseye"/> Crea Lead
                   </button>
-                  <button class="mv3-qa-btn mv3-qa-btn--purple" t-on-click="onCreateProject">
-                    <i class="fa fa-rocket"/> Crea Progetto
+                  <button class="mv3-qa-btn mv3-qa-btn--purple" t-on-click="() => this.onOpenService('dossier', msg.id)">
+                    <i class="fa fa-rocket"/> Dossier
                   </button>
                   <button class="mv3-qa-btn mv3-qa-btn--red" t-on-click="onDismissSender">
                     <i class="fa fa-ban"/> Dismetti mittente

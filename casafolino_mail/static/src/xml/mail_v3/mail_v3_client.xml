@@ -3,31 +3,50 @@
   <t t-name="casafolino_mail.MailV3Client">
     <div t-att-class="'mv3-client' + (state.mobileView ? ' mv3-client--mobile-view-' + state.mobileView : '')"
          t-att-data-theme="state.darkMode ? 'dark' : 'light'">
-      <!-- Sidebar Left compact -->
-      <div class="mv3-client__sidebar-left">
-        <SidebarLeft
-          accounts="state.accounts"
-          onAccountChange.bind="onAccountChange"
-          onFolderChange.bind="onFolderChange"
-          onComposeNew.bind="openComposeNew"
-          onOpenSettings.bind="openSettings"
-          onToggleNotifications.bind="toggleNotifications"
-          notificationsEnabled="state.notificationsEnabled"
-          notifUnreadCount="state.notifUnreadCount"/>
-      </div>
+      <header class="mv3-cockpit-top">
+        <div class="mv3-cockpit-brand">
+          <span class="mv3-cockpit-icon"><i class="fa fa-envelope-o"/></span>
+          <div>
+            <strong>Mail Inbox V2</strong>
+            <span>Triage, composer, CRM, pipeline e dossier in Odoo</span>
+          </div>
+        </div>
+        <nav class="mv3-cockpit-tabs">
+          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'triage' ? 'active' : '')" t-on-click="() => this.openTopView('triage')">Inbox Triage</button>
+          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'keep' ? 'active' : '')" t-on-click="() => this.openTopView('keep')">Keep CRM</button>
+          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'review' ? 'active' : '')" t-on-click="() => this.openTopView('review')">Review</button>
+          <button class="mv3-cockpit-tab" t-on-click="() => this.openTopView('composer')">Composer</button>
+          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'crm' ? 'active' : '')" t-on-click="() => this.openTopView('crm')">CRM/Pipeline</button>
+          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'dossier' ? 'active' : '')" t-on-click="() => this.openTopView('dossier')">Dossier</button>
+          <button class="mv3-cockpit-tab" t-on-click="() => this.openTopView('config')">Config</button>
+        </nav>
+        <button class="mv3-cockpit-primary" t-on-click="openComposeNew"><i class="fa fa-pencil"/> Scrivi</button>
+      </header>
 
-      <!-- V14: Folder Sidebar -->
-      <div class="mv3-client__folder-sidebar" t-if="state.folderSidebarVisible">
-        <!-- V17.1: Sync Status Badge -->
-        <SyncBadge/>
-        <FolderSidebar
-          selectedAccountIds="state.selectedAccountIds"
-          onFolderSelect.bind="onFolderSelect"
-          onOpenRules.bind="onOpenRules"/>
-      </div>
+      <main class="mv3-cockpit-shell" t-if="state.topView === 'triage' or state.topView === 'keep' or state.topView === 'review'">
+        <aside class="mv3-cockpit-sidebar">
+          <SyncBadge/>
+          <div class="mv3-cockpit-metrics">
+            <div><strong t-out="state.totalThreads || 0"/><span>conversazioni</span></div>
+            <div><strong t-out="state.notifUnreadCount || 0"/><span>non lette</span></div>
+            <div><strong t-out="state.accounts.length || 0"/><span>account</span></div>
+          </div>
+          <div class="mv3-cockpit-filter-title">Code operative</div>
+          <button class="mv3-cockpit-filter active" t-on-click="() => this.openTopView('triage')"><span><i class="fa fa-inbox"/> Tutte le email</span><strong t-out="state.totalThreads || 0"/></button>
+          <button class="mv3-cockpit-filter" t-on-click="() => this.openTopView('review')"><span><i class="fa fa-warning"/> Da decidere</span><strong>review</strong></button>
+          <button class="mv3-cockpit-filter" t-on-click="() => this.onFolderChange('sent')"><span><i class="fa fa-paper-plane"/> Inviate</span></button>
+          <button class="mv3-cockpit-filter" t-on-click="() => this.onFolderChange('starred')"><span><i class="fa fa-star"/> Tenute</span></button>
+          <button class="mv3-cockpit-filter" t-on-click="() => this.onFolderChange('snoozed')"><span><i class="fa fa-clock-o"/> Follow-up</span></button>
+          <div class="mv3-cockpit-filter-title">Account</div>
+          <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
+            <button class="mv3-cockpit-account" t-on-click="() => this.onAccountChange([acc.id])">
+              <span class="mv3-account-dot"/>
+              <span><strong t-out="acc.name"/><small t-out="acc.email"/></span>
+            </button>
+          </t>
+        </aside>
 
-      <!-- Thread List with search -->
-      <div class="mv3-client__thread-list">
+        <section class="mv3-client__thread-list">
         <div class="mv3-search">
           <div class="mv3-search__wrapper">
             <i class="fa fa-search mv3-search__icon"/>
@@ -126,7 +145,7 @@
         </div>
 
         <!-- Thread list -->
-        <div t-if="!state.searchResults">
+        <div t-if="!state.searchResults" class="mv3-thread-list-host">
           <ThreadList
             threads="state.threads"
             accounts="state.accounts"
@@ -141,12 +160,12 @@
             onSelect.bind="selectThread"
             onToggleSelect.bind="toggleThreadSelect"
             onSelectAll.bind="toggleSelectAll"
+            onService.bind="onThreadService"
             onLoadMore.bind="loadMoreThreads"/>
         </div>
-      </div>
+      </section>
 
-      <!-- Main area: reading pane (top) + 360 panel (bottom) -->
-      <div class="mv3-client__main-area">
+      <section class="mv3-client__main-area">
         <!-- Reading Pane -->
         <div class="mv3-client__reading-pane">
           <!-- Mobile back button -->
@@ -174,6 +193,7 @@
               onSnooze.bind="openSnoozePopup"
               onCreateLead.bind="onSenderCreateLead"
               onCreateProject.bind="onSenderCreateProject"
+              onOpenService.bind="openServiceAction"
               onDismissSender.bind="onQuickDismissSender"
               onDeleteEmail.bind="onDeleteEmail"/>
           </div>
@@ -189,7 +209,42 @@
             accountId="state.selectedAccountIds and state.selectedAccountIds[0] or 0"
             onPartnerCreated.bind="onPartnerCreated"/>
         </div>
-      </div>
+      </section>
+      </main>
+
+      <main t-if="state.topView === 'crm'" class="mv3-cockpit-board">
+        <section class="mv3-board-hero">
+          <div><span>CRM/Pipeline</span><h2>Opportunita nate dalle email</h2></div>
+          <div class="mv3-board-actions">
+            <button class="mv3-cockpit-secondary" t-on-click="() => this.openServiceAction('create_lead')"><i class="fa fa-plus"/> Crea lead</button>
+            <button class="mv3-cockpit-primary" t-on-click="() => this.openServiceAction('pipeline')"><i class="fa fa-bullseye"/> Apri pipeline</button>
+            <button class="mv3-cockpit-primary" t-on-click="() => this.openTopView('triage')"><i class="fa fa-inbox"/> Torna alla inbox</button>
+          </div>
+        </section>
+        <section class="mv3-pipeline-board">
+          <div class="mv3-pipeline-col"><header>Da qualificare <strong>3</strong></header><article t-on-click="() => this.openServiceAction('pipeline')"><strong t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().subject) || 'Seleziona una mail'"/><span>Contatto, azienda e dossier dalla conversazione.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Qualifica <strong>5</strong></header><article t-on-click="() => this.openServiceAction('contact')"><strong>Buyer / Export</strong><span>Attivita e ultimo follow-up collegati.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Offerta <strong>2</strong></header><article t-on-click="openReplyFromSelected"><strong>Preventivo da inviare</strong><span>Apri composer da Odoo.</span></article></div>
+          <div class="mv3-pipeline-col"><header>Follow-up <strong>4</strong></header><article t-on-click="() => this.openServiceAction('activity')"><strong>Nessuna risposta</strong><span>Snooze e attivita silenziose.</span></article></div>
+        </section>
+      </main>
+
+      <main t-if="state.topView === 'dossier'" class="mv3-cockpit-board">
+        <section class="mv3-board-hero mv3-board-hero--dossier">
+          <div><span>Dossier</span><h2 t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().main_participant) || 'Fascicolo operativo'"/></div>
+          <div class="mv3-board-actions">
+            <button class="mv3-cockpit-secondary" t-on-click="() => this.openServiceAction('pipeline')"><i class="fa fa-bullseye"/> Pipeline</button>
+            <button class="mv3-cockpit-primary" t-on-click="() => this.openServiceAction('dossier')"><i class="fa fa-folder-open"/> Apri dossier</button>
+            <button class="mv3-cockpit-primary" t-on-click="openReplyFromSelected"><i class="fa fa-reply"/> Rispondi in Odoo</button>
+          </div>
+        </section>
+        <section class="mv3-dossier-grid">
+          <article t-on-click="() => this.openServiceAction('dossier')"><label>Mail collegate</label><strong t-out="state.messages.length || 0"/><span>Conversazione, allegati e storico.</span></article>
+          <article t-on-click="() => this.openServiceAction('pipeline')"><label>Fase pipeline</label><strong>Da qualificare</strong><span>Aggiorna lead e prossima attivita.</span></article>
+          <article t-on-click="() => this.openServiceAction('dossier')"><label>Documenti</label><strong>Cataloghi / Offerte</strong><span>Collega file dal messaggio o dal CRM.</span></article>
+          <article><label>Azioni</label><button t-on-click="openReplyFromSelected">Composer</button><button t-on-click="() => this.openServiceAction('pipeline')">Pipeline</button><button t-on-click="() => this.openServiceAction('activity')">Attivita</button></article>
+        </section>
+      </main>
 
       <!-- Compose Wizard Overlay (F10) -->
       <div t-if="state.composeVisible" class="mv3-compose-overlay">

@@ -38,6 +38,12 @@ export class ThreadList extends Component {
         this.props.onSelect(threadId);
     }
 
+    openService(threadId, service) {
+        if (this.props.onService) {
+            this.props.onService(threadId, service);
+        }
+    }
+
     toggleSelect(threadId) {
         if (this.props.onToggleSelect) {
             this.props.onToggleSelect(threadId);

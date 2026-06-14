@@ -8,6 +8,12 @@
     <!-- ============================================================
          CRM cluster — commercial, sales, contacts, KPI
          ============================================================ -->
+    <!-- Mail Inbox V2 must stay as a standalone app icon. -->
+    <record id="casafolino_mail.menu_casafolino_mail_root" model="ir.ui.menu">
+        <field name="parent_id" eval="False"/>
+        <field name="sequence">15</field>
+    </record>
+
     <record id="casafolino_crm_export.menu_cf_export_root" model="ir.ui.menu">
         <field name="parent_id" ref="casafolino_home.menu_ws_crm"/>
         <field name="sequence">20</field>

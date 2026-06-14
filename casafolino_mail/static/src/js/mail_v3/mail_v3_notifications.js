@@ -84,7 +84,7 @@ export class MailV3Notifications {
      */
     updateTabBadge(count) {
         if (count > 0) {
-            document.title = `(${count}) Mail CRM`;
+            document.title = `(${count}) Mail Inbox V2`;
         } else {
             document.title = ORIGINAL_TITLE;
         }
@@ -126,7 +126,7 @@ export class MailV3Notifications {
             const body = count === 1
                 ? 'Hai 1 nuova email'
                 : `Hai ${count} nuove email`;
-            const notif = new Notification('Mail CRM — CasaFolino', {
+            const notif = new Notification('Mail Inbox V2 — CasaFolino', {
                 body: body,
                 icon: '/casafolino_mail/static/description/icon.png',
                 tag: 'cf-mail-new', // replace previous notification

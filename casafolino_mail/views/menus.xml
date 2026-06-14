@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_casafolino_mail_root"
-        name="Mail CRM"
+        name="Mail Inbox V2"
         sequence="15"
-        web_icon="casafolino_mail,static/description/icon.png"/>
+        web_icon="casafolino_mail,static/description/icon_new.png"/>
+
+    <record id="menu_casafolino_mail_root" model="ir.ui.menu">
+        <field name="parent_id" eval="False"/>
+        <field name="name">Mail Inbox V2</field>
+        <field name="sequence">15</field>
+        <field name="web_icon">casafolino_mail,static/description/icon_new.png</field>
+    </record>
 
     <menuitem id="menu_casafolino_mail_my_mailbox"
-        name="La Mia Casella"
+        name="Inbox V2"
         parent="menu_casafolino_mail_root"
         sequence="0"
         action="action_mail_v3_client"/>
@@ -80,4 +87,39 @@
         parent="menu_casafolino_mail_config"
         sequence="4"
         action="action_casafolino_mail_folder_rule"/>
+
+    <!-- Mail Inbox V2 is the only user-facing entry point. -->
+    <record id="menu_casafolino_mail_analytics" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_lead_score" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_sla" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_orphan" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_snippet" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_decision_history" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_folder_rules" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_config" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_accounts" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_folders_admin" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_casafolino_mail_folder_rules_admin" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 </odoo>

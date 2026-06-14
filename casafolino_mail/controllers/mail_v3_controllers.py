@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from email.utils import getaddresses
 from datetime import timedelta
 
 from odoo import http, fields
@@ -12,6 +13,17 @@ _SUBJECT_PREFIX_RE = re.compile(
     r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
     re.IGNORECASE,
 )
+
+_PUBLIC_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'hotmail.it',
+    'hotmail.co.uk', 'live.com', 'live.it', 'msn.com', 'yahoo.com', 'yahoo.it',
+    'yahoo.co.uk', 'yahoo.de', 'yahoo.fr', 'yahoo.es', 'icloud.com', 'me.com',
+    'mac.com', 'libero.it', 'virgilio.it', 'alice.it', 'tin.it', 'tim.it',
+    'tiscali.it', 'aol.com', 'protonmail.com', 'mail.com', 'gmx.com', 'gmx.de',
+    'web.de', 't-online.de', 'freenet.de', 'arcor.de', 'orange.fr',
+    'wanadoo.fr', 'free.fr', 'laposte.net', 'pec.it', 'legalmail.it',
+    'arubapec.it', 'postecert.it',
+}
 
 
 def _normalize_subject(subject):
@@ -152,7 +164,17 @@ class MailV3Controller(http.Controller):
             domain.append(('is_snoozed', '=', True))
         elif folder == 'trash':
             domain = [d for d in domain if d[0] != 'is_archived']
-            domain.append(('is_archived', '=', True))
+            trash_msgs = request.env['casafolino.mail.message'].search([
+                ('account_id', 'in', account_ids),
+                ('is_deleted', '=', True),
+            ])
+            domain.append(('id', 'in', trash_msgs.mapped('thread_id').ids or [0]))
+        else:
+            visible_msgs = request.env['casafolino.mail.message'].search([
+                ('account_id', 'in', account_ids),
+                ('is_deleted', '=', False),
+            ])
+            domain.append(('id', 'in', visible_msgs.mapped('thread_id').ids or [0]))
 
         # V14: Folder-based filtering (numeric folder_id)
         folder_id = kw.get('folder_id')
@@ -181,10 +203,12 @@ class MailV3Controller(http.Controller):
             external = [p for p in participants if company_domain not in p]
             main_participant = external[0] if external else (participants[0] if participants else '')
 
-            last_msg = request.env['casafolino.mail.message'].search([
-                ('thread_id', '=', t.id),
-                ('is_deleted', '=', False),
-            ], order='email_date desc', limit=1)
+            last_msg_domain = [('thread_id', '=', t.id)]
+            if folder == 'trash':
+                last_msg_domain.append(('is_deleted', '=', True))
+            else:
+                last_msg_domain.append(('is_deleted', '=', False))
+            last_msg = request.env['casafolino.mail.message'].search(last_msg_domain, order='email_date desc', limit=1)
 
             preview = ''
             if last_msg and last_msg.snippet:
@@ -231,7 +255,7 @@ class MailV3Controller(http.Controller):
                 lead_open = bool(lead)
 
             # Badge data: keep state and lead name from messages
-            active_msgs = t.message_ids.filtered(lambda m: not m.is_deleted)
+            active_msgs = t.message_ids.filtered(lambda m: m.is_deleted) if folder == 'trash' else t.message_ids.filtered(lambda m: not m.is_deleted)
             has_keep_message = any(
                 m.state in ('keep', 'auto_keep') for m in active_msgs
             )
@@ -292,6 +316,19 @@ class MailV3Controller(http.Controller):
             ('is_deleted', '=', False),
         ], order='email_date asc')
 
+        missing_body = messages.filtered(
+            lambda m: not m.body_downloaded and m.imap_folder and m.imap_uid
+        )
+        if missing_body:
+            missing_body[:5].with_context(cf_skip_mail_attachments=True)._ensure_body_downloaded()
+            messages.invalidate_recordset([
+                'body_html',
+                'body_plain',
+                'body_downloaded',
+                'fetch_state',
+                'fetch_error_msg',
+            ])
+
         result = []
         for m in messages:
             result.append({
@@ -312,12 +349,362 @@ class MailV3Controller(http.Controller):
                 'intent_detected': getattr(m, 'intent_detected', '') or '',
                 'partner_id': m.partner_id.id if m.partner_id else False,
                 'partner_name': m.partner_id.name if m.partner_id else '',
+                'lead_id': m.lead_id.id if m.lead_id else False,
+                'lead_name': m.lead_id.name if m.lead_id else '',
+                'cf_project_id': m.cf_project_id.id if m.cf_project_id else False,
+                'cf_project_name': m.cf_project_id.name if m.cf_project_id else '',
                 'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''}
                                     for a in m.attachment_ids],
                 'message_id_rfc': m.message_id_rfc or '',
             })
 
         return {'messages': result}
+
+    @http.route('/cf/mail/v3/thread/<int:thread_id>/service_action', type='json', auth='user')
+    def thread_service_action(self, thread_id, **kw):
+        thread = request.env['casafolino.mail.thread'].browse(thread_id)
+        if not self._check_thread_ownership(thread):
+            return {'success': False, 'error': 'Not your thread'}
+
+        service = kw.get('service') or ''
+        message_id = int(kw.get('message_id') or 0)
+        messages = thread.message_ids.filtered(lambda m: not m.is_deleted)
+        msg = messages.filtered(lambda m: m.id == message_id)[:1] if message_id else request.env['casafolino.mail.message']
+        if not msg:
+            msg = messages.filtered(lambda m: (m.direction_computed or m.direction) == 'inbound')[:1] or messages[:1]
+
+        partner = (msg.partner_id if msg else False) or thread.partner_ids[:1]
+        search_partner = partner.commercial_partner_id if partner else request.env['res.partner']
+        company = search_partner if search_partner and search_partner.is_company else request.env['res.partner']
+        sender_email = (msg.sender_email if msg else '') or ''
+        try:
+            participants = json.loads(thread.participant_emails or '[]')
+        except (json.JSONDecodeError, TypeError):
+            participants = []
+        sender_name = (msg.sender_name if msg else '') or sender_email or (participants[0] if participants else '')
+        subject = (msg.subject if msg else '') or thread.subject or sender_name or 'Email CasaFolino'
+
+        def clean_email(email):
+            email = (email or '').strip().lower()
+            if '<' in email or '>' in email:
+                parsed = getaddresses([email])
+                email = parsed[0][1].strip().lower() if parsed else email
+            return email if '@' in email else ''
+
+        internal_domains = set(
+            request.env['casafolino.mail.message']._get_internal_domains()
+        )
+
+        def email_domain(email):
+            email = clean_email(email)
+            return email.split('@')[-1] if '@' in email else ''
+
+        def is_business_domain(domain):
+            domain = (domain or '').lower().strip()
+            return bool(domain and domain not in internal_domains and domain not in _PUBLIC_EMAIL_DOMAINS)
+
+        def parse_email_list(raw):
+            pairs = []
+            for name, email in getaddresses([raw or '']):
+                email = clean_email(email)
+                if email:
+                    pairs.append((name.strip(), email))
+            return pairs
+
+        def thread_people():
+            people = {}
+            for item in messages:
+                pairs = []
+                if item.sender_email:
+                    pairs.append((item.sender_name or '', item.sender_email))
+                pairs += parse_email_list(item.recipient_emails)
+                pairs += parse_email_list(item.cc_emails)
+                for name, email in pairs:
+                    email = clean_email(email)
+                    domain = email_domain(email)
+                    if not email or domain in internal_domains:
+                        continue
+                    people.setdefault(email, {
+                        'email': email,
+                        'name': name or email.split('@')[0],
+                        'domain': domain,
+                    })
+            return list(people.values())
+
+        people = thread_people()
+        sender_email = clean_email(sender_email)
+        sender_domain = email_domain(sender_email)
+        business_domain = sender_domain if is_business_domain(sender_domain) else ''
+        if not business_domain:
+            business_domain = next((p['domain'] for p in people if is_business_domain(p['domain'])), '')
+
+        def link_partner(partner_record):
+            if not partner_record:
+                return
+            if partner_record.id not in thread.partner_ids.ids:
+                thread.write({'partner_ids': [(4, partner_record.id)]})
+            same_sender = messages.filtered(
+                lambda m: sender_email and (m.sender_email or '').lower().strip() == sender_email.lower().strip()
+            )
+            if same_sender:
+                same_sender.write({'partner_id': partner_record.id})
+
+        def find_contact_by_email(email):
+            if not email:
+                return request.env['res.partner']
+            return request.env['res.partner'].sudo().search([
+                ('email', '=ilike', email.strip()),
+                ('is_company', '=', False),
+            ], limit=1)
+
+        def domain_company_name(domain):
+            if not domain:
+                return sender_name or subject
+            root = domain.split('.')[0]
+            return root.replace('-', ' ').replace('_', ' ').title() or domain
+
+        def find_company_for_domain(domain):
+            if not is_business_domain(domain):
+                return request.env['res.partner']
+            Partner = request.env['res.partner'].sudo()
+            company = Partner.search([
+                ('is_company', '=', True),
+                '|',
+                ('email', '=ilike', '%@' + domain),
+                ('website', 'ilike', domain),
+            ], limit=1)
+            if company:
+                return company
+            contact = Partner.search([
+                ('email', '=ilike', '%@' + domain),
+                ('is_company', '=', False),
+                ('parent_id', '!=', False),
+            ], limit=1)
+            if contact and contact.parent_id:
+                return contact.parent_id.commercial_partner_id or contact.parent_id
+            root_contact = Partner.search([
+                ('email', '=ilike', '%@' + domain),
+                ('is_company', '=', False),
+                ('parent_id', '=', False),
+            ], limit=1)
+            if root_contact and root_contact.commercial_partner_id and root_contact.commercial_partner_id.is_company:
+                return root_contact.commercial_partner_id
+            return request.env['res.partner']
+
+        def ensure_company_for_domain(domain):
+            if not is_business_domain(domain):
+                return request.env['res.partner']
+            existing = find_company_for_domain(domain)
+            if existing:
+                return existing
+            return request.env['res.partner'].sudo().create({
+                'name': domain_company_name(domain),
+                'email': sender_email if email_domain(sender_email) == domain else False,
+                'website': domain,
+                'is_company': True,
+            })
+
+        def ensure_contact(email, name, company_record):
+            email = clean_email(email)
+            if not email:
+                return request.env['res.partner']
+            contact = find_contact_by_email(email)
+            vals = {}
+            if contact:
+                if company_record and contact.parent_id != company_record:
+                    vals['parent_id'] = company_record.id
+                if name and (not contact.name or contact.name == email):
+                    vals['name'] = name
+                if vals:
+                    contact.write(vals)
+                return contact
+            vals = {
+                'name': name or email.split('@')[0],
+                'email': email,
+                'is_company': False,
+                'type': 'contact',
+            }
+            if company_record:
+                vals['parent_id'] = company_record.id
+            return request.env['res.partner'].sudo().create(vals)
+
+        def link_domain_to_crm(company_record, contact_records):
+            partners_to_link = request.env['res.partner']
+            if company_record:
+                partners_to_link |= company_record
+            partners_to_link |= contact_records
+            if partners_to_link:
+                missing = [p.id for p in partners_to_link if p.id not in thread.partner_ids.ids]
+                if missing:
+                    thread.write({'partner_ids': [(4, pid) for pid in missing]})
+            if business_domain:
+                domain_msgs = request.env['casafolino.mail.message'].sudo().search([
+                    ('account_id', '=', thread.account_id.id),
+                    ('is_deleted', '=', False),
+                    '|', '|', '|',
+                    ('sender_domain', '=', business_domain),
+                    ('sender_email', '=ilike', '%@' + business_domain),
+                    ('recipient_emails', 'ilike', business_domain),
+                    ('cc_emails', 'ilike', business_domain),
+                ], limit=500)
+                contact_by_email = {c.email.lower(): c for c in contact_records if c.email}
+                for item in domain_msgs:
+                    item_sender = clean_email(item.sender_email)
+                    contact = contact_by_email.get(item_sender)
+                    if contact:
+                        item.write({'partner_id': contact.id})
+                    elif company_record and not item.partner_id:
+                        item.write({'partner_id': company_record.id})
+
+        def ensure_domain_network():
+            company_record = ensure_company_for_domain(business_domain)
+            contacts = request.env['res.partner']
+            for person in people:
+                if person['domain'] != business_domain:
+                    continue
+                contacts |= ensure_contact(person['email'], person['name'], company_record)
+            if sender_email and email_domain(sender_email) == business_domain:
+                contacts |= ensure_contact(sender_email, sender_name, company_record)
+            link_domain_to_crm(company_record, contacts)
+            return company_record, contacts
+
+        def act(res_model, name, view_mode='form', res_id=False, domain=None, context=None, target='current'):
+            views = [[False, mode.strip()] for mode in (view_mode or 'form').split(',') if mode.strip()]
+            if not views:
+                views = [[False, 'form']]
+            action = {
+                'type': 'ir.actions.act_window',
+                'name': name,
+                'res_model': res_model,
+                'view_mode': view_mode,
+                'views': views,
+                'target': target,
+                'context': context or {},
+            }
+            if res_id:
+                action['res_id'] = res_id
+                action['views'] = [[False, 'form']]
+            if domain is not None:
+                action['domain'] = domain
+            return action
+
+        if service in ('contact', 'partner'):
+            if business_domain:
+                company, contacts = ensure_domain_network()
+                contact = contacts.filtered(lambda c: clean_email(c.email) == sender_email)[:1] or contacts[:1]
+                if contact:
+                    return {'success': True, 'action': act('res.partner', 'Contatto', res_id=contact.id)}
+                if company:
+                    return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
+            if partner and not partner.is_company:
+                link_partner(partner)
+                return {'success': True, 'action': act('res.partner', 'Contatto', res_id=partner.id)}
+            existing = find_contact_by_email(sender_email)
+            if existing:
+                link_partner(existing)
+                return {'success': True, 'action': act('res.partner', 'Contatto', res_id=existing.id)}
+            vals = {
+                'name': sender_name or (sender_email.split('@')[0] if sender_email else subject),
+                'email': sender_email,
+                'is_company': False,
+            }
+            if company:
+                vals['parent_id'] = company.id
+            contact = request.env['res.partner'].sudo().create(vals)
+            link_partner(contact)
+            return {'success': True, 'action': act('res.partner', 'Contatto creato', res_id=contact.id)}
+
+        if service == 'company':
+            if business_domain:
+                company, contacts = ensure_domain_network()
+                if company:
+                    return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
+                contact = contacts[:1]
+                if contact:
+                    return {'success': True, 'action': act('res.partner', 'Contatto', res_id=contact.id)}
+            if company:
+                link_partner(company)
+                return {'success': True, 'action': act('res.partner', 'Azienda', res_id=company.id)}
+            if not is_business_domain(sender_domain):
+                contact = find_contact_by_email(sender_email)
+                if not contact and sender_email:
+                    contact = request.env['res.partner'].sudo().create({
+                        'name': sender_name or sender_email.split('@')[0],
+                        'email': sender_email,
+                        'is_company': False,
+                        'type': 'contact',
+                    })
+                if contact:
+                    link_partner(contact)
+                    return {'success': True, 'action': act('res.partner', 'Contatto', res_id=contact.id)}
+                return {'success': False, 'error': 'Dominio aziendale non riconosciuto'}
+            existing_company = find_company_for_domain(sender_domain)
+            if existing_company:
+                link_partner(existing_company)
+                return {'success': True, 'action': act('res.partner', 'Azienda', res_id=existing_company.id)}
+            company = request.env['res.partner'].sudo().create({
+                'name': domain_company_name(sender_domain),
+                'email': sender_email,
+                'is_company': True,
+            })
+            contact = partner if partner and not partner.is_company else find_contact_by_email(sender_email)
+            if contact and not contact.parent_id:
+                contact.sudo().write({'parent_id': company.id})
+                link_partner(contact)
+            else:
+                link_partner(company)
+            return {'success': True, 'action': act('res.partner', 'Azienda creata', res_id=company.id)}
+
+        if service == 'create_lead':
+            if not msg:
+                return {'success': False, 'error': 'Seleziona una mail prima di creare il lead'}
+            return {'success': True, 'action': act(
+                'casafolino.mail.create.lead.wizard',
+                'Crea lead da email',
+                target='new',
+                context={'default_message_id': msg.id},
+            )}
+
+        if service in ('pipeline', 'lead'):
+            if msg and msg.lead_id:
+                return {'success': True, 'action': act('crm.lead', 'Lead', res_id=msg.lead_id.id)}
+            lead_domain = [('type', '=', 'opportunity')]
+            if search_partner:
+                lead_domain.append(('partner_id', 'child_of', search_partner.id))
+            lead = request.env['crm.lead'].sudo().search(lead_domain, order='write_date desc, id desc', limit=1)
+            if lead:
+                return {'success': True, 'action': act('crm.lead', 'Pipeline', res_id=lead.id)}
+            return {'success': True, 'action': act('crm.lead', 'Pipeline CasaFolino', view_mode='kanban,list,form', domain=lead_domain, context={
+                'default_type': 'opportunity',
+                'default_partner_id': partner.id if partner else False,
+                'default_name': subject,
+                'default_email_from': sender_email,
+            })}
+
+        if service == 'dossier':
+            if msg and msg.cf_project_id:
+                return {'success': True, 'action': act('project.project', 'Dossier', res_id=msg.cf_project_id.id)}
+            dossier_domain = [('cf_status_dossier', '!=', False)]
+            if search_partner:
+                dossier_domain.append(('partner_id', 'child_of', search_partner.id))
+            project = request.env['project.project'].sudo().search(dossier_domain, order='write_date desc, id desc', limit=1)
+            if project:
+                return {'success': True, 'action': act('project.project', 'Dossier', res_id=project.id)}
+            return {'success': True, 'action': act('project.project', 'Dossier CasaFolino', view_mode='list,form', domain=dossier_domain, context={
+                'default_cf_status_dossier': 'exploration',
+                'default_partner_id': partner.id if partner else False,
+                'default_name': subject,
+            })}
+
+        if service == 'activity':
+            model_id = request.env['ir.model']._get_id('casafolino.mail.thread')
+            return {'success': True, 'action': act('mail.activity', 'Nuova attivita', target='new', context={
+                'default_res_model_id': model_id,
+                'default_res_id': thread.id,
+                'default_summary': subject,
+            })}
+
+        return {'success': False, 'error': 'Servizio non riconosciuto'}
 
     @http.route('/cf/mail/v3/thread/<int:thread_id>/mark_all_read', type='json', auth='user')
     def thread_mark_all_read(self, thread_id, **kw):
@@ -373,11 +760,20 @@ class MailV3Controller(http.Controller):
         if not msg:
             return {'success': False, 'error': 'Message not found or no access'}
         thread = msg.thread_id
-        msg.unlink()
-        thread_deleted = False
-        if thread and thread.exists() and not thread.message_ids:
-            thread.unlink()
-            thread_deleted = True
+        trash_folder = request.env['casafolino.mail.folder'].search([
+            ('account_id', '=', msg.account_id.id),
+            ('system_code', '=', 'trash'),
+        ], limit=1)
+        vals = {
+            'is_deleted': True,
+            'is_deleted_at': fields.Datetime.now(),
+        }
+        if trash_folder:
+            vals['folder_id'] = trash_folder.id
+        msg.write(vals)
+        if thread and thread.exists():
+            thread._recompute_aggregates()
+        thread_deleted = bool(thread and thread.exists() and not thread.message_ids.filtered(lambda m: not m.is_deleted))
         return {'success': True, 'thread_deleted': thread_deleted}
 
     # ── Draft CRUD ───────────────────────────────────────────────────

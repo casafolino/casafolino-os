@@ -16,11 +16,10 @@ class CFHomeKpi(models.AbstractModel):
 
         # Mail in attesa di posizionamento
         try:
-            MailMsg = self.env.get('casafolino.mail.message')
-            result['mail_pending'] = MailMsg.search_count([
+            result['mail_pending'] = self.env['casafolino.mail.message'].search_count([
                 ('cf_project_id', '=', False),
                 ('partner_id', '!=', False),
-            ]) if MailMsg else 0
+            ])
         except Exception as e:
             _logger.warning("HOME KPI mail_pending failed: %s", e)
             result['mail_pending'] = None
@@ -58,11 +57,10 @@ class CFHomeKpi(models.AbstractModel):
         # SLA buyer in scadenza (mail tracked senza risposta > 48h)
         try:
             sla_threshold = datetime.now() - timedelta(hours=48)
-            MailMsg = self.env.get('casafolino.mail.message')
-            result['sla_scadenza'] = MailMsg.search_count([
+            result['sla_scadenza'] = self.env['casafolino.mail.message'].search_count([
                 ('cf_project_id', '!=', False),
                 ('email_date', '<=', sla_threshold),
-            ]) if MailMsg else 0
+            ])
         except Exception:
             result['sla_scadenza'] = None
 
