@@ -10,6 +10,7 @@ from . import lead_score
 from . import snippet
 from . import snippet_picker
 from . import sender_decision
+from . import cf_mail_position_feedback
 from . import triage_wizard
 from . import casafolino_mail_thread
 from . import casafolino_mail_draft

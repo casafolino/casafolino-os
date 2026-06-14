@@ -28,6 +28,8 @@ class ResPartnerMailExt(models.Model):
     cf_ai_accuracy_score = fields.Float('AI accuracy', digits=(3, 2), default=0.5,
         help='Campo legacy V2 mantenuto per compatibilita viste partner.')
     cf_ai_feedback_count = fields.Integer('Feedback totali', compute='_compute_cf_ai_feedback_count')
+    cf_ai_feedback_ids = fields.One2many(
+        'cf.mail.position.feedback', 'partner_id', string='Storico feedback AI')
     mail_message_count = fields.Integer('Email',
         compute='_compute_mail_message_count')
     partner_message_ids = fields.One2many(
@@ -210,7 +212,7 @@ class ResPartnerMailExt(models.Model):
 
     def _compute_cf_ai_feedback_count(self):
         for partner in self:
-            partner.cf_ai_feedback_count = 0
+            partner.cf_ai_feedback_count = len(partner.cf_ai_feedback_ids)
 
     def _compute_mail_message_count(self):
         for partner in self:
