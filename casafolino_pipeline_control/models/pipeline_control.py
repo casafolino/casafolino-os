@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.safe_eval import safe_eval
 
 _logger = logging.getLogger(__name__)
 
@@ -1422,7 +1423,7 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'templates':
             return self._open_mail_templates()
         if quick_action == 'materials':
-            return self._open_mail_materials()
+            return self._open_mail_materials(msg)
         if quick_action == 'open_lead':
             if msg.lead_id:
                 return self._open_record(msg.lead_id, 'Lead')
@@ -1478,12 +1479,22 @@ class CfPipelineControl(models.AbstractModel):
         result['target'] = 'current'
         return result
 
-    def _open_mail_materials(self):
+    def _open_mail_materials(self, msg=None):
         action = self.env.ref('casafolino_mail.action_casafolino_mail_material', raise_if_not_found=False)
         if not action:
             return self._notify('Materiali non disponibili', 'Installa o aggiorna casafolino_mail.', 'warning')
         result = action.sudo().read()[0]
         result['name'] = 'Materiali commerciali'
+        raw_context = result.get('context') or {}
+        context = safe_eval(raw_context) if isinstance(raw_context, str) else dict(raw_context)
+        if msg:
+            context.update({
+                'default_message_id': msg.id,
+                'active_message_id': msg.id,
+                'default_partner_id': msg.partner_id.id if msg.partner_id else False,
+                'default_lead_id': msg.lead_id.id if msg.lead_id else False,
+            })
+        result['context'] = context
         result['target'] = 'current'
         return result
 

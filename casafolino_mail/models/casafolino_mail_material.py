@@ -72,8 +72,10 @@ class CasafolinoMailMaterial(models.Model):
 
     def action_create_tracking_link(self):
         self.ensure_one()
+        message_id = self.env.context.get('default_message_id') or self.env.context.get('active_message_id')
         link = self.env['casafolino.mail.material.link'].create({
             'material_id': self.id,
+            'message_id': int(message_id) if message_id else False,
             'user_id': self.env.user.id,
         })
         return {
