@@ -1419,6 +1419,10 @@ class CfPipelineControl(models.AbstractModel):
             return self._open_record(msg, 'Email')
         if quick_action == 'reply':
             return self._reply_from_message(msg)
+        if quick_action == 'templates':
+            return self._open_mail_templates()
+        if quick_action == 'materials':
+            return self._open_mail_materials()
         if quick_action == 'open_lead':
             if msg.lead_id:
                 return self._open_record(msg.lead_id, 'Lead')
@@ -1465,6 +1469,23 @@ class CfPipelineControl(models.AbstractModel):
             msg.action_archive()
             return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla Console CRM.', reload=True)
         return self._notify('Azione non disponibile', quick_action, 'warning')
+
+    def _open_mail_templates(self):
+        action = self.env.ref('casafolino_mail.action_casafolino_mail_template', raise_if_not_found=False)
+        if not action:
+            return self._notify('Template non disponibili', 'Installa o aggiorna casafolino_mail.', 'warning')
+        result = action.sudo().read()[0]
+        result['target'] = 'current'
+        return result
+
+    def _open_mail_materials(self):
+        action = self.env.ref('casafolino_mail.action_casafolino_mail_snippet', raise_if_not_found=False)
+        if not action:
+            return self._notify('Materiali non disponibili', 'Installa o aggiorna casafolino_mail.', 'warning')
+        result = action.sudo().read()[0]
+        result['name'] = 'Materiali e snippet commerciali'
+        result['target'] = 'current'
+        return result
 
     @api.model
     def lead_quick_action(self, lead_id, quick_action):
