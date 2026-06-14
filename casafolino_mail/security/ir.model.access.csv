@@ -48,3 +48,7 @@ access_mail_v3_template_user,casafolino.mail.template user,model_casafolino_mail
 access_mail_v3_template_admin,casafolino.mail.template admin,model_casafolino_mail_template,casafolino_mail.group_mail_v3_admin,1,1,1,1
 access_mail_v3_quote_wizard_user,casafolino.mail.quote.wizard user,model_casafolino_mail_quote_wizard,base.group_user,1,1,1,1
 access_mail_v3_quote_wizard_line_user,casafolino.mail.quote.wizard.line user,model_casafolino_mail_quote_wizard_line,base.group_user,1,1,1,1
+access_mail_material_user,casafolino.mail.material user,model_casafolino_mail_material,base.group_user,1,1,1,0
+access_mail_material_admin,casafolino.mail.material admin,model_casafolino_mail_material,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_material_link_user,casafolino.mail.material.link user,model_casafolino_mail_material_link,base.group_user,1,1,1,0
+access_mail_material_link_admin,casafolino.mail.material.link admin,model_casafolino_mail_material_link,casafolino_mail.group_mail_v3_admin,1,1,1,1

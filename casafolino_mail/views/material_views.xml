@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="casafolino_mail_material_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.search</field>
+        <field name="model">casafolino.mail.material</field>
+        <field name="arch" type="xml">
+            <search string="Materiali commerciali">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="description"/>
+                <filter name="active" string="Attivi" domain="[('active', '=', True)]"/>
+                <filter name="approved" string="Approvati" domain="[('state', '=', 'approved')]"/>
+                <filter name="catalog" string="Cataloghi" domain="[('category', '=', 'catalog')]"/>
+                <filter name="price_list" string="Listini" domain="[('category', '=', 'price_list')]"/>
+                <filter name="technical_sheet" string="Schede tecniche" domain="[('category', '=', 'technical_sheet')]"/>
+                <filter name="marketing" string="Marketing" domain="[('category', '=', 'marketing')]"/>
+                <separator/>
+                <filter name="lang_it" string="IT" domain="[('language', '=', 'it')]"/>
+                <filter name="lang_en" string="EN" domain="[('language', '=', 'en')]"/>
+                <filter name="lang_de" string="DE" domain="[('language', '=', 'de')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_category" string="Categoria" context="{'group_by': 'category'}"/>
+                    <filter name="group_language" string="Lingua" context="{'group_by': 'language'}"/>
+                    <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_material_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.list</field>
+        <field name="model">casafolino.mail.material</field>
+        <field name="arch" type="xml">
+            <list string="Materiali commerciali" decoration-muted="state == 'obsolete'">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="category" widget="badge"/>
+                <field name="language" widget="badge"/>
+                <field name="version" optional="show"/>
+                <field name="state" widget="badge"/>
+                <field name="delivery_type"/>
+                <field name="link_count"/>
+                <field name="access_count"/>
+                <field name="last_access_date" optional="show"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_material_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.form</field>
+        <field name="model">casafolino.mail.material</field>
+        <field name="arch" type="xml">
+            <form string="Materiale commerciale">
+                <header>
+                    <button name="action_approve" string="Approva" type="object" class="btn-primary" invisible="state == 'approved'"/>
+                    <button name="action_obsolete" string="Rendi obsoleto" type="object" invisible="state == 'obsolete'"/>
+                    <button name="action_create_tracking_link" string="Crea link tracciabile" type="object" class="btn-secondary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,obsolete"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_create_tracking_link" type="object" class="oe_stat_button" icon="fa-link">
+                            <field name="link_count" widget="statinfo" string="Link"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Catalogo Retail 2026"/></h1>
+                    </div>
+                    <group>
+                        <group string="Identificazione">
+                            <field name="code"/>
+                            <field name="category"/>
+                            <field name="language"/>
+                            <field name="version"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Consegna">
+                            <field name="delivery_type"/>
+                            <field name="file_name" invisible="delivery_type != 'file'"/>
+                            <field name="file_data" filename="file_name" invisible="delivery_type != 'file'"/>
+                            <field name="external_url" placeholder="https://..." invisible="delivery_type != 'url'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Statistiche">
+                            <field name="access_count"/>
+                            <field name="last_access_date"/>
+                        </group>
+                        <group string="Descrizione">
+                            <field name="description" nolabel="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Link tracciati" name="links">
+                            <field name="link_ids" readonly="1">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="partner_id"/>
+                                    <field name="lead_id"/>
+                                    <field name="access_url"/>
+                                    <field name="access_count"/>
+                                    <field name="download_count"/>
+                                    <field name="last_access_date"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Note" name="notes">
+                            <field name="notes" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_material_link_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.link.search</field>
+        <field name="model">casafolino.mail.material.link</field>
+        <field name="arch" type="xml">
+            <search string="Link materiali">
+                <field name="material_id"/>
+                <field name="partner_id"/>
+                <field name="lead_id"/>
+                <filter name="active" string="Attivi" domain="[('active', '=', True)]"/>
+                <filter name="opened" string="Usati" domain="[('access_count', '>', 0)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_material" string="Materiale" context="{'group_by': 'material_id'}"/>
+                    <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_material_link_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.link.list</field>
+        <field name="model">casafolino.mail.material.link</field>
+        <field name="arch" type="xml">
+            <list string="Link materiali">
+                <field name="create_date"/>
+                <field name="material_id"/>
+                <field name="partner_id"/>
+                <field name="lead_id"/>
+                <field name="access_url"/>
+                <field name="access_count"/>
+                <field name="download_count"/>
+                <field name="last_access_date"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_material_link_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.link.form</field>
+        <field name="model">casafolino.mail.material.link</field>
+        <field name="arch" type="xml">
+            <form string="Link materiale tracciabile">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Destinazione">
+                            <field name="material_id"/>
+                            <field name="message_id"/>
+                            <field name="partner_id"/>
+                            <field name="lead_id"/>
+                            <field name="user_id"/>
+                        </group>
+                        <group string="Link">
+                            <field name="access_url" readonly="1"/>
+                            <field name="expires_at"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Tracking">
+                        <field name="access_count"/>
+                        <field name="download_count"/>
+                        <field name="last_access_date"/>
+                        <field name="last_ip"/>
+                        <field name="last_user_agent"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_casafolino_mail_material" model="ir.actions.act_window">
+        <field name="name">Materiali commerciali</field>
+        <field name="res_model">casafolino.mail.material</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_material_search"/>
+        <field name="context">{'search_default_active': 1, 'search_default_approved': 1}</field>
+    </record>
+
+    <record id="action_casafolino_mail_material_link" model="ir.actions.act_window">
+        <field name="name">Link materiali tracciati</field>
+        <field name="res_model">casafolino.mail.material.link</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="casafolino_mail_material_link_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+</odoo>

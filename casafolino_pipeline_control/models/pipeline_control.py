@@ -1479,11 +1479,11 @@ class CfPipelineControl(models.AbstractModel):
         return result
 
     def _open_mail_materials(self):
-        action = self.env.ref('casafolino_mail.action_casafolino_mail_snippet', raise_if_not_found=False)
+        action = self.env.ref('casafolino_mail.action_casafolino_mail_material', raise_if_not_found=False)
         if not action:
             return self._notify('Materiali non disponibili', 'Installa o aggiorna casafolino_mail.', 'warning')
         result = action.sudo().read()[0]
-        result['name'] = 'Materiali e snippet commerciali'
+        result['name'] = 'Materiali commerciali'
         result['target'] = 'current'
         return result
 

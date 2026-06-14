@@ -28,3 +28,4 @@ from . import casafolino_mail_followup_rule
 from . import casafolino_mail_template
 from . import casafolino_mail_quote_wizard
 from . import sale_order_ext
+from . import casafolino_mail_material

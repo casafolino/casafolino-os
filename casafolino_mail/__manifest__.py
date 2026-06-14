@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Mail CRM',
-    'version': '18.0.20.0.0',
+    'version': '18.0.21.0.0',
     'summary': 'Cockpit commerciale Mail V3 + Intelligence per CasaFolino',
     'category': 'CasaFolino',
     'author': 'CasaFolino',
@@ -30,6 +30,7 @@
         'views/lead_rule_views.xml',
         'views/followup_rule_views.xml',
         'views/mail_template_views.xml',
+        'views/material_views.xml',
         'views/sale_order_views.xml',
         # menus AFTER all action definitions
         'views/menus.xml',

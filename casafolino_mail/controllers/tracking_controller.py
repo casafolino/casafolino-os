@@ -56,6 +56,35 @@ class CfMailTrackingController(http.Controller):
             ('Content-Disposition', 'attachment; filename="%s"' % att.name),
         ])
 
+    @http.route('/cf/material/<string:token>',
+                type='http', auth='public', csrf=False)
+    def material_link(self, token, **kw):
+        Link = request.env['casafolino.mail.material.link'].sudo()
+        link = Link.search([('token', '=', token), ('active', '=', True)], limit=1)
+        if not link or not link.material_id or not link.material_id.active:
+            return request.not_found()
+        material = link.material_id
+        try:
+            ip = request.httprequest.remote_addr or ''
+            ua = request.httprequest.headers.get('User-Agent') or ''
+            link._record_public_access(ip_address=ip, user_agent=ua)
+        except Exception as e:
+            _logger.warning("material_link tracking error: %s", e)
+
+        if material.delivery_type == 'url':
+            return request.redirect(material.external_url or '/', code=302)
+
+        if not material.file_data:
+            return request.not_found()
+        content = base64.b64decode(material.file_data)
+        filename = material.file_name or ('%s.pdf' % material.name)
+        return request.make_response(content, headers=[
+            ('Content-Type', 'application/octet-stream'),
+            ('Content-Disposition', 'attachment; filename="%s"' % filename),
+            ('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0'),
+            ('Pragma', 'no-cache'),
+        ])
+
     def _record(self, token, event_type, url_clicked='', attachment_name=''):
         """Record tracking event. All errors caught by caller."""
         if not token:
