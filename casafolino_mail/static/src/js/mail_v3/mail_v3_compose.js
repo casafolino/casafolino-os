@@ -111,6 +111,11 @@ export class ComposeWizard extends Component {
             detectedLang: '',
             hoveredTemplate: null,
             hoveredPreviewHtml: '',
+            // Materials panel
+            showMaterialPanel: false,
+            materials: [],
+            materialSearch: '',
+            materialLoading: false,
             // Preview modal
             showPreviewModal: false,
             previewData: null,
@@ -134,6 +139,7 @@ export class ComposeWizard extends Component {
             }
             this._autosaveTimer = setInterval(() => this.autosave(), 15000);
             this._loadTemplates();
+            this._loadMaterials();
             this._detectPartnerLanguage();
         });
 
@@ -392,6 +398,19 @@ export class ComposeWizard extends Component {
 
     toggleTemplatePanel() {
         this.state.showTemplatePanel = !this.state.showTemplatePanel;
+        if (this.state.showTemplatePanel) {
+            this.state.showMaterialPanel = false;
+        }
+    }
+
+    toggleMaterialPanel() {
+        this.state.showMaterialPanel = !this.state.showMaterialPanel;
+        if (this.state.showMaterialPanel) {
+            this.state.showTemplatePanel = false;
+        }
+        if (this.state.showMaterialPanel && !this.state.materials.length) {
+            this._loadMaterials();
+        }
     }
 
     async _loadTemplates() {
@@ -510,6 +529,75 @@ export class ComposeWizard extends Component {
 
     isTemplateDetectedLang(tpl) {
         return this.state.detectedLang && tpl.language === this.state.detectedLang;
+    }
+
+    // ── Materials Panel ─────────────────────────────────────
+
+    async _loadMaterials() {
+        this.state.materialLoading = true;
+        try {
+            const res = await rpc('/cf/mail/v3/materials/list', {
+                search: this.state.materialSearch || '',
+            });
+            this.state.materials = res.materials || [];
+        } catch (e) {
+            console.warn('[mail v3] materials load error:', e);
+        } finally {
+            this.state.materialLoading = false;
+        }
+    }
+
+    onMaterialSearchInput(ev) {
+        this.state.materialSearch = ev.target.value;
+        this._loadMaterials();
+    }
+
+    get filteredMaterials() {
+        return this.state.materials;
+    }
+
+    getMaterialCategoryLabel(category) {
+        const map = {
+            catalog: 'Catalogo',
+            price_list: 'Listino',
+            technical_sheet: 'Scheda tecnica',
+            marketing: 'Marketing',
+            presentation: 'Presentazione',
+            certification: 'Certificazione',
+            terms: 'Condizioni',
+            other: 'Altro',
+        };
+        return map[category] || category || '';
+    }
+
+    async insertMaterial(material) {
+        if (!this.props.draftId || !material?.id) return;
+        this.state.error = '';
+        try {
+            const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/material/' + material.id + '/link');
+            if (!res.success) {
+                this.state.error = res.error || 'Materiale non disponibile';
+                return;
+            }
+            const label = res.name || material.name || 'Materiale';
+            const url = res.url || '';
+            const html = '<p>Materiale: <a href="' + this._escapeAttr(url) + '">' + this._escapeHtml(label) + '</a></p>';
+            this._execCommand('insertHTML', html);
+            this.state.showMaterialPanel = false;
+        } catch (e) {
+            this.state.error = 'Errore inserimento materiale: ' + (e.message || e);
+        }
+    }
+
+    _escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    _escapeAttr(value) {
+        return this._escapeHtml(value).replace(/"/g, '&quot;');
     }
 
     // ── Preview Modal ───────────────────────────────────────

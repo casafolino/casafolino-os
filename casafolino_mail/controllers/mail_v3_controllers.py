@@ -341,6 +341,60 @@ class MailV3Controller(http.Controller):
             return {'success': False, 'error': 'Draft not found'}
         return draft.action_send()
 
+    # ── Composer Materials ───────────────────────────────────────────
+
+    @http.route('/cf/mail/v3/materials/list', type='json', auth='user')
+    def materials_list(self, **kw):
+        search = (kw.get('search') or '').strip()
+        domain = [
+            ('active', '=', True),
+            ('state', '=', 'approved'),
+        ]
+        if search:
+            domain += ['|', '|',
+                       ('name', 'ilike', search),
+                       ('code', 'ilike', search),
+                       ('description', 'ilike', search)]
+        materials = request.env['casafolino.mail.material'].search(
+            domain, order='category, sequence, name', limit=80)
+        return {
+            'materials': [{
+                'id': material.id,
+                'name': material.name or '',
+                'code': material.code or '',
+                'category': material.category or '',
+                'language': material.language or '',
+                'version': material.version or '',
+                'description': material.description or '',
+                'delivery_type': material.delivery_type or '',
+                'access_count': material.access_count,
+            } for material in materials]
+        }
+
+    @http.route('/cf/mail/v3/draft/<int:draft_id>/material/<int:material_id>/link',
+                type='json', auth='user')
+    def draft_material_link(self, draft_id, material_id, **kw):
+        draft = request.env['casafolino.mail.draft'].browse(draft_id)
+        material = request.env['casafolino.mail.material'].browse(material_id)
+        if not draft.exists():
+            return {'success': False, 'error': 'Draft not found'}
+        if not material.exists() or not material.active or material.state != 'approved':
+            return {'success': False, 'error': 'Materiale non disponibile'}
+        msg = draft.in_reply_to_message_id
+        link = request.env['casafolino.mail.material.link'].create({
+            'material_id': material.id,
+            'message_id': msg.id if msg else False,
+            'partner_id': msg.partner_id.id if msg and msg.partner_id else False,
+            'lead_id': msg.lead_id.id if msg and msg.lead_id else False,
+            'user_id': request.env.uid,
+        })
+        return {
+            'success': True,
+            'name': material.name or '',
+            'url': link.access_url or '',
+            'link_id': link.id,
+        }
+
     # ── Sidebar 360 ──────────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/partner/<int:partner_id>/sidebar_360', type='json', auth='user')
