@@ -25,6 +25,9 @@ class ResPartnerMailExt(models.Model):
         help='Timestamp di attivazione mail_tracked. Mantenuto per compatibilita con viste e dati V2.')
     mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
     mail_last_sync = fields.Datetime('Ultimo sync email')
+    cf_ai_accuracy_score = fields.Float('AI accuracy', digits=(3, 2), default=0.5,
+        help='Campo legacy V2 mantenuto per compatibilita viste partner.')
+    cf_ai_feedback_count = fields.Integer('Feedback totali', compute='_compute_cf_ai_feedback_count')
     mail_message_count = fields.Integer('Email',
         compute='_compute_mail_message_count')
     partner_message_ids = fields.One2many(
@@ -204,6 +207,10 @@ class ResPartnerMailExt(models.Model):
     cf_opt_out = fields.Boolean('Opt-out email marketing', default=False)
     cf_gdpr_consent = fields.Boolean('Consenso GDPR', default=False)
     cf_gdpr_date = fields.Date('Data consenso GDPR')
+
+    def _compute_cf_ai_feedback_count(self):
+        for partner in self:
+            partner.cf_ai_feedback_count = 0
 
     def _compute_mail_message_count(self):
         for partner in self:
