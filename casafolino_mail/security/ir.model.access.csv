@@ -52,3 +52,4 @@ access_mail_material_user,casafolino.mail.material user,model_casafolino_mail_ma
 access_mail_material_admin,casafolino.mail.material admin,model_casafolino_mail_material,casafolino_mail.group_mail_v3_admin,1,1,1,1
 access_mail_material_link_user,casafolino.mail.material.link user,model_casafolino_mail_material_link,base.group_user,1,1,1,0
 access_mail_material_link_admin,casafolino.mail.material.link admin,model_casafolino_mail_material_link,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_material_picker_wizard_user,casafolino.mail.material.picker.wizard user,model_casafolino_mail_material_picker_wizard,base.group_user,1,1,1,1

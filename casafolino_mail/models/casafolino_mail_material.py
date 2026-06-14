@@ -1,3 +1,4 @@
+from html import escape
 import uuid
 
 from odoo import api, fields, models
@@ -181,3 +182,105 @@ class CasafolinoMailMaterialLink(models.Model):
                 'lead_id': self.lead_id.id if self.lead_id else False,
                 'account_id': self.message_id.account_id.id if self.message_id.account_id else False,
             })
+
+
+class CasafolinoMailMaterialPickerWizard(models.TransientModel):
+    _name = 'casafolino.mail.material.picker.wizard'
+    _description = 'Selezione materiale commerciale per email'
+
+    message_id = fields.Many2one(
+        'casafolino.mail.message', string='Email',
+        required=True, ondelete='cascade')
+    material_id = fields.Many2one(
+        'casafolino.mail.material', string='Materiale',
+        required=True,
+        domain="[('active', '=', True), ('state', '=', 'approved')]")
+    link_id = fields.Many2one(
+        'casafolino.mail.material.link', string='Link generato',
+        readonly=True)
+    access_url = fields.Char('Link tracciabile', related='link_id.access_url', readonly=True)
+    body_intro = fields.Text(
+        'Testo prima del link',
+        default='Ti lascio qui il materiale richiesto:')
+
+    @api.model
+    def default_get(self, fields_list):
+        vals = super().default_get(fields_list)
+        message_id = self.env.context.get('default_message_id') or self.env.context.get('active_message_id')
+        if message_id and 'message_id' in fields_list:
+            vals['message_id'] = int(message_id)
+        return vals
+
+    def action_generate_link(self):
+        self.ensure_one()
+        link = self._ensure_link()
+        self.write({'link_id': link.id})
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Allega materiale',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_use_in_reply(self):
+        self.ensure_one()
+        link = self._ensure_link()
+        intro = (self.body_intro or '').strip()
+        body = '<p>%s</p><p><a href="%s">%s</a></p>' % (
+            escape(intro or 'Materiale richiesto:'),
+            escape(link.access_url or ''),
+            escape(self.material_id.name or 'Materiale'),
+        )
+        msg = self.message_id
+        partner = msg.partner_id
+        to_email = partner.email if partner and partner.email else (msg.sender_email or '')
+        account = msg.account_id or self.env['casafolino.mail.account'].search([
+            ('responsible_user_id', '=', self.env.user.id),
+            ('active', '=', True),
+        ], limit=1)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Rispondi con materiale',
+            'res_model': 'casafolino.mail.compose.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_account_id': account.id if account else False,
+                'default_to_emails': to_email,
+                'default_cc_emails': msg.cc_emails or '',
+                'default_subject': self._reply_subject(msg.subject or ''),
+                'default_body_html': body,
+                'default_in_reply_to_message_id': msg.id,
+            },
+        }
+
+    def action_open_link(self):
+        self.ensure_one()
+        link = self._ensure_link()
+        return {
+            'type': 'ir.actions.act_url',
+            'name': 'Apri materiale',
+            'url': link.access_url,
+            'target': 'new',
+        }
+
+    def _ensure_link(self):
+        self.ensure_one()
+        if self.link_id:
+            return self.link_id
+        link = self.env['casafolino.mail.material.link'].create({
+            'material_id': self.material_id.id,
+            'message_id': self.message_id.id,
+            'partner_id': self.message_id.partner_id.id if self.message_id.partner_id else False,
+            'lead_id': self.message_id.lead_id.id if self.message_id.lead_id else False,
+            'user_id': self.env.user.id,
+        })
+        self.link_id = link
+        return link
+
+    @staticmethod
+    def _reply_subject(subject):
+        clean = (subject or '').strip()
+        return clean if clean.lower().startswith('re:') else 'Re: %s' % clean

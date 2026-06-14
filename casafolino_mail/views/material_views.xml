@@ -190,6 +190,34 @@
         </field>
     </record>
 
+    <record id="casafolino_mail_material_picker_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.material.picker.wizard.form</field>
+        <field name="model">casafolino.mail.material.picker.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Allega materiale">
+                <sheet>
+                    <group>
+                        <field name="message_id" readonly="1"/>
+                        <field name="material_id" options="{'no_create': True}"/>
+                    </group>
+                    <group string="Testo risposta">
+                        <field name="body_intro" nolabel="1"/>
+                    </group>
+                    <group string="Link generato" invisible="not link_id">
+                        <field name="link_id" readonly="1"/>
+                        <field name="access_url" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_use_in_reply" string="Usa in risposta" type="object" class="btn-primary"/>
+                    <button name="action_generate_link" string="Solo genera link" type="object" class="btn-secondary"/>
+                    <button name="action_open_link" string="Apri link" type="object" class="btn-secondary" invisible="not link_id"/>
+                    <button string="Annulla" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="action_casafolino_mail_material" model="ir.actions.act_window">
         <field name="name">Materiali commerciali</field>
         <field name="res_model">casafolino.mail.material</field>

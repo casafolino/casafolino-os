@@ -1424,6 +1424,8 @@ class CfPipelineControl(models.AbstractModel):
             return self._open_mail_templates()
         if quick_action == 'materials':
             return self._open_mail_materials(msg)
+        if quick_action == 'attach_material':
+            return self._attach_material_from_message(msg)
         if quick_action == 'open_lead':
             if msg.lead_id:
                 return self._open_record(msg.lead_id, 'Lead')
@@ -1497,6 +1499,21 @@ class CfPipelineControl(models.AbstractModel):
         result['context'] = context
         result['target'] = 'current'
         return result
+
+    def _attach_material_from_message(self, msg):
+        if 'casafolino.mail.material.picker.wizard' not in self.env:
+            return self._notify('Materiali non disponibili', 'Aggiorna casafolino_mail.', 'warning')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Allega materiale',
+            'res_model': 'casafolino.mail.material.picker.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_message_id': msg.id,
+                'active_message_id': msg.id,
+            },
+        }
 
     @api.model
     def lead_quick_action(self, lead_id, quick_action):

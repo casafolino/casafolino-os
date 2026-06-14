@@ -501,7 +501,7 @@
                                         </button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Rispondi</button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Inoltra</button>
-                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'materials')">Allega materiale</button>
+                                        <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'attach_material')">Allega materiale</button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'snooze')">Crea follow-up</button>
                                     </div>
 
@@ -557,7 +557,7 @@
                                         <textarea t-att-value="state.aiDraftBody" t-on-input="(ev) => this.state.aiDraftBody = ev.target.value" placeholder="La bozza AI apparira qui. Puoi modificarla prima dell'invio."/>
                                         <footer>
                                             <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'templates')">Template</button>
-                                            <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'materials')">Materiali</button>
+                                            <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'attach_material')">Allega materiale</button>
                                             <button class="btn btn-light btn-sm">Link tracciabili</button>
                                             <button class="btn btn-light btn-sm">Firma</button>
                                             <button class="btn btn-primary btn-sm" t-on-click="sendAIDraft" t-att-disabled="(!state.aiDraftBody || state.aiDraftLoading) ? 'disabled' : ''">
