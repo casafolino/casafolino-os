@@ -275,6 +275,7 @@ class MailV3Controller(http.Controller):
             'discard_domain': 'action_blacklist_domain',
             'create_partner': 'action_create_partner',
             'create_lead': 'action_create_lead',
+            'create_dossier': 'action_create_dossier',
         }
 
         method = action_map.get(action)
@@ -795,6 +796,20 @@ class MailV3Controller(http.Controller):
         if msg.thread_id:
             thread_msgs = msg.thread_id.message_ids.sorted('email_date', reverse=True)[:3]
 
+        materials = request.env['casafolino.mail.material'].sudo().search([
+            ('active', '=', True),
+            ('state', '=', 'approved'),
+        ], order='category, sequence, name', limit=12)
+        materials_context = '\n'.join([
+            '- %s [%s/%s]: %s' % (
+                m.name or '',
+                m.category or '',
+                m.language or '',
+                (m.description or m.notes or '')[:120],
+            )
+            for m in materials
+        ]) or 'Nessun materiale approvato disponibile.'
+
         context_text = (
             "Azienda: %s\n"
             "Paese: %s\n"
@@ -802,7 +817,8 @@ class MailV3Controller(http.Controller):
             "Hotness: %s\n"
             "Oggetto: %s\n"
             "Body ultima email: %s\n"
-            "Ultimi scambi: %s"
+            "Ultimi scambi: %s\n"
+            "Materiali disponibili:\n%s"
         ) % (
             partner.name if partner else 'Sconosciuto',
             partner.country_id.name if partner and partner.country_id else 'N/A',
@@ -811,6 +827,7 @@ class MailV3Controller(http.Controller):
             msg.subject or '',
             (msg.body_plain or msg.body_html or '')[:500],
             ', '.join([(m.subject or '')[:50] for m in thread_msgs]),
+            materials_context,
         )
 
         prompt = (
@@ -827,6 +844,7 @@ class MailV3Controller(http.Controller):
             "- Diretta: 3-4 righe, risposta secca al punto\n"
             "- Relazionale: 4-5 righe, richiamo a storia/contesto, poi risposta\n"
             "- Proattiva: 5-6 righe, risposta + proposta prossimo step (call, invio materiale, meeting)\n"
+            "- Se ha senso, cita quale materiale approvato allegare o linkare, senza inventare file non presenti\n"
             "- Non firmare (la firma viene aggiunta automaticamente)\n"
             "- Non inventare date, numeri, prezzi"
         ) % context_text

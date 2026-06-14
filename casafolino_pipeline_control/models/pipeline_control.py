@@ -2479,7 +2479,8 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
 
     def action_create_dossier(self):
         self.ensure_one()
-        msg = self.message_id
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
+        msg = Mail.browse(self.message_id).exists() if Mail and self.message_id else False
 
         # 1. Partner
         partner = self.partner_id
@@ -2496,13 +2497,13 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
 
         # 2. Lead CRM
         lead_vals = {
-            'name': self.project_name or msg.subject or 'Richiesta commerciale',
+            'name': self.project_name or (msg.subject if msg else False) or 'Richiesta commerciale',
             'partner_id': partner.id,
-            'email_from': msg.sender_email or self.partner_email,
+            'email_from': (msg.sender_email if msg else False) or self.partner_email,
             'user_id': self.user_id.id or self.env.user.id,
             'expected_revenue': self.expected_revenue,
-            'source_email_id': msg.id,
-            'description': msg.snippet or '',
+            'source_email_id': msg.id if msg else False,
+            'description': (msg.snippet if msg else False) or '',
         }
         # Find Export team & "New" stage
         team = self.env['crm.team'].search([('name', 'ilike', 'Export')], limit=1)
@@ -2556,14 +2557,17 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
             promote_wizard._ensure_department_tasks(project, lead)
 
         # 5. Write back to message
-        msg.write({
-            'lead_id': lead.id,
-            'cf_project_id': project.id if 'cf_project_id' in msg._fields else False,
-            'partner_id': partner.id if not msg.partner_id else msg.partner_id.id,
-            'state': 'keep',
-            'triage_user_id': self.env.user.id,
-            'triage_date': fields.Datetime.now(),
-        })
+        if msg:
+            vals = {
+                'lead_id': lead.id,
+                'partner_id': partner.id if not msg.partner_id else msg.partner_id.id,
+                'state': 'keep',
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            }
+            if 'cf_project_id' in msg._fields:
+                vals['cf_project_id'] = project.id
+            msg.write(vals)
 
         return {
             'type': 'ir.actions.act_window',

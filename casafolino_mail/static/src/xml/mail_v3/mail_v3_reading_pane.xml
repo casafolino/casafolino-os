@@ -75,6 +75,10 @@
                         t-on-click="() => this.onAction('create_lead', msg.id)">
                   <i class="fa fa-bullseye"/> Lead
                 </button>
+                <button class="btn btn-sm btn-outline-primary"
+                        t-on-click="() => this.onAction('create_dossier', msg.id)">
+                  <i class="fa fa-folder-open"/> Dossier
+                </button>
                 <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onReply(msg.id)">
                   <i class="fa fa-reply"/> Rispondi
                 </button>

@@ -613,7 +613,7 @@ class CasafolinoMailMessage(models.Model):
         self.ensure_one()
 
         # Assicura partner
-        partner = self.partner_id
+        partner = self.partner_id or self._resolve_crm_entities_from_participants()
         if not partner and self.sender_email:
             partner = self.env['res.partner'].search(
                 [('email', '=ilike', self.sender_email)], limit=1)
@@ -631,12 +631,21 @@ class CasafolinoMailMessage(models.Model):
 
         lead_vals = {
             'name': self.subject or 'Email da %s' % self.sender_email,
+            'type': 'opportunity',
             'partner_id': partner.id if partner else False,
             'email_from': self.sender_email,
             'description': (self.body_html or self.snippet or '')[:3000],
             'user_id': user_id,
             'source_email_id': self.id,
         }
+        team = self.env['crm.team'].search([('name', 'ilike', 'Export')], limit=1)
+        if team:
+            lead_vals['team_id'] = team.id
+            stage = self.env['crm.stage'].search([('team_id', '=', team.id)], order='sequence', limit=1)
+        else:
+            stage = self.env['crm.stage'].search([], order='sequence', limit=1)
+        if stage:
+            lead_vals['stage_id'] = stage.id
 
         # UTM source "Email" se esiste
         try:
@@ -654,6 +663,31 @@ class CasafolinoMailMessage(models.Model):
             'res_id': lead.id,
             'view_mode': 'form',
             'target': 'current',
+        }
+
+    def action_create_dossier(self):
+        """Apre il wizard dossier operativo dalla mail."""
+        self.ensure_one()
+        try:
+            self.env['cf.pipeline.create.dossier.wizard']
+        except KeyError:
+            return self.action_create_lead()
+        if not self.partner_id:
+            self._resolve_crm_entities_from_participants()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Crea dossier',
+            'res_model': 'cf.pipeline.create.dossier.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_message_id': self.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
+                'default_partner_name': self.sender_name or self.sender_email or '',
+                'default_partner_email': self.sender_email or '',
+                'default_project_name': self.subject or 'Dossier da email',
+                'default_next_action': 'Risposta commerciale',
+            },
         }
 
     # ── Triage actions (Step 3) ──────────────────────────────────────

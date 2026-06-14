@@ -185,6 +185,7 @@ class CasafolinoMailAccount(models.Model):
     def _load_exclude_rules(self):
         """Carica set di email/domini da escludere da sender_policy auto_discard."""
         excluded = set()
+        excluded_domains = set()
         try:
             policies = self.env['casafolino.mail.sender_policy'].sudo().search([
                 ('action', '=', 'auto_discard'), ('active', '=', True)
@@ -192,9 +193,12 @@ class CasafolinoMailAccount(models.Model):
             for p in policies:
                 if p.pattern_type == 'email_exact' and p.pattern_value:
                     excluded.add(p.pattern_value.lower().strip())
+                elif p.pattern_type == 'domain' and p.pattern_value:
+                    pattern = p.pattern_value.lower().strip()
+                    excluded_domains.add(pattern[2:] if pattern.startswith('*.') else pattern.replace('*@', ''))
         except Exception:
             pass
-        return excluded
+        return excluded, excluded_domains
 
     def _fetch_folder(self, imap, folder_name, direction):
         """Fetch di una singola cartella IMAP."""
@@ -206,7 +210,8 @@ class CasafolinoMailAccount(models.Model):
 
         # Carica mappa account e regole exclude UNA SOLA VOLTA per sync
         account_map = self._build_account_email_map()
-        excluded_senders = self._load_exclude_rules()
+        excluded_senders, excluded_domains = self._load_exclude_rules()
+        Policy = self.env['casafolino.mail.sender_policy']
 
         # Seleziona la cartella (readonly)
         status, data = imap.select('"%s"' % folder_name, readonly=True)
@@ -281,7 +286,11 @@ class CasafolinoMailAccount(models.Model):
                     continue
 
                 # Check sender_policy exclude
+                sender_domain = sender_email.split('@')[-1] if '@' in sender_email else ''
                 if sender_email and sender_email in excluded_senders:
+                    blacklist_count += 1
+                    continue
+                if sender_domain and sender_domain in excluded_domains:
                     blacklist_count += 1
                     continue
 
@@ -306,6 +315,7 @@ class CasafolinoMailAccount(models.Model):
                 partner_id, match_type = self._match_partner(
                     sender_email, recipient_emails, actual_direction
                 )
+                policy = Policy.match_sender(sender_email, subject or '')
 
                 # Crea record staging
                 vals = {
@@ -328,6 +338,18 @@ class CasafolinoMailAccount(models.Model):
                 # Email inviate → sempre keep (le hai inviate tu)
                 if actual_direction == 'outbound':
                     vals['state'] = 'keep'
+                elif policy:
+                    vals['policy_applied_id'] = policy.id
+                    if policy.action == 'auto_keep':
+                        vals['state'] = 'auto_keep'
+                    elif policy.action == 'auto_discard':
+                        vals['state'] = 'auto_discard'
+                        vals['is_archived'] = True
+                    elif policy.action == 'escalate':
+                        vals['state'] = 'review'
+                        vals['is_important'] = True
+                    else:
+                        vals['state'] = 'review'
                 # Se il partner è tracked, scarica subito body e metti in keep
                 elif partner_id:
                     partner = self.env['res.partner'].browse(partner_id)
@@ -338,8 +360,8 @@ class CasafolinoMailAccount(models.Model):
                 if vals['state'] == 'new' and sender_email:
                     prev_keep = Message.search([
                         ('sender_email', '=ilike', sender_email),
-                        ('account_id', '=', self.id),
-                        ('state', '=', 'keep'),
+                        ('account_id', '=', resolved_account_id),
+                        ('state', 'in', ['keep', 'auto_keep']),
                     ], limit=1)
                     if prev_keep:
                         vals['state'] = 'keep'
@@ -364,6 +386,12 @@ class CasafolinoMailAccount(models.Model):
                     # Applica sender_policy se stato ancora 'new'
                     if new_msg.state == 'new':
                         new_msg._apply_sender_policy()
+
+                    if new_msg.state in ('keep', 'auto_keep'):
+                        try:
+                            new_msg._resolve_crm_entities_from_participants()
+                        except Exception as e:
+                            _logger.warning("CRM resolve error msg %s: %s", new_msg.id, e)
 
                     # Se stato keep/auto_keep (partner tracked), scarica body
                     if new_msg.state in ('keep', 'auto_keep'):

@@ -153,6 +153,15 @@
             <button class="btn btn-outline-primary" t-on-click="() => this.onFolderChange('triage')">
               <i class="fa fa-filter"/> Lavora triage
             </button>
+            <button class="btn btn-outline-primary" t-on-click="openManualContact">
+              <i class="fa fa-user-plus"/> Nuovo contatto
+            </button>
+            <button class="btn btn-outline-primary" t-on-click="openManualLead">
+              <i class="fa fa-bullseye"/> Nuova opportunità
+            </button>
+            <button class="btn btn-outline-secondary" t-on-click="openPipelineDesk">
+              <i class="fa fa-columns"/> Pipeline
+            </button>
             <button class="btn btn-outline-secondary" t-on-click="() => this.onFolderChange('kept')">
               <i class="fa fa-check-circle"/> Conversazioni tenute
             </button>

@@ -235,6 +235,43 @@ export class MailV3Client extends Component {
         return (this.state.deskSummary && this.state.deskSummary.last_sync) || 'non disponibile';
     }
 
+    openManualContact() {
+        this.actionService.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Nuovo contatto',
+            res_model: 'res.partner',
+            views: [[false, 'form']],
+            target: 'current',
+            context: {
+                default_cf_source: 'email',
+                default_mail_tracked: true,
+            },
+        });
+    }
+
+    openManualLead() {
+        this.actionService.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Nuova opportunità',
+            res_model: 'crm.lead',
+            views: [[false, 'form']],
+            target: 'current',
+            context: {
+                default_type: 'opportunity',
+            },
+        });
+    }
+
+    openPipelineDesk() {
+        this.actionService.doAction({
+            type: 'ir.actions.client',
+            name: 'Pipeline',
+            tag: 'casafolino_pipeline_control',
+            target: 'current',
+            context: { default_view: 'pipeline' },
+        });
+    }
+
     async _loadScheduled() {
         this.state.loading.threads = true;
         try {
@@ -279,7 +316,7 @@ export class MailV3Client extends Component {
                 const res = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/messages');
                 this.state.messages = res.messages || [];
             }
-            if (['keep', 'discard', 'discard_domain', 'create_partner', 'create_lead'].includes(action)) {
+            if (['keep', 'discard', 'discard_domain', 'create_partner', 'create_lead', 'create_dossier'].includes(action)) {
                 await this.loadThreads();
             }
         } catch (e) {
