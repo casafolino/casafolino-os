@@ -15,12 +15,9 @@
                 <field name="sender_name"/>
                 <field name="sender_domain"/>
                 <field name="partner_id"/>
-                <filter name="state_new" string="Da valutare" domain="[('state', '=', 'new')]"/>
-                <filter name="state_keep" string="Keep archiviate" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
-                <filter name="state_lead" string="Con Lead" domain="[('lead_id', '!=', False)]"/>
-                <filter name="state_auto_attached" string="Auto-collegate" domain="[('state', '=', 'auto_attached')]"/>
+                <filter name="state_new" string="Da valutare" domain="[('state', 'in', ['new', 'review'])]"/>
+                <filter name="state_keep" string="Tenute" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
                 <filter name="state_discard" string="Scartate" domain="[('state', 'in', ['discard', 'auto_discard'])]"/>
-                <filter name="my_mailbox" string="La mia casella" domain="[('account_id.responsible_user_id', '=', uid)]"/>
                 <separator/>
                 <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
                 <filter name="read" string="Letti" domain="[('is_read', '=', True)]"/>
@@ -30,8 +27,6 @@
                 <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
                 <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
                 <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
-                <filter name="outbound_team" string="Outbound team" domain="[('is_outbound_from_team', '=', True)]"/>
-                <filter name="internal_only" string="Solo interne" domain="[('state', '=', 'internal')]"/>
                 <separator/>
                 <filter name="fetch_pending" string="Fetch in coda" domain="[('fetch_state', '=', 'pending')]"/>
                 <filter name="fetch_error" string="Fetch errore" domain="[('fetch_state', '=', 'error')]"/>
@@ -40,6 +35,11 @@
                 <filter name="ai_action" string="Action Required" domain="[('ai_action_required', '=', True)]"/>
                 <filter name="ai_negative" string="Sentiment negativo" domain="[('ai_sentiment', '=', 'negative')]"/>
                 <separator/>
+                <filter name="intent_quote" string="Richiesta preventivo" domain="[('intent_detected', '=', 'request_quote')]"/>
+                <filter name="intent_order" string="Ordine" domain="[('intent_detected', '=', 'order')]"/>
+                <filter name="intent_complaint" string="Reclamo" domain="[('intent_detected', '=', 'complaint')]"/>
+                <filter name="intent_followup" string="Follow-up" domain="[('intent_detected', '=', 'follow_up')]"/>
+                <separator/>
                 <group expand="0" string="Raggruppa per">
                     <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
                     <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
@@ -47,6 +47,7 @@
                     <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
                     <filter name="group_date" string="Data" context="{'group_by': 'email_date:day'}"/>
                     <filter name="group_ai_category" string="AI Categoria" context="{'group_by': 'ai_category'}"/>
+                    <filter name="group_intent" string="Intent" context="{'group_by': 'intent_detected'}"/>
                 </group>
             </search>
         </field>
@@ -79,7 +80,7 @@
         <field name="arch" type="xml">
             <list string="Email Triage"
                   decoration-muted="state in ('discard', 'auto_discard')"
-                  decoration-success="state in ('keep', 'auto_keep', 'auto_attached')"
+                  decoration-success="state in ('keep', 'auto_keep')"
                   decoration-info="state in ('new', 'review')"
                   decoration-bf="not is_read"
                   multi_edit="1">
@@ -90,7 +91,6 @@
                 <field name="sender_email" string="Email"/>
                 <field name="sender_domain" string="Dominio"/>
                 <field name="subject" string="Oggetto"/>
-                <field name="lead_name" string="Lead" optional="show"/>
                 <field name="snippet" string="Preview" optional="show"/>
                 <field name="partner_id" string="Contatto"/>
                 <field name="match_type" string="Match" optional="hide"/>
@@ -106,6 +106,11 @@
                        decoration-success="ai_sentiment == 'positive'"
                        decoration-warning="ai_sentiment == 'neutral'"
                        decoration-danger="ai_sentiment == 'negative'"/>
+                <field name="intent_detected" string="Intent" widget="badge" optional="show"
+                       decoration-danger="intent_detected == 'complaint'"
+                       decoration-success="intent_detected in ('order', 'request_quote')"
+                       decoration-info="intent_detected in ('info_request', 'meeting_request')"
+                       decoration-warning="intent_detected in ('follow_up', 'payment')"/>
                 <field name="state" string="Stato" widget="badge"
                        decoration-info="state in ('new', 'review')"
                        decoration-success="state in ('keep', 'auto_keep')"
@@ -156,6 +161,7 @@
                     <group string="Sync">
                         <field name="sync_start_date"/>
                         <field name="gmail_label"/>
+                        <field name="use_allowlist"/>
                         <field name="last_fetch_datetime"/>
                         <field name="last_successful_fetch_datetime"/>
                         <field name="fetch_inbox"/>
@@ -181,9 +187,9 @@
                             invisible="state not in ('new', 'review', 'auto_discard')"/>
                     <button name="action_discard" string="Scarta"
                             type="object" class="btn btn-danger"
-                            confirm="Eliminare definitivamente questa email da Odoo? (Gmail resta intatto)"
                             invisible="state not in ('new', 'review', 'auto_keep')"/>
-                    <!-- [Brief #6.0] action_blacklist_domain removed -->
+                    <button name="action_blacklist_domain" string="Scarta Dominio"
+                            type="object" class="btn btn-warning"/>
                     <button name="action_create_lead" string="Crea Lead CRM"
                             type="object" class="btn btn-primary"
                             invisible="lead_id"/>
@@ -196,13 +202,6 @@
                     <button name="action_open_snippet_picker" string="Snippet"
                             type="object" class="btn btn-secondary"
                             invisible="direction != 'inbound'"/>
-                </div>
-                <div class="alert alert-info p-2 mb-2" role="alert"
-                     invisible="not lead_id">
-                    <button name="action_open_lead" type="object"
-                            class="btn btn-link p-0">
-                        <span class="fa fa-link"/> LEAD: <field name="lead_name" readonly="1"/>
-                    </button>
                 </div>
                 <group>
                     <group string="Email">
@@ -232,6 +231,22 @@
                     </page>
                     <page string="Allegati" name="attachments" invisible="not body_downloaded">
                         <field name="attachment_ids"/>
+                    </page>
+                    <page string="AI &amp; Intent" name="ai_intent">
+                        <group>
+                            <group string="Intent">
+                                <field name="intent_detected" widget="badge"/>
+                            </group>
+                            <group string="AI Classification">
+                                <field name="ai_category" widget="badge"/>
+                                <field name="ai_sentiment" widget="badge"/>
+                                <field name="ai_language"/>
+                                <field name="ai_urgency" widget="badge"/>
+                                <field name="ai_action_required"/>
+                                <field name="ai_classified_at"/>
+                                <field name="ai_error"/>
+                            </group>
+                        </group>
                     </page>
                     <page string="Tecnico" name="technical">
                         <group>
@@ -263,9 +278,6 @@
                         invisible="casafolino_email_count == 0">
                     <field name="casafolino_email_count" string="Email" widget="statinfo"/>
                 </button>
-                <button name="action_sync_full_email_history" string="Importa Email"
-                        type="object" class="oe_stat_button" icon="fa-download"
-                        confirm="Importare tutto lo storico email da IMAP per questo contatto?"/>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email CRM" name="casafolino_emails">
@@ -287,12 +299,6 @@
                             <field name="is_read" column_invisible="1"/>
                         </list>
                     </field>
-                </page>
-                <page string="Mail Config" name="mail_config">
-                    <group string="Domini Email Extra" invisible="not is_company">
-                        <field name="email_domains_extra"
-                               placeholder="aldi-sued.de, aldi.com, aldi-nord.de"/>
-                    </group>
                 </page>
                 <page string="CRM Info" name="crm_info">
                     <group string="Ruolo Commerciale">
@@ -335,31 +341,13 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_import_email_history" string="Importa Email"
-                        type="object" class="oe_stat_button" icon="fa-download"
-                        invisible="not partner_id"
-                        confirm="Importare tutto lo storico email IMAP per il contatto di questo lead?"/>
-            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Email" name="lead_emails">
-                    <field name="lead_message_ids" nolabel="1">
-                        <list string="Email collegate" default_order="email_date desc" create="false" edit="false">
-                            <field name="email_date"/>
-                            <field name="direction" widget="badge"/>
-                            <field name="sender_email"/>
-                            <field name="subject"/>
-                            <field name="state" widget="badge"/>
-                            <field name="is_read" widget="boolean_toggle"/>
-                        </list>
-                    </field>
+                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
                 </page>
             </xpath>
         </field>
     </record>
-
-    <!-- NOTE: view inheritance per la form premium spostata in casafolino_crm_export
-         per rompere la dipendenza circolare mail↔crm_export -->
 
     <!-- ══════════════════════════════════════════════════════════════
          5) ACTIONS (dopo le viste che referenziano)
@@ -380,14 +368,22 @@
         <field name="context">{'search_default_inbound': 1}</field>
     </record>
 
-    <!-- La Mia Casella — personal mailbox filtered by responsible_user_id -->
     <record id="action_casafolino_mail_my_mailbox" model="ir.actions.act_window">
         <field name="name">La Mia Casella</field>
         <field name="res_model">casafolino.mail.message</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('account_id.responsible_user_id', '=', uid)]</field>
+        <field name="domain">[('state', 'in', ['new', 'review', 'keep', 'auto_keep'])]</field>
         <field name="search_view_id" ref="casafolino_mail_message_search"/>
-        <field name="context">{'search_default_state_new': 1}</field>
+        <field name="context">{'search_default_inbound': 1}</field>
+    </record>
+
+    <record id="action_cf_mail_posizionatore" model="ir.actions.act_window">
+        <field name="name">Posizionatore mail</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['new', 'review'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_inbound': 1}</field>
     </record>
 
     <record id="action_casafolino_mail_message_keep" model="ir.actions.act_window">

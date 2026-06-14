@@ -8,18 +8,11 @@ import { SidebarLeft } from "./mail_v3_sidebar_left";
 import { ThreadList } from "./mail_v3_thread_list";
 import { ReadingPane } from "./mail_v3_reading_pane";
 import { Sidebar360 } from "./mail_v3_sidebar_360";
-import { MailV3Insight360TabBar } from "./mail_v3_insight_360_tabbar";
 import { ReplyAssistant } from "./mail_v3_reply_assistant";
-import { ComposeWizard } from "./mail_v3_compose";
-import { SenderDecisionPopup } from "./mail_v3_sender_decision_popup";
-import { DismissedSenders } from "./mail_v3_dismissed_senders";
-import { FolderSidebar } from "./mail_v3_folder_sidebar";
-import { MailV3Notifications } from "./mail_v3_notifications";
-import { SyncBadge } from "./mail_v3_sync_badge";
 
 export class MailV3Client extends Component {
     static template = "casafolino_mail.MailV3Client";
-    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, MailV3Insight360TabBar, ReplyAssistant, ComposeWizard, SenderDecisionPopup, DismissedSenders, FolderSidebar, SyncBadge };
+    static components = { SidebarLeft, ThreadList, ReadingPane, Sidebar360, ReplyAssistant };
     static props = ["*"];
 
     setup() {
@@ -35,10 +28,8 @@ export class MailV3Client extends Component {
             messages: [],
             selectedPartner: null,
             sidebar360Data: null,
-            loading: { threads: false, messages: false, sidebar: false, threadsMore: false },
+            loading: { threads: false, messages: false, sidebar: false },
             totalThreads: 0,
-            threadsOffset: 0,
-            hasMoreThreads: false,
             // Search
             searchQuery: '',
             searchResults: null,
@@ -69,62 +60,11 @@ export class MailV3Client extends Component {
             selectedThreadIds: [],
             // Mobile
             mobileView: null, // null = desktop, 'list' | 'reading' | 'sidebar'
-            // Compose overlay (F10: OWL ComposeWizard)
-            composeVisible: false,
-            composeDraftId: null,
-            composePrefilled: null,
-            composeMode: 'new',
-            composeAccountId: null,
-            // 360 panel collapse (F10 WP5)
-            panel360Collapsed: false,
-            // V12.4: sender email for 360 tabbar
-            senderEmail: '',
-            // V12.6: Sender decision
-            senderDecisionVisible: false,
-            senderDecisionEmail: '',
-            senderDecisionName: '',
-            // V12.6: Dismiss undo toast
-            dismissUndoToast: false,
-            dismissUndoEmail: '',
-            dismissUndoToken: '',
-            dismissUndoCount: 0,
-            dismissUndoCountdown: 10,
-            // V12.6: Dismissed senders folder
-            dismissedSendersVisible: false,
-            // V14: Folder sidebar
-            selectedFolderId: null,
-            folderSidebarVisible: true,
-            // V15: Mass actions
-            searchAllSelected: false,
-            allSelected: false,
-            moveDropdownVisible: false,
-            moveFolders: [],
-            massUndoToast: false,
-            massUndoToken: '',
-            massUndoMessage: '',
-            massUndoCountdown: 10,
-            isTrashView: false,
-            permanentDeleteConfirm: false,
-            // V17: Browser notifications
-            notificationsEnabled: false,
-            notifUnreadCount: 0,
-            // Inbox V2 cockpit shell
-            topView: 'triage',
-        });
-
-        this._notifier = new MailV3Notifications({
-            onNewMail: ({ unread_count }) => {
-                this.state.notifUnreadCount = unread_count;
-            },
         });
 
         this._keyHandler = this._onKeyDown.bind(this);
         this._undoTimer = null;
         this._undoCountdownTimer = null;
-        this._dismissUndoTimer = null;
-        this._dismissUndoCountdownTimer = null;
-        this._massUndoTimer = null;
-        this._massUndoCountdownTimer = null;
 
         onWillStart(async () => {
             await this.loadAccounts();
@@ -136,17 +76,12 @@ export class MailV3Client extends Component {
         onMounted(() => {
             document.addEventListener('keydown', this._keyHandler);
             window.addEventListener('resize', () => this._detectMobile());
-            // Start notification polling if enabled
-            if (this.state.notificationsEnabled) {
-                this._notifier.start();
-            }
         });
 
         onWillUnmount(() => {
             document.removeEventListener('keydown', this._keyHandler);
             if (this._undoTimer) clearTimeout(this._undoTimer);
             if (this._undoCountdownTimer) clearInterval(this._undoCountdownTimer);
-            this._notifier.stop();
         });
     }
 
@@ -179,59 +114,23 @@ export class MailV3Client extends Component {
 
     async loadThreads() {
         this.state.loading.threads = true;
-        this.state.threadsOffset = 0;
-        this.state.hasMoreThreads = false;
         try {
             const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
-            const params = {
+            const res = await rpc('/cf/mail/v3/threads/list', {
                 account_ids: this.state.selectedAccountIds,
                 state: 'keep',
                 limit: 50,
                 offset: 0,
                 filters: {},
                 folder: folder,
-            };
-            if (this.state.selectedFolderId) {
-                params.folder_id = this.state.selectedFolderId;
-            }
-            const res = await rpc('/cf/mail/v3/threads/list', params);
+            });
             this.state.threads = res.threads || [];
             this.state.totalThreads = res.total || 0;
-            this.state.hasMoreThreads = res.has_more || false;
-            this.state.threadsOffset = this.state.threads.length;
             this.state.searchResults = null;
         } catch (e) {
             console.error('[mail v3] loadThreads error:', e);
         }
         this.state.loading.threads = false;
-    }
-
-    async loadMoreThreads() {
-        if (this.state.loading.threadsMore || !this.state.hasMoreThreads) return;
-        this.state.loading.threadsMore = true;
-        try {
-            const folder = this.state.activeFolder === 'inbox' ? null : this.state.activeFolder;
-            const moreParams = {
-                account_ids: this.state.selectedAccountIds,
-                state: 'keep',
-                limit: 50,
-                offset: this.state.threadsOffset,
-                filters: {},
-                folder: folder,
-            };
-            if (this.state.selectedFolderId) {
-                moreParams.folder_id = this.state.selectedFolderId;
-            }
-            const res = await rpc('/cf/mail/v3/threads/list', moreParams);
-            const newThreads = res.threads || [];
-            this.state.threads = [...this.state.threads, ...newThreads];
-            this.state.totalThreads = res.total || this.state.totalThreads;
-            this.state.hasMoreThreads = res.has_more || false;
-            this.state.threadsOffset += newThreads.length;
-        } catch (e) {
-            console.error('[mail v3] loadMoreThreads error:', e);
-        }
-        this.state.loading.threadsMore = false;
     }
 
     async selectThread(threadId) {
@@ -266,18 +165,11 @@ export class MailV3Client extends Component {
             m => m.direction_computed === 'inbound' || m.direction === 'inbound'
         );
         const partnerId = inbound ? inbound.partner_id : null;
-        this.state.senderEmail = inbound ? (inbound.sender_email || '') : '';
         if (partnerId) {
             this._loadSidebar360(partnerId);
         } else {
             this.state.sidebar360Data = null;
             this.state.selectedPartner = null;
-        }
-
-        // V12.6: Check sender decision status for popup
-        this.state.senderDecisionVisible = false;
-        if (inbound && inbound.sender_email) {
-            this._checkSenderDecision(inbound.sender_email, inbound.sender_name || '');
         }
     }
 
@@ -305,119 +197,10 @@ export class MailV3Client extends Component {
 
     onFolderChange(folder) {
         this.state.activeFolder = folder;
-        this.state.selectedFolderId = null;
-        this.state.dismissedSendersVisible = false;
-        this.state.isTrashView = (folder === 'trash');
-        this.clearBulkSelection();
         if (folder === 'scheduled') {
             this._loadScheduled();
-        } else if (folder === 'dismissed') {
-            this.state.dismissedSendersVisible = true;
         } else {
             this.loadThreads();
-        }
-    }
-
-    // V14: Folder sidebar callbacks
-    onFolderSelect(folderId, accountId) {
-        this.state.selectedFolderId = folderId;
-        this.clearBulkSelection();
-        if (folderId) {
-            // When selecting a folder, switch to that account too
-            if (accountId) {
-                this.state.selectedAccountIds = [accountId];
-            }
-            this.state.activeFolder = 'inbox';
-            this.state.dismissedSendersVisible = false;
-            // Detect if selected folder is trash (for permanent delete button)
-            this._detectTrashFolder(folderId);
-        } else {
-            this.state.isTrashView = false;
-        }
-        this.loadThreads();
-    }
-
-    async _detectTrashFolder(folderId) {
-        try {
-            const folders = await rpc('/cf/mail/v3/folders/list');
-            const folder = (folders.folders || []).find(f => f.id === folderId);
-            this.state.isTrashView = folder && folder.system_code === 'trash';
-        } catch (e) {
-            this.state.isTrashView = false;
-        }
-    }
-
-    onOpenRules() {
-        this.actionService.doAction('casafolino_mail.action_casafolino_mail_folder_rule');
-    }
-
-    openTopView(view) {
-        if (view === 'composer') {
-            this.openComposeNew();
-            return;
-        }
-        if (view === 'config') {
-            this.openSettings();
-            return;
-        }
-        this.state.topView = view || 'triage';
-        if (view === 'review') {
-            this.state.activeFolder = 'inbox';
-        } else if (view === 'keep') {
-            this.state.activeFolder = 'inbox';
-        }
-    }
-
-    getSelectedThread() {
-        return (this.state.threads || []).find(t => t.id === this.state.selectedThreadId) || null;
-    }
-
-    getSelectedMessage() {
-        return (this.state.messages || []).find(
-            m => m.direction === 'inbound' || m.direction_computed === 'inbound'
-        ) || (this.state.messages || [])[0] || null;
-    }
-
-    async openServiceAction(service, msgId = null) {
-        if (!this.state.selectedThreadId) return;
-        if (service === 'composer') {
-            this.openReplyFromSelected();
-            return;
-        }
-        try {
-            const msg = msgId ? { id: msgId } : this.getSelectedMessage();
-            const res = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/service_action', {
-                service,
-                message_id: msg ? msg.id : false,
-            });
-            if (res && res.success && res.action) {
-                await this.actionService.doAction(res.action);
-            } else if (res && res.error) {
-                this.notification.add(res.error, { type: 'warning' });
-            }
-        } catch (e) {
-            console.error('[mail v3] service action error:', e);
-            this.notification.add('Azione servizio non disponibile', { type: 'danger' });
-        }
-    }
-
-    async onThreadService(threadId, service) {
-        if (threadId && this.state.selectedThreadId !== threadId) {
-            await this.selectThread(threadId);
-        }
-        if (service === 'composer') {
-            this.openReplyFromSelected();
-        } else {
-            await this.openServiceAction(service);
-        }
-    }
-
-    openReplyFromSelected() {
-        const msg = this.getSelectedMessage();
-        if (msg) {
-            this.openReply(msg.id);
-        } else {
-            this.openComposeNew();
         }
     }
 
@@ -460,24 +243,6 @@ export class MailV3Client extends Component {
         }
     }
 
-    async onDeleteEmail(msgId) {
-        try {
-            const result = await rpc('/cf/mail/v3/message/delete_single', { message_id: msgId });
-            if (result.success) {
-                if (result.thread_deleted) {
-                    this.state.selectedThreadId = null;
-                    this.state.messages = [];
-                    await this.loadThreads();
-                } else {
-                    const res = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/messages');
-                    this.state.messages = res.messages || [];
-                }
-            }
-        } catch (e) {
-            console.error('[mail v3] delete email error:', e);
-        }
-    }
-
     // ── Compose (wizard action) ─────────────────────────────────
 
     openComposeNew() {
@@ -502,49 +267,23 @@ export class MailV3Client extends Component {
             : (this.state.accounts.length > 0 ? this.state.accounts[0].id : null);
 
         try {
-            // Create draft via RPC to get prefilled data + draftId
-            const result = await rpc('/cf/mail/v3/compose/prepare', {
+            const action = await rpc('/cf/mail/v3/compose/open', {
                 account_id: accountId,
                 mode: mode,
                 reply_to_id: replyToId || false,
                 prefilled_body: prefilled_body || '',
             });
-            if (!result || !result.draft_id) {
-                console.error("[mail v3] compose prepare failed", result);
-                return;
-            }
-            // Show OWL ComposeWizard overlay
-            this.state.composeDraftId = result.draft_id;
-            this.state.composePrefilled = result.prefilled || {};
-            this.state.composeMode = mode;
-            this.state.composeAccountId = accountId;
-            this.state.composeVisible = true;
+            await this.actionService.doAction(action, {
+                onClose: async () => {
+                    await this.loadThreads();
+                    if (this.state.selectedThreadId) {
+                        await this.selectThread(this.state.selectedThreadId);
+                    }
+                },
+            });
         } catch (e) {
             console.error('[mail v3] compose open error:', e);
         }
-    }
-
-    async onComposeSent() {
-        this.state.composeVisible = false;
-        this.state.composeDraftId = null;
-        await this.loadThreads();
-        if (this.state.selectedThreadId) {
-            await this.selectThread(this.state.selectedThreadId);
-        }
-    }
-
-    onComposeClose() {
-        this.state.composeVisible = false;
-        this.state.composeDraftId = null;
-    }
-
-    togglePanel360() {
-        this.state.panel360Collapsed = !this.state.panel360Collapsed;
-    }
-
-    onPartnerCreated(partnerId) {
-        this.state.selectedPartner = partnerId;
-        this._loadSidebar360(partnerId);
     }
 
     // ── Reply Assistant ─────────────────────────────────────────
@@ -760,7 +499,7 @@ export class MailV3Client extends Component {
         }
     }
 
-    // ── Bulk Selection ─────────────────────────────────────────
+    // ── Bulk Actions ────────────────────────────────────────────
 
     toggleThreadSelect(threadId) {
         const ids = this.state.selectedThreadIds || [];
@@ -772,196 +511,24 @@ export class MailV3Client extends Component {
         }
         this.state.selectedThreadIds = [...ids];
         this.state.bulkMode = ids.length > 0;
-        this.state.allSelected = ids.length > 0 && ids.length === (this.state.threads || []).length;
-    }
-
-    toggleSelectAll() {
-        const threads = this.state.threads || [];
-        if (this.state.allSelected) {
-            this.state.selectedThreadIds = [];
-            this.state.allSelected = false;
-            this.state.bulkMode = false;
-        } else {
-            this.state.selectedThreadIds = threads.map(t => t.id);
-            this.state.allSelected = true;
-            this.state.bulkMode = true;
-        }
     }
 
     clearBulkSelection() {
         this.state.selectedThreadIds = [];
         this.state.bulkMode = false;
-        this.state.allSelected = false;
-        this.state.moveDropdownVisible = false;
     }
 
-    // ── V15: Mass Actions ───────────────────────────────────────
-
-    async massMarkRead() {
+    async bulkAction(action) {
         if (!this.state.selectedThreadIds.length) return;
         try {
-            const res = await rpc('/cf/mail/v3/mass_action/mark_read', {
+            await rpc('/cf/mail/v3/threads/bulk', {
+                action: action,
                 thread_ids: this.state.selectedThreadIds,
             });
-            if (res.success) {
-                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni segnate come lette');
-                this.clearBulkSelection();
-                await this.loadThreads();
-            }
-        } catch (e) {
-            console.error('[mail v3] mass mark_read error:', e);
-        }
-    }
-
-    async massArchive() {
-        if (!this.state.selectedThreadIds.length) return;
-        try {
-            const res = await rpc('/cf/mail/v3/mass_action/archive', {
-                thread_ids: this.state.selectedThreadIds,
-            });
-            if (res.success) {
-                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni archiviate');
-                this.clearBulkSelection();
-                await this.loadThreads();
-            }
-        } catch (e) {
-            console.error('[mail v3] mass archive error:', e);
-        }
-    }
-
-    async massTrash() {
-        if (!this.state.selectedThreadIds.length) return;
-        try {
-            const res = await rpc('/cf/mail/v3/mass_action/trash', {
-                thread_ids: this.state.selectedThreadIds,
-            });
-            if (res.success) {
-                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni cestinate');
-                this.clearBulkSelection();
-                await this.loadThreads();
-            }
-        } catch (e) {
-            console.error('[mail v3] mass trash error:', e);
-        }
-    }
-
-    async toggleMoveDropdown() {
-        if (this.state.moveDropdownVisible) {
-            this.state.moveDropdownVisible = false;
-            return;
-        }
-        try {
-            const res = await rpc('/cf/mail/v3/mass_action/folders_for_move', {
-                account_ids: this.state.selectedAccountIds || [],
-                exclude_folder_id: this.state.selectedFolderId || false,
-            });
-            this.state.moveFolders = res.folders || [];
-            this.state.moveDropdownVisible = true;
-        } catch (e) {
-            console.error('[mail v3] load move folders error:', e);
-        }
-    }
-
-    async massMove(folderId, folderName) {
-        if (!this.state.selectedThreadIds.length) return;
-        this.state.moveDropdownVisible = false;
-        try {
-            const res = await rpc('/cf/mail/v3/mass_action/move', {
-                thread_ids: this.state.selectedThreadIds,
-                folder_id: folderId,
-            });
-            if (res.success) {
-                this._showMassUndoToast(res.undo_token, res.processed + ' conversazioni spostate in ' + folderName);
-                this.clearBulkSelection();
-                await this.loadThreads();
-            }
-        } catch (e) {
-            console.error('[mail v3] mass move error:', e);
-        }
-    }
-
-    async massDismissSenders() {
-        if (!this.state.selectedThreadIds.length) return;
-        try {
-            const res = await rpc('/cf/mail/v3/mass_action/dismiss_senders', {
-                thread_ids: this.state.selectedThreadIds,
-            });
-            if (res.success) {
-                this._showMassUndoToast(res.undo_token, res.dismissed_count + ' mittenti dismessi');
-                this.clearBulkSelection();
-                await this.loadThreads();
-            }
-        } catch (e) {
-            console.error('[mail v3] mass dismiss error:', e);
-        }
-    }
-
-    massPermanentDelete() {
-        if (!this.state.selectedThreadIds.length) return;
-        this.state.permanentDeleteConfirm = true;
-    }
-
-    cancelPermanentDelete() {
-        this.state.permanentDeleteConfirm = false;
-    }
-
-    async confirmPermanentDelete() {
-        this.state.permanentDeleteConfirm = false;
-        try {
-            const res = await rpc('/cf/mail/v3/mass_action/permanent_delete', {
-                thread_ids: this.state.selectedThreadIds,
-            });
-            if (res.success) {
-                this.clearBulkSelection();
-                this.state.selectedThreadId = null;
-                this.state.messages = [];
-                await this.loadThreads();
-            }
-        } catch (e) {
-            console.error('[mail v3] mass permanent delete error:', e);
-        }
-    }
-
-    // ── V15: Mass Undo Toast ────────────────────────────────────
-
-    _showMassUndoToast(token, message) {
-        this.state.massUndoToast = true;
-        this.state.massUndoToken = token;
-        this.state.massUndoMessage = message;
-        this.state.massUndoCountdown = 10;
-
-        if (this._massUndoCountdownTimer) clearInterval(this._massUndoCountdownTimer);
-        if (this._massUndoTimer) clearTimeout(this._massUndoTimer);
-
-        this._massUndoCountdownTimer = setInterval(() => {
-            this.state.massUndoCountdown--;
-            if (this.state.massUndoCountdown <= 0) {
-                this._clearMassUndoToast();
-            }
-        }, 1000);
-
-        this._massUndoTimer = setTimeout(() => {
-            this._clearMassUndoToast();
-        }, 10500);
-    }
-
-    _clearMassUndoToast() {
-        this.state.massUndoToast = false;
-        this.state.massUndoToken = '';
-        if (this._massUndoTimer) { clearTimeout(this._massUndoTimer); this._massUndoTimer = null; }
-        if (this._massUndoCountdownTimer) { clearInterval(this._massUndoCountdownTimer); this._massUndoCountdownTimer = null; }
-    }
-
-    async massUndoAction() {
-        if (!this.state.massUndoToken) return;
-        try {
-            await rpc('/cf/mail/v3/mass_action/undo', {
-                token: this.state.massUndoToken,
-            });
-            this._clearMassUndoToast();
+            this.clearBulkSelection();
             await this.loadThreads();
         } catch (e) {
-            console.error('[mail v3] mass undo error:', e);
+            console.error('[mail v3] bulk action error:', e);
         }
     }
 
@@ -987,7 +554,6 @@ export class MailV3Client extends Component {
             const prefs = await rpc('/cf/mail/v3/user/preferences');
             this.state.preferences = prefs;
             this.state.darkMode = prefs.dark_mode || false;
-            this.state.notificationsEnabled = prefs.notifications_enabled || false;
         } catch (e) {
             console.error('[mail v3] load preferences error:', e);
         }
@@ -1029,27 +595,6 @@ export class MailV3Client extends Component {
             await rpc('/cf/mail/v3/user/preferences/save', payload);
         } catch (e) {
             console.error('[mail v3] save preference error:', e);
-        }
-    }
-
-    // ── V17: Notification toggle ─────────────────────────────
-
-    async toggleNotifications() {
-        if (!this.state.notificationsEnabled) {
-            // Enable: request permission first
-            const granted = await this._notifier.requestPermission();
-            if (!granted) {
-                console.warn('[mail v3] Notification permission denied');
-                return;
-            }
-            this.state.notificationsEnabled = true;
-            this._notifier.start();
-            await this._savePreference('notifications_enabled', true);
-        } else {
-            // Disable
-            this.state.notificationsEnabled = false;
-            this._notifier.stop();
-            await this._savePreference('notifications_enabled', false);
         }
     }
 
@@ -1098,43 +643,6 @@ export class MailV3Client extends Component {
     clearSearch() {
         this.state.searchQuery = '';
         this.state.searchResults = null;
-        this.state.searchAllSelected = false;
-    }
-
-    // ── V16: Search result selection (mass action) ─────────────
-
-    toggleSearchThreadSelect(threadId) {
-        const ids = this.state.selectedThreadIds || [];
-        const idx = ids.indexOf(threadId);
-        if (idx >= 0) {
-            ids.splice(idx, 1);
-        } else {
-            ids.push(threadId);
-        }
-        this.state.selectedThreadIds = [...ids];
-        this.state.bulkMode = ids.length > 0;
-        const searchResults = this.state.searchResults || [];
-        const searchThreadIds = searchResults.map(sr => sr.thread_id).filter(Boolean);
-        this.state.searchAllSelected = searchThreadIds.length > 0
-            && searchThreadIds.every(tid => ids.indexOf(tid) >= 0);
-    }
-
-    toggleSearchSelectAll() {
-        const searchResults = this.state.searchResults || [];
-        const searchThreadIds = [...new Set(searchResults.map(sr => sr.thread_id).filter(Boolean))];
-        if (this.state.searchAllSelected) {
-            // Deselect all search results
-            this.state.selectedThreadIds = (this.state.selectedThreadIds || [])
-                .filter(id => searchThreadIds.indexOf(id) < 0);
-            this.state.searchAllSelected = false;
-        } else {
-            // Select all search results
-            const current = new Set(this.state.selectedThreadIds || []);
-            searchThreadIds.forEach(id => current.add(id));
-            this.state.selectedThreadIds = [...current];
-            this.state.searchAllSelected = true;
-        }
-        this.state.bulkMode = this.state.selectedThreadIds.length > 0;
     }
 
     // ── Keyboard Shortcuts ──────────────────────────────────────
@@ -1242,118 +750,6 @@ export class MailV3Client extends Component {
 
     closeShortcutsHelp() {
         this.state.shortcutsHelpVisible = false;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // V12.6: Sender Decision
-    // ═══════════════════════════════════════════════════════════════
-
-    async _checkSenderDecision(email, name) {
-        try {
-            const res = await rpc('/cf/mail/v3/sender_decision/get', { email: email });
-            if (res.status === 'pending') {
-                this.state.senderDecisionEmail = email;
-                this.state.senderDecisionName = name;
-                this.state.senderDecisionVisible = true;
-            }
-        } catch (e) {
-            console.error('[mail v3] sender decision check error:', e);
-        }
-    }
-
-    onSenderDecision(decision) {
-        this.state.senderDecisionVisible = false;
-        // Refresh thread list to update pending badge
-        this.loadThreads();
-    }
-
-    onSenderDismiss(email, undoToken, count) {
-        this.state.senderDecisionVisible = false;
-        this._showDismissUndoToast(email, undoToken, count);
-        // Refresh thread list to remove dismissed threads
-        this.loadThreads();
-    }
-
-    async onSenderCreateLead() {
-        this.state.senderDecisionVisible = false;
-        await this.openServiceAction('create_lead');
-    }
-
-    async onSenderCreateProject() {
-        this.state.senderDecisionVisible = false;
-        await this.openServiceAction('dossier');
-    }
-
-    // ── Quick Action: Dismiss current sender from reading pane ──
-
-    async onQuickDismissSender() {
-        const email = this.state.senderEmail;
-        if (!email) return;
-        try {
-            const res = await rpc('/cf/mail/v3/sender_decision/dismiss', { email: email });
-            this._showDismissUndoToast(email, res.undo_token, res.pending_deletion_count);
-            await this.loadThreads();
-        } catch (e) {
-            console.error('[mail v3] quick dismiss error:', e);
-        }
-    }
-
-    // ── Dismiss Undo Toast ─────────────────────────────────────
-
-    _showDismissUndoToast(email, token, count) {
-        this.state.dismissUndoToast = true;
-        this.state.dismissUndoEmail = email;
-        this.state.dismissUndoToken = token;
-        this.state.dismissUndoCount = count;
-        this.state.dismissUndoCountdown = 10;
-
-        if (this._dismissUndoCountdownTimer) clearInterval(this._dismissUndoCountdownTimer);
-        if (this._dismissUndoTimer) clearTimeout(this._dismissUndoTimer);
-
-        this._dismissUndoCountdownTimer = setInterval(() => {
-            this.state.dismissUndoCountdown--;
-            if (this.state.dismissUndoCountdown <= 0) {
-                this._clearDismissUndoToast();
-            }
-        }, 1000);
-
-        this._dismissUndoTimer = setTimeout(() => {
-            this._clearDismissUndoToast();
-        }, 10500);
-    }
-
-    _clearDismissUndoToast() {
-        this.state.dismissUndoToast = false;
-        if (this._dismissUndoTimer) { clearTimeout(this._dismissUndoTimer); this._dismissUndoTimer = null; }
-        if (this._dismissUndoCountdownTimer) { clearInterval(this._dismissUndoCountdownTimer); this._dismissUndoCountdownTimer = null; }
-    }
-
-    async cancelDismiss() {
-        if (!this.state.dismissUndoToken) return;
-        try {
-            await rpc('/cf/mail/v3/sender_decision/cancel_dismiss', {
-                undo_token: this.state.dismissUndoToken,
-            });
-            this._clearDismissUndoToast();
-            await this.loadThreads();
-        } catch (e) {
-            console.error('[mail v3] cancel dismiss error:', e);
-        }
-    }
-
-    // ── Dismissed Senders Folder ───────────────────────────────
-
-    openDismissedSenders() {
-        this.state.dismissedSendersVisible = true;
-        this.state.activeFolder = 'dismissed';
-    }
-
-    closeDismissedSenders() {
-        this.state.dismissedSendersVisible = false;
-    }
-
-    onDismissedRestored() {
-        this.loadThreads();
     }
 }
 

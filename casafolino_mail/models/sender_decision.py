@@ -35,6 +35,7 @@ class CasafolinoMailSenderDecision(models.Model):
         ('lead_created', 'Lead creato'),
         ('assigned', 'Assegnato'),
         ('replied', 'Risposto con snippet'),
+        ('kept', 'Tenuto (valido)'),
         ('ignored_sender', 'Ignorato mittente'),
         ('ignored_domain', 'Ignorato dominio'),
     ], string='Decisione', required=True)
@@ -44,16 +45,15 @@ class CasafolinoMailSenderDecision(models.Model):
     notes = fields.Text('Note')
     lead_id = fields.Many2one('crm.lead', string='Lead creato', ondelete='set null')
     activity_id = fields.Many2one('mail.activity', string='Activity creata', ondelete='set null')
-    # [Brief #6.0] sender_policy_id removed — sender_policy engine demolished
+    sender_policy_id = fields.Many2one('casafolino.mail.sender_policy',
+                                        string='Policy creata', ondelete='set null')
     active = fields.Boolean(default=True)
 
-    def init(self):
-        self.env.cr.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS
-                casafolino_mail_sender_decision_partner_active_unique_idx
-            ON casafolino_mail_sender_decision (partner_id)
-            WHERE active IS TRUE
-        """)
+    _sql_constraints = [
+        ('partner_active_unique',
+         'UNIQUE(partner_id) WHERE active = TRUE',
+         'Questo partner ha già una decisione attiva.'),
+    ]
 
     @api.depends('sender_email')
     def _compute_sender_domain(self):
@@ -64,8 +64,10 @@ class CasafolinoMailSenderDecision(models.Model):
                 rec.sender_domain = ''
 
     def action_undo(self):
-        """Annulla decisione: disattiva decision."""
+        """Annulla decisione: disattiva decision + sender_policy associata."""
         self.ensure_one()
+        if self.sender_policy_id:
+            self.sender_policy_id.active = False
         self.active = False
 
     # ── Helper: get last inbound email for a partner ─────────────────

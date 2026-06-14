@@ -1,28 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_casafolino_mail_root"
-        name="Mail Inbox V2"
+        name="Mail CRM"
         sequence="15"
-        web_icon="casafolino_mail,static/description/icon_new.png"/>
+        web_icon="casafolino_mail,static/description/icon.png"/>
 
-    <record id="menu_casafolino_mail_root" model="ir.ui.menu">
-        <field name="parent_id" eval="False"/>
-        <field name="name">Mail Inbox V2</field>
-        <field name="sequence">15</field>
-        <field name="web_icon">casafolino_mail,static/description/icon_new.png</field>
-    </record>
-
-    <menuitem id="menu_casafolino_mail_my_mailbox"
-        name="Inbox V2"
+    <menuitem id="menu_casafolino_mail_triage"
+        name="Inbox Triage"
         parent="menu_casafolino_mail_root"
-        sequence="0"
-        action="action_mail_v3_client"/>
+        sequence="1"
+        action="action_casafolino_mail_message_triage"/>
 
-    <menuitem id="menu_casafolino_mail_analytics"
-        name="Analytics"
+    <menuitem id="menu_casafolino_mail_keep"
+        name="Tenute CRM"
         parent="menu_casafolino_mail_root"
-        sequence="0"
-        action="action_mail_v3_analytics"/>
+        sequence="2"
+        action="action_casafolino_mail_message_keep"/>
 
     <menuitem id="menu_casafolino_mail_lead_score"
         name="Lead Scoring TOP 20"
@@ -42,7 +35,11 @@
         sequence="6"
         action="action_casafolino_mail_orphan_partner"/>
 
-    <!-- [DEPRECATED Brief #6.0] Triage Orfani menu removed -->
+    <menuitem id="menu_casafolino_mail_triage_orphan"
+        name="Triage Orfani"
+        parent="menu_casafolino_mail_root"
+        sequence="7"
+        action="action_start_orphan_triage"/>
 
     <menuitem id="menu_casafolino_mail_snippet"
         name="Snippet Library"
@@ -56,11 +53,37 @@
         sequence="9"
         action="action_sender_decision_history"/>
 
-    <menuitem id="menu_casafolino_mail_folder_rules"
-        name="Regole Smistamento"
+    <menuitem id="menu_casafolino_mail_intelligence"
+        name="Partner Intelligence"
+        parent="menu_casafolino_mail_root"
+        sequence="4"
+        action="action_casafolino_partner_intelligence"/>
+
+    <menuitem id="menu_casafolino_mail_outbox"
+        name="Coda Invio"
         parent="menu_casafolino_mail_root"
         sequence="10"
-        action="action_casafolino_mail_folder_rule"/>
+        action="action_casafolino_mail_outbox"/>
+
+    <menuitem id="menu_casafolino_mail_feedback"
+        name="Calibration Feedback"
+        parent="menu_casafolino_mail_intelligence"
+        sequence="2"
+        action="action_intelligence_feedback"/>
+
+    <menuitem id="menu_casafolino_mail_analytics"
+        name="Analytics"
+        parent="menu_casafolino_mail_root"
+        sequence="11"
+        action="action_mail_v3_analytics"
+        groups="casafolino_mail.group_mail_v3_admin"/>
+
+    <menuitem id="menu_casafolino_mail_discard"
+        name="Archivio Scarto"
+        parent="menu_casafolino_mail_root"
+        sequence="12"
+        action="action_casafolino_mail_message_discard"
+        groups="base.group_system"/>
 
     <menuitem id="menu_casafolino_mail_config"
         name="Configurazione"
@@ -74,52 +97,27 @@
         sequence="1"
         action="action_casafolino_mail_account"/>
 
-    <!-- [DEPRECATED Brief #6.0] Regole Mittenti menu removed -->
+    <menuitem id="menu_casafolino_mail_policy"
+        name="Regole Mittenti"
+        parent="menu_casafolino_mail_config"
+        sequence="2"
+        action="action_casafolino_mail_policy"/>
 
-    <menuitem id="menu_casafolino_mail_folders_admin"
-        name="Cartelle"
+    <menuitem id="menu_casafolino_mail_lead_rules"
+        name="Regole Auto-link Lead"
         parent="menu_casafolino_mail_config"
         sequence="3"
-        action="action_casafolino_mail_folder"/>
+        action="action_casafolino_mail_lead_rule"/>
 
-    <menuitem id="menu_casafolino_mail_folder_rules_admin"
-        name="Regole Smistamento"
+    <menuitem id="menu_casafolino_mail_followup_rules"
+        name="Regole Follow-up"
         parent="menu_casafolino_mail_config"
         sequence="4"
-        action="action_casafolino_mail_folder_rule"/>
+        action="action_casafolino_mail_followup_rule"/>
 
-    <!-- Mail Inbox V2 is the only user-facing entry point. -->
-    <record id="menu_casafolino_mail_analytics" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_lead_score" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_sla" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_orphan" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_snippet" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_decision_history" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_folder_rules" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_config" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_accounts" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_folders_admin" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_casafolino_mail_folder_rules_admin" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
+    <menuitem id="menu_casafolino_mail_templates"
+        name="Template Email"
+        parent="menu_casafolino_mail_config"
+        sequence="5"
+        action="action_casafolino_mail_template"/>
 </odoo>

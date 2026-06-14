@@ -8,6 +8,8 @@ access_casafolino_mail_message_admin,casafolino.mail.message admin,model_casafol
 access_casafolino_assign_partner_wizard,casafolino.mail.assign.partner.wizard,model_casafolino_mail_assign_partner_wizard,base.group_user,1,1,1,1
 access_casafolino_assign_lead_wizard,casafolino.mail.assign.lead.wizard,model_casafolino_mail_assign_lead_wizard,base.group_user,1,1,1,1
 access_casafolino_assign_user_wizard,casafolino.mail.assign.user.wizard,model_casafolino_mail_assign_user_wizard,base.group_user,1,1,1,1
+access_casafolino_mail_sender_policy_user,casafolino.mail.sender_policy user,model_casafolino_mail_sender_policy,base.group_user,1,0,0,0
+access_casafolino_mail_sender_policy_admin,casafolino.mail.sender_policy admin,model_casafolino_mail_sender_policy,base.group_system,1,1,1,1
 access_casafolino_mail_tracking_user,casafolino.mail.tracking user,model_casafolino_mail_tracking,base.group_user,1,0,0,0
 access_casafolino_mail_tracking_admin,casafolino.mail.tracking admin,model_casafolino_mail_tracking,base.group_system,1,1,1,1
 access_casafolino_mail_sla_partner_user,casafolino.mail.sla.partner user,model_casafolino_mail_sla_partner,base.group_user,1,0,0,0
@@ -19,28 +21,28 @@ access_casafolino_mail_lead_score_admin,casafolino.mail.lead.score admin,model_c
 access_casafolino_mail_snippet_user,casafolino.mail.snippet user,model_casafolino_mail_snippet,base.group_user,1,1,1,1
 access_casafolino_mail_snippet_admin,casafolino.mail.snippet admin,model_casafolino_mail_snippet,base.group_system,1,1,1,1
 access_casafolino_mail_snippet_picker_user,casafolino.mail.snippet.picker user,model_casafolino_mail_snippet_picker,base.group_user,1,1,1,1
+access_casafolino_mail_triage_wizard_user,casafolino.mail.triage.wizard user,model_casafolino_mail_triage_wizard,base.group_user,1,1,1,1
 access_casafolino_mail_sender_decision_user,casafolino.mail.sender.decision user,model_casafolino_mail_sender_decision,base.group_user,1,1,1,0
 access_casafolino_mail_sender_decision_admin,casafolino.mail.sender.decision admin,model_casafolino_mail_sender_decision,base.group_system,1,1,1,1
-access_casafolino_mail_create_lead_wizard,casafolino.mail.create.lead.wizard,model_casafolino_mail_create_lead_wizard,base.group_user,1,1,1,1
-access_casafolino_mail_thread_user,casafolino.mail.thread user,model_casafolino_mail_thread,base.group_user,1,1,1,1
-access_casafolino_mail_draft_user,casafolino.mail.draft user,model_casafolino_mail_draft,base.group_user,1,1,1,1
+access_mail_v3_thread_user,casafolino.mail.thread.user,model_casafolino_mail_thread,casafolino_mail.group_mail_v3_user,1,1,1,1
+access_mail_v3_draft_user,casafolino.mail.draft.user,model_casafolino_mail_draft,casafolino_mail.group_mail_v3_user,1,1,1,1
+access_mail_v3_signature_user,casafolino.mail.signature.user,model_casafolino_mail_signature,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_signature_admin,casafolino.mail.signature.admin,model_casafolino_mail_signature,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_intelligence_user,casafolino.partner.intelligence.user,model_casafolino_partner_intelligence,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_intelligence_admin,casafolino.partner.intelligence.admin,model_casafolino_partner_intelligence,casafolino_mail.group_mail_v3_admin,1,1,1,1
 access_casafolino_mail_outbox_user,casafolino.mail.outbox user,model_casafolino_mail_outbox,base.group_user,1,1,1,0
-access_casafolino_mail_snooze_user,casafolino.mail.snooze user,model_casafolino_mail_snooze,base.group_user,1,1,1,1
-access_casafolino_mail_signature_user,casafolino.mail.signature user,model_casafolino_mail_signature,base.group_user,1,1,1,1
-access_casafolino_mail_template_user,casafolino.mail.template user,model_casafolino_mail_template,base.group_user,1,1,1,0
-access_casafolino_partner_intelligence_user,casafolino.partner.intelligence user,model_casafolino_partner_intelligence,base.group_user,1,0,0,0
-access_casafolino_mail_response_metric_user,casafolino.mail.response.metric user,model_casafolino_mail_response_metric,base.group_user,1,0,0,0
-access_casafolino_mail_lead_rule_user,casafolino.mail.lead.rule user,model_casafolino_mail_lead_rule,base.group_user,1,1,1,1
-access_casafolino_partner_intelligence_feedback_user,casafolino.partner.intelligence.feedback user,model_casafolino_partner_intelligence_feedback,base.group_user,1,1,1,0
-access_casafolino_mail_sender_preference_user,casafolino.mail.sender_preference user,model_casafolino_mail_sender_preference,base.group_user,1,1,1,0
-access_casafolino_mail_sender_preference_admin,casafolino.mail.sender_preference admin,model_casafolino_mail_sender_preference,base.group_system,1,1,1,1
-access_casafolino_mail_raw_user,casafolino.mail.raw user,model_casafolino_mail_raw,base.group_user,1,0,0,0
-access_casafolino_mail_raw_admin,casafolino.mail.raw admin,model_casafolino_mail_raw,base.group_system,1,1,1,1
-access_casafolino_mail_folder_user,casafolino.mail.folder user,model_casafolino_mail_folder,base.group_user,1,1,1,0
-access_casafolino_mail_folder_admin,casafolino.mail.folder admin,model_casafolino_mail_folder,base.group_system,1,1,1,1
-access_casafolino_mail_folder_rule_user,casafolino.mail.folder.rule user,model_casafolino_mail_folder_rule,base.group_user,1,1,1,0
-access_casafolino_mail_folder_rule_admin,casafolino.mail.folder.rule admin,model_casafolino_mail_folder_rule,base.group_system,1,1,1,1
-access_casafolino_mail_mass_action_log_user,casafolino.mail.mass.action.log user,model_casafolino_mail_mass_action_log,base.group_user,1,0,1,0
-access_casafolino_mail_mass_action_log_admin,casafolino.mail.mass.action.log admin,model_casafolino_mail_mass_action_log,base.group_system,1,1,1,1
-access_cf_mail_position_feedback_user,cf.mail.position.feedback user,model_cf_mail_position_feedback,base.group_user,1,1,1,0
-access_cf_mail_position_feedback_admin,cf.mail.position.feedback admin,model_cf_mail_position_feedback,base.group_system,1,1,1,1
+access_casafolino_mail_outbox_admin,casafolino.mail.outbox admin,model_casafolino_mail_outbox,base.group_system,1,1,1,1
+access_casafolino_mail_compose_wizard_user,casafolino.mail.compose.wizard user,model_casafolino_mail_compose_wizard,base.group_user,1,1,1,1
+access_mail_v3_snooze_user,casafolino.mail.snooze user,model_casafolino_mail_snooze,casafolino_mail.group_mail_v3_user,1,1,1,1
+access_mail_v3_intel_feedback_user,casafolino.partner.intelligence.feedback user,model_casafolino_partner_intelligence_feedback,casafolino_mail.group_mail_v3_user,1,1,1,0
+access_mail_v3_intel_feedback_admin,casafolino.partner.intelligence.feedback admin,model_casafolino_partner_intelligence_feedback,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_response_metric_user,casafolino.mail.response.metric user,model_casafolino_mail_response_metric,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_response_metric_admin,casafolino.mail.response.metric admin,model_casafolino_mail_response_metric,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_lead_rule_user,casafolino.mail.lead.rule user,model_casafolino_mail_lead_rule,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_lead_rule_admin,casafolino.mail.lead.rule admin,model_casafolino_mail_lead_rule,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_followup_rule_user,casafolino.mail.followup.rule user,model_casafolino_mail_followup_rule,casafolino_mail.group_mail_v3_user,1,0,0,0
+access_mail_v3_followup_rule_admin,casafolino.mail.followup.rule admin,model_casafolino_mail_followup_rule,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_template_user,casafolino.mail.template user,model_casafolino_mail_template,casafolino_mail.group_mail_v3_user,1,1,0,0
+access_mail_v3_template_admin,casafolino.mail.template admin,model_casafolino_mail_template,casafolino_mail.group_mail_v3_admin,1,1,1,1
+access_mail_v3_quote_wizard_user,casafolino.mail.quote.wizard user,model_casafolino_mail_quote_wizard,base.group_user,1,1,1,1
+access_mail_v3_quote_wizard_line_user,casafolino.mail.quote.wizard.line user,model_casafolino_mail_quote_wizard_line,base.group_user,1,1,1,1

@@ -12,10 +12,7 @@
       <div t-if="!props.loading and props.messages and props.messages.length > 0" class="mv3-reading-pane__content">
         <!-- Header -->
         <div class="mv3-reading-pane__header">
-          <div>
-            <div class="mv3-reading-pane__eyebrow">Mail aperta</div>
-            <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
-          </div>
+          <div class="mv3-reading-pane__subject" t-out="props.messages[0].subject"/>
           <t t-set="timeGap" t-value="this.getTimeGap()"/>
           <div t-if="timeGap" t-att-class="'mv3-time-gap mv3-time-gap--' + timeGap.severity">
             <t t-out="timeGap.icon + ' ' + timeGap.text"/>
@@ -54,56 +51,31 @@
                   </a>
                 </t>
               </div>
-              <!-- V12.7: Quick actions — 3 grouped button bars -->
-              <div class="mv3-quick-actions">
-                <div class="mv3-service-grid">
-                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('contact', msg.id)"><span>CO</span><strong>Crea contatto</strong><small>Persona dal mittente e note.</small></button>
-                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('company', msg.id)"><span>AZ</span><strong>Crea azienda</strong><small>Dominio, paese e relazione.</small></button>
-                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('pipeline', msg.id)"><span>PL</span><strong>Fase pipeline</strong><small>Lead, qualifica, offerta.</small></button>
-                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('dossier', msg.id)"><span>DO</span><strong>Dossier</strong><small>Mail, allegati, documenti.</small></button>
-                  <button class="mv3-service-card" t-on-click="() => this.onOpenService('activity', msg.id)"><span>AT</span><strong>Attivita</strong><small>Follow-up silenzioso.</small></button>
-                  <button class="mv3-service-card" t-on-click="onDismissSender"><span>RG</span><strong>Regola mittente</strong><small>Keep, review, discard.</small></button>
-                </div>
-                <div class="mv3-quick-actions__row">
-                  <!-- Group 1: Communicate -->
-                  <button class="mv3-qa-btn" t-on-click="() => this.onReply(msg.id)">
-                    <i class="fa fa-reply"/> Rispondi
-                  </button>
-                  <button class="mv3-qa-btn" t-on-click="() => this.onForward(msg.id)">
-                    <i class="fa fa-share"/> Inoltra
-                  </button>
-                  <button class="mv3-qa-btn" t-on-click="() => this.onAiReply(msg.id)">
-                    <i class="fa fa-magic"/> AI
-                  </button>
-                  <div class="mv3-qa-separator"/>
-                  <!-- Group 2: CRM actions -->
-                  <button class="mv3-qa-btn mv3-qa-btn--blue" t-on-click="() => this.onOpenService('create_lead', msg.id)">
-                    <i class="fa fa-bullseye"/> Crea Lead
-                  </button>
-                  <button class="mv3-qa-btn mv3-qa-btn--purple" t-on-click="() => this.onOpenService('dossier', msg.id)">
-                    <i class="fa fa-rocket"/> Dossier
-                  </button>
-                  <button class="mv3-qa-btn mv3-qa-btn--red" t-on-click="onDismissSender">
-                    <i class="fa fa-ban"/> Dismetti mittente
-                  </button>
-                  <div class="mv3-qa-separator"/>
-                  <!-- Group 3: Organize -->
-                  <button class="mv3-qa-btn" t-on-click="() => this.onAction('toggle_star', msg.id)">
-                    <i t-att-class="msg.is_starred ? 'fa fa-star text-warning' : 'fa fa-star-o'"/> Preferito
-                  </button>
-                  <button class="mv3-qa-btn" t-on-click="() => this.onSnooze(msg.id)">
-                    <i class="fa fa-clock-o"/> Snooze
-                  </button>
-                  <button class="mv3-qa-btn" t-on-click="() => this.onAction('archive', msg.id)">
-                    <i class="fa fa-archive"/> Archivia
-                  </button>
-                  <button t-att-class="'mv3-qa-btn mv3-qa-btn--red-soft' + (state.deleteConfirmMsgId === msg.id ? ' mv3-qa-btn--armed' : '')"
-                          t-on-click="() => this.onDeleteEmail(msg.id)">
-                    <i class="fa fa-trash-o"/>
-                    <t t-if="state.deleteConfirmMsgId === msg.id">Conferma?</t>
-                    <t t-else="">Cancella</t>
-                  </button>
-                </div>
+              <div class="mv3-message__actions">
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onReply(msg.id)">
+                  <i class="fa fa-reply"/> Rispondi
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onReplyAll(msg.id)">
+                  <i class="fa fa-reply-all"/> Tutti
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onForward(msg.id)">
+                  <i class="fa fa-share"/> Inoltra
+                </button>
+                <button class="btn btn-sm btn-outline-primary mv3-ai-reply-btn" t-on-click="() => this.onAiReply(msg.id)">
+                  🤖 AI
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onAction('toggle_star', msg.id)">
+                  <i t-att-class="msg.is_starred ? 'fa fa-star text-warning' : 'fa fa-star-o'"/>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onAction('archive', msg.id)">
+                  <i class="fa fa-archive"/>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onSnooze(msg.id)" title="Snooze">
+                  💤
+                </button>
+                <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.onAction('delete_soft', msg.id)">
+                  <i class="fa fa-trash"/>
+                </button>
               </div>
             </div>
           </t>

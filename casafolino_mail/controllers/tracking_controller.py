@@ -32,34 +32,8 @@ class CfMailTrackingController(http.Controller):
     @http.route('/cf/track/click/<string:token>',
                 type='http', auth='public', csrf=False)
     def track_click(self, token, url='', **kw):
-        from urllib.parse import unquote, urlparse
+        from urllib.parse import unquote
         target = unquote(url) if url else '/'
-
-        # Open Redirect prevention: validate target URL
-        is_safe = False
-        if target.startswith('/') and not target.startswith('//'):
-            is_safe = True
-        else:
-            try:
-                parsed_target = urlparse(target)
-                base_url = request.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
-                parsed_base = urlparse(base_url) if base_url else None
-
-                allowed_hosts = {'casafolino.com', 'casafolino.it', 'erp.casafolino.com', 'folinofood.com'}
-                if parsed_base and parsed_base.netloc:
-                    allowed_hosts.add(parsed_base.netloc)
-
-                # Check exact host match or wildcard domains
-                netloc = parsed_target.netloc.split(':')[0]  # strip port if any
-                if netloc in allowed_hosts or netloc.endswith(('.casafolino.com', '.casafolino.it')):
-                    is_safe = True
-            except Exception:
-                is_safe = False
-
-        if not is_safe:
-            _logger.warning("Open Redirect prevention: blocked redirect to '%s'", target)
-            target = '/'
-
         try:
             self._record(token, 'clicked', url_clicked=target)
         except Exception as e:

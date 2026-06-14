@@ -1,16 +1,9 @@
 /** @odoo-module **/
-import { Component, useState } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 
 export class ReadingPane extends Component {
     static template = "casafolino_mail.ReadingPane";
     static props = ["*"];
-
-    setup() {
-        this.state = useState({
-            deleteConfirmMsgId: null,
-        });
-        this._deleteTimer = null;
-    }
 
     getTimeGap() {
         const messages = this.props.messages || [];
@@ -72,40 +65,6 @@ export class ReadingPane extends Component {
 
     onSnooze(msgId) {
         if (this.props.onSnooze) this.props.onSnooze();
-    }
-
-    onCreateLead() {
-        if (this.props.onCreateLead) this.props.onCreateLead();
-    }
-
-    onCreateProject() {
-        if (this.props.onCreateProject) this.props.onCreateProject();
-    }
-
-    onOpenService(service, msgId) {
-        if (this.props.onOpenService) this.props.onOpenService(service, msgId);
-    }
-
-    onDismissSender() {
-        if (this.props.onDismissSender) this.props.onDismissSender();
-    }
-
-    onDeleteEmail(msgId) {
-        if (!msgId) return;
-        if (this.state.deleteConfirmMsgId === msgId) {
-            // Second click — confirmed
-            this.state.deleteConfirmMsgId = null;
-            if (this._deleteTimer) { clearTimeout(this._deleteTimer); this._deleteTimer = null; }
-            if (this.props.onDeleteEmail) this.props.onDeleteEmail(msgId);
-        } else {
-            // First click — arm
-            this.state.deleteConfirmMsgId = msgId;
-            if (this._deleteTimer) clearTimeout(this._deleteTimer);
-            this._deleteTimer = setTimeout(() => {
-                this.state.deleteConfirmMsgId = null;
-                this._deleteTimer = null;
-            }, 3000);
-        }
     }
 
     formatDate(dateStr) {

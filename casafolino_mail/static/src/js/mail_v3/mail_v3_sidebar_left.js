@@ -50,12 +50,6 @@ export class SidebarLeft extends Component {
         }
     }
 
-    onToggleNotifications() {
-        if (this.props.onToggleNotifications) {
-            this.props.onToggleNotifications();
-        }
-    }
-
     get totalUnread() {
         const accounts = this.props.accounts || [];
         return accounts.reduce((sum, a) => sum + (a.unread_count || 0), 0);

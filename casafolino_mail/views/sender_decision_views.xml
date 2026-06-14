@@ -18,7 +18,7 @@
                        decoration-danger="decision in ('ignored_sender', 'ignored_domain')"/>
                 <field name="triaged_by" string="Da"/>
                 <field name="lead_id" string="Lead" optional="show"/>
-                <!-- [Brief #6.0] sender_policy_id removed -->
+                <field name="sender_policy_id" string="Policy" optional="show"/>
                 <field name="active" string="Attiva"/>
                 <field name="notes" string="Note" optional="hide"/>
                 <button name="action_undo" string="Annulla" type="object"
@@ -87,7 +87,8 @@
                         <field name="triaged_at"/>
                         <field name="lead_id" invisible="decision != 'lead_created'"/>
                         <field name="activity_id" invisible="decision != 'assigned'"/>
-                        <!-- [Brief #6.0] sender_policy_id removed -->
+                        <field name="sender_policy_id"
+                               invisible="decision not in ('ignored_sender', 'ignored_domain')"/>
                     </group>
                 </group>
                 <group string="Note">

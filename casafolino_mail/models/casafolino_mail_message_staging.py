@@ -9,7 +9,7 @@ import uuid
 import requests as req
 
 from odoo import models, fields, api
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError
 
 _logger = logging.getLogger(__name__)
 
@@ -73,18 +73,13 @@ class CasafolinoMailMessage(models.Model):
         ('new', 'Nuova'),
         ('auto_keep', 'Tenuta (auto)'),
         ('keep', 'Tenuta'),
-        ('auto_attached', 'Auto-collegata Lead'),
         ('auto_discard', 'Scartata (auto)'),
         ('discard', 'Scartata'),
         ('review', 'Da valutare'),
-        ('internal', 'Solo interna'),
     ], string='Stato', default='new', index=True)
 
-    is_outbound_from_team = fields.Boolean(
-        'Outbound dal team', compute='_compute_is_outbound_from_team',
-        store=True, index=True)
-
-    # [Brief #6.0] policy_applied_id removed — sender_policy engine demolished
+    policy_applied_id = fields.Many2one('casafolino.mail.sender_policy',
+        string='Regola applicata', ondelete='set null')
 
     partner_id = fields.Many2one('res.partner', string='Contatto')
     match_type = fields.Selection([
@@ -97,6 +92,21 @@ class CasafolinoMailMessage(models.Model):
     body_html = fields.Html('Body HTML', sanitize=False)
     body_plain = fields.Text('Body testo')
     body_downloaded = fields.Boolean('Body scaricato', default=False)
+
+    # ── Intent Detection ───────────────────────────────────────────
+    intent_detected = fields.Selection([
+        ('request_quote', 'Richiesta preventivo'),
+        ('order', 'Ordine'),
+        ('complaint', 'Reclamo'),
+        ('follow_up', 'Follow-up'),
+        ('intro', 'Presentazione'),
+        ('info_request', 'Richiesta info'),
+        ('meeting_request', 'Richiesta incontro'),
+        ('payment', 'Pagamento'),
+        ('shipping', 'Spedizione'),
+        ('thank_you', 'Ringraziamento'),
+        ('other', 'Altro'),
+    ], string='Intent')
 
     # ── AI Classifier fields ────────────────────────────────────────
     ai_category = fields.Selection([
@@ -142,91 +152,60 @@ class CasafolinoMailMessage(models.Model):
     triage_user_id = fields.Many2one('res.users', string='Triage da')
     triage_date = fields.Datetime('Data triage')
     is_read = fields.Boolean('Letta', default=False)
+    imap_flags_synced = fields.Boolean('IMAP flags synced', default=False)
     is_important = fields.Boolean('Importante', default=False)
     assigned_user_ids = fields.Many2many(
         'res.users', 'casafolino_mail_message_user_rel',
         'message_id', 'user_id', string='Assegnato a')
     lead_id = fields.Many2one('crm.lead', string='Trattativa CRM', ondelete='set null')
-    lead_name = fields.Char('Lead', compute='_compute_lead_info', store=False)
-    lead_stage_class = fields.Char('Lead Stage CSS', compute='_compute_lead_info', store=False)
     tracking_token = fields.Char('Tracking Token', index=True)
     tracking_ids = fields.One2many('casafolino.mail.tracking', 'message_id', string='Tracking')
     tracking_open_count = fields.Integer(compute='_compute_tracking_counts', string='Aperture')
     tracking_click_count = fields.Integer(compute='_compute_tracking_counts', string='Click')
     thread_key = fields.Char('Thread Key', index=True, compute='_compute_thread_key', store=True)
 
-    # ── V3 restore fields ──────────────────────────────────────────
+    # ── Mail V3 fields ─────────────────────────────────────────────
     thread_id = fields.Many2one('casafolino.mail.thread', string='Thread V3',
                                  ondelete='set null', index=True)
-    is_starred = fields.Boolean('Starred', default=False)
+    is_starred = fields.Boolean('Importante V3', default=False)
     is_archived = fields.Boolean('Archiviata', default=False, index=True)
-    is_deleted = fields.Boolean('Deleted', default=False, index=True)
-    is_snoozed = fields.Boolean('Snoozed', default=False)
+    is_deleted = fields.Boolean('Eliminata (soft)', default=False, index=True)
     reply_to_message_id = fields.Many2one('casafolino.mail.message',
                                            string='In risposta a',
                                            ondelete='set null')
     direction_computed = fields.Selection([
         ('inbound', 'Ricevuta'),
         ('outbound', 'Inviata'),
-    ], string='Direzione (indexed)', compute='_compute_direction_computed',
-       store=True, index=True)
-    hotness_snapshot = fields.Char('Hotness snapshot')
+    ], string='Direzione V3', compute='_compute_direction_v3', store=True)
 
-    # ── Brief #6.2 — Posizionatore fields ─────────────────────────
-    cf_project_id = fields.Many2one(
-        'project.project', string='Dossier', ondelete='set null', index=True,
-        help='Dossier di progetto a cui questa mail è stata assegnata.')
-    cf_positioned_at = fields.Datetime('Posizionato il', readonly=True)
-    cf_positioned_by_id = fields.Many2one('res.users', string='Posizionato da', readonly=True)
-    cf_ai_suggestion_ids = fields.Many2many(
-        'project.project', 'cf_mail_msg_ai_sugg_rel',
-        'message_id', 'project_id', string='Dossier suggeriti AI')
-    cf_ai_confidence = fields.Float('AI confidence', digits=(3, 2), default=0.0)
-    cf_ai_confidence_band = fields.Selection([
-        ('high', 'Alta (>80%)'),
-        ('medium', 'Media (40-80%)'),
-        ('low', 'Bassa (<40%)'),
-        ('none', 'Non analizzata'),
-    ], string='Banda confidence', compute='_compute_cf_ai_confidence_band',
-       store=True, index=True)
-    cf_ai_processed = fields.Boolean('AI posizionamento elaborata', default=False)
-    cf_ai_reasoning = fields.Text('Motivazione AI')
-    mail_message_id = fields.Many2one('mail.message', string='Ref chatter project',
-                                       ondelete='set null')
+    @api.depends('direction')
+    def _compute_direction_v3(self):
+        for rec in self:
+            rec.direction_computed = rec.direction or 'inbound'
 
-    @api.depends('cf_ai_processed', 'cf_ai_confidence',
-                 'partner_id', 'partner_id.cf_ai_accuracy_score')
-    def _compute_cf_ai_confidence_band(self):
-        """Brief #6.3 — Dynamic threshold based on partner AI accuracy score.
-        accuracy >= 0.9 → high_threshold 0.7 (aggressive auto-accept)
-        accuracy <= 0.5 → high_threshold 0.9 (needs more confidence)
-        0.5..0.9 → linear interpolation 0.9..0.7
-        """
-        for msg in self:
-            if not msg.cf_ai_processed:
-                msg.cf_ai_confidence_band = 'none'
-                continue
-            accuracy = msg.partner_id.cf_ai_accuracy_score if msg.partner_id else 0.5
-            if accuracy >= 0.9:
-                high_threshold = 0.7
-            elif accuracy <= 0.5:
-                high_threshold = 0.9
-            else:
-                high_threshold = 0.9 - ((accuracy - 0.5) * 0.5)
-            if msg.cf_ai_confidence >= high_threshold:
-                msg.cf_ai_confidence_band = 'high'
-            elif msg.cf_ai_confidence >= 0.4:
-                msg.cf_ai_confidence_band = 'medium'
-            else:
-                msg.cf_ai_confidence_band = 'low'
+    # ── Mail V3 actions ────────────────────────────────────────────
 
-    # ── V14 Folder fields ─────────────────────────────────────────
-    folder_id = fields.Many2one(
-        'casafolino.mail.folder', string='Cartella',
-        ondelete='set null', index=True)
+    def action_mark_read(self):
+        self.write({'is_read': True})
 
-    # ── V15 Mass action fields ────────────────────────────────────
-    is_deleted_at = fields.Datetime('Cestinato il', index=True)
+    def action_mark_unread(self):
+        self.write({'is_read': False})
+
+    def action_archive(self):
+        self.write({'is_archived': True})
+
+    def action_unarchive(self):
+        self.write({'is_archived': False})
+
+    def action_delete_soft(self):
+        self.write({'is_deleted': True})
+
+    def action_restore(self):
+        self.write({'is_deleted': False})
+
+    def action_toggle_star(self):
+        for rec in self:
+            rec.is_starred = not rec.is_starred
 
     _SUBJECT_PREFIX_RE = re.compile(
         r'^\s*(Re|R|Fwd|FW|Fw|AW|SV|VS|RE|Rif|RIF)\s*:\s*',
@@ -252,28 +231,20 @@ class CasafolinoMailMessage(models.Model):
             WHERE message_id_rfc IS NOT NULL AND message_id_rfc != ''
         """)
 
-    @api.depends('sender_email')
-    @api.depends('direction')
-    def _compute_direction_computed(self):
-        for rec in self:
-            rec.direction_computed = rec.direction
-
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        if self.env.context.get('skip_thread_upsert'):
-            return records
-        Thread = self.env['casafolino.mail.thread']
-        for rec in records:
-            if not rec.thread_id:
-                try:
-                    Thread._upsert_from_message(rec)
-                except Exception as e:
-                    _logger.warning(
-                        "Thread upsert failed for message %s: %s", rec.id, e
-                    )
+        if not self.env.context.get('skip_thread_upsert'):
+            Thread = self.env['casafolino.mail.thread']
+            for rec in records:
+                if rec.state in ('keep', 'auto_keep'):
+                    try:
+                        Thread._upsert_from_message(rec)
+                    except Exception as e:
+                        _logger.warning('[mail v3] Thread upsert fail msg %s: %s', rec.id, e)
         return records
 
+    @api.depends('sender_email')
     def _compute_sender_domain(self):
         for rec in self:
             if rec.sender_email and '@' in rec.sender_email:
@@ -281,502 +252,39 @@ class CasafolinoMailMessage(models.Model):
             else:
                 rec.sender_domain = ''
 
-    @api.depends('sender_domain')
-    def _compute_is_outbound_from_team(self):
-        internal_domains = self._get_internal_domains()
-        for rec in self:
-            rec.is_outbound_from_team = bool(
-                rec.sender_domain and rec.sender_domain.lower() in internal_domains
-            )
-
-    @api.model
-    def _get_internal_domains(self):
-        """Return list of internal company domains from config parameter."""
-        param = self.env['ir.config_parameter'].sudo().get_param(
-            'casafolino_mail.internal_domains', 'casafolino.com'
-        )
-        return [d.strip().lower() for d in param.split(',') if d.strip()]
-
-    def _extract_external_recipients(self, internal_domains):
-        """Parse recipient_emails (comma-separated), return external emails only."""
+    def _apply_sender_policy(self):
+        """Applica la prima sender_policy che matcha a questo messaggio."""
         self.ensure_one()
-        raw_recipients = self.recipient_emails or ''
-        emails = [e.strip().lower() for e in raw_recipients.replace(';', ',').split(',') if e.strip()]
-        external = []
-        for em in emails:
-            if '@' not in em:
-                continue
-            domain = em.split('@')[1]
-            if domain not in internal_domains:
-                external.append(em)
-        return external
-
-    def _find_partner_by_email(self, email_addr):
-        """Find existing res.partner by email. Never auto-creates."""
-        if not email_addr:
-            return self.env['res.partner']
-        Partner = self.env['res.partner'].sudo()
-        partner = Partner.search([('email', '=ilike', email_addr)], limit=1)
-        return partner
-
-    def _apply_outbound_triage(self):
-        """Re-triage mail with internal sender: match on first external recipient.
-
-        For each message where sender_domain is internal:
-        - Extract external recipients
-        - If none → state='internal', direction='outbound'
-        - If found → match partner on first external, set direction='outbound',
-          state='auto_keep' if partner found, else state='new'
-        """
-        internal_domains = self._get_internal_domains()
-        for msg in self:
-            if not msg.sender_domain or msg.sender_domain.lower() not in internal_domains:
-                continue
-            # Already correctly triaged outbound — skip for idempotency
-            if msg.direction == 'outbound' and msg.state in ('auto_keep', 'internal'):
-                continue
-
-            external_recipients = msg._extract_external_recipients(internal_domains)
-            if not external_recipients:
-                msg.write({'state': 'internal', 'direction': 'outbound'})
-                continue
-
-            primary_recipient = external_recipients[0]
-            partner = msg._find_partner_by_email(primary_recipient)
-
-            vals = {
-                'direction': 'outbound',
-                'state': 'auto_keep' if partner else 'new',
-            }
-            if partner:
-                vals['partner_id'] = partner.id
-                vals['match_type'] = 'exact'
-
-            # Multi-domain external recipients: log in snippet for visibility
-            external_domains = {r.split('@')[1] for r in external_recipients if '@' in r}
-            if len(external_domains) > 1:
-                note = "Mail multi-cliente: %s" % ', '.join(sorted(external_domains))
-                existing_snippet = msg.snippet or ''
-                if 'multi-cliente' not in existing_snippet:
-                    vals['snippet'] = ('[MULTI] %s' % note)[:200]
-
-            msg.write(vals)
-
-    def _compute_lead_info(self):
-        for rec in self:
-            if rec.lead_id:
-                name = rec.lead_id.name or ''
-                rec.lead_name = name[:30] + ('...' if len(name) > 30 else '')
-                if rec.lead_id.stage_id and rec.lead_id.stage_id.is_won:
-                    rec.lead_stage_class = 'success'
-                elif not rec.lead_id.active:
-                    rec.lead_stage_class = 'secondary'
-                else:
-                    rec.lead_stage_class = 'info'
-            else:
-                rec.lead_name = ''
-                rec.lead_stage_class = ''
-
-    # [Brief #6.0] _apply_sender_policy() removed — sender_policy engine demolished
-
-    # ── Brief #6.2 — Posizionatore methods ──────────────────────────
-
-    def action_position_to_project(self, project_id):
-        """Posiziona mail su un dossier. Crea entry nel chatter del project."""
-        self.ensure_one()
-        Project = self.env['project.project'].browse(project_id)
-        if not Project.exists():
-            raise UserError("Dossier non trovato (id=%s)" % project_id)
-
-        body = self.body_html or self.body_plain or ''
-        chatter_msg = self.env['mail.message'].create({
-            'model': 'project.project',
-            'res_id': project_id,
-            'message_type': 'email',
-            'subtype_id': self.env.ref('mail.mt_note').id,
-            'body': body,
-            'subject': self.subject,
-            'email_from': self.sender_email,
-            'date': self.email_date,
-            'message_id': self.message_id_rfc,
-            'author_id': self.partner_id.id if self.partner_id else False,
-        })
-
-        self.write({
-            'cf_project_id': project_id,
-            'cf_positioned_at': fields.Datetime.now(),
-            'cf_positioned_by_id': self.env.user.id,
-            'mail_message_id': chatter_msg.id,
-        })
-
-        # Brief #6.3 — Record feedback for AI learning
-        self._record_position_feedback(project_id)
-
-    def _record_position_feedback(self, actual_project_id):
-        """Brief #6.3 — Create feedback record after positioning."""
-        self.ensure_one()
-        if not self.partner_id:
-            return
-        Feedback = self.env['cf.mail.position.feedback']
-        existing = Feedback.search([('message_id', '=', self.id)], limit=1)
-        if existing:
-            return  # idempotent
-        ai_top = self.cf_ai_suggestion_ids[:1]
-        Feedback.create({
-            'message_id': self.id,
-            'partner_id': self.partner_id.id,
-            'ai_suggested_project_id': ai_top.id if ai_top else False,
-            'ai_confidence_at_position': self.cf_ai_confidence,
-            'actual_project_id': actual_project_id,
-            'user_id': self.env.user.id,
-            'user_reason': self.env.context.get('cf_position_reason') or False,
-        })
-
-    @api.model
-    def _backfill_position_feedback(self):
-        """Brief #6.3 one-shot — Create retroactive feedback from already positioned mail."""
-        Feedback = self.env['cf.mail.position.feedback']
-        positioned = self.search([
-            ('cf_project_id', '!=', False),
-            ('partner_id', '!=', False),
-            ('cf_ai_processed', '=', True),
-        ])
-        created = 0
-        for msg in positioned:
-            if Feedback.search([('message_id', '=', msg.id)], limit=1):
-                continue
-            ai_top = msg.cf_ai_suggestion_ids[:1]
-            Feedback.create({
-                'message_id': msg.id,
-                'partner_id': msg.partner_id.id,
-                'ai_suggested_project_id': ai_top.id if ai_top else False,
-                'ai_confidence_at_position': msg.cf_ai_confidence,
-                'actual_project_id': msg.cf_project_id.id,
-                'user_id': msg.cf_positioned_by_id.id or self.env.user.id,
-            })
-            created += 1
-        _logger.info("Brief #6.3: backfill feedback — %d created", created)
-        return created
-
-    def action_position_quick_high(self):
-        """1-click confirm for HIGH confidence suggestion."""
-        self.ensure_one()
-        if not self.cf_ai_suggestion_ids:
-            raise UserError("Nessun dossier suggerito per questa mail.")
-        self.action_position_to_project(self.cf_ai_suggestion_ids[0].id)
-
-    def action_open_position_dialog(self):
-        """Open form dialog for MEDIUM/LOW positioning."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'casafolino.mail.message',
-            'res_id': self.id,
-            'view_mode': 'form',
-            'view_id': self.env.ref('casafolino_mail.view_cf_mail_posizionatore_form').id,
-            'target': 'new',
-            'context': {'form_view_initial_mode': 'edit'},
-        }
-
-    def action_save_and_position(self):
-        """Footer button: position to selected cf_project_id."""
-        self.ensure_one()
-        if not self.cf_project_id:
-            raise UserError("Seleziona un dossier prima di posizionare.")
-        self.action_position_to_project(self.cf_project_id.id)
-
-    def action_run_ai_suggestion(self):
-        """Run Groq AI to generate dossier suggestions for positioning."""
-        for msg in self:
-            if msg.cf_ai_processed:
-                continue
-            try:
-                msg._do_ai_suggestion()
-            except Exception as e:
-                _logger.exception("Brief #6.2: AI suggestion failed msg %s: %s", msg.id, e)
-
-    def _build_context_section_for_partner(self, partner_id, max_examples=5):
-        """Brief #6.3 — Build context section from feedback history for Groq prompt."""
-        Feedback = self.env['cf.mail.position.feedback']
-        mismatches = Feedback.search([
-            ('partner_id', '=', partner_id),
-            ('was_correct', '=', False),
-            ('ai_suggested_project_id', '!=', False),
-        ], limit=max_examples, order='create_date desc')
-        remaining = max(1, max_examples - len(mismatches))
-        matches = Feedback.search([
-            ('partner_id', '=', partner_id),
-            ('was_correct', '=', True),
-        ], limit=remaining, order='create_date desc')
-        if not mismatches and not matches:
-            return ''
-        lines = ['\nCONTEXT — Past positioning history for this partner:']
-        for fb in mismatches:
-            line = ("- Mail '%s': AI suggested '%s' (conf %.2f) but user positioned on '%s'" % (
-                (fb.message_id.subject or '')[:60],
-                fb.ai_suggested_project_id.name,
-                fb.ai_confidence_at_position,
-                fb.actual_project_id.name))
-            if fb.user_reason:
-                line += ' — reason: "%s"' % fb.user_reason
-            lines.append(line)
-        for fb in matches:
-            lines.append("- Mail '%s': AI correctly suggested '%s' (conf %.2f)" % (
-                (fb.message_id.subject or '')[:60],
-                fb.actual_project_id.name,
-                fb.ai_confidence_at_position))
-        lines.append('Use this history to refine your reasoning.')
-        return '\n'.join(lines)
-
-    def _do_ai_suggestion(self):
-        """Call Gemini/Groq with structured prompt → JSON with candidate dossiers."""
-        self.ensure_one()
-        if not self.partner_id:
-            self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
-                        'cf_ai_reasoning': 'Nessun partner associato.'})
+        Policy = self.env['casafolino.mail.sender_policy']
+        policy = Policy.match_sender(self.sender_email, self.subject or '',
+                                     ai_category=self.ai_category)
+        if not policy:
             return
 
-        Project = self.env['project.project']
-        candidates = Project.search([
-            ('cf_status_dossier', '!=', False),
-            '|',
-            ('partner_id', '=', self.partner_id.id),
-            ('cf_lead_ids.partner_id', '=', self.partner_id.id),
-        ], limit=20)
+        vals = {'policy_applied_id': policy.id}
 
-        if not candidates:
-            self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
-                        'cf_ai_reasoning': 'Nessun dossier candidato per il partner.'})
-            return
+        if policy.action == 'auto_keep':
+            vals['state'] = 'auto_keep'
+        elif policy.action == 'auto_discard':
+            vals['state'] = 'auto_discard'
+        elif policy.action == 'escalate':
+            vals['state'] = 'review'
+            vals['is_important'] = True
+        else:  # review
+            vals['state'] = 'review'
 
-        body_snippet = (self.body_html or self.body_plain or self.subject or '')[:2000]
-        cand_list = ', '.join(
-            ['id=%d "%s" (%s)' % (p.id, p.name, p.cf_status_dossier or 'n/a')
-             for p in candidates])
+        if policy.auto_create_partner and not self.partner_id:
+            partner = self.env['res.partner'].search(
+                [('email', '=ilike', self.sender_email)], limit=1)
+            if not partner:
+                partner = self.env['res.partner'].create({
+                    'name': self.sender_name or self.sender_email,
+                    'email': self.sender_email,
+                })
+            vals['partner_id'] = partner.id
+            vals['match_type'] = 'exact'
 
-        # Brief #6.3 — Context injection from feedback history
-        context_section = self._build_context_section_for_partner(self.partner_id.id)
-
-        prompt = (
-            'Analyze this CRM email and suggest the best matching dossier.\n'
-            'Email FROM: %s\nSUBJECT: %s\nBODY snippet: %s\n'
-            'Partner: %s\n\n'
-            'Candidate dossiers: %s\n'
-            '%s\n'
-            'Return JSON ONLY (no markdown):\n'
-            '{"suggestions": [{"project_id": <id>, "confidence": 0.0-1.0, '
-            '"reason": "<short>"}], "main_reasoning": "<1-2 sentences>"}\n'
-            'Order by confidence desc. Max 3 suggestions. '
-            'If no clear match, use confidence < 0.4.'
-        ) % (
-            self.sender_email or '',
-            self.subject or '(no subject)',
-            body_snippet,
-            self.partner_id.name or '',
-            cand_list,
-            context_section,
-        )
-
-        # 1. Prova prima Gemini se configurato
-        gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
-        if gemini_key:
-            try:
-                system_instruction = "You are a CRM email router. Respond with JSON only."
-                data = self.env['cf.gemini.client']._call_gemini_json(system_instruction, prompt)
-                if data:
-                    suggestions = data.get('suggestions', [])
-                    reasoning = data.get('main_reasoning', '')
-
-                    valid_ids = candidates.ids
-                    sugg_ids = [s['project_id'] for s in suggestions[:3]
-                                if s.get('project_id') in valid_ids]
-                    top_conf = suggestions[0].get('confidence', 0.0) if suggestions else 0.0
-
-                    self.write({
-                        'cf_ai_suggestion_ids': [(6, 0, sugg_ids)],
-                        'cf_ai_confidence': float(top_conf),
-                        'cf_ai_reasoning': reasoning,
-                        'cf_ai_processed': True,
-                    })
-                    return
-            except Exception as e:
-                _logger.warning("Posizionatore Gemini suggestion fallito: %s. Procedo con fallback Groq.", e)
-
-        # 2. Fallback Groq (originale)
-        api_key = self.env['ir.config_parameter'].sudo().get_param(
-            'casafolino.groq_api_key', '')
-        if not api_key:
-            self.write({'cf_ai_processed': True, 'cf_ai_confidence': 0.0,
-                        'cf_ai_reasoning': 'API key non configurata.'})
-            return
-
-        try:
-            resp = req.post(
-                'https://api.groq.com/openai/v1/chat/completions',
-                headers={
-                    'Authorization': 'Bearer %s' % api_key,
-                    'Content-Type': 'application/json',
-                },
-                json={
-                    'model': 'llama-3.3-70b-versatile',
-                    'messages': [
-                        {'role': 'system', 'content': 'You are a CRM email router. Respond with JSON only.'},
-                        {'role': 'user', 'content': prompt},
-                    ],
-                    'temperature': 0.1,
-                    'max_tokens': 300,
-                },
-                timeout=30,
-            )
-            if not resp.ok:
-                raise ValueError('Groq API %d: %s' % (resp.status_code, resp.text[:200]))
-
-            raw_text = resp.json().get('choices', [{}])[0].get('message', {}).get('content', '')
-            json_match = re.search(r'\{[\s\S]*\}', raw_text)
-            if not json_match:
-                raise ValueError('No JSON in Groq response')
-
-            data = json.loads(json_match.group())
-            suggestions = data.get('suggestions', [])
-            reasoning = data.get('main_reasoning', '')
-
-            valid_ids = candidates.ids
-            sugg_ids = [s['project_id'] for s in suggestions[:3]
-                        if s.get('project_id') in valid_ids]
-            top_conf = suggestions[0].get('confidence', 0.0) if suggestions else 0.0
-
-            self.write({
-                'cf_ai_suggestion_ids': [(6, 0, sugg_ids)],
-                'cf_ai_confidence': float(top_conf),
-                'cf_ai_reasoning': reasoning,
-                'cf_ai_processed': True,
-            })
-        except Exception as e:
-            _logger.warning("Brief #6.2: AI parse failed msg %s: %s", self.id, e)
-            self.write({
-                'cf_ai_processed': True,
-                'cf_ai_confidence': 0.0,
-                'cf_ai_reasoning': 'AI error: %s' % str(e)[:200],
-            })
-
-    @api.model
-    def _cron_run_ai_suggestion(self, batch_size=20):
-        """Brief #6.2 — Cron AI suggestion for pending positioning."""
-        pending = self.search([
-            ('cf_ai_processed', '=', False),
-            ('partner_id', '!=', False),
-            ('cf_project_id', '=', False),
-        ], limit=batch_size)
-        if pending:
-            pending.action_run_ai_suggestion()
-            _logger.info("Brief #6.2: AI suggestion on %d messages", len(pending))
-
-    @api.model
-    def cf_get_pending_count(self):
-        return self.search_count([
-            ('cf_project_id', '=', False),
-            ('partner_id', '!=', False),
-        ])
-
-    @api.model
-    def cf_get_pending_summary(self):
-        summary = {'high': 0, 'medium': 0, 'low': 0, 'none': 0, 'total': 0}
-        self.env.cr.execute("""
-            SELECT cf_ai_confidence_band, COUNT(*)
-            FROM casafolino_mail_message
-            WHERE cf_project_id IS NULL AND partner_id IS NOT NULL
-            GROUP BY cf_ai_confidence_band
-        """)
-        for band, count in self.env.cr.fetchall():
-            summary[band or 'none'] = count
-            summary['total'] += count
-        return summary
-
-    # ── Brief #6.6 — Backfill batch AI ─────────────────────────────
-
-    @api.model
-    def cf_backfill_ai_suggestion(self, batch_size=50, throttle_seconds=2, limit=None):
-        """Backfill AI suggestion in batch on existing mail in DB."""
-        import time
-        start = time.time()
-        domain = [
-            ('cf_ai_processed', '=', False),
-            ('partner_id', '!=', False),
-            ('cf_project_id', '=', False),
-        ]
-        pending = self.search(domain, limit=limit)
-        total = len(pending)
-        _logger.info("Brief #6.6: backfill AI on %d messages (batch=%d)", total, batch_size)
-        processed = errors = skipped = 0
-        for i in range(0, total, batch_size):
-            batch = pending[i:i + batch_size]
-            for msg in batch:
-                try:
-                    msg.action_run_ai_suggestion()
-                    processed += 1 if msg.cf_ai_processed else 0
-                    skipped += 0 if msg.cf_ai_processed else 1
-                except Exception as e:
-                    errors += 1
-                    _logger.warning("Brief #6.6: error msg %s: %s", msg.id, e)
-            if i + batch_size < total:
-                time.sleep(throttle_seconds)
-                self.env.cr.commit()
-        duration = time.time() - start
-        _logger.info("Brief #6.6: backfill done — processed=%d errors=%d skipped=%d %.1fs",
-                     processed, errors, skipped, duration)
-        return {'processed': processed, 'errors': errors, 'skipped': skipped,
-                'duration_seconds': round(duration, 1)}
-
-    # ── Brief #6.5 — Inbox selector endpoints ─────────────────────
-
-    @api.model
-    def cf_get_supervisable_users(self):
-        """List users the caller can impersonate. Empty if no permission."""
-        if not self.env.user.cf_can_see_all_inboxes:
-            return []
-        Account = self.env['casafolino.mail.account'].sudo()
-        accounts = Account.search([('active', '=', True)])
-        user_ids = list(set(accounts.mapped('responsible_user_id.id')))
-        users = self.env['res.users'].sudo().browse(user_ids).filtered('active')
-        color_map = {2: 'green', 6: 'purple', 8: 'gray'}
-        result = []
-        for u in users:
-            result.append({
-                'id': u.id,
-                'name': u.name,
-                'login': u.login,
-                'color_class': color_map.get(u.id, 'gray'),
-                'is_self': u.id == self.env.user.id,
-                'accounts_count': len(accounts.filtered(
-                    lambda a: a.responsible_user_id.id == u.id)),
-            })
-        result.sort(key=lambda x: (not x['is_self'], x['name']))
-        return result
-
-    @api.model
-    def cf_get_inbox_messages_as_user(self, viewing_as_user_id, domain=None, limit=80, offset=0):
-        """Return messages visible to target user. Permission gate strict."""
-        if not self.env.user.cf_can_see_all_inboxes:
-            from odoo.exceptions import AccessError
-            raise AccessError("cf_can_see_all_inboxes required.")
-        target = self.env['res.users'].sudo().browse(viewing_as_user_id)
-        if not target.exists() or not target.active:
-            return []
-        base_domain = list(domain or [])
-        base_domain.append(('account_id.responsible_user_id', '=', viewing_as_user_id))
-        messages = self.sudo().search(base_domain, limit=limit, offset=offset, order='email_date desc')
-        result = []
-        for msg in messages:
-            result.append({
-                'id': msg.id,
-                'subject': msg.subject or '',
-                'sender_email': msg.sender_email or '',
-                'email_date': fields.Datetime.to_string(msg.email_date) if msg.email_date else '',
-                'partner_id': [msg.partner_id.id, msg.partner_id.name] if msg.partner_id else None,
-                'cf_project_id': [msg.cf_project_id.id, msg.cf_project_id.name] if msg.cf_project_id else None,
-                'cf_ai_confidence_band': msg.cf_ai_confidence_band,
-            })
-        return result
+        self.write(vals)
 
     # ── AI Classifier — Groq ────────────────────────────────────────
 
@@ -875,14 +383,9 @@ class CasafolinoMailMessage(models.Model):
                     timeout=15,
                 )
 
-                if resp.status_code == 429 and attempt == 0:
-                    _logger.warning("Groq rate limit (429) for message %s, retry in 20s...", self.id)
-                    time.sleep(20)
-                    continue
-
                 if resp.status_code == 429:
-                    self.write({'ai_error': 'Rate limit 429 dopo retry'})
-                    _logger.warning("Groq rate limit (429) for message %s after retry, skip", self.id)
+                    self.write({'ai_error': 'Rate limit 429'})
+                    _logger.warning("Groq rate limit (429) for message %s, skip (will retry later)", self.id)
                     return
 
                 if resp.status_code == 403 and attempt == 0:
@@ -956,266 +459,118 @@ class CasafolinoMailMessage(models.Model):
         # Se arriviamo qui: 2 tentativi falliti (403 retry)
         self.write({'ai_error': 'Cloudflare 403 after retry'})
 
-    def _classify_with_gemini(self):
-        """Classifica questa email con Google Gemini API. Non solleva mai eccezioni."""
+    # ── Intent Detection — keyword matcher IT/EN/DE ─────────────────
+
+    _INTENT_KEYWORDS = {
+        'request_quote': {
+            'it': ['preventivo', 'quotazione', 'listino prezzi', 'offerta', 'prezzo unitario',
+                   'richiesta prezzi', 'condizioni commerciali', 'catalogo prezzi'],
+            'en': ['quote', 'quotation', 'price list', 'pricing', 'unit price',
+                   'price request', 'commercial terms', 'rfi', 'rfq'],
+            'de': ['angebot', 'preisliste', 'preisanfrage', 'konditionen',
+                   'stückpreis', 'angebotanfrage', 'handelskonditionen'],
+        },
+        'order': {
+            'it': ['ordine', 'conferma ordine', 'ordiniamo', 'vorremmo ordinare',
+                   'acquisto', 'po number', 'buono d\'ordine'],
+            'en': ['order', 'purchase order', 'po number', 'we would like to order',
+                   'confirm order', 'place an order'],
+            'de': ['bestellung', 'bestellen', 'auftrag', 'bestellnummer',
+                   'auftragsbestätigung', 'wir möchten bestellen'],
+        },
+        'complaint': {
+            'it': ['reclamo', 'lamentela', 'problema', 'difetto', 'danneggiato',
+                   'non conforme', 'contestazione', 'insoddisfatto', 'delusione'],
+            'en': ['complaint', 'issue', 'problem', 'defect', 'damaged',
+                   'not acceptable', 'disappointed', 'unsatisfied', 'claim'],
+            'de': ['reklamation', 'beschwerde', 'problem', 'mangelhaft', 'beschädigt',
+                   'nicht akzeptabel', 'beanstandung', 'enttäuscht'],
+        },
+        'follow_up': {
+            'it': ['sollecito', 'aggiornamento', 'stato dell\'ordine', 'a che punto',
+                   'news', 'novità', 'riscontro', 'promemoria'],
+            'en': ['follow up', 'following up', 'status update', 'any update',
+                   'checking in', 'reminder', 'status of', 'any news'],
+            'de': ['nachfrage', 'statusupdate', 'wie ist der stand', 'erinnerung',
+                   'rückmeldung', 'gibt es neuigkeiten'],
+        },
+        'intro': {
+            'it': ['presentazione', 'mi presento', 'vorrei presentare', 'primo contatto',
+                   'piacere di', 'ci presentiamo', 'la nostra azienda'],
+            'en': ['introduction', 'introducing', 'first contact', 'pleased to meet',
+                   'would like to introduce', 'our company'],
+            'de': ['vorstellung', 'möchte mich vorstellen', 'erstkontakt',
+                   'unser unternehmen', 'gestatten sie'],
+        },
+        'info_request': {
+            'it': ['informazioni', 'dettagli', 'scheda tecnica', 'specifiche',
+                   'vorrei sapere', 'potrebbe inviarmi', 'documentazione'],
+            'en': ['information', 'details', 'spec sheet', 'specifications',
+                   'could you send', 'would like to know', 'documentation'],
+            'de': ['informationen', 'details', 'datenblatt', 'spezifikationen',
+                   'könnten sie mir senden', 'unterlagen'],
+        },
+        'meeting_request': {
+            'it': ['incontro', 'appuntamento', 'riunione', 'videochiamata', 'call',
+                   'ci vediamo', 'fissare un incontro', 'disponibilità'],
+            'en': ['meeting', 'appointment', 'call', 'video call', 'schedule',
+                   'let\'s meet', 'availability', 'set up a call'],
+            'de': ['treffen', 'termin', 'besprechung', 'videokonferenz',
+                   'verfügbarkeit', 'termin vereinbaren'],
+        },
+        'payment': {
+            'it': ['pagamento', 'fattura', 'bonifico', 'scadenza', 'saldo',
+                   'rimessa', 'ricevuta', 'coordinate bancarie'],
+            'en': ['payment', 'invoice', 'wire transfer', 'due date', 'balance',
+                   'remittance', 'receipt', 'bank details'],
+            'de': ['zahlung', 'rechnung', 'überweisung', 'fälligkeitsdatum',
+                   'bankverbindung', 'kontoauszug'],
+        },
+        'shipping': {
+            'it': ['spedizione', 'consegna', 'tracking', 'pallet', 'trasporto',
+                   'resa', 'incoterms', 'container', 'logistica'],
+            'en': ['shipping', 'delivery', 'tracking', 'shipment', 'transport',
+                   'incoterms', 'container', 'logistics', 'freight'],
+            'de': ['versand', 'lieferung', 'tracking', 'sendung', 'transport',
+                   'incoterms', 'fracht', 'logistik'],
+        },
+        'thank_you': {
+            'it': ['grazie', 'ringraziamento', 'ottimo lavoro', 'perfetto',
+                   'complimenti', 'eccellente'],
+            'en': ['thank you', 'thanks', 'great job', 'perfect', 'excellent',
+                   'well done', 'appreciated'],
+            'de': ['danke', 'vielen dank', 'ausgezeichnet', 'perfekt',
+                   'hervorragend', 'gut gemacht'],
+        },
+    }
+
+    def _detect_intent(self):
+        """Detect email intent via keyword matching (IT/EN/DE). Non-blocking."""
         self.ensure_one()
+        text = ((self.subject or '') + ' ' + (self.snippet or '')).lower()
+        if self.body_plain:
+            text += ' ' + self.body_plain[:1000].lower()
+        elif self.body_html:
+            clean = re.sub(r'<[^>]+>', ' ', self.body_html[:2000])
+            text += ' ' + clean.lower()
 
-        # Check abilitazione
-        enabled = self.env['ir.config_parameter'].sudo().get_param(
-            'casafolino_mail.ai_classifier_enabled', '0')
-        if enabled != '1':
+        if not text.strip():
             return
 
-        # Skip se già classificato
-        if self.ai_classified_at:
-            return
+        best_intent = None
+        best_score = 0
+        for intent, lang_keywords in self._INTENT_KEYWORDS.items():
+            score = 0
+            for lang, keywords in lang_keywords.items():
+                for kw in keywords:
+                    if kw in text:
+                        score += 1
+            if score > best_score:
+                best_score = score
+                best_intent = intent
 
-        # Estrai testo
-        body_text = self._get_body_text_for_ai()
-        if not body_text and not self.subject:
-            self.write({'ai_error': 'No body content'})
-            return
-
-        system_prompt = (
-            "You are an email classifier for CasaFolino, an Italian artisan gourmet food company "
-            "(B2B export, GDO retail, private label). Classify each email with JSON output only, no prose."
-        )
-        user_prompt = (
-            "Classify this email:\n"
-            "Subject: %s\n"
-            "Body (first 2000 chars): %s\n\n"
-            "Return ONLY valid JSON in this exact format:\n"
-            '{"category": "commerciale|admin|fornitore|newsletter|interno|personale|spam", '
-            '"sentiment": "positive|neutral|negative", '
-            '"language": "it|en|de|fr|es|other", '
-            '"urgency": "high|medium|low", '
-            '"action_required": true|false,\n'
-            '"summary": "concise 1-2 sentence Italian summary of the email"}\n\n'
-            "Rules:\n"
-            '- "commerciale" = buyer, distributor, retailer, customer requests, trade fairs\n'
-            '- "admin" = invoices, bank, tax, legal, HR, logistics docs\n'
-            '- "fornitore" = suppliers, raw materials, packaging, ingredients\n'
-            '- "newsletter" = marketing, promotional, mass mailing\n'
-            '- "interno" = internal @casafolino.com addresses\n'
-            '- "personale" = personal matters\n'
-            '- "spam" = unsolicited promotional, phishing\n'
-            '- urgency="high" when: explicit deadlines <7 days, complaints, legal matters, payments overdue\n'
-            '- action_required=true when recipient must reply or take action'
-        ) % (self.subject or '(no subject)', body_text or '(empty)')
-
-        try:
-            data = self.env['cf.gemini.client']._call_gemini_json(system_prompt, user_prompt)
-            if not data:
-                self.write({'ai_error': 'Gemini returned empty or invalid JSON'})
-                return
-
-            vals = {
-                'ai_classified_at': fields.Datetime.now(),
-                'ai_raw_response': json.dumps(data),
-                'ai_error': False,
-            }
-
-            cat = (data.get('category') or '').lower().strip()
-            if cat in self._GROQ_VALID_CATEGORIES:
-                vals['ai_category'] = cat
-
-            sent = (data.get('sentiment') or '').lower().strip()
-            if sent in self._GROQ_VALID_SENTIMENTS:
-                vals['ai_sentiment'] = sent
-
-            lang = (data.get('language') or '').lower().strip()
-            if lang in self._GROQ_VALID_LANGUAGES:
-                vals['ai_language'] = lang
-
-            urg = (data.get('urgency') or '').lower().strip()
-            if urg in self._GROQ_VALID_URGENCIES:
-                vals['ai_urgency'] = urg
-
-            if isinstance(data.get('action_required'), bool):
-                vals['ai_action_required'] = data['action_required']
-
-            # Aggiorna snippet con il riassunto intelligente generato da Gemini se presente
-            if data.get('summary'):
-                vals['snippet'] = data['summary']
-
-            self.write(vals)
-
-            # Invia la notifica Telegram se la mail è "rilevante"
-            # Definiamo "rilevante": categoria in ('commerciale', 'admin') o urgenza 'high'
-            if cat in ('commerciale', 'admin') or urg == 'high':
-                try:
-                    self.action_send_telegram_notification()
-                except Exception as tg_e:
-                    _logger.warning("Telegram notification failed for message %s: %s", self.id, tg_e)
-
-            return
-
-        except Exception as e:
-            self.write({'ai_error': str(e)[:200]})
-            _logger.exception("Gemini classify error for message %s: %s", self.id, e)
-            return
-
-    def action_send_telegram_notification(self):
-        """Invia notifica Telegram per email rilevante usando parametri ICP."""
-        self.ensure_one()
-        ICP = self.env['ir.config_parameter'].sudo()
-
-        enabled = ICP.get_param('casafolino.telegram_enabled', '0')
-        if enabled != '1':
-            return False
-
-        token = ICP.get_param('casafolino.telegram_bot_token', '')
-        chat_id = ICP.get_param('casafolino.telegram_chat_id', '')
-
-        if not token or not chat_id:
-            _logger.warning("Telegram notifica saltata: token o chat_id non configurati.")
-            return False
-
-        # Get summary from Gemini response, fallback to subject/snippet
-        summary = ""
-        if self.ai_raw_response:
-            try:
-                data = json.loads(self.ai_raw_response)
-                summary = data.get('summary', '')
-            except Exception:
-                pass
-
-        if not summary:
-            summary = self.snippet or "Nessuna anteprima disponibile."
-
-        # Format message in simple Markdown
-        message = (
-            "📧 *Nuova Email Rilevante Ricevuta!*\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👤 *Mittente:* {self.sender_name or 'Sconosciuto'} (`{self.sender_email or ''}`)\n"
-            f"✉️ *Oggetto:* __{self.subject or '(Nessun Oggetto)'}__\n"
-            f"🏷️ *Categoria:* `{self.ai_category or 'N/A'}`\n"
-            f"🔥 *Priorità:* `{self.ai_urgency or 'media'}`\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"💡 *Sintesi AI:*\n{summary}\n"
-        )
-
-        # Inline Keyboard
-        reply_markup = {
-            "inline_keyboard": [
-                [
-                    {"text": "📝 Bozza Risposta", "callback_data": f"draft:{self.id}"},
-                    {"text": "✅ Segna Letto", "callback_data": f"read:{self.id}"},
-                    {"text": "❌ Ignora", "callback_data": f"ignore:{self.id}"}
-                ]
-            ]
-        }
-
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": message,
-            "parse_mode": "Markdown",
-            "reply_markup": reply_markup
-        }
-
-        try:
-            resp = req.post(url, json=payload, timeout=10)
-            if not resp.ok:
-                _logger.warning("Telegram notifica fallita: %s", resp.text)
-                return False
-            return True
-        except Exception as e:
-            _logger.exception("Errore nell'invio della notifica Telegram: %s", e)
-            return False
-
-    def _maybe_auto_create_lead(self):
-        """Auto-crea crm.lead se email classificata 'commerciale' e nessun lead esistente per mittente."""
-        self.ensure_one()
-
-        # Feature toggle
-        enabled = self.env['ir.config_parameter'].sudo().get_param(
-            'casafolino.auto_create_lead_from_ai', '1')
-        if enabled != '1':
-            return
-
-        if self.ai_category != 'commerciale':
-            return
-
-        # Solo inbound
-        if self.direction != 'inbound':
-            return
-
-        sender = (self.sender_email or '').strip().lower()
-        if not sender:
-            return
-
-        # Skip internal domains
-        domain_part = sender.split('@')[-1] if '@' in sender else ''
-        internal_domains = {'casafolino.com', 'casafolino.it'}
-        if domain_part in internal_domains:
-            return
-
-        Lead = self.env['crm.lead'].sudo()
-        Partner = self.env['res.partner'].sudo()
-
-        # Dedup: se esiste già un lead aperto per questo mittente, skip
-        partner = Partner.search([('email', '=ilike', sender)], limit=1)
-        if partner:
-            existing_lead = Lead.search([
-                ('partner_id', '=', partner.id),
-                ('stage_id.is_won', '=', False),
-                ('active', '=', True),
-            ], limit=1)
-            if existing_lead:
-                _logger.info("[auto lead AI] Lead già esistente per %s (lead %s), skip",
-                             sender, existing_lead.id)
-                return
-
-        # Dedup: se il thread ha già un lead, skip
-        if self.thread_id:
-            existing_thread_lead = Lead.search([
-                ('cf_mail_thread_id', '=', self.thread_id.id),
-            ], limit=1)
-            if existing_thread_lead:
-                return
-
-        # Owner = account responsible user
-        owner_id = self.account_id.responsible_user_id.id if self.account_id.responsible_user_id else self.env.ref('base.user_admin').id
-
-        # utm.source
-        Source = self.env['utm.source'].sudo()
-        source = Source.search([('name', '=', 'Mail AI Auto-classify')], limit=1)
-        if not source:
-            source = Source.create({'name': 'Mail AI Auto-classify'})
-
-        # Tag auto-created
-        Tag = self.env['crm.tag'].sudo()
-        tags = Tag.browse()
-        for tag_name in ['auto-created', 'from-mail-classifier']:
-            t = Tag.search([('name', '=', tag_name)], limit=1)
-            if not t:
-                t = Tag.create({'name': tag_name})
-            tags |= t
-
-        lead_name = (self.subject or 'Email commerciale')[:80]
-        lead_vals = {
-            'name': lead_name,
-            'email_from': sender,
-            'partner_name': self.sender_name or sender.split('@')[0],
-            'description': '<p>Lead auto-creato da classificazione AI (commerciale)</p>'
-                           '<p><b>Oggetto:</b> %s</p>'
-                           '<p><b>Anteprima:</b> %s</p>' % (
-                               self.subject or '', (self.snippet or '')[:300]),
-            'source_id': source.id,
-            'user_id': owner_id,
-            'cf_auto_created': True,
-            'tag_ids': [(6, 0, tags.ids)],
-        }
-        if partner:
-            lead_vals['partner_id'] = partner.id
-        if self.thread_id:
-            lead_vals['cf_mail_thread_id'] = self.thread_id.id
-
-        lead = Lead.create(lead_vals)
-        self.write({'lead_id': lead.id})
-        _logger.info("[auto lead AI] Lead %s creato da email %s (msg %s, account %s)",
-                     lead.id, sender, self.id, self.account_id.name)
+        if best_intent and best_score >= 1:
+            self.write({'intent_detected': best_intent})
 
     def _compute_tracking_counts(self):
         for rec in self:
@@ -1246,23 +601,51 @@ class CasafolinoMailMessage(models.Model):
     # ── Quick Convert → CRM Lead ────────────────────────────────────
 
     def action_create_lead(self):
-        """Apre wizard popup per creare crm.lead da questa email (v11)."""
+        """Crea un crm.lead pre-compilato da questa email."""
         self.ensure_one()
 
-        # Assicura partner se non ancora matchato
-        if not self.partner_id and self.sender_email:
+        # Assicura partner
+        partner = self.partner_id
+        if not partner and self.sender_email:
             partner = self.env['res.partner'].search(
                 [('email', '=ilike', self.sender_email)], limit=1)
-            if partner:
+            if not partner:
+                partner = self.env['res.partner'].create({
+                    'name': self.sender_name or self.sender_email,
+                    'email': self.sender_email,
+                })
                 self.partner_id = partner
+
+        # Determina salesperson dalla policy o utente corrente
+        user_id = self.env.user.id
+        if self.policy_applied_id and self.policy_applied_id.default_owner_id:
+            user_id = self.policy_applied_id.default_owner_id.id
+
+        lead_vals = {
+            'name': self.subject or 'Email da %s' % self.sender_email,
+            'partner_id': partner.id if partner else False,
+            'email_from': self.sender_email,
+            'description': (self.body_html or self.snippet or '')[:3000],
+            'user_id': user_id,
+            'source_email_id': self.id,
+        }
+
+        # UTM source "Email" se esiste
+        try:
+            lead_vals['source_id'] = self.env.ref('utm.utm_source_email').id
+        except Exception:
+            pass
+
+        lead = self.env['crm.lead'].create(lead_vals)
+        self.write({'lead_id': lead.id, 'state': 'keep'})
 
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Crea Lead da Email',
-            'res_model': 'casafolino.mail.create.lead.wizard',
+            'name': 'Lead creato',
+            'res_model': 'crm.lead',
+            'res_id': lead.id,
             'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_message_id': self.id},
+            'target': 'current',
         }
 
     # ── Triage actions (Step 3) ──────────────────────────────────────
@@ -1321,22 +704,13 @@ class CasafolinoMailMessage(models.Model):
                         sib_vals['match_type'] = 'exact'
                     sib.write(sib_vals)
 
-    def action_open_lead(self):
-        """Apre il lead collegato in nuova tab."""
-        self.ensure_one()
-        if not self.lead_id:
-            return
-        return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'crm.lead',
-            'res_id': self.lead_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
     def action_discard(self):
-        """Hard delete record (v11). Gmail originale resta intatto."""
-        self.unlink()
+        """Marca come discard."""
+        self.write({
+            'state': 'discard',
+            'triage_user_id': self.env.user.id,
+            'triage_date': fields.Datetime.now(),
+        })
 
     # ── Body download (Step 3) ───────────────────────────────────────
 
@@ -1369,7 +743,6 @@ class CasafolinoMailMessage(models.Model):
         body_html = ''
         body_text = ''
         attachments = []
-        capture_attachments = not self.env.context.get('cf_skip_mail_attachments')
 
         if msg.is_multipart():
             for part in msg.walk():
@@ -1463,7 +836,42 @@ class CasafolinoMailMessage(models.Model):
         }
         self.env['mail.message'].sudo().create(msg_vals)
 
-    # [Brief #6.0] action_blacklist_domain() removed — sender_policy engine demolished
+    # ── Domain discard + Quick actions ────────────────────────────
+
+    def action_blacklist_domain(self):
+        """Crea sender_policy auto_discard per il dominio e scarta le email new."""
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        domains_done = set()
+
+        for record in self:
+            domain = record.sender_domain
+            if domain and domain not in domains_done:
+                existing = Policy.search([
+                    ('pattern_type', '=', 'domain'),
+                    ('pattern_value', '=', domain),
+                    ('action', '=', 'auto_discard'),
+                ], limit=1)
+                if not existing:
+                    Policy.create({
+                        'name': 'Auto-discard: %s' % domain,
+                        'pattern_type': 'domain',
+                        'pattern_value': domain,
+                        'action': 'auto_discard',
+                        'priority': 70,
+                    })
+                domains_done.add(domain)
+
+        # Scarta TUTTE le email new da questi domini
+        if domains_done:
+            all_from_domains = self.search([
+                ('sender_domain', 'in', list(domains_done)),
+                ('state', '=', 'new'),
+            ])
+            all_from_domains.write({
+                'state': 'discard',
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
 
     def _get_contact_email_and_name(self):
         """Ritorna (email, name) del contatto esterno per questa email."""
@@ -1571,14 +979,13 @@ class CasafolinoMailMessage(models.Model):
         body_html = ''
         body_text = ''
         attachments = []
-        capture_attachments = not self.env.context.get('cf_skip_mail_attachments')
 
         if msg_obj.is_multipart():
             for part in msg_obj.walk():
                 content_type = part.get_content_type()
                 disposition = str(part.get('Content-Disposition', ''))
 
-                if capture_attachments and ('attachment' in disposition or part.get_filename()):
+                if 'attachment' in disposition or part.get_filename():
                     filename = part.get_filename()
                     if filename:
                         filename = self.env['casafolino.mail.account']._decode_header_value(filename)
@@ -1704,56 +1111,6 @@ class CasafolinoMailMessage(models.Model):
         """Segna come non letto."""
         self.write({'is_read': False})
 
-    def action_archive(self):
-        """Archivia messaggi."""
-        self.write({'is_archived': True})
-        for rec in self:
-            if rec.thread_id:
-                rec.thread_id._recompute_aggregates()
-
-    def action_unarchive(self):
-        """Ripristina da archivio."""
-        self.write({'is_archived': False})
-        for rec in self:
-            if rec.thread_id:
-                rec.thread_id._recompute_aggregates()
-
-    def action_delete_soft(self):
-        """Soft delete: sposta nel cestino."""
-        trash_folders = {}
-        for rec in self:
-            account_id = rec.account_id.id
-            if account_id not in trash_folders:
-                trash = self.env['casafolino.mail.folder'].search([
-                    ('account_id', '=', account_id),
-                    ('system_code', '=', 'trash'),
-                ], limit=1)
-                trash_folders[account_id] = trash.id if trash else False
-            vals = {
-                'is_deleted': True,
-                'is_deleted_at': fields.Datetime.now(),
-            }
-            if trash_folders[account_id]:
-                vals['folder_id'] = trash_folders[account_id]
-            rec.write(vals)
-            if rec.thread_id:
-                rec.thread_id._recompute_aggregates()
-
-    def action_restore(self):
-        """Ripristina dal cestino."""
-        self.write({
-            'is_deleted': False,
-            'is_deleted_at': False,
-        })
-        for rec in self:
-            if rec.thread_id:
-                rec.thread_id._recompute_aggregates()
-
-    def action_toggle_star(self):
-        """Toggle starred status."""
-        for rec in self:
-            rec.write({'is_starred': not rec.is_starred})
-
     def action_bulk_delete(self):
         """Elimina selezionati (solo admin)."""
         if not self.env.user.has_group('base.group_system'):
@@ -1787,30 +1144,6 @@ class CasafolinoMailMessage(models.Model):
             except Exception as e:
                 _logger.error("Error downloading body for %s: %s", record.message_id_rfc, e)
 
-    # ── V15: Cron Cleanup Trash ──────────────────────────────────────
-
-    @api.model
-    def _cron_cleanup_trash(self):
-        """Permanently delete messages trashed more than 30 days ago."""
-        from datetime import timedelta
-        cutoff = fields.Datetime.now() - timedelta(days=30)
-        old_trash = self.sudo().search([
-            ('is_deleted', '=', True),
-            ('is_deleted_at', '!=', False),
-            ('is_deleted_at', '<', cutoff),
-        ])
-        if not old_trash:
-            return
-        count = len(old_trash)
-        # Collect threads before unlinking
-        thread_ids = old_trash.mapped('thread_id')
-        old_trash.unlink()
-        # Clean up empty threads
-        for thread in thread_ids:
-            if thread.exists() and not thread.message_ids:
-                thread.unlink()
-        _logger.info("Cleanup trash: %d messages permanently deleted", count)
-
     # ── Cron AI classify pending ────────────────────────────────────
 
     @api.model
@@ -1826,24 +1159,14 @@ class CasafolinoMailMessage(models.Model):
 
         _logger.info("AI classify cron: %d messaggi da classificare", len(pending))
         classified = 0
-        # Check standard AI engine based on config or key presence
-        use_gemini = bool(self.env['cf.gemini.client']._get_api_key())
-
         for idx, msg in enumerate(pending):
             try:
-                if use_gemini:
-                    msg._classify_with_gemini()
-                else:
-                    msg._classify_with_groq()
+                msg._classify_with_groq()
                 if msg.ai_classified_at:
                     classified += 1
-                    # [Brief #6.0] _apply_sender_policy call removed
-                    # Auto Lead AI: crea lead se classificato "commerciale"
-                    if msg.ai_category == 'commerciale':
-                        try:
-                            msg._maybe_auto_create_lead()
-                        except Exception as le:
-                            _logger.warning("Auto lead error msg %s: %s", msg.id, le)
+                    # Re-apply policy solo se il messaggio è ancora in state='new'
+                    if msg.state == 'new':
+                        msg._apply_sender_policy()
             except Exception as e:
                 _logger.warning("AI classify cron error msg %s: %s", msg.id, e)
             self.env.cr.commit()
@@ -1852,6 +1175,18 @@ class CasafolinoMailMessage(models.Model):
                 time.sleep(2.5)
 
         _logger.info("AI classify cron completato: %d/%d classificati", classified, len(pending))
+
+    # ── Cron cleanup (Step 8) ────────────────────────────────────────
+
+    @api.model
+    def _cron_cleanup_discarded(self):
+        """Elimina email scartate più vecchie di 30 giorni."""
+        from datetime import timedelta
+        cutoff = fields.Datetime.now() - timedelta(days=30)
+        old = self.search([('state', '=', 'discard'), ('triage_date', '<', cutoff)])
+        count = len(old)
+        old.unlink()
+        _logger.info("Mail cleanup: %d email scartate eliminate.", count)
 
     @api.model
     def _cron_fetch_pending_bodies(self):
@@ -1908,113 +1243,6 @@ class CasafolinoMailMessage(models.Model):
                 pass
 
         _logger.info("Cron fetch bodies completato: %d messaggi processati", len(pending))
-
-    # ── Auto-attach email to open leads (v11 cron) ─────────────────
-
-    @api.model
-    def _cron_auto_attach_leads(self):
-        """Cron: collega email new a lead aperti dello stesso partner.
-
-        Se partner ha 1+ lead open → attach al più recente (MAX create_date).
-        Stato → auto_attached. Batch max 100 per run.
-        """
-        emails = self.search([
-            ('state', '=', 'new'),
-            ('partner_id', '!=', False),
-        ], limit=100, order='email_date desc')
-
-        if not emails:
-            return
-
-        attached = 0
-        for msg in emails:
-            # Cerca lead aperti per questo partner
-            leads = self.env['crm.lead'].search([
-                ('partner_id', '=', msg.partner_id.id),
-                ('active', '=', True),
-                ('stage_id.is_won', '=', False),
-                ('probability', '<', 100),
-            ], order='create_date desc', limit=1)
-
-            if leads:
-                msg.write({
-                    'lead_id': leads[0].id,
-                    'state': 'auto_attached',
-                })
-                attached += 1
-
-        if attached:
-            _logger.info("Auto-attach leads: %d email collegate su %d processate",
-                         attached, len(emails))
-
-    # ── Digest mittenti fuori-CRM (v11 cron) ────────────────────────
-
-    @api.model
-    def _cron_digest_fuori_crm(self):
-        """Cron settimanale: invia digest top-20 domini fuori-CRM ad Antonio.
-
-        Analizza email filtrate dalla whitelist (non scaricate) contando
-        i domini più frequenti negli header IMAP degli ultimi 7 giorni.
-        Usa i log applicativi per conteggio — alternativa: query diretta.
-        """
-        from collections import Counter
-        from datetime import timedelta
-
-        cutoff = fields.Datetime.now() - timedelta(days=7)
-
-        # Conta domini mittente di email NON in CRM (state=new senza partner)
-        # In v11 le email fuori-CRM non vengono create, quindi contiamo
-        # i domini con email create nell'ultima settimana raggruppati
-        self.env.cr.execute("""
-            SELECT sender_domain, COUNT(*) as cnt
-            FROM casafolino_mail_message
-            WHERE email_date >= %s
-              AND partner_id IS NULL
-              AND direction = 'inbound'
-              AND sender_domain IS NOT NULL
-              AND sender_domain != ''
-            GROUP BY sender_domain
-            ORDER BY cnt DESC
-            LIMIT 20
-        """, [cutoff])
-        rows = self.env.cr.fetchall()
-
-        if not rows:
-            return
-
-        # Costruisci HTML digest
-        lines = []
-        for domain, count in rows:
-            lines.append('<tr><td style="padding:4px 8px;">%s</td>'
-                         '<td style="padding:4px 8px;text-align:right;">%d</td></tr>'
-                         % (domain, count))
-
-        body = """
-        <h3>Digest Settimanale — Mittenti Fuori CRM</h3>
-        <p>Top 20 domini non riconosciuti negli ultimi 7 giorni:</p>
-        <table border="1" cellpadding="4" style="border-collapse:collapse;">
-            <tr><th>Dominio</th><th>Email</th></tr>
-            %s
-        </table>
-        <p><em>Per aggiungere un dominio al CRM: crea un contatto azienda con email @dominio
-        oppure aggiungi il dominio nel campo "Domini email extra".</em></p>
-        """ % '\n'.join(lines)
-
-        # Invia ad Antonio
-        try:
-            antonio = self.env['res.users'].search([
-                ('login', '=', 'antonio@casafolino.com')
-            ], limit=1)
-            if antonio and antonio.partner_id:
-                mail = self.env['mail.mail'].sudo().create({
-                    'subject': 'Digest Mittenti Fuori-CRM — Settimana %s' % fields.Date.today().isocalendar()[1],
-                    'body_html': body,
-                    'email_to': 'antonio@casafolino.com',
-                    'auto_delete': True,
-                })
-                mail.send()
-        except Exception as e:
-            _logger.warning("Digest fuori-CRM send error: %s", e)
 
     # ── OWL Client API ───────────────────────────────────────────────
 
@@ -2358,7 +1586,20 @@ class CasafolinoMailMessage(models.Model):
         if not msg.exists() or not msg.sender_email:
             return {'success': False}
         addr = msg.sender_email.strip().lower()
-        # [Brief #6.0] sender_policy creation removed — just discard emails
+        # Crea sender_policy auto_discard per questa email
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        existing = Policy.search([
+            ('pattern_type', '=', 'email_exact'),
+            ('pattern_value', '=', addr),
+        ], limit=1)
+        if not existing:
+            Policy.create({
+                'name': 'Block: %s' % addr,
+                'pattern_type': 'email_exact',
+                'pattern_value': addr,
+                'action': 'auto_discard',
+                'priority': 90,
+            })
         # Discard ALL emails from this sender (new + keep)
         to_discard = self.search([
             ('sender_email', '=ilike', addr),
@@ -3052,88 +2293,3 @@ class CasafolinoMailMessage(models.Model):
     def get_templates(self, *args, **kw):
         """Templates non più disponibili (vecchio stack rimosso)."""
         return []
-
-    # ── Outbound backfill migration ───────────────────────────────
-
-    @api.model
-    def migrate_outbound_match(self, dry_run=True, batch_size=100):
-        """Retroactive outbound triage: re-match mail with internal sender.
-
-        Finds messages where sender is internal but partner_id points to an
-        internal contact (or is missing), and applies _apply_outbound_triage().
-
-        Args:
-            dry_run: If True (default), only logs what would change. No writes.
-            batch_size: Records per commit batch.
-
-        Returns:
-            dict with counts: total, modified, skipped, errors.
-        """
-        internal_domains = self._get_internal_domains()
-        if not internal_domains:
-            _logger.warning("[migrate_outbound] No internal domains configured")
-            return {'total': 0, 'modified': 0, 'skipped': 0, 'errors': 0}
-
-        domain_conditions = [('sender_domain', 'in', internal_domains)]
-        candidates = self.sudo().search(domain_conditions, order='email_date desc')
-        total = len(candidates)
-        _logger.info(
-            "[migrate_outbound] Found %d candidates (dry_run=%s)", total, dry_run
-        )
-
-        modified = 0
-        skipped = 0
-        errors = 0
-
-        for i in range(0, total, batch_size):
-            batch = candidates[i:i + batch_size]
-            for msg in batch:
-                try:
-                    # Already correctly triaged
-                    if msg.direction == 'outbound' and msg.state in ('auto_keep', 'internal'):
-                        skipped += 1
-                        continue
-
-                    external = msg._extract_external_recipients(internal_domains)
-                    if not external:
-                        new_state = 'internal'
-                        new_partner = False
-                    else:
-                        partner = msg._find_partner_by_email(external[0])
-                        new_state = 'auto_keep' if partner else 'new'
-                        new_partner = partner
-
-                    if dry_run:
-                        _logger.info(
-                            "[migrate_outbound][DRY-RUN] msg=%d subject='%s' "
-                            "sender=%s → direction=outbound state=%s partner=%s",
-                            msg.id, (msg.subject or '')[:50],
-                            msg.sender_email, new_state,
-                            new_partner.name if new_partner else 'None'
-                        )
-                        modified += 1
-                    else:
-                        vals = {'direction': 'outbound', 'state': new_state}
-                        if new_partner:
-                            vals['partner_id'] = new_partner.id
-                            vals['match_type'] = 'exact'
-                        msg.write(vals)
-                        modified += 1
-
-                except Exception as e:
-                    errors += 1
-                    _logger.warning(
-                        "[migrate_outbound] Error msg %d: %s", msg.id, e
-                    )
-
-            if not dry_run and i + batch_size < total:
-                self.env.cr.commit()
-
-        result = {
-            'total': total,
-            'modified': modified,
-            'skipped': skipped,
-            'errors': errors,
-        }
-        _logger.info("[migrate_outbound] Done: %s", result)
-        return result

@@ -38,12 +38,6 @@ class CasafolinoMailTemplate(models.Model):
         ('generic', 'Generic'),
     ], default='generic')
 
-    default_attachment_policy = fields.Selection([
-        ('none', 'No automatic attachments'),
-        ('catalog', 'Catalogue only'),
-        ('catalog_price_list', 'Catalogue and price list'),
-    ], default='none', required=True)
-
     account_ids = fields.Many2many('casafolino.mail.account',
         'casafolino_mail_template_account_rel', 'template_id', 'account_id',
         help="Visible only when composing from these accounts. Empty = all accounts.")

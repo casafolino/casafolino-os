@@ -1,7 +1,6 @@
 /** @odoo-module **/
 import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
-import { CFComposeAIPanel } from "@casafolino_mail/compose_ai_panel/compose_ai_panel";
 
 // ── Constants (before class so static refs work) ────────
 
@@ -81,7 +80,6 @@ const COLOR_PALETTE = [
  */
 export class ComposeWizard extends Component {
     static template = "casafolino_mail.ComposeWizard";
-    static components = { CFComposeAIPanel };
     static props = ["*"];
     static FONT_SIZES = FONT_SIZES;
     static COLOR_PALETTE = COLOR_PALETTE;
@@ -122,26 +120,12 @@ export class ComposeWizard extends Component {
             showBgColorPicker: false,
             // Signature
             signatureHtml: this.props.prefilled?.signature_html || '',
-            // Snippet autocomplete
-            snippetVisible: false,
-            snippetResults: [],
-            snippetSelectedIndex: 0,
-            snippetQuery: '',
-            // Schedule send
-            showScheduleModal: false,
-            scheduledDateTime: '',
         });
 
         this._autosaveTimer = null;
         this._autosaveDebounce = null;
-        this._snippetDebounce = null;
 
         onMounted(() => {
-            // Snippet slash-command listener
-            if (this.editorRef.el) {
-                this.editorRef.el.addEventListener('keyup', this._onEditorKeyup.bind(this));
-                this.editorRef.el.addEventListener('keydown', this._onEditorKeydown.bind(this));
-            }
             if (this.editorRef.el && this.state.body) {
                 this.editorRef.el.innerHTML = this.state.body;
             }
@@ -500,27 +484,9 @@ export class ComposeWizard extends Component {
                 }
                 this._syncBody();
             }
-            this._appendTemplateAttachments(res.attachments || []);
             this.state.showTemplatePanel = false;
         } catch (e) {
             console.error('[mail v3] template apply error:', e);
-        }
-    }
-
-    _appendTemplateAttachments(attachments) {
-        for (const att of attachments) {
-            if (!att?.id) continue;
-            const alreadyAttached = this.state.attachments.some(existing => existing.id === att.id);
-            if (!alreadyAttached) {
-                this.state.attachments.push({
-                    id: att.id,
-                    name: att.name || 'Allegato',
-                    size: att.size || 0,
-                });
-            }
-        }
-        if (attachments.length) {
-            this._triggerAutosaveDebounce();
         }
     }
 
@@ -544,101 +510,6 @@ export class ComposeWizard extends Component {
 
     isTemplateDetectedLang(tpl) {
         return this.state.detectedLang && tpl.language === this.state.detectedLang;
-    }
-
-    // ── Snippet Autocomplete ───────────────────────────────
-
-    _getSlashQuery() {
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return null;
-        const range = sel.getRangeAt(0);
-        const node = range.startContainer;
-        if (node.nodeType !== Node.TEXT_NODE) return null;
-        const text = node.textContent.substring(0, range.startOffset);
-        const match = text.match(/(?:^|\s)(\/\S*)$/);
-        if (!match) return null;
-        return { query: match[1], node, offset: range.startOffset, matchStart: range.startOffset - match[1].length };
-    }
-
-    _onEditorKeydown(ev) {
-        if (!this.state.snippetVisible) return;
-        if (ev.key === 'ArrowDown') {
-            ev.preventDefault();
-            this.state.snippetSelectedIndex = Math.min(
-                this.state.snippetSelectedIndex + 1, this.state.snippetResults.length - 1);
-        } else if (ev.key === 'ArrowUp') {
-            ev.preventDefault();
-            this.state.snippetSelectedIndex = Math.max(this.state.snippetSelectedIndex - 1, 0);
-        } else if (ev.key === 'Enter' || ev.key === 'Tab') {
-            if (this.state.snippetResults.length > 0) {
-                ev.preventDefault();
-                this._applySnippet(this.state.snippetResults[this.state.snippetSelectedIndex]);
-            }
-        } else if (ev.key === 'Escape') {
-            ev.preventDefault();
-            this.state.snippetVisible = false;
-        }
-    }
-
-    _onEditorKeyup(ev) {
-        if (['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(ev.key)) return;
-        const slashData = this._getSlashQuery();
-        if (!slashData || slashData.query.length < 2) {
-            this.state.snippetVisible = false;
-            return;
-        }
-        this.state.snippetQuery = slashData.query;
-        if (this._snippetDebounce) clearTimeout(this._snippetDebounce);
-        this._snippetDebounce = setTimeout(() => this._fetchSnippets(slashData.query), 200);
-    }
-
-    async _fetchSnippets(query) {
-        try {
-            const res = await rpc('/cf/mail/v3/snippets/list', { code_prefix: query });
-            this.state.snippetResults = res.snippets || [];
-            this.state.snippetSelectedIndex = 0;
-            this.state.snippetVisible = this.state.snippetResults.length > 0;
-        } catch (e) {
-            this.state.snippetVisible = false;
-        }
-    }
-
-    async _applySnippet(snippet) {
-        this.state.snippetVisible = false;
-        try {
-            const res = await rpc('/cf/mail/v3/snippets/apply', {
-                snippet_id: snippet.id,
-                partner_id: this.props.prefilled?.partner_id || false,
-            });
-            if (res.success && res.body) {
-                // Replace /code with snippet body in editor
-                const slashData = this._getSlashQuery();
-                if (slashData) {
-                    const { node, matchStart, offset } = slashData;
-                    const before = node.textContent.substring(0, matchStart);
-                    const after = node.textContent.substring(offset);
-                    node.textContent = before + after;
-                    // Insert rendered HTML at cursor
-                    const sel = window.getSelection();
-                    const range = document.createRange();
-                    range.setStart(node, matchStart);
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                    document.execCommand('insertHTML', false, res.body);
-                }
-                if (res.subject && !this.state.subject) {
-                    this.state.subject = res.subject;
-                }
-                this._syncBody();
-            }
-        } catch (e) {
-            console.error('[mail v3] snippet apply error:', e);
-        }
-    }
-
-    onSnippetClick(snippet) {
-        this._applySnippet(snippet);
     }
 
     // ── Preview Modal ───────────────────────────────────────
@@ -682,83 +553,7 @@ export class ComposeWizard extends Component {
         this.state.sending = false;
     }
 
-    // ── Schedule Send ────────────────────────────────────────
-
-    openScheduleModal() {
-        // Default: tomorrow 9:00 local
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(9, 0, 0, 0);
-        const localISO = tomorrow.toISOString().slice(0, 16);
-        this.state.showScheduleModal = true;
-        this.state.scheduledDateTime = localISO;
-    }
-
-    closeScheduleModal() {
-        this.state.showScheduleModal = false;
-    }
-
-    onScheduleDateChange(ev) {
-        this.state.scheduledDateTime = ev.target.value;
-    }
-
-    async confirmSchedule() {
-        if (!this.state.to.trim()) {
-            this.state.error = 'Inserisci almeno un destinatario';
-            this.state.showScheduleModal = false;
-            return;
-        }
-        if (!this.state.scheduledDateTime) {
-            this.state.error = 'Seleziona data e ora';
-            return;
-        }
-        this.state.sending = true;
-        this.state.error = '';
-        await this.autosave();
-
-        try {
-            // Convert local datetime to UTC ISO string for server
-            const localDate = new Date(this.state.scheduledDateTime);
-            const utcISO = localDate.toISOString().replace('T', ' ').slice(0, 19);
-            const res = await rpc('/cf/mail/v3/draft/' + this.props.draftId + '/schedule', {
-                scheduled_send_at: utcISO,
-            });
-            if (res.success) {
-                this.state.showScheduleModal = false;
-                if (this.props.onSent) this.props.onSent();
-            } else {
-                this.state.error = res.error || 'Errore programmazione';
-            }
-        } catch (e) {
-            this.state.error = 'Errore: ' + (e.message || e);
-        }
-        this.state.sending = false;
-    }
-
     discard() {
         if (this.props.onClose) this.props.onClose();
-    }
-
-    // Brief #6.4 — AI assist panel callbacks
-    get aiPanelPartnerId() {
-        return this.props.prefilled?.partner_id || null;
-    }
-    get aiPanelThreadId() {
-        return this.props.prefilled?.thread_id || null;
-    }
-    getBodyForAI() {
-        return this.state.body || '';
-    }
-    applyAIBody(text) {
-        this.state.body = text;
-        if (this.editorRef.el) {
-            this.editorRef.el.innerHTML = text;
-        }
-    }
-    appendAIBody(text) {
-        this.state.body = (this.state.body || '') + text;
-        if (this.editorRef.el) {
-            this.editorRef.el.innerHTML = this.state.body;
-        }
     }
 }

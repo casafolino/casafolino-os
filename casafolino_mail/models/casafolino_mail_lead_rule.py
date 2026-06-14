@@ -220,10 +220,40 @@ class CasafolinoMailLeadRule(models.Model):
         return source
 
     def _get_excluded_partner_ids(self):
-        """Partner esclusi da auto-link: hanno decisione ignore."""
+        """Partner esclusi da auto-link: hanno decisione ignore o policy discard."""
         Decision = self.env['casafolino.mail.sender.decision'].sudo()
         ignored_decisions = Decision.search([
             ('active', '=', True),
             ('decision', 'in', ['ignored_sender', 'ignored_domain']),
         ])
-        return ignored_decisions.mapped('partner_id').ids
+        ignored_ids = ignored_decisions.mapped('partner_id').ids
+
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        discard_policies = Policy.search([
+            ('active', '=', True),
+            ('action', '=', 'auto_discard'),
+        ])
+
+        discard_ids = []
+        if discard_policies:
+            Partner = self.env['res.partner'].sudo()
+            for policy in discard_policies:
+                if policy.pattern_type == 'domain':
+                    val = policy.pattern_value.replace('*', '%')
+                    partners = Partner.search([('email', '=ilike', val)])
+                    discard_ids.extend(partners.ids)
+
+        return list(set(ignored_ids + discard_ids))
+
+    @api.model
+    def _cron_auto_link_leads(self):
+        """Cron 94: run all active lead rules."""
+        rules = self.search([('active', '=', True)])
+        total = 0
+        for rule in rules:
+            try:
+                total += rule._run_rule()
+            except Exception as e:
+                _logger.error("[lead rule] Error in rule '%s': %s", rule.name, e)
+        if total:
+            _logger.info("[lead rule] Cron total: %d leads created", total)

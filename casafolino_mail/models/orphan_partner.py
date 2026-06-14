@@ -116,3 +116,126 @@ class CasafolinoMailOrphanPartner(models.Model):
             'domain': [('partner_id', '=', self.partner_id.id),
                        ('state', 'in', ['keep', 'auto_keep'])],
         }
+
+    # ── Bulk Actions (F7 §3.6) ──────────────────────────────────────
+
+    def action_bulk_ignore_sender(self):
+        """Bulk: ignora tutti i mittenti selezionati (crea policy auto_discard)."""
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        Decision = self.env['casafolino.mail.sender.decision']
+        Msg = self.env['casafolino.mail.message'].sudo()
+
+        count = 0
+        for orphan in self:
+            email = (orphan.partner_email or '').lower().strip()
+            if not email:
+                continue
+
+            # Skip se decisione già esiste
+            existing = Decision.search([
+                ('partner_id', '=', orphan.partner_id.id),
+                ('active', '=', True),
+            ], limit=1)
+            if existing:
+                continue
+
+            # Crea policy
+            policy = Policy.create({
+                'name': 'Bulk ignora: %s' % email,
+                'pattern_type': 'email_exact',
+                'pattern_value': email,
+                'action': 'auto_discard',
+                'priority': 15,
+                'notes': 'Bulk triage il %s da %s' % (
+                    fields.Datetime.now().strftime('%Y-%m-%d'), self.env.user.name),
+            })
+
+            # Crea decisione
+            Decision.create({
+                'partner_id': orphan.partner_id.id,
+                'sender_email': email,
+                'decision': 'ignored_sender',
+                'sender_policy_id': policy.id,
+            })
+
+            # Retroactive apply
+            msgs = Msg.search([
+                ('sender_email', '=ilike', email),
+                ('state', 'in', ['new', 'review']),
+                ('direction', '=', 'inbound'),
+            ])
+            if msgs:
+                msgs.write({'state': 'auto_discard', 'policy_applied_id': policy.id})
+
+            count += 1
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Bulk Ignora',
+                'message': '%d mittenti ignorati.' % count,
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def action_bulk_keep(self):
+        """Bulk: tieni tutti i selezionati come contatti validi."""
+        Decision = self.env['casafolino.mail.sender.decision']
+
+        count = 0
+        for orphan in self:
+            existing = Decision.search([
+                ('partner_id', '=', orphan.partner_id.id),
+                ('active', '=', True),
+            ], limit=1)
+            if existing:
+                continue
+
+            Decision.create({
+                'partner_id': orphan.partner_id.id,
+                'sender_email': (orphan.partner_email or '').lower().strip(),
+                'decision': 'kept',
+                'notes': 'Bulk keep il %s da %s' % (
+                    fields.Datetime.now().strftime('%Y-%m-%d'), self.env.user.name),
+            })
+            count += 1
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Bulk Tieni',
+                'message': '%d contatti confermati validi.' % count,
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    @staticmethod
+    def _noreply_regex():
+        """Pattern per mittenti noreply/automated."""
+        import re
+        return re.compile(
+            r'^(noreply|no-reply|donotreply|mailer-daemon|postmaster|'
+            r'info|news|newsletter|automated|notification)@',
+            re.IGNORECASE)
+
+    def action_bulk_autoclean_noreply(self):
+        """Admin action: ignora tutti gli orfani con email noreply-like."""
+        pattern = self._noreply_regex()
+        noreply_orphans = self.search([]).filtered(
+            lambda o: o.partner_email and pattern.match(o.partner_email))
+        if noreply_orphans:
+            return noreply_orphans.action_bulk_ignore_sender()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Auto-pulizia',
+                'message': 'Nessun mittente noreply@ trovato.',
+                'type': 'warning',
+                'sticky': False,
+            },
+        }

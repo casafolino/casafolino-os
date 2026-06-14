@@ -3,7 +3,6 @@ import json
 import logging
 import re
 import requests
-from datetime import timezone
 from email.utils import parseaddr, parsedate_to_datetime
 
 from odoo import models, fields, api
@@ -17,25 +16,13 @@ class ResPartnerMailExt(models.Model):
 
     # Campi extra tipo HubSpot/Zoho
     cf_job_title = fields.Char('Ruolo / Posizione')
+    mv3_private_notes = fields.Text('Note private Mail V3')
 
     # ── Mail Hub tracking fields ──
     mail_tracked = fields.Boolean('Mail Tracked', default=False,
-        help='Se attivo, le mail in entrata/uscita vengono importate in Odoo. '
-             'Se disattivo, le mail restano solo in Gmail/IMAP.',
-        tracking=True)
-    mail_tracked_since = fields.Datetime('Tracking attivo dal', readonly=True,
-        help='Timestamp di attivazione mail_tracked. Usato per backfill.')
+        help='Se attivo, le nuove email vanno direttamente nel chatter')
     mail_first_sync_done = fields.Boolean('Storico email scaricato', default=False)
     mail_last_sync = fields.Datetime('Ultimo sync email')
-
-    # ── Brief #6.3 — AI accuracy ──
-    cf_ai_accuracy_score = fields.Float(
-        'AI accuracy', digits=(3, 2), default=0.5,
-        help='0.0=AI always wrong, 1.0=always correct. Default 0.5 (neutral).')
-    cf_ai_feedback_count = fields.Integer(
-        'Feedback totali', compute='_compute_cf_ai_feedback_count')
-    cf_ai_feedback_ids = fields.One2many(
-        'cf.mail.position.feedback', 'partner_id', string='Storico feedback AI')
     mail_message_count = fields.Integer('Email',
         compute='_compute_mail_message_count')
     partner_message_ids = fields.One2many(
@@ -134,13 +121,51 @@ class ResPartnerMailExt(models.Model):
         ('nome_azienda', 'Da nome azienda'), ('nome_persona', 'Da nome persona'),
     ], string='Arricchito da')
 
-    # ── Domini extra per whitelist ingestion ──
-    email_domains_extra = fields.Char(
-        'Domini email extra',
-        help='Domini aggiuntivi separati da virgola (es. aldi-sued.de, aldi.com). '
-             'Usati dal filtro ingestion per riconoscere email di questa azienda.',
-        groups='sales_team.group_sale_manager',
-    )
+    # ── Mail V3 fields ─────────────────────────────────────────────
+    mail_v3_thread_count = fields.Integer('Thread V3', compute='_compute_mail_v3_stats')
+    mail_v3_unread_count = fields.Integer('Non letti V3', compute='_compute_mail_v3_stats')
+    mail_v3_last_inbound_at = fields.Datetime('Ultima inbound V3',
+                                               compute='_compute_mail_v3_dates', store=True)
+    mail_v3_last_outbound_at = fields.Datetime('Ultima outbound V3',
+                                                compute='_compute_mail_v3_dates', store=True)
+    mail_v3_response_time_avg_hours = fields.Float('Tempo risposta medio (h)',
+                                                    compute='_compute_mail_v3_dates', store=True)
+    intelligence_id = fields.Many2one('casafolino.partner.intelligence',
+                                       string='Intelligence',
+                                       compute='_compute_intelligence_id', store=True)
+    hotness_score = fields.Integer('Hotness', related='intelligence_id.hotness_score',
+                                    store=True, index=True)
+
+    def _compute_mail_v3_stats(self):
+        for partner in self:
+            threads = self.env['casafolino.mail.thread'].search([
+                ('partner_ids', 'in', [partner.id]),
+            ])
+            partner.mail_v3_thread_count = len(threads)
+            partner.mail_v3_unread_count = sum(t.unread_count for t in threads)
+
+    @api.depends('partner_message_ids.email_date', 'partner_message_ids.direction')
+    def _compute_mail_v3_dates(self):
+        for partner in self:
+            msgs = self.env['casafolino.mail.message'].search([
+                ('partner_id', '=', partner.id),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ], order='email_date desc')
+
+            inbound = msgs.filtered(lambda m: m.direction == 'inbound')
+            outbound = msgs.filtered(lambda m: m.direction == 'outbound')
+
+            partner.mail_v3_last_inbound_at = inbound[0].email_date if inbound else False
+            partner.mail_v3_last_outbound_at = outbound[0].email_date if outbound else False
+            partner.mail_v3_response_time_avg_hours = 0.0
+
+    @api.depends()
+    def _compute_intelligence_id(self):
+        for partner in self:
+            intel = self.env['casafolino.partner.intelligence'].search([
+                ('partner_id', '=', partner.id),
+            ], limit=1)
+            partner.intelligence_id = intel.id if intel else False
 
     cf_department = fields.Char('Reparto')
     cf_linkedin = fields.Char('LinkedIn')
@@ -184,87 +209,6 @@ class ResPartnerMailExt(models.Model):
                 ('partner_id', '=', partner.id),
             ])
 
-    def _compute_cf_ai_feedback_count(self):
-        for p in self:
-            p.cf_ai_feedback_count = len(p.cf_ai_feedback_ids)
-
-    def _refresh_ai_accuracy_score(self):
-        """Brief #6.3 — Recalculate cf_ai_accuracy_score from feedback history."""
-        for partner in self:
-            valid = partner.cf_ai_feedback_ids.filtered(
-                lambda fb: fb.ai_suggested_project_id)
-            if len(valid) < 5:
-                partner.cf_ai_accuracy_score = 0.5
-                continue
-            correct = len(valid.filtered('was_correct'))
-            partner.cf_ai_accuracy_score = correct / len(valid)
-
-    @api.model
-    def _cron_refresh_ai_accuracy(self):
-        """Brief #6.3 — Daily cron to refresh accuracy for tracked partners."""
-        partners = self.search([
-            ('mail_tracked', '=', True),
-            ('cf_ai_feedback_ids', '!=', False),
-        ])
-        partners._refresh_ai_accuracy_score()
-        _logger.info("Brief #6.3: accuracy refreshed for %d partners", len(partners))
-
-    def write(self, vals):
-        """Brief #6.1 — On mail_tracked activation: set timestamp + schedule backfill."""
-        if 'mail_tracked' in vals and vals['mail_tracked']:
-            for partner in self:
-                if not partner.mail_tracked:
-                    vals.setdefault('mail_tracked_since', fields.Datetime.now())
-        res = super().write(vals)
-        if 'mail_tracked' in vals and vals['mail_tracked']:
-            for partner in self:
-                if partner.mail_tracked and partner.email:
-                    partner._schedule_backfill_history()
-        return res
-
-    def _schedule_backfill_history(self):
-        """Brief #6.1 — Schedule async backfill via one-shot cron.
-        Does NOT block UI — cron runs within 1 minute."""
-        self.ensure_one()
-        if not self.email:
-            return
-        _logger.info("Brief #6.1: scheduling backfill for partner id=%s email=%s", self.id, self.email)
-        model_id = self.env['ir.model']._get_id('res.partner')
-        server_action = self.env['ir.actions.server'].sudo().create({
-            'name': 'Backfill mail partner %s' % self.id,
-            'model_id': model_id,
-            'state': 'code',
-            'code': "env['res.partner'].browse(%d).action_sync_full_email_history()" % self.id,
-        })
-        self.env['ir.cron'].sudo().create({
-            'name': 'Backfill mail partner %s (%s)' % (self.id, self.name or ''),
-            'ir_actions_server_id': server_action.id,
-            'interval_number': 1,
-            'interval_type': 'minutes',
-            'numbercall': 1,
-            'active': True,
-            'nextcall': fields.Datetime.now(),
-            'user_id': self.env.ref('base.user_admin').id,
-        })
-
-    def action_enable_mail_tracking(self):
-        """Bulk action for list view: enable tracking for selected partners."""
-        without_email = self.filtered(lambda p: not p.email)
-        if without_email:
-            raise UserError(
-                "I seguenti partner non hanno email e non possono essere tracciati:\n%s"
-                % "\n".join(p.name for p in without_email[:10])
-            )
-        self.write({'mail_tracked': True})
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'message': 'Mail tracking attivato per %d partner.' % len(self),
-                'type': 'success',
-            },
-        }
-
     @api.depends('casafolino_mail_ids.email_date', 'casafolino_mail_ids.state')
     def _compute_casafolino_mail_stats(self):
         for partner in self:
@@ -293,26 +237,11 @@ class ResPartnerMailExt(models.Model):
         if not self.email:
             raise UserError("Il contatto non ha un indirizzo email.")
 
-        ICP = self.env['ir.config_parameter'].sudo()
-        batch_limit = int(
-            self.env.context.get('cf_history_limit')
-            or ICP.get_param('casafolino_mail.history_sync_batch_size', 80)
-            or 80
-        )
-        skip_attachments = self.env.context.get('cf_skip_mail_attachments', True)
-        skip_threads = self.env.context.get('cf_skip_thread_upsert', True)
-        skip_partner_chatter = self.env.context.get('cf_skip_partner_chatter', True)
-
         accounts = self.env['casafolino.mail.account'].search([('state', '=', 'connected')])
         email_lower = self.email.lower().strip()
         Message = self.env['casafolino.mail.message']
-        imported = 0
-        skipped = 0
-        errors = 0
 
         for account in accounts:
-            if batch_limit and imported >= batch_limit:
-                break
             imap = account._get_imap_connection()
             try:
                 folders = []
@@ -336,9 +265,7 @@ class ResPartnerMailExt(models.Model):
                     uid_list = msg_ids[0].split()
                     _logger.info("Storico %s in %s: %d email", email_lower, folder_name, len(uid_list))
 
-                    for uid in reversed(uid_list):
-                        if batch_limit and imported >= batch_limit:
-                            break
+                    for uid in uid_list:
                         uid_str = uid.decode()
 
                         # Scarica completo (header + body)
@@ -362,7 +289,6 @@ class ResPartnerMailExt(models.Model):
 
                         # Skip se già esiste
                         if Message.search([('message_id_rfc', '=', message_id), ('account_id', '=', account.id)], limit=1):
-                            skipped += 1
                             continue
 
                         # Parsa header
@@ -373,8 +299,6 @@ class ResPartnerMailExt(models.Model):
                         subject = account._decode_header_value(msg.get('Subject', ''))
                         try:
                             email_date = parsedate_to_datetime(msg.get('Date', ''))
-                            if email_date and email_date.tzinfo:
-                                email_date = email_date.astimezone(timezone.utc).replace(tzinfo=None)
                         except Exception:
                             email_date = fields.Datetime.now()
 
@@ -382,40 +306,31 @@ class ResPartnerMailExt(models.Model):
 
                         # Crea record staging con state=keep e body
                         try:
-                            with self.env.cr.savepoint():
-                                new_msg = Message.with_context(
-                                    skip_thread_upsert=skip_threads
-                                ).create({
-                                    'account_id': account.id,
-                                    'message_id_rfc': message_id,
-                                    'imap_uid': uid_str,
-                                    'imap_folder': folder_name,
-                                    'direction': actual_direction,
-                                    'sender_email': sender_email_addr,
-                                    'sender_name': sender_name,
-                                    'recipient_emails': account._extract_emails(msg.get('To', '')),
-                                    'cc_emails': account._extract_emails(msg.get('Cc', '')),
-                                    'subject': subject,
-                                    'email_date': email_date,
-                                    'state': 'keep',
-                                    'partner_id': self.id,
-                                    'match_type': 'exact',
-                                    'triage_user_id': self.env.user.id,
-                                    'triage_date': fields.Datetime.now(),
-                                })
+                            new_msg = Message.create({
+                                'account_id': account.id,
+                                'message_id_rfc': message_id,
+                                'imap_uid': uid_str,
+                                'imap_folder': folder_name,
+                                'direction': actual_direction,
+                                'sender_email': sender_email_addr,
+                                'sender_name': sender_name,
+                                'recipient_emails': account._extract_emails(msg.get('To', '')),
+                                'cc_emails': account._extract_emails(msg.get('Cc', '')),
+                                'subject': subject,
+                                'email_date': email_date,
+                                'state': 'keep',
+                                'partner_id': self.id,
+                                'match_type': 'exact',
+                                'triage_user_id': self.env.user.id,
+                                'triage_date': fields.Datetime.now(),
+                            })
 
-                                # Parsa body direttamente dal raw già disponibile.
-                                new_msg.with_context(
-                                    cf_skip_mail_attachments=skip_attachments
-                                )._parse_and_save_body(msg)
-                                if not skip_partner_chatter:
-                                    new_msg._create_partner_mail_message()
+                            # Parsa body direttamente dal raw già disponibile
+                            new_msg._parse_and_save_body(msg)
+                            new_msg._create_partner_mail_message()
 
-                            imported += 1
                             self.env.cr.commit()
                         except Exception as e:
-                            errors += 1
-                            self.env.cr.rollback()
                             _logger.warning("History sync error for %s uid %s: %s", email_lower, uid_str, e)
                             continue
 
@@ -430,34 +345,16 @@ class ResPartnerMailExt(models.Model):
             'mail_first_sync_done': True,
             'mail_last_sync': fields.Datetime.now(),
         })
-        self.env.cr.commit()
 
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Sync completato',
-                'message': '%s: %d importate, %d gia presenti, %d errori.' % (
-                    self.email, imported, skipped, errors),
+                'message': 'Storico email scaricato per %s' % self.email,
                 'type': 'success',
             },
         }
-
-    @api.model
-    def _cron_sync_tracked_contact_history(self, limit_contacts=5, limit_messages=80):
-        """Importa storico mail dei contatti tracciati a piccoli batch riprendibili."""
-        contacts = self.search([
-            ('mail_tracked', '=', True),
-            ('email', '!=', False),
-        ], order='mail_last_sync asc NULLS FIRST, id', limit=limit_contacts)
-        for contact in contacts:
-            contact.with_context(
-                cf_history_limit=limit_messages,
-                cf_skip_mail_attachments=True,
-                cf_skip_thread_upsert=True,
-                cf_skip_partner_chatter=True,
-            ).action_sync_full_email_history()
-        return True
 
     @api.depends('partner_message_ids', 'partner_message_ids.email_date')
     def _compute_last_contact(self):
@@ -591,7 +488,7 @@ class ResPartnerMailExt(models.Model):
             if serper_key:
                 # Determina paese del contatto
                 country_code = partner.country_id.code.upper() if partner.country_id else ''
-
+                
                 # Fonti per paese
                 sources_by_country = {
                     'IT': [
@@ -662,23 +559,23 @@ class ResPartnerMailExt(models.Model):
                         f"{company} site:linkedin.com/company",
                     ],
                 }
-
+                
                 # Fonti internazionali sempre incluse
                 universal_queries = [
                     f"{company} site:apollo.io",
                     f"{company} site:crunchbase.com",
                 ]
-
+                
                 # Seleziona queries per paese (default: ricerca generica)
                 queries = sources_by_country.get(country_code, [
                     f"{company} revenue employees headquarters",
                     f"{company} site:opencorporates.com",
                     f"{company} site:linkedin.com/company",
                 ])
-
+                
                 # Aggiungi sempre le universali
                 queries += universal_queries
-
+                
                 # Lancia max 4 query Serper
                 for q in queries[:4]:
                     try:
@@ -739,49 +636,32 @@ Per "note_agente" scrivi un breve riassunto (2-3 frasi) utile per il team commer
 """
 
             try:
-                data = {}
-                gemini_key = self.env['ir.config_parameter'].sudo().get_param('casafolino.gemini_api_key', '')
-                if gemini_key:
-                    try:
-                        system_instruction = "Sei un agente di business intelligence. Rispondi solo in formato JSON."
-                        # Use gemini-1.5-pro for complex structured extraction to ensure 100% correct JSON
-                        res_json = self.env['cf.gemini.client']._call_gemini_json(system_instruction, prompt, model="gemini-1.5-pro")
-                        if res_json:
-                            data = res_json
-                    except Exception as e:
-                        _logger.warning("007 Gemini enrichment fallito: %s. Procedo con fallback Groq.", e)
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "max_tokens": 4096,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    timeout=120,
+                )
+                if not response.ok:
+                    raise ValueError(f"API Error {response.status_code}: {response.text}")
+                response.raise_for_status()
+                _logger.info("007 raw response: %s", response.text[:2000])
+                result = response.json()
 
-                if not data:
-                    try:
-                        response = requests.post(
-                            "https://api.groq.com/openai/v1/chat/completions",
-                            headers={
-                                "Authorization": f"Bearer {api_key}",
-                                "Content-Type": "application/json",
-                            },
-                            json={
-                                "model": "llama-3.3-70b-versatile",
-                                "max_tokens": 4096,
-                                "messages": [{"role": "user", "content": prompt}],
-                            },
-                            timeout=120,
-                        )
-                        if not response.ok:
-                            raise ValueError(f"API Error {response.status_code}: {response.text}")
-                        response.raise_for_status()
-                        _logger.info("007 raw response: %s", response.text[:2000])
-                        result = response.json()
+                full_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+                json_match = re.search(r'\{[\s\S]*\}', full_text)
+                if not json_match:
+                    _logger.warning("007: no JSON found in response for partner %s", partner.id)
+                    continue
 
-                        full_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
-                        json_match = re.search(r'\{[\s\S]*\}', full_text)
-                        if not json_match:
-                            _logger.warning("007: no JSON found in response for partner %s", partner.id)
-                            continue
-
-                        data = json.loads(json_match.group())
-                    except Exception as e:
-                        _logger.error("007 Groq fallback fallito per partner %s: %s", partner.id, e)
-                        continue
+                data = json.loads(json_match.group())
 
                 # Determine enrichment source
                 enrich_from = 'nome_azienda'

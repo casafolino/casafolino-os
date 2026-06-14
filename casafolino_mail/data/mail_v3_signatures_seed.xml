@@ -1,0 +1,55 @@
+<odoo>
+  <data noupdate="1">
+    <!-- Antonio -->
+    <record id="signature_antonio" model="casafolino.mail.signature">
+      <field name="name">Antonio Folino - Default</field>
+      <field name="account_id" search="[('email_address', '=', 'antonio@casafolino.com')]"/>
+      <field name="is_default" eval="True"/>
+      <field name="include_in_reply" eval="True"/>
+      <field name="include_in_forward" eval="True"/>
+      <field name="body_html"><![CDATA[
+        <div style="font-family: Arial, sans-serif; font-size: 13px; color: #333;">
+          <p style="margin:0;"><strong>Antonio Folino</strong></p>
+          <p style="margin:0; color:#666;">CEO &mdash; CasaFolino Srl SB</p>
+          <p style="margin:8px 0 0;">antonio@casafolino.com</p>
+          <p style="margin:4px 0 0;"><a href="https://casafolino.com" style="color:#5A6E3A;">casafolino.com</a></p>
+          <p style="margin:8px 0 0; font-size:11px; color:#999;">Lamezia Terme (CZ) - Artigiani del gusto dal 1962</p>
+        </div>
+      ]]></field>
+    </record>
+    <!-- Josefina -->
+    <record id="signature_josefina" model="casafolino.mail.signature">
+      <field name="name">Josefina Lazzaro - Default</field>
+      <field name="account_id" search="[('email_address', '=', 'josefina.lazzaro@casafolino.com')]"/>
+      <field name="is_default" eval="True"/>
+      <field name="include_in_reply" eval="True"/>
+      <field name="include_in_forward" eval="True"/>
+      <field name="body_html"><![CDATA[
+        <div style="font-family: Arial, sans-serif; font-size: 13px; color: #333;">
+          <p style="margin:0;"><strong>Josefina Lazzaro</strong></p>
+          <p style="margin:0; color:#666;">Operations Manager &mdash; CasaFolino Srl SB</p>
+          <p style="margin:8px 0 0;">josefina.lazzaro@casafolino.com</p>
+          <p style="margin:4px 0 0;"><a href="https://casafolino.com" style="color:#5A6E3A;">casafolino.com</a></p>
+          <p style="margin:8px 0 0; font-size:11px; color:#999;">Lamezia Terme (CZ) - Artigiani del gusto dal 1962</p>
+        </div>
+      ]]></field>
+    </record>
+    <!-- Martina -->
+    <record id="signature_martina" model="casafolino.mail.signature">
+      <field name="name">Martina Sinopoli - Default</field>
+      <field name="account_id" search="[('email_address', '=', 'martina.sinopoli@casafolino.com')]"/>
+      <field name="is_default" eval="True"/>
+      <field name="include_in_reply" eval="True"/>
+      <field name="include_in_forward" eval="True"/>
+      <field name="body_html"><![CDATA[
+        <div style="font-family: Arial, sans-serif; font-size: 13px; color: #333;">
+          <p style="margin:0;"><strong>Martina Sinopoli</strong></p>
+          <p style="margin:0; color:#666;">Export Sales &mdash; CasaFolino Srl SB</p>
+          <p style="margin:8px 0 0;">martina.sinopoli@casafolino.com</p>
+          <p style="margin:4px 0 0;"><a href="https://casafolino.com" style="color:#5A6E3A;">casafolino.com</a></p>
+          <p style="margin:8px 0 0; font-size:11px; color:#999;">Lamezia Terme (CZ) - Artigiani del gusto dal 1962</p>
+        </div>
+      ]]></field>
+    </record>
+  </data>
+</odoo>

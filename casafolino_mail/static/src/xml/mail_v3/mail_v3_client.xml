@@ -3,50 +3,18 @@
   <t t-name="casafolino_mail.MailV3Client">
     <div t-att-class="'mv3-client' + (state.mobileView ? ' mv3-client--mobile-view-' + state.mobileView : '')"
          t-att-data-theme="state.darkMode ? 'dark' : 'light'">
-      <header class="mv3-cockpit-top">
-        <div class="mv3-cockpit-brand">
-          <span class="mv3-cockpit-icon"><i class="fa fa-envelope-o"/></span>
-          <div>
-            <strong>Mail Inbox V2</strong>
-            <span>Triage, composer, CRM, pipeline e dossier in Odoo</span>
-          </div>
-        </div>
-        <nav class="mv3-cockpit-tabs">
-          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'triage' ? 'active' : '')" t-on-click="() => this.openTopView('triage')">Inbox Triage</button>
-          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'keep' ? 'active' : '')" t-on-click="() => this.openTopView('keep')">Keep CRM</button>
-          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'review' ? 'active' : '')" t-on-click="() => this.openTopView('review')">Review</button>
-          <button class="mv3-cockpit-tab" t-on-click="() => this.openTopView('composer')">Composer</button>
-          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'crm' ? 'active' : '')" t-on-click="() => this.openTopView('crm')">CRM/Pipeline</button>
-          <button t-att-class="'mv3-cockpit-tab ' + (state.topView === 'dossier' ? 'active' : '')" t-on-click="() => this.openTopView('dossier')">Dossier</button>
-          <button class="mv3-cockpit-tab" t-on-click="() => this.openTopView('config')">Config</button>
-        </nav>
-        <button class="mv3-cockpit-primary" t-on-click="openComposeNew"><i class="fa fa-pencil"/> Scrivi</button>
-      </header>
+      <!-- Sidebar Left compact -->
+      <div class="mv3-client__sidebar-left">
+        <SidebarLeft
+          accounts="state.accounts"
+          onAccountChange.bind="onAccountChange"
+          onFolderChange.bind="onFolderChange"
+          onComposeNew.bind="openComposeNew"
+          onOpenSettings.bind="openSettings"/>
+      </div>
 
-      <main class="mv3-cockpit-shell" t-if="state.topView === 'triage' or state.topView === 'keep' or state.topView === 'review'">
-        <aside class="mv3-cockpit-sidebar">
-          <SyncBadge/>
-          <div class="mv3-cockpit-metrics">
-            <div><strong t-out="state.totalThreads || 0"/><span>conversazioni</span></div>
-            <div><strong t-out="state.notifUnreadCount || 0"/><span>non lette</span></div>
-            <div><strong t-out="state.accounts.length || 0"/><span>account</span></div>
-          </div>
-          <div class="mv3-cockpit-filter-title">Code operative</div>
-          <button class="mv3-cockpit-filter active" t-on-click="() => this.openTopView('triage')"><span><i class="fa fa-inbox"/> Tutte le email</span><strong t-out="state.totalThreads || 0"/></button>
-          <button class="mv3-cockpit-filter" t-on-click="() => this.openTopView('review')"><span><i class="fa fa-warning"/> Da decidere</span><strong>review</strong></button>
-          <button class="mv3-cockpit-filter" t-on-click="() => this.onFolderChange('sent')"><span><i class="fa fa-paper-plane"/> Inviate</span></button>
-          <button class="mv3-cockpit-filter" t-on-click="() => this.onFolderChange('starred')"><span><i class="fa fa-star"/> Tenute</span></button>
-          <button class="mv3-cockpit-filter" t-on-click="() => this.onFolderChange('snoozed')"><span><i class="fa fa-clock-o"/> Follow-up</span></button>
-          <div class="mv3-cockpit-filter-title">Account</div>
-          <t t-foreach="state.accounts" t-as="acc" t-key="acc.id">
-            <button class="mv3-cockpit-account" t-on-click="() => this.onAccountChange([acc.id])">
-              <span class="mv3-account-dot"/>
-              <span><strong t-out="acc.name"/><small t-out="acc.email"/></span>
-            </button>
-          </t>
-        </aside>
-
-        <section class="mv3-client__thread-list">
+      <!-- Thread List with search -->
+      <div class="mv3-client__thread-list">
         <div class="mv3-search">
           <div class="mv3-search__wrapper">
             <i class="fa fa-search mv3-search__icon"/>
@@ -69,48 +37,25 @@
           </div>
         </div>
 
-        <!-- V15: Mass action toolbar -->
-        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-mass-toolbar">
-          <span class="mv3-mass-toolbar__count">
+        <!-- Bulk actions toolbar -->
+        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-bulk-toolbar">
+          <span class="mv3-bulk-toolbar__count">
             <t t-out="state.selectedThreadIds.length"/> selezionati
           </span>
-          <button class="mv3-mass-toolbar__btn" t-on-click="massMarkRead" title="Segna come letti">
-            <i class="fa fa-envelope-open-o"/> Letti
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('mark_read')" title="Letti">
+            <i class="fa fa-envelope-open-o"/>
           </button>
-          <button class="mv3-mass-toolbar__btn" t-on-click="massArchive" title="Archivia">
-            <i class="fa fa-archive"/> Archivia
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('mark_unread')" title="Non letti">
+            <i class="fa fa-envelope"/>
           </button>
-          <button class="mv3-mass-toolbar__btn" t-on-click="massTrash" title="Cestina">
-            <i class="fa fa-trash"/> Cestina
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('archive')" title="Archivia">
+            <i class="fa fa-archive"/>
           </button>
-          <!-- Move to folder dropdown -->
-          <div class="mv3-mass-toolbar__dropdown">
-            <button class="mv3-mass-toolbar__btn" t-on-click="toggleMoveDropdown" title="Sposta in cartella">
-              <i class="fa fa-folder-o"/> Sposta in
-              <i class="fa fa-caret-down ms-1"/>
-            </button>
-            <div t-if="state.moveDropdownVisible" class="mv3-mass-toolbar__dropdown-menu">
-              <t t-if="state.moveFolders and state.moveFolders.length > 0">
-                <t t-foreach="state.moveFolders" t-as="mf" t-key="mf.id">
-                  <button class="mv3-mass-toolbar__dropdown-item"
-                          t-on-click="() => this.massMove(mf.id, mf.name)">
-                    <span t-out="mf.icon"/> <t t-out="mf.name"/>
-                    <span t-if="mf.account_name" class="text-muted ms-1 small">(<t t-out="mf.account_name"/>)</span>
-                  </button>
-                </t>
-              </t>
-              <div t-else="" class="mv3-mass-toolbar__dropdown-empty">Nessuna cartella</div>
-            </div>
-          </div>
-          <button class="mv3-mass-toolbar__btn" t-on-click="massDismissSenders" title="Dismetti mittenti">
-            <i class="fa fa-ban"/> Dismetti
+          <button class="mv3-bulk-toolbar__btn" t-on-click="() => this.bulkAction('delete')" title="Elimina">
+            <i class="fa fa-trash"/>
           </button>
-          <!-- Permanent delete only in trash -->
-          <button t-if="state.isTrashView" class="mv3-mass-toolbar__btn mv3-mass-toolbar__btn--danger"
-                  t-on-click="massPermanentDelete" title="Elimina definitivamente">
-            <i class="fa fa-times-circle"/> Elimina definitivamente
-          </button>
-          <button class="mv3-mass-toolbar__btn mv3-mass-toolbar__btn--close" t-on-click="clearBulkSelection" title="Deseleziona">
+          <button class="mv3-bulk-toolbar__btn" t-on-click="openBulkSnooze" title="Snooze">💤</button>
+          <button class="mv3-bulk-toolbar__btn" t-on-click="clearBulkSelection" title="Deseleziona">
             <i class="fa fa-times"/>
           </button>
         </div>
@@ -118,146 +63,61 @@
         <!-- Search results -->
         <div t-if="state.searchResults" class="mv3-search-results">
           <div class="mv3-search-results__header">
-            <label class="mv3-search-results__select-all">
-              <input type="checkbox"
-                     t-att-checked="state.searchAllSelected"
-                     t-on-change="toggleSearchSelectAll"/>
-            </label>
             <t t-out="state.searchResults.length"/> risultati
           </div>
           <t t-foreach="state.searchResults" t-as="sr" t-key="sr.id">
-            <div t-att-class="'mv3-search-results__item' + (state.selectedThreadIds.indexOf(sr.thread_id) >= 0 ? ' mv3-search-results__item--selected' : '')"
+            <div class="mv3-search-results__item"
                  t-on-click="() => this.onSearchResultClick(sr.thread_id)">
-              <label class="mv3-search-results__checkbox" t-on-click.stop="">
-                <input type="checkbox"
-                       t-att-checked="state.selectedThreadIds.indexOf(sr.thread_id) >= 0"
-                       t-on-change="() => this.toggleSearchThreadSelect(sr.thread_id)"/>
-              </label>
-              <div class="mv3-search-results__content">
-                <div class="mv3-search-results__subject" t-out="sr.subject"/>
-                <div class="mv3-search-results__meta">
-                  <span t-out="sr.sender_email"/>
-                  <span t-out="sr.email_date"/>
-                </div>
+              <div class="mv3-search-results__subject" t-out="sr.subject"/>
+              <div class="mv3-search-results__meta">
+                <span t-out="sr.sender_email"/>
+                <span t-out="sr.email_date"/>
               </div>
             </div>
           </t>
         </div>
 
         <!-- Thread list -->
-        <div t-if="!state.searchResults" class="mv3-thread-list-host">
+        <div t-if="!state.searchResults">
           <ThreadList
             threads="state.threads"
             accounts="state.accounts"
             loading="state.loading.threads"
-            loadingMore="state.loading.threadsMore"
-            hasMore="state.hasMoreThreads"
-            totalThreads="state.totalThreads"
             selectedThreadId="state.selectedThreadId"
             selectedThreadIds="state.selectedThreadIds"
             bulkMode="state.bulkMode"
-            allSelected="state.allSelected"
             onSelect.bind="selectThread"
-            onToggleSelect.bind="toggleThreadSelect"
-            onSelectAll.bind="toggleSelectAll"
-            onService.bind="onThreadService"
-            onLoadMore.bind="loadMoreThreads"/>
+            onToggleSelect.bind="toggleThreadSelect"/>
         </div>
-      </section>
+      </div>
 
-      <section class="mv3-client__main-area">
-        <!-- Reading Pane -->
-        <div class="mv3-client__reading-pane">
-          <!-- Mobile back button -->
-          <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
-            <i class="fa fa-arrow-left"/> Torna alla lista
-          </div>
-          <!-- V12.6: Sender Decision Popup (above reading pane) -->
-          <SenderDecisionPopup
-            t-if="state.senderDecisionVisible"
-            senderEmail="state.senderDecisionEmail"
-            senderName="state.senderDecisionName"
-            onDecision.bind="onSenderDecision"
-            onDismiss.bind="onSenderDismiss"
-            onCreateLead.bind="onSenderCreateLead"
-            onCreateProject.bind="onSenderCreateProject"/>
-          <div t-att-class="'mv3-reading-pane-wrapper' + (state.senderDecisionVisible ? ' mv3-reading-pane-wrapper--dimmed' : '')">
-            <ReadingPane
-              messages="state.messages"
-              loading="state.loading.messages"
-              onAction.bind="onMessageAction"
-              onReply.bind="openReply"
-              onReplyAll.bind="openReplyAll"
-              onForward.bind="openForward"
-              onAiReply.bind="openReplyAssistant"
-              onSnooze.bind="openSnoozePopup"
-              onCreateLead.bind="onSenderCreateLead"
-              onCreateProject.bind="onSenderCreateProject"
-              onOpenService.bind="openServiceAction"
-              onDismissSender.bind="onQuickDismissSender"
-              onDeleteEmail.bind="onDeleteEmail"/>
-          </div>
+      <!-- Reading Pane -->
+      <div class="mv3-client__reading-pane">
+        <!-- Mobile back button -->
+        <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
+          <i class="fa fa-arrow-left"/> Torna alla lista
         </div>
+        <ReadingPane
+          messages="state.messages"
+          loading="state.loading.messages"
+          onAction.bind="onMessageAction"
+          onReply.bind="openReply"
+          onReplyAll.bind="openReplyAll"
+          onForward.bind="openForward"
+          onAiReply.bind="openReplyAssistant"
+          onSnooze.bind="openSnoozePopup"/>
+      </div>
 
-        <!-- V12.4: Insight 360 Tab Bar (replaces old accordion) -->
-        <div class="mv3-client__bottom-360"
-             t-if="state.selectedThreadId">
-          <MailV3Insight360TabBar
-            partnerId="state.selectedPartner"
-            threadId="state.selectedThreadId"
-            senderEmail="state.senderEmail"
-            accountId="state.selectedAccountIds and state.selectedAccountIds[0] or 0"
-            onPartnerCreated.bind="onPartnerCreated"/>
-        </div>
-      </section>
-      </main>
-
-      <main t-if="state.topView === 'crm'" class="mv3-cockpit-board">
-        <section class="mv3-board-hero">
-          <div><span>CRM/Pipeline</span><h2>Opportunita nate dalle email</h2></div>
-          <div class="mv3-board-actions">
-            <button class="mv3-cockpit-secondary" t-on-click="() => this.openServiceAction('create_lead')"><i class="fa fa-plus"/> Crea lead</button>
-            <button class="mv3-cockpit-primary" t-on-click="() => this.openServiceAction('pipeline')"><i class="fa fa-bullseye"/> Apri pipeline</button>
-            <button class="mv3-cockpit-primary" t-on-click="() => this.openTopView('triage')"><i class="fa fa-inbox"/> Torna alla inbox</button>
-          </div>
-        </section>
-        <section class="mv3-pipeline-board">
-          <div class="mv3-pipeline-col"><header>Da qualificare <strong>3</strong></header><article t-on-click="() => this.openServiceAction('pipeline')"><strong t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().subject) || 'Seleziona una mail'"/><span>Contatto, azienda e dossier dalla conversazione.</span></article></div>
-          <div class="mv3-pipeline-col"><header>Qualifica <strong>5</strong></header><article t-on-click="() => this.openServiceAction('contact')"><strong>Buyer / Export</strong><span>Attivita e ultimo follow-up collegati.</span></article></div>
-          <div class="mv3-pipeline-col"><header>Offerta <strong>2</strong></header><article t-on-click="openReplyFromSelected"><strong>Preventivo da inviare</strong><span>Apri composer da Odoo.</span></article></div>
-          <div class="mv3-pipeline-col"><header>Follow-up <strong>4</strong></header><article t-on-click="() => this.openServiceAction('activity')"><strong>Nessuna risposta</strong><span>Snooze e attivita silenziose.</span></article></div>
-        </section>
-      </main>
-
-      <main t-if="state.topView === 'dossier'" class="mv3-cockpit-board">
-        <section class="mv3-board-hero mv3-board-hero--dossier">
-          <div><span>Dossier</span><h2 t-out="(this.getSelectedThread() &amp;&amp; this.getSelectedThread().main_participant) || 'Fascicolo operativo'"/></div>
-          <div class="mv3-board-actions">
-            <button class="mv3-cockpit-secondary" t-on-click="() => this.openServiceAction('pipeline')"><i class="fa fa-bullseye"/> Pipeline</button>
-            <button class="mv3-cockpit-primary" t-on-click="() => this.openServiceAction('dossier')"><i class="fa fa-folder-open"/> Apri dossier</button>
-            <button class="mv3-cockpit-primary" t-on-click="openReplyFromSelected"><i class="fa fa-reply"/> Rispondi in Odoo</button>
-          </div>
-        </section>
-        <section class="mv3-dossier-grid">
-          <article t-on-click="() => this.openServiceAction('dossier')"><label>Mail collegate</label><strong t-out="state.messages.length || 0"/><span>Conversazione, allegati e storico.</span></article>
-          <article t-on-click="() => this.openServiceAction('pipeline')"><label>Fase pipeline</label><strong>Da qualificare</strong><span>Aggiorna lead e prossima attivita.</span></article>
-          <article t-on-click="() => this.openServiceAction('dossier')"><label>Documenti</label><strong>Cataloghi / Offerte</strong><span>Collega file dal messaggio o dal CRM.</span></article>
-          <article><label>Azioni</label><button t-on-click="openReplyFromSelected">Composer</button><button t-on-click="() => this.openServiceAction('pipeline')">Pipeline</button><button t-on-click="() => this.openServiceAction('activity')">Attivita</button></article>
-        </section>
-      </main>
-
-      <!-- Compose Wizard Overlay (F10) -->
-      <div t-if="state.composeVisible" class="mv3-compose-overlay">
-        <div class="mv3-compose-overlay__backdrop" t-on-click="onComposeClose"/>
-        <div class="mv3-compose-overlay__panel">
-          <ComposeWizard
-            draftId="state.composeDraftId"
-            prefilled="state.composePrefilled"
-            mode="state.composeMode"
-            accountId="state.composeAccountId"
-            onSent.bind="onComposeSent"
-            onClose.bind="onComposeClose"/>
-        </div>
+      <!-- Sidebar 360 -->
+      <div class="mv3-client__sidebar-360" t-if="state.sidebar360Data">
+        <Sidebar360
+          data="state.sidebar360Data"
+          loading="state.loading.sidebar"
+          onQuickAction.bind="onSidebarQuickAction"
+          onDismissNba.bind="dismissNba"
+          onSaveNotes.bind="saveNotes"
+          onFeedback.bind="logFeedback"
+          onDoAction.bind="doAction"/>
       </div>
 
       <!-- Reply Assistant Modal -->
@@ -308,47 +168,6 @@
         <button class="mv3-undo-toast__btn" t-on-click="undoSend">
           Annulla (<t t-out="state.undoCountdown"/>s)
         </button>
-      </div>
-
-      <!-- V12.6: Dismiss Undo Toast -->
-      <div t-if="state.dismissUndoToast" class="mv3-dismiss-undo-toast">
-        <span>Mittente <strong t-out="state.dismissUndoEmail"/> dismesso.</span>
-        <button class="mv3-dismiss-undo-toast__btn" t-on-click="cancelDismiss">
-          Annulla (<t t-out="state.dismissUndoCountdown"/>s)
-        </button>
-      </div>
-
-      <!-- V15: Mass Action Undo Toast -->
-      <div t-if="state.massUndoToast" class="mv3-mass-undo-toast">
-        <span t-out="state.massUndoMessage"/>
-        <button class="mv3-mass-undo-toast__btn" t-on-click="massUndoAction">
-          Annulla (<t t-out="state.massUndoCountdown"/>s)
-        </button>
-      </div>
-
-      <!-- V15: Permanent Delete Confirm -->
-      <div t-if="state.permanentDeleteConfirm" class="mv3-modal-overlay" t-on-click="cancelPermanentDelete">
-        <div class="mv3-confirm-dialog" t-on-click.stop="">
-          <div class="mv3-confirm-dialog__body">
-            <i class="fa fa-exclamation-triangle text-danger me-2"/>
-            Sei sicuro? Questa azione è <strong>irreversibile</strong>.<br/>
-            <t t-out="state.selectedThreadIds.length"/> conversazioni verranno eliminate definitivamente.
-          </div>
-          <div class="mv3-confirm-dialog__footer">
-            <button class="btn btn-sm btn-secondary" t-on-click="cancelPermanentDelete">Annulla</button>
-            <button class="btn btn-sm btn-danger" t-on-click="confirmPermanentDelete">Elimina definitivamente</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- V12.6: Dismissed Senders Panel -->
-      <div t-if="state.dismissedSendersVisible" class="mv3-modal-overlay" t-on-click="closeDismissedSenders">
-        <div class="mv3-dismissed-panel" t-on-click.stop="">
-          <DismissedSenders onRestored.bind="onDismissedRestored"/>
-          <button class="btn btn-sm btn-link mv3-dismissed-panel__close" t-on-click="closeDismissedSenders">
-            <i class="fa fa-times"/>
-          </button>
-        </div>
       </div>
 
       <!-- Shortcuts Help Modal -->
