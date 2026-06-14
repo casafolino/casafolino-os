@@ -12,8 +12,6 @@ URLS=(
   "erp.casafolino.com|/it/"
   "company.casafolino.com|/it/"
   "b2b.casafolino.com|/b2b"
-  "erp.casafolino.com|/voice_ai/config?db=${DB}"
-  "erp.casafolino.com|/voice_ai/outbound/next?db=${DB}"
 )
 
 echo "==> Attendo Odoo su ${BASE_URL}..."
