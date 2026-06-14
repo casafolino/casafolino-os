@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         1) SEARCH VIEWS
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_message_search" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.search</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <search string="Cerca Email">
+                <field name="subject"/>
+                <field name="sender_email"/>
+                <field name="sender_name"/>
+                <field name="sender_domain"/>
+                <field name="partner_id"/>
+                <filter name="state_new" string="Da valutare" domain="[('state', 'in', ['new', 'review'])]"/>
+                <filter name="state_keep" string="Tenute" domain="[('state', 'in', ['keep', 'auto_keep'])]"/>
+                <filter name="state_discard" string="Scartate" domain="[('state', 'in', ['discard', 'auto_discard'])]"/>
+                <separator/>
+                <filter name="unread" string="Non letti" domain="[('is_read', '=', False)]"/>
+                <filter name="read" string="Letti" domain="[('is_read', '=', True)]"/>
+                <filter name="important" string="Importanti" domain="[('is_important', '=', True)]"/>
+                <separator/>
+                <filter name="assigned_to_me" string="Assegnate a me" domain="[('assigned_user_ids', 'in', uid)]"/>
+                <filter name="no_partner" string="Senza contatto" domain="[('partner_id', '=', False)]"/>
+                <filter name="inbound" string="Ricevute" domain="[('direction', '=', 'inbound')]"/>
+                <filter name="outbound" string="Inviate" domain="[('direction', '=', 'outbound')]"/>
+                <separator/>
+                <filter name="fetch_pending" string="Fetch in coda" domain="[('fetch_state', '=', 'pending')]"/>
+                <filter name="fetch_error" string="Fetch errore" domain="[('fetch_state', '=', 'error')]"/>
+                <separator/>
+                <filter name="ai_urgent" string="Urgenti" domain="[('ai_urgency', '=', 'high')]"/>
+                <filter name="ai_action" string="Action Required" domain="[('ai_action_required', '=', True)]"/>
+                <filter name="ai_negative" string="Sentiment negativo" domain="[('ai_sentiment', '=', 'negative')]"/>
+                <separator/>
+                <filter name="intent_quote" string="Richiesta preventivo" domain="[('intent_detected', '=', 'request_quote')]"/>
+                <filter name="intent_order" string="Ordine" domain="[('intent_detected', '=', 'order')]"/>
+                <filter name="intent_complaint" string="Reclamo" domain="[('intent_detected', '=', 'complaint')]"/>
+                <filter name="intent_followup" string="Follow-up" domain="[('intent_detected', '=', 'follow_up')]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="group_domain" string="Dominio" context="{'group_by': 'sender_domain'}"/>
+                    <filter name="group_partner" string="Contatto" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_account" string="Casella" context="{'group_by': 'account_id'}"/>
+                    <filter name="group_state" string="Stato" context="{'group_by': 'state'}"/>
+                    <filter name="group_date" string="Data" context="{'group_by': 'email_date:day'}"/>
+                    <filter name="group_ai_category" string="AI Categoria" context="{'group_by': 'ai_category'}"/>
+                    <filter name="group_intent" string="Intent" context="{'group_by': 'intent_detected'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         2) LIST VIEWS
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_account_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.account.list</field>
+        <field name="model">casafolino.mail.account</field>
+        <field name="arch" type="xml">
+            <list string="Account IMAP">
+                <field name="name"/>
+                <field name="email_address"/>
+                <field name="responsible_user_id"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"/>
+                <field name="last_fetch_datetime"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_message_list" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.list</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <list string="Email Triage"
+                  decoration-muted="state in ('discard', 'auto_discard')"
+                  decoration-success="state in ('keep', 'auto_keep')"
+                  decoration-info="state in ('new', 'review')"
+                  decoration-bf="not is_read"
+                  multi_edit="1">
+                <field name="is_important" string=" " widget="boolean_favorite"/>
+                <field name="email_date" string="Data"/>
+                <field name="direction" string="Dir"/>
+                <field name="sender_name" string="Da"/>
+                <field name="sender_email" string="Email"/>
+                <field name="sender_domain" string="Dominio"/>
+                <field name="subject" string="Oggetto"/>
+                <field name="snippet" string="Preview" optional="show"/>
+                <field name="partner_id" string="Contatto"/>
+                <field name="match_type" string="Match" optional="hide"/>
+                <field name="account_id" string="Casella"/>
+                <field name="assigned_user_ids" string="Assegnato a" widget="many2many_tags" optional="show"/>
+                <field name="ai_category" string="AI Cat." widget="badge" optional="show"
+                       decoration-info="ai_category in ('commerciale', 'fornitore')"
+                       decoration-success="ai_category == 'admin'"
+                       decoration-warning="ai_category in ('newsletter', 'personale')"
+                       decoration-danger="ai_category == 'spam'"
+                       decoration-muted="ai_category == 'interno'"/>
+                <field name="ai_sentiment" string="AI Sent." widget="badge" optional="show"
+                       decoration-success="ai_sentiment == 'positive'"
+                       decoration-warning="ai_sentiment == 'neutral'"
+                       decoration-danger="ai_sentiment == 'negative'"/>
+                <field name="intent_detected" string="Intent" widget="badge" optional="show"
+                       decoration-danger="intent_detected == 'complaint'"
+                       decoration-success="intent_detected in ('order', 'request_quote')"
+                       decoration-info="intent_detected in ('info_request', 'meeting_request')"
+                       decoration-warning="intent_detected in ('follow_up', 'payment')"/>
+                <field name="state" string="Stato" widget="badge"
+                       decoration-info="state in ('new', 'review')"
+                       decoration-success="state in ('keep', 'auto_keep')"
+                       decoration-danger="state in ('discard', 'auto_discard')"/>
+                <field name="fetch_state" string="Fetch" widget="badge" optional="show"
+                       decoration-info="fetch_state == 'pending'"
+                       decoration-success="fetch_state == 'done'"
+                       decoration-danger="fetch_state == 'error'"/>
+                <field name="is_read" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         3) FORM VIEWS
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="casafolino_mail_account_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.account.form</field>
+        <field name="model">casafolino.mail.account</field>
+        <field name="arch" type="xml">
+            <form string="Account Email IMAP">
+                <div class="o_row mb-3">
+                    <button name="action_test_connection" string="Test Connessione"
+                            type="object" class="btn btn-primary"/>
+                    <button name="action_fetch_now" string="Fetch Now"
+                            type="object" class="btn btn-success"
+                            invisible="state != 'connected'"/>
+                </div>
+                <group>
+                    <group string="Account">
+                        <field name="name"/>
+                        <field name="email_address"/>
+                        <field name="company_domain"/>
+                        <field name="responsible_user_id"/>
+                        <field name="state" widget="badge"
+                               decoration-info="state == 'draft'"
+                               decoration-success="state == 'connected'"
+                               decoration-danger="state == 'error'"/>
+                    </group>
+                    <group string="IMAP">
+                        <field name="imap_host"/>
+                        <field name="imap_port"/>
+                        <field name="imap_password" password="True"/>
+                        <field name="imap_use_ssl"/>
+                        <field name="sent_folder"/>
+                    </group>
+                    <group string="Sync">
+                        <field name="sync_start_date"/>
+                        <field name="gmail_label"/>
+                        <field name="use_allowlist"/>
+                        <field name="last_fetch_datetime"/>
+                        <field name="last_successful_fetch_datetime"/>
+                        <field name="fetch_inbox"/>
+                        <field name="fetch_sent"/>
+                    </group>
+                </group>
+                <field name="error_message" invisible="state != 'error'" readonly="1"/>
+                <separator string="Firma Email"/>
+                <field name="signature_html" widget="html"
+                       placeholder="La tua firma email (inserita automaticamente nelle email inviate)..."/>
+            </form>
+        </field>
+    </record>
+
+    <record id="casafolino_mail_message_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.message.form</field>
+        <field name="model">casafolino.mail.message</field>
+        <field name="arch" type="xml">
+            <form string="Email">
+                <div class="o_row mb-3">
+                    <button name="action_keep" string="Tieni"
+                            type="object" class="btn btn-success"
+                            invisible="state not in ('new', 'review', 'auto_discard')"/>
+                    <button name="action_discard" string="Scarta"
+                            type="object" class="btn btn-danger"
+                            invisible="state not in ('new', 'review', 'auto_keep')"/>
+                    <button name="action_blacklist_domain" string="Scarta Dominio"
+                            type="object" class="btn btn-warning"/>
+                    <button name="action_create_lead" string="Crea Lead CRM"
+                            type="object" class="btn btn-primary"
+                            invisible="lead_id"/>
+                    <button name="action_create_partner" string="Crea Contatto"
+                            type="object" class="btn btn-secondary"
+                            invisible="partner_id != False"/>
+                    <button name="action_launch_007" string="Agente 007"
+                            type="object" class="btn btn-info"
+                            invisible="partner_id == False"/>
+                    <button name="action_open_snippet_picker" string="Snippet"
+                            type="object" class="btn btn-secondary"
+                            invisible="direction != 'inbound'"/>
+                </div>
+                <group>
+                    <group string="Email">
+                        <field name="email_date"/>
+                        <field name="direction"/>
+                        <field name="sender_name"/>
+                        <field name="sender_email"/>
+                        <field name="recipient_emails"/>
+                        <field name="cc_emails"/>
+                        <field name="subject"/>
+                        <field name="snippet" invisible="body_downloaded"/>
+                    </group>
+                    <group string="CRM">
+                        <field name="partner_id"/>
+                        <field name="match_type"/>
+                        <field name="account_id"/>
+                        <field name="state" widget="badge"/>
+                        <field name="assigned_user_ids" widget="many2many_tags"/>
+                        <field name="lead_id"/>
+                        <field name="triage_user_id"/>
+                        <field name="triage_date"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="Contenuto" name="content" invisible="not body_downloaded">
+                        <field name="body_html" widget="html" readonly="1"/>
+                    </page>
+                    <page string="Allegati" name="attachments" invisible="not body_downloaded">
+                        <field name="attachment_ids"/>
+                    </page>
+                    <page string="AI &amp; Intent" name="ai_intent">
+                        <group>
+                            <group string="Intent">
+                                <field name="intent_detected" widget="badge"/>
+                            </group>
+                            <group string="AI Classification">
+                                <field name="ai_category" widget="badge"/>
+                                <field name="ai_sentiment" widget="badge"/>
+                                <field name="ai_language"/>
+                                <field name="ai_urgency" widget="badge"/>
+                                <field name="ai_action_required"/>
+                                <field name="ai_classified_at"/>
+                                <field name="ai_error"/>
+                            </group>
+                        </group>
+                    </page>
+                    <page string="Tecnico" name="technical">
+                        <group>
+                            <field name="message_id_rfc"/>
+                            <field name="imap_uid"/>
+                            <field name="imap_folder"/>
+                            <field name="sender_domain"/>
+                            <field name="body_downloaded"/>
+                        </group>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         4) INHERITED VIEWS (partner stat button)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_partner_form_mail_hub" model="ir.ui.view">
+        <field name="name">res.partner.form.mail.hub</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_casafolino_emails" string="Email CRM"
+                        type="object" class="oe_stat_button" icon="fa-envelope"
+                        invisible="casafolino_email_count == 0">
+                    <field name="casafolino_email_count" string="Email" widget="statinfo"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Email CRM" name="casafolino_emails">
+                    <group>
+                        <field name="casafolino_email_count" readonly="1"/>
+                        <field name="casafolino_last_email_date" readonly="1"/>
+                    </group>
+                    <field name="casafolino_mail_ids" readonly="1" nolabel="1">
+                        <list default_order="email_date desc"
+                              decoration-bf="not is_read"
+                              decoration-info="direction == 'inbound'"
+                              decoration-muted="direction == 'outbound'">
+                            <field name="email_date" string="Data"/>
+                            <field name="direction" string="Dir"/>
+                            <field name="sender_email" string="Mittente"/>
+                            <field name="subject" string="Oggetto"/>
+                            <field name="state" string="Stato" widget="badge"/>
+                            <field name="snippet" string="Preview" optional="show"/>
+                            <field name="is_read" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="CRM Info" name="crm_info">
+                    <group string="Ruolo Commerciale">
+                        <group>
+                            <field name="cf_role"/>
+                            <field name="cf_decision_level"/>
+                        </group>
+                        <group>
+                            <field name="function"/>
+                        </group>
+                    </group>
+                    <group string="Origine">
+                        <group>
+                            <field name="cf_channel"/>
+                        </group>
+                        <group>
+                            <field name="cf_fair_met"/>
+                        </group>
+                    </group>
+                    <group string="Note Commerciali">
+                        <group>
+                            <field name="cf_contact_frequency"/>
+                            <field name="cf_last_contact_date"/>
+                        </group>
+                    </group>
+                    <field name="cf_notes_commercial" nolabel="1"
+                           placeholder="Note commerciali (cosa cerca, volumi, budget...)"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         4b) INHERITED VIEW — crm.lead Email tab
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="view_crm_lead_form_mail_hub" model="ir.ui.view">
+        <field name="name">crm.lead.form.mail.hub</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Email" name="lead_emails">
+                    <field name="lead_message_ids" widget="cf_lead_mail_widget" nolabel="1"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         5) ACTIONS (dopo le viste che referenziano)
+         ══════════════════════════════════════════════════════════════ -->
+
+    <record id="action_casafolino_mail_account" model="ir.actions.act_window">
+        <field name="name">Account IMAP</field>
+        <field name="res_model">casafolino.mail.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_casafolino_mail_message_triage" model="ir.actions.act_window">
+        <field name="name">Inbox Triage</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['new', 'review'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_inbound': 1}</field>
+    </record>
+
+    <record id="action_casafolino_mail_my_mailbox" model="ir.actions.act_window">
+        <field name="name">La Mia Casella</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['new', 'review', 'keep', 'auto_keep'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_inbound': 1}</field>
+    </record>
+
+    <record id="action_cf_mail_posizionatore" model="ir.actions.act_window">
+        <field name="name">Posizionatore mail</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['new', 'review'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+        <field name="context">{'search_default_inbound': 1}</field>
+    </record>
+
+    <record id="action_casafolino_mail_message_keep" model="ir.actions.act_window">
+        <field name="name">Tenute CRM</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['keep', 'auto_keep'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+    </record>
+
+    <record id="action_casafolino_mail_message_discard" model="ir.actions.act_window">
+        <field name="name">Archivio Scarto</field>
+        <field name="res_model">casafolino.mail.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['discard', 'auto_discard'])]</field>
+        <field name="search_view_id" ref="casafolino_mail_message_search"/>
+    </record>
+
+</odoo>

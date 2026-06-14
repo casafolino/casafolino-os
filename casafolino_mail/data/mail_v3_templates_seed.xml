@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+
+    <!-- ═══ F8: 10 New Default Templates ═══ -->
+
+    <!-- 1. IT — Invio listino prodotti -->
+    <record id="template_it_listino" model="casafolino.mail.template">
+        <field name="name">Invio listino prodotti</field>
+        <field name="description">Invio listino prezzi aggiornato</field>
+        <field name="category">quote</field>
+        <field name="language">it_IT</field>
+        <field name="sequence">20</field>
+        <field name="subject">Listino prezzi CasaFolino — {{current_season}} 2026</field>
+        <field name="body_html"><![CDATA[
+<p>Gentile {{partner_name}},</p>
+<p>Le invio in allegato il nostro listino prezzi aggiornato per la stagione {{current_season}}.</p>
+<p>Troverà la nostra selezione completa di prodotti artigianali calabresi, con le novità di quest'anno evidenziate.</p>
+<p>Resto a disposizione per qualsiasi chiarimento o per organizzare un incontro per discutere un ordine personalizzato.</p>
+<p>Cordiali saluti,<br/>{{sender_name}}</p>
+]]></field>
+    </record>
+
+    <!-- 2. IT — Conferma ordine e spedizione -->
+    <record id="template_it_conferma_ordine" model="casafolino.mail.template">
+        <field name="name">Conferma ordine e spedizione</field>
+        <field name="description">Conferma ricezione ordine e dettagli spedizione</field>
+        <field name="category">follow_up</field>
+        <field name="language">it_IT</field>
+        <field name="sequence">21</field>
+        <field name="subject">Conferma ordine {{last_order_number}} — CasaFolino</field>
+        <field name="body_html"><![CDATA[
+<p>Gentile {{partner_name}},</p>
+<p>Confermiamo la ricezione del Suo ordine <strong>{{last_order_number}}</strong>.</p>
+<p>Il nostro team di produzione sta preparando la spedizione. Riceverà una notifica con il tracking non appena la merce sarà in viaggio.</p>
+<p>Per qualsiasi modifica o richiesta urgente, non esiti a contattarci.</p>
+<p>Grazie per la fiducia,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 3. EN — Price list shipment -->
+    <record id="template_en_pricelist" model="casafolino.mail.template">
+        <field name="name">Price list shipment</field>
+        <field name="description">Send updated price list to international buyers</field>
+        <field name="category">quote</field>
+        <field name="language">en_US</field>
+        <field name="sequence">22</field>
+        <field name="subject">CasaFolino Price List — {{current_season}} 2026</field>
+        <field name="body_html"><![CDATA[
+<p>Dear {{partner_name}},</p>
+<p>Please find attached our updated price list for the {{current_season}} season.</p>
+<p>Our full range of artisan Calabrian products is included, with this season's new additions highlighted.</p>
+<p>I'd be happy to discuss any questions or arrange a tasting session at your convenience.</p>
+<p>Best regards,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 4. EN — Order confirmation -->
+    <record id="template_en_order_confirm" model="casafolino.mail.template">
+        <field name="name">Order confirmation</field>
+        <field name="description">Confirm order receipt and shipping details</field>
+        <field name="category">follow_up</field>
+        <field name="language">en_US</field>
+        <field name="sequence">23</field>
+        <field name="subject">Order {{last_order_number}} confirmed — CasaFolino</field>
+        <field name="body_html"><![CDATA[
+<p>Dear {{partner_name}},</p>
+<p>We confirm receipt of your order <strong>{{last_order_number}}</strong>.</p>
+<p>Our production team is currently preparing your shipment. You will receive tracking details as soon as the goods are dispatched.</p>
+<p>Please don't hesitate to contact us for any changes or urgent requests.</p>
+<p>Thank you for your trust,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 5. EN — Sample follow-up after 2 weeks -->
+    <record id="template_en_sample_followup" model="casafolino.mail.template">
+        <field name="name">Sample follow-up after 2 weeks</field>
+        <field name="description">Follow up on sample shipment sent 2 weeks ago</field>
+        <field name="category">follow_up</field>
+        <field name="language">en_US</field>
+        <field name="sequence">24</field>
+        <field name="subject">Re: CasaFolino samples — your feedback?</field>
+        <field name="body_html"><![CDATA[
+<p>Dear {{partner_first_name}},</p>
+<p>I hope you've had the chance to taste our product samples we sent {{days_since_last_contact}} days ago.</p>
+<p>I'd love to hear your feedback and discuss which products might work best for your market in {{partner_country}}.</p>
+<p>Would you have 15 minutes this week for a quick call? I can share insights on how other buyers in your region have successfully introduced our range.</p>
+<p>Looking forward to hearing from you,<br/>{{sender_name}}</p>
+]]></field>
+    </record>
+
+    <!-- 6. DE — Musteranfrage Follow-up -->
+    <record id="template_de_muster_followup" model="casafolino.mail.template">
+        <field name="name">Musteranfrage Follow-up</field>
+        <field name="description">Nachfassung nach Musterversand</field>
+        <field name="category">follow_up</field>
+        <field name="language">de_DE</field>
+        <field name="sequence">25</field>
+        <field name="subject">Re: CasaFolino Muster — Ihr Feedback?</field>
+        <field name="body_html"><![CDATA[
+<p>Sehr geehrte/r {{partner_name}},</p>
+<p>Ich hoffe, Sie hatten bereits Gelegenheit, unsere Produktmuster zu probieren.</p>
+<p>Gerne würde ich Ihr Feedback hören und besprechen, welche Produkte am besten zu Ihrem Markt passen könnten.</p>
+<p>Hätten Sie diese Woche 15 Minuten Zeit für ein kurzes Telefonat? Ich kann Ihnen gerne berichten, wie andere Einkäufer in {{partner_country}} unser Sortiment erfolgreich eingeführt haben.</p>
+<p>Mit freundlichen Grüßen,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 7. DE — Preisliste -->
+    <record id="template_de_preisliste" model="casafolino.mail.template">
+        <field name="name">Preisliste</field>
+        <field name="description">Aktuelle Preisliste senden</field>
+        <field name="category">quote</field>
+        <field name="language">de_DE</field>
+        <field name="sequence">26</field>
+        <field name="subject">CasaFolino Preisliste — {{current_season}} 2026</field>
+        <field name="body_html"><![CDATA[
+<p>Sehr geehrte/r {{partner_name}},</p>
+<p>Anbei finden Sie unsere aktuelle Preisliste für die Saison {{current_season}}.</p>
+<p>Unser vollständiges Sortiment an handwerklichen kalabrischen Produkten ist enthalten, die Neuheiten dieser Saison sind hervorgehoben.</p>
+<p>Für Rückfragen oder zur Vereinbarung eines Verkostungstermins stehe ich Ihnen gerne zur Verfügung.</p>
+<p>Mit freundlichen Grüßen,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 8. ES — Envio de catalogo -->
+    <record id="template_es_catalogo" model="casafolino.mail.template">
+        <field name="name">Envio de catalogo</field>
+        <field name="description">Enviar catalogo y lista de precios</field>
+        <field name="category">quote</field>
+        <field name="language">es_ES</field>
+        <field name="sequence">27</field>
+        <field name="subject">Catalogo CasaFolino — {{current_season}} 2026</field>
+        <field name="body_html"><![CDATA[
+<p>Estimado/a {{partner_name}},</p>
+<p>Adjunto encontrara nuestro catalogo y lista de precios actualizada para la temporada {{current_season}}.</p>
+<p>Nuestra seleccion completa de productos artesanales calabreses esta incluida, con las novedades de esta temporada destacadas.</p>
+<p>Quedo a su disposicion para cualquier consulta o para organizar una degustacion.</p>
+<p>Saludos cordiales,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 9. ES — Seguimiento post-feria -->
+    <record id="template_es_postferia" model="casafolino.mail.template">
+        <field name="name">Seguimiento post-feria</field>
+        <field name="description">Follow-up despues de feria comercial</field>
+        <field name="category">post_fair</field>
+        <field name="language">es_ES</field>
+        <field name="sequence">28</field>
+        <field name="subject">Encantados de conocerle — CasaFolino</field>
+        <field name="body_html"><![CDATA[
+<p>Estimado/a {{partner_first_name}},</p>
+<p>Fue un placer conocerle en la feria. Espero que haya disfrutado probando nuestros productos artesanales.</p>
+<p>Como comentamos, adjunto la informacion sobre los productos que le interesaron, junto con nuestra lista de precios para {{partner_country}}.</p>
+<p>Me encantaria continuar nuestra conversacion y explorar como CasaFolino puede ser un socio ideal para su negocio.</p>
+<p>Quedo a la espera de sus noticias,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+    <!-- 10. FR — Envoi catalogue -->
+    <record id="template_fr_catalogue" model="casafolino.mail.template">
+        <field name="name">Envoi catalogue</field>
+        <field name="description">Envoi du catalogue et tarifs</field>
+        <field name="category">quote</field>
+        <field name="language">fr_FR</field>
+        <field name="sequence">29</field>
+        <field name="subject">Catalogue CasaFolino — {{current_season}} 2026</field>
+        <field name="body_html"><![CDATA[
+<p>Cher/Chere {{partner_name}},</p>
+<p>Veuillez trouver ci-joint notre catalogue et notre liste de prix mise a jour pour la saison {{current_season}}.</p>
+<p>Notre gamme complete de produits artisanaux calabrais y est presentee, avec les nouveautes de cette saison mises en avant.</p>
+<p>Je reste a votre disposition pour toute question ou pour organiser une degustation a votre convenance.</p>
+<p>Cordialement,<br/>{{sender_name}}<br/>CasaFolino Srls</p>
+]]></field>
+    </record>
+
+</odoo>

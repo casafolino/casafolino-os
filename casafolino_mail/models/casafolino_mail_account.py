@@ -1,0 +1,756 @@
+import email
+import imaplib
+import logging
+from datetime import timedelta, timezone
+from email.header import decode_header
+from email.utils import parseaddr, parsedate_to_datetime
+
+from odoo import models, fields, api
+from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
+
+
+class CasafolinoMailAccount(models.Model):
+    _name = 'casafolino.mail.account'
+    _description = 'Account Email IMAP — Mail Hub'
+    _order = 'name'
+
+    name = fields.Char('Nome account', required=True)
+    email_address = fields.Char('Indirizzo email', required=True)
+    responsible_user_id = fields.Many2one('res.users', string='Responsabile triage',
+                                          default=lambda self: self.env.uid)
+    imap_host = fields.Char('IMAP Host', default='imap.gmail.com')
+    imap_port = fields.Integer('IMAP Port', default=993)
+    imap_password = fields.Char('App Password')
+    imap_use_ssl = fields.Boolean('SSL', default=True)
+    sent_folder = fields.Char('Cartella Sent', help='Auto-detected o manuale. Es. [Gmail]/Posta inviata')
+    sync_start_date = fields.Date('Importa dal', default='2025-01-01')
+    last_fetch_datetime = fields.Datetime('Ultimo fetch', readonly=True)
+    last_fetch_uid = fields.Char('Ultimo UID processato', readonly=True)
+    state = fields.Selection([
+        ('draft', 'Bozza'),
+        ('connected', 'Connesso'),
+        ('error', 'Errore'),
+    ], string='Stato', default='draft')
+    error_message = fields.Text('Errore')
+    active = fields.Boolean(default=True)
+    gmail_label = fields.Char('Label Gmail', default='Odoo',
+        help='Label Gmail da cui pescare email. Default: Odoo')
+    use_allowlist = fields.Boolean('Usa allowlist domini', default=True,
+        help='Se attivo, importa solo da domini con sender_policy auto_keep')
+    last_successful_fetch_datetime = fields.Datetime('Ultimo fetch OK', readonly=True)
+    fetch_inbox = fields.Boolean('Scarica INBOX', default=True)
+    fetch_sent = fields.Boolean('Scarica Sent', default=True)
+    company_domain = fields.Char('Dominio aziendale', default='casafolino.com',
+        help='Email da questo dominio sono considerate interne')
+    signature_html = fields.Html('Firma Email',
+        help='Firma HTML inserita automaticamente nelle email')
+
+    # ── Connection helpers ────────────────────────────────────────────
+
+    def _get_imap_connection(self):
+        """Apre connessione IMAP SSL a Gmail."""
+        self.ensure_one()
+        try:
+            if self.imap_use_ssl:
+                imap = imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
+            else:
+                imap = imaplib.IMAP4(self.imap_host, self.imap_port)
+            imap.login(self.email_address, self.imap_password)
+            return imap
+        except Exception as e:
+            self.write({'state': 'error', 'error_message': str(e)})
+            raise UserError("Connessione IMAP fallita: %s" % e)
+
+    def action_test_connection(self):
+        """Testa la connessione e rileva la cartella Sent."""
+        self.ensure_one()
+        imap = self._get_imap_connection()
+
+        # Rileva cartella sent
+        status, folders = imap.list()
+        sent_folder = None
+        if status == 'OK':
+            for folder in folders:
+                decoded = folder.decode() if isinstance(folder, bytes) else folder
+                if '\\Sent' in decoded:
+                    parts = decoded.split('"')
+                    if len(parts) >= 3:
+                        sent_folder = parts[-2]
+                    break
+
+        imap.logout()
+
+        vals = {'state': 'connected', 'error_message': False}
+        if sent_folder:
+            vals['sent_folder'] = sent_folder
+        self.write(vals)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'OK',
+                'message': 'Connessione riuscita. Sent: %s' % (sent_folder or '(non rilevata)'),
+                'type': 'success',
+            },
+        }
+
+    def action_fetch_now(self):
+        """Fetch manuale per questo account."""
+        self.ensure_one()
+        self._fetch_emails()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Fetch completato',
+                'message': 'Email scaricate per %s' % self.email_address,
+                'type': 'success',
+            },
+        }
+
+    # ── Fetch engine (Step 2) ───────────────────��────────────────────
+
+    def _fetch_emails(self):
+        """Fetch principale: scarica header da INBOX e/o Sent."""
+        self.ensure_one()
+        imap = self._get_imap_connection()
+        total_new = 0
+        total_skip = 0
+        total_blacklist = 0
+
+        try:
+            folders_to_fetch = []
+            if self.fetch_inbox:
+                folders_to_fetch.append(('INBOX', 'inbound'))
+            if self.fetch_sent and self.sent_folder:
+                folders_to_fetch.append((self.sent_folder, 'outbound'))
+
+            for folder_name, direction in folders_to_fetch:
+                new, skip, bl = self._fetch_folder(imap, folder_name, direction)
+                total_new += new
+                total_skip += skip
+                total_blacklist += bl
+
+            self.write({
+                'state': 'connected',
+                'error_message': False,
+                'last_successful_fetch_datetime': fields.Datetime.now(),
+            })
+
+            _logger.info(
+                "[%s] fetched %d, skipped %d, excluded %d",
+                self.email_address, total_new, total_skip, total_blacklist
+            )
+
+        except Exception as e:
+            self.write({'state': 'error', 'error_message': str(e)})
+            _logger.error("Mail fetch error %s: %s", self.email_address, e)
+            raise
+        finally:
+            self.write({'last_fetch_datetime': fields.Datetime.now()})
+            try:
+                imap.logout()
+            except Exception:
+                pass
+
+    def _build_account_email_map(self):
+        """Costruisce mappa email→account_id per tutti gli account attivi. Chiamare UNA volta per sync."""
+        accounts = self.env['casafolino.mail.account'].search([('active', '=', True)])
+        return {a.email_address.lower().strip(): a.id for a in accounts if a.email_address}
+
+    def _resolve_account_id(self, sender_email, recipient_emails, cc_emails, account_map):
+        """Determina l'account_id corretto basandosi su from/to/cc.
+        1. Se il mittente è un account CasaFolino → quell'account
+        2. Se un destinatario/cc è un account CasaFolino → quell'account
+        3. Fallback → self.id (account che esegue la sync)
+        """
+        # Check mittente
+        if sender_email:
+            aid = account_map.get(sender_email.lower().strip())
+            if aid:
+                return aid
+        # Check destinatari
+        all_recipients = (recipient_emails or '') + ',' + (cc_emails or '')
+        for addr in all_recipients.split(','):
+            addr = addr.strip().lower()
+            if addr:
+                aid = account_map.get(addr)
+                if aid:
+                    return aid
+        return self.id
+
+    def _load_exclude_rules(self):
+        """Carica set di email/domini da escludere da sender_policy auto_discard."""
+        excluded = set()
+        try:
+            policies = self.env['casafolino.mail.sender_policy'].sudo().search([
+                ('action', '=', 'auto_discard'), ('active', '=', True)
+            ])
+            for p in policies:
+                if p.pattern_type == 'email_exact' and p.pattern_value:
+                    excluded.add(p.pattern_value.lower().strip())
+        except Exception:
+            pass
+        return excluded
+
+    def _fetch_folder(self, imap, folder_name, direction):
+        """Fetch di una singola cartella IMAP."""
+        Message = self.env['casafolino.mail.message']
+
+        new_count = 0
+        skip_count = 0
+        blacklist_count = 0
+
+        # Carica mappa account e regole exclude UNA SOLA VOLTA per sync
+        account_map = self._build_account_email_map()
+        excluded_senders = self._load_exclude_rules()
+
+        # Seleziona la cartella (readonly)
+        status, data = imap.select('"%s"' % folder_name, readonly=True)
+        if status != 'OK':
+            _logger.warning("Cannot select folder %s: %s", folder_name, data)
+            return 0, 0, 0
+
+        # Costruisci criterio di ricerca — formato data IMAP: 01-Jan-2025
+        if self.last_fetch_datetime:
+            since_date = self.last_fetch_datetime.strftime('%d-%b-%Y')
+        else:
+            since_date = self.sync_start_date.strftime('%d-%b-%Y')
+
+        search_criteria = '(SINCE %s)' % since_date
+        status, msg_ids = imap.search(None, search_criteria)
+
+        if status != 'OK' or not msg_ids[0]:
+            return 0, 0, 0
+
+        uid_list = msg_ids[0].split()
+        _logger.info("Folder %s: %d email trovate dal %s", folder_name, len(uid_list), since_date)
+
+        # Processa in batch da 50
+        batch_size = 50
+        for i in range(0, len(uid_list), batch_size):
+            batch = uid_list[i:i + batch_size]
+
+            for uid in batch:
+                uid_str = uid.decode()
+
+                # Scarica solo header (no body — snippet viene dal Subject)
+                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
+                if status2 != 'OK':
+                    continue
+
+                # Parsa gli header
+                raw_header = None
+                for part in header_data:
+                    if isinstance(part, tuple):
+                        raw_header = part[1]
+                        break
+
+                if not raw_header:
+                    continue
+
+                msg = email.message_from_bytes(raw_header)
+
+                # Estrai Message-ID
+                message_id = msg.get('Message-ID', '').strip()
+                if not message_id:
+                    message_id = "<%s-%s-%s@generated>" % (self.email_address, uid_str, folder_name)
+
+                # Estrai mittente (serve prima della dedup per resolve account)
+                sender_name, sender_email = parseaddr(msg.get('From', ''))
+                sender_name = self._decode_header_value(sender_name)
+                sender_email = sender_email.lower().strip() if sender_email else ''
+
+                # Estrai destinatari (serve per resolve account)
+                to_raw = msg.get('To', '')
+                cc_raw = msg.get('Cc', '')
+                recipient_emails = self._extract_emails(to_raw)
+                cc_emails = self._extract_emails(cc_raw)
+
+                # Resolve account_id corretto (Bug 1 fix)
+                resolved_account_id = self._resolve_account_id(
+                    sender_email, recipient_emails, cc_emails, account_map)
+
+                # Deduplicazione: skip se Message-ID già esiste su QUALSIASI account
+                existing = Message.search([('message_id_rfc', '=', message_id)], limit=1)
+                if existing:
+                    skip_count += 1
+                    continue
+
+                # Check sender_policy exclude
+                if sender_email and sender_email in excluded_senders:
+                    blacklist_count += 1
+                    continue
+
+                # Estrai oggetto
+                subject = self._decode_header_value(msg.get('Subject', '(nessun oggetto)'))
+
+                # Estrai data — Odoo richiede datetime naive UTC
+                date_str = msg.get('Date', '')
+                try:
+                    email_date = parsedate_to_datetime(date_str)
+                    if email_date.tzinfo is not None:
+                        email_date = email_date.astimezone(timezone.utc).replace(tzinfo=None)
+                except Exception:
+                    email_date = fields.Datetime.now()
+
+                # Determina direction effettiva
+                actual_direction = direction
+                if direction == 'inbound' and sender_email == self.email_address.lower():
+                    actual_direction = 'outbound'
+
+                # Matching con res.partner
+                partner_id, match_type = self._match_partner(
+                    sender_email, recipient_emails, actual_direction
+                )
+
+                # Crea record staging
+                vals = {
+                    'account_id': resolved_account_id,
+                    'message_id_rfc': message_id,
+                    'imap_uid': uid_str,
+                    'imap_folder': folder_name,
+                    'direction': actual_direction,
+                    'sender_email': sender_email,
+                    'sender_name': sender_name,
+                    'recipient_emails': recipient_emails,
+                    'cc_emails': cc_emails,
+                    'subject': subject,
+                    'email_date': email_date,
+                    'state': 'new',
+                    'partner_id': partner_id,
+                    'match_type': match_type,
+                }
+
+                # Email inviate → sempre keep (le hai inviate tu)
+                if actual_direction == 'outbound':
+                    vals['state'] = 'keep'
+                # Se il partner è tracked, scarica subito body e metti in keep
+                elif partner_id:
+                    partner = self.env['res.partner'].browse(partner_id)
+                    if partner.mail_tracked:
+                        vals['state'] = 'keep'
+
+                # Auto-keep: se esistono già email keep dallo stesso mittente su questo account
+                if vals['state'] == 'new' and sender_email:
+                    prev_keep = Message.search([
+                        ('sender_email', '=ilike', sender_email),
+                        ('account_id', '=', self.id),
+                        ('state', '=', 'keep'),
+                    ], limit=1)
+                    if prev_keep:
+                        vals['state'] = 'keep'
+                        if prev_keep.partner_id and not vals.get('partner_id'):
+                            vals['partner_id'] = prev_keep.partner_id.id
+                            vals['match_type'] = 'exact'
+
+                try:
+                    new_msg = Message.create(vals)
+                    new_count += 1
+
+                    # AI classify — deferred if no key or rate limited
+                    # Classification runs in separate cron to not block ingestion
+                    pass
+
+                    # Intent detection (keyword-based, non-blocking)
+                    try:
+                        new_msg._detect_intent()
+                    except Exception as e:
+                        _logger.warning("Intent detect error msg %s: %s", new_msg.id, e)
+
+                    # Applica sender_policy se stato ancora 'new'
+                    if new_msg.state == 'new':
+                        new_msg._apply_sender_policy()
+
+                    # Se stato keep/auto_keep (partner tracked), scarica body
+                    if new_msg.state in ('keep', 'auto_keep'):
+                        new_msg._download_body_imap(imap, folder_name, uid_str)
+
+                except Exception as e:
+                    _logger.warning("Error creating mail message: %s", e)
+                    continue
+
+            # Committa ogni batch
+            self.env.cr.commit()
+            _logger.info("Batch %d: %d nuove fin qui", i // batch_size + 1, new_count)
+
+        return new_count, skip_count, blacklist_count
+
+    # ── Helper methods ────────────────────────────────────────��───────
+
+    def _decode_header_value(self, value):
+        """Decodifica header MIME (=?UTF-8?Q?...?= etc)."""
+        if not value:
+            return ''
+        decoded_parts = decode_header(value)
+        result = []
+        for part, charset in decoded_parts:
+            if isinstance(part, bytes):
+                result.append(part.decode(charset or 'utf-8', errors='ignore'))
+            else:
+                result.append(part)
+        return ' '.join(result).strip()
+
+    def _extract_emails(self, header_value):
+        """Estrae lista email da header To/Cc."""
+        if not header_value:
+            return ''
+        addresses = []
+        for part in header_value.split(','):
+            name, addr = parseaddr(part.strip())
+            if addr:
+                addresses.append(addr.lower().strip())
+        return ', '.join(addresses)
+
+    def _get_external_email(self, sender_email, recipient_emails):
+        """Se il mittente è interno (company_domain), ritorna il primo destinatario esterno."""
+        self.ensure_one()
+        cd = (self.company_domain or '').lower().strip()
+        if not cd:
+            return sender_email
+
+        sender_domain = sender_email.split('@')[1].lower() if '@' in sender_email else ''
+        if sender_domain != cd:
+            # Mittente è esterno — usa il mittente
+            return sender_email
+
+        # Mittente è interno — cerca primo destinatario esterno
+        if recipient_emails:
+            for addr in recipient_emails.split(','):
+                addr = addr.strip().lower()
+                if addr and '@' in addr and addr.split('@')[1] != cd:
+                    return addr
+
+        # Tutti interni — fallback sul mittente
+        return sender_email
+
+    def _match_partner(self, sender_email, recipient_emails, direction):
+        """Cerca partner corrispondente. Ritorna (partner_id, match_type) o (False, 'none')."""
+        Partner = self.env['res.partner']
+
+        if direction == 'inbound':
+            # Se mittente è interno, cerca sul primo destinatario esterno
+            email_to_match = self._get_external_email(sender_email, recipient_emails)
+        else:
+            # Per outbound, prendi il primo destinatario esterno
+            email_to_match = self._get_external_email(sender_email, recipient_emails)
+            # Se il risultato è il sender (tutti interni), prova il primo recipient
+            if email_to_match == sender_email and recipient_emails:
+                first_rcpt = recipient_emails.split(',')[0].strip()
+                if first_rcpt:
+                    email_to_match = first_rcpt
+
+        if not email_to_match:
+            return False, 'none'
+
+        # 1. Match esatto per email
+        partner = Partner.search([('email', '=ilike', email_to_match)], limit=1)
+        if partner:
+            return partner.id, 'exact'
+
+        # 2. Match per dominio (company website)
+        domain = email_to_match.split('@')[1] if '@' in email_to_match else ''
+        if domain:
+            partner = Partner.search([
+                ('is_company', '=', True),
+                ('website', 'ilike', domain),
+            ], limit=1)
+            if partner:
+                return partner.id, 'domain'
+
+        return False, 'none'
+
+    # ── Cron (Step 8) ────────────────────────────────────────────────
+
+    @api.model
+    def _cron_fetch_all_accounts(self):
+        """Fetch incrementale per tutti gli account connessi."""
+        accounts = self.search([('state', '=', 'connected'), ('active', '=', True)])
+        for account in accounts:
+            try:
+                account._fetch_emails()
+            except Exception as e:
+                account.write({'state': 'error', 'error_message': str(e)})
+                _logger.error("Cron fetch error %s: %s", account.email_address, e)
+
+    # ── Cron: Silent Partners Alert ────────────────────────────────
+
+    @api.model
+    def _cron_silent_partners_alert(self):
+        """Crea mail.activity per partner con lead aperti e silenti da X giorni."""
+        threshold = int(self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino_mail.silent_days_threshold', '21'))
+        cutoff_date = fields.Datetime.now() - timedelta(days=threshold)
+
+        # Partner con lead CRM aperti (non vinti, non persi)
+        open_leads = self.env['crm.lead'].search([
+            ('active', '=', True),
+            ('stage_id.is_won', '=', False),
+            ('probability', '<', 100),
+            ('partner_id', '!=', False),
+        ])
+        partners_with_leads = open_leads.mapped('partner_id')
+
+        Message = self.env['casafolino.mail.message']
+        Activity = self.env['mail.activity']
+        partner_model_id = self.env['ir.model']._get('res.partner').id
+        todo_type = self.env.ref('mail.mail_activity_data_todo')
+
+        silent_count = 0
+        for partner in partners_with_leads:
+            # Ultima email keep/auto_keep per questo partner
+            last_email = Message.search([
+                ('partner_id', '=', partner.id),
+                ('state', 'in', ['keep', 'auto_keep']),
+            ], order='email_date desc', limit=1)
+
+            if last_email and last_email.email_date and last_email.email_date > cutoff_date:
+                continue  # non silente
+
+            # Evita duplicati: se esiste già activity "Riattivare" pending
+            existing = Activity.search([
+                ('res_model_id', '=', partner_model_id),
+                ('res_id', '=', partner.id),
+                ('summary', 'ilike', 'Riattivare conversazione'),
+                ('date_deadline', '>=', fields.Date.today()),
+            ], limit=1)
+            if existing:
+                continue
+
+            # Salesperson dal lead, o admin
+            related_lead = open_leads.filtered(lambda l: l.partner_id == partner)[:1]
+            user = related_lead.user_id if related_lead and related_lead.user_id else False
+            if not user:
+                user = self.env.ref('base.user_admin')
+
+            last_date_str = str(last_email.email_date.date()) if last_email and last_email.email_date else 'mai'
+            Activity.create({
+                'activity_type_id': todo_type.id,
+                'summary': 'Riattivare conversazione',
+                'note': 'Partner silente da oltre %d giorni. Ultima email: %s' % (threshold, last_date_str),
+                'date_deadline': fields.Date.today(),
+                'user_id': user.id,
+                'res_model_id': partner_model_id,
+                'res_id': partner.id,
+            })
+            silent_count += 1
+
+        _logger.info('Silent partners alert: %d activity create', silent_count)
+        return silent_count
+
+    # ── OWL Client API ───────────────────────────────────────────────
+
+    @api.model
+    def is_admin(self, *args, **kw):
+        return (
+            self.env.user.has_group('base.group_system')
+            or self.env.user.login in ('antonio@casafolino.com',)
+        )
+
+    @api.model
+    def get_accounts(self, *args, **kw):
+        domain = [('active', '=', True), ('responsible_user_id', '=', self.env.uid)]
+        accounts = self.search(domain, order='name')
+        result = []
+        for a in accounts:
+            unread = self.env['casafolino.mail.message'].search_count([
+                ('account_id', '=', a.id),
+                ('is_read', '=', False),
+                ('state', '=', 'keep'),
+                ('direction', '=', 'inbound'),
+            ])
+            result.append({
+                'id': a.id,
+                'name': a.name or a.email_address,
+                'email': a.email_address or '',
+                'color': '#5A6E3A',
+                'is_team': False,
+                'unread': unread,
+                'signature': a.signature_html or '',
+                'imap_enabled': a.state == 'connected',
+                'imap_status': a.state or '',
+            })
+        return result
+
+    @api.model
+    def get_account_detail(self, *args, **kw):
+        account_id = kw.get('account_id')
+        if not account_id:
+            return {}
+        acc = self.browse(int(account_id))
+        if not acc.exists():
+            return {}
+        return {
+            'id': acc.id,
+            'name': acc.name or '',
+            'email': acc.email_address or '',
+            'color': '#5A6E3A',
+            'signature': acc.signature_html or '',
+            'imap_host': acc.imap_host or 'imap.gmail.com',
+            'imap_port': acc.imap_port or 993,
+            'imap_ssl': acc.imap_use_ssl,
+            'imap_enabled': acc.state == 'connected',
+            'imap_status': acc.state or '',
+            'smtp_host': 'smtp.gmail.com',
+            'smtp_port': 587,
+            'smtp_tls': True,
+            'ooo_enabled': False,
+            'ooo_subject': '',
+            'ooo_message': '',
+            'ooo_start': '',
+            'ooo_end': '',
+        }
+
+    @api.model
+    def save_account(self, *args, **kw):
+        account_id = kw.get('id') or False
+        vals = {
+            'name': kw.get('name') or '',
+            'email_address': kw.get('email') or '',
+            'imap_host': kw.get('imap_host') or 'imap.gmail.com',
+            'imap_port': int(kw.get('imap_port') or 993),
+            'imap_use_ssl': bool(kw.get('imap_ssl')),
+        }
+        if kw.get('imap_password'):
+            vals['imap_password'] = kw.get('imap_password')
+        if account_id:
+            acc = self.browse(int(account_id))
+            acc.write(vals)
+        else:
+            acc = self.create(vals)
+        return {'success': True, 'id': acc.id}
+
+    @api.model
+    def test_connection(self, *args, **kw):
+        account_id = kw.get('account_id')
+        if not account_id:
+            return {'success': False, 'error': 'Account non trovato'}
+        acc = self.browse(int(account_id))
+        if not acc.exists():
+            return {'success': False, 'error': 'Account non trovato'}
+        try:
+            acc.action_test_connection()
+            return {'success': True, 'message': 'Connessione riuscita'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)[:100]}
+
+    @api.model
+    def sync_now(self, *args, **kw):
+        account_id = kw.get('account_id')
+        if account_id:
+            acc = self.browse(int(account_id))
+        else:
+            acc = self.search([('state', '=', 'connected')])
+        for a in acc:
+            a._fetch_emails()
+        return {'success': True}
+
+    # ── SMTP Send — Mail V3 ─────────────────────────────────────────
+
+    def _smtp_send(self, draft):
+        """Invia email da draft via SMTP.
+
+        Returns: casafolino.mail.message outbound creato.
+        Raises: SMTPException after 3 retry.
+        """
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+
+        self.ensure_one()
+
+        # 1. Build MIME
+        msg = MIMEMultipart('alternative')
+        msg['From'] = '"%s" <%s>' % (self.name, self.email_address)
+        msg['To'] = draft.to_emails or ''
+        if draft.cc_emails:
+            msg['Cc'] = draft.cc_emails
+        if draft.bcc_emails:
+            msg['Bcc'] = draft.bcc_emails
+        msg['Subject'] = draft.subject or '(no subject)'
+
+        # In-Reply-To + References
+        if draft.in_reply_to_message_id:
+            orig = draft.in_reply_to_message_id
+            if orig.message_id_rfc:
+                msg['In-Reply-To'] = orig.message_id_rfc
+                msg['References'] = orig.message_id_rfc
+
+        # Body con firma
+        body = draft.body_html or ''
+        sig = draft.signature_id
+        if not sig:
+            sig = self.env['casafolino.mail.signature'].search([
+                ('account_id', '=', self.id),
+                ('is_default', '=', True),
+            ], limit=1)
+        if sig and sig.body_html:
+            body = body + '<br><br>' + sig.body_html
+
+        msg.attach(MIMEText(body, 'html'))
+
+        # Attachments
+        for att in draft.attachment_ids:
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(att.raw or b'')
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition',
+                            'attachment; filename="%s"' % (att.name or 'file'))
+            msg.attach(part)
+
+        # 2. Submit SMTP con retry
+        last_exc = None
+        for attempt in (1, 2, 3):
+            try:
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=30) as server:
+                    server.login(self.email_address, self.imap_password)
+                    server.send_message(msg)
+                _logger.info('[mail v3] SMTP attempt %d/3 OK from %s', attempt, self.email_address)
+                break
+            except smtplib.SMTPException as e:
+                last_exc = e
+                _logger.warning('[mail v3] SMTP attempt %d/3 failed: %s', attempt, e)
+                if attempt < 3:
+                    import time as _time
+                    _time.sleep({1: 5, 2: 15}[attempt])
+        else:
+            raise last_exc
+
+        # 3. IMAP APPEND to Sent folder
+        try:
+            imap = self._get_imap_connection()
+            sent_folder = self.sent_folder or '[Gmail]/Sent Mail'
+            imap.append(sent_folder, '\\Seen', None, msg.as_bytes())
+            imap.logout()
+        except Exception as e:
+            _logger.warning('[mail v3] IMAP APPEND failed: %s', e)
+
+        # 4. Create message record
+        new_msg = self.env['casafolino.mail.message'].create({
+            'account_id': self.id,
+            'direction': 'outbound',
+            'state': 'keep',
+            'fetch_state': 'done',
+            'body_downloaded': True,
+            'sender_email': self.email_address,
+            'sender_name': self.name,
+            'recipient_emails': draft.to_emails or '',
+            'cc_emails': draft.cc_emails or '',
+            'subject': draft.subject,
+            'body_html': body,
+            'email_date': fields.Datetime.now(),
+            'is_read': True,
+            'reply_to_message_id': draft.in_reply_to_message_id.id if draft.in_reply_to_message_id else False,
+        })
+
+        # 5. Delete draft
+        draft.unlink()
+
+        _logger.info('[mail v3] SMTP send OK from %s to %s, msg_id=%s',
+                      self.email_address, draft.to_emails, new_msg.id)
+        return new_msg

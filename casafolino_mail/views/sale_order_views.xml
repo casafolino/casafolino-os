@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Sale Order: smart button Thread Mail V3 -->
+    <record id="view_sale_order_form_mail_v3_thread" model="ir.ui.view">
+        <field name="name">sale.order.form.mail.v3.thread</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_mail_v3_thread" string="Thread Mail V3"
+                        type="object" class="oe_stat_button" icon="fa-envelope"
+                        invisible="not cf_mail_thread_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Quote Wizard Action -->
+    <record id="action_casafolino_mail_quote_wizard" model="ir.actions.act_window">
+        <field name="name">Crea offerta da thread</field>
+        <field name="res_model">casafolino.mail.quote.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Quote Wizard Form -->
+    <record id="view_casafolino_mail_quote_wizard_form" model="ir.ui.view">
+        <field name="name">casafolino.mail.quote.wizard.form</field>
+        <field name="model">casafolino.mail.quote.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Crea offerta">
+                <group>
+                    <field name="thread_id" readonly="1"/>
+                    <field name="partner_id" readonly="1"/>
+                    <field name="pricelist_id"/>
+                    <field name="payment_term_id"/>
+                    <field name="incoterm_id"/>
+                    <field name="warehouse_id"/>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="product_id"/>
+                        <field name="name" readonly="1"/>
+                        <field name="product_uom_qty"/>
+                        <field name="price_unit"/>
+                    </list>
+                </field>
+                <group string="Contesto conversazione">
+                    <field name="note" widget="html" readonly="1"/>
+                </group>
+                <footer>
+                    <button name="action_create_sale_order" string="Crea offerta"
+                            type="object" class="btn-primary"/>
+                    <button string="Annulla" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
