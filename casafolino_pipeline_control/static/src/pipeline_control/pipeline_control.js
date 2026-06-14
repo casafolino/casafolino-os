@@ -58,7 +58,8 @@ export class CFPipelineControl extends Component {
         this.state.loading = true;
         this.state.error = null;
         try {
-            this.state.data = await this.orm.call("cf.pipeline.control", "get_dashboard_data", [this.state.selectedFairId || false]);
+            const data = await this.orm.call("cf.pipeline.control", "get_dashboard_data", [this.state.selectedFairId || false]);
+            this.state.data = this.normalizeDashboardData(data);
             if (!this.state.selectedFairId && this.state.data.post_fair?.fair?.id) {
                 this.state.selectedFairId = this.state.data.post_fair.fair.id;
             }
@@ -73,6 +74,65 @@ export class CFPipelineControl extends Component {
         } finally {
             this.state.loading = false;
         }
+    }
+
+    normalizeDashboardData(data = {}) {
+        const asArray = (value) => Array.isArray(value) ? value : [];
+        const normalized = data || {};
+        return {
+            ...normalized,
+            kpis: asArray(normalized.kpis),
+            lanes: asArray(normalized.lanes).map((lane) => ({
+                ...lane,
+                items: asArray(lane.items),
+            })),
+            b2b_registrations: {
+                ...(normalized.b2b_registrations || {}),
+                kpis: asArray(normalized.b2b_registrations?.kpis),
+                rows: asArray(normalized.b2b_registrations?.rows),
+            },
+            followup: {
+                ...(normalized.followup || {}),
+                kpis: asArray(normalized.followup?.kpis),
+                columns: asArray(normalized.followup?.columns).map((column) => ({
+                    ...column,
+                    items: asArray(column.items),
+                })),
+                routes: asArray(normalized.followup?.routes).map((route) => ({
+                    ...route,
+                    items: asArray(route.items),
+                })),
+                timeline: asArray(normalized.followup?.timeline),
+            },
+            post_fair: {
+                ...(normalized.post_fair || {}),
+                kpis: asArray(normalized.post_fair?.kpis),
+                columns: asArray(normalized.post_fair?.columns).map((column) => ({
+                    ...column,
+                    items: asArray(column.items),
+                })),
+                timeline: asArray(normalized.post_fair?.timeline),
+                fair_options: asArray(normalized.post_fair?.fair_options),
+            },
+            pipeline: asArray(normalized.pipeline).map((column) => ({
+                ...column,
+                items: asArray(column.items),
+            })),
+            inbox: {
+                ...(normalized.inbox || {}),
+                kpis: asArray(normalized.inbox?.kpis),
+                distribution_stats: asArray(normalized.inbox?.distribution_stats),
+                to_reply: asArray(normalized.inbox?.to_reply),
+                waiting_customer: asArray(normalized.inbox?.waiting_customer),
+            },
+            dossiers: asArray(normalized.dossiers).map((dossier) => ({
+                ...dossier,
+                departments: asArray(dossier.departments).map((department) => ({
+                    ...department,
+                    tasks: asArray(department.tasks),
+                })),
+            })),
+        };
     }
 
     async selectMessage(messageId) {

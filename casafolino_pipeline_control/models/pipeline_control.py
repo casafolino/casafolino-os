@@ -332,7 +332,7 @@ class CfPipelineControl(models.AbstractModel):
             'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []}),
             'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
             'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
-            'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'to_reply': [], 'waiting_customer': []}),
+            'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'kpis': [], 'distribution_stats': [], 'to_reply': [], 'waiting_customer': []}),
             'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
         }
 
