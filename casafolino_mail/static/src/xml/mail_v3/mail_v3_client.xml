@@ -15,7 +15,7 @@
 
       <!-- Thread List with search -->
       <div class="mv3-client__thread-list">
-        <div class="mv3-search">
+        <div class="mv3-search" t-if="state.activeFolder !== 'desk'">
           <div class="mv3-search__wrapper">
             <i class="fa fa-search mv3-search__icon"/>
             <input class="mv3-search__input"
@@ -38,7 +38,7 @@
         </div>
 
         <!-- Bulk actions toolbar -->
-        <div t-if="state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-bulk-toolbar">
+        <div t-if="state.activeFolder !== 'desk' and state.selectedThreadIds and state.selectedThreadIds.length > 0" class="mv3-bulk-toolbar">
           <span class="mv3-bulk-toolbar__count">
             <t t-out="state.selectedThreadIds.length"/> selezionati
           </span>
@@ -61,7 +61,7 @@
         </div>
 
         <!-- Search results -->
-        <div t-if="state.searchResults" class="mv3-search-results">
+        <div t-if="state.activeFolder !== 'desk' and state.searchResults" class="mv3-search-results">
           <div class="mv3-search-results__header">
             <t t-out="state.searchResults.length"/> risultati
           </div>
@@ -78,7 +78,27 @@
         </div>
 
         <!-- Thread list -->
-        <div t-if="!state.searchResults">
+        <div t-if="state.activeFolder === 'desk'" class="mv3-desk-nav">
+          <div class="mv3-desk-nav__title">Desk CRM</div>
+          <button class="mv3-desk-nav__row" t-on-click="() => this.onFolderChange('triage')">
+            <span>Da valutare</span>
+            <strong t-out="this.deskCount('triage')"/>
+          </button>
+          <button class="mv3-desk-nav__row" t-on-click="() => this.onFolderChange('inbox')">
+            <span>Inbox operativa</span>
+            <strong t-out="this.deskCount('inbox')"/>
+          </button>
+          <button class="mv3-desk-nav__row" t-on-click="() => this.onFolderChange('kept')">
+            <span>Tenute CRM</span>
+            <strong t-out="this.deskCount('kept')"/>
+          </button>
+          <button class="mv3-desk-nav__row" t-on-click="() => this.onFolderChange('starred')">
+            <span>Urgenti</span>
+            <strong t-out="this.deskCount('urgent')"/>
+          </button>
+        </div>
+
+        <div t-if="state.activeFolder !== 'desk' and !state.searchResults">
           <ThreadList
             threads="state.threads"
             accounts="state.accounts"
@@ -93,11 +113,67 @@
 
       <!-- Reading Pane -->
       <div class="mv3-client__reading-pane">
+        <div t-if="state.activeFolder === 'desk'" class="mv3-desk">
+          <div class="mv3-desk__header">
+            <div>
+              <div class="mv3-desk__eyebrow">CasaFolino CRM</div>
+              <h2>Desk CRM</h2>
+            </div>
+            <button class="btn btn-primary btn-sm" t-on-click="openComposeNew">
+              <i class="fa fa-pencil-square-o"/> Nuova mail
+            </button>
+          </div>
+          <div class="mv3-desk__metrics">
+            <button class="mv3-desk-card mv3-desk-card--accent" t-on-click="() => this.onFolderChange('triage')">
+              <span>Da valutare</span>
+              <strong t-out="this.deskCount('triage')"/>
+            </button>
+            <button class="mv3-desk-card" t-on-click="() => this.onFolderChange('inbox')">
+              <span>Inbox operativa</span>
+              <strong t-out="this.deskCount('inbox')"/>
+            </button>
+            <button class="mv3-desk-card" t-on-click="() => this.onFolderChange('kept')">
+              <span>Tenute CRM</span>
+              <strong t-out="this.deskCount('kept')"/>
+            </button>
+            <button class="mv3-desk-card" t-on-click="() => this.onFolderChange('triage')">
+              <span>Senza contatto</span>
+              <strong t-out="this.deskCount('no_partner')"/>
+            </button>
+            <button class="mv3-desk-card">
+              <span>Lead aperti</span>
+              <strong t-out="this.deskCount('open_leads')"/>
+            </button>
+            <button class="mv3-desk-card">
+              <span>Materiali pronti</span>
+              <strong t-out="this.deskCount('materials')"/>
+            </button>
+          </div>
+          <div class="mv3-desk__workbar">
+            <button class="btn btn-outline-primary" t-on-click="() => this.onFolderChange('triage')">
+              <i class="fa fa-filter"/> Lavora triage
+            </button>
+            <button class="btn btn-outline-secondary" t-on-click="() => this.onFolderChange('kept')">
+              <i class="fa fa-check-circle"/> Conversazioni tenute
+            </button>
+            <button class="btn btn-outline-secondary" t-on-click="() => this.onFolderChange('scheduled')">
+              <i class="fa fa-calendar"/> Programmate
+            </button>
+          </div>
+          <div class="mv3-desk__status">
+            <span>Ultimo sync: <t t-out="this.deskLastSync()"/></span>
+            <span t-if="this.deskCount('account_errors') > 0" class="mv3-desk__alert">
+              <t t-out="this.deskCount('account_errors')"/> account in errore
+            </span>
+          </div>
+        </div>
+
         <!-- Mobile back button -->
-        <div t-if="state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
+        <div t-if="state.activeFolder !== 'desk' and state.mobileView === 'reading'" class="mv3-mobile-back" t-on-click="mobileBack">
           <i class="fa fa-arrow-left"/> Torna alla lista
         </div>
         <ReadingPane
+          t-if="state.activeFolder !== 'desk'"
           messages="state.messages"
           loading="state.loading.messages"
           onAction.bind="onMessageAction"

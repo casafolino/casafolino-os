@@ -35,10 +35,26 @@ def _hotness_emoji(tier):
 
 class MailV3Controller(http.Controller):
 
+    def _ensure_recent_operational_threads(self):
+        """Make new/review mail visible in V3, including older rows created before thread upsert."""
+        Message = request.env['casafolino.mail.message']
+        unthreaded = Message.search([
+            ('thread_id', '=', False),
+            ('state', 'in', ['new', 'review', 'keep', 'auto_keep']),
+            ('is_deleted', '=', False),
+        ], order='email_date desc', limit=300)
+        Thread = request.env['casafolino.mail.thread']
+        for msg in unthreaded:
+            try:
+                Thread._upsert_from_message(msg)
+            except Exception as e:
+                _logger.warning('[mail v3] ensure thread failed for msg %s: %s', msg.id, e)
+
     # ── Thread List ──────────────────────────────────────────────────
 
     @http.route('/cf/mail/v3/threads/list', type='json', auth='user')
     def threads_list(self, **kw):
+        self._ensure_recent_operational_threads()
         account_ids = kw.get('account_ids')
         state = kw.get('state', 'keep')
         limit = min(int(kw.get('limit', 50)), 200)
@@ -64,6 +80,18 @@ class MailV3Controller(http.Controller):
             ])
             starred_thread_ids = starred_msgs.mapped('thread_id').ids
             domain.append(('id', 'in', starred_thread_ids))
+        elif folder == 'triage':
+            triage_msgs = request.env['casafolino.mail.message'].search([
+                ('state', 'in', ['new', 'review']),
+                ('is_deleted', '=', False),
+            ])
+            domain.append(('id', 'in', triage_msgs.mapped('thread_id').ids))
+        elif folder == 'kept':
+            kept_msgs = request.env['casafolino.mail.message'].search([
+                ('state', 'in', ['keep', 'auto_keep']),
+                ('is_deleted', '=', False),
+            ])
+            domain.append(('id', 'in', kept_msgs.mapped('thread_id').ids))
         elif folder == 'sent':
             domain.append(('has_outbound', '=', True))
         elif folder == 'snoozed':
@@ -71,7 +99,16 @@ class MailV3Controller(http.Controller):
             domain.append(('is_snoozed', '=', True))
         elif folder == 'trash':
             domain = [d for d in domain if d[0] != 'is_archived']
-            domain.append(('is_archived', '=', True))
+            discarded_msgs = request.env['casafolino.mail.message'].search([
+                ('state', 'in', ['discard', 'auto_discard']),
+            ])
+            domain.append(('id', 'in', discarded_msgs.mapped('thread_id').ids))
+        elif not folder or folder == 'inbox':
+            inbox_msgs = request.env['casafolino.mail.message'].search([
+                ('state', 'in', ['new', 'review', 'keep', 'auto_keep']),
+                ('is_deleted', '=', False),
+            ])
+            domain.append(('id', 'in', inbox_msgs.mapped('thread_id').ids))
 
         threads = request.env['casafolino.mail.thread'].search(
             domain, limit=limit, offset=offset,
@@ -160,6 +197,7 @@ class MailV3Controller(http.Controller):
                 'attachment_count': att_count,
                 'lead_open': lead_open,
                 'partner_ids': t.partner_ids.ids,
+                'needs_triage': any(m.state in ('new', 'review') for m in t.message_ids),
             })
 
         return {'threads': result, 'total': total}
@@ -194,9 +232,12 @@ class MailV3Controller(http.Controller):
                 'is_read': m.is_read,
                 'is_starred': m.is_starred,
                 'is_archived': m.is_archived,
+                'state': m.state or '',
                 'intent_detected': m.intent_detected or '',
                 'partner_id': m.partner_id.id if m.partner_id else False,
                 'partner_name': m.partner_id.name if m.partner_id else '',
+                'lead_id': m.lead_id.id if m.lead_id else False,
+                'lead_name': m.lead_id.name if m.lead_id else '',
                 'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''}
                                     for a in m.attachment_ids],
                 'message_id_rfc': m.message_id_rfc or '',
@@ -229,14 +270,62 @@ class MailV3Controller(http.Controller):
             'delete_soft': 'action_delete_soft',
             'restore': 'action_restore',
             'toggle_star': 'action_toggle_star',
+            'keep': 'action_keep',
+            'discard': 'action_discard',
+            'discard_domain': 'action_blacklist_domain',
+            'create_partner': 'action_create_partner',
+            'create_lead': 'action_create_lead',
         }
 
         method = action_map.get(action)
         if not method:
             return {'success': False, 'error': 'Invalid action'}
 
-        getattr(msg, method)()
-        return {'success': True}
+        action_result = getattr(msg, method)()
+        response = {'success': True}
+        if isinstance(action_result, dict) and action_result.get('type'):
+            response['action'] = action_result
+        if msg.exists():
+            response.update({
+                'message_id': msg.id,
+                'state': msg.state or '',
+                'partner_id': msg.partner_id.id if msg.partner_id else False,
+                'partner_name': msg.partner_id.name if msg.partner_id else '',
+                'lead_id': msg.lead_id.id if msg.lead_id else False,
+                'lead_name': msg.lead_id.name if msg.lead_id else '',
+            })
+        return response
+
+    @http.route('/cf/mail/v3/desk/summary', type='json', auth='user')
+    def desk_summary(self, **kw):
+        Message = request.env['casafolino.mail.message']
+        Partner = request.env['res.partner']
+        Lead = request.env['crm.lead'].sudo()
+        Account = request.env['casafolino.mail.account']
+        Material = request.env['casafolino.mail.material']
+
+        inbox_domain = [('state', 'in', ['new', 'review', 'keep', 'auto_keep']), ('is_deleted', '=', False)]
+        triage_domain = [('state', 'in', ['new', 'review']), ('is_deleted', '=', False)]
+        kept_domain = [('state', 'in', ['keep', 'auto_keep']), ('is_deleted', '=', False)]
+        no_partner_domain = triage_domain + [('partner_id', '=', False)]
+        urgent_domain = inbox_domain + ['|', ('is_important', '=', True), ('ai_urgency', '=', 'high')]
+
+        accounts = Account.search([('active', '=', True)])
+        last_sync_dates = [a.last_fetch_datetime for a in accounts if a.last_fetch_datetime]
+        return {
+            'counts': {
+                'inbox': Message.search_count(inbox_domain),
+                'triage': Message.search_count(triage_domain),
+                'kept': Message.search_count(kept_domain),
+                'no_partner': Message.search_count(no_partner_domain),
+                'urgent': Message.search_count(urgent_domain),
+                'open_leads': Lead.search_count([('active', '=', True), ('stage_id.is_won', '=', False)]),
+                'tracked_companies': Partner.search_count([('is_company', '=', True), ('mail_tracked', '=', True)]),
+                'materials': Material.search_count([('active', '=', True), ('state', '=', 'approved')]),
+                'account_errors': len(accounts.filtered(lambda a: a.state == 'error')),
+            },
+            'last_sync': str(max(last_sync_dates)) if last_sync_dates else '',
+        }
 
     # ── Draft CRUD ───────────────────────────────────────────────────
 

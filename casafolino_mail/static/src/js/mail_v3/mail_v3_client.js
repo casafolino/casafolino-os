@@ -23,7 +23,7 @@ export class MailV3Client extends Component {
         this.state = useState({
             accounts: [],
             selectedAccountIds: null,
-            activeFolder: 'inbox',
+            activeFolder: 'desk',
             threads: [],
             selectedThreadId: null,
             selectedThreadIndex: -1,
@@ -60,6 +60,7 @@ export class MailV3Client extends Component {
             // Bulk selection
             bulkMode: false,
             selectedThreadIds: [],
+            deskSummary: null,
             // Mobile
             mobileView: null, // null = desktop, 'list' | 'reading' | 'sidebar'
         });
@@ -70,7 +71,7 @@ export class MailV3Client extends Component {
 
         onWillStart(async () => {
             await this.loadAccounts();
-            await this.loadThreads();
+            await this._loadDeskSummary();
             await this._loadPreferences();
             this._detectMobile();
         });
@@ -199,11 +200,39 @@ export class MailV3Client extends Component {
 
     onFolderChange(folder) {
         this.state.activeFolder = folder;
+        this.state.messages = [];
+        this.state.selectedThreadId = null;
+        this.state.selectedThreadIndex = -1;
         if (folder === 'scheduled') {
             this._loadScheduled();
+        } else if (folder === 'desk') {
+            this._loadDeskSummary();
         } else {
             this.loadThreads();
         }
+    }
+
+    async _loadDeskSummary() {
+        this.state.loading.threads = true;
+        try {
+            const res = await rpc('/cf/mail/v3/desk/summary');
+            this.state.deskSummary = res || {};
+            this.state.threads = [];
+            this.state.totalThreads = 0;
+        } catch (e) {
+            console.error('[mail v3] load desk summary error:', e);
+        }
+        this.state.loading.threads = false;
+    }
+
+    deskCount(key) {
+        const summary = this.state.deskSummary || {};
+        const counts = summary.counts || {};
+        return counts[key] || 0;
+    }
+
+    deskLastSync() {
+        return (this.state.deskSummary && this.state.deskSummary.last_sync) || 'non disponibile';
     }
 
     async _loadScheduled() {
@@ -235,10 +264,23 @@ export class MailV3Client extends Component {
 
     async onMessageAction(action, msgId) {
         try {
-            await rpc('/cf/mail/v3/message/' + msgId + '/' + action);
+            const result = await rpc('/cf/mail/v3/message/' + msgId + '/' + action);
+            if (result?.action) {
+                await this.actionService.doAction(result.action, {
+                    onClose: async () => {
+                        await this.loadThreads();
+                        if (this.state.selectedThreadId) {
+                            await this.selectThread(this.state.selectedThreadId);
+                        }
+                    },
+                });
+            }
             if (this.state.selectedThreadId) {
                 const res = await rpc('/cf/mail/v3/thread/' + this.state.selectedThreadId + '/messages');
                 this.state.messages = res.messages || [];
+            }
+            if (['keep', 'discard', 'discard_domain', 'create_partner', 'create_lead'].includes(action)) {
+                await this.loadThreads();
             }
         } catch (e) {
             console.error('[mail v3] message action error:', e);

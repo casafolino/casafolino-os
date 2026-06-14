@@ -8,7 +8,7 @@ export class SidebarLeft extends Component {
     setup() {
         this.state = useState({
             selectedAccountId: null,
-            activeFolder: 'inbox',
+            activeFolder: 'desk',
         });
     }
 

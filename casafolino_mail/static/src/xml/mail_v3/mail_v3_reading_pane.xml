@@ -37,6 +37,9 @@
                   <t t-out="msg.intent_detected"/>
                 </span>
               </div>
+              <div t-if="msg.state" class="mv3-message__intent">
+                <span class="mv3-badge mv3-badge--state" t-out="msg.state"/>
+              </div>
               <div class="mv3-message__body">
                 <iframe class="mv3-message__iframe"
                         sandbox="allow-same-origin allow-popups"
@@ -52,6 +55,26 @@
                 </t>
               </div>
               <div class="mv3-message__actions">
+                <button t-if="msg.state !== 'keep' and msg.state !== 'auto_keep'"
+                        class="btn btn-sm btn-success"
+                        t-on-click="() => this.onAction('keep', msg.id)">
+                  <i class="fa fa-check"/> Tieni
+                </button>
+                <button t-if="msg.state !== 'discard' and msg.state !== 'auto_discard'"
+                        class="btn btn-sm btn-outline-danger"
+                        t-on-click="() => this.onAction('discard', msg.id)">
+                  <i class="fa fa-times"/> Scarta
+                </button>
+                <button t-if="!msg.partner_id"
+                        class="btn btn-sm btn-outline-primary"
+                        t-on-click="() => this.onAction('create_partner', msg.id)">
+                  <i class="fa fa-user-plus"/> Contatto
+                </button>
+                <button t-if="!msg.lead_id"
+                        class="btn btn-sm btn-outline-primary"
+                        t-on-click="() => this.onAction('create_lead', msg.id)">
+                  <i class="fa fa-bullseye"/> Lead
+                </button>
                 <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.onReply(msg.id)">
                   <i class="fa fa-reply"/> Rispondi
                 </button>
@@ -75,6 +98,12 @@
                 </button>
                 <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.onAction('delete_soft', msg.id)">
                   <i class="fa fa-trash"/>
+                </button>
+                <button t-if="msg.state === 'new' || msg.state === 'review'"
+                        class="btn btn-sm btn-outline-warning"
+                        t-on-click="() => this.onAction('discard_domain', msg.id)"
+                        title="Scarta dominio">
+                  <i class="fa fa-ban"/>
                 </button>
               </div>
             </div>

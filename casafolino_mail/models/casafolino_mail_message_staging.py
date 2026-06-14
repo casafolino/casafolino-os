@@ -5,6 +5,7 @@ import logging
 import re
 import time
 import uuid
+from email.utils import getaddresses
 
 import requests as req
 
@@ -42,6 +43,13 @@ _LANG_KEYWORDS = {
               'envío', 'productos', 'atentamente', 'buenos', 'días'},
     'it_IT': {'gentile', 'cordiali', 'saluti', 'grazie', 'ordine',
               'spedizione', 'prodotti', 'distinti', 'buongiorno', 'gentilissimo'},
+}
+
+_GENERIC_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+    'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 'live.com', 'msn.com',
+    'gmx.de', 'web.de', 'libero.it', 'virgilio.it', 'alice.it', 'tiscali.it',
+    't-online.de', 'wanadoo.fr', 'orange.fr', 'free.fr', 'laposte.net',
 }
 
 
@@ -237,7 +245,7 @@ class CasafolinoMailMessage(models.Model):
         if not self.env.context.get('skip_thread_upsert'):
             Thread = self.env['casafolino.mail.thread']
             for rec in records:
-                if rec.state in ('keep', 'auto_keep'):
+                if rec.state in ('new', 'review', 'keep', 'auto_keep'):
                     try:
                         Thread._upsert_from_message(rec)
                     except Exception as e:
@@ -651,12 +659,12 @@ class CasafolinoMailMessage(models.Model):
     # ── Triage actions (Step 3) ──────────────────────────────────────
 
     def action_keep(self):
-        """Marca come keep (non-bloccante). Il body viene scaricato dal cron."""
+        """Marca come keep, risolve CRM e attiva auto-keep dominio quando possibile."""
         now = fields.Datetime.now()
         uid = self.env.user.id
 
-        # Marca tutti i record selezionati come keep + pending fetch
         for record in self:
+            record._resolve_crm_entities_from_participants()
             vals = {
                 'state': 'keep',
                 'triage_user_id': uid,
@@ -672,15 +680,22 @@ class CasafolinoMailMessage(models.Model):
             if record.partner_id and not record.partner_id.mail_tracked:
                 record.partner_id.sudo().mail_tracked = True
 
-        # Auto-keep: tutte le email dallo stesso mittente ancora in 'new'
+            record._ensure_auto_keep_domain_policy()
+            self.env['casafolino.mail.thread']._upsert_from_message(record)
+
+        # Auto-keep: tutte le email dallo stesso dominio business ancora da lavorare.
+        business_domains = set()
         sender_emails = set()
         for record in self:
             if record.sender_email:
                 sender_emails.add(record.sender_email.lower().strip())
+            if record.sender_domain and not record._is_generic_email_domain(record.sender_domain):
+                business_domains.add(record.sender_domain.lower().strip())
+
         if sender_emails:
             siblings = self.search([
                 ('sender_email', 'in', list(sender_emails)),
-                ('state', '=', 'new'),
+                ('state', 'in', ['new', 'review']),
                 ('id', 'not in', self.ids),
             ])
             if siblings:
@@ -703,14 +718,174 @@ class CasafolinoMailMessage(models.Model):
                         sib_vals['partner_id'] = pid
                         sib_vals['match_type'] = 'exact'
                     sib.write(sib_vals)
+                    self.env['casafolino.mail.thread']._upsert_from_message(sib)
+
+        if business_domains:
+            domain_siblings = self.search([
+                ('sender_domain', 'in', list(business_domains)),
+                ('state', 'in', ['new', 'review']),
+                ('id', 'not in', self.ids),
+            ])
+            for sib in domain_siblings:
+                sib._resolve_crm_entities_from_participants()
+                sib.write({
+                    'state': 'keep',
+                    'triage_user_id': uid,
+                    'triage_date': now,
+                    'fetch_state': 'pending' if not sib.body_downloaded else 'done',
+                })
+                self.env['casafolino.mail.thread']._upsert_from_message(sib)
 
     def action_discard(self):
-        """Marca come discard."""
+        """Marca come discard e la rimuove dalla inbox operativa."""
         self.write({
             'state': 'discard',
+            'is_archived': True,
             'triage_user_id': self.env.user.id,
             'triage_date': fields.Datetime.now(),
         })
+
+    def _is_generic_email_domain(self, domain):
+        return (domain or '').lower().strip() in _GENERIC_EMAIL_DOMAINS
+
+    def _message_external_addresses(self):
+        """Ritorna indirizzi esterni presenti in From/To/Cc, esclusa la casella CasaFolino."""
+        self.ensure_one()
+        raw_values = [self.sender_email or '', self.recipient_emails or '', self.cc_emails or '']
+        parsed = []
+        for name, addr in getaddresses(raw_values):
+            email_addr = (addr or '').lower().strip()
+            if not email_addr or '@' not in email_addr:
+                continue
+            if self.account_id and email_addr == (self.account_id.email_address or '').lower().strip():
+                continue
+            domain = email_addr.split('@', 1)[1]
+            if self.account_id and domain == (self.account_id.company_domain or '').lower().strip():
+                continue
+            parsed.append((email_addr, name or ''))
+
+        if self.sender_email and '@' in self.sender_email:
+            sender = self.sender_email.lower().strip()
+            if sender not in [p[0] for p in parsed]:
+                parsed.insert(0, (sender, self.sender_name or ''))
+        return parsed
+
+    def _company_name_from_domain(self, domain):
+        root = (domain or '').split('.')[0].strip()
+        if not root:
+            return ''
+        return root.replace('-', ' ').replace('_', ' ').title()
+
+    def _find_or_create_company_for_domain(self, domain):
+        domain = (domain or '').lower().strip()
+        if not domain or self._is_generic_email_domain(domain):
+            return self.env['res.partner']
+
+        Partner = self.env['res.partner'].sudo()
+        website_like = '%' + domain + '%'
+        company = Partner.search([
+            ('is_company', '=', True),
+            '|', ('website', 'ilike', website_like), ('email', 'ilike', '@' + domain),
+        ], limit=1)
+        if company:
+            return company
+
+        name = self._company_name_from_domain(domain)
+        normalized_name = re.sub(r'[^a-z0-9]+', '', name.lower())
+        candidates = Partner.search([('is_company', '=', True), ('name', 'ilike', name)], limit=20)
+        for candidate in candidates:
+            candidate_norm = re.sub(r'[^a-z0-9]+', '', (candidate.name or '').lower())
+            if candidate_norm == normalized_name:
+                return candidate
+
+        return Partner.create({
+            'name': name or domain,
+            'is_company': True,
+            'website': 'https://%s' % domain,
+            'email': 'info@%s' % domain,
+            'mail_tracked': True,
+            'mail_tracked_since': fields.Datetime.now(),
+        })
+
+    def _find_or_create_person_for_email(self, email_addr, display_name='', company=False):
+        Partner = self.env['res.partner'].sudo()
+        partner = Partner.search([('email', '=ilike', email_addr)], limit=1)
+        if partner:
+            vals = {}
+            if company and not partner.parent_id and not partner.is_company:
+                vals['parent_id'] = company.id
+            if not partner.mail_tracked:
+                vals['mail_tracked'] = True
+                vals['mail_tracked_since'] = fields.Datetime.now()
+            if vals:
+                partner.write(vals)
+            return partner
+
+        vals = {
+            'name': display_name or email_addr,
+            'email': email_addr,
+            'mail_tracked': True,
+            'mail_tracked_since': fields.Datetime.now(),
+        }
+        if company:
+            vals['parent_id'] = company.id
+        self._enrich_partner_vals(vals)
+        return Partner.create(vals)
+
+    def _resolve_crm_entities_from_participants(self):
+        """Crea/collega contatti e azienda dalla mail. Il match resta deterministico."""
+        self.ensure_one()
+        addresses = self._message_external_addresses()
+        if not addresses:
+            return self.env['res.partner']
+
+        primary_partner = self.env['res.partner']
+        thread_partner_ids = []
+        company_by_domain = {}
+        for email_addr, display_name in addresses:
+            domain = email_addr.split('@', 1)[1]
+            company = company_by_domain.get(domain)
+            if company is None:
+                company = self._find_or_create_company_for_domain(domain)
+                company_by_domain[domain] = company
+            partner = self._find_or_create_person_for_email(email_addr, display_name, company=company)
+            if partner:
+                thread_partner_ids.append(partner.id)
+                if company:
+                    thread_partner_ids.append(company.id)
+                if not primary_partner:
+                    primary_partner = partner
+
+        vals = {}
+        if primary_partner and not self.partner_id:
+            vals['partner_id'] = primary_partner.id
+            vals['match_type'] = 'manual'
+        if vals:
+            self.write(vals)
+        if self.thread_id and thread_partner_ids:
+            self.thread_id.write({'partner_ids': [(4, pid) for pid in set(thread_partner_ids)]})
+        return primary_partner
+
+    def _ensure_auto_keep_domain_policy(self):
+        self.ensure_one()
+        domain = (self.sender_domain or '').lower().strip()
+        if not domain or self._is_generic_email_domain(domain):
+            return
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        existing = Policy.search([
+            ('pattern_type', '=', 'domain'),
+            ('pattern_value', '=', domain),
+            ('action', '=', 'auto_keep'),
+        ], limit=1)
+        if not existing:
+            Policy.create({
+                'name': 'Auto-keep: %s' % domain,
+                'pattern_type': 'domain',
+                'pattern_value': domain,
+                'action': 'auto_keep',
+                'priority': 80,
+                'auto_create_partner': True,
+            })
 
     # ── Body download (Step 3) ───────────────────────────────────────
 
@@ -865,10 +1040,11 @@ class CasafolinoMailMessage(models.Model):
         if domains_done:
             all_from_domains = self.search([
                 ('sender_domain', 'in', list(domains_done)),
-                ('state', '=', 'new'),
+                ('state', 'in', ['new', 'review']),
             ])
             all_from_domains.write({
                 'state': 'discard',
+                'is_archived': True,
                 'triage_user_id': self.env.user.id,
                 'triage_date': fields.Datetime.now(),
             })
@@ -886,8 +1062,19 @@ class CasafolinoMailMessage(models.Model):
         return ext_email, name
 
     def action_create_partner(self):
-        """Crea un nuovo res.partner arricchito dall'email."""
+        """Crea o collega i contatti della conversazione, inclusa azienda da dominio business."""
         self.ensure_one()
+        partner = self._resolve_crm_entities_from_participants()
+        if partner:
+            self.write({'partner_id': partner.id, 'match_type': 'manual'})
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'res.partner',
+                'res_id': partner.id,
+                'view_mode': 'form',
+                'target': 'current',
+            }
+
         email_addr, name = self._get_contact_email_and_name()
 
         vals = {

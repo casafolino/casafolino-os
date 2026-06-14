@@ -10,11 +10,18 @@
 
       <div class="mv3-sidebar-left__divider"/>
 
+      <!-- Desk CRM -->
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'desk'}"
+           t-on-click="() => this.selectFolder('desk')" title="Desk CRM">
+        <i class="fa fa-th-large"/>
+      </div>
+
       <!-- Tutti (inbox) -->
       <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': !state.selectedAccountId and state.activeFolder === 'inbox'}"
            t-on-click="selectAll" title="Tutti">
-        <span>📬</span>
+        <i class="fa fa-inbox"/>
         <span class="mv3-sidebar-left__badge" t-if="totalUnread > 0">
           <t t-out="totalUnread > 99 ? '99+' : totalUnread"/>
         </span>
@@ -38,29 +45,39 @@
 
       <!-- Folder icons -->
       <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'triage'}"
+           t-on-click="() => this.selectFolder('triage')" title="Da valutare">
+        <i class="fa fa-filter"/>
+      </div>
+      <div class="mv3-sidebar-left__icon"
+           t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'kept'}"
+           t-on-click="() => this.selectFolder('kept')" title="Tenute CRM">
+        <i class="fa fa-check-circle"/>
+      </div>
+      <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'starred'}"
            t-on-click="() => this.selectFolder('starred')" title="Speciali">
-        <span>⭐</span>
+        <i class="fa fa-star"/>
       </div>
       <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'snoozed'}"
            t-on-click="() => this.selectFolder('snoozed')" title="Snoozed">
-        <span>💤</span>
+        <i class="fa fa-clock-o"/>
       </div>
       <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'scheduled'}"
            t-on-click="() => this.selectFolder('scheduled')" title="Programmate">
-        <span>⏰</span>
+        <i class="fa fa-calendar"/>
       </div>
       <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'sent'}"
            t-on-click="() => this.selectFolder('sent')" title="Inviati">
-        <span>📤</span>
+        <i class="fa fa-paper-plane"/>
       </div>
       <div class="mv3-sidebar-left__icon"
            t-att-class="{'mv3-sidebar-left__icon--active': state.activeFolder === 'trash'}"
            t-on-click="() => this.selectFolder('trash')" title="Cestino">
-        <span>🗑️</span>
+        <i class="fa fa-trash"/>
       </div>
 
       <!-- Spacer -->
@@ -68,7 +85,7 @@
 
       <!-- Settings -->
       <div class="mv3-sidebar-left__icon" t-on-click="onOpenSettings" title="Impostazioni">
-        <span>⚙️</span>
+        <i class="fa fa-cog"/>
       </div>
     </div>
   </t>

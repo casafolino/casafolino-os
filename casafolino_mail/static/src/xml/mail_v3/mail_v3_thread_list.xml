@@ -39,6 +39,9 @@
             <span t-if="thread.lead_open" class="mv3-badge mv3-badge--lead">
               <t t-out="'\ud83d\udcbc Lead aperto'"/>
             </span>
+            <span t-if="thread.needs_triage" class="mv3-badge mv3-badge--triage">
+              Da valutare
+            </span>
           </div>
         </div>
       </t>
