@@ -1806,17 +1806,27 @@ class CfPipelineControl(models.AbstractModel):
         }
 
     def _reply_from_message(self, msg):
+        if 'casafolino.mail.compose.wizard' not in self.env:
+            return self._notify('Composer non disponibile', 'Aggiorna casafolino_mail.', 'warning')
         partner = msg.partner_id
         partner_email = partner.email if partner else (msg.sender_email or '')
+        account = msg.account_id or self.env['casafolino.mail.account'].search([
+            ('responsible_user_id', '=', self.env.user.id),
+            ('active', '=', True),
+        ], limit=1)
         return {
-            'type': 'ir.actions.client',
-            'tag': 'casafolino_mail.compose_f8',
+            'type': 'ir.actions.act_window',
+            'name': 'Rispondi',
+            'res_model': 'casafolino.mail.compose.wizard',
+            'view_mode': 'form',
+            'target': 'new',
             'context': {
-                'default_partner_email': partner_email,
+                'default_account_id': account.id if account else False,
+                'default_to_emails': partner_email,
+                'default_cc_emails': msg.cc_emails or '',
                 'default_subject': 'Re: %s' % (msg.subject or ''),
                 'default_partner_id': partner.id if partner else False,
-                'default_thread_id': msg.id,
-                'default_thread_model': 'casafolino.mail.message',
+                'default_in_reply_to_message_id': msg.id,
             },
         }
 
