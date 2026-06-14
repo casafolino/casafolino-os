@@ -15,7 +15,7 @@ class CrmLeadPipelineControl(models.Model):
     cf_pc_task_count = fields.Integer(string='Task dossier', compute='_compute_cf_pc_counts')
 
     def _compute_cf_pc_counts(self):
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         Sale = self.env['sale.order']
         Task = self.env['project.task']
         has_opportunity = 'opportunity_id' in Sale._fields
@@ -1052,7 +1052,7 @@ class CfPipelineControl(models.AbstractModel):
         stats = {lead_id: {'inbound': 0, 'outbound': 0, 'last_date': False} for lead_id in lead_ids}
         if not lead_ids:
             return stats
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return stats
         messages = Mail.search([
@@ -1095,7 +1095,7 @@ class CfPipelineControl(models.AbstractModel):
     def _lead_ids_with_mail(self, lead_ids):
         if not lead_ids:
             return set()
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return set()
         groups = Mail.read_group(
@@ -1120,7 +1120,7 @@ class CfPipelineControl(models.AbstractModel):
         return columns
 
     def _get_inbox_data(self, user):
-        if not self.env.get('casafolino.mail.message'):
+        if 'casafolino.mail.message' not in self.env:
             return self._empty_inbox_data()
         inbox, waiting = self._get_latest_commercial_threads(user)
         rows_to_reply = [self._format_mail_row(msg) for msg in inbox[:24]]
@@ -1321,7 +1321,7 @@ class CfPipelineControl(models.AbstractModel):
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     def _get_latest_commercial_threads(self, user):
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return [], []
         domain = [
@@ -1974,7 +1974,7 @@ class CfPipelineControl(models.AbstractModel):
         timeline = []
         import datetime
 
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         emails = Mail.search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50) if Mail else []
         for email in emails:
             attachments = self.env['ir.attachment'].search([
@@ -2177,7 +2177,7 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return res
         msg_id = self.env.context.get('default_message_id')
@@ -2370,7 +2370,7 @@ class CfPipelineCreateDossierWizard(models.TransientModel):
         import datetime
 
         # 1. Custom Emails: casafolino.mail.message
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         emails = Mail.search([('cf_project_id', '=', project.id)], order='create_date desc', limit=50) if Mail else []
         for email in emails:
             attachments = self.env['ir.attachment'].search([
@@ -2459,7 +2459,7 @@ class CfPipelineLinkLeadWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return res
         message = Mail.browse(self.env.context.get('default_message_id')).exists()
@@ -2474,7 +2474,7 @@ class CfPipelineLinkLeadWizard(models.TransientModel):
 
     def action_link(self):
         self.ensure_one()
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return {
                 'type': 'ir.actions.client',
@@ -2531,7 +2531,7 @@ class CfPipelineSnoozeWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        Mail = self.env.get('casafolino.mail.message')
+        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return res
         message = Mail.browse(self.env.context.get('default_message_id')).exists()
