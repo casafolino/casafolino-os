@@ -186,6 +186,20 @@ class AccountMoveLineExt(models.Model):
             line.cf_vendor_bill_price_unit_six_decimals = line.price_unit
             line.cf_vendor_bill_discount_six_decimals = line.discount
 
+    @api.onchange(
+        'cf_vendor_bill_quantity_six_decimals',
+        'cf_vendor_bill_price_unit_six_decimals',
+        'cf_vendor_bill_discount_six_decimals',
+    )
+    def _onchange_cf_vendor_bill_decimal_fields(self):
+        for line in self:
+            if line.move_id.move_type not in ('in_invoice', 'in_refund'):
+                continue
+            line.quantity = line.cf_vendor_bill_quantity_six_decimals
+            line.price_unit = line.cf_vendor_bill_price_unit_six_decimals
+            line.discount = line.cf_vendor_bill_discount_six_decimals
+            line._compute_cf_price_subtotal_six_decimals()
+
     def _inverse_cf_vendor_bill_quantity_six_decimals(self):
         for line in self:
             line.quantity = line.cf_vendor_bill_quantity_six_decimals
@@ -213,4 +227,5 @@ class AccountMoveLineExt(models.Model):
                 continue
 
             subtotal = quantity * price_unit * (Decimal("1.0") - (discount / Decimal("100.0")))
+            subtotal = subtotal.quantize(Decimal("0.000001"))
             line.cf_price_subtotal_six_decimals = float(subtotal)
