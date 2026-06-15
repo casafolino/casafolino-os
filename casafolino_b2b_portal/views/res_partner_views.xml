@@ -121,5 +121,6 @@
         name="Iscrizioni B2B"
         parent="casafolino_pipeline_control.menu_cf_pipeline_control_root"
         action="action_cf_b2b_control_room"
+        active="False"
         sequence="42"/>
 </odoo>

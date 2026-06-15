@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CasaFolino B2B Portal",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.0.1",
     "category": "Website/eCommerce",
     "summary": "Portale B2B CasaFolino con approvazione clienti, prezzi riservati e minimi ordine.",
     "author": "CasaFolino S.r.l.",
