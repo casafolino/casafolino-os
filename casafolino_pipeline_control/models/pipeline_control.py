@@ -855,6 +855,7 @@ class CfPipelineControl(models.AbstractModel):
         refs_to_disable = [
             'casafolino_crm_360.menu_crm360_root',
             'casafolino_crm_export.menu_cf_projects_360',
+            'casafolino_pipeline_control.menu_cf_pipeline_root_control',
             'casafolino_pipeline_control.menu_cf_pipeline_root_inbox',
             'casafolino_pipeline_control.menu_cf_pipeline_root_followup',
             'casafolino_pipeline_control.menu_cf_pipeline_root_post_fair',
