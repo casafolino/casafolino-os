@@ -215,7 +215,7 @@ class AccountMoveLineExt(models.Model):
     @api.depends('quantity', 'price_unit', 'discount', 'display_type')
     def _compute_cf_price_subtotal_six_decimals(self):
         for line in self:
-            if line.display_type:
+            if line.display_type in ('line_section', 'line_note'):
                 line.cf_price_subtotal_six_decimals = 0.0
                 continue
             try:
