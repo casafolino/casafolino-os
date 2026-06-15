@@ -91,8 +91,12 @@ export class CFPipelineControl extends Component {
         await this.loadData(this.state.activeView, true);
     }
 
+    asArray(value) {
+        return Array.isArray(value) ? value : [];
+    }
+
     normalizeDashboardData(data = {}) {
-        const asArray = (value) => Array.isArray(value) ? value : [];
+        const asArray = this.asArray.bind(this);
         const normalized = data || {};
         return {
             ...normalized,
@@ -280,7 +284,7 @@ export class CFPipelineControl extends Component {
     removeMessageFromInbox(messageId) {
         const inbox = this.state.data?.inbox;
         if (!inbox) return;
-        const removeFrom = (items) => asArray(items).filter((item) => item.id !== messageId);
+        const removeFrom = (items) => this.asArray(items).filter((item) => item.id !== messageId);
         inbox.to_reply = removeFrom(inbox.to_reply);
         inbox.waiting_customer = removeFrom(inbox.waiting_customer);
         if (this.state.selectedMessageId === messageId) {
