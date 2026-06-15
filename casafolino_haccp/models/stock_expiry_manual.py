@@ -50,6 +50,24 @@ class StockMoveLine(models.Model):
         if duration:
             from_date = self.picking_id.scheduled_date or fields.Datetime.today()
             self.expiration_date = from_date + datetime.timedelta(days=duration)
-        elif not self.expiration_date:
+        else:
             self.expiration_date = False
         return res
+
+
+class StockMove(models.Model):
+    _inherit = "stock.move"
+
+    def _generate_serial_move_line_commands(self, field_data, location_dest_id=False, origin_move_line=None):
+        commands = super()._generate_serial_move_line_commands(field_data, location_dest_id, origin_move_line)
+        if not self.product_id.use_expiration_date or self.product_id.expiration_time:
+            return commands
+
+        for index, command in enumerate(commands):
+            if len(command) < 3:
+                continue
+            source_data = field_data[index] if index < len(field_data) else {}
+            manual_expiration = source_data.get("expiration_date") or source_data.get("datetime")
+            if not manual_expiration:
+                command[2].pop("expiration_date", None)
+        return commands
