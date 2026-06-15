@@ -138,6 +138,17 @@
         }
     }
 
+    .cf-pc-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        margin: -20px -20px 16px;
+        padding: 14px 20px;
+        background: rgba(246, 247, 248, .96);
+        border-bottom: 1px solid #dfe3da;
+        backdrop-filter: blur(10px);
+    }
+
     .cf-pc-actions {
         display: flex;
         gap: 8px;
@@ -1762,6 +1773,9 @@
     }
 
     .cf-pc-inbox-command {
+        position: sticky;
+        top: 69px;
+        z-index: 9;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -1772,6 +1786,7 @@
         border: 1px solid #d8dde4;
         border-radius: 8px;
         overflow-x: auto;
+        box-shadow: 0 6px 18px rgba(24, 32, 42, .06);
 
         .btn {
             white-space: nowrap;
@@ -1898,6 +1913,33 @@
         }
     }
 
+    .cf-pc-vc-date-group {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 10px 0 8px;
+        padding: 7px 9px;
+        border: 1px solid #d8dde4;
+        border-radius: 7px;
+        background: rgba(247, 248, 250, .96);
+        color: #374151;
+        font-size: 12px;
+        font-weight: 850;
+
+        em {
+            min-width: 22px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #e8ecf1;
+            color: #657282;
+            font-style: normal;
+            text-align: center;
+        }
+    }
+
     .cf-pc-vc-score {
         width: 42px;
         height: 42px;
@@ -1973,8 +2015,8 @@
 
     .cf-pc-vc-thread-toolbar {
         position: sticky;
-        top: -18px;
-        z-index: 3;
+        top: 0;
+        z-index: 4;
         display: flex;
         align-items: center;
         flex-wrap: wrap;

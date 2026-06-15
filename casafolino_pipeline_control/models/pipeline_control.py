@@ -472,18 +472,29 @@ class CfPipelineControl(models.AbstractModel):
         if not msg:
             return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
         if hasattr(msg, 'action_create_partner'):
-            result = msg.action_create_partner()
+            msg.action_create_partner()
         else:
             partner = self._resolve_or_create_partner_from_message(
                 msg,
                 create_company=True,
                 create_participants=True,
             )
-            result = self._open_record(partner, 'Azienda') if partner else False
-        if not result:
+        msg.invalidate_recordset(['partner_id', 'match_type'])
+        if not msg.partner_id:
             return self._notify('Azienda non creata', 'Non ho trovato un mittente valido.', 'warning')
-        result['reload'] = True
-        return result
+        partner_name = msg.partner_id.display_name
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Azienda collegata',
+                'message': '%s e i contatti della conversazione sono collegati alla mail.' % partner_name,
+                'type': 'success',
+                'sticky': False,
+            },
+            'reload': True,
+            'partner_id': msg.partner_id.id,
+        }
 
     @api.model
     def message_create_lead(self, message_id):
@@ -2034,7 +2045,9 @@ class CfPipelineControl(models.AbstractModel):
             'model': msg._name,
             'title': partner.display_name if partner else (msg.sender_name or msg.sender_email or 'Email senza partner'),
             'subtitle': msg.subject or 'Senza oggetto',
-            'meta': self._date_label(msg.email_date),
+            'meta': self._datetime_label_it(msg.email_date),
+            'date_group': self._mail_date_group(msg.email_date),
+            'sort_ts': fields.Datetime.to_string(msg.email_date) if msg.email_date else '',
             'tone': 'red' if msg.ai_urgency == 'high' or msg.ai_action_required else 'amber',
             'badges': self._compact([
                 'tocca a noi',
@@ -2481,6 +2494,42 @@ class CfPipelineControl(models.AbstractModel):
         if isinstance(value, str):
             return value[:10]
         return fields.Date.to_string(value) if not hasattr(value, 'hour') else fields.Datetime.to_string(value)[:16]
+
+    def _datetime_in_user_tz(self, value):
+        if not value:
+            return False
+        dt_value = fields.Datetime.to_datetime(value)
+        if not dt_value:
+            return False
+        return fields.Datetime.context_timestamp(self, dt_value).replace(tzinfo=None)
+
+    def _datetime_label_it(self, value):
+        dt_value = self._datetime_in_user_tz(value)
+        if not dt_value:
+            return ''
+        return dt_value.strftime('%d/%m/%Y %H:%M')
+
+    def _mail_date_group(self, value):
+        dt_value = self._datetime_in_user_tz(value)
+        if not dt_value:
+            return 'Senza data'
+        today = fields.Date.context_today(self)
+        msg_date = dt_value.date()
+        if msg_date == today:
+            return 'Oggi'
+        if msg_date == today - timedelta(days=1):
+            return 'Ieri'
+        week_start = today - timedelta(days=today.weekday())
+        if msg_date >= week_start:
+            return 'Questa settimana'
+        last_week_start = week_start - timedelta(days=7)
+        if msg_date >= last_week_start:
+            return 'Settimana scorsa'
+        months = [
+            'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+            'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre',
+        ]
+        return '%s %s' % (months[dt_value.month - 1].capitalize(), dt_value.year)
 
     def _compact(self, values):
         return [value for value in values if value]

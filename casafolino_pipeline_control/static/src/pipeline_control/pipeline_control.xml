@@ -52,6 +52,10 @@
                         <button class="btn btn-light" t-on-click="refreshData" title="Aggiorna">
                             <i class="fa fa-refresh"/>
                         </button>
+                        <button class="btn btn-light" t-on-click="openGlobalComposer" title="Scrivi email">
+                            <i class="fa fa-envelope"/>
+                            Scrivi email
+                        </button>
                         <button class="btn btn-light" t-on-click="newLead">
                             <i class="fa fa-plus"/>
                             Nuova richiesta
@@ -500,6 +504,10 @@
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'templates')">
                                 Template
                             </button>
+                            <button class="btn btn-primary btn-sm" t-on-click="openGlobalComposer">
+                                <i class="fa fa-envelope"/>
+                                Scrivi email
+                            </button>
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'materials')">
                                 Materiali
                             </button>
@@ -543,33 +551,39 @@
                                 </div>
 
                                 <div class="cf-pc-inbox-vc-scroll">
-                                    <t t-foreach="priorityInboxRows" t-as="row" t-key="'vc-row-' + row.id">
-                                        <article t-attf-class="cf-pc-inbox-vc-card #{state.selectedMessageId === row.id ? 'active' : ''}"
-                                                 t-on-click="() => this.selectMessage(row.id)">
-                                            <span t-attf-class="cf-pc-vc-score #{row.priority_score &lt; 80 ? 'mid' : ''}" t-out="row.priority_score"/>
-                                            <div>
-                                                <div class="cf-pc-vc-card-head">
-                                                    <span t-attf-class="cf-pc-vc-status #{row.partner_id ? 'known' : 'new'}">
-                                                        <t t-if="row.partner_id">Cliente noto</t>
-                                                        <t t-else="">Nuovo dominio</t>
-                                                    </span>
-                                                    <time t-out="row.meta"/>
+                                    <t t-foreach="inboxDateGroups" t-as="group" t-key="'vc-group-' + group.key">
+                                        <div class="cf-pc-vc-date-group">
+                                            <span t-out="group.label"/>
+                                            <em t-out="group.rows.length"/>
+                                        </div>
+                                        <t t-foreach="group.rows" t-as="row" t-key="'vc-row-' + row.id">
+                                            <article t-attf-class="cf-pc-inbox-vc-card #{state.selectedMessageId === row.id ? 'active' : ''}"
+                                                     t-on-click="() => this.selectMessage(row.id)">
+                                                <span t-attf-class="cf-pc-vc-score #{row.priority_score &lt; 80 ? 'mid' : ''}" t-out="row.priority_score"/>
+                                                <div>
+                                                    <div class="cf-pc-vc-card-head">
+                                                        <span t-attf-class="cf-pc-vc-status #{row.partner_id ? 'known' : 'new'}">
+                                                            <t t-if="row.partner_id">Cliente noto</t>
+                                                            <t t-else="">Nuovo dominio</t>
+                                                        </span>
+                                                        <time t-out="row.meta"/>
+                                                    </div>
+                                                    <h3 t-out="row.subtitle || 'Email senza oggetto'"/>
+                                                    <p class="cf-pc-vc-sender">
+                                                        <t t-out="row.title"/>
+                                                        <t t-if="row.sender_email"> · <t t-out="row.sender_email"/></t>
+                                                    </p>
+                                                    <p t-out="row.snippet"/>
+                                                    <div class="cf-pc-vc-chips">
+                                                        <span t-if="row.needs_action">AI: azione</span>
+                                                        <span t-if="row.lead" t-out="row.lead"/>
+                                                        <span t-if="!row.lead">senza lead</span>
+                                                    </div>
                                                 </div>
-                                                <h3 t-out="row.subtitle || 'Email senza oggetto'"/>
-                                                <p class="cf-pc-vc-sender">
-                                                    <t t-out="row.title"/>
-                                                    <t t-if="row.sender_email"> · <t t-out="row.sender_email"/></t>
-                                                </p>
-                                                <p t-out="row.snippet"/>
-                                                <div class="cf-pc-vc-chips">
-                                                    <span t-if="row.needs_action">AI: azione</span>
-                                                    <span t-if="row.lead" t-out="row.lead"/>
-                                                    <span t-if="!row.lead">senza lead</span>
-                                                </div>
-                                            </div>
-                                        </article>
+                                            </article>
+                                        </t>
                                     </t>
-                                    <div class="cf-pc-empty" t-if="!priorityInboxRows.length">
+                                    <div class="cf-pc-empty" t-if="!inboxDateGroups.length">
                                         Nessuna email commerciale da lavorare.
                                     </div>
                                 </div>

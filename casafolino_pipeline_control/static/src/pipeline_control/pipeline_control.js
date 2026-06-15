@@ -644,6 +644,28 @@ export class CFPipelineControl extends Component {
         return true;
     }
 
+    async openGlobalComposer() {
+        const selected = this.selectedMessage;
+        if (selected) {
+            await this.mailQuickAction(selected, "reply");
+            return;
+        }
+        this.dialog.add(ComposeWizardDialog, {
+            accountId: false,
+            partnerEmail: "",
+            defaultSubject: "",
+            defaultBody: "",
+            partnerId: false,
+            threadId: false,
+            threadModel: "",
+            replyToId: false,
+            mode: "new",
+            onSent: async () => {
+                await this.loadData(this.state.activeView, true);
+            },
+        });
+    }
+
     async openModel(model, name) {
         await this.action.doAction({
             type: "ir.actions.act_window",
@@ -855,6 +877,26 @@ export class CFPipelineControl extends Component {
         return this.filterInboxRows(this.allInboxRows)
             .map((row) => ({ ...row, priority_score: score(row) }))
             .sort((a, b) => b.priority_score - a.priority_score);
+    }
+
+    get inboxDateGroups() {
+        const groups = [];
+        const byLabel = new Map();
+        const rows = [...this.priorityInboxRows].sort((a, b) => {
+            const dateCompare = String(b.sort_ts || "").localeCompare(String(a.sort_ts || ""));
+            if (dateCompare) return dateCompare;
+            return (b.priority_score || 0) - (a.priority_score || 0);
+        });
+        for (const row of rows) {
+            const label = row.date_group || _t("Senza data");
+            if (!byLabel.has(label)) {
+                const group = { key: label, label, rows: [] };
+                byLabel.set(label, group);
+                groups.push(group);
+            }
+            byLabel.get(label).rows.push(row);
+        }
+        return groups;
     }
 
     get homeInboxRows() {
