@@ -379,6 +379,26 @@ class CfPipelineControl(models.AbstractModel):
         return True
 
     @api.model
+    def mass_discard(self, message_ids):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        now = fields.Datetime.now()
+        if msgs:
+            msgs.write({
+                'state': 'discard',
+                'is_archived': True,
+                'triage_user_id': self.env.user.id,
+                'triage_date': now,
+            })
+        return {'success': True, 'count': len(msgs), 'removed_ids': msgs.ids}
+
+    @api.model
+    def mass_delete(self, message_ids):
+        msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        if msgs:
+            msgs.write({'is_deleted': True, 'is_archived': True})
+        return {'success': True, 'count': len(msgs), 'removed_ids': msgs.ids}
+
+    @api.model
     def mass_link_lead(self, message_ids, lead_id):
         msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
         lead = self.env['crm.lead'].browse(int(lead_id)).exists()

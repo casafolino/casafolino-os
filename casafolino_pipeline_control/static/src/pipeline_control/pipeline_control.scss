@@ -1878,6 +1878,32 @@
         padding-bottom: 2px;
     }
 
+    .cf-pc-inbox-vc-bulk {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        margin: -2px 0 10px;
+        padding: 6px;
+        background: #f7f9fb;
+        border: 1px solid #d8dde4;
+        border-radius: 8px;
+        overflow-x: auto;
+
+        span {
+            color: #3f4a56;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .btn {
+            white-space: nowrap;
+        }
+    }
+
     .cf-pc-inbox-vc-scroll {
         display: grid;
         gap: 10px;
@@ -1885,8 +1911,9 @@
 
     .cf-pc-inbox-vc-card {
         display: grid;
-        grid-template-columns: 44px 1fr;
-        gap: 10px;
+        grid-template-columns: 22px 44px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
         padding: 12px;
         background: #fff;
         border: 1px solid #d8dde4;
@@ -1896,6 +1923,11 @@
         &.active {
             border-color: #275da8;
             box-shadow: 0 0 0 2px rgba(39, 93, 168, .14);
+        }
+
+        &.checked {
+            border-color: #7a4d72;
+            background: #fbf7fb;
         }
 
         h3 {
@@ -1910,6 +1942,21 @@
             color: #657282;
             font-size: 12.5px;
             line-height: 1.35;
+        }
+    }
+
+    .cf-pc-vc-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        min-height: 44px;
+        cursor: pointer;
+
+        input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
         }
     }
 

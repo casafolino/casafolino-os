@@ -195,6 +195,22 @@ export class CFPipelineControl extends Component {
         this.state.selectedMessageIds[messageId] = !this.state.selectedMessageIds[messageId];
     }
 
+    get selectedMessageCount() {
+        return Object.values(this.state.selectedMessageIds || {}).filter(Boolean).length;
+    }
+
+    selectVisibleMessages() {
+        const next = { ...this.state.selectedMessageIds };
+        for (const row of this.priorityInboxRows) {
+            next[row.id] = true;
+        }
+        this.state.selectedMessageIds = next;
+    }
+
+    clearSelectedMessages() {
+        this.state.selectedMessageIds = {};
+    }
+
     async triggerBulkAction(actionType) {
         const ids = Object.keys(this.state.selectedMessageIds).filter(id => this.state.selectedMessageIds[id]).map(Number);
         if (!ids.length) {
@@ -205,6 +221,12 @@ export class CFPipelineControl extends Component {
             if (actionType === 'archive') {
                 await this.orm.call("cf.pipeline.control", "mass_archive", [ids]);
                 this.notification.add(_t("Messaggi archiviati con successo"), { type: "success" });
+            } else if (actionType === 'discard') {
+                const res = await this.orm.call("cf.pipeline.control", "mass_discard", [ids]);
+                this.notification.add(_t("%s email scartate").replace("%s", res.count || ids.length), { type: "success" });
+            } else if (actionType === 'delete') {
+                const res = await this.orm.call("cf.pipeline.control", "mass_delete", [ids]);
+                this.notification.add(_t("%s email cancellate").replace("%s", res.count || ids.length), { type: "success" });
             } else if (actionType === 'link_lead') {
                 if (this.selectedMessage && this.selectedMessage.lead_id) {
                     await this.orm.call("cf.pipeline.control", "mass_link_lead", [ids, this.selectedMessage.lead_id]);
@@ -215,6 +237,11 @@ export class CFPipelineControl extends Component {
                 }
             }
             this.state.selectedMessageIds = {};
+            this.state.selectedMessageId = null;
+            this.state.selectedMessageBody = "";
+            this.state.messageContext = null;
+            this.state.loadedSections.inbox = false;
+            this.state.loadedSections.control = false;
             await this.loadData(this.state.activeView, true);
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });

@@ -549,6 +549,24 @@
                                         </button>
                                     </t>
                                 </div>
+                                <div class="cf-pc-inbox-vc-bulk">
+                                    <button class="btn btn-sm btn-light" t-on-click="selectVisibleMessages">
+                                        Seleziona pagina
+                                    </button>
+                                    <button class="btn btn-sm btn-light" t-if="selectedMessageCount" t-on-click="clearSelectedMessages">
+                                        Deseleziona
+                                    </button>
+                                    <span t-if="selectedMessageCount">
+                                        <strong t-out="selectedMessageCount"/>
+                                        selezionate
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-danger" t-if="selectedMessageCount" t-on-click="() => this.triggerBulkAction('discard')">
+                                        Scarta
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" t-if="selectedMessageCount" t-on-click="() => this.triggerBulkAction('delete')">
+                                        Cancella
+                                    </button>
+                                </div>
 
                                 <div class="cf-pc-inbox-vc-scroll">
                                     <t t-foreach="inboxDateGroups" t-as="group" t-key="'vc-group-' + group.key">
@@ -557,8 +575,13 @@
                                             <em t-out="group.rows.length"/>
                                         </div>
                                         <t t-foreach="group.rows" t-as="row" t-key="'vc-row-' + row.id">
-                                            <article t-attf-class="cf-pc-inbox-vc-card #{state.selectedMessageId === row.id ? 'active' : ''}"
+                                            <article t-attf-class="cf-pc-inbox-vc-card #{state.selectedMessageId === row.id ? 'active' : ''} #{state.selectedMessageIds[row.id] ? 'checked' : ''}"
                                                      t-on-click="() => this.selectMessage(row.id)">
+                                                <label class="cf-pc-vc-check" t-on-click.stop="">
+                                                    <input type="checkbox"
+                                                           t-att-checked="state.selectedMessageIds[row.id] ? 'checked' : undefined"
+                                                           t-on-change="() => this.toggleMessageCheck(row.id)"/>
+                                                </label>
                                                 <span t-attf-class="cf-pc-vc-score #{row.priority_score &lt; 80 ? 'mid' : ''}" t-out="row.priority_score"/>
                                                 <div>
                                                     <div class="cf-pc-vc-card-head">
