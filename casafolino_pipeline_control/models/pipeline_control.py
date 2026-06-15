@@ -24,6 +24,13 @@ FREE_EMAIL_DOMAINS = {
     'pec.it',
 }
 
+INTERNAL_EMAIL_DOMAINS = {
+    'casafolino.com',
+    'casafolino.it',
+    'folinofood.com',
+    'folinofood.it',
+}
+
 
 class CrmLeadPipelineControl(models.Model):
     _inherit = 'crm.lead'
@@ -387,19 +394,8 @@ class CfPipelineControl(models.AbstractModel):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:
             return False
-        if msg.partner_id:
-            return True
-        if hasattr(msg, 'action_create_partner'):
-            msg.action_create_partner()
-        else:
-            partner = self._resolve_or_create_partner_from_message(
-                msg,
-                create_company=True,
-                create_participants=True,
-            )
-            if not partner:
-                return False
-        return True
+        partner = self._ensure_message_customer_partner(msg, force=True)
+        return bool(partner)
 
     @api.model
     def get_message_payload(self, message_id):
@@ -471,18 +467,11 @@ class CfPipelineControl(models.AbstractModel):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:
             return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
-        if hasattr(msg, 'action_create_partner'):
-            msg.action_create_partner()
-        else:
-            partner = self._resolve_or_create_partner_from_message(
-                msg,
-                create_company=True,
-                create_participants=True,
-            )
+        partner = self._ensure_message_customer_partner(msg, force=True)
         msg.invalidate_recordset(['partner_id', 'match_type'])
-        if not msg.partner_id:
+        if not partner:
             return self._notify('Azienda non creata', 'Non ho trovato un mittente valido.', 'warning')
-        partner_name = msg.partner_id.display_name
+        partner_name = partner.display_name
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -493,7 +482,7 @@ class CfPipelineControl(models.AbstractModel):
                 'sticky': False,
             },
             'reload': True,
-            'partner_id': msg.partner_id.id,
+            'partner_id': partner.id,
         }
 
     @api.model
@@ -501,15 +490,9 @@ class CfPipelineControl(models.AbstractModel):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
         if not msg:
             return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
-        if not msg.partner_id:
-            if hasattr(msg, 'action_create_partner'):
-                msg.action_create_partner()
-            else:
-                self._resolve_or_create_partner_from_message(
-                    msg,
-                    create_company=True,
-                    create_participants=True,
-                )
+        partner = self._ensure_message_customer_partner(msg, force=True)
+        if not partner:
+            return self._notify('Opportunita non creata', 'Non ho trovato un mittente cliente valido.', 'warning')
         result = msg.action_create_lead()
         if isinstance(result, dict):
             result['reload'] = True
@@ -689,10 +672,10 @@ class CfPipelineControl(models.AbstractModel):
         )
 
     def _resolve_or_create_partner_from_message(self, msg, create_company=False, create_participants=False):
-        sender_email = (msg.sender_email or '').lower().strip()
+        sender_email = self._external_email_for_message(msg)
         if not sender_email:
             return False
-        sender_domain = (msg.sender_domain or '').lower().strip()
+        sender_domain = sender_email.split('@', 1)[1] if '@' in sender_email else ''
         company = False
         if create_company and sender_domain and sender_domain not in FREE_EMAIL_DOMAINS:
             company = self._resolve_or_create_company_from_domain(sender_domain)
@@ -700,6 +683,8 @@ class CfPipelineControl(models.AbstractModel):
         partner = self.env['res.partner'].sudo().search([
             ('email', '=ilike', sender_email),
         ], limit=1)
+        if partner and self._is_internal_partner(partner):
+            partner = False
         if not partner:
             partner = self.env['res.partner'].sudo().create({
                 'name': msg.sender_name or sender_email.split('@')[0],
@@ -714,6 +699,65 @@ class CfPipelineControl(models.AbstractModel):
         if create_participants and company:
             self._resolve_message_participants(msg, company, sender_domain)
         return partner
+
+    def _ensure_message_customer_partner(self, msg, force=False):
+        """Ensure inbound CRM actions use the external customer, never CasaFolino itself."""
+        partner = msg.partner_id
+        if partner and not self._is_internal_partner(partner) and not force:
+            return partner
+        if partner and self._is_internal_partner(partner):
+            msg.sudo().write({'partner_id': False, 'match_type': 'none'})
+
+        if hasattr(msg, '_resolve_crm_entities_from_participants'):
+            partner = msg._resolve_crm_entities_from_participants()
+            if partner and self._is_internal_partner(partner):
+                msg.sudo().write({'partner_id': False, 'match_type': 'none'})
+                partner = False
+
+        if not partner:
+            partner = self._resolve_or_create_partner_from_message(
+                msg,
+                create_company=True,
+                create_participants=True,
+            )
+        return partner if partner and not self._is_internal_partner(partner) else False
+
+    def _external_email_for_message(self, msg):
+        account = msg.account_id
+        sender_email = (msg.sender_email or '').lower().strip()
+        recipients = msg.recipient_emails or ''
+        if account and hasattr(account, '_get_external_email'):
+            email = (account._get_external_email(sender_email, recipients) or '').lower().strip()
+        else:
+            email = sender_email
+        if self._is_internal_email(email):
+            for _name, addr in getaddresses([recipients, getattr(msg, 'cc_emails', False) or '']):
+                addr = (addr or '').lower().strip()
+                if addr and '@' in addr and not self._is_internal_email(addr):
+                    return addr
+            return ''
+        return email
+
+    def _is_internal_email(self, email):
+        email = (email or '').lower().strip()
+        domain = email.split('@', 1)[1] if '@' in email else ''
+        return domain in INTERNAL_EMAIL_DOMAINS
+
+    def _is_internal_partner(self, partner):
+        if not partner:
+            return False
+        partner = partner.sudo()
+        email = (partner.email or '').lower().strip()
+        website = (partner.website or '').lower().strip()
+        if self._is_internal_email(email):
+            return True
+        if any(domain in website for domain in INTERNAL_EMAIL_DOMAINS):
+            return True
+        user = self.env['res.users'].sudo().search([('partner_id', '=', partner.id)], limit=1)
+        if user:
+            return True
+        company = self.env.company.partner_id.sudo()
+        return bool(company and (partner == company or partner.parent_id == company))
 
     def _resolve_or_create_company_from_domain(self, domain):
         Partner = self.env['res.partner'].sudo()
@@ -819,7 +863,7 @@ class CfPipelineControl(models.AbstractModel):
                 'quotes': []
             }
 
-        partner = msg.partner_id
+        partner = msg.partner_id if not self._is_internal_partner(msg.partner_id) else False
         partner_details = None
         suggested_partners = []
 
@@ -2038,7 +2082,7 @@ class CfPipelineControl(models.AbstractModel):
         return end or start or ''
 
     def _format_mail_item(self, msg):
-        partner = msg.partner_id
+        partner = msg.partner_id if not self._is_internal_partner(msg.partner_id) else False
         lead = msg.lead_id
         return {
             'id': msg.id,
@@ -2060,10 +2104,11 @@ class CfPipelineControl(models.AbstractModel):
 
     def _format_mail_row(self, msg):
         item = self._format_mail_item(msg)
+        partner = msg.partner_id if not self._is_internal_partner(msg.partner_id) else False
         
         # Deduplication matching suggestion for incoming email not linked to partner
         suggested_partner = False
-        if not msg.partner_id and msg.sender_domain:
+        if not partner and msg.sender_domain:
             generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 'libero.it', 'virgilio.it', 'tiscali.it', 'alice.it'}
             if msg.sender_domain not in generic_domains:
                 domain_partner = self.env['res.partner'].search([
@@ -2081,7 +2126,7 @@ class CfPipelineControl(models.AbstractModel):
         item.update({
             'lead': msg.lead_id.display_name if msg.lead_id else '',
             'lead_id': msg.lead_id.id if msg.lead_id else False,
-            'partner_id': msg.partner_id.id if msg.partner_id else False,
+            'partner_id': partner.id if partner else False,
             'suggested_partner': suggested_partner,
             'thread_id': msg.thread_id.id if msg.thread_id else False,
             'owner': ', '.join(msg.assigned_user_ids.mapped('name')) or '',

@@ -851,17 +851,17 @@ export class CFPipelineControl extends Component {
     }
 
     get filteredToReplyRows() {
-        return this.filterInboxRows(this.state.data.inbox?.to_reply || []);
+        return this.filterInboxRows(this.asArray(this.state.data.inbox?.to_reply));
     }
 
     get filteredWaitingRows() {
-        return this.filterInboxRows(this.state.data.inbox?.waiting_customer || []);
+        return this.filterInboxRows(this.asArray(this.state.data.inbox?.waiting_customer));
     }
 
     get allInboxRows() {
         return [
-            ...(this.state.data.inbox?.to_reply || []),
-            ...(this.state.data.inbox?.waiting_customer || []),
+            ...this.asArray(this.state.data.inbox?.to_reply),
+            ...this.asArray(this.state.data.inbox?.waiting_customer),
         ];
     }
 
@@ -874,7 +874,7 @@ export class CFPipelineControl extends Component {
             if (row.partner_id) value += 5;
             return Math.min(value, 98);
         };
-        return this.filterInboxRows(this.allInboxRows)
+        return this.asArray(this.filterInboxRows(this.allInboxRows))
             .map((row) => ({ ...row, priority_score: score(row) }))
             .sort((a, b) => b.priority_score - a.priority_score);
     }
@@ -882,7 +882,7 @@ export class CFPipelineControl extends Component {
     get inboxDateGroups() {
         const groups = [];
         const byLabel = new Map();
-        const rows = [...this.priorityInboxRows].sort((a, b) => {
+        const rows = this.asArray(this.priorityInboxRows).slice().sort((a, b) => {
             const dateCompare = String(b.sort_ts || "").localeCompare(String(a.sort_ts || ""));
             if (dateCompare) return dateCompare;
             return (b.priority_score || 0) - (a.priority_score || 0);
@@ -904,7 +904,7 @@ export class CFPipelineControl extends Component {
     }
 
     get dossierContinentOptions() {
-        const rows = this.state.data.dossiers || [];
+        const rows = this.asArray(this.state.data.dossiers);
         const labels = {
             europe: "Europa",
             north_america: "Nord America",
@@ -930,7 +930,7 @@ export class CFPipelineControl extends Component {
     }
 
     get filteredDossiers() {
-        const rows = this.state.data.dossiers || [];
+        const rows = this.asArray(this.state.data.dossiers);
         const query = this.state.dossierSearch || "";
         const continent = this.state.dossierContinent || "all";
         return rows.filter((row) => {
@@ -956,10 +956,11 @@ export class CFPipelineControl extends Component {
         if (!this.state.activeDossierId) {
             return false;
         }
-        return (this.state.data.dossiers || []).find((row) => row.id === this.state.activeDossierId) || false;
+        return this.asArray(this.state.data.dossiers).find((row) => row.id === this.state.activeDossierId) || false;
     }
 
     filterInboxRows(rows) {
+        rows = this.asArray(rows);
         const filter = this.state.inboxFilter;
         if (filter === "urgent") {
             return rows.filter((row) => row.urgency === "high");
