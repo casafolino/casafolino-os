@@ -888,6 +888,12 @@ class CfPipelineControl(models.AbstractModel):
                 'action': 'ir.actions.client,%s' % console_action.id,
                 'active': True,
             })
+            child_menus = self.env['ir.ui.menu'].sudo().search([
+                ('parent_id', '=', console_menu.id),
+                ('active', '=', True),
+            ])
+            if child_menus:
+                child_menus.write({'active': False})
 
         desk_menu = self.env.ref('casafolino_mail.menu_mail_v3_root', raise_if_not_found=False)
         if console_action and desk_menu:

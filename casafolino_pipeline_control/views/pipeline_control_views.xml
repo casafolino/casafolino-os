@@ -506,8 +506,4 @@
     <record id="menu_cf_pipeline_dossiers" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>
-    <record id="casafolino_b2b_portal.menu_cf_b2b_control_room" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-
 </odoo>
