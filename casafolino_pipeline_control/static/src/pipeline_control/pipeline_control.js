@@ -264,6 +264,9 @@ export class CFPipelineControl extends Component {
                 }
                 await this.action.doAction(result);
                 if (result.reload) {
+                    if (result.remove_message_id) {
+                        this.removeMessageFromInbox(result.remove_message_id);
+                    }
                     this.state.loadedSections.inbox = false;
                     this.state.loadedSections.control = false;
                     await this.loadData(this.state.activeView, true);
@@ -272,6 +275,20 @@ export class CFPipelineControl extends Component {
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }
+    }
+
+    removeMessageFromInbox(messageId) {
+        const inbox = this.state.data?.inbox;
+        if (!inbox) return;
+        const removeFrom = (items) => asArray(items).filter((item) => item.id !== messageId);
+        inbox.to_reply = removeFrom(inbox.to_reply);
+        inbox.waiting_customer = removeFrom(inbox.waiting_customer);
+        if (this.state.selectedMessageId === messageId) {
+            this.state.selectedMessageId = inbox.to_reply[0]?.id || inbox.waiting_customer[0]?.id || null;
+            this.state.selectedMessageBody = "";
+            this.state.messageContext = null;
+        }
+        delete this.state.selectedMessageIds[messageId];
     }
 
     async generateAIDraft() {

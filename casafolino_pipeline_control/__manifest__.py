@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Console CRM',
-    'version': '18.0.1.27.14',
+    'version': '18.0.1.27.15',
     'category': 'CasaFolino',
     'summary': 'Console CRM export: follow-up, inbox commerciale, pipeline e dossier',
     'author': 'CasaFolino S.R.L.',

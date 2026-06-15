@@ -411,15 +411,24 @@ class CfPipelineControl(models.AbstractModel):
                 'body_downloaded': False,
             }
 
-        if not (msg.body_html or msg.body_plain) and hasattr(msg, 'action_download_body'):
+        if not (msg.body_html or msg.body_plain):
             try:
-                msg.action_download_body()
+                self._ensure_console_message_body(msg)
                 msg.invalidate_recordset(['body_html', 'body_plain', 'body_downloaded'])
             except Exception:
                 _logger.exception("Unable to download body for CRM console message %s", msg.id)
 
         body_html = msg.body_html or ''
         body_plain = msg.body_plain or msg.snippet or ''
+        source_msg = msg
+
+        if not (body_html or body_plain):
+            fallback = self._find_thread_body_fallback(msg)
+            if fallback:
+                source_msg = fallback
+                body_html = fallback.body_html or ''
+                body_plain = fallback.body_plain or fallback.snippet or ''
+
         if not body_html and body_plain:
             body_html = '<pre>%s</pre>' % escape(body_plain)
         if not body_html:
@@ -428,8 +437,34 @@ class CfPipelineControl(models.AbstractModel):
         return {
             'body_html': body_html,
             'body_plain': body_plain,
-            'body_downloaded': bool(msg.body_downloaded),
+            'body_downloaded': bool(source_msg.body_downloaded),
+            'source_message_id': source_msg.id,
         }
+
+    def _ensure_console_message_body(self, msg):
+        """Load a mail body on demand using the mail module primitives."""
+        if hasattr(msg, '_ensure_body_downloaded'):
+            msg._ensure_body_downloaded()
+            return
+        if hasattr(msg, 'get_message_detail'):
+            msg.get_message_detail(message_id=msg.id)
+
+    def _find_thread_body_fallback(self, msg):
+        domain = [
+            ('id', '!=', msg.id),
+            ('body_html', '!=', False),
+        ]
+        if msg.thread_id:
+            domain.append(('thread_id', '=', msg.thread_id.id))
+        elif msg.thread_key:
+            domain.append(('thread_key', '=', msg.thread_key))
+        else:
+            return False
+        return self.env['casafolino.mail.message'].search(
+            domain,
+            order='email_date desc, id desc',
+            limit=1,
+        )
 
     @api.model
     def message_create_partner(self, message_id):
@@ -483,7 +518,18 @@ class CfPipelineControl(models.AbstractModel):
                 'triage_user_id': self.env.user.id,
                 'triage_date': fields.Datetime.now(),
             })
-        return self._notify('Email scartata', 'La mail e uscita dalla Inbox operativa.', reload=True)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Email scartata',
+                'message': 'La mail e uscita dalla Inbox operativa.',
+                'type': 'success',
+                'sticky': False,
+            },
+            'reload': True,
+            'remove_message_id': msg.id,
+        }
 
     @api.model
     def message_delete(self, message_id):
@@ -494,7 +540,18 @@ class CfPipelineControl(models.AbstractModel):
             msg.action_delete_soft()
         else:
             msg.write({'is_deleted': True})
-        return self._notify('Email rimossa', 'La mail e stata rimossa dalla Inbox operativa.', reload=True)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Email rimossa',
+                'message': 'La mail e stata rimossa dalla Inbox operativa.',
+                'type': 'success',
+                'sticky': False,
+            },
+            'reload': True,
+            'remove_message_id': msg.id,
+        }
 
     @api.model
     def mail_policy_action(self, message_id, policy_action):
