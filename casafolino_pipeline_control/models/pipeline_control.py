@@ -391,47 +391,80 @@ class CfPipelineControl(models.AbstractModel):
         if not msg:
             return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
 
-        sender_email = (msg.sender_email or '').lower().strip()
-        sender_domain = (msg.sender_domain or '').lower().strip()
-        if not sender_email:
+        target_email, target_name, target_domain = self._get_policy_target_identity(msg, policy_action)
+        if not target_email:
             return self._notify('Mittente mancante', 'Non posso creare una regola senza email mittente.', 'warning')
 
         if policy_action == 'keep_domain':
-            if not sender_domain:
+            if not target_domain:
                 return self._notify('Dominio mancante', 'Non posso creare una regola dominio per questo mittente.', 'warning')
-            if sender_domain in FREE_EMAIL_DOMAINS:
-                result = self._apply_mail_sender_policy(msg, 'keep_sender')
+            if target_domain in FREE_EMAIL_DOMAINS:
+                result = self._apply_mail_sender_policy(
+                    msg, 'keep_sender', target_email=target_email, target_name=target_name,
+                    target_domain=target_domain)
                 result['params']['message'] = (
                     'Dominio pubblico %s: ho tenuto solo il mittente %s.'
-                    % (sender_domain, sender_email)
+                    % (target_domain, target_email)
                 )
                 return result
-            return self._apply_mail_sender_policy(msg, 'keep_domain')
+            return self._apply_mail_sender_policy(
+                msg, 'keep_domain', target_email=target_email, target_name=target_name,
+                target_domain=target_domain)
 
         if policy_action == 'keep_sender':
             return self._apply_mail_sender_policy(msg, 'keep_sender')
 
         if policy_action == 'discard_domain':
-            if not sender_domain:
+            if not target_domain:
                 return self._notify('Dominio mancante', 'Non posso scartare per dominio questo mittente.', 'warning')
-            if sender_domain in FREE_EMAIL_DOMAINS:
-                result = self._apply_mail_sender_policy(msg, 'discard_sender')
+            if target_domain in FREE_EMAIL_DOMAINS:
+                result = self._apply_mail_sender_policy(
+                    msg, 'discard_sender', target_email=target_email, target_name=target_name,
+                    target_domain=target_domain)
                 result['params']['message'] = (
                     'Dominio pubblico %s: ho scartato solo il mittente %s.'
-                    % (sender_domain, sender_email)
+                    % (target_domain, target_email)
                 )
                 return result
-            return self._apply_mail_sender_policy(msg, 'discard_domain')
+            return self._apply_mail_sender_policy(
+                msg, 'discard_domain', target_email=target_email, target_name=target_name,
+                target_domain=target_domain)
 
         if policy_action == 'discard_sender':
             return self._apply_mail_sender_policy(msg, 'discard_sender')
 
         return self._notify('Azione non disponibile', policy_action, 'warning')
 
-    def _apply_mail_sender_policy(self, msg, policy_action):
-        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+    def _get_policy_target_identity(self, msg, policy_action):
         sender_email = (msg.sender_email or '').lower().strip()
+        sender_name = (msg.sender_name or '').strip()
         sender_domain = (msg.sender_domain or '').lower().strip()
+        if not policy_action.endswith('_domain') or not self._is_internal_mail_domain(sender_domain):
+            return sender_email, sender_name, sender_domain
+
+        for name, email in self._extract_message_participants(msg):
+            domain = email.split('@')[-1].lower().strip() if '@' in email else ''
+            if domain and not self._is_internal_mail_domain(domain):
+                return email, name, domain
+        return sender_email, sender_name, sender_domain
+
+    def _is_internal_mail_domain(self, domain):
+        domain = (domain or '').lower().strip()
+        if not domain:
+            return False
+        internal_domains = {'casafolino.com'}
+        Account = self.env['casafolino.mail.account'] if 'casafolino.mail.account' in self.env else False
+        if Account:
+            internal_domains.update(
+                d for d in Account.sudo().search([]).mapped('company_domain')
+                if d
+            )
+        return domain in {d.lower().strip() for d in internal_domains}
+
+    def _apply_mail_sender_policy(self, msg, policy_action, target_email=False, target_name=False, target_domain=False):
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        sender_email = (target_email or msg.sender_email or '').lower().strip()
+        sender_domain = (target_domain or msg.sender_domain or '').lower().strip()
         now = fields.Datetime.now()
 
         is_domain = policy_action.endswith('_domain')
@@ -498,6 +531,13 @@ class CfPipelineControl(models.AbstractModel):
                         create_company=is_domain,
                         create_participants=is_domain,
                     )
+        if is_keep and is_domain and target_email:
+            company = self._resolve_or_create_company_from_domain(sender_domain)
+            partner = self._resolve_or_create_partner_from_identity(
+                target_name, target_email, company=company)
+            if msg.id not in messages.ids:
+                msg.sudo().write({'partner_id': partner.id, 'match_type': 'exact'})
+            self._resolve_message_participants(msg, company, sender_domain)
 
         title = 'Regola creata'
         verb = 'tenute' if is_keep else 'scartate'
@@ -554,6 +594,23 @@ class CfPipelineControl(models.AbstractModel):
             'is_company': True,
             'website': 'https://%s' % domain,
             'email': 'info@%s' % domain,
+        })
+
+    def _resolve_or_create_partner_from_identity(self, name, email, company=False):
+        email = (email or '').lower().strip()
+        if not email:
+            return False
+        Partner = self.env['res.partner'].sudo()
+        partner = Partner.search([('email', '=ilike', email)], limit=1)
+        if partner:
+            if company and not partner.parent_id and not partner.is_company:
+                partner.write({'parent_id': company.id})
+            return partner
+        return Partner.create({
+            'name': name or email.split('@')[0],
+            'email': email,
+            'parent_id': company.id if company else False,
+            'type': 'contact',
         })
 
     def _resolve_message_participants(self, msg, company, domain):
