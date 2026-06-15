@@ -136,11 +136,31 @@ export class CFPipelineControl extends Component {
         };
     }
 
+    escapeHtml(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    buildFallbackMessageBody(message) {
+        const parts = [
+            message?.snippet,
+            message?.subtitle,
+            message?.title,
+        ].filter(Boolean);
+        const body = parts.length ? parts.join("\n\n") : _t("Nessun testo disponibile per questa email.");
+        return `<pre class="cf-pc-email-fallback">${this.escapeHtml(body)}</pre>`;
+    }
+
     async selectMessage(messageId) {
         this.state.selectedMessageId = messageId;
         this.state.aiDraftBody = "";
         this.state.aiInstruction = "";
         this.state.selectedMessageBody = _t("Caricamento email...");
+        const selected = this.allInboxRows.find((message) => message.id === messageId);
         this.state.messageContext = null;
         this.state.partnerSearchQuery = "";
         this.state.leadSearchQuery = "";
@@ -152,9 +172,11 @@ export class CFPipelineControl extends Component {
         try {
             const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
             if (records && records.length) {
-                this.state.selectedMessageBody = records[0].body_html || `<pre>${records[0].body_plain || ''}</pre>` || _t("Nessun contenuto.");
+                const bodyPlain = (records[0].body_plain || "").trim();
+                const bodyHtml = (records[0].body_html || "").trim();
+                this.state.selectedMessageBody = bodyHtml || (bodyPlain ? `<pre class="cf-pc-email-fallback">${this.escapeHtml(bodyPlain)}</pre>` : this.buildFallbackMessageBody(selected));
             } else {
-                this.state.selectedMessageBody = _t("Impossibile caricare il corpo del messaggio.");
+                this.state.selectedMessageBody = this.buildFallbackMessageBody(selected);
             }
             
             // Fetch sidebar context database info
