@@ -855,6 +855,7 @@ class CfPipelineControl(models.AbstractModel):
         refs_to_disable = [
             'casafolino_crm_360.menu_crm360_root',
             'casafolino_crm_export.menu_cf_projects_360',
+            'casafolino_pipeline_control.menu_cf_pipeline_control',
             'casafolino_pipeline_control.menu_cf_pipeline_root_control',
             'casafolino_pipeline_control.menu_cf_pipeline_root_inbox',
             'casafolino_pipeline_control.menu_cf_pipeline_root_followup',
@@ -882,11 +883,19 @@ class CfPipelineControl(models.AbstractModel):
 
         console_action = self.env.ref('casafolino_pipeline_control.action_cf_pipeline_control', raise_if_not_found=False)
         console_menu = self.env.ref('casafolino_pipeline_control.menu_cf_pipeline_control_root', raise_if_not_found=False)
+        home_action = self.env.ref('casafolino_home.action_scrivania_commerciale', raise_if_not_found=False)
+        home_menu = self.env.ref('casafolino_home.menu_cf_home_root', raise_if_not_found=False)
+        if home_action and home_menu:
+            home_menu.write({
+                'name': 'Sala Controllo',
+                'action': 'ir.actions.client,%s' % home_action.id,
+                'active': True,
+            })
         if console_action and console_menu:
             console_menu.write({
                 'name': 'Console CRM',
                 'action': 'ir.actions.client,%s' % console_action.id,
-                'active': True,
+                'active': not bool(home_action),
             })
             child_menus = self.env['ir.ui.menu'].sudo().search([
                 ('parent_id', '=', console_menu.id),
@@ -904,7 +913,7 @@ class CfPipelineControl(models.AbstractModel):
             desk_menu.write({
                 'name': 'Console CRM',
                 'action': 'ir.actions.client,%s' % console_action.id,
-                'active': True,
+                'active': not bool(home_action),
             })
 
         action = self.env.ref('casafolino_crm_export.action_project_dashboard_360', raise_if_not_found=False)
@@ -1015,9 +1024,9 @@ class CfPipelineControl(models.AbstractModel):
         return [
             {
                 'key': 'to_reply',
-                'label': 'Tocca a noi',
+                'label': 'Inbox',
                 'value': len(inbox_threads),
-                'hint': 'Thread cliente con azione richiesta',
+                'hint': 'Mail inbound da lavorare',
                 'tone': 'red',
             },
             {

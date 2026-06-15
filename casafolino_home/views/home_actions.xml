@@ -19,7 +19,7 @@
     <!-- Root menu: single visible cockpit in apps grid -->
     <menuitem id="menu_cf_home_root"
               name="Sala Controllo"
-              action="casafolino_pipeline_control.action_cf_pipeline_control"
+              action="casafolino_home.action_scrivania_commerciale"
               sequence="1"
               web_icon="casafolino_home,static/description/icon.png"/>
 </odoo>

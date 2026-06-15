@@ -7,12 +7,11 @@ import { registry } from "@web/core/registry";
 
 const CLUSTERS = ["crm", "produzione", "haccp", "tesoreria"];
 const QUICK_LINKS = [
-    { id: "home", label: "Home", action: "onSwitchCRM" },
+    { id: "home", label: "Console", action: "onOpenControlRoom" },
+    { id: "inbox", label: "Inbox", action: "onOpenMailInbox" },
+    { id: "followup", label: "Follow-up", action: "onOpenFollowup" },
     { id: "pipeline", label: "Pipeline", action: "onOpenPipeline" },
     { id: "projects", label: "Dossier", action: "onOpenProjects" },
-    { id: "fairs", label: "Fiere", action: "onOpenFairs" },
-    { id: "samples", label: "Campionature", action: "onOpenSamples" },
-    { id: "cards", label: "Biglietti", action: "onOpenCardScanner" },
 ];
 
 export class CFWorkspace extends Component {
@@ -71,37 +70,37 @@ export class CFWorkspace extends Component {
                 id: "crm",
                 label: "Commerciale",
                 value: this.formatKpi(crm.progetti_attivi),
-                detail: `${this.formatKpi(crm.lead_aperti)} lead aperti`,
+                detail: "console unica",
                 icon: "fa-briefcase",
                 tone: "crm",
-                action: () => this.onOpenProjects(),
+                action: () => this.onOpenControlRoom(),
             },
             {
                 id: "pipeline",
                 label: "Pipeline",
                 value: this.formatKpi(crm.lead_aperti),
-                detail: "lead e opportunità",
+                detail: "disciplina e opportunità",
                 icon: "fa-tasks",
                 tone: "pipeline",
                 action: () => this.onOpenPipeline(),
             },
             {
-                id: "fairs",
-                label: "Fiere",
+                id: "inbox",
+                label: "Inbox",
                 value: "\u2192",
-                detail: "eventi e contatti",
-                icon: "fa-globe",
-                tone: "fairs",
-                action: () => this.onOpenFairs(),
+                detail: "mail da lavorare",
+                icon: "fa-inbox",
+                tone: "crm",
+                action: () => this.onOpenMailInbox(),
             },
             {
-                id: "samples",
-                label: "Campionature",
+                id: "followup",
+                label: "Follow-up",
                 value: "\u2192",
-                detail: "invii e follow-up",
-                icon: "fa-flask",
+                detail: "azioni scadute e oggi",
+                icon: "fa-calendar-check-o",
                 tone: "samples",
-                action: () => this.onOpenSamples(),
+                action: () => this.onOpenFollowup(),
             },
             {
                 id: "quality",
@@ -169,6 +168,18 @@ export class CFWorkspace extends Component {
 
     // ======== CRM actions ========
 
+    async onOpenConsoleAction(actionXmlId, fallback) {
+        try {
+            await this.action.doAction(actionXmlId);
+        } catch {
+            if (fallback) {
+                await fallback();
+            } else {
+                await this.action.doAction("casafolino_pipeline_control.action_cf_pipeline_control");
+            }
+        }
+    }
+
     async onNewProject() {
         await this.action.doAction(
             "casafolino_crm_export.action_cf_commercial_project_wizard"
@@ -194,10 +205,16 @@ export class CFWorkspace extends Component {
         });
     }
 
+    async onOpenMailInbox() {
+        await this.onOpenControlRoom();
+    }
+
+    async onOpenFollowup() {
+        await this.onOpenControlRoom();
+    }
+
     async onOpenPipeline() {
-        try {
-            await this.action.doAction("casafolino_crm_export.action_cf_crm_all");
-        } catch {
+        await this.onOpenConsoleAction("casafolino_pipeline_control.action_cf_pipeline_control", async () => {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "crm.lead",
@@ -205,13 +222,11 @@ export class CFWorkspace extends Component {
                 domain: [["type", "=", "lead"], ["active", "=", true]],
                 target: "current",
             });
-        }
+        });
     }
 
     async onOpenProjects() {
-        try {
-            await this.action.doAction("casafolino_crm_export.action_cf_project_dossier");
-        } catch {
+        await this.onOpenConsoleAction("casafolino_pipeline_control.action_cf_pipeline_control", async () => {
             await this.action.doAction({
                 type: "ir.actions.act_window",
                 res_model: "project.project",
@@ -219,7 +234,7 @@ export class CFWorkspace extends Component {
                 domain: [["cf_status_dossier", "!=", false]],
                 target: "current",
             });
-        }
+        });
     }
 
     async onOpenLavagna() {
@@ -276,11 +291,9 @@ export class CFWorkspace extends Component {
     }
 
     async onOpenControlRoom() {
-        try {
-            await this.action.doAction("casafolino_pipeline_control.action_cf_pipeline_control");
-        } catch {
+        await this.onOpenConsoleAction("casafolino_pipeline_control.action_cf_pipeline_control", async () => {
             await this.onOpenProjects();
-        }
+        });
     }
 
     async onOpenDossierExport() {

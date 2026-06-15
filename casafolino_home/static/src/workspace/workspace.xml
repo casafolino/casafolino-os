@@ -30,11 +30,11 @@
             <div class="cf-ws-hello">
                 <div class="cf-ws-avatar">AF</div>
                 <div>
-                    <h1>Scrivania commerciale</h1>
+                    <h1>Sala Controllo commerciale</h1>
                     <p>
                         <t t-out="formatKpi(state.kpi.crm.progetti_attivi)"/> dossier attivi ·
                         <t t-out="formatKpi(state.kpi.crm.lead_aperti)"/> lead aperti ·
-                        accesso rapido a pipeline, fiere, campionature e biglietti scansionati
+                        accesso rapido alla Console CRM unica, inbox, follow-up e dossier
                     </p>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                 </div>
                 <div class="cf-ws-tip">
                     <i class="fa fa-bullseye"/>
-                    <span>Parti dai lead caldi, crea il dossier quando il progetto prende forma, poi governa attività, preventivi e campionature dalla Sala Controllo.</span>
+                    <span>Parti dalla Console CRM: inbox, pipeline, follow-up e dossier sono nello stesso flusso di lavoro.</span>
                 </div>
             </div>
         </section>
@@ -72,7 +72,7 @@
             </button>
             <button t-on-click="onOpenMailInbox" class="cf-qa cf-qa-primary-mail">
                 <i class="fa fa-inbox"/>
-                <span class="cf-qa-label">Mail Inbox V2</span>
+                <span class="cf-qa-label">Inbox CRM</span>
             </button>
             <button t-on-click="onNewLead" class="cf-qa">
                 <i class="fa fa-bullseye"/>
@@ -170,18 +170,18 @@
             <div class="cf-sections-grid">
                 <div t-on-click="onOpenMailInbox" class="cf-section-card">
                     <i class="fa fa-inbox cf-section-icon" style="color: #246B4F;"/>
-                    <p class="cf-section-title">Mail Inbox V2</p>
-                    <p class="cf-section-subtitle">Mail, composer e servizi CRM</p>
+                    <p class="cf-section-title">Inbox CRM</p>
+                    <p class="cf-section-subtitle">Mail inbound e thread da collegare</p>
                 </div>
                 <div t-on-click="onOpenPipeline" class="cf-section-card">
                     <i class="fa fa-tasks cf-section-icon" style="color: #2E5AAC;"/>
                     <p class="cf-section-title">Pipeline Lead</p>
-                    <p class="cf-section-subtitle">Kanban opportunità</p>
+                    <p class="cf-section-subtitle">Vista unica opportunità</p>
                 </div>
                 <div t-on-click="onOpenProjects" class="cf-section-card">
                     <i class="fa fa-folder-o cf-section-icon" style="color: #185FA5;"/>
-                    <p class="cf-section-title">Dossier Commerciali</p>
-                    <p class="cf-section-subtitle">Storia clienti</p>
+                    <p class="cf-section-title">Dossier</p>
+                    <p class="cf-section-subtitle">Progetti e storia clienti</p>
                 </div>
                 <div t-on-click="onOpenLavagna" class="cf-section-card">
                     <i class="fa fa-clipboard cf-section-icon" style="color: #173404;"/>
@@ -205,8 +205,8 @@
                 </div>
                 <div t-on-click="onOpenControlRoom" class="cf-section-card">
                     <i class="fa fa-bar-chart cf-section-icon" style="color: #633806;"/>
-                    <p class="cf-section-title">Sala Controllo</p>
-                    <p class="cf-section-subtitle">Inbox, follow-up e dossier</p>
+                    <p class="cf-section-title">Console CRM</p>
+                    <p class="cf-section-subtitle">Priorità, inbox e blocchi</p>
                 </div>
                 <div t-on-click="onOpenInternalProjects" class="cf-section-card">
                     <i class="fa fa-check-square-o cf-section-icon" style="color: #3F8A4F;"/>
