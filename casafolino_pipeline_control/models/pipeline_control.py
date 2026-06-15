@@ -855,6 +855,17 @@ class CfPipelineControl(models.AbstractModel):
         refs_to_disable = [
             'casafolino_crm_360.menu_crm360_root',
             'casafolino_crm_export.menu_cf_projects_360',
+            'casafolino_pipeline_control.menu_cf_pipeline_root_inbox',
+            'casafolino_pipeline_control.menu_cf_pipeline_root_followup',
+            'casafolino_pipeline_control.menu_cf_pipeline_root_post_fair',
+            'casafolino_pipeline_control.menu_cf_pipeline_root_pipeline',
+            'casafolino_pipeline_control.menu_cf_pipeline_root_dossiers',
+            'casafolino_pipeline_control.menu_cf_pipeline_inbox',
+            'casafolino_pipeline_control.menu_cf_pipeline_followup',
+            'casafolino_pipeline_control.menu_cf_pipeline_post_fair',
+            'casafolino_pipeline_control.menu_cf_pipeline_pipeline',
+            'casafolino_pipeline_control.menu_cf_pipeline_dossiers',
+            'casafolino_b2b_portal.menu_cf_b2b_control_room',
             'casafolino_crm_360.crm_lead_form_crm360_button',
             'casafolino_crm_360.crm_lead_form_premium_crm360_button',
             'casafolino_crm_360.view_project_project_form_crm360',
@@ -1681,9 +1692,6 @@ class CfPipelineControl(models.AbstractModel):
             '|',
             ('thread_id', '=', False),
             ('thread_id.is_snoozed', '=', False),
-            '|',
-            ('partner_id', '!=', False),
-            ('lead_id', '!=', False),
         ]
         if user and not user.has_group('base.group_system'):
             domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain

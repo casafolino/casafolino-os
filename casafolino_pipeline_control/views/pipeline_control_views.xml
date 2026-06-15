@@ -473,4 +473,35 @@
               action="action_cf_pipeline_dossiers"
               sequence="6"/>
 
+    <record id="menu_cf_pipeline_root_inbox" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_root_followup" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_root_post_fair" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_root_pipeline" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_root_dossiers" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_inbox" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_followup" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_post_fair" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_pipeline" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_cf_pipeline_dossiers" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
 </odoo>

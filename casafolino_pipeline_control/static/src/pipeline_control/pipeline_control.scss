@@ -369,6 +369,54 @@
         white-space: nowrap;
     }
 
+    .cf-pc-home-inbox-panel {
+        margin-bottom: 16px;
+    }
+
+    .cf-pc-home-inbox-body {
+        display: grid;
+        grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+        gap: 12px;
+        padding: 10px;
+    }
+
+    .cf-pc-home-inbox-kpis {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .cf-pc-home-inbox-kpi {
+        min-height: 78px;
+        padding: 10px;
+        border: 1px solid #dfe3da;
+        border-radius: 8px;
+        background: #fff;
+
+        span,
+        small {
+            display: block;
+            color: #667061;
+            font-size: 11px;
+            line-height: 1.25;
+        }
+
+        strong {
+            display: block;
+            margin: 5px 0;
+            color: #a33c33;
+            font-size: 24px;
+            line-height: 1;
+        }
+    }
+
+    .cf-pc-home-inbox-list {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        min-width: 0;
+    }
+
     .cf-pc-lane-body {
         min-height: 120px;
         padding: 10px;
@@ -2258,6 +2306,10 @@
             grid-template-columns: 1fr;
         }
 
+        .cf-pc-home-inbox-body {
+            grid-template-columns: 1fr;
+        }
+
         .cf-pc-workbench,
         .cf-pc-workbench-grid {
             grid-template-columns: 1fr;
@@ -2303,6 +2355,10 @@
         }
 
         .cf-pc-discipline-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cf-pc-home-inbox-kpis {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 

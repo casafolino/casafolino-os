@@ -129,6 +129,35 @@
                         </div>
                     </section>
 
+                    <section class="cf-pc-panel cf-pc-home-inbox-panel">
+                        <header>
+                            <div>
+                                <h2>Inbox commerciale</h2>
+                                <p>Mail inbound, risposte clienti e messaggi da collegare al CRM.</p>
+                            </div>
+                            <span class="cf-pc-pill tone-red" t-out="allInboxRows.length"/>
+                        </header>
+                        <div class="cf-pc-home-inbox-body">
+                            <div class="cf-pc-home-inbox-kpis">
+                                <t t-foreach="state.data.inbox.kpis" t-as="kpi" t-key="'home-inbox-kpi-' + kpi.label">
+                                    <div class="cf-pc-home-inbox-kpi">
+                                        <span t-out="kpi.label"/>
+                                        <strong t-out="kpi.value"/>
+                                        <small t-out="kpi.hint"/>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="cf-pc-home-inbox-list">
+                                <t t-if="homeInboxRows.length">
+                                    <t t-foreach="homeInboxRows" t-as="item" t-key="'home-inbox-' + item.model + '-' + item.id">
+                                        <t t-call="casafolino_pipeline_control.CompactActionRow"/>
+                                    </t>
+                                </t>
+                                <div t-else="" class="cf-pc-empty">Nessuna email commerciale da lavorare</div>
+                            </div>
+                        </div>
+                    </section>
+
                     <div class="cf-pc-board">
                         <t t-foreach="state.data.lanes" t-as="lane" t-key="lane.key">
                             <section class="cf-pc-lane">
