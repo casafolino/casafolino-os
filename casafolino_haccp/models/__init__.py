@@ -18,3 +18,4 @@ from . import cf_haccp_igiene
 from . import cf_haccp_picking_extend
 from . import cf_haccp_production_extend
 from . import cf_haccp_reminder
+from . import stock_expiry_manual
