@@ -1702,9 +1702,9 @@ class CfPipelineControl(models.AbstractModel):
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     def _get_latest_commercial_threads(self, user):
-        Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
-        if not Mail:
+        if 'casafolino.mail.message' not in self.env:
             return [], []
+        Mail = self.env['casafolino.mail.message']
 
         def latest_per_thread(messages):
             latest_by_thread = {}
