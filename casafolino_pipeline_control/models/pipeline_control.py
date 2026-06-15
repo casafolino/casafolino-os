@@ -894,6 +894,10 @@ class CfPipelineControl(models.AbstractModel):
             ])
             if child_menus:
                 child_menus.write({'active': False})
+            self.env.cr.execute(
+                "UPDATE ir_ui_menu SET active = false WHERE parent_id = %s",
+                (console_menu.id,),
+            )
 
         desk_menu = self.env.ref('casafolino_mail.menu_mail_v3_root', raise_if_not_found=False)
         if console_action and desk_menu:
