@@ -434,7 +434,7 @@
               sequence="6"/>
 
     <record id="menu_cf_pipeline_control_root" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
     </record>
 
     <menuitem id="menu_cf_pipeline_control"

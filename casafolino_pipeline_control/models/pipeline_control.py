@@ -854,7 +854,6 @@ class CfPipelineControl(models.AbstractModel):
         """Keep one visible operational cockpit and hide obsolete 360 entrypoints."""
         refs_to_disable = [
             'casafolino_crm_360.menu_crm360_root',
-            'casafolino_pipeline_control.menu_cf_pipeline_control_root',
             'casafolino_crm_export.menu_cf_projects_360',
             'casafolino_crm_360.crm_lead_form_crm360_button',
             'casafolino_crm_360.crm_lead_form_premium_crm360_button',
@@ -868,6 +867,23 @@ class CfPipelineControl(models.AbstractModel):
             record = self.env.ref(xmlid, raise_if_not_found=False)
             if record and 'active' in record._fields:
                 record.write({'active': False})
+
+        console_action = self.env.ref('casafolino_pipeline_control.action_cf_pipeline_control', raise_if_not_found=False)
+        console_menu = self.env.ref('casafolino_pipeline_control.menu_cf_pipeline_control_root', raise_if_not_found=False)
+        if console_action and console_menu:
+            console_menu.write({
+                'name': 'Console CRM',
+                'action': 'ir.actions.client,%s' % console_action.id,
+                'active': True,
+            })
+
+        desk_menu = self.env.ref('casafolino_mail.menu_mail_v3_root', raise_if_not_found=False)
+        if console_action and desk_menu:
+            desk_menu.write({
+                'name': 'Console CRM',
+                'action': 'ir.actions.client,%s' % console_action.id,
+                'active': True,
+            })
 
         action = self.env.ref('casafolino_crm_export.action_project_dashboard_360', raise_if_not_found=False)
         if action and action._name == 'ir.actions.client':
