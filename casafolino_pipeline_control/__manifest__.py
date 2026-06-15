@@ -1,6 +1,6 @@
 {
     'name': 'CasaFolino Console CRM',
-    'version': '18.0.1.27.6',
+    'version': '18.0.1.27.7',
     'category': 'CasaFolino',
     'summary': 'Console CRM export: follow-up, inbox commerciale, pipeline e dossier',
     'author': 'CasaFolino S.R.L.',
@@ -15,8 +15,8 @@
     ],
     'data': [
         'security/ir.model.access.csv',
-        'data/legacy_cleanup.xml',
         'views/pipeline_control_views.xml',
+        'data/legacy_cleanup.xml',
     ],
     'assets': {
         'web.assets_backend': [
