@@ -218,6 +218,9 @@ class AccountMoveLineExt(models.Model):
             if line.display_type in ('line_section', 'line_note'):
                 line.cf_price_subtotal_six_decimals = 0.0
                 continue
+            if line.cf_fatturapa_xml_price_total:
+                line.cf_price_subtotal_six_decimals = line.cf_fatturapa_xml_price_total
+                continue
             try:
                 quantity = Decimal(str(line.quantity or 0.0))
                 price_unit = Decimal(str(line.price_unit or 0.0))

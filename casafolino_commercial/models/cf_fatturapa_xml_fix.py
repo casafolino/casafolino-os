@@ -316,6 +316,25 @@ class AccountMove(models.Model):
             )
         return True
 
+    def _cf_align_fatturapa_xml_line_balances(self, parsed):
+        self.ensure_one()
+        xml_lines = parsed.get("lines") or []
+        product_lines = self.invoice_line_ids.filtered(
+            lambda line: line.display_type == "product" and line.name != CF_XML_ROUNDING_LINE_NAME
+        ).sorted("sequence")
+        if len(xml_lines) != len(product_lines):
+            return False
+
+        direction = 1 if self.move_type == "in_invoice" else -1
+        for xml_line, line in zip(xml_lines, product_lines):
+            price_total = xml_line.get("price_total")
+            if price_total is None:
+                continue
+            line.with_context(check_move_validity=False).write(
+                self._cf_balance_line_vals(direction * price_total)
+            )
+        return True
+
     def _cf_apply_fatturapa_xml_total_rounding(self, parsed):
         self.ensure_one()
         xml_total = parsed.get("amount_total")
@@ -511,11 +530,13 @@ class AccountMove(models.Model):
                     touched += 1
 
             move._cf_align_fatturapa_xml_bases(parsed)
+            move._cf_align_fatturapa_xml_line_balances(parsed)
             move._cf_align_fatturapa_xml_summaries(parsed)
             move._cf_apply_fatturapa_xml_total_rounding(parsed)
             if was_posted:
                 move.action_post()
                 move._cf_align_fatturapa_xml_bases(parsed)
+                move._cf_align_fatturapa_xml_line_balances(parsed)
                 move._cf_align_fatturapa_xml_summaries(parsed)
                 move._cf_apply_fatturapa_xml_total_rounding(parsed)
 
