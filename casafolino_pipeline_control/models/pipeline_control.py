@@ -1705,29 +1705,51 @@ class CfPipelineControl(models.AbstractModel):
         Mail = self.env['casafolino.mail.message'] if 'casafolino.mail.message' in self.env else False
         if not Mail:
             return [], []
-        domain = [
+
+        def latest_per_thread(messages):
+            latest_by_thread = {}
+            for msg in messages:
+                key = msg.thread_key or (msg.partner_id.id and 'partner:%s' % msg.partner_id.id) or msg.sender_email or msg.subject or msg.id
+                if key not in latest_by_thread:
+                    latest_by_thread[key] = msg
+            return list(latest_by_thread.values())
+
+        Mail = Mail.sudo()
+        base_domain = [
             ('is_archived', '=', False),
             ('is_deleted', '=', False),
-            ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
             '|',
             ('thread_id', '=', False),
             ('thread_id.is_snoozed', '=', False),
         ]
-        if user and not user.has_group('base.group_system'):
-            domain = ['|', ('assigned_user_ids', '=', False), ('assigned_user_ids', 'in', user.ids)] + domain
-        messages = Mail.search(domain, order='email_date desc, id desc', limit=250)
-        latest_by_thread = {}
-        for msg in messages:
-            key = msg.thread_key or (msg.partner_id.id and 'partner:%s' % msg.partner_id.id) or msg.sender_email or msg.subject or msg.id
-            if key not in latest_by_thread:
-                latest_by_thread[key] = msg
-        to_reply = []
-        waiting = []
-        for msg in latest_by_thread.values():
-            if msg.direction_computed == 'inbound' or msg.ai_action_required:
+        to_reply_domain = base_domain + [
+            ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
+            '|',
+            ('direction_computed', '=', 'inbound'),
+            '&',
+            ('direction_computed', '=', False),
+            ('direction', '=', 'inbound'),
+        ]
+        action_required_domain = base_domain + [
+            ('ai_action_required', '=', True),
+            ('state', 'in', ['new', 'review', 'keep', 'auto_keep', 'auto_attached']),
+        ]
+        waiting_domain = base_domain + [
+            ('state', 'in', ['keep', 'auto_keep', 'auto_attached']),
+            '|',
+            ('direction_computed', '=', 'outbound'),
+            '&',
+            ('direction_computed', '=', False),
+            ('direction', '=', 'outbound'),
+        ]
+
+        to_reply = latest_per_thread(Mail.search(to_reply_domain, order='email_date desc, id desc', limit=500))
+        known_reply_ids = {msg.id for msg in to_reply}
+        for msg in latest_per_thread(Mail.search(action_required_domain, order='email_date desc, id desc', limit=200)):
+            if msg.id not in known_reply_ids:
                 to_reply.append(msg)
-            elif msg.direction_computed == 'outbound':
-                waiting.append(msg)
+                known_reply_ids.add(msg.id)
+        waiting = latest_per_thread(Mail.search(waiting_domain, order='email_date desc, id desc', limit=500))
         return to_reply, waiting
 
     def _get_dossier_data(self, today):

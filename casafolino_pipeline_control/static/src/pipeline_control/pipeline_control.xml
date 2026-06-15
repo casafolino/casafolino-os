@@ -20,8 +20,8 @@
         <div t-else="" class="cf-pc-shell">
             <aside class="cf-pc-sidebar">
                 <div class="cf-pc-brand">
-                    <strong>Pipeline Export</strong>
-                    <span>Console CRM operativa</span>
+                    <strong>Console CRM</strong>
+                    <span>Dashboard commerciale unica</span>
                 </div>
                 <div class="cf-pc-nav">
                     <t t-foreach="navItems" t-as="nav" t-key="nav.id">
