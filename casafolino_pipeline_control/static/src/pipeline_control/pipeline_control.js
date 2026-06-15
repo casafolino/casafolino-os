@@ -41,6 +41,7 @@ export class CFPipelineControl extends Component {
             aiDraftBody: "",
             aiDraftLoading: false,
             aiInstruction: "",
+            loadedSections: {},
             data: {
                 kpis: [],
                 discipline: { kpis: [], rows: [] },
@@ -56,12 +57,20 @@ export class CFPipelineControl extends Component {
         onWillStart(this.loadData.bind(this));
     }
 
-    async loadData() {
+    async loadData(section = this.state.activeView, force = false) {
+        const targetSection = section || "control";
+        if (!force && this.state.loadedSections[targetSection]) {
+            return;
+        }
         this.state.loading = true;
         this.state.error = null;
         try {
-            const data = await this.orm.call("cf.pipeline.control", "get_dashboard_data", [this.state.selectedFairId || false]);
-            this.state.data = this.normalizeDashboardData(data);
+            const data = await this.orm.call("cf.pipeline.control", "get_dashboard_data", [this.state.selectedFairId || false, targetSection]);
+            this.state.data = this.normalizeDashboardData({
+                ...this.state.data,
+                ...data,
+            });
+            this.state.loadedSections[targetSection] = true;
             if (!this.state.selectedFairId && this.state.data.post_fair?.fair?.id) {
                 this.state.selectedFairId = this.state.data.post_fair.fair.id;
             }
@@ -76,6 +85,10 @@ export class CFPipelineControl extends Component {
         } finally {
             this.state.loading = false;
         }
+    }
+
+    async refreshData() {
+        await this.loadData(this.state.activeView, true);
     }
 
     normalizeDashboardData(data = {}) {
@@ -194,7 +207,7 @@ export class CFPipelineControl extends Component {
                 }
             }
             this.state.selectedMessageIds = {};
-            await this.loadData();
+            await this.loadData(this.state.activeView, true);
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }
@@ -206,7 +219,7 @@ export class CFPipelineControl extends Component {
             const success = await this.orm.call("cf.pipeline.control", "quick_create_partner", [row.id]);
             if (success) {
                 this.notification.add(_t("Contatto registrato e collegato con successo!"), { type: "success" });
-                await this.loadData();
+                await this.loadData(this.state.activeView, true);
                 if (this.state.selectedMessageId === row.id) {
                     await this.selectMessage(row.id);
                 }
@@ -245,7 +258,7 @@ export class CFPipelineControl extends Component {
                 this.state.aiDraftBody = "";
                 this.state.aiInstruction = "";
                 this.notification.add(_t("Email di risposta inviata con successo!"), { type: "success" });
-                await this.loadData();
+                await this.loadData(this.state.activeView, true);
             } else {
                 this.notification.add(res.error || _t("Errore nell'invio email"), { type: "danger" });
             }
@@ -262,7 +275,7 @@ export class CFPipelineControl extends Component {
             const success = await this.orm.call("cf.pipeline.control", "link_partner_to_message", [this.state.selectedMessageId, partnerId]);
             if (success) {
                 this.notification.add(_t("Mittente associato al partner con successo"), { type: "success" });
-                await this.loadData();
+                await this.loadData(this.state.activeView, true);
                 await this.selectMessage(this.state.selectedMessageId);
             } else {
                 this.notification.add(_t("Associazione fallita"), { type: "danger" });
@@ -278,7 +291,7 @@ export class CFPipelineControl extends Component {
             const success = await this.orm.call("cf.pipeline.control", "link_lead_to_message", [this.state.selectedMessageId, leadId]);
             if (success) {
                 this.notification.add(_t("Email associata al lead con successo"), { type: "success" });
-                await this.loadData();
+                await this.loadData(this.state.activeView, true);
                 await this.selectMessage(this.state.selectedMessageId);
             } else {
                 this.notification.add(_t("Associazione fallita"), { type: "danger" });
@@ -294,7 +307,7 @@ export class CFPipelineControl extends Component {
             const success = await this.orm.call("cf.pipeline.control", "link_dossier_to_message", [this.state.selectedMessageId, projectId]);
             if (success) {
                 this.notification.add(_t("Email associata al dossier con successo"), { type: "success" });
-                await this.loadData();
+                await this.loadData(this.state.activeView, true);
                 await this.selectMessage(this.state.selectedMessageId);
             } else {
                 this.notification.add(_t("Associazione fallita"), { type: "danger" });
@@ -348,11 +361,13 @@ export class CFPipelineControl extends Component {
 
     setView(view) {
         this.state.activeView = view;
+        this.loadData(view);
     }
 
     async selectFair(ev) {
         this.state.selectedFairId = parseInt(ev.target.value, 10) || false;
-        await this.loadData();
+        this.state.loadedSections.fair = false;
+        await this.loadData("fair", true);
     }
 
     setInboxFilter(filter) {
@@ -425,7 +440,7 @@ export class CFPipelineControl extends Component {
             this.notification.add(_t("Stato aggiornato!"), { type: "success" });
             
             // Reload overall data and active dossier's specific content
-            await this.loadData();
+            await this.loadData(this.state.activeView, true);
             if (this.state.activeDossierId) {
                 await this.loadDossierTimeline(this.state.activeDossierId);
             }
@@ -466,7 +481,7 @@ export class CFPipelineControl extends Component {
                 }
                 await this.action.doAction(result);
                 if (result.reload) {
-                    await this.loadData();
+                    await this.loadData(this.state.activeView, true);
                 }
             }
         } catch (error) {
@@ -484,7 +499,7 @@ export class CFPipelineControl extends Component {
             if (result) {
                 await this.action.doAction(result);
                 if (result.reload) {
-                    await this.loadData();
+                    await this.loadData(this.state.activeView, true);
                 }
             }
         } catch (error) {
@@ -505,7 +520,7 @@ export class CFPipelineControl extends Component {
                 }
                 await this.action.doAction(result);
                 if (result.reload) {
-                    await this.loadData();
+                    await this.loadData(this.state.activeView, true);
                 }
             }
         } catch (error) {
@@ -532,7 +547,7 @@ export class CFPipelineControl extends Component {
                 }
                 await this.action.doAction(result);
                 if (result.reload) {
-                    await this.loadData();
+                    await this.loadData(this.state.activeView, true);
                 }
             }
         } catch (error) {
@@ -559,7 +574,7 @@ export class CFPipelineControl extends Component {
             replyToId,
             mode: ctx.default_mode || (replyToId ? "reply" : "new"),
             onSent: async () => {
-                await this.loadData();
+                await this.loadData(this.state.activeView, true);
             },
         });
         return true;
@@ -636,7 +651,7 @@ export class CFPipelineControl extends Component {
             if (result) {
                 await this.action.doAction(result);
                 if (result.reload) {
-                    await this.loadData();
+                    await this.loadData(this.state.activeView, true);
                 }
             }
         } catch (error) {
@@ -677,7 +692,7 @@ export class CFPipelineControl extends Component {
         try {
             await this.orm.call("res.partner", "action_cf_b2b_approve", [[row.id]]);
             this.notification.add(_t("Cliente B2B approvato"), { type: "success" });
-            await this.loadData();
+            await this.loadData(this.state.activeView, true);
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });
         }

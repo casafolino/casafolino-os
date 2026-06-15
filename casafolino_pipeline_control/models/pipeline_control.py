@@ -338,21 +338,30 @@ class CfPipelineControl(models.AbstractModel):
     _description = 'CasaFolino Pipeline Control data provider'
 
     @api.model
-    def get_dashboard_data(self, fair_id=False):
+    def get_dashboard_data(self, fair_id=False, section='control'):
         today = fields.Date.context_today(self)
         user = self.env.user
         fair_id = self._normalize_fair_id(fair_id)
-        return {
-            'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
-            'discipline': self._safe_section('discipline', lambda: self._get_pipeline_discipline(today), {'kpis': [], 'rows': []}),
-            'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
-            'b2b_registrations': self._safe_section('b2b_registrations', lambda: self._get_b2b_registration_data(today), {'kpis': [], 'rows': []}),
-            'followup': self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []}),
-            'post_fair': self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []}),
-            'pipeline': self._safe_section('pipeline', lambda: self._get_pipeline_data(today), []),
-            'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'kpis': [], 'distribution_stats': [], 'to_reply': [], 'waiting_customer': []}),
-            'dossiers': self._safe_section('dossiers', lambda: self._get_dossier_data(today), []),
-        }
+        section = section or 'control'
+        data = {}
+        if section == 'control':
+            data.update({
+                'kpis': self._safe_section('kpis', lambda: self._get_kpis(today, user), []),
+                'discipline': self._safe_section('discipline', lambda: self._get_pipeline_discipline(today), {'kpis': [], 'rows': []}),
+                'lanes': self._safe_section('lanes', lambda: self._get_control_lanes(today, user), []),
+                'inbox': self._safe_section('inbox', lambda: self._get_inbox_data(user), {'kpis': [], 'distribution_stats': [], 'to_reply': [], 'waiting_customer': []}),
+            })
+        elif section == 'inbox':
+            data['inbox'] = self._safe_section('inbox', lambda: self._get_inbox_data(user), {'kpis': [], 'distribution_stats': [], 'to_reply': [], 'waiting_customer': []})
+        elif section == 'followup':
+            data['followup'] = self._safe_section('followup', lambda: self._get_followup_data(today, user), {'kpis': [], 'columns': [], 'routes': [], 'timeline': []})
+        elif section == 'fair':
+            data['post_fair'] = self._safe_section('post_fair', lambda: self._get_post_fair_data(today, fair_id), {'kpis': [], 'columns': [], 'timeline': [], 'fair_options': []})
+        elif section == 'pipeline':
+            data['pipeline'] = self._safe_section('pipeline', lambda: self._get_pipeline_data(today), [])
+        elif section == 'dossiers':
+            data['dossiers'] = self._safe_section('dossiers', lambda: self._get_dossier_data(today), [])
+        return data
 
     @api.model
     def mass_archive(self, message_ids):
