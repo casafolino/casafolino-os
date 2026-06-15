@@ -710,6 +710,11 @@ export class CFPipelineControl extends Component {
     get navItems() {
         return [
             { id: "control", label: "Console CRM", count: this.totalLaneCount },
+            { id: "inbox", label: "Inbox", count: this.allInboxRows.length },
+            { id: "followup", label: "Follow-up", count: this.followupCount },
+            { id: "fair", label: "Post-Fiera", count: this.postFairCount },
+            { id: "pipeline", label: "Pipeline", count: this.pipelineCount },
+            { id: "dossiers", label: "Dossier", count: this.dossierCount },
         ];
     }
 
@@ -717,8 +722,20 @@ export class CFPipelineControl extends Component {
         return (this.state.data.lanes || []).reduce((sum, lane) => sum + (lane.count || 0), 0);
     }
 
+    get followupCount() {
+        return (this.state.data.followup?.columns || []).reduce((sum, column) => sum + (column.count || 0), 0);
+    }
+
+    get postFairCount() {
+        return (this.state.data.post_fair?.columns || []).reduce((sum, column) => sum + (column.count || 0), 0);
+    }
+
     get pipelineCount() {
         return (this.state.data.pipeline || []).reduce((sum, column) => sum + (column.count || 0), 0);
+    }
+
+    get dossierCount() {
+        return (this.state.data.dossiers || []).length;
     }
 
     get inboxFilterOptions() {
