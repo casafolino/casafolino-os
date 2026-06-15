@@ -1428,6 +1428,31 @@
             background: transparent;
         }
 
+        .cf-pc-email-body {
+            min-height: 220px;
+            padding: 18px;
+            background: #ffffff;
+            color: #1f2723;
+            font-size: 14px;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+
+            pre {
+                margin: 0;
+                white-space: pre-wrap;
+                font-family: inherit;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            table {
+                max-width: 100%;
+            }
+        }
+
         .cf-pc-reader-empty {
             flex: 1;
             display: flex;
@@ -1959,6 +1984,13 @@
         background: rgba(255, 255, 255, .96);
         border-bottom: 1px solid #d8dde4;
         backdrop-filter: blur(10px);
+    }
+
+    .cf-pc-vc-timeline .cf-pc-email-body {
+        max-height: 520px;
+        overflow: auto;
+        border: 1px solid #e0e5ea;
+        border-radius: 8px;
     }
 
     .cf-pc-vc-reader-head {

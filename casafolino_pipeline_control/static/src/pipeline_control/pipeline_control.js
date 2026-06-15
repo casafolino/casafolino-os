@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, markup, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
@@ -169,9 +169,9 @@ export class CFPipelineControl extends Component {
         this.state.dossierSearchResults = [];
         
         try {
-            const records = await this.orm.read("casafolino.mail.message", [messageId], ["body_html", "body_plain"]);
-            if (records && records.length) {
-                this.state.selectedMessageBody = records[0].body_html || `<pre>${records[0].body_plain || ''}</pre>` || _t("Nessun contenuto.");
+            const payload = await this.orm.call("cf.pipeline.control", "get_message_payload", [messageId]);
+            if (payload) {
+                this.state.selectedMessageBody = payload.body_html || _t("Nessun contenuto.");
             } else {
                 this.state.selectedMessageBody = _t("Impossibile caricare il corpo del messaggio.");
             }
@@ -181,6 +181,10 @@ export class CFPipelineControl extends Component {
         } catch (error) {
             this.state.selectedMessageBody = _t("Errore caricamento corpo email: ") + (error.message || String(error));
         }
+    }
+
+    get selectedMessageBodyMarkup() {
+        return markup(this.state.selectedMessageBody || "");
     }
 
     toggleMessageCheck(messageId) {
@@ -225,6 +229,45 @@ export class CFPipelineControl extends Component {
                 }
             } else {
                 this.notification.add(_t("Registrazione contatto fallita."), { type: "danger" });
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async messageCreatePartner(row) {
+        await this.runMessageAction(row, "message_create_partner");
+    }
+
+    async messageCreateLead(row) {
+        await this.runMessageAction(row, "message_create_lead");
+    }
+
+    async messageDiscard(row) {
+        await this.runMessageAction(row, "message_discard");
+    }
+
+    async messageDelete(row) {
+        await this.runMessageAction(row, "message_delete");
+    }
+
+    async runMessageAction(row, methodName) {
+        if (!row || !row.id) {
+            this.notification.add(_t("Email non disponibile"), { type: "warning" });
+            return;
+        }
+        try {
+            const result = await this.orm.call("cf.pipeline.control", methodName, [row.id]);
+            if (result) {
+                if (await this.openComposeDialogFromAction(result)) {
+                    return;
+                }
+                await this.action.doAction(result);
+                if (result.reload) {
+                    this.state.loadedSections.inbox = false;
+                    this.state.loadedSections.control = false;
+                    await this.loadData(this.state.activeView, true);
+                }
             }
         } catch (error) {
             this.notification.add(error.message || String(error), { type: "danger" });

@@ -482,17 +482,17 @@
                 <t t-elif="state.activeView === 'inbox'">
                     <div class="cf-pc-inbox-vc">
                         <section class="cf-pc-inbox-command">
-                            <button t-if="selectedMessage" class="btn btn-success btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_domain')">
-                                <i class="fa fa-check"/> Tieni dominio
+                            <button t-if="selectedMessage" class="btn btn-success btn-sm" t-on-click="() => this.messageCreatePartner(selectedMessage)">
+                                <i class="fa fa-building-o"/> Crea azienda
                             </button>
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_sender')">
                                 Tieni persona
                             </button>
-                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'discard_sender')">
+                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDiscard(selectedMessage)">
                                 Scarta
                             </button>
-                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'discard_domain')">
-                                Scarta dominio
+                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDelete(selectedMessage)">
+                                Cancella
                             </button>
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">
                                 Reply all
@@ -503,7 +503,7 @@
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'materials')">
                                 Materiali
                             </button>
-                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')">
+                            <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.messageCreateLead(selectedMessage)">
                                 + Lead
                             </button>
                             <button t-if="selectedMessage" class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_dossier')">
@@ -578,13 +578,15 @@
                             <main class="cf-pc-inbox-vc-reader">
                                 <t t-if="selectedMessage">
                                     <div class="cf-pc-vc-thread-toolbar">
-                                        <button class="btn btn-success btn-sm" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_domain')">
-                                            Tieni + crea CRM
+                                        <button class="btn btn-success btn-sm" t-on-click="() => this.messageCreatePartner(selectedMessage)">
+                                            Crea azienda
                                         </button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Rispondi</button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'reply')">Inoltra</button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'attach_material')">Allega materiale</button>
                                         <button class="btn btn-light btn-sm" t-on-click="() => this.mailQuickAction(selectedMessage, 'snooze')">Crea follow-up</button>
+                                        <button class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDiscard(selectedMessage)">Scarta</button>
+                                        <button class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDelete(selectedMessage)">Cancella</button>
                                     </div>
 
                                     <div class="cf-pc-vc-reader-head">
@@ -610,7 +612,7 @@
                                                 <strong>Mail ricevuta</strong>
                                                 <time t-out="selectedMessage.meta"/>
                                             </header>
-                                            <iframe t-att-srcdoc="state.selectedMessageBody" class="cf-pc-email-iframe" sandbox="allow-same-origin"/>
+                                            <div class="cf-pc-email-body" t-out="selectedMessageBodyMarkup"/>
                                         </article>
                                         <article>
                                             <header>
@@ -684,7 +686,7 @@
                                         <strong>Nome</strong>
                                         <span>Match deterministico</span>
                                     </div>
-                                    <button t-if="selectedMessage" class="btn btn-primary btn-sm w-100" t-on-click="() => this.mailPolicyAction(selectedMessage, 'keep_domain')">
+                                    <button t-if="selectedMessage" class="btn btn-primary btn-sm w-100" t-on-click="() => this.messageCreatePartner(selectedMessage)">
                                         Crea azienda + contatti
                                     </button>
                                 </section>
@@ -697,7 +699,7 @@
                                         <button class="btn btn-sm btn-primary">Qualificato</button>
                                         <button class="btn btn-sm btn-light">Offerta</button>
                                     </div>
-                                    <button t-if="selectedMessage" class="btn btn-light btn-sm w-100" t-on-click="() => this.mailQuickAction(selectedMessage, 'create_lead')">
+                                    <button t-if="selectedMessage" class="btn btn-light btn-sm w-100" t-on-click="() => this.messageCreateLead(selectedMessage)">
                                         Crea opportunita
                                     </button>
                                 </section>

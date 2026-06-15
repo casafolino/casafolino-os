@@ -1,4 +1,5 @@
 import logging
+from html import escape
 from email.utils import getaddresses
 from datetime import timedelta
 
@@ -388,12 +389,112 @@ class CfPipelineControl(models.AbstractModel):
             return False
         if msg.partner_id:
             return True
-        partner = self.env['res.partner'].create({
-            'name': msg.sender_name or msg.sender_email.split('@')[0],
-            'email': msg.sender_email,
-        })
-        msg.write({'partner_id': partner.id})
+        if hasattr(msg, 'action_create_partner'):
+            msg.action_create_partner()
+        else:
+            partner = self._resolve_or_create_partner_from_message(
+                msg,
+                create_company=True,
+                create_participants=True,
+            )
+            if not partner:
+                return False
         return True
+
+    @api.model
+    def get_message_payload(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return {
+                'body_html': '<p>Email non trovata.</p>',
+                'body_plain': '',
+                'body_downloaded': False,
+            }
+
+        if not (msg.body_html or msg.body_plain) and hasattr(msg, 'action_download_body'):
+            try:
+                msg.action_download_body()
+                msg.invalidate_recordset(['body_html', 'body_plain', 'body_downloaded'])
+            except Exception:
+                _logger.exception("Unable to download body for CRM console message %s", msg.id)
+
+        body_html = msg.body_html or ''
+        body_plain = msg.body_plain or msg.snippet or ''
+        if not body_html and body_plain:
+            body_html = '<pre>%s</pre>' % escape(body_plain)
+        if not body_html:
+            body_html = '<p>Nessun contenuto disponibile per questa email.</p>'
+
+        return {
+            'body_html': body_html,
+            'body_plain': body_plain,
+            'body_downloaded': bool(msg.body_downloaded),
+        }
+
+    @api.model
+    def message_create_partner(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
+        if hasattr(msg, 'action_create_partner'):
+            result = msg.action_create_partner()
+        else:
+            partner = self._resolve_or_create_partner_from_message(
+                msg,
+                create_company=True,
+                create_participants=True,
+            )
+            result = self._open_record(partner, 'Azienda') if partner else False
+        if not result:
+            return self._notify('Azienda non creata', 'Non ho trovato un mittente valido.', 'warning')
+        result['reload'] = True
+        return result
+
+    @api.model
+    def message_create_lead(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
+        if not msg.partner_id:
+            if hasattr(msg, 'action_create_partner'):
+                msg.action_create_partner()
+            else:
+                self._resolve_or_create_partner_from_message(
+                    msg,
+                    create_company=True,
+                    create_participants=True,
+                )
+        result = msg.action_create_lead()
+        if isinstance(result, dict):
+            result['reload'] = True
+        return result
+
+    @api.model
+    def message_discard(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
+        if hasattr(msg, 'action_discard'):
+            msg.action_discard()
+        else:
+            msg.write({
+                'state': 'discard',
+                'is_archived': True,
+                'triage_user_id': self.env.user.id,
+                'triage_date': fields.Datetime.now(),
+            })
+        return self._notify('Email scartata', 'La mail e uscita dalla Inbox operativa.', reload=True)
+
+    @api.model
+    def message_delete(self, message_id):
+        msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
+        if not msg:
+            return self._notify('Email non trovata', 'Il thread non e piu disponibile.', 'warning')
+        if hasattr(msg, 'action_delete_soft'):
+            msg.action_delete_soft()
+        else:
+            msg.write({'is_deleted': True})
+        return self._notify('Email rimossa', 'La mail e stata rimossa dalla Inbox operativa.', reload=True)
 
     @api.model
     def mail_policy_action(self, message_id, policy_action):
@@ -1546,7 +1647,9 @@ class CfPipelineControl(models.AbstractModel):
                 return self._open_record(msg.lead_id, 'Lead')
             return msg.action_create_lead()
         if quick_action == 'create_lead':
-            return msg.action_create_lead()
+            return self.message_create_lead(msg.id)
+        if quick_action == 'create_partner':
+            return self.message_create_partner(msg.id)
         if quick_action == 'create_dossier':
             return {
                 'type': 'ir.actions.act_window',
@@ -1586,6 +1689,10 @@ class CfPipelineControl(models.AbstractModel):
         if quick_action == 'archive':
             msg.action_archive()
             return self._notify('Thread archiviato', 'La conversazione e stata rimossa dalla Console CRM.', reload=True)
+        if quick_action == 'discard':
+            return self.message_discard(msg.id)
+        if quick_action == 'delete':
+            return self.message_delete(msg.id)
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     def _open_mail_templates(self):
