@@ -715,6 +715,16 @@ export class CFPipelineControl extends Component {
         }
     }
 
+    async newContact() {
+        await this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Nuovo contatto"),
+            res_model: "res.partner",
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
     async openLegacyLeadForm() {
         await this.action.doAction({
             type: "ir.actions.act_window",

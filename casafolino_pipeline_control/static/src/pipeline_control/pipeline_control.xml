@@ -68,6 +68,81 @@
                 </div>
 
                 <t t-if="state.activeView === 'control'">
+                    <section class="cf-pc-quick-home">
+                        <div class="cf-pc-quick-hero">
+                            <div>
+                                <span>Centro operativo</span>
+                                <h2>Azioni rapide</h2>
+                            </div>
+                            <div class="cf-pc-quick-hero-actions">
+                                <button class="btn btn-primary" t-on-click="openGlobalComposer">
+                                    <i class="fa fa-envelope"/>
+                                    Scrivi email
+                                </button>
+                                <button class="btn btn-light" t-on-click="refreshData" title="Aggiorna">
+                                    <i class="fa fa-refresh"/>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="cf-pc-quick-grid">
+                            <button class="cf-pc-quick-card tone-green" t-on-click="newContact">
+                                <i class="fa fa-address-card-o"/>
+                                <span>Contatto</span>
+                                <strong>Nuova anagrafica</strong>
+                            </button>
+                            <button class="cf-pc-quick-card tone-blue" t-on-click="newLead">
+                                <i class="fa fa-handshake-o"/>
+                                <span>Opportunita</span>
+                                <strong>Nuovo lead</strong>
+                            </button>
+                            <button class="cf-pc-quick-card tone-purple" t-on-click="newDossier">
+                                <i class="fa fa-briefcase"/>
+                                <span>Dossier</span>
+                                <strong>Nuovo progetto</strong>
+                            </button>
+                            <button class="cf-pc-quick-card tone-amber" t-on-click="() => this.openModel('cf.export.sample', 'Campionature')">
+                                <i class="fa fa-flask"/>
+                                <span>Campione</span>
+                                <strong>Nuova campionatura</strong>
+                            </button>
+                        </div>
+
+                        <div class="cf-pc-entry-grid">
+                            <button class="cf-pc-entry-card" t-on-click="() => this.setView('inbox')">
+                                <i class="fa fa-inbox"/>
+                                <span>Inbox</span>
+                                <strong t-out="allInboxRows.length"/>
+                            </button>
+                            <button class="cf-pc-entry-card" t-on-click="() => this.setView('followup')">
+                                <i class="fa fa-calendar-check-o"/>
+                                <span>Follow-up</span>
+                                <strong t-out="followupCount"/>
+                            </button>
+                            <button class="cf-pc-entry-card" t-on-click="() => this.setView('fair')">
+                                <i class="fa fa-users"/>
+                                <span>Post-Fiera</span>
+                                <strong t-out="postFairCount"/>
+                            </button>
+                            <button class="cf-pc-entry-card" t-on-click="() => this.setView('pipeline')">
+                                <i class="fa fa-list-ul"/>
+                                <span>Pipeline</span>
+                                <strong t-out="pipelineCount"/>
+                            </button>
+                            <button class="cf-pc-entry-card" t-on-click="() => this.setView('dossiers')">
+                                <i class="fa fa-folder-open-o"/>
+                                <span>Dossier</span>
+                                <strong t-out="dossierCount"/>
+                            </button>
+                            <button class="cf-pc-entry-card" t-on-click="openB2BRegistrations">
+                                <i class="fa fa-id-badge"/>
+                                <span>Iscrizioni B2B</span>
+                                <strong t-out="state.data.b2b_registrations.rows.length"/>
+                            </button>
+                        </div>
+                    </section>
+
+                    <t t-if="false">
                     <div class="cf-pc-kpis">
                         <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.key">
                             <div t-attf-class="cf-pc-kpi tone-#{kpi.tone}">
@@ -259,6 +334,7 @@
                             </div>
                         </div>
                     </section>
+                    </t>
                 </t>
 
                 <t t-elif="state.activeView === 'followup'">
