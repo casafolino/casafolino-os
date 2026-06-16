@@ -1,4 +1,9 @@
-# CasaFolino OS — Guida Tecnica per Codex
+# CasaFolino — AGENTS (Canonical instructions)
+
+## Scopo
+Questa è la fonte canonica condivisa tra Claude Code e Codex per tutte le regole universali del progetto: Odoo 18 rules, deploy flow, architettura, struttura repo, naming & palette UI, e riferimenti per la riconciliazione bancaria. Evita duplicazione e drift; `CLAUDE.md` e altri file agent-specific importano o rimandano qui.
+
+---
 
 ## Progetto
 Modulo Odoo 18 custom per CasaFolino Srls (azienda food italiana).
@@ -6,167 +11,116 @@ Stack: Odoo 18 Enterprise, Docker, PostgreSQL 15, AWS EC2.
 
 ---
 
-## REGOLE CRITICHE OWL ODOO 18 — MAI VIOLARE
-
-### 1. Event handlers nel template XML
-**VIETATO** — arrow function con blocco `{}`:
-```xml
-<!-- SBAGLIATO: genera "Unexpected identifier" in OWL -->
-<select t-on-change="(e) => { if(e.target.value) this.doSomething(e.target.value); }"/>
-<input t-on-change="(e) => { this.state.val = e.target.value; }"/>
-```
-**CORRETTO** — usa sempre un metodo dedicato nel componente:
-```xml
-<!-- GIUSTO -->
-<select t-on-change="onSelectChange"/>
-<input t-on-change="onInputChange"/>
-```
-```javascript
-// Nel componente JS:
-onSelectChange(ev) {
-    if (ev.target.value) this.doSomething(ev.target.value);
-}
-onInputChange(ev) {
-    this.state.val = ev.target.value;
-}
-```
-
-### 2. CSS — niente import esterni
-**VIETATO**:
-```css
-/* SBAGLIATO: rompe la compilazione del bundle */
-@import url('https://fonts.googleapis.com/css2?family=Inter');
-```
-**CORRETTO**: usa font di sistema o font già in Odoo.
-
-### 3. RPC calls nel JS
-**VIETATO**:
-```javascript
-// SBAGLIATO in Odoo 18
-const rpc = useService('rpc');
-import rpc from 'web.rpc';
-```
-**CORRETTO**:
-```javascript
-// GIUSTO in Odoo 18
-import { rpc } from "@web/core/network/rpc";
-// Poi usalo direttamente:
-const result = await rpc("/web/dataset/call_kw", { ... });
-```
-
-### 4. Views XML — attributi condizionali
-**VIETATO**:
-```xml
-<!-- SBAGLIATO: attrs= non esiste in Odoo 18 -->
-<field name="x" attrs="{'invisible': [('state', '=', 'draft')]}"/>
-```
-**CORRETTO**:
-```xml
-<!-- GIUSTO -->
-<field name="x" invisible="state == 'draft'"/>
-```
-
-### 5. Views XML — invisible/readonly expressions
-**VIETATO**:
-```xml
-<!-- SBAGLIATO: parentesi tonde negli invisible -->
-<field name="x" invisible="(state == 'draft')"/>
-```
-**CORRETTO**:
-```xml
-<!-- GIUSTO: niente parentesi tonde -->
-<field name="x" invisible="state == 'draft'"/>
-```
-
-### 6. Assets nel manifest
-**VIETATO**:
-```python
-# SBAGLIATO: web.assets_web non esiste per backend
-'assets': {'web.assets_web': [...]}
-```
-**CORRETTO**:
-```python
-# GIUSTO
-'assets': {'web.assets_backend': [...]}
-```
-
-### 7. Menus XML — ordine dichiarazione
-**REGOLA**: le `record` action devono venire PRIMA dei `menuitem` che le referenziano.
-```xml
-<!-- PRIMA l'action -->
-<record id="action_cf_mail" model="ir.actions.client">...</record>
-<!-- POI il menu che usa l'action -->
-<menuitem id="menu_cf_mail" action="action_cf_mail"/>
-```
-
-### 8. Conflitti ir_model_data
-Se appare: `found record of different model ir.actions.client (ID)`:
-```sql
-DELETE FROM ir_model_data WHERE name='action_cf_mail_client' AND module='casafolino_mail';
-```
+## Indice veloce
+- Canonical Odoo 18 rules
+- Repo & structure
+- Bank reconciliation (where/what)
+- Naming / Palette / UI rules
+- Deploy flow
+- Useful commands & references
 
 ---
 
-## STRUTTURA MODULI CASAFOLINO
+## Canonical Odoo 18 rules — (MAI VIOLARE)
+1) Event handlers nei template XML
+- Evita arrow functions con blocco `{}` nelle espressioni t-on-*
+- Usa sempre metodi del componente (es. `onSelectChange`, `onInputChange`)
+
+2) CSS — niente import esterni
+- Non importare risorse esterne (es. Google Fonts) nei CSS degli assets; usare font di sistema o font già in Odoo.
+
+3) RPC calls nel JS
+- Importare ed usare `rpc` da `@web/core/network/rpc` (no shim `web.rpc` o `useService('rpc')` legacy).
+
+4) Views XML — attributi condizionali
+- Non usare `attrs=`: usare `invisible="state == 'draft'"` o analoghi.
+
+5) Expressions — invisible/readonly
+- Non usare parentesi tonde nelle expressions XML (es. `invisible="state == 'draft'"`).
+
+6) Assets nel manifest
+- Registrare assets per il backend con `web.assets_backend` (non `web.assets_web` per backend).
+
+7) Menus XML — ordine dichiarazione
+- Dichiarare `record`/`action` PRIMA del `menuitem` che le usa.
+
+8) Conflitti `ir_model_data`
+- Se appare l'errore su record di modello differente, rimuovere entry errate da `ir_model_data` come indicato nel repo.
+
+---
+
+## Repo & module structure (canonical)
+Esempio modulo:
 ```
 casafolino_mail/
-├── __manifest__.py          # version, depends, assets
-├── __init__.py
+├── __manifest__.py
 ├── models/
-│   ├── __init__.py
-│   ├── cf_contact.py        # res.partner extension
-│   ├── cf_mail_message.py   # cf.mail.message model
-│   └── cf_mail_account.py   # cf.mail.account model
-├── security/
-│   └── ir.model.access.csv
-├── static/
-│   └── src/
-│       ├── css/cf_mail_client.css
-│       ├── js/cf_mail_client.js
-│       └── xml/cf_mail_client.xml
-└── views/
-    ├── cf_mail_views.xml
-    └── menus.xml
+├── static/src/
+├── views/
+└── security/
 ```
+Per le regole di naming e struttura consultare `.planning/codebase/STRUCTURE.md` e `ARCHITECTURE.md`.
 
-## Brand CasaFolino
-- **Accent primario**: `#5A6E3A` (verde)
-- **Accent dark**: `#3d4d28`
-- **Accent light**: `rgba(90,110,58,0.1)`
-- **Font**: sistema sans-serif (no Google Fonts)
+---
 
-## Deploy
+## Bank reconciliation (stato riconciliazione bancaria)
+- Gli script di import e riconciliazione sono sotto `scripts/` (es. `scripts/import_bank_statements.py` e `scripts/reconcile_step2_auto.py`).
+- Policy: le riconciliazioni automatizzate devono usare i modelli di riconciliazione Odoo 18; eventuali eccezioni devono essere documentate in `.planning/codebase/INTEGRATIONS.md`.
+
+Riferimenti:
+- `scripts/import_bank_statements.py`
+- `.planning/codebase/INTEGRATIONS.md`
+
+---
+
+## Naming / Palette / UI rules
+- Palette CasaFolino (valori canonici):
+    - Accent primario: `#5A6E3A`
+    - Accent dark: `#3d4d28`
+    - Accent light: `rgba(90,110,58,0.1)`
+- Font: sistema sans-serif (no Google Fonts importati).
+- UI naming: segui i pattern esistenti nei file `static/src/scss` e nei brief in `casafolino_mail/docs/`.
+
+Riferimenti:
+- `casafolino_mail/docs/report_f8.md`
+- `casafolino_crm_export/static/src/scss/` (palette notes)
+
+---
+
+## Deploy flow (canonical)
+- Keep a reproducible `deploy.sh` per host; valore host/target non committare come secret in chiaro (vedi sezione sicurezza).
+- Esempio (da mantenere come regola):
 ```bash
-# Sul server AWS EC2 51.44.170.55
-~/deploy.sh
+# Uso tipico (stage)
+# docker exec odoo-app odoo -d folinofood_stage -u casafolino_mail --stop-after-init --no-http
+# Pulizia cache assets
+# docker exec odoo-db psql -U odoo -d folinofood_stage -c "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';"
+# Restart
+# docker restart odoo-app
 ```
+
+NOTE: mantenere il valore host/indirizzo di deploy in variabile d'ambiente (es. `DEPLOY_HOST`) e NON in file di istruzioni committati.
+
+---
 
 ## Database
-- **Stage**: `folinofood_stage` (per sviluppo)
-- **Prod**: `folinofood` (non toccare mai senza autorizzazione esplicita)
+- Stage DB: `folinofood_stage`
+- Prod DB: `folinofood` (non toccare senza autorizzazione esplicita)
 
-## Comandi utili
-```bash
-# Update modulo specifico
-docker exec odoo-app odoo -d folinofood_stage -u casafolino_mail --stop-after-init --no-http
+---
 
-# Pulisci asset cache
-docker exec odoo-db psql -U odoo -d folinofood_stage -c "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';"
+## Useful commands & quick references
+- Aggiorna modulo:
+    `docker exec odoo-app odoo -d folinofood_stage -u casafolino_mail --stop-after-init --no-http`
+- Pulisci asset cache:
+    `docker exec odoo-db psql -U odoo -d folinofood_stage -c "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';"`
+- Restart:
+    `docker restart odoo-app`
 
-# Restart
-docker restart odoo-app
-```
+---
 
-## Colonne res_partner custom (già esistenti nel DB)
-cf_job_title, cf_department, cf_linkedin, cf_instagram, cf_whatsapp,
-cf_language, cf_country_origin, cf_birthday, cf_fairs, cf_notes,
-cf_last_contact, cf_email_count, cf_opt_out, cf_gdpr_consent,
-cf_gdpr_date, cf_source, cf_rating
+## References (local)
+- `.planning/codebase/STRUCTURE.md`
+- `scripts/import_bank_statements.py`
+- `casafolino_mail/docs/report_f8.md`
 
-## Deploy con update modulo (necessario per nuovi campi o cron)
-```bash
-# Quando ci sono nuovi campi o cron da registrare:
-docker exec odoo-app odoo -d folinofood_stage -u casafolino_mail --stop-after-init --no-http
-# I campi OOO vengono aggiunti automaticamente al DB
-# Il cron parte alla prima sincronizzazione del modulo
-```
