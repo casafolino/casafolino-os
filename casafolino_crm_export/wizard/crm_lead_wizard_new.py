@@ -226,6 +226,7 @@ class CrmLeadWizardNew(models.TransientModel):
         }
 
         # Create lead
+        stage = self._default_pipeline_stage()
         lead_vals = {
             'name': f"{partner.name} - Nuovo lead",
             'partner_id': partner.id,
@@ -235,6 +236,8 @@ class CrmLeadWizardNew(models.TransientModel):
             'tag_ids': [(6, 0, tag_ids)] if tag_ids else False,
             'type': 'opportunity',
         }
+        if stage:
+            lead_vals['stage_id'] = stage.id
         if self.origin_type:
             lead_vals['description'] = f"Origine: {source_map.get(self.origin_type, self.origin_type)}"
 
@@ -266,5 +269,15 @@ class CrmLeadWizardNew(models.TransientModel):
             'res_model': 'crm.lead',
             'res_id': lead.id,
             'view_mode': 'form',
+            'views': [(False, 'form')],
             'target': 'current',
         }
+
+    def _default_pipeline_stage(self):
+        stage = self.env.ref(
+            'casafolino_crm_export.stage_primo_contatto',
+            raise_if_not_found=False,
+        )
+        if stage:
+            return stage
+        return self.env['crm.stage'].search([('fold', '=', False)], order='sequence, id', limit=1)
