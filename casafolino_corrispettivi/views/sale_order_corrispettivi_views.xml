@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_order_corrispettivi_list" model="ir.ui.view">
+        <field name="name">sale.order.corrispettivi.list</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <list string="Ordini da portare nei corrispettivi" decoration-success="cf_corrispettivi_status == 'included'" decoration-warning="cf_corrispettivi_status == 'invoice_required'" decoration-muted="cf_corrispettivi_status == 'excluded'">
+                <field name="name" string="Ordine"/>
+                <field name="date_order"/>
+                <field name="partner_id"/>
+                <field name="amount_total" sum="Totale"/>
+                <field name="invoice_status"/>
+                <field name="cf_corrispettivi_status"/>
+                <field name="cf_corrispettivi_channel"/>
+                <field name="cf_corrispettivi_date"/>
+                <field name="cf_corrispettivi_move_id"/>
+                <field name="cf_corrispettivi_user_id"/>
+                <field name="cf_corrispettivi_note" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sale_order_corrispettivi_search" model="ir.ui.view">
+        <field name="name">sale.order.corrispettivi.search</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <search string="Corrispettivi">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="client_order_ref"/>
+                <field name="cf_corrispettivi_status"/>
+                <field name="cf_corrispettivi_channel"/>
+                <filter string="Da fatturare" name="to_invoice" domain="[('invoice_status','=','to invoice')]"/>
+                <filter string="Da gestire" name="to_review" domain="['|',('cf_corrispettivi_status','=',False),('cf_corrispettivi_status','=','to_review')]"/>
+                <filter string="Nei corrispettivi" name="included" domain="[('cf_corrispettivi_status','=','included')]"/>
+                <filter string="Richiede fattura" name="invoice_required" domain="[('cf_corrispettivi_status','=','invoice_required')]"/>
+                <filter string="Sito" name="website_channel" domain="[('cf_corrispettivi_channel','=','website')]"/>
+                <filter string="Amazon" name="amazon_channel" domain="[('cf_corrispettivi_channel','=','amazon')]"/>
+                <filter string="Ordini 2026" name="orders_2026" domain="[('date_order','&gt;=','2026-01-01 00:00:00'),('date_order','&lt;','2027-01-01 00:00:00')]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter string="Stato procedura" name="group_status" context="{'group_by': 'cf_corrispettivi_status'}"/>
+                    <filter string="Canale" name="group_channel" context="{'group_by': 'cf_corrispettivi_channel'}"/>
+                    <filter string="Mese ordine" name="group_month" context="{'group_by': 'date_order:month'}"/>
+                    <filter string="Cliente" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_sale_order_form_corrispettivi" model="ir.ui.view">
+        <field name="name">sale.order.form.corrispettivi</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Corrispettivi" name="cf_corrispettivi">
+                    <group>
+                        <group>
+                            <field name="cf_corrispettivi_status"/>
+                            <field name="cf_corrispettivi_channel"/>
+                            <field name="cf_corrispettivi_date"/>
+                            <field name="cf_corrispettivi_move_id"/>
+                        </group>
+                        <group>
+                            <field name="cf_corrispettivi_user_id"/>
+                            <field name="cf_corrispettivi_note"/>
+                        </group>
+                    </group>
+                    <div class="o_row mb-3">
+                        <button name="action_cf_create_corrispettivi_receipt" type="object" string="Crea corrispettivo CORR" class="btn btn-primary"/>
+                        <button name="action_cf_mark_corrispettivi_included" type="object" string="Segna come gia registrato" class="btn btn-secondary"/>
+                        <button name="action_cf_mark_invoice_required" type="object" string="Richiede fattura" class="btn btn-secondary"/>
+                        <button name="action_cf_mark_corrispettivi_excluded" type="object" string="Escludi" class="btn btn-secondary"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_sale_order_corrispettivi_to_review" model="ir.actions.act_window">
+        <field name="name">Ordini da portare nei corrispettivi</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="view_id" ref="view_sale_order_corrispettivi_list"/>
+        <field name="search_view_id" ref="view_sale_order_corrispettivi_search"/>
+        <field name="domain">[('state','in',('sale','done')),('invoice_status','=','to invoice'),'|',('cf_corrispettivi_status','=',False),('cf_corrispettivi_status','=','to_review')]</field>
+        <field name="context">{'search_default_orders_2026': 1, 'search_default_to_review': 1}</field>
+    </record>
+
+    <record id="action_sale_order_corrispettivi_included" model="ir.actions.act_window">
+        <field name="name">Ordini con corrispettivo CORR</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="view_id" ref="view_sale_order_corrispettivi_list"/>
+        <field name="search_view_id" ref="view_sale_order_corrispettivi_search"/>
+        <field name="domain">[('cf_corrispettivi_status','=','included')]</field>
+        <field name="context">{'search_default_orders_2026': 1, 'search_default_included': 1}</field>
+    </record>
+
+    <record id="action_sale_order_corrispettivi_invoice_required" model="ir.actions.act_window">
+        <field name="name">Ordini che richiedono fattura</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_sale_order_corrispettivi_list"/>
+        <field name="search_view_id" ref="view_sale_order_corrispettivi_search"/>
+        <field name="domain">[('cf_corrispettivi_status','=','invoice_required')]</field>
+        <field name="context">{'search_default_orders_2026': 1, 'search_default_invoice_required': 1}</field>
+    </record>
+
+    <menuitem id="menu_sale_corrispettivi_root" name="Corrispettivi CORR" parent="sale.sale_menu_root" sequence="35"/>
+    <menuitem id="menu_sale_corrispettivi_to_review" name="Ordini da portare" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_to_review" sequence="10"/>
+    <menuitem id="menu_sale_corrispettivi_included" name="Gia registrati" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_included" sequence="20"/>
+    <menuitem id="menu_sale_corrispettivi_invoice_required" name="Richiedono fattura" parent="menu_sale_corrispettivi_root" action="action_sale_order_corrispettivi_invoice_required" sequence="30"/>
+</odoo>

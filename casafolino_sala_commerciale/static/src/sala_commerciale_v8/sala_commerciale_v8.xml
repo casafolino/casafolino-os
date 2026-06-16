@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_sala_commerciale.CFSalaCommercialeV8">
+    <div class="cf-sale-v8">
+        <header class="cf-sale-v8-top">
+            <div>
+                <p>Sala controllo commerciale v8</p>
+                <h1>Regia, Inbox, Pipeline e Dossier in un unico flusso</h1>
+                <span>Versione affiancata: pulita, testabile e reversibile senza toccare la Scrivania Commerciale attuale.</span>
+            </div>
+            <div class="cf-sale-v8-actions">
+                <button t-on-click="loadKpi">Aggiorna</button>
+                <button t-on-click="openMailTriage" class="primary">Apri Inbox</button>
+            </div>
+        </header>
+
+        <section class="cf-sale-v8-kpi">
+            <article><span>Mail da decidere</span><strong t-out="formatKpi(state.kpi.mail_pending)"/><small>Tieni o scarta</small></article>
+            <article><span>Lead aperti</span><strong t-out="formatKpi(state.kpi.lead_aperti)"/><small>con prossima azione</small></article>
+            <article><span>Dossier attivi</span><strong t-out="formatKpi(state.kpi.progetti_attivi)"/><small>reparti e task</small></article>
+            <article><span>SLA scadenza</span><strong class="danger" t-out="formatKpi(state.kpi.sla_scadenza)"/><small>da sbloccare</small></article>
+        </section>
+
+        <section class="cf-sale-v8-regia">
+            <article class="urgent">
+                <span>Urgente</span>
+                <h2>AL WASL: decidere la mail</h2>
+                <p>Nuova richiesta catalogo. Non deve restare in inbox: va tenuta o scartata.</p>
+                <button t-on-click="openMailTriage">Decidi ora</button>
+            </article>
+            <article class="waiting">
+                <span>In attesa</span>
+                <h2>Follow-up senza risposta</h2>
+                <p>Le mail inviate senza risposta devono tornare in Regia con data e owner.</p>
+                <button t-on-click="createFollowupTask">Crea follow-up</button>
+            </article>
+            <article class="blocked">
+                <span>Da sbloccare</span>
+                <h2>Dossier con reparto fermo</h2>
+                <p>Ogni reparto lavora nella propria pipeline, uno sotto l'altro.</p>
+                <button t-on-click="openDossiers">Apri dossier</button>
+            </article>
+        </section>
+
+        <section class="cf-sale-v8-grid">
+            <article class="cf-sale-v8-panel cf-sale-v8-inbox">
+                <div class="cf-sale-v8-panel-head">
+                    <div><p>Pilastro 1</p><h2>Inbox: prima tieni o scarta</h2></div>
+                    <button t-on-click="openMailbox">Mia casella</button>
+                </div>
+
+                <div class="cf-mail-preview">
+                    <span>Mail selezionata</span>
+                    <strong t-out="state.selectedMail.company"/>
+                    <b t-out="state.selectedMail.subject"/>
+                    <p t-out="state.selectedMail.snippet"/>
+                </div>
+
+                <div class="cf-mail-choice">
+                    <button t-on-click="openMailTriage" class="keep"><strong>Tieni</strong><span>Crea lavoro CRM</span></button>
+                    <button t-on-click="openMailTriage" class="discard"><strong>Scarta</strong><span>Archivia senza lavoro</span></button>
+                </div>
+
+                <div class="cf-detected">
+                    <div>
+                        <span>Azienda rilevata</span>
+                        <strong t-out="state.selectedMail.company"/>
+                        <small>Se esiste gia, collega invece di duplicare.</small>
+                    </div>
+                    <div>
+                        <span>Mittenti rilevati</span>
+                        <strong><t t-out="state.selectedMail.contacts.length"/> contatti</strong>
+                        <small t-out="state.selectedMail.contacts.join(' · ')"/>
+                    </div>
+                </div>
+
+                <div class="cf-mail-actions">
+                    <button t-on-click="createCompanyAndContacts">Crea azienda + contatti</button>
+                    <button t-on-click="createPipelineLead">Manda in Pipeline</button>
+                    <button t-on-click="prepareDossier">Prepara dossier</button>
+                    <button t-on-click="createFollowupTask">Crea task/follow-up</button>
+                    <button t-on-click="openMailTriage">Collega record esistente</button>
+                    <button t-on-click="openMailTriage">Completa triage</button>
+                </div>
+            </article>
+
+            <article class="cf-sale-v8-panel cf-sale-v8-pipeline">
+                <div class="cf-sale-v8-panel-head">
+                    <div><p>Pilastro 2</p><h2>Pipeline commerciale</h2></div>
+                    <button t-on-click="openPipeline">Apri</button>
+                </div>
+                <div class="cf-pipeline-board">
+                    <div>
+                        <h3>Primo contatto</h3>
+                        <article class="active"><strong>AL WASL GENERAL TRADING COMPANY</strong><span>Inviare catalogo · oggi · Antonio</span></article>
+                        <article class="alarm"><strong>Maple Fine Foods</strong><span>Manca prossima azione</span></article>
+                    </div>
+                    <div>
+                        <h3>Interesse</h3>
+                        <article><strong>REWE Group</strong><span>Follow-up offerta · oggi</span></article>
+                    </div>
+                    <div>
+                        <h3>Campioni / Offerta</h3>
+                        <article><strong>Carrefour FR</strong><span>Preparare campionatura</span></article>
+                    </div>
+                    <div>
+                        <h3>Negoziazione</h3>
+                        <article><strong>Gourmet Handels</strong><span>Controproposta prezzo</span></article>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="cf-sale-v8-panel cf-sale-v8-dossier">
+            <div class="cf-sale-v8-panel-head">
+                <div><p>Pilastro 3</p><h2>Dossier AL WASL: reparti uno sotto l'altro</h2></div>
+                <button t-on-click="openDossiers">Apri dossier</button>
+            </div>
+            <div class="cf-dossier-summary">
+                <article><span>Dove siamo</span><p>Catalogo richiesto e lead da qualificare. Dossier completo solo dopo interesse reale.</p></article>
+                <article><span>Aspettano da noi</span><p>Catalogo export, risposta professionale, domanda su canale e volumi.</p></article>
+                <article><span>Aspettiamo da loro</span><p>SKU di interesse, volumi stimati, richiesta campioni o preventivo.</p></article>
+            </div>
+            <div class="cf-reparti-stack">
+                <div class="cf-reparto open">
+                    <header><strong>Commerciale Export</strong><span>corrente</span></header>
+                    <div class="cf-reparto-pipe">
+                        <span class="done">Mail ricevuta<b>catalogo richiesto</b></span>
+                        <span class="current">Catalogo<b>inviare oggi</b></span>
+                        <span>Follow-up<b>13/06</b></span>
+                        <span>Qualifica<b>volumi e SKU</b></span>
+                    </div>
+                </div>
+                <div class="cf-reparto">
+                    <header><strong>Backoffice Export</strong><span>pronto se serve</span></header>
+                    <div class="cf-reparto-pipe">
+                        <span>Listino<b>preparare</b></span><span>Incoterms<b>EXW / FCA</b></span><span>Documenti<b>certificati</b></span><span>Offerta<b>PDF</b></span>
+                    </div>
+                </div>
+                <div class="cf-reparto">
+                    <header><strong>Campionatura</strong><span>su richiesta</span></header>
+                    <div class="cf-reparto-pipe">
+                        <span>SKU<b>selezione</b></span><span>Colli<b>preparazione</b></span><span>Tracking<b>DHL</b></span><span>Feedback<b>assaggio</b></span>
+                    </div>
+                </div>
+                <div class="cf-reparto">
+                    <header><strong>Ricette Personalizzate / R&amp;D</strong><span>opzionale</span></header>
+                    <div class="cf-reparto-pipe">
+                        <span>Brief<b>target UAE</b></span><span>Prova<b>laboratorio</b></span><span>Assaggio<b>cliente</b></span><span>Finale<b>approvata</b></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</t>
+
+</templates>
