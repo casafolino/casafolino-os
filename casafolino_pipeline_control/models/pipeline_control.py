@@ -423,13 +423,15 @@ class CfPipelineControl(models.AbstractModel):
         self._move_leads_recordset_to_pipeline(leads, pipeline)
         return len(leads)
 
-    def _move_leads_recordset_to_pipeline(self, leads, pipeline):
+    def _move_leads_recordset_to_pipeline(self, leads, pipeline, clear_user=False):
         fallback_stage = self._first_stage_for_pipeline(pipeline)
         for lead in leads:
             stage = self._starter_stage_for(pipeline, lead.stage_id) if lead.stage_id else fallback_stage
             vals = {'team_id': pipeline.id}
             if stage:
                 vals['stage_id'] = stage.id
+            if clear_user:
+                vals['user_id'] = False
             lead.write(vals)
 
     def _empty_personal_pipelines(self, starter):
@@ -448,8 +450,28 @@ class CfPipelineControl(models.AbstractModel):
                     Lead.search([('team_id', 'in', teams.ids)]),
                     starter,
                 )
-            summary[key] = count
+            user_leads = self._personal_user_leads(key)
+            user_count = len(user_leads)
+            if user_leads:
+                self._move_leads_recordset_to_pipeline(user_leads, starter, clear_user=True)
+            summary[key] = {
+                'team_leads_moved': count,
+                'assigned_leads_unassigned': user_count,
+            }
         return summary
+
+    def _personal_user_leads(self, key):
+        Users = self.env['res.users'].sudo().with_context(active_test=False)
+        users = Users.search([
+            '|',
+            ('login', 'ilike', key),
+            ('partner_id.name', 'ilike', key),
+        ])
+        if not users:
+            return self.env['crm.lead'].sudo().with_context(active_test=False)
+        return self.env['crm.lead'].sudo().with_context(active_test=False).search([
+            ('user_id', 'in', users.ids),
+        ])
 
     def _cleanup_demo_records(self):
         cleanup_specs = [
