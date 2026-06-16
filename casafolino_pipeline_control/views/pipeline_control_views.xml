@@ -30,6 +30,30 @@
         </field>
     </record>
 
+    <record id="view_cf_pipeline_move_lead_wizard" model="ir.ui.view">
+        <field name="name">cf.pipeline.move.lead.wizard.form</field>
+        <field name="model">cf.pipeline.move.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Sposta lead in pipeline">
+                <sheet>
+                    <group>
+                        <field name="lead_id"/>
+                        <field name="current_team_id"/>
+                    </group>
+                    <group>
+                        <field name="target_team_id"/>
+                        <field name="keep_current_stage"/>
+                        <field name="stage_id" domain="[('team_id', '=', target_team_id)]"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_move" string="Sposta lead" type="object" class="btn btn-primary"/>
+                    <button string="Annulla" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="view_cf_pipeline_create_dossier_wizard" model="ir.ui.view">
         <field name="name">cf.pipeline.create.dossier.wizard.form</field>
         <field name="model">cf.pipeline.create.dossier.wizard</field>
@@ -157,6 +181,7 @@
                         <button name="action_cf_pc_open_quotes" type="object" string="Quotazioni" class="btn btn-secondary"/>
                         <button name="action_cf_pc_new_task" type="object" string="Nuova task" class="btn btn-secondary"/>
                         <button name="action_cf_pc_promote_dossier" type="object" string="Promuovi a dossier" class="btn btn-secondary"/>
+                        <button name="action_cf_pc_move_pipeline" type="object" string="Sposta pipeline" class="btn btn-secondary"/>
                     </div>
                     <group>
                         <group string="Catena commerciale">

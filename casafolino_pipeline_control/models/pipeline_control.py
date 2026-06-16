@@ -31,6 +31,10 @@ INTERNAL_EMAIL_DOMAINS = {
     'folinofood.it',
 }
 
+STARTER_PIPELINE_NAME = 'StarterPipeline'
+PERSONAL_PIPELINE_KEYS = ('antonio', 'josefina', 'martina')
+DEMO_NAME_PATTERN = 'DEMO'
+
 
 class CrmLeadPipelineControl(models.Model):
     _inherit = 'crm.lead'
@@ -71,6 +75,17 @@ class CrmLeadPipelineControl(models.Model):
     def action_cf_pc_new_task(self):
         self.ensure_one()
         return self.env['cf.pipeline.control'].lead_quick_action(self.id, 'task')
+
+    def action_cf_pc_move_pipeline(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Sposta lead in pipeline',
+            'res_model': 'cf.pipeline.move.lead.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_lead_id': self.id},
+        }
 
     def action_cf_pc_open_quotes(self):
         self.ensure_one()
@@ -344,6 +359,190 @@ class ProjectProjectPipelineControl(models.Model):
 class CfPipelineControl(models.AbstractModel):
     _name = 'cf.pipeline.control'
     _description = 'CasaFolino Pipeline Control data provider'
+
+    @api.model
+    def setup_starter_pipeline(self):
+        """Temporary consolidation requested for the CRM review pass.
+
+        The operation is intentionally idempotent: module updates can run it
+        again without duplicating the StarterPipeline or recreating demo data.
+        """
+        starter = self._get_or_create_starter_pipeline()
+        result = {
+            'starter_pipeline_id': starter.id,
+            'starter_stages_ready': self._move_all_stages_to_starter(starter),
+            'personal_pipelines_emptied': self._empty_personal_pipelines(starter),
+            'remaining_leads_moved': self._move_all_leads_to_pipeline(starter),
+            'demo_cleanup': self._cleanup_demo_records(),
+        }
+        _logger.info('StarterPipeline setup completed: %s', result)
+        return result
+
+    def _get_or_create_starter_pipeline(self):
+        Team = self.env['crm.team'].sudo().with_context(active_test=False)
+        starter = Team.search([('name', '=', STARTER_PIPELINE_NAME)], limit=1)
+        if starter:
+            if 'active' in starter._fields and not starter.active:
+                starter.write({'active': True})
+            return starter
+        vals = {'name': STARTER_PIPELINE_NAME}
+        if 'active' in Team._fields:
+            vals['active'] = True
+        return Team.create(vals)
+
+    def _move_all_stages_to_starter(self, starter):
+        Stage = self.env['crm.stage'].sudo().with_context(active_test=False)
+        if 'team_id' not in Stage._fields:
+            return 0
+        source_stages = Stage.search([
+            '|',
+            ('team_id', '=', False),
+            ('team_id', '!=', starter.id),
+        ], order='sequence, id')
+        ensured = 0
+        for source in source_stages:
+            if self._starter_stage_for(starter, source):
+                continue
+            vals = self._stage_copy_vals(source)
+            vals['team_id'] = starter.id
+            Stage.create(vals)
+            ensured += 1
+        return ensured
+
+    def _move_all_leads_to_pipeline(self, pipeline):
+        Lead = self.env['crm.lead'].sudo().with_context(active_test=False)
+        if 'team_id' not in Lead._fields:
+            return 0
+        leads = Lead.search([
+            '|',
+            ('team_id', '=', False),
+            ('team_id', '!=', pipeline.id),
+        ])
+        if not leads:
+            return 0
+        self._move_leads_recordset_to_pipeline(leads, pipeline)
+        return len(leads)
+
+    def _move_leads_recordset_to_pipeline(self, leads, pipeline):
+        fallback_stage = self._first_stage_for_pipeline(pipeline)
+        for lead in leads:
+            stage = self._starter_stage_for(pipeline, lead.stage_id) if lead.stage_id else fallback_stage
+            vals = {'team_id': pipeline.id}
+            if stage:
+                vals['stage_id'] = stage.id
+            lead.write(vals)
+
+    def _empty_personal_pipelines(self, starter):
+        Lead = self.env['crm.lead'].sudo().with_context(active_test=False)
+        if 'team_id' not in Lead._fields:
+            return {}
+        summary = {}
+        for key in PERSONAL_PIPELINE_KEYS:
+            teams = self.env['crm.team'].sudo().with_context(active_test=False).search([
+                ('name', 'ilike', key),
+                ('id', '!=', starter.id),
+            ])
+            count = Lead.search_count([('team_id', 'in', teams.ids)]) if teams else 0
+            if count:
+                self._move_leads_recordset_to_pipeline(
+                    Lead.search([('team_id', 'in', teams.ids)]),
+                    starter,
+                )
+            summary[key] = count
+        return summary
+
+    def _cleanup_demo_records(self):
+        cleanup_specs = [
+            ('crm.lead', ['name', 'contact_name', 'partner_name', 'email_from']),
+            ('crm.team', ['name']),
+            ('crm.stage', ['name']),
+            ('res.partner', ['name', 'email']),
+            ('project.project', ['name']),
+            ('project.task', ['name']),
+            ('sale.order', ['name', 'client_order_ref', 'origin']),
+            ('cf.export.sample', ['reference', 'description']),
+            ('casafolino.mail.message', ['subject', 'sender_email', 'sender_name']),
+        ]
+        summary = {}
+        for model_name, field_names in cleanup_specs:
+            if model_name not in self.env:
+                continue
+            Model = self.env[model_name].sudo().with_context(active_test=False)
+            fields_available = [name for name in field_names if name in Model._fields]
+            if not fields_available:
+                continue
+            domain = self._or_domain([(field_name, 'ilike', DEMO_NAME_PATTERN) for field_name in fields_available])
+            records = Model.search(domain)
+            if not records:
+                summary[model_name] = {'found': 0, 'deleted': 0, 'archived': 0}
+                continue
+            if model_name == 'crm.stage':
+                fallback_stage = Model.search([
+                    ('id', 'not in', records.ids),
+                    ('name', 'not ilike', DEMO_NAME_PATTERN),
+                ], order='sequence, id', limit=1)
+                if fallback_stage:
+                    self.env['crm.lead'].sudo().with_context(active_test=False).search([
+                        ('stage_id', 'in', records.ids),
+                    ]).write({'stage_id': fallback_stage.id})
+            found = len(records)
+            deleted = 0
+            archived = 0
+            try:
+                records.unlink()
+                deleted = found
+            except Exception:
+                _logger.exception('Unable to unlink demo records for %s, archiving where possible', model_name)
+                vals = {}
+                if 'active' in Model._fields:
+                    vals['active'] = False
+                if 'is_deleted' in Model._fields:
+                    vals['is_deleted'] = True
+                if 'is_archived' in Model._fields:
+                    vals['is_archived'] = True
+                if vals:
+                    records.write(vals)
+                    archived = found
+            summary[model_name] = {'found': found, 'deleted': deleted, 'archived': archived}
+        return summary
+
+    def _or_domain(self, terms):
+        if not terms:
+            return []
+        domain = [terms[0]]
+        for term in terms[1:]:
+            domain = ['|', term] + domain
+        return domain
+
+    def _first_stage_for_pipeline(self, pipeline):
+        Stage = self.env['crm.stage'].sudo().with_context(active_test=False)
+        if 'team_id' in Stage._fields:
+            stage = Stage.search([('team_id', '=', pipeline.id)], order='sequence, id', limit=1)
+            if stage:
+                return stage
+        return Stage.search([], order='sequence, id', limit=1)
+
+    def _starter_stage_for(self, starter, source_stage):
+        if not source_stage:
+            return False
+        Stage = self.env['crm.stage'].sudo().with_context(active_test=False)
+        if 'team_id' not in Stage._fields:
+            return source_stage
+        return Stage.search([
+            ('team_id', '=', starter.id),
+            ('name', '=', source_stage.name),
+        ], order='sequence, id', limit=1)
+
+    def _stage_copy_vals(self, source_stage):
+        vals = {
+            'name': source_stage.name,
+            'sequence': source_stage.sequence,
+            'fold': source_stage.fold,
+            'is_won': source_stage.is_won,
+        }
+        if 'cf_probability_default' in source_stage._fields:
+            vals['cf_probability_default'] = source_stage.cf_probability_default
+        return vals
 
     @api.model
     def get_dashboard_data(self, fair_id=False, section='control'):
@@ -1905,6 +2104,16 @@ class CfPipelineControl(models.AbstractModel):
                 'context': {'default_lead_id': lead.id},
                 'reload': True,
             }
+        if quick_action == 'move_pipeline':
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Sposta lead in pipeline',
+                'res_model': 'cf.pipeline.move.lead.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_lead_id': lead.id},
+                'reload': True,
+            }
         return self._notify('Azione non disponibile', quick_action, 'warning')
 
     @api.model
@@ -2848,6 +3057,87 @@ class CfPipelinePromoteDossierWizard(models.TransientModel):
             if user_id:
                 vals['user_ids'] = [(6, 0, [user_id])]
             Task.create(vals)
+
+
+class CfPipelineMoveLeadWizard(models.TransientModel):
+    _name = 'cf.pipeline.move.lead.wizard'
+    _description = 'Sposta lead tra pipeline CRM'
+
+    lead_id = fields.Many2one('crm.lead', string='Lead', required=True, readonly=True)
+    current_team_id = fields.Many2one('crm.team', string='Pipeline attuale', readonly=True)
+    target_team_id = fields.Many2one('crm.team', string='Pipeline destinazione', required=True)
+    stage_id = fields.Many2one('crm.stage', string='Fase destinazione')
+    keep_current_stage = fields.Boolean(
+        string='Mantieni fase attuale se compatibile',
+        default=True,
+    )
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        lead = self.env['crm.lead'].browse(self.env.context.get('default_lead_id')).exists()
+        if lead:
+            target = lead.team_id or self.env['crm.team'].search([
+                ('name', '=', STARTER_PIPELINE_NAME),
+            ], limit=1) or self.env['crm.team'].search([], limit=1)
+            res.update({
+                'lead_id': lead.id,
+                'current_team_id': lead.team_id.id if lead.team_id else False,
+                'target_team_id': target.id if target else False,
+                'stage_id': lead.stage_id.id if lead.stage_id else False,
+            })
+        return res
+
+    @api.onchange('target_team_id', 'keep_current_stage')
+    def _onchange_target_team_id(self):
+        for wizard in self:
+            if not wizard.target_team_id:
+                wizard.stage_id = False
+                continue
+            if wizard.keep_current_stage and wizard.stage_id:
+                team_id = getattr(wizard.stage_id, 'team_id', False)
+                if not team_id or team_id == wizard.target_team_id:
+                    continue
+            wizard.stage_id = wizard._first_stage_for_target()
+
+    def action_move(self):
+        self.ensure_one()
+        lead = self.lead_id.exists()
+        if not lead:
+            raise UserError('Lead non trovato.')
+        vals = {'team_id': self.target_team_id.id}
+        stage = self.stage_id or self._first_stage_for_target()
+        if stage:
+            vals['stage_id'] = stage.id
+        lead.write(vals)
+        lead.message_post(
+            body='Lead spostato nella pipeline %s%s.' % (
+                self.target_team_id.display_name,
+                ' / fase %s' % stage.display_name if stage else '',
+            ),
+            message_type='notification',
+            subtype_xmlid='mail.mt_note',
+        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lead',
+            'res_model': 'crm.lead',
+            'res_id': lead.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
+    def _first_stage_for_target(self):
+        self.ensure_one()
+        Stage = self.env['crm.stage']
+        if self.target_team_id and 'team_id' in Stage._fields:
+            stage = Stage.search([
+                ('team_id', '=', self.target_team_id.id),
+            ], order='sequence, id', limit=1)
+            if stage:
+                return stage
+        return Stage.search([], order='sequence, id', limit=1)
 
 
 class CfPipelineCreateDossierWizard(models.TransientModel):
