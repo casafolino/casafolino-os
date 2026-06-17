@@ -1,7 +1,7 @@
 // Fixtures locali — UI verificabile senza Odoo (CONSOLE_USE_MOCK=1).
 // Klaus Berger è la prova di "mail ovunque": le sue mail compaiono nel suo
 // lead, dossier e ordini perché TUTTE le viste consumano lo stesso bundle.
-import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData } from "./types";
+import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData, PipelineData } from "./types";
 
 const KLAUS_MAIL: MailMessage[] = [
   {
@@ -147,6 +147,28 @@ export function mockInbox(): InboxData {
       body: "Per il Q3 valutiamo le creme a marchio nostro. Mi serve il listino EXW con MOQ e palletizzazione per pistacchio e nocciola…",
     },
     source: "mock",
+  };
+}
+
+export function mockPipeline(): PipelineData {
+  return {
+    source: "mock",
+    columns: [
+      { key: "interesse", label: "Interesse", count: 14, won: false, cards: [
+        { id: 1, partnerId: null, name: "Edeka Süd", sub: "creme · DE", operator: "antonio", value: 24000, score: 62, badgeLabel: null, badgeTone: "neutral" },
+        { id: 2, partnerId: null, name: "Migros", sub: "miele · CH", operator: "josefina", value: 31000, score: 55, badgeLabel: null, badgeTone: "neutral" },
+      ]},
+      { key: "trattativa", label: "Trattativa", count: 9, won: false, cards: [
+        { id: 3, partnerId: 9001, name: "REWE Group", sub: "creme PL · DE", operator: "antonio", value: 48000, score: 78, badgeLabel: "scaduto", badgeTone: "danger" },
+        { id: 4, partnerId: null, name: "SPAR ÖST", sub: "miele · AT", operator: "martina", value: 27000, score: 71, badgeLabel: null, badgeTone: "neutral" },
+      ]},
+      { key: "preventivo", label: "Preventivo", count: 5, won: false, cards: [
+        { id: 5, partnerId: null, name: "Kaufland", sub: "cantucci · DE", operator: "antonio", value: 62000, score: 84, badgeLabel: null, badgeTone: "neutral" },
+      ]},
+      { key: "vinto", label: "Vinto", count: 3, won: true, cards: [
+        { id: 6, partnerId: null, name: "Coop CH", sub: "creme · CH", operator: "josefina", value: 54000, score: null, badgeLabel: "vinto", badgeTone: "ok" },
+      ]},
+    ],
   };
 }
 

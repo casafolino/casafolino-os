@@ -24,6 +24,14 @@ export const operatorColor: Record<OperatorKey, string> = {
   other: "#D1D5DB", // grigio neutro
 };
 
+// Tint (sfondo tenue) per chip score, fedele al riferimento.
+export const operatorTint: Record<OperatorKey, string> = {
+  antonio: "var(--op-antonio-t)",
+  josefina: "var(--op-josefina-t)",
+  martina: "var(--op-martina-t)",
+  other: "var(--panel-2)",
+};
+
 export const operatorLabel: Record<OperatorKey, string> = {
   antonio: "Antonio",
   josefina: "Josefina",

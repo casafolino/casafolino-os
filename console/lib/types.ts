@@ -138,3 +138,29 @@ export interface InboxData {
   message: InboxSelectedMessage;
   source: "odoo" | "mock";
 }
+
+// --- Pipeline (kanban) ---
+export interface PipelineCard {
+  id: number;
+  partnerId: number | null;
+  name: string;
+  sub: string;
+  operator: OperatorKey;
+  value: number | null;
+  score: number | null;
+  badgeLabel: string | null;
+  badgeTone: Tone;
+}
+
+export interface PipelineColumn {
+  key: string;
+  label: string;
+  count: number;
+  won: boolean;
+  cards: PipelineCard[];
+}
+
+export interface PipelineData {
+  columns: PipelineColumn[];
+  source: "odoo" | "mock";
+}
