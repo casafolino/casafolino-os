@@ -5,6 +5,7 @@ import { Icon } from "./Icons";
 import { PartnerMailThread } from "./PartnerMailThread";
 import { AiDraftButton } from "./AiDraftButton";
 import { CreateLeadButton } from "./CreateLeadButton";
+import { LinkLeadButton } from "./LinkLeadButton";
 import { money, moneyCompact, dateLabel } from "./Honest";
 import { operatorColor } from "@/lib/theme";
 import type { InboxItem, PartnerBundle, Tone } from "@/lib/types";
@@ -62,7 +63,7 @@ export function InboxClient({ items, bundles, initialSelectedId }: { items: Inbo
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="btn pri"><Icon name="reply" size={14} /> Rispondi · F8</span>
             {m ? <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} to={m.senderEmail} /> : null}
-            <span className="btn"><Icon name="link" size={14} /> Collega</span>
+            <LinkLeadButton messageId={item.id} leadId={bundle?.leads[0]?.id ?? null} leadName={bundle?.leads[0]?.name} />
           </div>
         </div>
 
