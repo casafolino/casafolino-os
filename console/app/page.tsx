@@ -23,7 +23,7 @@ export default async function Home() {
         <a href="#">Follow-up</a>
         <a href="#">Fiere</a>
         <div style={{ marginTop: 20, fontSize: 11, opacity: 0.7 }}>
-          fonte dati: {klaus?.source ?? "—"} (mock)
+          fonte dati: {klaus?.source ?? "non disponibile"}
         </div>
       </nav>
 
