@@ -1,11 +1,29 @@
 // getPartnerBundle(partnerId): UN bundle relazione-per-partner, con cache.
 // Consumato da TUTTE le viste (contatto, inbox, lead, pipeline card, dossier).
 import type {
-  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey,
+  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData,
 } from "./types";
-import { shouldUseMock, searchRead } from "./odoo";
-import { mockBundle, mockResolveBySender } from "./mock";
+import { shouldUseMock, searchRead, callKw } from "./odoo";
+import { mockBundle, mockResolveBySender, mockRegia } from "./mock";
 import { operatorFromLogin } from "./theme";
+
+/** Dati Regia (home). Mock-first; path Odoo best-effort via conteggi. */
+export async function getRegia(): Promise<RegiaData> {
+  if (shouldUseMock()) return mockRegia();
+  const [hotLeads, overdueFollowups, blockedDossiers] = await Promise.all([
+    callKw<number>("crm.lead", "search_count", [[["cf_lead_score", ">=", 70], ["type", "=", "opportunity"]]]),
+    callKw<number>("crm.lead", "search_count", [[["cf_rotting_state", "in", ["danger", "dead"]], ["type", "=", "opportunity"]]]),
+    callKw<number>("project.project", "search_count", [[["cf_status_dossier", "=", "on_hold"]]]),
+  ]);
+  return {
+    greetingName: "Antonio",
+    subtitle: "",
+    kpis: { hotLeads, overdueFollowups, blockedDossiers, monthRevenue: 0 },
+    queue: [],
+    pipeline: { totalLeads: 0, segments: [] },
+    source: "odoo",
+  };
+}
 
 // --- cache in-memory (per processo server), TTL breve ---
 const TTL_MS = 30_000;

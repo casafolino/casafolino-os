@@ -1,63 +1,75 @@
-// Home demo (mock) — prova "mail ovunque": lo STESSO thread di Klaus Berger
-// compare in Contatto, Lead e Dossier perché tutti consumano getPartnerBundle.
-import { getPartnerBundle } from "@/lib/bundle";
-import { PartnerContext } from "@/components/PartnerContext";
-import { PartnerMailThread } from "@/components/PartnerMailThread";
-import { RelationshipTimeline } from "@/components/RelationshipTimeline";
-import { EmptyHonest } from "@/components/Honest";
+// Regia — command center (schermo 1 di console_reference_v4). Home della console.
+import { getRegia } from "@/lib/bundle";
+import { Sidebar } from "@/components/Sidebar";
+import { Icon } from "@/components/Icons";
+import { operatorColor } from "@/lib/theme";
+import { moneyCompact, EmptyHonest } from "@/components/Honest";
+import type { Tone } from "@/lib/types";
 
-export const dynamic = "force-dynamic"; // legge il bundle a ogni richiesta
+export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const klaus = await getPartnerBundle(9001);
-  const neumann = await getPartnerBundle(9002);
+function toneStyle(tone: Tone): React.CSSProperties {
+  switch (tone) {
+    case "danger": return { background: "var(--danger-t)", color: "var(--danger)" };
+    case "warn": return { background: "var(--warn-t)", color: "var(--warn)" };
+    case "ok": return { background: "var(--ok-t)", color: "var(--ok)" };
+    default: return { background: "var(--panel-2)", color: "var(--muted)" };
+  }
+}
+
+export default async function Regia() {
+  const r = await getRegia();
 
   return (
-    <div className="shell">
-      <nav className="shell-nav">
-        <div style={{ fontWeight: 800, marginBottom: 16 }}>CasaFolino</div>
-        <a href="#">Regia</a>
-        <a href="#">Inbox</a>
-        <a href="#">Pipeline</a>
-        <a href="#">Dossier</a>
-        <a href="#">Follow-up</a>
-        <a href="#">Fiere</a>
-        <div style={{ marginTop: 20, fontSize: 11, opacity: 0.7 }}>
-          fonte dati: {klaus?.source ?? "non disponibile"}
+    <div className="app">
+      <Sidebar active="regia" source={r.source === "mock" ? "mock" : "Odoo · folinofood"} />
+      <main className="main">
+        <h2 style={{ fontSize: 19 }}>Buongiorno {r.greetingName}</h2>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
+          {r.subtitle || `${r.queue.length} elementi ti aspettano`}
         </div>
-      </nav>
 
-      <main className="shell-main">
-        <h2 style={{ marginTop: 0 }}>Foundation demo · relazione per partner</h2>
+        {/* 4 KPI */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
+          <div className="kpi"><div className="k">Lead caldi</div><div className="v">{r.kpis.hotLeads}</div></div>
+          <div className="kpi"><div className="k">Follow-up scaduti</div><div className="v" style={{ color: "var(--danger)" }}>{r.kpis.overdueFollowups}</div></div>
+          <div className="kpi"><div className="k">Dossier bloccati</div><div className="v" style={{ color: "var(--warn)" }}>{r.kpis.blockedDossiers}</div></div>
+          <div className="kpi"><div className="k">Fatturato giugno</div><div className="v">{moneyCompact(r.kpis.monthRevenue)}</div></div>
+        </div>
 
-        {!klaus ? (
-          <EmptyHonest label="Bundle Klaus non disponibile." />
-        ) : (
-          <>
-            <PartnerContext bundle={klaus} />
-
-            <div className="grid-2" style={{ marginTop: 16 }}>
-              {/* Stesso thread nel contesto LEAD */}
-              <div>
-                <p className="section-title">Vista Lead — {klaus.leads[0]?.name ?? "nessun lead"}</p>
-                <PartnerMailThread messages={klaus.mailThread} title="Mail (nel lead)" limit={5} />
+        {/* Coda "Ti aspetta" */}
+        <h3 className="sec-title">Ti aspetta</h3>
+        <div className="card" style={{ overflow: "hidden", marginBottom: 18 }}>
+          {r.queue.length === 0 ? (
+            <div style={{ padding: 12 }}><EmptyHonest label="Nessuna email in attesa di risposta." actionLabel="Apri inbox" /></div>
+          ) : (
+            r.queue.map((q, i) => (
+              <div key={i} className="row" style={{ padding: "10px 13px", borderBottom: i < r.queue.length - 1 ? "1px solid var(--line)" : "none" }}>
+                <span className="opdot" style={{ background: operatorColor[q.operator] }} />
+                <span style={{ fontWeight: 600, width: 150, flexShrink: 0 }}>{q.partnerName}</span>
+                <span className="muted grow ell" style={{ fontSize: 13 }}>{q.subject}</span>
+                <span className="chip" style={toneStyle(q.badgeTone)}>{q.badgeLabel}</span>
               </div>
-              {/* Stesso thread nel contesto DOSSIER */}
-              <div>
-                <p className="section-title">Vista Dossier — {klaus.dossiers[0]?.name ?? "nessun dossier"}</p>
-                <PartnerMailThread messages={klaus.mailThread} title="Mail (nel dossier)" limit={5} />
+            ))
+          )}
+        </div>
+
+        {/* Barra pipeline */}
+        <div className="row">
+          <h3 className="sec-title" style={{ margin: 0 }}>Pipeline</h3>
+          {r.pipeline.segments.length === 0 ? (
+            <span className="muted" style={{ fontSize: 12 }}>nessun lead in pipeline</span>
+          ) : (
+            <>
+              <div className="grow" style={{ display: "flex", height: 9, borderRadius: 999, overflow: "hidden" }}>
+                {r.pipeline.segments.map((s, i) => (
+                  <div key={i} title={`${s.label} ${s.pct}%`} style={{ width: `${s.pct}%`, background: s.color }} />
+                ))}
               </div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <RelationshipTimeline bundle={klaus} />
-            </div>
-          </>
-        )}
-
-        {/* Inbox: contesto risolto dal mittente anche SENZA lead collegato */}
-        <h3 style={{ marginTop: 24 }}>Inbox — contesto dal mittente (senza lead)</h3>
-        {neumann ? <PartnerContext bundle={neumann} /> : <EmptyHonest label="Nessun contatto risolto." actionLabel="Crea contatto" />}
+              <span className="muted" style={{ fontSize: 12 }}>{r.pipeline.totalLeads} lead</span>
+            </>
+          )}
+        </div>
       </main>
     </div>
   );

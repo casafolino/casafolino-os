@@ -26,6 +26,13 @@ export function money(amount: number | null | undefined, currency = "EUR"): stri
   }
 }
 
+/** Compatto per KPI: 58000 -> "€58k" (come il riferimento). */
+export function moneyCompact(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return "non disponibile";
+  if (Math.abs(amount) >= 1000) return `€${Math.round(amount / 1000)}k`;
+  return `€${amount}`;
+}
+
 export function dateLabel(iso: string | null | undefined): string {
   if (!iso) return "senza data";
   const d = new Date(iso);

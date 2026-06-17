@@ -1,7 +1,7 @@
 // Fixtures locali — UI verificabile senza Odoo (CONSOLE_USE_MOCK=1).
 // Klaus Berger è la prova di "mail ovunque": le sue mail compaiono nel suo
 // lead, dossier e ordini perché TUTTE le viste consumano lo stesso bundle.
-import type { PartnerBundle, MailMessage, SenderResolution } from "./types";
+import type { PartnerBundle, MailMessage, SenderResolution, RegiaData } from "./types";
 
 const KLAUS_MAIL: MailMessage[] = [
   {
@@ -103,6 +103,30 @@ export function mockBundle(partnerId: number): PartnerBundle | null {
 
 export function mockPartnerList(): PartnerBundle["partner"][] {
   return Object.values(BUNDLES).map((b) => b.partner);
+}
+
+export function mockRegia(): RegiaData {
+  return {
+    greetingName: "Antonio",
+    subtitle: "martedì 17 giugno · 7 email ti aspettano",
+    kpis: { hotLeads: 12, overdueFollowups: 5, blockedDossiers: 3, monthRevenue: 58000 },
+    queue: [
+      { partnerId: 9001, operator: "antonio", partnerName: "REWE Group", subject: "Richiesta listino creme Q3", badgeLabel: "scaduto 4g", badgeTone: "danger" },
+      { partnerId: null, operator: "josefina", partnerName: "SPAR Österreich", subject: "Conferma campioni miele", badgeLabel: "oggi", badgeTone: "warn" },
+      { partnerId: 9002, operator: "other", partnerName: "Delifrance", subject: "Primo contatto cantucci", badgeLabel: "nuovo", badgeTone: "neutral" },
+    ],
+    pipeline: {
+      totalLeads: 87,
+      segments: [
+        { label: "Interesse", pct: 30, color: "#CBE4D2" },
+        { label: "Trattativa", pct: 22, color: "#8FC79F" },
+        { label: "Preventivo", pct: 24, color: "var(--op-antonio)" },
+        { label: "Vinto", pct: 14, color: "#2F6B4F" },
+        { label: "Chiuso", pct: 10, color: "#1F4A36" },
+      ],
+    },
+    source: "mock",
+  };
 }
 
 export function mockResolveBySender(email: string): SenderResolution {

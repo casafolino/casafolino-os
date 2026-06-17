@@ -89,3 +89,24 @@ export interface SenderResolution {
   matchType: "exact" | "domain" | "none";
   guessName: string | null;
 }
+
+// --- Regia (home / command center) ---
+export type Tone = "ok" | "warn" | "danger" | "neutral";
+
+export interface RegiaQueueItem {
+  partnerId: number | null;
+  operator: OperatorKey;
+  partnerName: string;
+  subject: string;
+  badgeLabel: string;
+  badgeTone: Tone;
+}
+
+export interface RegiaData {
+  greetingName: string;
+  subtitle: string;
+  kpis: { hotLeads: number; overdueFollowups: number; blockedDossiers: number; monthRevenue: number };
+  queue: RegiaQueueItem[];
+  pipeline: { totalLeads: number; segments: { label: string; pct: number; color: string }[] };
+  source: "odoo" | "mock";
+}
