@@ -1,0 +1,124 @@
+:root {
+  /* Palette CasaFolino */
+  --cream: #F5E6C8;
+  --brown: #6B4A1E;
+  --gold: #C8A43A;
+  --ink: #2A2118;
+  --paper: #FFFDF7;
+  --line: rgba(107, 74, 30, 0.18);
+  --muted: rgba(42, 33, 24, 0.55);
+
+  /* Operatori */
+  --op-antonio: #3F8A4F;  /* verde */
+  --op-josefina: #8B5CF6; /* prugna */
+  --op-martina: #6B4A1E;  /* marrone */
+  --op-other: #D1D5DB;    /* grigio */
+
+  /* Stati */
+  --ok: #3F8A4F;
+  --warn: #C8A43A;
+  --danger: #B4452E;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+a { color: var(--brown); }
+
+/* Card / superfici */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brown);
+  margin: 0 0 8px;
+}
+
+/* Badge operatore */
+.op-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.op-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Chip / pill */
+.chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(200, 164, 58, 0.16);
+  color: var(--brown);
+}
+.chip-hot { background: rgba(180, 69, 46, 0.14); color: var(--danger); }
+.chip-warm { background: rgba(200, 164, 58, 0.18); color: #8a6d12; }
+.chip-cold { background: rgba(42,33,24,0.08); color: var(--muted); }
+
+/* Empty-state ONESTO (no-trattino): mai "—", sempre dato o azione */
+.empty-honest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(245, 230, 200, 0.4);
+  color: var(--muted);
+  font-size: 13px;
+}
+.empty-honest button, .empty-action {
+  border: 1px solid var(--brown);
+  background: transparent;
+  color: var(--brown);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Mail thread */
+.mail-item { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.mail-item:last-child { border-bottom: none; }
+.mail-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.mail-dir-in { border-left: 3px solid var(--gold); padding-left: 10px; }
+.mail-dir-out { border-left: 3px solid var(--op-antonio); padding-left: 10px; }
+.mail-unread { font-weight: 700; }
+
+/* Timeline */
+.tl-item { display: flex; gap: 10px; padding: 6px 0; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); margin-top: 6px; flex: none; }
+
+/* Layout shell */
+.shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
+.shell-nav { background: var(--brown); color: var(--cream); padding: 16px 12px; }
+.shell-nav a { color: var(--cream); display: block; padding: 8px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+.shell-main { padding: 20px 24px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
