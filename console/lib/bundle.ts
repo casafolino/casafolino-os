@@ -1,11 +1,19 @@
 // getPartnerBundle(partnerId): UN bundle relazione-per-partner, con cache.
 // Consumato da TUTTE le viste (contatto, inbox, lead, pipeline card, dossier).
 import type {
-  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData, InboxData, PipelineData,
+  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData, InboxData, PipelineData, DossierView,
 } from "./types";
 import { shouldUseMock, searchRead, callKw } from "./odoo";
-import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline } from "./mock";
+import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline, mockDossier } from "./mock";
 import { operatorFromLogin } from "./theme";
+
+/** Dossier 360. Mock-first. (Odoo: project.project + bundle del partner.) */
+export async function getDossier(): Promise<DossierView> {
+  if (shouldUseMock()) return mockDossier();
+  return { id: 0, name: "", status: "", statusTone: "neutral", partnerId: null, partnerName: "",
+    country: null, operator: "other", valueEstimate: null,
+    kpis: { leads: 0, samples: 0, orders: 0, revenue: 0, issues: 0 }, samples: [], source: "odoo" };
+}
 
 /** Pipeline kanban. Mock-first. (Odoo: crm.lead raggruppati per stage_id.) */
 export async function getPipeline(): Promise<PipelineData> {

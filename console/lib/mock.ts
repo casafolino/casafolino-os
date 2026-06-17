@@ -1,7 +1,7 @@
 // Fixtures locali — UI verificabile senza Odoo (CONSOLE_USE_MOCK=1).
 // Klaus Berger è la prova di "mail ovunque": le sue mail compaiono nel suo
 // lead, dossier e ordini perché TUTTE le viste consumano lo stesso bundle.
-import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData, PipelineData } from "./types";
+import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData, PipelineData, DossierView } from "./types";
 
 const KLAUS_MAIL: MailMessage[] = [
   {
@@ -169,6 +169,20 @@ export function mockPipeline(): PipelineData {
         { id: 6, partnerId: null, name: "Coop CH", sub: "creme · CH", operator: "josefina", value: 54000, score: null, badgeLabel: "vinto", badgeTone: "ok" },
       ]},
     ],
+  };
+}
+
+export function mockDossier(): DossierView {
+  return {
+    id: 4201, name: "Creme PL Germania", status: "Attivo", statusTone: "ok",
+    partnerId: 9001, partnerName: "Berger Gourmet GmbH", country: "DE", operator: "antonio",
+    valueEstimate: 142000,
+    kpis: { leads: 3, samples: 2, orders: 7, revenue: 142000, issues: 1 },
+    samples: [
+      { id: 1, name: "Creme pistacchio · 3 SKU", sub: "inviata 28 feb · valutazione 8/10", statusLabel: "Feedback ok", statusTone: "ok" },
+      { id: 2, name: "Crema nocciola · 1 SKU", sub: "inviata 10 giu · feedback atteso", statusLabel: "In attesa", statusTone: "warn" },
+    ],
+    source: "mock",
   };
 }
 

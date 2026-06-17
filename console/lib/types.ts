@@ -164,3 +164,27 @@ export interface PipelineData {
   columns: PipelineColumn[];
   source: "odoo" | "mock";
 }
+
+// --- Dossier 360 ---
+export interface DossierSample {
+  id: number;
+  name: string;
+  sub: string;
+  statusLabel: string;
+  statusTone: Tone;
+}
+
+export interface DossierView {
+  id: number;
+  name: string;
+  status: string;
+  statusTone: Tone;
+  partnerId: number | null;
+  partnerName: string;
+  country: string | null;
+  operator: OperatorKey;
+  valueEstimate: number | null;
+  kpis: { leads: number; samples: number; orders: number; revenue: number; issues: number };
+  samples: DossierSample[];
+  source: "odoo" | "mock";
+}
