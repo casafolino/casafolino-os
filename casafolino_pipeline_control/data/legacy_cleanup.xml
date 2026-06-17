@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <function model="cf.pipeline.control" name="cleanup_legacy_entrypoints"/>
-    <function model="cf.pipeline.control" name="setup_starter_pipeline"/>
+    <data noupdate="1">
+        <!-- Consolidamento StarterPipeline: operazione one-shot (install only).
+             noupdate="1" impedisce la riesecuzione DISTRUTTIVA a ogni -u
+             (sposta tutti i lead, azzera owner, cancella record DEMO). -->
+        <function model="cf.pipeline.control" name="setup_starter_pipeline"/>
+    </data>
 </odoo>
