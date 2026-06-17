@@ -7,36 +7,135 @@ import { shouldUseMock, searchRead, callKw } from "./odoo";
 import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline, mockDossier, mockFollowup, mockFiere } from "./mock";
 import { operatorFromLogin } from "./theme";
 
-/** Follow-up 4 colonne. Mock-first. */
+/** Follow-up 4 colonne. Mock-first. Odoo: crm.lead per data follow-up/rotting. (verify on stage) */
 export async function getFollowup(): Promise<FollowupData> {
   if (shouldUseMock()) return mockFollowup();
-  return { columns: [], source: "odoo" };
+  const leads = await searchRead<Record<string, unknown>>("crm.lead",
+    [["type", "=", "opportunity"], ["active", "=", true]],
+    { fields: ["name", "partner_id", "expected_revenue", "user_id", "cf_date_next_followup", "cf_rotting_state", "cf_lead_score"], limit: 400 });
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const in7 = new Date(today.getTime() + 7 * 86400000);
+  const item = (l: Record<string, unknown>, label: string) => ({
+    id: l.id as number, partnerId: rel(l.partner_id), name: relName(l.partner_id) ?? str(l.name) ?? "Lead",
+    sub: str(l.name) ?? "", operator: operatorFromLogin(relName(l.user_id)) as OperatorKey,
+    value: num(l.expected_revenue), dateLabel: label,
+  });
+  const cols = { overdue: [] as ReturnType<typeof item>[], week: [] as ReturnType<typeof item>[], noplan: [] as ReturnType<typeof item>[], hot: [] as ReturnType<typeof item>[] };
+  for (const l of leads) {
+    const d = str(l.cf_date_next_followup);
+    const due = d ? new Date(d) : null;
+    if (!due) { if ((num(l.cf_lead_score) ?? 0) >= 70) cols.hot.push(item(l, "cliente caldo")); else cols.noplan.push(item(l, "senza data")); }
+    else if (due < today) cols.overdue.push(item(l, "scaduto"));
+    else if (due <= in7) cols.week.push(item(l, due.toISOString().slice(0, 10)));
+    else if ((num(l.cf_lead_score) ?? 0) >= 70) cols.hot.push(item(l, "cliente caldo"));
+  }
+  return {
+    source: "odoo",
+    columns: [
+      { key: "overdue", label: "Scaduti / oggi", tone: "danger", items: cols.overdue },
+      { key: "week", label: "Prossimi 7 giorni", tone: "warn", items: cols.week },
+      { key: "noplan", label: "Da pianificare", tone: "neutral", items: cols.noplan },
+      { key: "hot", label: "Clienti caldi", tone: "ok", items: cols.hot },
+    ],
+  };
 }
 
-/** Fiere. Mock-first. */
+/** Fiere. Mock-first. Odoo: cf.export.fair. (verify on stage) */
 export async function getFiere(): Promise<FairData> {
   if (shouldUseMock()) return mockFiere();
-  return { fairs: [], source: "odoo" };
+  const rows = await searchRead<Record<string, unknown>>("cf.export.fair", [],
+    { fields: ["name", "location", "date_start", "state", "lead_count", "revenue_generated"], order: "date_start desc", limit: 50 });
+  const toneOf = (s: string | null): FairData["fairs"][number]["statusTone"] =>
+    s === "followup" ? "ok" : s === "done" || s === "closed" ? "neutral" : "warn";
+  return {
+    source: "odoo",
+    fairs: rows.map((f) => ({
+      id: f.id as number, name: str(f.name) ?? "Fiera", location: str(f.location) ?? "",
+      dateLabel: str(f.date_start) ?? "data da definire", status: str(f.state) ?? "",
+      statusTone: toneOf(str(f.state)), leads: num(f.lead_count) ?? 0, revenue: num(f.revenue_generated) ?? 0,
+    })),
+  };
 }
 
-/** Dossier 360. Mock-first. (Odoo: project.project + bundle del partner.) */
+/** Dossier 360. Mock-first. Odoo: project.project (dossier attivo più recente) + samples. (verify on stage) */
 export async function getDossier(): Promise<DossierView> {
   if (shouldUseMock()) return mockDossier();
-  return { id: 0, name: "", status: "", statusTone: "neutral", partnerId: null, partnerName: "",
-    country: null, operator: "other", valueEstimate: null,
-    kpis: { leads: 0, samples: 0, orders: 0, revenue: 0, issues: 0 }, samples: [], source: "odoo" };
+  const rows = await searchRead<Record<string, unknown>>("project.project",
+    [["cf_status_dossier", "!=", false]],
+    { fields: ["name", "cf_status_dossier", "partner_id", "cf_buyer_id", "user_id", "cf_dossier_value_estimate", "cf_lead_count", "cf_sample_count"], order: "write_date desc", limit: 1 });
+  if (!rows[0]) {
+    return { id: 0, name: "", status: "", statusTone: "neutral", partnerId: null, partnerName: "", country: null,
+      operator: "other", valueEstimate: null, kpis: { leads: 0, samples: 0, orders: 0, revenue: 0, issues: 0 }, samples: [], source: "odoo" };
+  }
+  const d = rows[0];
+  const partnerId = rel(d.partner_id) ?? rel(d.cf_buyer_id);
+  const sampleRows = await searchRead<Record<string, unknown>>("cf.export.sample",
+    [["project_id", "=", d.id]], { fields: ["reference", "state", "product_summary"], limit: 20 });
+  const statusOf = (s: string | null): DossierView["statusTone"] =>
+    s === "won" || s === "active" ? "ok" : s === "on_hold" ? "warn" : "neutral";
+  return {
+    id: d.id as number, name: str(d.name) ?? "Dossier", status: str(d.cf_status_dossier) ?? "",
+    statusTone: statusOf(str(d.cf_status_dossier)), partnerId, partnerName: relName(d.partner_id) ?? relName(d.cf_buyer_id) ?? "Partner",
+    country: null, operator: operatorFromLogin(relName(d.user_id)) as OperatorKey,
+    valueEstimate: num(d.cf_dossier_value_estimate),
+    kpis: { leads: num(d.cf_lead_count) ?? 0, samples: num(d.cf_sample_count) ?? sampleRows.length, orders: 0, revenue: 0, issues: 0 },
+    samples: sampleRows.map((s) => ({
+      id: s.id as number, name: str(s.reference) ?? "Campione", sub: str(s.product_summary) ?? "",
+      statusLabel: str(s.state) ?? "", statusTone: (s.state === "feedback_ok" ? "ok" : s.state === "feedback_ko" ? "danger" : "warn") as DossierView["samples"][number]["statusTone"],
+    })),
+    source: "odoo",
+  };
 }
 
-/** Pipeline kanban. Mock-first. (Odoo: crm.lead raggruppati per stage_id.) */
+/** Pipeline kanban. Mock-first. Odoo: crm.lead raggruppati per stage_id. (verify on stage) */
 export async function getPipeline(): Promise<PipelineData> {
   if (shouldUseMock()) return mockPipeline();
-  return { columns: [], source: "odoo" };
+  const stages = await searchRead<Record<string, unknown>>("crm.stage", [], { fields: ["name", "sequence"], order: "sequence, id" });
+  const leadRows = await searchRead<Record<string, unknown>>("crm.lead",
+    [["type", "=", "opportunity"], ["active", "=", true]],
+    { fields: ["name", "stage_id", "expected_revenue", "cf_lead_score", "user_id", "cf_rotting_state", "partner_id"], limit: 500, order: "expected_revenue desc" });
+  const columns = stages.map((s) => {
+    const sid = s.id as number;
+    const name = relName(s.name) ?? str(s.name) ?? "Stage";
+    const cards = leadRows.filter((l) => rel(l.stage_id) === sid).slice(0, 8).map((l) => {
+      const ownerEmail = relName(l.user_id);
+      return {
+        id: l.id as number, partnerId: rel(l.partner_id), name: str(l.name) ?? "Lead",
+        sub: relName(l.partner_id) ?? "", operator: operatorFromLogin(ownerEmail) as OperatorKey,
+        value: num(l.expected_revenue), score: num(l.cf_lead_score),
+        badgeLabel: l.cf_rotting_state === "danger" || l.cf_rotting_state === "dead" ? "scaduto" : null,
+        badgeTone: "danger" as const,
+      };
+    });
+    return { key: String(sid), label: name, count: leadRows.filter((l) => rel(l.stage_id) === sid).length, won: /vint|won/i.test(name), cards };
+  });
+  return { columns, source: "odoo" };
 }
 
-/** Inbox 3-pane. Mock-first. (Odoo: lista da casafolino.mail.message stato review/keep.) */
+/** Inbox 3-pane. Mock-first. Odoo: casafolino.mail.message inbound da gestire. (verify on stage) */
 export async function getInbox(): Promise<InboxData> {
   if (shouldUseMock()) return mockInbox();
-  return { items: [], selectedId: 0, source: "odoo" };
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
+    [["direction", "=", "inbound"], ["state", "in", ["new", "review", "keep", "auto_keep"]], ["is_deleted", "=", false]],
+    { fields: ["subject", "sender_email", "sender_name", "email_date", "partner_id", "match_type", "snippet"], order: "email_date desc", limit: 30 });
+  const items = rows.map((r) => {
+    const partnerId = rel(r.partner_id);
+    const match = (str(r.match_type) as "exact" | "domain" | "manual" | "none") ?? "none";
+    return {
+      id: r.id as number, partnerId, operator: "other" as OperatorKey,
+      name: str(r.sender_name) ?? str(r.sender_email) ?? "mittente",
+      org: relName(r.partner_id) ?? str(r.sender_email) ?? "",
+      badgeLabel: partnerId ? "Tocca a noi" : "no match",
+      badgeTone: (partnerId ? "ok" : "danger") as InboxData["items"][number]["badgeTone"],
+      resolutionMatch: match === "manual" ? "exact" : (match as "exact" | "domain" | "none"),
+      message: {
+        subject: str(r.subject) ?? "(senza oggetto)", senderName: str(r.sender_name) ?? "",
+        senderEmail: str(r.sender_email) ?? "", timeLabel: str(r.email_date) ?? "",
+        body: str(r.snippet) ?? "",
+      },
+    };
+  });
+  return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
 }
 
 /** Dati Regia (home). Mock-first; path Odoo best-effort via conteggi. */
