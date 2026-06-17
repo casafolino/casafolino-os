@@ -3,6 +3,7 @@ import { getInbox, getPartnerBundle } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
 import { PartnerMailThread } from "@/components/PartnerMailThread";
+import { AiDraftButton } from "@/components/AiDraftButton";
 import { EmptyHonest, money, moneyCompact, dateLabel } from "@/components/Honest";
 import { operatorColor } from "@/lib/theme";
 import type { Tone } from "@/lib/types";
@@ -64,7 +65,7 @@ export default async function Inbox() {
           <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 13 }}>{m.body}</div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="btn pri"><Icon name="reply" size={14} /> Rispondi · F8</span>
-            <span className="btn"><Icon name="ai" size={14} /> Bozza AI</span>
+            <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} />
             <span className="btn"><Icon name="link" size={14} /> Collega</span>
           </div>
         </div>
