@@ -1,11 +1,23 @@
 // getPartnerBundle(partnerId): UN bundle relazione-per-partner, con cache.
 // Consumato da TUTTE le viste (contatto, inbox, lead, pipeline card, dossier).
 import type {
-  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData, InboxData, PipelineData, DossierView,
+  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData, InboxData, PipelineData, DossierView, FollowupData, FairData,
 } from "./types";
 import { shouldUseMock, searchRead, callKw } from "./odoo";
-import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline, mockDossier } from "./mock";
+import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline, mockDossier, mockFollowup, mockFiere } from "./mock";
 import { operatorFromLogin } from "./theme";
+
+/** Follow-up 4 colonne. Mock-first. */
+export async function getFollowup(): Promise<FollowupData> {
+  if (shouldUseMock()) return mockFollowup();
+  return { columns: [], source: "odoo" };
+}
+
+/** Fiere. Mock-first. */
+export async function getFiere(): Promise<FairData> {
+  if (shouldUseMock()) return mockFiere();
+  return { fairs: [], source: "odoo" };
+}
 
 /** Dossier 360. Mock-first. (Odoo: project.project + bundle del partner.) */
 export async function getDossier(): Promise<DossierView> {

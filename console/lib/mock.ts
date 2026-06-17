@@ -1,7 +1,7 @@
 // Fixtures locali — UI verificabile senza Odoo (CONSOLE_USE_MOCK=1).
 // Klaus Berger è la prova di "mail ovunque": le sue mail compaiono nel suo
 // lead, dossier e ordini perché TUTTE le viste consumano lo stesso bundle.
-import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData, PipelineData, DossierView } from "./types";
+import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData, PipelineData, DossierView, FollowupData, FairData } from "./types";
 
 const KLAUS_MAIL: MailMessage[] = [
   {
@@ -183,6 +183,37 @@ export function mockDossier(): DossierView {
       { id: 2, name: "Crema nocciola · 1 SKU", sub: "inviata 10 giu · feedback atteso", statusLabel: "In attesa", statusTone: "warn" },
     ],
     source: "mock",
+  };
+}
+
+export function mockFollowup(): FollowupData {
+  return {
+    source: "mock",
+    columns: [
+      { key: "overdue", label: "Scaduti / oggi", tone: "danger", items: [
+        { id: 1, partnerId: 9001, name: "REWE Group", sub: "listino creme Q3", operator: "antonio", value: 48000, dateLabel: "scaduto 4g" },
+      ]},
+      { key: "week", label: "Prossimi 7 giorni", tone: "warn", items: [
+        { id: 2, partnerId: null, name: "SPAR ÖST", sub: "conferma campioni", operator: "martina", value: 27000, dateLabel: "19 giu" },
+      ]},
+      { key: "noplan", label: "Da pianificare", tone: "neutral", items: [
+        { id: 3, partnerId: 9002, name: "Neumann Feinkost", sub: "primo contatto", operator: "other", value: null, dateLabel: "senza data" },
+      ]},
+      { key: "hot", label: "Clienti caldi", tone: "ok", items: [
+        { id: 4, partnerId: null, name: "Kaufland", sub: "preventivo cantucci", operator: "antonio", value: 62000, dateLabel: "oggi" },
+      ]},
+    ],
+  };
+}
+
+export function mockFiere(): FairData {
+  return {
+    source: "mock",
+    fairs: [
+      { id: 1, name: "Anuga 2026", location: "Köln · DE", dateLabel: "ott 2026", status: "In preparazione", statusTone: "warn", leads: 0, revenue: 0 },
+      { id: 2, name: "TUTTOFOOD 2026", location: "Milano · IT", dateLabel: "mag 2026", status: "Follow-up", statusTone: "ok", leads: 34, revenue: 86000 },
+      { id: 3, name: "SIAL Montréal", location: "Montréal · CA", dateLabel: "apr 2026", status: "Chiusa", statusTone: "neutral", leads: 18, revenue: 41000 },
+    ],
   };
 }
 

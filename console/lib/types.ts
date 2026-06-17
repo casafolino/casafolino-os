@@ -188,3 +188,29 @@ export interface DossierView {
   samples: DossierSample[];
   source: "odoo" | "mock";
 }
+
+// --- Follow-up (4 colonne) ---
+export interface FollowupItem {
+  id: number;
+  partnerId: number | null;
+  name: string;
+  sub: string;
+  operator: OperatorKey;
+  value: number | null;
+  dateLabel: string;
+}
+export interface FollowupColumn { key: string; label: string; tone: Tone; items: FollowupItem[]; }
+export interface FollowupData { columns: FollowupColumn[]; source: "odoo" | "mock"; }
+
+// --- Fiere ---
+export interface Fair {
+  id: number;
+  name: string;
+  location: string;
+  dateLabel: string;
+  status: string;
+  statusTone: Tone;
+  leads: number;
+  revenue: number;
+}
+export interface FairData { fairs: Fair[]; source: "odoo" | "mock"; }
