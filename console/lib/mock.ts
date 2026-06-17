@@ -131,22 +131,28 @@ export function mockRegia(): RegiaData {
 
 export function mockInbox(): InboxData {
   return {
-    items: [
-      { id: 7001, partnerId: 9001, operator: "antonio", name: "Klaus Berger", org: "Berger Gourmet · listino Q3", badgeLabel: "Tocca a noi", badgeTone: "ok" },
-      { id: 7101, partnerId: 9002, operator: "other", name: "H. Neumann", org: "Neumann Feinkost · sortiment", badgeLabel: null, badgeTone: "neutral" },
-      { id: 7999, partnerId: null, operator: "other", name: "Delifrance", org: "primo contatto cantucci", badgeLabel: "no match", badgeTone: "danger" },
-    ],
     selectedId: 7001,
-    selectedPartnerId: 9001,
-    resolutionMatch: "exact",
-    message: {
-      subject: "Richiesta listino creme — volumi Q3",
-      senderName: "Klaus Berger",
-      senderEmail: "klaus@berger-gourmet.de",
-      timeLabel: "oggi 08:14",
-      body: "Per il Q3 valutiamo le creme a marchio nostro. Mi serve il listino EXW con MOQ e palletizzazione per pistacchio e nocciola…",
-    },
     source: "mock",
+    items: [
+      {
+        id: 7001, partnerId: 9001, operator: "antonio", name: "Klaus Berger", org: "Berger Gourmet · listino Q3",
+        badgeLabel: "Tocca a noi", badgeTone: "ok", resolutionMatch: "exact",
+        message: { subject: "Richiesta listino creme — volumi Q3", senderName: "Klaus Berger", senderEmail: "klaus@berger-gourmet.de", timeLabel: "oggi 08:14",
+          body: "Per il Q3 valutiamo le creme a marchio nostro. Mi serve il listino EXW con MOQ e palletizzazione per pistacchio e nocciola…" },
+      },
+      {
+        id: 7101, partnerId: 9002, operator: "other", name: "H. Neumann", org: "Neumann Feinkost · sortiment",
+        badgeLabel: null, badgeTone: "neutral", resolutionMatch: "domain",
+        message: { subject: "Anfrage Sortiment", senderName: "H. Neumann", senderEmail: "h.neumann@neumann-feinkost.at", timeLabel: "oggi 07:30",
+          body: "Wir interessieren uns für Ihr Sortiment italienischer Spezialitäten für unsere Feinkost-Abteilung…" },
+      },
+      {
+        id: 7999, partnerId: null, operator: "other", name: "Delifrance", org: "primo contatto cantucci",
+        badgeLabel: "no match", badgeTone: "danger", resolutionMatch: "none",
+        message: { subject: "Première prise de contact — cantuccini", senderName: "Service Achats", senderEmail: "achats@delifrance.fr", timeLabel: "ieri 16:20",
+          body: "Bonjour, nous souhaitons référencer vos cantuccini. Pourriez-vous nous transmettre votre catalogue…" },
+      },
+    ],
   };
 }
 

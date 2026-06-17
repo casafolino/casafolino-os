@@ -36,9 +36,7 @@ export async function getPipeline(): Promise<PipelineData> {
 /** Inbox 3-pane. Mock-first. (Odoo: lista da casafolino.mail.message stato review/keep.) */
 export async function getInbox(): Promise<InboxData> {
   if (shouldUseMock()) return mockInbox();
-  // Path Odoo: implementazione successiva (richiede credenziali stage).
-  return { items: [], selectedId: 0, selectedPartnerId: null, resolutionMatch: "none",
-    message: { subject: "", senderName: "", senderEmail: "", timeLabel: "", body: "" }, source: "odoo" };
+  return { items: [], selectedId: 0, source: "odoo" };
 }
 
 /** Dati Regia (home). Mock-first; path Odoo best-effort via conteggi. */
