@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CasaFolino Console — Design Reference v4 (chiaro)</title>
+<style>
+  /* =================================================================
+     CASAFOLINO CONSOLE — DESIGN REFERENCE v4 — TEMA CHIARO
+     Identico al mockup approvato: sfondo chiaro, card bianche,
+     sidebar chiara. Niente marrone di fondo.
+     Colore = solo accenti: pallini operatore + badge di stato.
+     4 principi: una casa · niente "—" · contesto ovunque · colori operatore.
+     ================================================================= */
+  :root {
+    /* superfici */
+    --canvas:  #FAFAF8;   /* fondo app */
+    --paper:   #FFFFFF;   /* card */
+    --panel:   #F4F4F1;   /* sidebar + riempimenti tenui */
+    --panel-2: #EFEEEB;   /* fill secondario */
+
+    /* testo */
+    --ink:     #1E1E1F;
+    --muted:   #6B6E76;
+    --faint:   #9A9CA3;
+
+    /* linee */
+    --line:    rgba(20,20,25,0.09);
+    --line-2:  rgba(20,20,25,0.16);
+
+    /* accento azione (come --color-text-info del mockup) */
+    --accent:   #2E6BB8;
+    --accent-t: #E8F0FA;
+
+    /* operatori (sistema CasaFolino) */
+    --op-antonio:   #3F8A4F;  --op-antonio-t: #E7F2E9;
+    --op-josefina:  #8B5CF6;  --op-josefina-t:#EDE7FC;
+    --op-martina:   #8A5A1E;  --op-martina-t: #F4EAD8;
+    --op-none:      #C4C6CB;
+
+    /* stato */
+    --ok:     #1D8A66;  --ok-t:    #E3F4EC;
+    --warn:   #9A6B1E;  --warn-t:  #FBF0D8;
+    --danger: #C0392B;  --danger-t:#FBE6E3;
+
+    --r-sm: 6px; --r-md: 9px; --r-lg: 14px;
+    --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--canvas); color: var(--ink);
+    font-family: var(--font); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  h1,h2,h3 { margin: 0; font-weight: 600; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  .doc-head { margin-bottom: 26px; }
+  .doc-head .ey { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .doc-head h1 { font-size: 26px; margin: 4px 0 6px; letter-spacing: -0.01em; }
+  .doc-head p { margin: 0; color: var(--muted); max-width: 64ch; }
+  .principles { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 18px; }
+  .principles span { font-size: 12px; padding: 5px 11px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); font-weight: 500; }
+  .swatches { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sw { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+  .sw i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+
+  .screen { margin-top: 30px; }
+  .screen > .label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+  .frame { border: 1px solid var(--line-2); border-radius: var(--r-lg); overflow: hidden; background: var(--canvas); box-shadow: 0 1px 3px rgba(20,20,25,.05); }
+  .titlebar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .titlebar .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+  .titlebar .url { margin-left: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .app { display: flex; min-height: 460px; }
+
+  /* sidebar CHIARA */
+  .side { width: 184px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--line); padding: 16px 12px; display: flex; flex-direction: column; gap: 3px; }
+  .side .brand { font-size: 16px; font-weight: 600; padding: 4px 8px 16px; color: var(--ink); }
+  .side a { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: var(--r-md); color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .side a.on { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(20,20,25,.06); }
+  .side a .ic { width: 18px; height: 18px; flex-shrink: 0; }
+  .side a .cnt { margin-left: auto; font-size: 11px; background: var(--accent); color: #fff; padding: 1px 7px; border-radius: 999px; font-weight: 600; }
+  .side .src { margin-top: auto; font-size: 11px; color: var(--faint); padding: 8px; }
+  .side .me { display: flex; align-items: center; gap: 9px; padding: 8px; }
+  .side .me .av { width: 26px; height: 26px; border-radius: 50%; background: var(--op-antonio); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+  .side .me span { font-size: 12px; color: var(--muted); }
+
+  .main { flex: 1; min-width: 0; padding: 20px 22px; background: var(--canvas); }
+
+  .row { display: flex; align-items: center; gap: 10px; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: var(--muted); }
+  .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+  .opdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .btn { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: var(--r-md); border: 1px solid var(--line-2); background: var(--paper); color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
+  .btn.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .kpi { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; }
+  .kpi .k { font-size: 11px; color: var(--muted); }
+  .kpi .v { font-size: 23px; font-weight: 600; line-height: 1.2; }
+  .sec-title { font-size: 13px; font-weight: 600; margin: 0 0 9px; }
+  svg.ic { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 13h4l2 3h4l2-3h4"/></symbol>
+    <symbol id="i-kanban" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-fair" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5M4 9h16M5 9v11h14V9M9 20v-6h6v6"/></symbol>
+    <symbol id="i-folders" viewBox="0 0 24 24"><path d="M4 7h5l2 2h9v9H4zM4 7V5h4l2 2"/></symbol>
+    <symbol id="i-reply" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 5 5v3"/></symbol>
+    <symbol id="i-ai" viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8zM18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9 16H3zM12 10v4M12 17h.01"/></symbol>
+  </svg>
+
+  <div class="doc-head">
+    <div class="ey">Console commerciale · CasaFolino OS</div>
+    <h1>Design Reference v4 · tema chiaro</h1>
+    <p>Sfondo chiaro, card bianche, sidebar chiara — come il mockup approvato. Il colore è solo accento: pallini operatore (verde / prugna / marrone) e badge di stato. I quattro schermi condividono una sola scocca; ogni token è nelle variabili CSS in testa al file.</p>
+    <div class="principles"><span>Una sola casa</span><span>Niente "—"</span><span>Contesto ovunque</span><span>Colori operatore</span></div>
+    <div class="swatches">
+      <span class="sw"><i style="background:var(--op-antonio)"></i>Antonio</span>
+      <span class="sw"><i style="background:var(--op-josefina)"></i>Josefina</span>
+      <span class="sw"><i style="background:var(--op-martina)"></i>Martina</span>
+      <span class="sw"><i style="background:var(--accent)"></i>azione</span>
+      <span class="sw"><i style="background:var(--ok)"></i>ok</span>
+      <span class="sw"><i style="background:var(--warn)"></i>attenzione</span>
+      <span class="sw"><i style="background:var(--danger)"></i>scaduto</span>
+    </div>
+  </div>
+
+  <!-- ===================== 1 · REGIA / HOME ===================== -->
+  <div class="screen">
+    <div class="label">1 · Regia — command center</div>
+    <div class="frame">
+      <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">localhost:3000/regia</span></div>
+      <div class="app">
+        <nav class="side">
+          <div class="brand">CasaFolino</div>
+          <a class="on"><svg class="ic" width="18" height="18"><use href="#i-home"/></svg> Regia</a>
+          <a><svg class="ic" width="18" height="18"><use href="#i-inbox"/></svg> Inbox <span class="cnt">7</span></a>
+          <a><svg class="ic" width="18" height="18"><use href="#i-kanban"/></svg> Pipeline</a>
+          <a><svg class="ic" width="18" height="18"><use href="#i-clock"/></svg> Follow-up</a>
+          <a><svg class="ic" width="18" height="18"><use href="#i-fair"/></svg> Fiere</a>
+          <a><svg class="ic" width="18" height="18"><use href="#i-folders"/></svg> Dossier</a>
+          <div class="me" style="margin-top:auto"><span class="av">AF</span><span>Antonio</span></div>
+          <div class="src">dati: Odoo · folinofood</div>
+        </nav>
+        <div class="main">
+          <h2 style="font-size:19px">Buongiorno Antonio</h2>
+          <div class="muted" style="font-size:12px; margin-bottom:16px">martedì 17 giugno · 7 email ti aspettano</div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px">
+            <div class="kpi"><div class="k">Lead caldi</div><div class="v">12</div></div>
+            <div class="kpi"><div class="k">Follow-up scaduti</div><div class="v" style="color:var(--danger)">5</div></div>
+            <div class="kpi"><div class="k">Dossier bloccati</div><div class="v" style="color:var(--warn)">3</div></div>
+            <div class="kpi"><div class="k">Fatturato giugno</div><div class="v">€58k</div></div>
+          </div>
+          <h3 class="sec-title">Ti aspetta</h3>
+          <div class="card" style="overflow:hidden; margin-bottom:18px">
+            <div class="row" style="padding:10px 13px; border-bottom:1px solid var(--line)">
+              <span class="opdot" style="background:var(--op-antonio)"></span>
+              <span style="font-weight:600; width:140px; flex-shrink:0">REWE Group</span>
+              <span class="muted grow ell" style="font-size:13px">Richiesta listino creme Q3</span>
+              <span class="chip" style="background:var(--danger-t); color:var(--danger)">scaduto 4g</span>
+            </div>
+            <div class="row" style="padding:10px 13px; border-bottom:1px solid var(--line)">
+              <span class="opdot" style="background:var(--op-josefina)"></span>
+              <span style="font-weight:600; width:140px; flex-shrink:0">SPAR Österreich</span>
+              <span class="muted grow ell" style="font-size:13px">Conferma campioni miele</span>
+              <span class="chip" style="background:var(--warn-t); color:var(--warn)">oggi</span>
+            </div>
+            <div class="row" style="padding:10px 13px">
+              <span class="opdot" style="background:var(--op-none)"></span>
+              <span style="font-weight:600; width:140px; flex-shrink:0">Delifrance</span>
+              <span class="muted grow ell" style="font-size:13px">Primo contatto cantucci</span>
+              <span class="chip" style="background:var(--panel-2); color:var(--muted)">nuovo</span>
+            </div>
+          </div>
+          <div class="row">
+            <h3 class="sec-title" style="margin:0">Pipeline</h3>
+            <div class="grow" style="display:flex; height:9px; border-radius:999px; overflow:hidden">
+              <div style="width:30%; background:#CBE4D2"></div>
+              <div style="width:22%; background:#8FC79F"></div>
+              <div style="width:24%; background:var(--op-antonio)"></div>
+              <div style="width:14%; background:#2F6B4F"></div>
+              <div style="width:10%; background:#1F4A36"></div>
+            </div>
+            <span class="muted" style="font-size:12px">87 lead</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 2 · INBOX 3-PANE ===================== -->
+  <div class="screen">
+    <div class="label">2 · Inbox — 3 pannelli, contesto dal mittente (non dal lead)</div>
+    <div class="frame">
+      <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">localhost:3000/inbox</span></div>
+      <div class="app">
+        <nav class="side" style="width:54px; align-items:center; padding:16px 0; gap:18px">
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-home"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--accent)"><use href="#i-inbox"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-kanban"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-clock"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-fair"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-folders"/></svg>
+          <span style="margin-top:auto; width:26px; height:26px; border-radius:50%; background:var(--op-antonio); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600">AF</span>
+        </nav>
+        <div style="width:200px; flex-shrink:0; border-right:1px solid var(--line); background:var(--paper)">
+          <div style="padding:11px 13px; border-bottom:1px solid var(--line); font-weight:600">Inbox</div>
+          <div style="padding:10px 13px; border-left:3px solid var(--accent); background:var(--accent-t)">
+            <div class="row" style="gap:6px"><span class="opdot" style="background:var(--op-antonio)"></span><span style="font-weight:600; font-size:13px">Klaus Berger</span></div>
+            <div class="muted" style="font-size:11px; margin:2px 0 5px">REWE · listino Q3</div>
+            <span class="chip" style="background:var(--ok-t); color:var(--ok)">Tocca a noi</span>
+          </div>
+          <div style="padding:10px 13px; border-left:3px solid transparent">
+            <div class="row" style="gap:6px"><span class="opdot" style="background:var(--op-josefina)"></span><span style="font-weight:600; font-size:13px">Sandra Hofer</span></div>
+            <div class="muted" style="font-size:11px; margin:2px 0">SPAR · campioni</div>
+          </div>
+          <div style="padding:10px 13px; border-left:3px solid transparent">
+            <div class="row" style="gap:6px"><span class="opdot" style="background:var(--op-none)"></span><span style="font-weight:600; font-size:13px">Delifrance</span></div>
+            <div class="muted" style="font-size:11px; margin:2px 0 5px">primo contatto</div>
+            <span class="chip" style="background:var(--danger-t); color:var(--danger)">no match</span>
+          </div>
+        </div>
+        <div class="main" style="display:flex; flex-direction:column; gap:12px">
+          <div class="card" style="padding:14px 16px">
+            <div style="font-weight:600; margin-bottom:4px">Richiesta listino creme — volumi Q3</div>
+            <div class="muted" style="font-size:12px; margin-bottom:11px"><span style="color:var(--ink); font-weight:600">Klaus Berger</span> · k.berger@rewe-group.de · oggi 08:14</div>
+            <div style="font-size:13px; line-height:1.6; margin-bottom:13px">Per il Q3 valutiamo le creme a marchio nostro. Mi serve il listino EXW con MOQ e palletizzazione per pistacchio e nocciola…</div>
+            <div class="row" style="gap:8px; flex-wrap:wrap">
+              <span class="btn pri"><svg class="ic" width="14" height="14"><use href="#i-reply"/></svg> Rispondi · F8</span>
+              <span class="btn"><svg class="ic" width="14" height="14"><use href="#i-ai"/></svg> Bozza AI</span>
+              <span class="btn"><svg class="ic" width="14" height="14"><use href="#i-link"/></svg> Collega</span>
+            </div>
+          </div>
+          <div class="card" style="padding:14px 16px">
+            <div class="row" style="gap:10px; margin-bottom:8px">
+              <div style="width:40px; height:40px; border-radius:50%; background:var(--ok-t); color:var(--ok); display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0">RG</div>
+              <div class="grow">
+                <div style="font-weight:600">REWE Group <span class="chip" style="background:var(--accent-t); color:var(--accent); margin-left:4px">Distributore · DE</span></div>
+                <div class="muted" style="font-size:11px"><svg class="ic" width="13" height="13" style="vertical-align:-2px; color:var(--ok)"><use href="#i-check"/></svg> riconosciuto dal mittente · match dominio <span style="font-family:var(--mono)">rewe-group.de</span></div>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px">
+              <div><div class="muted" style="font-size:11px">Lead</div><div style="font-weight:600; font-size:13px">Trattativa · score 78</div></div>
+              <div><div class="muted" style="font-size:11px">Dossier</div><div style="font-weight:600; font-size:13px; color:var(--accent)">Creme PL Germania · attivo</div></div>
+              <div><div class="muted" style="font-size:11px">Ultimo ordine</div><div style="font-weight:600; font-size:13px">12 mar · €18.400</div></div>
+              <div><div class="muted" style="font-size:11px">Fatturato 2025</div><div style="font-weight:600; font-size:13px">€142.000</div></div>
+            </div>
+            <div class="row" style="gap:8px; background:var(--warn-t); padding:8px 11px; border-radius:var(--r-md); margin-bottom:12px">
+              <svg class="ic" width="16" height="16" style="color:var(--warn)"><use href="#i-alert"/></svg>
+              <span class="grow" style="font-size:12px; color:#6B4A12"><b>Prossima azione:</b> follow-up scaduto da 4 giorni</span>
+              <span class="chip" style="border:1px solid var(--warn); color:var(--warn)">Pianifica</span>
+            </div>
+            <div><div class="muted" style="font-size:11px; margin-bottom:6px">Mail con questo partner · 3 (ovunque: qui, nel lead, nel dossier)</div>
+              <div class="row" style="font-size:12px; padding:2px 0"><span class="muted" style="width:52px; flex-shrink:0">oggi</span><span class="ell grow">Re: listino creme Q3 — questa</span></div>
+              <div class="row" style="font-size:12px; padding:2px 0"><span class="muted" style="width:52px; flex-shrink:0">15 mar</span><span class="ell grow">Listino private label Q3 (inviata)</span></div>
+              <div class="row" style="font-size:12px; padding:2px 0"><span class="muted" style="width:52px; flex-shrink:0">10 mar</span><span class="ell grow">Campioni ricevuti — feedback</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 3 · PIPELINE KANBAN ===================== -->
+  <div class="screen">
+    <div class="label">3 · Pipeline — kanban, card colorate per operatore</div>
+    <div class="frame">
+      <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">localhost:3000/pipeline</span></div>
+      <div class="app">
+        <nav class="side" style="width:54px; align-items:center; padding:16px 0; gap:18px">
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-home"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-inbox"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--accent)"><use href="#i-kanban"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-clock"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-fair"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-folders"/></svg>
+          <span style="margin-top:auto; width:26px; height:26px; border-radius:50%; background:var(--op-antonio); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600">AF</span>
+        </nav>
+        <div class="main" style="display:flex; gap:11px">
+          <div class="grow">
+            <div class="row" style="justify-content:space-between; margin-bottom:9px"><span style="font-weight:600; font-size:13px">Interesse</span><span class="muted" style="font-size:11px">14</span></div>
+            <div class="card" style="border-left:3px solid var(--op-antonio); padding:10px; margin-bottom:8px">
+              <div style="font-weight:600; font-size:13px">Edeka Süd</div><div class="muted" style="font-size:11px; margin-bottom:7px">creme · DE</div>
+              <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:12px">€24k</span><span class="chip" style="background:var(--op-antonio-t); color:var(--op-antonio)">62</span></div>
+            </div>
+            <div class="card" style="border-left:3px solid var(--op-josefina); padding:10px">
+              <div style="font-weight:600; font-size:13px">Migros</div><div class="muted" style="font-size:11px; margin-bottom:7px">miele · CH</div>
+              <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:12px">€31k</span><span class="chip" style="background:var(--op-josefina-t); color:var(--op-josefina)">55</span></div>
+            </div>
+          </div>
+          <div class="grow">
+            <div class="row" style="justify-content:space-between; margin-bottom:9px"><span style="font-weight:600; font-size:13px">Trattativa</span><span class="muted" style="font-size:11px">9</span></div>
+            <div class="card" style="border-left:3px solid var(--op-antonio); padding:10px; margin-bottom:8px">
+              <div style="font-weight:600; font-size:13px">REWE Group</div><div class="muted" style="font-size:11px; margin-bottom:7px">creme PL · DE</div>
+              <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:12px">€48k</span><span class="chip" style="background:var(--op-antonio-t); color:var(--op-antonio)">78</span></div>
+              <div style="margin-top:7px"><span class="chip" style="background:var(--danger-t); color:var(--danger)"><svg class="ic" width="11" height="11" style="vertical-align:-1px"><use href="#i-clock"/></svg> scaduto</span></div>
+            </div>
+            <div class="card" style="border-left:3px solid var(--op-martina); padding:10px">
+              <div style="font-weight:600; font-size:13px">SPAR ÖST</div><div class="muted" style="font-size:11px; margin-bottom:7px">miele · AT</div>
+              <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:12px">€27k</span><span class="chip" style="background:var(--op-martina-t); color:var(--op-martina)">71</span></div>
+            </div>
+          </div>
+          <div class="grow">
+            <div class="row" style="justify-content:space-between; margin-bottom:9px"><span style="font-weight:600; font-size:13px">Preventivo</span><span class="muted" style="font-size:11px">5</span></div>
+            <div class="card" style="border-left:3px solid var(--op-antonio); padding:10px">
+              <div style="font-weight:600; font-size:13px">Kaufland</div><div class="muted" style="font-size:11px; margin-bottom:7px">cantucci · DE</div>
+              <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:12px">€62k</span><span class="chip" style="background:var(--op-antonio-t); color:var(--op-antonio)">84</span></div>
+            </div>
+          </div>
+          <div class="grow">
+            <div class="row" style="justify-content:space-between; margin-bottom:9px"><span style="font-weight:600; font-size:13px; color:var(--ok)">Vinto</span><span class="muted" style="font-size:11px">3</span></div>
+            <div class="card" style="border-left:3px solid var(--op-josefina); padding:10px">
+              <div style="font-weight:600; font-size:13px">Coop CH</div><div class="muted" style="font-size:11px; margin-bottom:7px">creme · CH</div>
+              <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:12px">€54k</span><span class="chip" style="background:var(--ok-t); color:var(--ok)"><svg class="ic" width="11" height="11" style="vertical-align:-1px"><use href="#i-check"/></svg></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 4 · DOSSIER 360 ===================== -->
+  <div class="screen">
+    <div class="label">4 · Dossier 360 — workbench componentizzato</div>
+    <div class="frame">
+      <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">localhost:3000/dossier/creme-pl-germania</span></div>
+      <div class="app">
+        <nav class="side" style="width:54px; align-items:center; padding:16px 0; gap:18px">
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-home"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-inbox"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-kanban"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-clock"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--faint)"><use href="#i-fair"/></svg>
+          <svg class="ic" width="20" height="20" style="color:var(--accent)"><use href="#i-folders"/></svg>
+          <span style="margin-top:auto; width:26px; height:26px; border-radius:50%; background:var(--op-antonio); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600">AF</span>
+        </nav>
+        <div class="main">
+          <div class="row" style="gap:10px; margin-bottom:14px">
+            <div style="width:40px; height:40px; border-radius:50%; background:var(--ok-t); color:var(--ok); display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0">RG</div>
+            <div class="grow">
+              <div style="font-weight:600; font-size:15px">Creme PL Germania <span class="chip" style="background:var(--ok-t); color:var(--ok)">Attivo</span></div>
+              <div class="muted" style="font-size:12px">REWE Group · DE · seguito da <span style="color:var(--op-antonio); font-weight:600">Antonio</span></div>
+            </div>
+            <div style="text-align:right"><div class="muted" style="font-size:11px">Valore stimato</div><div style="font-weight:600; font-size:16px">€142.000</div></div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:16px">
+            <div class="kpi" style="padding:9px 11px"><div class="k">Lead</div><div class="v" style="font-size:19px">3</div></div>
+            <div class="kpi" style="padding:9px 11px"><div class="k">Campionature</div><div class="v" style="font-size:19px">2</div></div>
+            <div class="kpi" style="padding:9px 11px"><div class="k">Ordini</div><div class="v" style="font-size:19px">7</div></div>
+            <div class="kpi" style="padding:9px 11px"><div class="k">Fatturato</div><div class="v" style="font-size:19px">€142k</div></div>
+            <div class="kpi" style="padding:9px 11px"><div class="k">Issue</div><div class="v" style="font-size:19px; color:var(--warn)">1</div></div>
+          </div>
+          <div class="row" style="gap:16px; border-bottom:1px solid var(--line); margin-bottom:13px">
+            <span style="font-size:12px; font-weight:600; padding-bottom:8px; border-bottom:2px solid var(--accent)">Campionature</span>
+            <span class="muted" style="font-size:12px; padding-bottom:8px">Contatti</span>
+            <span class="muted" style="font-size:12px; padding-bottom:8px">Lead</span>
+            <span class="muted" style="font-size:12px; padding-bottom:8px">Ordini</span>
+            <span class="muted" style="font-size:12px; padding-bottom:8px">Mail</span>
+            <span class="muted" style="font-size:12px; padding-bottom:8px">Note</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:13px">
+            <div>
+              <div class="card" style="padding:10px 12px; margin-bottom:8px">
+                <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:13px">Creme pistacchio · 3 SKU</span><span class="chip" style="background:var(--ok-t); color:var(--ok)">Feedback ok</span></div>
+                <div class="muted" style="font-size:11px; margin-top:3px">inviata 28 feb · valutazione 8/10</div>
+              </div>
+              <div class="card" style="padding:10px 12px">
+                <div class="row" style="justify-content:space-between"><span style="font-weight:600; font-size:13px">Crema nocciola · 1 SKU</span><span class="chip" style="background:var(--warn-t); color:var(--warn)">In attesa</span></div>
+                <div class="muted" style="font-size:11px; margin-top:3px">inviata 10 giu · feedback atteso</div>
+              </div>
+            </div>
+            <div>
+              <div class="muted" style="font-size:11px; margin-bottom:7px">Timeline relazione</div>
+              <div class="row" style="font-size:12px; padding:2px 0"><span class="muted" style="width:46px; flex-shrink:0">oggi</span><span class="ell grow">Email listino Q3</span></div>
+              <div class="row" style="font-size:12px; padding:2px 0"><span class="muted" style="width:46px; flex-shrink:0">12 mar</span><span class="ell grow">Ordine €18.400</span></div>
+              <div class="row" style="font-size:12px; padding:2px 0"><span class="muted" style="width:46px; flex-shrink:0">28 feb</span><span class="ell grow">Campioni 3 SKU</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
