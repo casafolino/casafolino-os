@@ -1,7 +1,7 @@
 // Fixtures locali — UI verificabile senza Odoo (CONSOLE_USE_MOCK=1).
 // Klaus Berger è la prova di "mail ovunque": le sue mail compaiono nel suo
 // lead, dossier e ordini perché TUTTE le viste consumano lo stesso bundle.
-import type { PartnerBundle, MailMessage, SenderResolution, RegiaData } from "./types";
+import type { PartnerBundle, MailMessage, SenderResolution, RegiaData, InboxData } from "./types";
 
 const KLAUS_MAIL: MailMessage[] = [
   {
@@ -124,6 +124,27 @@ export function mockRegia(): RegiaData {
         { label: "Vinto", pct: 14, color: "#2F6B4F" },
         { label: "Chiuso", pct: 10, color: "#1F4A36" },
       ],
+    },
+    source: "mock",
+  };
+}
+
+export function mockInbox(): InboxData {
+  return {
+    items: [
+      { id: 7001, partnerId: 9001, operator: "antonio", name: "Klaus Berger", org: "Berger Gourmet · listino Q3", badgeLabel: "Tocca a noi", badgeTone: "ok" },
+      { id: 7101, partnerId: 9002, operator: "other", name: "H. Neumann", org: "Neumann Feinkost · sortiment", badgeLabel: null, badgeTone: "neutral" },
+      { id: 7999, partnerId: null, operator: "other", name: "Delifrance", org: "primo contatto cantucci", badgeLabel: "no match", badgeTone: "danger" },
+    ],
+    selectedId: 7001,
+    selectedPartnerId: 9001,
+    resolutionMatch: "exact",
+    message: {
+      subject: "Richiesta listino creme — volumi Q3",
+      senderName: "Klaus Berger",
+      senderEmail: "klaus@berger-gourmet.de",
+      timeLabel: "oggi 08:14",
+      body: "Per il Q3 valutiamo le creme a marchio nostro. Mi serve il listino EXW con MOQ e palletizzazione per pistacchio e nocciola…",
     },
     source: "mock",
   };

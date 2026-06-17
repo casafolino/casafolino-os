@@ -1,4 +1,5 @@
-// Sidebar chiara riusabile (6 voci) — fedele a console_reference_v4.
+// Sidebar riusabile — fedele a console_reference_v4.
+// variant "full": Regia (184px, label + count). variant "rail": Inbox/Pipeline (54px, sole icone).
 import Link from "next/link";
 import { Icon } from "./Icons";
 
@@ -11,7 +12,27 @@ const NAV: { key: string; label: string; href: string; icon: string; count?: num
   { key: "dossier", label: "Dossier", href: "/dossier", icon: "folders" },
 ];
 
-export function Sidebar({ active, source }: { active: string; source?: string }) {
+export function Sidebar({
+  active,
+  source,
+  variant = "full",
+}: {
+  active: string;
+  source?: string;
+  variant?: "full" | "rail";
+}) {
+  if (variant === "rail") {
+    return (
+      <nav className="side rail">
+        {NAV.map((n) => (
+          <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""} title={n.label}>
+            <Icon name={n.icon} color={n.key === active ? "var(--accent)" : "var(--faint)"} size={20} />
+          </Link>
+        ))}
+        <span className="av" style={{ marginTop: "auto" }}>AF</span>
+      </nav>
+    );
+  }
   return (
     <nav className="side">
       <div className="brand">CasaFolino</div>

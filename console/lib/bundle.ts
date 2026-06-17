@@ -1,11 +1,19 @@
 // getPartnerBundle(partnerId): UN bundle relazione-per-partner, con cache.
 // Consumato da TUTTE le viste (contatto, inbox, lead, pipeline card, dossier).
 import type {
-  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData,
+  PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData, InboxData,
 } from "./types";
 import { shouldUseMock, searchRead, callKw } from "./odoo";
-import { mockBundle, mockResolveBySender, mockRegia } from "./mock";
+import { mockBundle, mockResolveBySender, mockRegia, mockInbox } from "./mock";
 import { operatorFromLogin } from "./theme";
+
+/** Inbox 3-pane. Mock-first. (Odoo: lista da casafolino.mail.message stato review/keep.) */
+export async function getInbox(): Promise<InboxData> {
+  if (shouldUseMock()) return mockInbox();
+  // Path Odoo: implementazione successiva (richiede credenziali stage).
+  return { items: [], selectedId: 0, selectedPartnerId: null, resolutionMatch: "none",
+    message: { subject: "", senderName: "", senderEmail: "", timeLabel: "", body: "" }, source: "odoo" };
+}
 
 /** Dati Regia (home). Mock-first; path Odoo best-effort via conteggi. */
 export async function getRegia(): Promise<RegiaData> {

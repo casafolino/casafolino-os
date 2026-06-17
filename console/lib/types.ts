@@ -110,3 +110,31 @@ export interface RegiaData {
   pipeline: { totalLeads: number; segments: { label: string; pct: number; color: string }[] };
   source: "odoo" | "mock";
 }
+
+// --- Inbox (3-pane) ---
+export interface InboxItem {
+  id: number;
+  partnerId: number | null; // null = mittente non risolto (no match)
+  operator: OperatorKey;
+  name: string;
+  org: string;
+  badgeLabel: string | null;
+  badgeTone: Tone;
+}
+
+export interface InboxSelectedMessage {
+  subject: string;
+  senderName: string;
+  senderEmail: string;
+  timeLabel: string;
+  body: string;
+}
+
+export interface InboxData {
+  items: InboxItem[];
+  selectedId: number;
+  selectedPartnerId: number | null;
+  resolutionMatch: "exact" | "domain" | "none";
+  message: InboxSelectedMessage;
+  source: "odoo" | "mock";
+}
