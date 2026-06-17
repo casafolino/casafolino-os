@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
 import { PartnerMailThread } from "@/components/PartnerMailThread";
 import { AiDraftButton } from "@/components/AiDraftButton";
+import { CreateLeadButton } from "@/components/CreateLeadButton";
 import { EmptyHonest, money, moneyCompact, dateLabel } from "@/components/Honest";
 import { operatorColor } from "@/lib/theme";
 import type { Tone } from "@/lib/types";
@@ -65,7 +66,7 @@ export default async function Inbox() {
           <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 13 }}>{m.body}</div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="btn pri"><Icon name="reply" size={14} /> Rispondi · F8</span>
-            <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} />
+            <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} to={m.senderEmail} />
             <span className="btn"><Icon name="link" size={14} /> Collega</span>
           </div>
         </div>
@@ -116,7 +117,10 @@ export default async function Inbox() {
           </div>
         ) : (
           <div className="card" style={{ padding: "14px 16px" }}>
-            <EmptyHonest label="Mittente non riconosciuto: nessun partner collegato." actionLabel="Crea contatto" />
+            <div className="empty-honest">
+              <span>Mittente non riconosciuto: nessun partner collegato.</span>
+              <CreateLeadButton name={`Nuovo contatto · ${m.senderName || m.senderEmail}`} emailFrom={m.senderEmail} />
+            </div>
             <div style={{ marginTop: 10 }}>
               <PartnerMailThread messages={[]} title="Mail con questo partner" />
             </div>
