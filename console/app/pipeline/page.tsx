@@ -1,4 +1,5 @@
 // Pipeline kanban (schermo 3 di console_reference_v4): colonne, card bordo-sinistro per operatore.
+import Link from "next/link";
 import { getPipeline } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
@@ -18,7 +19,7 @@ function badgeStyle(tone: Tone): React.CSSProperties {
 }
 
 function Card({ c }: { c: PipelineCard }) {
-  return (
+  const inner = (
     <div className="card" style={{ borderLeft: `3px solid ${operatorColor[c.operator]}`, padding: 10, marginBottom: 8 }}>
       <div style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</div>
       <div className="muted" style={{ fontSize: 11, marginBottom: 7 }}>{c.sub}</div>
@@ -38,6 +39,7 @@ function Card({ c }: { c: PipelineCard }) {
       ) : null}
     </div>
   );
+  return c.partnerId ? <Link href={`/partner/${c.partnerId}`} style={{ display: "block" }}>{inner}</Link> : inner;
 }
 
 export default async function Pipeline() {

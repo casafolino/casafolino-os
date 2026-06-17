@@ -1,4 +1,5 @@
 // Dossier 360 (schermo 4). Server: header + KPI; client DossierTabs per i tab.
+import Link from "next/link";
 import { getDossier, getPartnerBundle } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
 import { DossierTabs } from "@/components/DossierTabs";
@@ -33,7 +34,10 @@ export default async function DossierPage() {
           <div className="grow">
             <div style={{ fontWeight: 600, fontSize: 15 }}>{d.name} <span className="chip" style={tone(d.statusTone)}>{d.status}</span></div>
             <div className="muted" style={{ fontSize: 12 }}>
-              {d.partnerName}{d.country ? ` · ${d.country}` : ""} · seguito da <span style={{ color: operatorColor[d.operator], fontWeight: 600 }}>{operatorLabel[d.operator]}</span>
+              {d.partnerId ? (
+                <Link href={`/partner/${d.partnerId}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{d.partnerName} →</Link>
+              ) : d.partnerName}
+              {d.country ? ` · ${d.country}` : ""} · seguito da <span style={{ color: operatorColor[d.operator], fontWeight: 600 }}>{operatorLabel[d.operator]}</span>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>

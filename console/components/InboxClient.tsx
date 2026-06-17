@@ -1,6 +1,7 @@
 "use client";
 // Inbox 3-pane interattivo: clic sulla lista cambia messaggio + contesto.
 import { useState } from "react";
+import Link from "next/link";
 import { Icon } from "./Icons";
 import { PartnerMailThread } from "./PartnerMailThread";
 import { AiDraftButton } from "./AiDraftButton";
@@ -73,7 +74,7 @@ export function InboxClient({ items, bundles, initialSelectedId }: { items: Inbo
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--ok-t)", color: "var(--ok)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, flexShrink: 0 }}>{initials(bundle.partner.name)}</div>
               <div className="grow">
                 <div style={{ fontWeight: 600 }}>
-                  {bundle.partner.name}
+                  <Link href={`/partner/${bundle.partner.id}`} style={{ color: "var(--accent)" }}>{bundle.partner.name} →</Link>
                   {bundle.partner.role || bundle.partner.country ? <span className="chip" style={{ marginLeft: 4 }}>{[bundle.partner.role, bundle.partner.country].filter(Boolean).join(" · ")}</span> : null}
                 </div>
                 <div className="muted" style={{ fontSize: 11 }}>
@@ -84,7 +85,7 @@ export function InboxClient({ items, bundles, initialSelectedId }: { items: Inbo
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
               <Cell label="Lead" value={bundle.leads[0] ? `${bundle.leads[0].stage ?? "lead"} · score ${bundle.leads[0].score ?? "n/d"}` : null} empty="Nessun lead" accent={false} />
-              <Cell label="Dossier" value={bundle.dossiers[0] ? `${bundle.dossiers[0].name} · ${bundle.dossiers[0].status ?? ""}` : null} empty="Nessun dossier" accent />
+              <Cell label="Dossier" value={bundle.dossiers[0] ? `${bundle.dossiers[0].name} · ${bundle.dossiers[0].status ?? ""}` : null} empty="Nessun dossier" accent href={bundle.dossiers[0] ? "/dossier" : undefined} />
               <Cell label="Ultimo ordine" value={lastOrder(bundle)} empty="Nessun ordine" accent={false} />
               <Cell label="Fatturato" value={bundle.revenue.total > 0 ? moneyCompact(bundle.revenue.total) : null} empty="Nessun fatturato" accent={false} />
             </div>
@@ -110,12 +111,14 @@ export function InboxClient({ items, bundles, initialSelectedId }: { items: Inbo
   );
 }
 
-function Cell({ label, value, empty, accent }: { label: string; value: string | null; empty: string; accent: boolean }) {
+function Cell({ label, value, empty, accent, href }: { label: string; value: string | null; empty: string; accent: boolean; href?: string }) {
+  const text = (
+    <div style={{ fontWeight: 600, fontSize: 13, color: accent ? "var(--accent)" : "var(--ink)" }}>{value}{href ? " →" : ""}</div>
+  );
   return (
     <div>
       <div className="muted" style={{ fontSize: 11 }}>{label}</div>
-      {value ? <div style={{ fontWeight: 600, fontSize: 13, color: accent ? "var(--accent)" : "var(--ink)" }}>{value}</div>
-             : <div style={{ fontSize: 12, color: "var(--muted)" }}>{empty}</div>}
+      {value ? (href ? <Link href={href}>{text}</Link> : text) : <div style={{ fontSize: 12, color: "var(--muted)" }}>{empty}</div>}
     </div>
   );
 }

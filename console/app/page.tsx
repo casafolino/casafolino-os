@@ -1,4 +1,5 @@
 // Regia — command center (schermo 1 di console_reference_v4). Home della console.
+import Link from "next/link";
 import { getRegia } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
@@ -44,12 +45,13 @@ export default async function Regia() {
             <div style={{ padding: 12 }}><EmptyHonest label="Nessuna email in attesa di risposta." actionLabel="Apri inbox" /></div>
           ) : (
             r.queue.map((q, i) => (
-              <div key={i} className="row" style={{ padding: "10px 13px", borderBottom: i < r.queue.length - 1 ? "1px solid var(--line)" : "none" }}>
+              <Link key={i} href={q.partnerId ? `/partner/${q.partnerId}` : "/inbox"}
+                className="row" style={{ padding: "10px 13px", borderBottom: i < r.queue.length - 1 ? "1px solid var(--line)" : "none" }}>
                 <span className="opdot" style={{ background: operatorColor[q.operator] }} />
                 <span style={{ fontWeight: 600, width: 150, flexShrink: 0 }}>{q.partnerName}</span>
                 <span className="muted grow ell" style={{ fontSize: 13 }}>{q.subject}</span>
                 <span className="chip" style={toneStyle(q.badgeTone)}>{q.badgeLabel}</span>
-              </div>
+              </Link>
             ))
           )}
         </div>
