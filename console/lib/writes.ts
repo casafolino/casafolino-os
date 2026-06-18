@@ -28,6 +28,10 @@ export async function linkMessageToLead(input: { messageId: number; leadId: numb
 /** Invia email tramite Odoo (mail.mail.create + send). MAI SMTP diretto. */
 export async function sendMail(input: { to: string; subject: string; bodyHtml: string }): Promise<WriteResult> {
   if (shouldUseMock()) return { ok: true, simulated: true, message: `Email a ${input.to} accodata in mail.mail (mock)` };
+  // SAFETY: su stage l'outbound SMTP è reale → blocca l'invio salvo abilitazione esplicita.
+  if (process.env.CONSOLE_ALLOW_SEND !== "1") {
+    return { ok: false, simulated: true, message: "Invio BLOCCATO (CONSOLE_ALLOW_SEND≠1): outbound stage non neutralizzato." };
+  }
   const mailId = await callKw<number>("mail.mail", "create", [{
     email_to: input.to,
     subject: input.subject,
