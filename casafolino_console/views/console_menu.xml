@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Azione: apre la Console (servita dietro nginx su /console) in nuova scheda. -->
+    <record id="action_console_open" model="ir.actions.act_url">
+        <field name="name">Console Commerciale</field>
+        <field name="url">/console</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- App in alto: icona + click apre la Console. -->
+    <menuitem id="menu_console_root"
+              name="Console"
+              web_icon="casafolino_console,static/description/icon.png"
+              action="action_console_open"
+              sequence="5"/>
+</odoo>
