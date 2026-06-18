@@ -200,6 +200,36 @@ class CasafolinoMailAccount(models.Model):
             pass
         return excluded, excluded_domains
 
+    @staticmethod
+    def _extract_body(msg):
+        """Estrae (body_html, body_text) da un email.message già parsato.
+        Usato all'ingestion: il fetch deve usare BODY.PEEK[] (no flag \\Seen)."""
+        body_html = ''
+        body_text = ''
+        if msg.is_multipart():
+            for part in msg.walk():
+                ctype = part.get_content_type()
+                cdisp = str(part.get('Content-Disposition', ''))
+                if 'attachment' in cdisp or part.get_filename():
+                    continue
+                if ctype == 'text/html' and not body_html:
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body_html = payload.decode(part.get_content_charset() or 'utf-8', errors='ignore')
+                elif ctype == 'text/plain' and not body_text:
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body_text = payload.decode(part.get_content_charset() or 'utf-8', errors='ignore')
+        else:
+            payload = msg.get_payload(decode=True)
+            if payload:
+                dec = payload.decode(msg.get_content_charset() or 'utf-8', errors='ignore')
+                if msg.get_content_type() == 'text/html':
+                    body_html = dec
+                else:
+                    body_text = dec
+        return body_html, body_text
+
     def _fetch_folder(self, imap, folder_name, direction):
         """Fetch di una singola cartella IMAP."""
         Message = self.env['casafolino.mail.message']
@@ -242,22 +272,23 @@ class CasafolinoMailAccount(models.Model):
             for uid in batch:
                 uid_str = uid.decode()
 
-                # Scarica solo header (no body — snippet viene dal Subject)
-                status2, header_data = imap.fetch(uid, '(BODY.PEEK[HEADER])')
+                # Scarica messaggio COMPLETO con BODY.PEEK[] — header + corpo insieme,
+                # senza marcare la mail come letta (\Seen) nella Gmail reale.
+                status2, full_data = imap.fetch(uid, '(BODY.PEEK[])')
                 if status2 != 'OK':
                     continue
 
-                # Parsa gli header
-                raw_header = None
-                for part in header_data:
+                # Parsa il messaggio completo (header + body)
+                raw_full = None
+                for part in full_data:
                     if isinstance(part, tuple):
-                        raw_header = part[1]
+                        raw_full = part[1]
                         break
 
-                if not raw_header:
+                if not raw_full:
                     continue
 
-                msg = email.message_from_bytes(raw_header)
+                msg = email.message_from_bytes(raw_full)
 
                 # Estrai Message-ID
                 message_id = msg.get('Message-ID', '').strip()
@@ -368,6 +399,14 @@ class CasafolinoMailAccount(models.Model):
                         if prev_keep.partner_id and not vals.get('partner_id'):
                             vals['partner_id'] = prev_keep.partner_id.id
                             vals['match_type'] = 'exact'
+
+                # Body completo dall'ingestion (PEEK, no \Seen). Se presente, il record
+                # nasce già con body → niente fetch deferito, inbox leggibile da subito.
+                body_html, body_text = self._extract_body(msg)
+                if body_html or body_text:
+                    vals['body_html'] = body_html or ('<pre>%s</pre>' % body_text)
+                    vals['body_plain'] = body_text or False
+                    vals['body_downloaded'] = True
 
                 try:
                     new_msg = Message.create(vals)

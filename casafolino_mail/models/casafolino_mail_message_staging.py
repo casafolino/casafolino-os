@@ -931,9 +931,10 @@ class CasafolinoMailMessage(models.Model):
         if status != 'OK':
             return
 
-        # Scarica messaggio completo
+        # Scarica messaggio completo con BODY.PEEK[] — NON marca \Seen nella Gmail reale
+        # (RFC822/BODY[] marcherebbe come letto; il select readonly è doppia sicurezza).
         uid_bytes = uid.encode() if isinstance(uid, str) else uid
-        status, msg_data = imap.fetch(uid_bytes, '(RFC822)')
+        status, msg_data = imap.fetch(uid_bytes, '(BODY.PEEK[])')
         if status != 'OK':
             return
 
