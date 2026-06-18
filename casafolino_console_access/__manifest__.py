@@ -1,0 +1,31 @@
+{
+    "name": "CasaFolino Console — Access (scoped service user)",
+    "version": "18.0.1.0.0",
+    "summary": "Utente di servizio console_prod_rw con permessi minimi: legge la console, scrive solo dove serve, non distrugge, non tocca la contabilità.",
+    "description": """
+Foundation ACL per l'app Console (Next /console) che autentica via JSON-RPC.
+Crea:
+  - gruppo group_console_rw
+  - utente console_prod_rw (password NON inclusa: la imposta l'admin via UI)
+  - ir.model.access: WRITE/CREATE su crm.lead e res.partner (unlink=0)
+  - ir.rule group-based: READ tutte le mail (supera 'caselle proprie') + READ/WRITE triage,
+    READ/WRITE/CREATE tutti i lead. Nessun perm_unlink → unlink bloccato dalle record-rule.
+NEGATO per design: unlink (nessun perm_unlink), account.move/contabilità (nessun ACL),
+config res.users/res.company/ir.* (nessun ACL, group_user non scrive).
+NB: la write su mail.message è a livello modello (include body): il blocco scrittura-body
+è applicato a livello APP (la console scrive solo i campi di triage).
+""",
+    "category": "Technical",
+    "author": "CasaFolino",
+    "license": "LGPL-3",
+    "depends": ["base", "crm", "sale", "casafolino_mail"],
+    "data": [
+        "security/console_access_groups.xml",
+        "security/ir.model.access.csv",
+        "security/console_access_rules.xml",
+        "data/console_access_user.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+}

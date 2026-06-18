@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Record rules group-based per group_console_rw. Permissive (OR) → non toccano
+         le regole degli altri utenti. Nessun perm_unlink: unlink resta bloccato dalle
+         regole esistenti (che per console_prod_rw non matchano nessun record). -->
+
+    <!-- Mail: legge tutte le caselle (supera 'solo caselle proprie') + write triage.
+         perm_create/perm_unlink = False di proposito. -->
+    <record id="rule_console_rw_mail_all" model="ir.rule">
+        <field name="name">Console RW: tutte le mail (read + triage write)</field>
+        <field name="model_id" ref="casafolino_mail.model_casafolino_mail_message"/>
+        <field name="groups" eval="[(4, ref('casafolino_console_access.group_console_rw'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Lead: vede e scrive/crea tutti i lead (le rule lead native sono group-based). -->
+    <record id="rule_console_rw_lead_all" model="ir.rule">
+        <field name="name">Console RW: tutti i lead (read + write + create)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="groups" eval="[(4, ref('casafolino_console_access.group_console_rw'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

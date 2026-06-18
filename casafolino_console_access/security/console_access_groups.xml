@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Gruppo del solo utente di servizio console_prod_rw. Tecnico/nascosto. -->
+    <record id="group_console_rw" model="res.groups">
+        <field name="name">Console RW (servizio scoped)</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+        <field name="comment">Permessi minimi per l'app Console: read mail/partner/lead, write triage+lead+partner, mai unlink, mai contabilità.</field>
+    </record>
+</odoo>

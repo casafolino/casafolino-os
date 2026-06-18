@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_console_rw_crm_lead,console_rw.crm.lead,crm.model_crm_lead,casafolino_console_access.group_console_rw,1,1,1,0
+access_console_rw_res_partner,console_rw.res.partner,base.model_res_partner,casafolino_console_access.group_console_rw,1,1,1,0
+access_console_rw_crm_stage,console_rw.crm.stage,crm.model_crm_stage,casafolino_console_access.group_console_rw,1,0,0,0
+access_console_rw_sale_order,console_rw.sale.order,sale.model_sale_order,casafolino_console_access.group_console_rw,1,0,0,0
+access_console_rw_mail_message,console_rw.casafolino.mail.message,casafolino_mail.model_casafolino_mail_message,casafolino_console_access.group_console_rw,1,1,0,0
+access_console_rw_mail_account,console_rw.casafolino.mail.account,casafolino_mail.model_casafolino_mail_account,casafolino_console_access.group_console_rw,1,0,0,0

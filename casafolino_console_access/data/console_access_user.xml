@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Utente di servizio per la Console (JSON-RPC). PASSWORD NON inclusa:
+         la imposta l'admin via UI dopo il deploy, poi genera l'API key.
+         noupdate=1 → un -u del modulo non azzera l'utente/i suoi gruppi/password. -->
+    <record id="user_console_prod_rw" model="res.users">
+        <field name="name">Console PROD (read-write scoped)</field>
+        <field name="login">console_prod_rw</field>
+        <field name="notification_type">inbox</field>
+        <field name="share" eval="False"/>
+        <field name="groups_id" eval="[(6, 0, [
+            ref('base.group_user'),
+            ref('casafolino_console_access.group_console_rw'),
+        ])]"/>
+    </record>
+</odoo>
