@@ -55,20 +55,26 @@ export function InboxClient({ items, bundles, initialSelectedId }: { items: Inbo
 
       {/* Pane 3: corpo + contesto */}
       <main className="main" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div className="card" style={{ padding: "14px 16px" }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{m?.subject || "(senza oggetto)"}</div>
-          <div className="muted" style={{ fontSize: 12, marginBottom: 11 }}>
-            <span style={{ color: "var(--ink)", fontWeight: 600 }}>{m?.senderName}</span> · {m?.senderEmail} · {m?.timeLabel}
+        {!item || !m ? (
+          <div className="card" style={{ padding: "14px 16px" }}>
+            <div className="empty-honest"><span>Nessuna mail in coda: la inbox è vuota.</span></div>
           </div>
-          <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 13 }}>{m?.body}</div>
+        ) : (
+        <div className="card" style={{ padding: "14px 16px" }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.subject || "(senza oggetto)"}</div>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 11 }}>
+            <span style={{ color: "var(--ink)", fontWeight: 600 }}>{m.senderName}</span> · {m.senderEmail} · {m.timeLabel}
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 13 }}>{m.body}</div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="btn pri"><Icon name="reply" size={14} /> Rispondi · F8</span>
-            {m ? <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} to={m.senderEmail} /> : null}
+            <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} to={m.senderEmail} />
             <LinkLeadButton messageId={item.id} leadId={bundle?.leads[0]?.id ?? null} leadName={bundle?.leads[0]?.name} />
           </div>
         </div>
+        )}
 
-        {bundle ? (
+        {item && bundle ? (
           <div className="card" style={{ padding: "14px 16px" }}>
             <div className="row" style={{ gap: 10, marginBottom: 8 }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--ok-t)", color: "var(--ok)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, flexShrink: 0 }}>{initials(bundle.partner.name)}</div>
@@ -97,15 +103,15 @@ export function InboxClient({ items, bundles, initialSelectedId }: { items: Inbo
             ) : null}
             <PartnerMailThread messages={bundle.mailThread} title="Mail con questo partner (qui, nel lead, nel dossier)" limit={5} />
           </div>
-        ) : (
+        ) : item && m ? (
           <div className="card" style={{ padding: "14px 16px" }}>
             <div className="empty-honest">
               <span>Mittente non riconosciuto: nessun partner collegato.</span>
-              {m ? <CreateLeadButton name={`Nuovo contatto · ${m.senderName || m.senderEmail}`} emailFrom={m.senderEmail} /> : null}
+              <CreateLeadButton name={`Nuovo contatto · ${m.senderName || m.senderEmail}`} emailFrom={m.senderEmail} />
             </div>
             <div style={{ marginTop: 10 }}><PartnerMailThread messages={[]} title="Mail con questo partner" /></div>
           </div>
-        )}
+        ) : null}
       </main>
     </>
   );
