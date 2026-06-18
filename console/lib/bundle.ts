@@ -8,6 +8,9 @@ import { shouldUseMock, searchRead, callKw } from "./odoo";
 import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline, mockDossier, mockFollowup, mockFiere } from "./mock";
 import { operatorFromLogin, operatorFromName } from "./theme";
 
+// Baseline vista Mail (modificabile). ISO. La posta più vecchia resta in Odoo, solo non mostrata.
+const MAIL_SINCE = "2026-04-01";
+
 function stripHtml(h: string | null): string | null {
   if (!h) return null;
   return h.replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ").trim() || null;
@@ -39,7 +42,9 @@ export async function getMailList(accountId?: number): Promise<MailListItem[]> {
     ];
     return mock.filter((m) => !accountId || m.accountId === accountId);
   }
-  const domain: unknown[] = [["direction", "=", "inbound"], ["is_deleted", "=", false]];
+  // Floor data vista Mail: mostra solo dal 1 apr 2026 (la storia va indietro a giu 2025,
+  // ma il baseline operativo parte da aprile). La console LEGGE, non importa: è solo un filtro.
+  const domain: unknown[] = [["direction", "=", "inbound"], ["is_deleted", "=", false], ["email_date", ">=", MAIL_SINCE]];
   if (accountId) domain.push(["account_id", "=", accountId]);
   const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message", domain,
     { fields: ["subject", "sender_email", "sender_name", "email_date", "partner_id", "account_id", "state", "is_read", "direction"], order: "email_date desc", limit: 200 });
