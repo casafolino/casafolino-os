@@ -1,6 +1,7 @@
 "use client";
 // "Crea lead" → /api/write (Odoo crm.lead.create). Mock-safe.
 import { useState } from "react";
+import { BP } from "@/lib/basePath";
 
 export function CreateLeadButton({ name, emailFrom, partnerId }: { name: string; emailFrom?: string; partnerId?: number | null }) {
   const [status, setStatus] = useState<string | null>(null);
@@ -9,7 +10,7 @@ export function CreateLeadButton({ name, emailFrom, partnerId }: { name: string;
   async function run() {
     setBusy(true); setStatus(null);
     try {
-      const res = await fetch("/api/write", { method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${BP}/api/write`, { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "createLead", payload: { name, emailFrom, partnerId } }) });
       const data = await res.json();
       setStatus(data.ok ? data.message : `errore: ${data.message}`);

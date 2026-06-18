@@ -2,6 +2,7 @@
 // "Collega" → /api/write linkMessageToLead (Odoo). Mock-safe.
 import { useState } from "react";
 import { Icon } from "./Icons";
+import { BP } from "@/lib/basePath";
 
 export function LinkLeadButton({ messageId, leadId, leadName }: { messageId: number; leadId: number | null; leadName?: string }) {
   const [status, setStatus] = useState<string | null>(null);
@@ -14,7 +15,7 @@ export function LinkLeadButton({ messageId, leadId, leadName }: { messageId: num
   async function run() {
     setBusy(true); setStatus(null);
     try {
-      const res = await fetch("/api/write", { method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${BP}/api/write`, { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "linkMessageToLead", payload: { messageId, leadId } }) });
       const data = await res.json();
       setStatus(data.ok ? "collegata" : `errore`);

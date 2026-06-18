@@ -2,6 +2,7 @@
 // "Bozza AI" → /api/ai-draft (Groq). Poi "Invia via Odoo" → /api/write (mail.mail, mai SMTP raw).
 import { useState } from "react";
 import { Icon } from "./Icons";
+import { BP } from "@/lib/basePath";
 
 export function AiDraftButton({ subject, body, partnerName, to }: { subject: string; body: string; partnerName?: string; to?: string }) {
   const [loading, setLoading] = useState(false);
@@ -12,7 +13,7 @@ export function AiDraftButton({ subject, body, partnerName, to }: { subject: str
   async function gen() {
     setLoading(true); setErr(null); setStatus(null);
     try {
-      const res = await fetch("/api/ai-draft", { method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${BP}/api/ai-draft`, { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject, body, partnerName }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "errore");
@@ -24,7 +25,7 @@ export function AiDraftButton({ subject, body, partnerName, to }: { subject: str
     if (!to) { setErr("destinatario non disponibile"); return; }
     setStatus("Invio…"); setErr(null);
     try {
-      const res = await fetch("/api/write", { method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${BP}/api/write`, { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "sendMail", payload: { to, subject: `Re: ${subject}`, bodyHtml: (draft || "").replace(/\n/g, "<br>") } }) });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.message || "errore");
