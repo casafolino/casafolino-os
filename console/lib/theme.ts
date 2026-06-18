@@ -17,11 +17,12 @@ const OPERATOR_BY_LOGIN: Record<string, OperatorKey> = {
   "martina.sinopoli@casafolino.com": "martina",
 };
 
+// Colori owner — valori canonici del brief Mail+Dossier.
 export const operatorColor: Record<OperatorKey, string> = {
-  antonio: "#3F8A4F", // verde
-  josefina: "#8B5CF6", // prugna
+  antonio: "#2F6B4F", // verde
+  josefina: "#6B4A66", // prugna
   martina: "#6B4A1E", // marrone
-  other: "#D1D5DB", // grigio neutro
+  other: "#C4C6CB", // grigio neutro
 };
 
 // Tint (sfondo tenue) per chip score, fedele al riferimento.
@@ -42,4 +43,15 @@ export const operatorLabel: Record<OperatorKey, string> = {
 export function operatorFromLogin(login: string | null | undefined): OperatorKey {
   if (!login) return "other";
   return OPERATOR_BY_LOGIN[login.trim().toLowerCase()] ?? "other";
+}
+
+// Da nome visualizzato (es. "Antonio Folino", "Martina Sinopoli") → operatore.
+// Usato per le caselle mail (account.responsible_user_id dà il nome, non il login).
+export function operatorFromName(name: string | null | undefined): OperatorKey {
+  if (!name) return "other";
+  const n = name.toLowerCase();
+  if (n.includes("antonio")) return "antonio";
+  if (n.includes("martina")) return "martina";
+  if (n.includes("josefina") || n.includes("lazzaro")) return "josefina";
+  return "other";
 }

@@ -5,6 +5,7 @@ import { Icon } from "./Icons";
 
 const NAV: { key: string; label: string; href: string; icon: string; count?: number }[] = [
   { key: "regia", label: "Regia", href: "/", icon: "home" },
+  { key: "mail", label: "Mail", href: "/mail", icon: "mail" },
   { key: "inbox", label: "Inbox", href: "/inbox", icon: "inbox", count: 7 },
   { key: "pipeline", label: "Pipeline", href: "/pipeline", icon: "kanban" },
   { key: "followup", label: "Follow-up", href: "/follow-up", icon: "clock" },

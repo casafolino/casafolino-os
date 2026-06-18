@@ -4,6 +4,7 @@ export function IconSprite() {
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
       <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" /></symbol>
       <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 4h16v16H4z" /><path d="M4 13h4l2 3h4l2-3h4" /></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24"><path d="M3 5h18v14H3z" /><path d="M3 6l9 7 9-7" /></symbol>
       <symbol id="i-kanban" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z" /></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></symbol>
       <symbol id="i-fair" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5M4 9h16M5 9v11h14V9M9 20v-6h6v6" /></symbol>

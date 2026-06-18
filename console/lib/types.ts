@@ -213,3 +213,46 @@ export interface Fair {
   revenue: number;
 }
 export interface FairData { fairs: Fair[]; source: "odoo" | "mock"; }
+
+// --- Mail (2 caselle: Antonio + Martina) — read-only ---
+export interface MailAccount {
+  id: number;
+  name: string;
+  operator: OperatorKey;
+  responsibleName: string | null;
+}
+export interface MailListItem {
+  id: number;
+  subject: string;
+  senderName: string;
+  senderEmail: string;
+  date: string | null; // ISO
+  accountId: number | null;
+  accountName: string;
+  operator: OperatorKey;
+  partnerId: number | null;     // risolto dal record (casafolino_mail)
+  partnerName: string | null;
+  linked: boolean;              // false = "non collegato" (mai campo muto)
+  isRead: boolean;
+  direction: "inbound" | "outbound";
+}
+export interface MailDetail {
+  id: number;
+  subject: string;
+  senderName: string;
+  senderEmail: string;
+  date: string | null;
+  accountName: string;
+  operator: OperatorKey;
+  body: string;
+  partnerId: number | null;
+  partnerName: string | null;
+  direction: "inbound" | "outbound";
+}
+
+// --- Dossier browser (lente su res.partner) ---
+export interface PartnerListItem {
+  id: number;
+  name: string;
+  sub: string;
+}

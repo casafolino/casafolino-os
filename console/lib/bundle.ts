@@ -3,9 +3,100 @@
 import type {
   PartnerBundle, Lead, Dossier, Order, MailMessage, Partner, SenderResolution, OperatorKey, RegiaData, InboxData, PipelineData, DossierView, FollowupData, FairData,
 } from "./types";
+import type { MailAccount, MailListItem, MailDetail, PartnerListItem } from "./types";
 import { shouldUseMock, searchRead, callKw } from "./odoo";
 import { mockBundle, mockResolveBySender, mockRegia, mockInbox, mockPipeline, mockDossier, mockFollowup, mockFiere } from "./mock";
-import { operatorFromLogin } from "./theme";
+import { operatorFromLogin, operatorFromName } from "./theme";
+
+function stripHtml(h: string | null): string | null {
+  if (!h) return null;
+  return h.replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ").trim() || null;
+}
+
+/** Le 2 caselle (Antonio + Martina). Read-only. */
+export async function getMailAccounts(): Promise<MailAccount[]> {
+  if (shouldUseMock()) {
+    return [
+      { id: 1, name: "Antonio Folino", operator: "antonio", responsibleName: "Antonio Folino" },
+      { id: 2, name: "Martina Sinopoli", operator: "martina", responsibleName: "Martina Sinopoli" },
+    ];
+  }
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.account",
+    [["active", "=", true]], { fields: ["name", "responsible_user_id"], order: "id" });
+  return rows.map((a) => ({
+    id: a.id as number, name: str(a.name) ?? "Casella",
+    operator: operatorFromName(relName(a.responsible_user_id) ?? str(a.name)) as OperatorKey,
+    responsibleName: relName(a.responsible_user_id),
+  }));
+}
+
+/** Inbox mail (inbound). Filtrabile per casella. Read-only. */
+export async function getMailList(accountId?: number): Promise<MailListItem[]> {
+  if (shouldUseMock()) {
+    const mock: MailListItem[] = [
+      { id: 7001, subject: "Richiesta listino creme — Q3", senderName: "Klaus Berger", senderEmail: "klaus@berger-gourmet.de", date: "2026-06-16T09:12:00Z", accountId: 1, accountName: "Antonio Folino", operator: "antonio", partnerId: 9001, partnerName: "Berger Gourmet GmbH", linked: true, isRead: false, direction: "inbound" },
+      { id: 7101, subject: "Anfrage Sortiment", senderName: "H. Neumann", senderEmail: "h.neumann@neumann-feinkost.at", date: "2026-06-17T07:30:00Z", accountId: 2, accountName: "Martina Sinopoli", operator: "martina", partnerId: null, partnerName: null, linked: false, isRead: false, direction: "inbound" },
+    ];
+    return mock.filter((m) => !accountId || m.accountId === accountId);
+  }
+  const domain: unknown[] = [["direction", "=", "inbound"], ["is_deleted", "=", false]];
+  if (accountId) domain.push(["account_id", "=", accountId]);
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message", domain,
+    { fields: ["subject", "sender_email", "sender_name", "email_date", "partner_id", "account_id", "state", "is_read", "direction"], order: "email_date desc", limit: 200 });
+  return rows.map((r) => {
+    const partnerId = rel(r.partner_id);
+    return {
+      id: r.id as number, subject: str(r.subject) ?? "(senza oggetto)",
+      senderName: str(r.sender_name) ?? str(r.sender_email) ?? "mittente",
+      senderEmail: str(r.sender_email) ?? "", date: str(r.email_date),
+      accountId: rel(r.account_id), accountName: relName(r.account_id) ?? "",
+      operator: operatorFromName(relName(r.account_id)) as OperatorKey,
+      partnerId, partnerName: relName(r.partner_id), linked: partnerId != null,
+      isRead: r.is_read === true, direction: r.direction === "outbound" ? "outbound" : "inbound",
+    };
+  });
+}
+
+/** Dettaglio mail (corpo + contesto). Read-only. */
+export async function getMailMessage(id: number): Promise<MailDetail | null> {
+  if (shouldUseMock()) {
+    const l = (await getMailList()).find((m) => m.id === id);
+    if (!l) return null;
+    return { ...l, body: "Corpo mail (mock). Per il Q3 valutiamo le creme a marchio nostro…", accountName: l.accountName };
+  }
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
+    [["id", "=", id]],
+    { fields: ["subject", "sender_email", "sender_name", "email_date", "partner_id", "account_id", "body_plain", "body_html", "snippet", "direction"], limit: 1 });
+  if (!rows[0]) return null;
+  const r = rows[0];
+  return {
+    id: r.id as number, subject: str(r.subject) ?? "(senza oggetto)",
+    senderName: str(r.sender_name) ?? "", senderEmail: str(r.sender_email) ?? "",
+    date: str(r.email_date), accountName: relName(r.account_id) ?? "",
+    operator: operatorFromName(relName(r.account_id)) as OperatorKey,
+    body: str(r.body_plain) ?? stripHtml(str(r.body_html)) ?? str(r.snippet) ?? "",
+    partnerId: rel(r.partner_id), partnerName: relName(r.partner_id),
+    direction: r.direction === "outbound" ? "outbound" : "inbound",
+  };
+}
+
+/** Elenco partner (lente dossier). Read-only. */
+export async function getPartnerList(q?: string): Promise<PartnerListItem[]> {
+  if (shouldUseMock()) {
+    return [
+      { id: 9001, name: "Berger Gourmet GmbH", sub: "München · DE · klaus@berger-gourmet.de" },
+      { id: 9002, name: "Neumann Feinkost", sub: "Wien · AT" },
+    ].filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()));
+  }
+  const domain: unknown[] = [["is_company", "=", true]];
+  if (q && q.trim()) domain.push(["name", "ilike", q.trim()]);
+  const rows = await searchRead<Record<string, unknown>>("res.partner", domain,
+    { fields: ["name", "city", "country_id", "email"], order: "name", limit: 60 });
+  return rows.map((p) => ({
+    id: p.id as number, name: str(p.name) ?? "Partner",
+    sub: [str(p.city), relName(p.country_id), str(p.email)].filter(Boolean).join(" · "),
+  }));
+}
 
 /** Follow-up 4 colonne. Mock-first. Odoo: crm.lead per data follow-up/rotting. (verify on stage) */
 export async function getFollowup(): Promise<FollowupData> {
