@@ -96,24 +96,58 @@ class CasafolinoMailMessageGateway(models.Model):
         if not account.responsible_user_id:
             raise UserError(_("Account %s senza responsible_user_id mappato.") % account.name)
 
-        # 4. crea BOZZA (state='draft' → mai inviata dal cron). Nessun invio in Phase A.
-        draft = self.env['casafolino.mail.outbox'].sudo().create({
+        # 4. kill-switch server-side (default False). Disattivabile all'istante senza deploy.
+        enabled = self.env['ir.config_parameter'].sudo().get_param('casafolino.console_send_enabled', 'False')
+        live = str(enabled).strip().lower() in ('true', '1', 'yes')
+
+        common = {
             'account_id': account.id,
             'user_id': account.responsible_user_id.id,
             'to_emails': to,
             'subject': subject,
             'body_html': body,
             'source_message_id': int(src_id) if src_id else False,
-            'state': 'draft',
-        })
+        }
+
+        if not live:
+            # PHASE A: bozza, NESSUN invio (state='draft' → il cron legacy non la tocca).
+            draft = self.env['casafolino.mail.outbox'].sudo().create(dict(common, state='draft'))
+            self._console_audit_send(draft.id, 'send:draft', to, account, None)
+            return {'ok': True, 'phase': 'A', 'draft_id': draft.id,
+                    'account': account.name, 'state': 'draft', 'to': to}
+
+        # PHASE B LIVE: invia via ir.mail_server (NO smtplib raw, NO stato 'queued' del cron legacy).
+        server = self.env['ir.mail_server'].sudo().search(
+            [('smtp_user', '=', account.email_address)], limit=1)
+        if not server:
+            raise UserError(_("Nessun ir.mail_server mappato per %s.") % account.email_address)
+        import uuid as _uuid
+        message_id = '<%s@casafolino.com>' % _uuid.uuid4().hex[:20]
+        IMS = self.env['ir.mail_server'].sudo()
+        message = IMS.build_email(
+            email_from=account.email_address,
+            email_to=[to],
+            subject=subject,
+            body=body or '',
+            subtype='html',
+            message_id=message_id,
+        )
+        # invio esplicito via QUEL server (acc.1→id1, acc.2→id2)
+        IMS.send_email(message, mail_server_id=server.id)
+        rec = self.env['casafolino.mail.outbox'].sudo().create(
+            dict(common, state='sent', sent_at=fields.Datetime.now(), message_id_rfc=message_id))
+        self._console_audit_send(rec.id, 'send:sent', to, account, server.id)
+        return {'ok': True, 'phase': 'B', 'outbox_id': rec.id, 'account': account.name,
+                'state': 'sent', 'to': to, 'server_id': server.id, 'mail_server': server.name}
+
+    def _console_audit_send(self, outbox_id, action, to, account, server_id):
         self.env['casafolino.console.audit'].sudo().create({
             'user_id': self.env.user.id, 'login': self.env.user.login,
-            'model': 'casafolino.mail.outbox', 'res_ids': str([draft.id]),
-            'action': 'send:draft',
-            'fields_touched': ('to=%s;account=%s' % (to, account.name))[:255],
+            'model': 'casafolino.mail.outbox', 'res_ids': str([outbox_id]),
+            'action': action,
+            'fields_touched': ('to=%s;account=%s%s' % (
+                to, account.name, (';server=%s' % server_id) if server_id else ''))[:255],
         })
-        return {'ok': True, 'phase': 'A', 'draft_id': draft.id,
-                'account': account.name, 'state': 'draft', 'to': to}
 
 
 class CrmLeadConsoleAudit(models.Model):

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Kill-switch invii live console_send. default False → solo bozze (Phase A).
+         noupdate=1 → un -u non lo resetta se l'admin lo porta a True. -->
+    <record id="param_console_send_enabled" model="ir.config_parameter">
+        <field name="key">casafolino.console_send_enabled</field>
+        <field name="value">False</field>
+    </record>
+</odoo>
