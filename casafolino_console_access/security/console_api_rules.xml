@@ -28,6 +28,30 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
+    <!-- Attività (mail.activity): lettura tutte (per context/silent alerts inbox). Read-only. -->
+    <record id="rule_console_api_activity" model="ir.rule">
+        <field name="name">Console API: lettura tutte le attività</field>
+        <field name="model_id" ref="mail.model_mail_activity"/>
+        <field name="groups" eval="[(4, ref('casafolino_console_access.group_console_api'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Allegati (ir.attachment): lettura (supera la rule portal "propri allegati"). Read-only. -->
+    <record id="rule_console_api_attachment" model="ir.rule">
+        <field name="name">Console API: lettura allegati</field>
+        <field name="model_id" ref="base.model_ir_attachment"/>
+        <field name="groups" eval="[(4, ref('casafolino_console_access.group_console_api'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
     <!-- Partner: supera la rule portal "solo il proprio commercial partner". -->
     <record id="rule_console_api_partner" model="ir.rule">
         <field name="name">Console API: tutti i partner (read/write/create)</field>

@@ -12,4 +12,7 @@ access_console_api_sale_order,console_api.sale.order,sale.model_sale_order,casaf
 access_console_api_mail_message,console_api.casafolino.mail.message,casafolino_mail.model_casafolino_mail_message,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_mail_account,console_api.casafolino.mail.account,casafolino_mail.model_casafolino_mail_account,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_audit,console_api.audit,casafolino_console_access.model_casafolino_console_audit,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_crm_tag,console_api.crm.tag,crm.model_crm_tag,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_mail_activity,console_api.mail.activity,mail.model_mail_activity,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_ir_attachment,console_api.ir.attachment,base.model_ir_attachment,casafolino_console_access.group_console_api,1,0,0,0
 
