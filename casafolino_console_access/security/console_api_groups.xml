@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Gruppo del service-user PORTAL console_api. Standalone: NON implica group_user
+         (così l'utente resta portal/share=True → non consuma un seat billed). -->
+    <record id="group_console_api" model="res.groups">
+        <field name="name">Console API (portal scoped)</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+        <field name="comment">Service-user portal della Console: READ mail/partner/lead, WRITE lead/partner (ACL) + triage mail (gateway sudo). Mai unlink, mai contabilità, mai body.</field>
+    </record>
+</odoo>

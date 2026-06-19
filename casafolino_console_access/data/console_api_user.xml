@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Service-user PORTAL della Console (JSON-RPC). group_portal → share=True → NO seat billed.
+         PASSWORD + API key NON qui: generate da Code via shell, scritte nell'env, mai in chat.
+         noupdate=1 → un -u non azzera utente/password/key. -->
+    <record id="user_console_api" model="res.users">
+        <field name="name">Console API (portal service)</field>
+        <field name="login">console_api</field>
+        <field name="notification_type">email</field>
+        <field name="groups_id" eval="[(6, 0, [
+            ref('base.group_portal'),
+            ref('casafolino_console_access.group_console_api'),
+        ])]"/>
+    </record>
+</odoo>
