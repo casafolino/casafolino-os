@@ -12,7 +12,7 @@ SINCE = "2026-04-01"
 THROTTLE = 0.25          # s tra una mail e l'altra
 BATCH_PAUSE = 2.0        # s ogni BATCH messaggi
 BATCH = 40
-GMAIL_ALL = "[Gmail]/Tutta la posta"   # contiene anche le archiviate
+GMAIL_ALL = "[Gmail]/Tutti i messaggi"   # All Mail (locale IT) — contiene anche le archiviate
 
 Msg = env["casafolino.mail.message"].sudo()
 Account = env["casafolino.mail.account"].sudo()
@@ -22,6 +22,8 @@ pending = Msg.search([
     ("imap_folder", "=", "INBOX"),
     ("email_date", ">=", SINCE),
     ("body_downloaded", "=", False),
+    # Solo gli stati che contano: salta auto_discard/discard (marketing/spam già scartato)
+    ("state", "in", ["review", "keep", "auto_keep"]),
 ], order="account_id, email_date desc")
 print("BF> da processare (inbound INBOX post-%s, no body): %d" % (SINCE, len(pending)))
 
