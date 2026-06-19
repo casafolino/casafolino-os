@@ -18,7 +18,7 @@ NB: la write su mail.message è a livello modello (include body): il blocco scri
     "category": "Technical",
     "author": "CasaFolino",
     "license": "LGPL-3",
-    "depends": ["base", "crm", "sale", "casafolino_mail"],
+    "depends": ["base", "crm", "sale", "sales_team", "casafolino_mail"],
     "data": [
         "security/console_access_groups.xml",
         "security/console_api_groups.xml",
