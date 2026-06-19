@@ -15,4 +15,4 @@ access_console_api_audit,console_api.audit,casafolino_console_access.model_casaf
 access_console_api_crm_tag,console_api.crm.tag,sales_team.model_crm_tag,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_mail_activity,console_api.mail.activity,mail.model_mail_activity,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_ir_attachment,console_api.ir.attachment,base.model_ir_attachment,casafolino_console_access.group_console_api,1,0,0,0
-
+access_console_api_mail_outbox,console_api.casafolino.mail.outbox,casafolino_mail.model_casafolino_mail_outbox,casafolino_console_access.group_console_api,1,0,0,0

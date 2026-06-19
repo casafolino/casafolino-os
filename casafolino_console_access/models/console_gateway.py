@@ -44,6 +44,77 @@ class CasafolinoMailMessageGateway(models.Model):
         _audit(self.env, 'casafolino.mail.message', ids, 'triage:%s' % state, {'state'})
         return {'ok': True, 'count': len(ids), 'state': state}
 
+    @api.model
+    def console_send(self, payload):
+        """Gateway SEND. PHASE A = SOLO DRAFT (nessun invio reale).
+        - valida il destinatario contro l'email del record linkato (no destinatari arbitrari)
+        - risolve l'account mittente dal messaggio sorgente (responsible_user_id → account)
+        - crea una BOZZA outbox (state='draft' → il cron NON la invia)
+        - audita. console_api NON ha create/write diretto su mail.mail/mail.message/outbox.
+        payload: {to, subject, body, sourceMessageId?, leadId?, partnerId?}"""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api può usare console_send."))
+        to = (payload.get('to') or '').strip().lower()
+        subject = payload.get('subject') or ''
+        body = payload.get('body') or ''
+        src_id = payload.get('sourceMessageId')
+        lead_id = payload.get('leadId')
+        partner_id = payload.get('partnerId')
+        if not to or '@' not in to:
+            raise UserError(_("Destinatario non valido."))
+
+        # 1-2. email ammesse dal record linkato + account mittente
+        allowed = set()
+        account = self.env['casafolino.mail.account']
+        if src_id:
+            src = self.sudo().browse(int(src_id))
+            if not src.exists():
+                raise UserError(_("Messaggio sorgente inesistente."))
+            if src.sender_email:
+                allowed.add(src.sender_email.strip().lower())
+            if src.partner_id and src.partner_id.email:
+                allowed.add(src.partner_id.email.strip().lower())
+            account = src.account_id
+        if partner_id:
+            p = self.env['res.partner'].sudo().browse(int(partner_id))
+            if p.exists() and p.email:
+                allowed.add(p.email.strip().lower())
+        if lead_id:
+            lead = self.env['crm.lead'].sudo().browse(int(lead_id))
+            if lead.exists():
+                if lead.email_from:
+                    allowed.add(lead.email_from.strip().lower())
+                if lead.partner_id and lead.partner_id.email:
+                    allowed.add(lead.partner_id.email.strip().lower())
+        if to not in allowed:
+            raise UserError(_("Destinatario %s fuori dal record linkato (ammessi: %s).")
+                            % (to, ', '.join(sorted(allowed)) or 'nessuno'))
+
+        # 3. account mittente + responsible_user_id mappato
+        if not account:
+            raise UserError(_("Account mittente non risolto (manca sourceMessageId)."))
+        if not account.responsible_user_id:
+            raise UserError(_("Account %s senza responsible_user_id mappato.") % account.name)
+
+        # 4. crea BOZZA (state='draft' → mai inviata dal cron). Nessun invio in Phase A.
+        draft = self.env['casafolino.mail.outbox'].sudo().create({
+            'account_id': account.id,
+            'user_id': account.responsible_user_id.id,
+            'to_emails': to,
+            'subject': subject,
+            'body_html': body,
+            'source_message_id': int(src_id) if src_id else False,
+            'state': 'draft',
+        })
+        self.env['casafolino.console.audit'].sudo().create({
+            'user_id': self.env.user.id, 'login': self.env.user.login,
+            'model': 'casafolino.mail.outbox', 'res_ids': str([draft.id]),
+            'action': 'send:draft',
+            'fields_touched': ('to=%s;account=%s' % (to, account.name))[:255],
+        })
+        return {'ok': True, 'phase': 'A', 'draft_id': draft.id,
+                'account': account.name, 'state': 'draft', 'to': to}
+
 
 class CrmLeadConsoleAudit(models.Model):
     """crm.lead: console_api scrive via ACL diretta scoped → qui logghiamo l'audit."""
@@ -79,3 +150,14 @@ class ResPartnerConsoleAudit(models.Model):
         if not self.env.su and self.ids and _is_console(self.env):
             _audit(self.env, 'res.partner', self.ids, 'write', set(vals.keys()))
         return res
+
+
+class CasafolinoMailOutboxDraft(models.Model):
+    """Aggiunge lo stato 'draft' all'outbox: il cron _cron_process_outbox invia solo
+    'queued' → una bozza creata dal gateway (Phase A) NON viene mai inviata."""
+    _inherit = 'casafolino.mail.outbox'
+
+    state = fields.Selection(
+        selection_add=[('draft', 'Bozza (console)')],
+        ondelete={'draft': 'set default'},
+    )
