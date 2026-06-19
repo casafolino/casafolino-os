@@ -96,7 +96,16 @@ class CasafolinoMailMessageGateway(models.Model):
         if not account.responsible_user_id:
             raise UserError(_("Account %s senza responsible_user_id mappato.") % account.name)
 
-        # 4. kill-switch server-side (default False). Disattivabile all'istante senza deploy.
+        # 4. delega al SEND CORE condiviso (kill-switch, ir.mail_server, build/send, audit).
+        return self._console_outbound(account, to, subject, body,
+                                      int(src_id) if src_id else False, 'send')
+
+    # ── SEND CORE — UNICO, security-critical. Usato da console_send E console_reply (no fork). ──
+    def _console_outbound(self, account, to, subject, body, source_id, action,
+                          in_reply_to=None, references=None, parent_msg=None):
+        """Invio centralizzato. kill-switch CONDIVISO casafolino.console_send_enabled:
+        False → bozza outbox (state='draft', nessun invio); True → invio reale via ir.mail_server
+        (mai smtplib raw, mai stato 'queued')."""
         enabled = self.env['ir.config_parameter'].sudo().get_param('casafolino.console_send_enabled', 'False')
         live = str(enabled).strip().lower() in ('true', '1', 'yes')
 
@@ -106,17 +115,19 @@ class CasafolinoMailMessageGateway(models.Model):
             'to_emails': to,
             'subject': subject,
             'body_html': body,
-            'source_message_id': int(src_id) if src_id else False,
+            'source_message_id': source_id or False,
+            'in_reply_to': in_reply_to or '',
+            'references': references or '',
         }
+        parent_id = parent_msg.id if parent_msg else None
 
         if not live:
-            # PHASE A: bozza, NESSUN invio (state='draft' → il cron legacy non la tocca).
             draft = self.env['casafolino.mail.outbox'].sudo().create(dict(common, state='draft'))
-            self._console_audit_send(draft.id, 'send:draft', to, account, None)
-            return {'ok': True, 'phase': 'A', 'draft_id': draft.id,
-                    'account': account.name, 'state': 'draft', 'to': to}
+            self._console_audit_outbound(draft.id, '%s:draft' % action, to, account, None, parent_id)
+            return {'ok': True, 'phase': 'A', 'draft_id': draft.id, 'account': account.name,
+                    'state': 'draft', 'to': to, 'parent_msg_id': parent_id, 'in_reply_to': in_reply_to}
 
-        # PHASE B LIVE: invia via ir.mail_server (NO smtplib raw, NO stato 'queued' del cron legacy).
+        # LIVE via ir.mail_server (acc.1→id1, acc.2→id2)
         server = self.env['ir.mail_server'].sudo().search(
             [('smtp_user', '=', account.email_address)], limit=1)
         if not server:
@@ -124,29 +135,82 @@ class CasafolinoMailMessageGateway(models.Model):
         import uuid as _uuid
         message_id = '<%s@casafolino.com>' % _uuid.uuid4().hex[:20]
         IMS = self.env['ir.mail_server'].sudo()
+        headers = {'In-Reply-To': in_reply_to} if in_reply_to else None
         message = IMS.build_email(
-            email_from=account.email_address,
-            email_to=[to],
-            subject=subject,
-            body=body or '',
-            subtype='html',
-            message_id=message_id,
+            email_from=account.email_address, email_to=[to], subject=subject,
+            body=body or '', subtype='html', message_id=message_id,
+            references=references or False, headers=headers,
         )
-        # invio esplicito via QUEL server (acc.1→id1, acc.2→id2)
         IMS.send_email(message, mail_server_id=server.id)
         rec = self.env['casafolino.mail.outbox'].sudo().create(
             dict(common, state='sent', sent_at=fields.Datetime.now(), message_id_rfc=message_id))
-        self._console_audit_send(rec.id, 'send:sent', to, account, server.id)
+        # thread-link dell'outbound nel thread originale (parent_id + thread)
+        if parent_msg:
+            try:
+                self.env['casafolino.mail.message'].sudo().create({
+                    'account_id': account.id, 'message_id_rfc': message_id, 'direction': 'outbound',
+                    'sender_email': account.email_address, 'sender_name': account.name,
+                    'recipient_emails': to, 'subject': subject, 'email_date': fields.Datetime.now(),
+                    'body_html': body, 'body_downloaded': True, 'state': 'keep', 'fetch_state': 'done',
+                    'is_read': True, 'reply_to_message_id': parent_msg.id,
+                    'thread_id': parent_msg.thread_id.id if parent_msg.thread_id else False,
+                    'partner_id': parent_msg.partner_id.id if parent_msg.partner_id else False,
+                })
+            except Exception as e:
+                _logger.warning("[console_reply] outbound thread-link error: %s", e)
+        self._console_audit_outbound(rec.id, '%s:sent' % action, to, account, server.id, parent_id)
         return {'ok': True, 'phase': 'B', 'outbox_id': rec.id, 'account': account.name,
-                'state': 'sent', 'to': to, 'server_id': server.id, 'mail_server': server.name}
+                'state': 'sent', 'to': to, 'server_id': server.id, 'mail_server': server.name,
+                'parent_msg_id': parent_id, 'message_id': message_id}
 
-    def _console_audit_send(self, outbox_id, action, to, account, server_id):
+    @api.model
+    def console_reply(self, payload):
+        """Gateway REPLY in-thread. Destinatario = MITTENTE del messaggio originale (non free-form),
+        threading via In-Reply-To/References = message_id originale + reply_to_message_id (parent).
+        Delega al send core _console_outbound (kill-switch condiviso, ir.mail_server).
+        payload: {messageId | messageIdRfc, body, subject?, to?(validato == mittente)}"""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api può usare console_reply."))
+        body = payload.get('body') or ''
+        msg_id = payload.get('messageId')
+        msg_rfc = payload.get('messageIdRfc')
+        if msg_id:
+            orig = self.sudo().browse(int(msg_id))
+        elif msg_rfc:
+            orig = self.sudo().search([('message_id_rfc', '=', msg_rfc)], limit=1)
+        else:
+            raise UserError(_("messageId o messageIdRfc richiesto."))
+        if not orig or not orig.exists():
+            raise UserError(_("Messaggio originale inesistente."))
+        # destinatario = mittente originale (NON free-form)
+        sender = (orig.sender_email or '').strip().lower()
+        if not sender or '@' not in sender:
+            raise UserError(_("Messaggio originale senza email mittente valida."))
+        to_req = (payload.get('to') or '').strip().lower()
+        if to_req and to_req != sender:
+            raise UserError(_("Reply: destinatario %s diverso dal mittente originale %s.") % (to_req, sender))
+        # account dalla casella del messaggio originale
+        account = orig.account_id
+        if not account:
+            raise UserError(_("Account non risolto dal messaggio originale."))
+        if not account.responsible_user_id:
+            raise UserError(_("Account %s senza responsible_user_id mappato.") % account.name)
+        subject = payload.get('subject') or ('Re: %s' % (orig.subject or ''))
+        ref = orig.message_id_rfc or None
+        return self._console_outbound(account, sender, subject, body, orig.id, 'reply',
+                                      in_reply_to=ref, references=ref, parent_msg=orig)
+
+    def _console_audit_outbound(self, outbox_id, action, to, account, server_id, parent_msg_id=None):
+        # forward-compatible (S4): struttura pronta per un campo operatore umano.
+        meta = 'to=%s;account=%s' % (to, account.name)
+        if server_id:
+            meta += ';server_id=%s' % server_id
+        if parent_msg_id:
+            meta += ';parent_msg_id=%s' % parent_msg_id
         self.env['casafolino.console.audit'].sudo().create({
             'user_id': self.env.user.id, 'login': self.env.user.login,
             'model': 'casafolino.mail.outbox', 'res_ids': str([outbox_id]),
-            'action': action,
-            'fields_touched': ('to=%s;account=%s%s' % (
-                to, account.name, (';server=%s' % server_id) if server_id else ''))[:255],
+            'action': action, 'fields_touched': meta[:255],
         })
 
 
