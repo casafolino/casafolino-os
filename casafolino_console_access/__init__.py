@@ -1,2 +1,4 @@
-# casafolino_console_access — foundation ACL per l'utente di servizio della Console.
-# Nessun modello: solo gruppo + utente + ACL + record rules (dati XML versionati).
+# casafolino_console_access — ACL scoped per gli utenti di servizio della Console.
+# S0: console_prod_rw (internal, dormiente). Questa slice: console_api (portal, no seat)
+# con gateway triage sudo + audit delle scritture.
+from . import models
