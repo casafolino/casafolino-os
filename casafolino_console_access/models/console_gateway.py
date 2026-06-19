@@ -1,5 +1,9 @@
+import logging
+
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError, UserError
+
+_logger = logging.getLogger(__name__)
 
 CONSOLE_GROUP = 'casafolino_console_access.group_console_api'
 
