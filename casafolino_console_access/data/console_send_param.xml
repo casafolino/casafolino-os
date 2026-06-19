@@ -6,4 +6,18 @@
         <field name="key">casafolino.console_send_enabled</field>
         <field name="value">False</field>
     </record>
+
+    <!-- S4 sponde (modificabili senza deploy). cap=0 o flag→0 disattiva il controllo. -->
+    <record id="param_console_send_cap_daily" model="ir.config_parameter">
+        <field name="key">casafolino.console_send_cap_daily</field>
+        <field name="value">40</field>
+    </record>
+    <record id="param_console_send_dedup_minutes" model="ir.config_parameter">
+        <field name="key">casafolino.console_send_dedup_minutes</field>
+        <field name="value">30</field>
+    </record>
+    <record id="param_console_send_burst_per_hour" model="ir.config_parameter">
+        <field name="key">casafolino.console_send_burst_per_hour</field>
+        <field name="value">3</field>
+    </record>
 </odoo>

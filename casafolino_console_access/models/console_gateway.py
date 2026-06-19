@@ -102,7 +102,7 @@ class CasafolinoMailMessageGateway(models.Model):
 
     # ── SEND CORE — UNICO, security-critical. Usato da console_send E console_reply (no fork). ──
     def _console_outbound(self, account, to, subject, body, source_id, action,
-                          in_reply_to=None, references=None, parent_msg=None):
+                          in_reply_to=None, references=None, parent_msg=None, guards=True):
         """Invio centralizzato. kill-switch CONDIVISO casafolino.console_send_enabled:
         False → bozza outbox (state='draft', nessun invio); True → invio reale via ir.mail_server
         (mai smtplib raw, mai stato 'queued')."""
@@ -126,6 +126,17 @@ class CasafolinoMailMessageGateway(models.Model):
             self._console_audit_outbound(draft.id, '%s:draft' % action, to, account, None, parent_id)
             return {'ok': True, 'phase': 'A', 'draft_id': draft.id, 'account': account.name,
                     'state': 'draft', 'to': to, 'parent_msg_id': parent_id, 'in_reply_to': in_reply_to}
+
+        # S4 SPONDE: cap giornaliero + dedup + burst PRIMA dell'invio reale.
+        # Bloccato → ricade su bozza (state='draft', nessun invio) + audit del blocco.
+        if guards:
+            block = self._console_send_guard(account, to, body)
+            if block:
+                draft = self.env['casafolino.mail.outbox'].sudo().create(dict(common, state='draft'))
+                self._console_audit_outbound(draft.id, '%s:%s' % (action, block), to, account, None, parent_id)
+                _logger.warning("[console guard] %s bloccato per %s → %s (bozza %s)", action, to, block, draft.id)
+                return {'ok': False, 'blocked': block, 'phase': 'A', 'draft_id': draft.id,
+                        'account': account.name, 'state': 'draft', 'to': to, 'parent_msg_id': parent_id}
 
         # LIVE via ir.mail_server (acc.1→id1, acc.2→id2)
         server = self.env['ir.mail_server'].sudo().search(
@@ -212,6 +223,87 @@ class CasafolinoMailMessageGateway(models.Model):
             'model': 'casafolino.mail.outbox', 'res_ids': str([outbox_id]),
             'action': action, 'fields_touched': meta[:255],
         })
+
+    # ── S4 sponde: cap giornaliero / dedup / burst ──────────────────────────
+    @staticmethod
+    def _norm_body(body):
+        import re
+        return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', body or '')).strip().lower()
+
+    def _console_send_guard(self, account, to, body):
+        """Ritorna None se OK, altrimenti il motivo blocco: cap_blocked/dedup_blocked/burst_blocked.
+        Soglie da ir.config_parameter (0 = controllo disattivato)."""
+        from datetime import timedelta
+        ICP = self.env['ir.config_parameter'].sudo()
+        Audit = self.env['casafolino.console.audit'].sudo()
+        Outbox = self.env['casafolino.mail.outbox'].sudo()
+        now = fields.Datetime.now()
+
+        # CAP giornaliero: invii reali odierni (send:sent + reply:sent) — circuit breaker.
+        cap = int(ICP.get_param('casafolino.console_send_cap_daily', '40') or 0)
+        if cap > 0:
+            day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            sent_today = Audit.search_count([
+                ('action', 'in', ['send:sent', 'reply:sent']),
+                ('create_date', '>=', day_start),
+            ])
+            if sent_today >= cap:
+                return 'cap_blocked'
+
+        # DEDUP: stesso destinatario + body normalizzato entro la finestra.
+        dedup_min = int(ICP.get_param('casafolino.console_send_dedup_minutes', '30') or 0)
+        if dedup_min > 0 and to:
+            target = self._norm_body(body)
+            recent = Outbox.search([
+                ('to_emails', '=', to), ('state', '=', 'sent'),
+                ('sent_at', '>=', now - timedelta(minutes=dedup_min)),
+            ])
+            if any(self._norm_body(r.body_html) == target for r in recent):
+                return 'dedup_blocked'
+
+        # BURST: N invii/ora allo stesso destinatario.
+        burst = int(ICP.get_param('casafolino.console_send_burst_per_hour', '3') or 0)
+        if burst > 0 and to:
+            cnt = Outbox.search_count([
+                ('to_emails', '=', to), ('state', '=', 'sent'),
+                ('sent_at', '>=', now - timedelta(hours=1)),
+            ])
+            if cnt >= burst:
+                return 'burst_blocked'
+        return None
+
+    # ── S4 monitoring: digest giornaliero dall'audit ────────────────────────
+    @api.model
+    def _cron_console_send_digest(self):
+        """Digest invii del giorno dall'audit, recapitato ad antonio@ via _console_outbound
+        (stesso path vetato; guards off → il digest non consuma il cap)."""
+        from collections import Counter
+        ICP = self.env['ir.config_parameter'].sudo()
+        now = fields.Datetime.now()
+        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        rows = self.env['casafolino.console.audit'].sudo().search([('create_date', '>=', day_start)])
+        by_action = Counter(r.action for r in rows)
+        sent = by_action.get('send:sent', 0) + by_action.get('reply:sent', 0)
+        blocks = sum(v for k, v in by_action.items() if 'blocked' in (k or ''))
+        cap = ICP.get_param('casafolino.console_send_cap_daily', '40')
+        _logger.info("[console digest] %s: %s invii reali (cap %s), %s blocchi", day_start.date(), sent, cap, blocks)
+
+        body = '<h3>CasaFolino Console — digest %s</h3>' % day_start.date()
+        body += '<p>Invii reali (send+reply): <b>%s</b> / cap %s</p>' % (sent, cap)
+        body += '<p>Blocchi totali: <b>%s</b></p><ul>' % blocks
+        for k in sorted(by_action):
+            body += '<li>%s: %s</li>' % (k, by_action[k])
+        body += '</ul>'
+
+        acc1 = self.env['casafolino.mail.account'].sudo().browse(1)
+        if acc1.exists() and acc1.responsible_user_id:
+            try:
+                self.sudo()._console_outbound(
+                    acc1, 'antonio@casafolino.com', 'Console digest %s' % day_start.date(),
+                    body, False, 'digest', guards=False)
+            except Exception as e:
+                _logger.warning("[console digest] invio fallito: %s", e)
+        return {'date': str(day_start.date()), 'sent': sent, 'blocks': blocks, 'cap': cap}
 
 
 class CrmLeadConsoleAudit(models.Model):
