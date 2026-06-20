@@ -56,6 +56,20 @@ class CasafolinoMailMessageGateway(models.Model):
         _audit(self.env, 'casafolino.mail.message', ids, 'triage:%s' % state, {'state'}, operator)
         return {'ok': True, 'count': len(ids), 'state': state}
 
+    def console_mark_read(self, is_read, operator_uid=None):
+        """Segna letto/non-letto in bulk. Scrive SOLO is_read via sudo, audita con operatore.
+        Mai unlink, mai write generico (ACL console_api read-only sul modello)."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console può usare console_mark_read."))
+        if not self.ids:
+            return {'ok': False, 'error': 'no records'}
+        operator = self._resolve_operator(operator_uid)
+        ids = self.ids
+        flag = bool(is_read)
+        self.sudo().write({'is_read': flag})  # SOLO is_read
+        _audit(self.env, 'casafolino.mail.message', ids, 'mark_read:%s' % (1 if flag else 0), {'is_read'}, operator)
+        return {'ok': True, 'count': len(ids), 'is_read': flag}
+
     # 'trash' = stato Cestino soft (recuperabile). Aggiunto qui (non in casafolino_mail) per
     # tenere il concetto Console nell'addon Console. set default su ondelete = mai vincoli duri.
     state = fields.Selection(
