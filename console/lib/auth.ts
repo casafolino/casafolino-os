@@ -9,8 +9,9 @@ import { verifyOperator } from "@/lib/odooAuth";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Self-host dietro nginx: fidati dell'host inoltrato (Host/X-Forwarded-Proto).
   trustHost: true,
-  // App servita sotto /console: gli endpoint auth sono /console/api/auth/*.
-  basePath: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/auth`,
+  // basePath = quello che VEDE l'handler: Next rimuove il basePath /console prima della
+  // route, quindi Auth.js vede /api/auth/* (default). Il prefisso /console nei redirect
+  // post-login è gestito esplicitamente nella server action (login/actions.ts).
   session: { strategy: "jwt", maxAge: 12 * 60 * 60 }, // 12h
   pages: { signIn: "/login" },
   providers: [
