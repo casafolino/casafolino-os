@@ -39,7 +39,8 @@ function stateChip(state: string): { label: string; tone: Tone } {
 }
 
 type Snack = { text: string; prev: Record<number, string> } | null;
-type GroupMode = "date" | "casella";
+type GroupMode = "date" | "casella" | "mittente";
+type GroupRec = { key: string; label: string; items: InboxItem[]; lastDate: string };
 export type InboxView = "queue" | "all" | "keep" | "discard" | "trash";
 
 // Nav primaria: Coda (to-do) + Inbox (record completo). Bucket nel menu "Altro".
@@ -101,8 +102,10 @@ export function InboxClient({
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [snack, setSnack] = useState<Snack>(null);
-  const [confirmTrash, setConfirmTrash] = useState(false);
+  const [confirmTrash, setConfirmTrash] = useState<number[] | null>(null); // ids da cestinare (sel/gruppo)
   const [groupMode, setGroupMode] = useState<GroupMode>("date");
+  const [groupSort, setGroupSort] = useState<"recency" | "volume">("recency");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [bodyHtml, setBodyHtml] = useState<string>("");
   const [bodyLoading, setBodyLoading] = useState(false);
   const [composer, setComposer] = useState<{ mode: "reply" | "forward"; target: ComposerTarget } | null>(null);
@@ -142,15 +145,15 @@ export function InboxClient({
   const setMany = (ids: number[], on: boolean) => setChecked((s) => { const n = new Set(s); ids.forEach((i) => (on ? n.add(i) : n.delete(i))); return n; });
   const selectAll = () => setChecked(allChecked ? new Set() : new Set(items.map((i) => i.id)));
 
-  const doTriage = useCallback(async (state: string) => {
-    const ids = targetIds();
+  const doTriage = useCallback(async (state: string, idsArg?: number[]) => {
+    const ids = idsArg ?? targetIds();
     if (!ids.length) return;
     const idset = new Set(ids);
     const prev: Record<number, string> = {};
     items.forEach((i) => { if (idset.has(i.id)) prev[i.id] = i.state; });
     setBusy(true);
     const r = await postJson("/api/console/triage", { ids, state });
-    setBusy(false); setConfirmTrash(false);
+    setBusy(false); setConfirmTrash(null);
     if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "triage fallito"}`, prev: {} }); return; }
     const verb = state === "keep" ? "tenuti" : state === "discard" ? "scartati" : state === "trash" ? "cestinati" : "ripristinati";
     // AUTO-ADVANCE: salta alla prossima mail in coda NON triata (le triate spariscono al refresh).
@@ -209,7 +212,7 @@ export function InboxClient({
         case "F8": case "r": case "R": if (isTriage) { e.preventDefault(); openReply(); } break;
         case "t": case "T": if (isTriage) { e.preventDefault(); doTriage("keep"); } break;
         case "s": case "S": if (isTriage) { e.preventDefault(); doTriage("discard"); } break;
-        case "Backspace": if (isTriage && targetCount) { e.preventDefault(); setConfirmTrash(true); } break;
+        case "Backspace": if (isTriage && targetCount) { e.preventDefault(); setConfirmTrash(targetIds()); } break;
         case "j": case "J": e.preventDefault(); move(1); break;
         case "k": case "K": e.preventDefault(); move(-1); break;
         case "x": case "X": if (item) { e.preventDefault(); toggle(item.id); } break;
@@ -219,17 +222,26 @@ export function InboxClient({
     return () => window.removeEventListener("keydown", onKey);
   }, [composer, view, openReply, doTriage, move, item, targetCount]);
 
-  // raggruppamento: "date" = lista piatta (data desc); "casella" = per account.
-  const groups = useMemo<[string, InboxItem[]][]>(() => {
-    if (groupMode === "date") return [["", items]];
-    const map = new Map<string, InboxItem[]>();
+  // raggruppamento: "date" = lista piatta (data desc); "casella" = per account;
+  // "mittente" = per partner se linkato, altrimenti email_from (stessa logica del filtro Slice 2).
+  const groups = useMemo<GroupRec[]>(() => {
+    if (groupMode === "date") return [{ key: "_all", label: "", items, lastDate: "" }];
+    const map = new Map<string, GroupRec>();
     for (const it of items) {
-      const k = it.accountName || "— senza casella";
-      const arr = map.get(k);
-      if (arr) arr.push(it); else map.set(k, [it]);
+      let key: string, label: string;
+      if (groupMode === "casella") { key = `c:${it.accountName}`; label = it.accountName || "— senza casella"; }
+      else if (it.partnerId) { key = `p:${it.partnerId}`; label = it.org || it.senderEmail || "—"; }
+      else { key = `e:${it.senderEmail}`; label = it.senderEmail || "— senza mittente"; }
+      const g = map.get(key);
+      if (g) { g.items.push(it); if (it.message.timeLabel > g.lastDate) g.lastDate = it.message.timeLabel; }
+      else map.set(key, { key, label, items: [it], lastDate: it.message.timeLabel });
     }
-    return [...map.entries()];
-  }, [items, groupMode]);
+    const arr = [...map.values()];
+    if (groupMode === "mittente") {
+      arr.sort((a, b) => groupSort === "volume" ? b.items.length - a.items.length : b.lastDate.localeCompare(a.lastDate));
+    }
+    return arr;
+  }, [items, groupMode, groupSort]);
 
   const triageDisabled = busy || targetCount === 0;
   const btn = (extra?: React.CSSProperties): React.CSSProperties => ({ padding: "5px 9px", fontSize: 12, ...extra });
@@ -260,8 +272,11 @@ export function InboxClient({
           <span className="muted">·</span>
           <Link href={hrefScope(true)} style={{ textDecoration: "none", fontWeight: scopeAll ? 700 : 400, color: scopeAll ? "var(--accent)" : "var(--muted)" }}>Tutte</Link>
           <span style={{ flex: 1 }} />
-          {(["date", "casella"] as GroupMode[]).map((g) => (
-            <button key={g} onClick={() => setGroupMode(g)} style={{ border: "none", cursor: "pointer", background: "none", color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 700 : 400 }}>{g === "date" ? "data" : "casella"}</button>
+          {groupMode === "mittente" ? (
+            <button onClick={() => setGroupSort((s) => s === "recency" ? "volume" : "recency")} title="Ordina gruppi" style={{ border: "none", cursor: "pointer", background: "none", color: "var(--muted)" }}>↕ {groupSort === "recency" ? "recenti" : "volume"}</button>
+          ) : null}
+          {(["date", "casella", "mittente"] as GroupMode[]).map((g) => (
+            <button key={g} onClick={() => setGroupMode(g)} style={{ border: "none", cursor: "pointer", background: "none", color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 700 : 400 }}>{g === "date" ? "data" : g === "casella" ? "casella" : "mittente"}</button>
           ))}
         </div>
         {/* barra ricerca full-record scoped (server-side, paginata) */}
@@ -281,18 +296,32 @@ export function InboxClient({
           </div>
         ) : null}
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {groups.map(([label, its]) => {
+          {groups.map((g) => {
+            const its = g.items;
             const groupIds = its.map((i) => i.id);
             const groupAll = its.length > 0 && its.every((i) => checked.has(i.id));
+            const isCollapsed = collapsed.has(g.key);
+            const bySender = groupMode === "mittente";
             return (
-              <div key={label || "_all"}>
-                {label ? (
-                  <div style={{ padding: "5px 12px", background: "var(--panel-2)", display: "flex", alignItems: "center", gap: 6, fontSize: 10, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--muted)" }}>
-                    <input type="checkbox" checked={groupAll} onChange={() => setMany(groupIds, !groupAll)} title="Seleziona casella" />
-                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span><span>{its.length}</span>
+              <div key={g.key}>
+                {g.label ? (
+                  <div style={{ padding: "6px 10px", background: "var(--panel-2)", display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)", borderTop: "1px solid var(--line)" }}>
+                    <input type="checkbox" checked={groupAll} onChange={() => setMany(groupIds, !groupAll)} title="Seleziona gruppo" />
+                    <button onClick={() => setCollapsed((s) => { const n = new Set(s); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; })} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted)", padding: 0 }}>{isCollapsed ? "▸" : "▾"}</button>
+                    <span style={{ flex: 1, minWidth: 0, color: "var(--ink)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.label}</span>
+                    <span className="chip" style={{ background: "var(--accent-t)", color: "var(--accent)" }}>{its.length}</span>
+                    {bySender ? <span style={{ fontSize: 9, flexShrink: 0 }}>{g.lastDate}</span> : null}
+                    {/* azioni sul gruppo intero (nuke-rumore) */}
+                    {bySender && isTriage ? (
+                      <span className="row" style={{ gap: 3, flexShrink: 0 }}>
+                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px", background: "var(--ok-t)", color: "var(--ok)" })} disabled={busy} title="Tieni gruppo" onClick={() => doTriage("keep", groupIds)}>★</button>
+                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px" })} disabled={busy} title="Scarta gruppo" onClick={() => doTriage("discard", groupIds)}>✕</button>
+                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px", background: "var(--danger-t)", color: "var(--danger)" })} disabled={busy} title="Cestina gruppo" onClick={() => setConfirmTrash(groupIds)}>🗑</button>
+                      </span>
+                    ) : null}
                   </div>
                 ) : null}
-                {its.map((it) => {
+                {isCollapsed ? null : its.map((it) => {
                   const sel = it.id === selectedId; const ck = checked.has(it.id);
                   return (
                     <div key={it.id} style={{ padding: "9px 12px", display: "flex", gap: 8, borderLeft: `3px solid ${sel ? "var(--accent)" : "transparent"}`, background: ck ? "var(--accent-t)" : sel ? "var(--panel-2)" : "transparent" }}>
@@ -339,7 +368,7 @@ export function InboxClient({
               <>
                 <button className="btn" style={btn({ background: "var(--ok-t)", color: "var(--ok)" })} disabled={triageDisabled} onClick={() => doTriage("keep")}>★ Tieni</button>
                 <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("discard")}>✕ Scarta</button>
-                <button className="btn" style={btn({ background: "var(--danger-t)", color: "var(--danger)" })} disabled={triageDisabled} onClick={() => setConfirmTrash(true)}>🗑 Cestina</button>
+                <button className="btn" style={btn({ background: "var(--danger-t)", color: "var(--danger)" })} disabled={triageDisabled} onClick={() => setConfirmTrash(targetIds())}>🗑 Cestina</button>
               </>
             )}
             <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doMarkRead(true)}>✉ Segna lette</button>
@@ -429,13 +458,13 @@ export function InboxClient({
       {composer ? <Composer mode={composer.mode} target={composer.target} onClose={() => setComposer(null)} /> : null}
 
       {confirmTrash ? (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmTrash(false)}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmTrash(null)}>
           <div className="card" style={{ padding: 22, width: 320 }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Cestina {targetCount} {targetCount === 1 ? "messaggio" : "messaggi"}?</div>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Cestina {confirmTrash.length} {confirmTrash.length === 1 ? "messaggio" : "messaggi"}?</div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>Vanno nel Cestino (recuperabili). Nessuna cancellazione fisica.</div>
             <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
-              <button className="btn" onClick={() => setConfirmTrash(false)}>Annulla</button>
-              <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => doTriage("trash")}>🗑 Cestina</button>
+              <button className="btn" onClick={() => setConfirmTrash(null)}>Annulla</button>
+              <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => doTriage("trash", confirmTrash)}>🗑 Cestina</button>
             </div>
           </div>
         </div>
