@@ -6,6 +6,8 @@ from odoo.exceptions import AccessError, UserError
 _logger = logging.getLogger(__name__)
 
 CONSOLE_GROUP = 'casafolino_console_access.group_console_api'
+# S5 — allowlist unica degli operatori umani (login casafolinoerp + attribution send/reply).
+CONSOLE_OPERATOR_GROUP = 'casafolino_console_access.group_console_operator'
 
 
 def _is_console(env):
@@ -48,6 +50,25 @@ class CasafolinoMailMessageGateway(models.Model):
         _audit(self.env, 'casafolino.mail.message', ids, 'triage:%s' % state, {'state'})
         return {'ok': True, 'count': len(ids), 'state': state}
 
+    def _resolve_operator(self, operator_uid):
+        """S5 — ATTRIBUTION. Risolve l'operatore umano dallo uid e valida l'allowlist.
+        operator_uid è SEPARATO dall'account mittente: registra CHI ha operato, non cambia
+        chi invia. Vuoto/0/None → nessuna attribution (retro-compatibile, rollback-friendly).
+        Non-allowlist → rifiuta (il gateway non si fida di uid arbitrari)."""
+        if not operator_uid:
+            return self.env['res.users']
+        try:
+            uid = int(operator_uid)
+        except (TypeError, ValueError):
+            raise UserError(_("operator_uid non valido: %s") % operator_uid)
+        user = self.env['res.users'].sudo().browse(uid)
+        if not user.exists():
+            raise UserError(_("operator_uid %s inesistente.") % uid)
+        group = self.env.ref(CONSOLE_OPERATOR_GROUP, raise_if_not_found=False)
+        if not group or user not in group.sudo().users:
+            raise UserError(_("operator_uid %s non è in Console Operator (allowlist).") % uid)
+        return user
+
     @api.model
     def console_send(self, payload):
         """Gateway SEND. PHASE A = SOLO DRAFT (nessun invio reale).
@@ -64,6 +85,7 @@ class CasafolinoMailMessageGateway(models.Model):
         src_id = payload.get('sourceMessageId')
         lead_id = payload.get('leadId')
         partner_id = payload.get('partnerId')
+        operator = self._resolve_operator(payload.get('operator_uid'))  # S5 attribution
         if not to or '@' not in to:
             raise UserError(_("Destinatario non valido."))
 
@@ -102,11 +124,13 @@ class CasafolinoMailMessageGateway(models.Model):
 
         # 4. delega al SEND CORE condiviso (kill-switch, ir.mail_server, build/send, audit).
         return self._console_outbound(account, to, subject, body,
-                                      int(src_id) if src_id else False, 'send')
+                                      int(src_id) if src_id else False, 'send',
+                                      operator=operator)
 
     # ── SEND CORE — UNICO, security-critical. Usato da console_send E console_reply (no fork). ──
     def _console_outbound(self, account, to, subject, body, source_id, action,
-                          in_reply_to=None, references=None, parent_msg=None, guards=True):
+                          in_reply_to=None, references=None, parent_msg=None, guards=True,
+                          operator=None):
         """Invio centralizzato. kill-switch CONDIVISO casafolino.console_send_enabled:
         False → bozza outbox (state='draft', nessun invio); True → invio reale via ir.mail_server
         (mai smtplib raw, mai stato 'queued')."""
@@ -127,7 +151,7 @@ class CasafolinoMailMessageGateway(models.Model):
 
         if not live:
             draft = self.env['casafolino.mail.outbox'].sudo().create(dict(common, state='draft'))
-            self._console_audit_outbound(draft.id, '%s:draft' % action, to, account, None, parent_id)
+            self._console_audit_outbound(draft.id, '%s:draft' % action, to, account, None, parent_id, operator)
             return {'ok': True, 'phase': 'A', 'draft_id': draft.id, 'account': account.name,
                     'state': 'draft', 'to': to, 'parent_msg_id': parent_id, 'in_reply_to': in_reply_to}
 
@@ -137,7 +161,7 @@ class CasafolinoMailMessageGateway(models.Model):
             block = self._console_send_guard(account, to, body)
             if block:
                 draft = self.env['casafolino.mail.outbox'].sudo().create(dict(common, state='draft'))
-                self._console_audit_outbound(draft.id, '%s:%s' % (action, block), to, account, None, parent_id)
+                self._console_audit_outbound(draft.id, '%s:%s' % (action, block), to, account, None, parent_id, operator)
                 _logger.warning("[console guard] %s bloccato per %s → %s (bozza %s)", action, to, block, draft.id)
                 return {'ok': False, 'blocked': block, 'phase': 'A', 'draft_id': draft.id,
                         'account': account.name, 'state': 'draft', 'to': to, 'parent_msg_id': parent_id}
@@ -173,7 +197,7 @@ class CasafolinoMailMessageGateway(models.Model):
                 })
             except Exception as e:
                 _logger.warning("[console_reply] outbound thread-link error: %s", e)
-        self._console_audit_outbound(rec.id, '%s:sent' % action, to, account, server.id, parent_id)
+        self._console_audit_outbound(rec.id, '%s:sent' % action, to, account, server.id, parent_id, operator)
         return {'ok': True, 'phase': 'B', 'outbox_id': rec.id, 'account': account.name,
                 'state': 'sent', 'to': to, 'server_id': server.id, 'mail_server': server.name,
                 'parent_msg_id': parent_id, 'message_id': message_id}
@@ -187,6 +211,7 @@ class CasafolinoMailMessageGateway(models.Model):
         if not _is_console(self.env):
             raise AccessError(_("Solo console_api può usare console_reply."))
         body = payload.get('body') or ''
+        operator = self._resolve_operator(payload.get('operator_uid'))  # S5 attribution
         msg_id = payload.get('messageId')
         msg_rfc = payload.get('messageIdRfc')
         if msg_id:
@@ -213,19 +238,25 @@ class CasafolinoMailMessageGateway(models.Model):
         subject = payload.get('subject') or ('Re: %s' % (orig.subject or ''))
         ref = orig.message_id_rfc or None
         return self._console_outbound(account, sender, subject, body, orig.id, 'reply',
-                                      in_reply_to=ref, references=ref, parent_msg=orig)
+                                      in_reply_to=ref, references=ref, parent_msg=orig,
+                                      operator=operator)
 
-    def _console_audit_outbound(self, outbox_id, action, to, account, server_id, parent_msg_id=None):
-        # forward-compatible (S4): struttura pronta per un campo operatore umano.
+    def _console_audit_outbound(self, outbox_id, action, to, account, server_id, parent_msg_id=None,
+                                operator=None):
+        # S5: l'operatore umano (attribution) è separato da user_id = console_api (service-user).
         meta = 'to=%s;account=%s' % (to, account.name)
         if server_id:
             meta += ';server_id=%s' % server_id
         if parent_msg_id:
             meta += ';parent_msg_id=%s' % parent_msg_id
+        if operator:
+            meta += ';operator=%s' % operator.login
         self.env['casafolino.console.audit'].sudo().create({
             'user_id': self.env.user.id, 'login': self.env.user.login,
             'model': 'casafolino.mail.outbox', 'res_ids': str([outbox_id]),
             'action': action, 'fields_touched': meta[:255],
+            'operator_uid': operator.id if operator else False,
+            'operator_login': operator.login if operator else False,
         })
 
     # ── S4 sponde: cap giornaliero / dedup / burst ──────────────────────────
@@ -290,11 +321,21 @@ class CasafolinoMailMessageGateway(models.Model):
         sent = by_action.get('send:sent', 0) + by_action.get('reply:sent', 0)
         blocks = sum(v for k, v in by_action.items() if 'blocked' in (k or ''))
         cap = ICP.get_param('casafolino.console_send_cap_daily', '40')
-        _logger.info("[console digest] %s: %s invii reali (cap %s), %s blocchi", day_start.date(), sent, cap, blocks)
+        # S5 — breakdown invii reali per operatore umano (attribution).
+        by_operator = Counter(
+            (r.operator_login or '(nessun operatore)')
+            for r in rows if r.action in ('send:sent', 'reply:sent')
+        )
+        _logger.info("[console digest] %s: %s invii reali (cap %s), %s blocchi, operatori=%s",
+                     day_start.date(), sent, cap, blocks, dict(by_operator))
 
         body = '<h3>CasaFolino Console — digest %s</h3>' % day_start.date()
         body += '<p>Invii reali (send+reply): <b>%s</b> / cap %s</p>' % (sent, cap)
-        body += '<p>Blocchi totali: <b>%s</b></p><ul>' % blocks
+        body += '<p>Blocchi totali: <b>%s</b></p>' % blocks
+        body += '<p><b>Per operatore (invii reali):</b></p><ul>'
+        for op in sorted(by_operator):
+            body += '<li>%s: %s</li>' % (op, by_operator[op])
+        body += '</ul><p><b>Per azione:</b></p><ul>'
         for k in sorted(by_action):
             body += '<li>%s: %s</li>' % (k, by_action[k])
         body += '</ul>'
