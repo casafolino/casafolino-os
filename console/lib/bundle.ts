@@ -208,29 +208,47 @@ export async function getPipeline(): Promise<PipelineData> {
   return { columns, source: "odoo" };
 }
 
-/** Inbox 3-pane. Mock-first. Odoo: casafolino.mail.message inbound da gestire. (verify on stage) */
+const INBOX_FIELDS = ["subject", "sender_email", "sender_name", "email_date", "partner_id", "match_type", "snippet", "state", "account_id"];
+
+function mapInboxRow(r: Record<string, unknown>): InboxData["items"][number] {
+  const partnerId = rel(r.partner_id);
+  const match = (str(r.match_type) as "exact" | "domain" | "manual" | "none") ?? "none";
+  return {
+    id: r.id as number, partnerId, operator: "other" as OperatorKey,
+    name: str(r.sender_name) ?? str(r.sender_email) ?? "mittente",
+    org: relName(r.partner_id) ?? str(r.sender_email) ?? "",
+    badgeLabel: partnerId ? "Tocca a noi" : "no match",
+    badgeTone: (partnerId ? "ok" : "danger") as InboxData["items"][number]["badgeTone"],
+    resolutionMatch: match === "manual" ? "exact" : (match as "exact" | "domain" | "none"),
+    message: {
+      subject: str(r.subject) ?? "(senza oggetto)", senderName: str(r.sender_name) ?? "",
+      senderEmail: str(r.sender_email) ?? "", timeLabel: str(r.email_date) ?? "",
+      body: str(r.snippet) ?? "",
+    },
+    state: str(r.state) ?? "new",
+    senderEmail: (str(r.sender_email) ?? "").toLowerCase(),
+    accountId: rel(r.account_id),
+    accountName: relName(r.account_id) ?? "",
+  };
+}
+
+/** Inbox 3-pane. Mock-first. Odoo: casafolino.mail.message inbound da gestire. */
 export async function getInbox(): Promise<InboxData> {
   if (shouldUseMock()) return mockInbox();
   const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
     [["direction", "=", "inbound"], ["state", "in", ["new", "review", "keep", "auto_keep"]], ["is_deleted", "=", false]],
-    { fields: ["subject", "sender_email", "sender_name", "email_date", "partner_id", "match_type", "snippet"], order: "email_date desc", limit: 30 });
-  const items = rows.map((r) => {
-    const partnerId = rel(r.partner_id);
-    const match = (str(r.match_type) as "exact" | "domain" | "manual" | "none") ?? "none";
-    return {
-      id: r.id as number, partnerId, operator: "other" as OperatorKey,
-      name: str(r.sender_name) ?? str(r.sender_email) ?? "mittente",
-      org: relName(r.partner_id) ?? str(r.sender_email) ?? "",
-      badgeLabel: partnerId ? "Tocca a noi" : "no match",
-      badgeTone: (partnerId ? "ok" : "danger") as InboxData["items"][number]["badgeTone"],
-      resolutionMatch: match === "manual" ? "exact" : (match as "exact" | "domain" | "none"),
-      message: {
-        subject: str(r.subject) ?? "(senza oggetto)", senderName: str(r.sender_name) ?? "",
-        senderEmail: str(r.sender_email) ?? "", timeLabel: str(r.email_date) ?? "",
-        body: str(r.snippet) ?? "",
-      },
-    };
-  });
+    { fields: INBOX_FIELDS, order: "email_date desc", limit: 200 });
+  const items = rows.map(mapInboxRow);
+  return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
+}
+
+/** Cestino: messaggi in stato 'trash' (soft, recuperabili). NESSUN unlink. */
+export async function getTrash(): Promise<InboxData> {
+  if (shouldUseMock()) return { items: [], selectedId: 0, source: "mock" };
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
+    [["state", "=", "trash"], ["is_deleted", "=", false]],
+    { fields: INBOX_FIELDS, order: "email_date desc", limit: 200 });
+  const items = rows.map(mapInboxRow);
   return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
 }
 

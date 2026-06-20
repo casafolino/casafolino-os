@@ -130,6 +130,10 @@ export interface InboxItem {
   badgeTone: Tone;
   resolutionMatch: "exact" | "domain" | "none";
   message: InboxSelectedMessage;
+  state: string; // stato triage corrente (per undo: stato precedente)
+  senderEmail: string; // per "seleziona tutti da questo mittente"
+  accountId: number | null; // casella di appartenenza (multi-casella)
+  accountName: string;
 }
 
 export interface InboxData {

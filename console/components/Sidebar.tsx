@@ -1,16 +1,24 @@
 // Sidebar riusabile — fedele a console_reference_v4.
 // variant "full": Regia (184px, label + count). variant "rail": Inbox/Pipeline (54px, sole icone).
+// "Mail" demotata in un gruppo secondario "Altro" (overflow): raggiungibile, non in primo piano.
 import Link from "next/link";
 import { Icon } from "./Icons";
 
-const NAV: { key: string; label: string; href: string; icon: string; count?: number }[] = [
+type NavItem = { key: string; label: string; href: string; icon: string; count?: number };
+
+// Nav PRIMARIA (Mail rimossa).
+const NAV: NavItem[] = [
   { key: "regia", label: "Regia", href: "/", icon: "home" },
-  { key: "mail", label: "Mail", href: "/mail", icon: "mail" },
   { key: "inbox", label: "Inbox", href: "/inbox", icon: "inbox", count: 7 },
   { key: "pipeline", label: "Pipeline", href: "/pipeline", icon: "kanban" },
   { key: "followup", label: "Follow-up", href: "/follow-up", icon: "clock" },
   { key: "fiere", label: "Fiere", href: "/fiere", icon: "fair" },
   { key: "dossier", label: "Dossier", href: "/dossier", icon: "folders" },
+];
+
+// Nav SECONDARIA / overflow "Altro": Mail demotata qui.
+const NAV_SECONDARY: NavItem[] = [
+  { key: "mail", label: "Mail", href: "/mail", icon: "mail" },
 ];
 
 export function Sidebar({
@@ -30,6 +38,13 @@ export function Sidebar({
             <Icon name={n.icon} color={n.key === active ? "var(--accent)" : "var(--faint)"} size={20} />
           </Link>
         ))}
+        {/* overflow "Altro" — separato, dimmato */}
+        <div style={{ height: 1, background: "var(--line)", margin: "6px 8px", opacity: 0.6 }} />
+        {NAV_SECONDARY.map((n) => (
+          <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""} title={`${n.label} (Altro)`} style={{ opacity: 0.55 }}>
+            <Icon name={n.icon} color={n.key === active ? "var(--accent)" : "var(--faint)"} size={18} />
+          </Link>
+        ))}
         <span className="av" style={{ marginTop: "auto" }}>AF</span>
       </nav>
     );
@@ -42,6 +57,14 @@ export function Sidebar({
           <Icon name={n.icon} />
           {n.label}
           {n.count ? <span className="cnt">{n.count}</span> : null}
+        </Link>
+      ))}
+      {/* sezione secondaria "Altro" */}
+      <div style={{ margin: "10px 0 4px", padding: "0 12px", fontSize: 10, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--faint)" }}>Altro</div>
+      {NAV_SECONDARY.map((n) => (
+        <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""} style={{ opacity: 0.7 }}>
+          <Icon name={n.icon} />
+          {n.label}
         </Link>
       ))}
       <div className="me" style={{ marginTop: "auto" }}>
