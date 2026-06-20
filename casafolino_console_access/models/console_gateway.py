@@ -15,7 +15,7 @@ def _is_console(env):
     return env.user.has_group(CONSOLE_GROUP)
 
 
-def _audit(env, model, res_ids, action, fields_touched=None):
+def _audit(env, model, res_ids, action, fields_touched=None, operator=None):
     env['casafolino.console.audit'].sudo().create({
         'user_id': env.user.id,
         'login': env.user.login,
@@ -23,6 +23,8 @@ def _audit(env, model, res_ids, action, fields_touched=None):
         'res_ids': str(res_ids)[:255],
         'action': action,
         'fields_touched': (','.join(sorted(fields_touched))[:255]) if fields_touched else False,
+        'operator_uid': operator.id if operator else False,
+        'operator_login': operator.login if operator else False,
     })
 
 
@@ -32,23 +34,34 @@ class CasafolinoMailMessageGateway(models.Model):
     L'ACL di console_api su casafolino.mail.message è READ-ONLY → niente write diretta."""
     _inherit = 'casafolino.mail.message'
 
-    # stati triage ammessi (allineati alla selection del modello)
-    _CONSOLE_TRIAGE_STATES = ('new', 'review', 'keep', 'auto_keep', 'discard', 'auto_discard')
+    # stati triage ammessi (allineati alla selection del modello). 'trash' = Cestino soft
+    # (recuperabile, MAI unlink fisico): la riga resta, esce solo dall'inbox.
+    _CONSOLE_TRIAGE_STATES = ('new', 'review', 'keep', 'auto_keep', 'discard', 'auto_discard', 'trash')
 
-    def console_triage(self, state):
+    def console_triage(self, state, operator_uid=None):
         """Chiamato via JSON-RPC dall'utente portal: browse(ids).console_triage(state).
-        Scrive solo state via sudo. Mai un write(model, vals) generico."""
+        Scrive solo state via sudo (bulk-safe su tutti gli ids, ogni msg mantiene la sua
+        casella). Mai un write(model, vals) generico, mai unlink. operator_uid (S5) =
+        attribution umana validata contro group_console_operator."""
         if not _is_console(self.env):
             raise AccessError(_("Solo l'utente Console può usare console_triage."))
         if state not in self._CONSOLE_TRIAGE_STATES:
             raise UserError(_("Stato triage non valido: %s") % state)
         if not self.ids:
             return {'ok': False, 'error': 'no records'}
+        operator = self._resolve_operator(operator_uid)  # valida allowlist o vuoto
         # self è già filtrato dalle record-rule di lettura dell'utente
         ids = self.ids
-        self.sudo().write({'state': state})  # SOLO state — body invariato
-        _audit(self.env, 'casafolino.mail.message', ids, 'triage:%s' % state, {'state'})
+        self.sudo().write({'state': state})  # SOLO state — body invariato, nessun unlink
+        _audit(self.env, 'casafolino.mail.message', ids, 'triage:%s' % state, {'state'}, operator)
         return {'ok': True, 'count': len(ids), 'state': state}
+
+    # 'trash' = stato Cestino soft (recuperabile). Aggiunto qui (non in casafolino_mail) per
+    # tenere il concetto Console nell'addon Console. set default su ondelete = mai vincoli duri.
+    state = fields.Selection(
+        selection_add=[('trash', 'Cestino')],
+        ondelete={'trash': 'set default'},
+    )
 
     def _resolve_operator(self, operator_uid):
         """S5 — ATTRIBUTION. Risolve l'operatore umano dallo uid e valida l'allowlist.
