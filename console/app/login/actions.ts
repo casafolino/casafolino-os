@@ -5,13 +5,13 @@ import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
-const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-
 export async function authenticate(
   _prev: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  const callbackUrl = String(formData.get("callbackUrl") || "/");
+  // callbackUrl arriva già STRIPPED dal middleware (es. "/", "/inbox"). Solo path interni.
+  let callbackUrl = String(formData.get("callbackUrl") || "/");
+  if (!callbackUrl.startsWith("/") || callbackUrl.startsWith("//")) callbackUrl = "/";
   try {
     // redirect:false → signIn imposta solo il cookie di sessione (nessun redirect interno
     // che ignorerebbe il basePath /console). On failure lancia AuthError.
@@ -26,7 +26,8 @@ export async function authenticate(
     }
     throw e;
   }
-  // Redirect esplicito col prefisso basePath (/console). redirect() lancia NEXT_REDIRECT
-  // → fuori dal try così non viene scambiato per errore di login.
-  redirect(`${BP}${callbackUrl}`);
+  // redirect() di Next aggiunge GIÀ il basePath /console → NON prefissarlo a mano (causava
+  // /console/console → 404). Path interno: redirect("/") → Next → /console/.
+  // Fuori dal try: lancia NEXT_REDIRECT, non va scambiato per errore di login.
+  redirect(callbackUrl);
 }
