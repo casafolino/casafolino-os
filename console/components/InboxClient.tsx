@@ -1,7 +1,8 @@
 "use client";
-// Inbox 3-pane: lista per DATA (default) o per CASELLA (toggle), corpo mail completo,
-// Rispondi/Inoltra (composer F8) + triage bulk (tieni/scarta/cestina) via gateway.
-// Nessun unlink: 'cestina' = stato trash soft, recuperabile dal Cestino.
+// Inbox 3-pane: lista per DATA/CASELLA + corpo completo. Due barre azioni STICKY in cima
+// al pannello: Bar B (fissa, triage+selezione, target = selezione o mail aperta) e Bar A
+// (contestuale, azioni della mail aperta). Scorciatoie da tastiera fuori dagli input.
+// Tutto via gateway (console_triage / console_mark_read / reply / send): mai unlink/write raw.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -31,12 +32,24 @@ function initials(name: string): string {
 type Snack = { text: string; prev: Record<number, string> } | null;
 type GroupMode = "date" | "casella";
 
-async function triageCall(ids: number[], state: string): Promise<{ ok: boolean; message?: string }> {
-  const res = await fetch(`${BP}/api/console/triage`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ids, state }),
-  });
+async function postJson(path: string, body: unknown): Promise<{ ok: boolean; message?: string; count?: number }> {
+  const res = await fetch(`${BP}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return res.json().catch(() => ({ ok: false, message: "errore rete" }));
+}
+
+// Dropdown overflow minimale.
+function More({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button className="btn" onClick={() => setOpen((o) => !o)} onBlur={() => setTimeout(() => setOpen(false), 150)} title="Altro">⋯</button>
+      {open ? (
+        <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 8, boxShadow: "0 6px 18px rgba(0,0,0,.12)", padding: 4, zIndex: 20, minWidth: 170, display: "flex", flexDirection: "column", gap: 2 }}>
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function InboxClient({
@@ -62,13 +75,19 @@ export function InboxClient({
   const bundle = item?.partnerId ? bundles[item.partnerId] : null;
   const m = item?.message;
 
-  // corpo completo on-select (body_html via route auth-gated).
+  // TARGET azioni Bar B: selezione se ≥1, altrimenti la mail aperta.
+  const targetIds = useCallback((): number[] => {
+    if (checked.size) return [...checked];
+    return item ? [item.id] : [];
+  }, [checked, item]);
+  const targetCount = checked.size || (item ? 1 : 0);
+
+  // corpo completo on-select.
   useEffect(() => {
     if (!item) { setBodyHtml(""); return; }
     let alive = true;
     setBodyLoading(true); setBodyHtml("");
-    fetch(`${BP}/api/console/message?id=${item.id}`)
-      .then((r) => r.json())
+    fetch(`${BP}/api/console/message?id=${item.id}`).then((r) => r.json())
       .then((j) => { if (alive) setBodyHtml(j.ok ? (j.bodyHtml ?? "") : ""); })
       .catch(() => { if (alive) setBodyHtml(""); })
       .finally(() => { if (alive) setBodyLoading(false); });
@@ -79,20 +98,87 @@ export function InboxClient({
     if (!item || !m) return null;
     return { id: item.id, subject: m.subject, senderEmail: m.senderEmail || item.senderEmail, senderName: m.senderName };
   }, [item, m]);
+  const openReply = useCallback(() => { const t = composerTarget(); if (t) setComposer({ mode: "reply", target: t }); }, [composerTarget]);
+  const openForward = useCallback(() => { const t = composerTarget(); if (t) setComposer({ mode: "forward", target: t }); }, [composerTarget]);
 
-  // F8 = Rispondi sul messaggio selezionato.
+  const allChecked = items.length > 0 && checked.size === items.length;
+  const toggle = (id: number) => setChecked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const setMany = (ids: number[], on: boolean) => setChecked((s) => { const n = new Set(s); ids.forEach((i) => (on ? n.add(i) : n.delete(i))); return n; });
+  const selectAll = () => setChecked(allChecked ? new Set() : new Set(items.map((i) => i.id)));
+
+  const doTriage = useCallback(async (state: string) => {
+    const ids = targetIds();
+    if (!ids.length) return;
+    const idset = new Set(ids);
+    const prev: Record<number, string> = {};
+    items.forEach((i) => { if (idset.has(i.id)) prev[i.id] = i.state; });
+    setBusy(true);
+    const r = await postJson("/api/console/triage", { ids, state });
+    setBusy(false); setConfirmTrash(false);
+    if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "triage fallito"}`, prev: {} }); return; }
+    const verb = state === "keep" ? "tenuti" : state === "discard" ? "scartati" : state === "trash" ? "cestinati" : "ripristinati";
+    setChecked(new Set());
+    setSnack({ text: `${ids.length} ${verb}`, prev });
+    router.refresh();
+  }, [targetIds, items, router]);
+
+  const doMarkRead = useCallback(async (isRead: boolean) => {
+    const ids = targetIds();
+    if (!ids.length) return;
+    setBusy(true);
+    const r = await postJson("/api/console/read", { ids, isRead });
+    setBusy(false);
+    setSnack({ text: r.ok ? `${ids.length} segnate ${isRead ? "lette" : "non lette"}` : `Errore: ${r.message ?? "fallito"}`, prev: {} });
+    setChecked(new Set());
+    router.refresh();
+  }, [targetIds, router]);
+
+  async function undo() {
+    if (!snack || !Object.keys(snack.prev).length) { setSnack(null); return; }
+    const byState = new Map<string, number[]>();
+    for (const [id, st] of Object.entries(snack.prev)) {
+      const arr = byState.get(st);
+      if (arr) arr.push(Number(id)); else byState.set(st, [Number(id)]);
+    }
+    setBusy(true);
+    for (const [st, ids] of byState) await postJson("/api/console/triage", { ids, state: st });
+    setBusy(false); setSnack(null);
+    router.refresh();
+  }
+
+  // J/K navigazione, X selezione corrente.
+  const move = useCallback((dir: 1 | -1) => {
+    if (!items.length) return;
+    const idx = items.findIndex((i) => i.id === selectedId);
+    const next = Math.max(0, Math.min(items.length - 1, (idx < 0 ? 0 : idx) + dir));
+    setSelectedId(items[next].id);
+  }, [items, selectedId]);
+
+  // SCORCIATOIE — disattive se composer aperto o focus in input/textarea/contentEditable.
   useEffect(() => {
+    function typing(): boolean {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "F8" && !composer && view === "inbox") {
-        const t = composerTarget();
-        if (t) { e.preventDefault(); setComposer({ mode: "reply", target: t }); }
+      if (composer || typing() || e.metaKey || e.ctrlKey || e.altKey) return;
+      switch (e.key) {
+        case "F8": case "r": case "R": if (view === "inbox") { e.preventDefault(); openReply(); } break;
+        case "t": case "T": if (view === "inbox") { e.preventDefault(); doTriage("keep"); } break;
+        case "s": case "S": if (view === "inbox") { e.preventDefault(); doTriage("discard"); } break;
+        case "Backspace": if (view === "inbox" && targetCount) { e.preventDefault(); setConfirmTrash(true); } break;
+        case "j": case "J": e.preventDefault(); move(1); break;
+        case "k": case "K": e.preventDefault(); move(-1); break;
+        case "x": case "X": if (item) { e.preventDefault(); toggle(item.id); } break;
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, composerTarget, view]);
+  }, [composer, view, openReply, doTriage, move, item, targetCount]);
 
-  // raggruppamento: "date" = lista piatta (già ordinata per data desc); "casella" = per account.
+  // raggruppamento: "date" = lista piatta (data desc); "casella" = per account.
   const groups = useMemo<[string, InboxItem[]][]>(() => {
     if (groupMode === "date") return [["", items]];
     const map = new Map<string, InboxItem[]>();
@@ -104,38 +190,8 @@ export function InboxClient({
     return [...map.entries()];
   }, [items, groupMode]);
 
-  const allChecked = items.length > 0 && checked.size === items.length;
-  const toggle = (id: number) => setChecked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const setMany = (ids: number[], on: boolean) => setChecked((s) => { const n = new Set(s); ids.forEach((i) => (on ? n.add(i) : n.delete(i))); return n; });
-  const selectAll = () => setChecked(allChecked ? new Set() : new Set(items.map((i) => i.id)));
-
-  async function applyBulk(state: string) {
-    const ids = [...checked];
-    if (!ids.length) return;
-    const prev: Record<number, string> = {};
-    items.forEach((i) => { if (checked.has(i.id)) prev[i.id] = i.state; });
-    setBusy(true);
-    const r = await triageCall(ids, state);
-    setBusy(false); setConfirmTrash(false);
-    if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "triage fallito"}`, prev: {} }); return; }
-    const verb = state === "keep" ? "tenuti" : state === "discard" ? "scartati" : state === "trash" ? "cestinati" : "ripristinati";
-    setChecked(new Set());
-    setSnack({ text: `${ids.length} ${verb}`, prev });
-    router.refresh();
-  }
-
-  async function undo() {
-    if (!snack || !Object.keys(snack.prev).length) { setSnack(null); return; }
-    const byState = new Map<string, number[]>();
-    for (const [id, st] of Object.entries(snack.prev)) {
-      const arr = byState.get(st);
-      if (arr) arr.push(Number(id)); else byState.set(st, [Number(id)]);
-    }
-    setBusy(true);
-    for (const [st, ids] of byState) await triageCall(ids, st);
-    setBusy(false); setSnack(null);
-    router.refresh();
-  }
+  const triageDisabled = busy || targetCount === 0;
+  const btn = (extra?: React.CSSProperties): React.CSSProperties => ({ padding: "5px 9px", fontSize: 12, ...extra });
 
   return (
     <>
@@ -143,27 +199,15 @@ export function InboxClient({
       <div style={{ width: 270, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--paper)", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "9px 12px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
           <strong style={{ flex: 1 }}>{view === "trash" ? "Cestino" : "Inbox"}</strong>
-          <Link href={view === "trash" ? "/inbox" : "/inbox?view=trash"} className="muted" style={{ fontSize: 11 }}>
-            {view === "trash" ? "← Inbox" : "Cestino"}
-          </Link>
+          <Link href={view === "trash" ? "/inbox" : "/inbox?view=trash"} className="muted" style={{ fontSize: 11 }}>{view === "trash" ? "← Inbox" : "Cestino"}</Link>
         </div>
-        {/* toggle ordinamento/raggruppamento */}
         {view === "inbox" ? (
           <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 11 }}>
             {(["date", "casella"] as GroupMode[]).map((g) => (
-              <button key={g} onClick={() => setGroupMode(g)} style={{
-                flex: 1, padding: "6px 0", border: "none", cursor: "pointer",
-                background: groupMode === g ? "var(--accent-t)" : "transparent",
-                color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 600 : 400,
-              }}>{g === "date" ? "Per data" : "Per casella"}</button>
+              <button key={g} onClick={() => setGroupMode(g)} style={{ flex: 1, padding: "6px 0", border: "none", cursor: "pointer", background: groupMode === g ? "var(--accent-t)" : "transparent", color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 600 : 400 }}>{g === "date" ? "Per data" : "Per casella"}</button>
             ))}
           </div>
         ) : null}
-        <label style={{ padding: "7px 12px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 7, fontSize: 12, cursor: "pointer" }}>
-          <input type="checkbox" checked={allChecked} onChange={selectAll} />
-          Seleziona tutto ({items.length})
-        </label>
-
         <div style={{ overflowY: "auto", flex: 1 }}>
           {groups.map(([label, its]) => {
             const groupIds = its.map((i) => i.id);
@@ -173,19 +217,13 @@ export function InboxClient({
                 {label ? (
                   <div style={{ padding: "5px 12px", background: "var(--panel-2)", display: "flex", alignItems: "center", gap: 6, fontSize: 10, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--muted)" }}>
                     <input type="checkbox" checked={groupAll} onChange={() => setMany(groupIds, !groupAll)} title="Seleziona casella" />
-                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-                    <span>{its.length}</span>
+                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span><span>{its.length}</span>
                   </div>
                 ) : null}
                 {its.map((it) => {
-                  const sel = it.id === selectedId;
-                  const ck = checked.has(it.id);
+                  const sel = it.id === selectedId; const ck = checked.has(it.id);
                   return (
-                    <div key={it.id} style={{
-                      padding: "9px 12px", display: "flex", gap: 8,
-                      borderLeft: `3px solid ${sel ? "var(--accent)" : "transparent"}`,
-                      background: ck ? "var(--accent-t)" : sel ? "var(--panel-2)" : "transparent",
-                    }}>
+                    <div key={it.id} style={{ padding: "9px 12px", display: "flex", gap: 8, borderLeft: `3px solid ${sel ? "var(--accent)" : "transparent"}`, background: ck ? "var(--accent-t)" : sel ? "var(--panel-2)" : "transparent" }}>
                       <input type="checkbox" checked={ck} onChange={() => toggle(it.id)} style={{ marginTop: 3 }} />
                       <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => setSelectedId(it.id)}>
                         <div className="row" style={{ gap: 6, justifyContent: "space-between" }}>
@@ -208,53 +246,68 @@ export function InboxClient({
           })}
           {items.length === 0 ? <div className="muted" style={{ padding: 16, fontSize: 12 }}>{view === "trash" ? "Cestino vuoto." : "Inbox vuota."}</div> : null}
         </div>
-
-        {/* barra azioni bulk */}
-        {checked.size > 0 ? (
-          <div style={{ borderTop: "1px solid var(--line)", padding: "8px 10px", display: "flex", flexWrap: "wrap", gap: 6, background: "var(--paper)" }}>
-            <span style={{ fontSize: 12, fontWeight: 600, width: "100%" }}>{checked.size} selezionati</span>
-            {view === "trash" ? (
-              <button disabled={busy} onClick={() => applyBulk("review")} className="btn">↩ Ripristina</button>
-            ) : (
-              <>
-                <button disabled={busy} onClick={() => applyBulk("keep")} className="btn" style={{ background: "var(--ok-t)", color: "var(--ok)" }}>★ Tieni</button>
-                <button disabled={busy} onClick={() => applyBulk("discard")} className="btn">✕ Scarta</button>
-                <button disabled={busy} onClick={() => setConfirmTrash(true)} className="btn" style={{ background: "var(--danger-t)", color: "var(--danger)" }}>🗑 Cestina</button>
-              </>
-            )}
-            <button disabled={busy} onClick={() => setChecked(new Set())} className="btn">Deseleziona</button>
-          </div>
-        ) : null}
       </div>
 
-      {/* Pane 3: corpo + contesto */}
+      {/* Pane 3: barre sticky + corpo + contesto */}
       <main className="main" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* BARRE STICKY */}
+        <div style={{ position: "sticky", top: 0, zIndex: 10, margin: "-1px 0 0", background: "var(--canvas, #FAFAF8)" }}>
+          {/* BAR B — fissa: triage + selezione (target = selezione o mail aperta) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "7px 10px", borderBottom: "1px solid var(--line)", background: "var(--paper)" }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>{checked.size ? `${checked.size} selezionate` : item ? "mail aperta" : "—"}</span>
+            <button className="btn" style={btn()} onClick={selectAll}>{allChecked ? "Deseleziona" : "Seleziona tutto"}</button>
+            <span style={{ width: 1, height: 18, background: "var(--line)", margin: "0 2px" }} />
+            {view === "trash" ? (
+              <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("review")}>↩ Ripristina</button>
+            ) : (
+              <>
+                <button className="btn" style={btn({ background: "var(--ok-t)", color: "var(--ok)" })} disabled={triageDisabled} onClick={() => doTriage("keep")}>★ Tieni</button>
+                <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("discard")}>✕ Scarta</button>
+                <button className="btn" style={btn({ background: "var(--danger-t)", color: "var(--danger)" })} disabled={triageDisabled} onClick={() => setConfirmTrash(true)}>🗑 Cestina</button>
+              </>
+            )}
+            <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doMarkRead(true)}>✉ Segna lette</button>
+            <span style={{ flex: 1 }} />
+            <More>
+              {item ? <CreateLeadButton name={`Nuovo contatto · ${m?.senderName || m?.senderEmail || ""}`} emailFrom={m?.senderEmail} /> : null}
+              <button className="btn" style={btn()} disabled title="Prossimamente">⛔ Blocca mittente</button>
+            </More>
+          </div>
+
+          {/* BAR A — contestuale: azioni della mail aperta */}
+          {item && m && view === "inbox" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "7px 10px", borderBottom: "1px solid var(--line)", background: "var(--panel-2)" }}>
+              <span className="muted" style={{ fontSize: 11, marginRight: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
+                <b style={{ color: "var(--ink)" }}>{m.senderName || m.senderEmail}</b>{item.accountName ? ` · casella ${item.accountName}` : ""}
+              </span>
+              <span style={{ flex: 1 }} />
+              <button className="btn pri" style={btn()} onClick={openReply}><Icon name="reply" size={13} /> Rispondi · R</button>
+              <button className="btn" style={btn()} onClick={openForward}>↪ Inoltra</button>
+              <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} to={m.senderEmail} />
+              <LinkLeadButton messageId={item.id} leadId={bundle?.leads[0]?.id ?? null} leadName={bundle?.leads[0]?.name} />
+              <More>
+                <button className="btn" style={btn()} onClick={() => doMarkRead(false)}>✉ Segna non letta</button>
+              </More>
+            </div>
+          ) : null}
+        </div>
+
+        {/* corpo mail (senza tasti in fondo: vivono in Bar A) */}
         {!item || !m ? (
           <div className="card" style={{ padding: "14px 16px" }}>
-            <div className="empty-honest"><span>{view === "trash" ? "Cestino vuoto." : "Nessuna mail in coda: la inbox è vuota."}</span></div>
+            <div className="empty-honest"><span>{view === "trash" ? "Cestino vuoto." : "Nessuna mail aperta."}</span></div>
           </div>
         ) : (
-        <div className="card" style={{ padding: "14px 16px" }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.subject || "(senza oggetto)"}</div>
-          <div className="muted" style={{ fontSize: 12, marginBottom: 11 }}>
-            <span style={{ color: "var(--ink)", fontWeight: 600 }}>{m.senderName}</span> · {m.senderEmail} · {m.timeLabel}
-            {item.accountName ? <span> · casella <b>{item.accountName}</b></span> : null}
+          <div className="card" style={{ padding: "14px 16px" }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.subject || "(senza oggetto)"}</div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 11 }}>
+              <span style={{ color: "var(--ink)", fontWeight: 600 }}>{m.senderName}</span> · {m.senderEmail} · {m.timeLabel}
+              {item.accountName ? <span> · casella <b>{item.accountName}</b></span> : null}
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, maxHeight: 420, overflowY: "auto", borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+              {bodyLoading ? <span className="muted">caricamento corpo…</span> : bodyHtml ? <div dangerouslySetInnerHTML={{ __html: bodyHtml }} /> : <span>{m.body || "(nessun corpo)"}</span>}
+            </div>
           </div>
-          {/* corpo completo */}
-          <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 13, maxHeight: 360, overflowY: "auto", borderTop: "1px solid var(--line)", paddingTop: 10 }}>
-            {bodyLoading ? <span className="muted">caricamento corpo…</span>
-              : bodyHtml ? <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
-              : <span>{m.body || "(nessun corpo)"}</span>}
-          </div>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button className="btn pri" onClick={() => { const t = composerTarget(); if (t) setComposer({ mode: "reply", target: t }); }}>
-              <Icon name="reply" size={14} /> Rispondi · F8
-            </button>
-            <button className="btn" onClick={() => { const t = composerTarget(); if (t) setComposer({ mode: "forward", target: t }); }}>↪ Inoltra</button>
-            <AiDraftButton subject={m.subject} body={m.body} partnerName={m.senderName} to={m.senderEmail} />
-            <LinkLeadButton messageId={item.id} leadId={bundle?.leads[0]?.id ?? null} leadName={bundle?.leads[0]?.name} />
-          </div>
-        </div>
         )}
 
         {item && bundle ? (
@@ -267,7 +320,7 @@ export function InboxClient({
                   {bundle.partner.role || bundle.partner.country ? <span className="chip" style={{ marginLeft: 4 }}>{[bundle.partner.role, bundle.partner.country].filter(Boolean).join(" · ")}</span> : null}
                 </div>
                 <div className="muted" style={{ fontSize: 11 }}>
-                  <Icon name="check" size={13} color="var(--ok)" /> riconosciuto dal mittente · match {item.resolutionMatch === "domain" ? "dominio " : item.resolutionMatch === "exact" ? "esatto " : ""}
+                  <Icon name="check" size={13} color="var(--ok)" /> riconosciuto · match {item.resolutionMatch === "domain" ? "dominio " : item.resolutionMatch === "exact" ? "esatto " : ""}
                   <span style={{ fontFamily: "var(--mono)" }}>{bundle.partner.domain ?? bundle.partner.email}</span>
                 </div>
               </div>
@@ -284,43 +337,35 @@ export function InboxClient({
                 <span className="grow" style={{ fontSize: 12, color: "#6B4A12" }}><b>Prossima azione:</b> {bundle.signals.nbaText}</span>
               </div>
             ) : null}
-            <PartnerMailThread messages={bundle.mailThread} title="Mail con questo partner (qui, nel lead, nel dossier)" limit={5} />
+            <PartnerMailThread messages={bundle.mailThread} title="Mail con questo partner" limit={5} />
           </div>
         ) : item && m ? (
           <div className="card" style={{ padding: "14px 16px" }}>
-            <div className="empty-honest">
-              <span>Mittente non riconosciuto: nessun partner collegato.</span>
-              <CreateLeadButton name={`Nuovo contatto · ${m.senderName || m.senderEmail}`} emailFrom={m.senderEmail} />
-            </div>
+            <div className="empty-honest"><span>Mittente non riconosciuto: nessun partner collegato.</span></div>
             <div style={{ marginTop: 10 }}><PartnerMailThread messages={[]} title="Mail con questo partner" /></div>
           </div>
         ) : null}
       </main>
 
-      {/* composer F8 (reply/forward) */}
       {composer ? <Composer mode={composer.mode} target={composer.target} onClose={() => setComposer(null)} /> : null}
 
-      {/* conferma cestina */}
       {confirmTrash ? (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmTrash(false)}>
           <div className="card" style={{ padding: 22, width: 320 }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Cestina {checked.size} messaggi?</div>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Cestina {targetCount} {targetCount === 1 ? "messaggio" : "messaggi"}?</div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>Vanno nel Cestino (recuperabili). Nessuna cancellazione fisica.</div>
             <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
               <button className="btn" onClick={() => setConfirmTrash(false)}>Annulla</button>
-              <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => applyBulk("trash")}>🗑 Cestina</button>
+              <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => doTriage("trash")}>🗑 Cestina</button>
             </div>
           </div>
         </div>
       ) : null}
 
-      {/* snackbar undo */}
       {snack ? (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--ink)", color: "#fff", padding: "10px 14px", borderRadius: 8, display: "flex", gap: 14, alignItems: "center", zIndex: 60, boxShadow: "0 4px 16px rgba(0,0,0,.25)" }}>
           <span style={{ fontSize: 13 }}>{snack.text}</span>
-          {Object.keys(snack.prev).length ? (
-            <button onClick={undo} disabled={busy} style={{ background: "none", border: "none", color: "#9ec46a", fontWeight: 700, cursor: "pointer" }}>Annulla</button>
-          ) : null}
+          {Object.keys(snack.prev).length ? <button onClick={undo} disabled={busy} style={{ background: "none", border: "none", color: "#9ec46a", fontWeight: 700, cursor: "pointer" }}>Annulla</button> : null}
           <button onClick={() => setSnack(null)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer" }}>✕</button>
         </div>
       ) : null}
@@ -329,9 +374,7 @@ export function InboxClient({
 }
 
 function Cell({ label, value, empty, accent, href }: { label: string; value: string | null; empty: string; accent: boolean; href?: string }) {
-  const text = (
-    <div style={{ fontWeight: 600, fontSize: 13, color: accent ? "var(--accent)" : "var(--ink)" }}>{value}{href ? " →" : ""}</div>
-  );
+  const text = (<div style={{ fontWeight: 600, fontSize: 13, color: accent ? "var(--accent)" : "var(--ink)" }}>{value}{href ? " →" : ""}</div>);
   return (
     <div>
       <div className="muted" style={{ fontSize: 11 }}>{label}</div>
