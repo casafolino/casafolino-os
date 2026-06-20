@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- S5 — Allowlist UNICA degli operatori umani della Console.
+         Usata sia (a) dal login casafolinoerp (l'umano deve essere in questo gruppo)
+         sia (b) dalla validazione operator_uid nel gateway send/reply.
+         NON implica group_user: è solo un tag di abilitazione. I membri sono comunque
+         utenti interni Odoo con credenziali proprie. Membri assegnati dal post_init_hook
+         (Antonio/Martina/Josefina) per login, idempotente. -->
+    <record id="group_console_operator" model="res.groups">
+        <field name="name">Console Operator (umani)</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+        <field name="comment">Operatori umani abilitati alla Console (login casafolinoerp + attribution send/reply). Allowlist unica. NON dà permessi dati: i dati passano sempre da console_api.</field>
+    </record>
+</odoo>

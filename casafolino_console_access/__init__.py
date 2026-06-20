@@ -1,12 +1,43 @@
 # casafolino_console_access — ACL scoped per gli utenti di servizio della Console.
 # S0: console_prod_rw (internal, dormiente). console_api (portal, no seat) con gateway
 # triage/send/reply sudo + audit + sponde S4 (cap/dedup/burst/digest).
+# S5: group_console_operator (allowlist umani) + attribution operatore nel gateway.
 from . import models
+
+# Login degli operatori umani abilitati alla Console (allowlist unica S5).
+CONSOLE_OPERATOR_LOGINS = (
+    'antonio@casafolino.com',
+    'martina.sinopoli@casafolino.com',
+    'josefina.lazzaro@casafolino.com',
+)
+
+
+def _ensure_console_operators(env):
+    """Aggiunge gli operatori umani (per login) al group_console_operator. Idempotente.
+    Chiamato sia da post_init_hook (install) sia dalla migration (update). Non rimuove
+    membri esistenti aggiunti a mano via UI."""
+    import logging
+    _logger = logging.getLogger(__name__)
+    group = env.ref('casafolino_console_access.group_console_operator', raise_if_not_found=False)
+    if not group:
+        _logger.warning("[console S5] group_console_operator assente: skip membri.")
+        return
+    for login in CONSOLE_OPERATOR_LOGINS:
+        user = env['res.users'].sudo().search([('login', '=', login)], limit=1)
+        if not user:
+            user = env['res.users'].sudo().search([('email', '=ilike', login)], limit=1)
+        if user:
+            user.sudo().write({'groups_id': [(4, group.id)]})
+            _logger.info("[console S5] %s aggiunto a group_console_operator.", login)
+        else:
+            _logger.warning("[console S5] utente %s non trovato: assegnare a mano.", login)
 
 
 def post_init_hook(env):
-    """Crea il cron digest invii (idempotente). Evita model_id ref in XML (ParseError Odoo 18)."""
+    """Install: assegna gli operatori e crea il cron digest invii (idempotente).
+    Evita model_id ref in XML (ParseError Odoo 18)."""
     from odoo import fields
+    _ensure_console_operators(env)
     Cron = env['ir.cron'].sudo()
     if Cron.search([('cron_name', '=', 'CasaFolino Console: digest invii')], limit=1):
         return
