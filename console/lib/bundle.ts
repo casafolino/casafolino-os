@@ -246,6 +246,44 @@ async function operatorAccountDomain(scope: InboxScope): Promise<unknown[]> {
   return [["account_id", "in", ids.length ? ids : [-1]]];
 }
 
+export type InboxViewKind = "queue" | "all" | "keep" | "discard" | "trash";
+
+// Dominio stato della vista corrente (la group-action agisce SOLO sulle mail della vista).
+function stateDomainFor(view: InboxViewKind): unknown[] {
+  if (view === "all") return [["state", "!=", "trash"]];
+  if (view === "keep" || view === "discard" || view === "trash") return [["state", "=", view]];
+  return [["state", "in", QUEUE_STATES]]; // queue
+}
+
+/** Conteggi VERI per mittente (read_group server-side, entro scope+vista). Non i caricati.
+ * Chiave: 'p:<partnerId>' se linkato, 'e:<email>' altrimenti (allineata ai gruppi client). */
+export async function getSenderCounts(scope: InboxScope, view: InboxViewKind): Promise<Record<string, number>> {
+  if (shouldUseMock()) return {};
+  const accDomain = await operatorAccountDomain(scope);
+  const base = [["direction", "=", "inbound"], ["is_deleted", "=", false], ...stateDomainFor(view), ...accDomain];
+  const out: Record<string, number> = {};
+  const byP = await callKw<Array<{ partner_id: [number, string] | false; __count: number }>>(
+    "casafolino.mail.message", "read_group", [[...base, ["partner_id", "!=", false]], [], ["partner_id"]], { lazy: false });
+  for (const g of byP) if (Array.isArray(g.partner_id)) out[`p:${g.partner_id[0]}`] = g.__count;
+  const byE = await callKw<Array<{ sender_email: string | false; __count: number }>>(
+    "casafolino.mail.message", "read_group", [[...base, ["partner_id", "=", false]], [], ["sender_email"]], { lazy: false });
+  for (const g of byE) if (g.sender_email) out[`e:${g.sender_email.toLowerCase()}`] = g.__count;
+  return out;
+}
+
+/** Tutti gli id (+stato per undo) di un mittente entro scope+vista. Per la group-action server-side. */
+export async function fetchSenderIds(scope: InboxScope, opts: { partnerId?: number; senderEmail?: string; view: InboxViewKind }): Promise<{ id: number; state: string }[]> {
+  if (shouldUseMock()) return [];
+  const accDomain = await operatorAccountDomain(scope);
+  const domain: unknown[] = [["direction", "=", "inbound"], ["is_deleted", "=", false], ...stateDomainFor(opts.view), ...accDomain];
+  if (opts.partnerId) domain.push(["partner_id", "=", opts.partnerId]);
+  else if (opts.senderEmail) domain.push(["sender_email", "=ilike", opts.senderEmail]);
+  else return [];
+  const rows = await searchRead<{ id: number; state: string }>("casafolino.mail.message", domain,
+    { fields: ["state"], limit: 5000, order: "id" });
+  return rows.map((r) => ({ id: r.id, state: r.state }));
+}
+
 // Triage-queue: inbox = SOLO stati non-triati. keep/discard/trash escono dalla coda e
 // finiscono nei bucket (Tenute/Scartate/Cestino), recuperabili, mai più in coda.
 const QUEUE_STATES = ["new", "review"];

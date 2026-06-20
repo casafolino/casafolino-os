@@ -76,9 +76,11 @@ function More({ children }: { children: React.ReactNode }) {
 
 export type SearchState = { q: string; sender: string; partner: number | null; active: boolean };
 
+type SenderTarget = { partnerId?: number; senderEmail?: string; label: string; count: number };
+
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
-  search = { q: "", sender: "", partner: null, active: false },
+  search = { q: "", sender: "", partner: null, active: false }, senderCounts = {},
 }: {
   items: InboxItem[];
   bundles: Record<number, PartnerBundle>;
@@ -87,6 +89,7 @@ export function InboxClient({
   scopeAll?: boolean;
   queueCount?: number;
   search?: SearchState;
+  senderCounts?: Record<string, number>;
 }) {
   const router = useRouter();
   const isQueue = view === "queue" && !search.active;   // Coda (to-do): i triati spariscono
@@ -102,7 +105,8 @@ export function InboxClient({
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [snack, setSnack] = useState<Snack>(null);
-  const [confirmTrash, setConfirmTrash] = useState<number[] | null>(null); // ids da cestinare (sel/gruppo)
+  const [confirmTrash, setConfirmTrash] = useState<number[] | null>(null); // ids da cestinare (sel/gruppo caricati)
+  const [confirmSender, setConfirmSender] = useState<SenderTarget | null>(null); // cestina-mittente server-side
   const [groupMode, setGroupMode] = useState<GroupMode>("date");
   const [groupSort, setGroupSort] = useState<"recency" | "volume">("recency");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -176,6 +180,19 @@ export function InboxClient({
     setChecked(new Set());
     router.refresh();
   }, [targetIds, router]);
+
+  // Nuke-all per mittente SERVER-SIDE: triaga TUTTE le mail del mittente entro scope+vista,
+  // non solo i caricati. Ritorna prev di TUTTO il set per l'undo completo.
+  const triageSender = useCallback(async (state: string, t: SenderTarget) => {
+    setBusy(true);
+    const r = await postJson("/api/console/triage-sender", { state, partnerId: t.partnerId, senderEmail: t.senderEmail, view, scopeAll }) as { ok: boolean; message?: string; count?: number; prev?: Record<number, string> };
+    setBusy(false); setConfirmSender(null);
+    if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "fallito"}`, prev: {} }); return; }
+    const verb = state === "keep" ? "tenuti" : state === "discard" ? "scartati" : state === "trash" ? "cestinati" : "ripristinati";
+    setChecked(new Set());
+    setSnack({ text: `${r.count ?? 0} ${verb} (${t.label})`, prev: r.prev ?? {} });
+    router.refresh();
+  }, [view, scopeAll, router]);
 
   async function undo() {
     if (!snack || !Object.keys(snack.prev).length) { setSnack(null); return; }
@@ -302,21 +319,28 @@ export function InboxClient({
             const groupAll = its.length > 0 && its.every((i) => checked.has(i.id));
             const isCollapsed = collapsed.has(g.key);
             const bySender = groupMode === "mittente";
+            // conteggio VERO (read_group) se disponibile, altrimenti i caricati.
+            const trueCount = (bySender && !search.active && senderCounts[g.key] != null) ? senderCounts[g.key] : its.length;
+            // target server-side dal key del gruppo (p:<id> | e:<email>).
+            const senderTarget: SenderTarget = g.key.startsWith("p:")
+              ? { partnerId: Number(g.key.slice(2)), label: g.label, count: trueCount }
+              : { senderEmail: g.key.slice(2), label: g.label, count: trueCount };
+            const groupServerOk = bySender && !search.active; // nuke-all server-side solo su Coda/Inbox/bucket
             return (
               <div key={g.key}>
                 {g.label ? (
                   <div style={{ padding: "6px 10px", background: "var(--panel-2)", display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)", borderTop: "1px solid var(--line)" }}>
-                    <input type="checkbox" checked={groupAll} onChange={() => setMany(groupIds, !groupAll)} title="Seleziona gruppo" />
+                    <input type="checkbox" checked={groupAll} onChange={() => setMany(groupIds, !groupAll)} title="Seleziona gruppo (caricati)" />
                     <button onClick={() => setCollapsed((s) => { const n = new Set(s); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; })} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted)", padding: 0 }}>{isCollapsed ? "▸" : "▾"}</button>
                     <span style={{ flex: 1, minWidth: 0, color: "var(--ink)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.label}</span>
-                    <span className="chip" style={{ background: "var(--accent-t)", color: "var(--accent)" }}>{its.length}</span>
+                    <span className="chip" style={{ background: "var(--accent-t)", color: "var(--accent)" }} title={trueCount !== its.length ? `${its.length} caricate di ${trueCount}` : undefined}>{trueCount}</span>
                     {bySender ? <span style={{ fontSize: 9, flexShrink: 0 }}>{g.lastDate}</span> : null}
-                    {/* azioni sul gruppo intero (nuke-rumore) */}
+                    {/* azioni sul gruppo INTERO (server-side nuke-all su Coda/Inbox) */}
                     {bySender && isTriage ? (
                       <span className="row" style={{ gap: 3, flexShrink: 0 }}>
-                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px", background: "var(--ok-t)", color: "var(--ok)" })} disabled={busy} title="Tieni gruppo" onClick={() => doTriage("keep", groupIds)}>★</button>
-                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px" })} disabled={busy} title="Scarta gruppo" onClick={() => doTriage("discard", groupIds)}>✕</button>
-                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px", background: "var(--danger-t)", color: "var(--danger)" })} disabled={busy} title="Cestina gruppo" onClick={() => setConfirmTrash(groupIds)}>🗑</button>
+                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px", background: "var(--ok-t)", color: "var(--ok)" })} disabled={busy} title="Tieni tutto il mittente" onClick={() => groupServerOk ? triageSender("keep", senderTarget) : doTriage("keep", groupIds)}>★</button>
+                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px" })} disabled={busy} title="Scarta tutto il mittente" onClick={() => groupServerOk ? triageSender("discard", senderTarget) : doTriage("discard", groupIds)}>✕</button>
+                        <button className="btn" style={btn({ fontSize: 10, padding: "2px 5px", background: "var(--danger-t)", color: "var(--danger)" })} disabled={busy} title="Cestina tutto il mittente" onClick={() => groupServerOk ? setConfirmSender(senderTarget) : setConfirmTrash(groupIds)}>🗑</button>
                       </span>
                     ) : null}
                   </div>
@@ -465,6 +489,20 @@ export function InboxClient({
             <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
               <button className="btn" onClick={() => setConfirmTrash(null)}>Annulla</button>
               <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => doTriage("trash", confirmTrash)}>🗑 Cestina</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* conferma nuke-all per mittente (totale VERO server-side) */}
+      {confirmSender ? (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmSender(null)}>
+          <div className="card" style={{ padding: 22, width: 340 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Cestina {confirmSender.count} di {confirmSender.label}?</div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>TUTTE le mail di questo mittente nella vista corrente (entro la tua casella). Nel Cestino, recuperabili. Nessuna cancellazione fisica.</div>
+            <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn" onClick={() => setConfirmSender(null)}>Annulla</button>
+              <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => triageSender("trash", confirmSender)}>🗑 Cestina tutto</button>
             </div>
           </div>
         </div>
