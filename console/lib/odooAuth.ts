@@ -53,11 +53,13 @@ export async function verifyOperator(login: string, password: string): Promise<O
   })) as number | false;
   if (!uid) return null; // credenziali errate
 
-  // 2. allowlist: has_group eseguito con le credenziali umane (self.env.user = uid)
+  // 2. allowlist: has_group con le credenziali umane (self.env.user = uid).
+  // execute_kw interpreta args[0] come ids del recordset → has_group(self, group_ext_id)
+  // va chiamato come [[uid], OPERATOR_GROUP] (ids + arg), non [OPERATOR_GROUP].
   const inGroup = (await rpc({
     service: "object",
     method: "execute_kw",
-    args: [DB, uid, password, "res.users", "has_group", [OPERATOR_GROUP]],
+    args: [DB, uid, password, "res.users", "has_group", [[uid], OPERATOR_GROUP]],
   })) as boolean;
   if (!inGroup) return null; // utente Odoo valido ma NON Console Operator → negato
 
