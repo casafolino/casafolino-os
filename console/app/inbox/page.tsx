@@ -11,7 +11,9 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
   const { view } = await searchParams;
   const isTrash = view === "trash";
   const data = isTrash ? await getTrash() : await getInbox();
-  const ids = [...new Set(data.items.map((i) => i.partnerId).filter((x): x is number => x != null))];
+  // Prefetch bundle SOLO per i primi N partner (pannello dettaglio). La lista resta a 200
+  // per il triage bulk; evita il fan-out di centinaia di RPC che satura Odoo (timeout).
+  const ids = [...new Set(data.items.map((i) => i.partnerId).filter((x): x is number => x != null))].slice(0, 12);
   const bundles: Record<number, PartnerBundle> = {};
   await Promise.all(ids.map(async (id) => { const b = await getPartnerBundle(id); if (b) bundles[id] = b; }));
 
