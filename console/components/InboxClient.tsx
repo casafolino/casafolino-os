@@ -31,10 +31,14 @@ function initials(name: string): string {
 
 type Snack = { text: string; prev: Record<number, string> } | null;
 type GroupMode = "date" | "casella";
-export type InboxView = "inbox" | "keep" | "discard" | "trash";
+export type InboxView = "queue" | "all" | "keep" | "discard" | "trash";
 
-const VIEW_TABS: { key: InboxView; label: string }[] = [
-  { key: "inbox", label: "Coda" },
+// Nav primaria: Coda (to-do) + Inbox (record completo). Bucket nel menu "Altro".
+const PRIMARY_TABS: { key: InboxView; label: string }[] = [
+  { key: "queue", label: "Coda" },
+  { key: "all", label: "Inbox" },
+];
+const BUCKET_TABS: { key: InboxView; label: string }[] = [
   { key: "keep", label: "Tenute" },
   { key: "discard", label: "Scartate" },
   { key: "trash", label: "Cestino" },
@@ -61,16 +65,18 @@ function More({ children }: { children: React.ReactNode }) {
 }
 
 export function InboxClient({
-  items, bundles, initialSelectedId, view = "inbox", scopeAll = false,
+  items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
 }: {
   items: InboxItem[];
   bundles: Record<number, PartnerBundle>;
   initialSelectedId: number;
   view?: InboxView;
   scopeAll?: boolean;
+  queueCount?: number;
 }) {
   const router = useRouter();
-  const isQueue = view === "inbox";
+  const isQueue = view === "queue";              // Coda (to-do): i triati spariscono
+  const isTriage = view === "queue" || view === "all"; // triage/azioni mail attive qui
   const hrefView = (v: InboxView) => `/inbox?view=${v}${scopeAll ? "&scope=all" : ""}`;
   const hrefScope = (all: boolean) => `/inbox?view=${view}${all ? "&scope=all" : ""}`;
   const [selectedId, setSelectedId] = useState(initialSelectedId);
@@ -182,10 +188,10 @@ export function InboxClient({
     function onKey(e: KeyboardEvent) {
       if (composer || typing() || e.metaKey || e.ctrlKey || e.altKey) return;
       switch (e.key) {
-        case "F8": case "r": case "R": if (view === "inbox") { e.preventDefault(); openReply(); } break;
-        case "t": case "T": if (view === "inbox") { e.preventDefault(); doTriage("keep"); } break;
-        case "s": case "S": if (view === "inbox") { e.preventDefault(); doTriage("discard"); } break;
-        case "Backspace": if (view === "inbox" && targetCount) { e.preventDefault(); setConfirmTrash(true); } break;
+        case "F8": case "r": case "R": if (isTriage) { e.preventDefault(); openReply(); } break;
+        case "t": case "T": if (isTriage) { e.preventDefault(); doTriage("keep"); } break;
+        case "s": case "S": if (isTriage) { e.preventDefault(); doTriage("discard"); } break;
+        case "Backspace": if (isTriage && targetCount) { e.preventDefault(); setConfirmTrash(true); } break;
         case "j": case "J": e.preventDefault(); move(1); break;
         case "k": case "K": e.preventDefault(); move(-1); break;
         case "x": case "X": if (item) { e.preventDefault(); toggle(item.id); } break;
@@ -214,11 +220,20 @@ export function InboxClient({
     <>
       {/* Pane 2: lista */}
       <div style={{ width: 270, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--paper)", display: "flex", flexDirection: "column" }}>
-        {/* bucket selector: Coda / Tenute / Scartate / Cestino */}
-        <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 11 }}>
-          {VIEW_TABS.map((t) => (
-            <Link key={t.key} href={hrefView(t.key)} style={{ flex: 1, textAlign: "center", padding: "7px 0", textDecoration: "none", background: view === t.key ? "var(--accent-t)" : "transparent", color: view === t.key ? "var(--accent)" : "var(--muted)", fontWeight: view === t.key ? 600 : 400 }}>{t.label}</Link>
+        {/* nav PRIMARIA: Coda (badge) + Inbox · bucket nel menu Altro */}
+        <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 11, alignItems: "stretch" }}>
+          {PRIMARY_TABS.map((t) => (
+            <Link key={t.key} href={hrefView(t.key)} style={{ flex: 1, textAlign: "center", padding: "7px 0", textDecoration: "none", background: view === t.key ? "var(--accent-t)" : "transparent", color: view === t.key ? "var(--accent)" : "var(--muted)", fontWeight: view === t.key ? 700 : 400, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+              {t.label}{t.key === "queue" && queueCount > 0 ? <span className="cnt" style={{ background: "var(--accent)", color: "#fff", borderRadius: 9, fontSize: 9, padding: "0 5px" }}>{queueCount}</span> : null}
+            </Link>
           ))}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 4px", borderLeft: "1px solid var(--line)" }}>
+            <More>
+              {BUCKET_TABS.map((t) => (
+                <Link key={t.key} href={hrefView(t.key)} className="btn" style={{ fontSize: 12, justifyContent: "flex-start", textDecoration: "none", color: view === t.key ? "var(--accent)" : "var(--ink)" }}>{t.label}</Link>
+              ))}
+            </More>
+          </div>
         </div>
         {/* scope per-operatore: Solo me (default) / Tutte (toggle esplicito) */}
         <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 10, alignItems: "center", padding: "4px 8px", gap: 6 }}>
@@ -267,7 +282,7 @@ export function InboxClient({
               </div>
             );
           })}
-          {items.length === 0 ? <div className="muted" style={{ padding: 16, fontSize: 12 }}>{isQueue ? "Coda vuota: tutto triato." : "Vuoto."}</div> : null}
+          {items.length === 0 ? <div className="muted" style={{ padding: 16, fontSize: 12 }}>{isQueue ? "Coda vuota: tutto triato." : view === "all" ? "Inbox vuota." : "Vuoto."}</div> : null}
         </div>
       </div>
 
@@ -280,7 +295,7 @@ export function InboxClient({
             <span style={{ fontSize: 12, fontWeight: 600 }}>{checked.size ? `${checked.size} selezionate` : item ? "mail aperta" : "—"}</span>
             <button className="btn" style={btn()} onClick={selectAll}>{allChecked ? "Deseleziona" : "Seleziona tutto"}</button>
             <span style={{ width: 1, height: 18, background: "var(--line)", margin: "0 2px" }} />
-            {!isQueue ? (
+            {!isTriage ? (
               <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("review")}>↩ Ripristina in coda</button>
             ) : (
               <>
@@ -298,7 +313,7 @@ export function InboxClient({
           </div>
 
           {/* BAR A — contestuale: azioni della mail aperta */}
-          {item && m && view === "inbox" ? (
+          {item && m && isTriage ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "7px 10px", borderBottom: "1px solid var(--line)", background: "var(--panel-2)" }}>
               <span className="muted" style={{ fontSize: 11, marginRight: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
                 <b style={{ color: "var(--ink)" }}>{m.senderName || m.senderEmail}</b>{item.accountName ? ` · casella ${item.accountName}` : ""}
@@ -318,7 +333,7 @@ export function InboxClient({
         {/* corpo mail (senza tasti in fondo: vivono in Bar A) */}
         {!item || !m ? (
           <div className="card" style={{ padding: "14px 16px" }}>
-            <div className="empty-honest"><span>{isQueue ? "Nessuna mail aperta." : "Vuoto."}</span></div>
+            <div className="empty-honest"><span>{isTriage ? "Nessuna mail aperta." : "Vuoto."}</span></div>
           </div>
         ) : (
           <div className="card" style={{ padding: "14px 16px" }}>

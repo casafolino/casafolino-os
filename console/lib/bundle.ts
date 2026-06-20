@@ -272,6 +272,25 @@ export async function getBucket(state: "keep" | "discard" | "trash", scope: Inbo
   return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
 }
 
+/** Inbox = record completo della casella scopata: tutti gli stati TRANNE trash (cestino a parte). */
+export async function getInboxAll(scope: InboxScope = {}): Promise<InboxData> {
+  if (shouldUseMock()) return mockInbox();
+  const accDomain = await operatorAccountDomain(scope);
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
+    [["direction", "=", "inbound"], ["state", "!=", "trash"], ["is_deleted", "=", false], ...accDomain],
+    { fields: INBOX_FIELDS, order: "email_date desc", limit: 200 });
+  const items = rows.map(mapInboxRow);
+  return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
+}
+
+/** Conteggio coda (non-triate) per il badge della tab Coda. Scoped all'operatore. */
+export async function getQueueCount(scope: InboxScope = {}): Promise<number> {
+  if (shouldUseMock()) return 0;
+  const accDomain = await operatorAccountDomain(scope);
+  return callKw<number>("casafolino.mail.message", "search_count",
+    [[["direction", "=", "inbound"], ["state", "in", QUEUE_STATES], ["is_deleted", "=", false], ...accDomain]]);
+}
+
 /** Dati Regia (home). Mock-first; path Odoo best-effort via conteggi. */
 export async function getRegia(): Promise<RegiaData> {
   if (shouldUseMock()) return mockRegia();
