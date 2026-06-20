@@ -31,6 +31,14 @@ function initials(name: string): string {
 
 type Snack = { text: string; prev: Record<number, string> } | null;
 type GroupMode = "date" | "casella";
+export type InboxView = "inbox" | "keep" | "discard" | "trash";
+
+const VIEW_TABS: { key: InboxView; label: string }[] = [
+  { key: "inbox", label: "Coda" },
+  { key: "keep", label: "Tenute" },
+  { key: "discard", label: "Scartate" },
+  { key: "trash", label: "Cestino" },
+];
 
 async function postJson(path: string, body: unknown): Promise<{ ok: boolean; message?: string; count?: number }> {
   const res = await fetch(`${BP}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -53,14 +61,18 @@ function More({ children }: { children: React.ReactNode }) {
 }
 
 export function InboxClient({
-  items, bundles, initialSelectedId, view = "inbox",
+  items, bundles, initialSelectedId, view = "inbox", scopeAll = false,
 }: {
   items: InboxItem[];
   bundles: Record<number, PartnerBundle>;
   initialSelectedId: number;
-  view?: "inbox" | "trash";
+  view?: InboxView;
+  scopeAll?: boolean;
 }) {
   const router = useRouter();
+  const isQueue = view === "inbox";
+  const hrefView = (v: InboxView) => `/inbox?view=${v}${scopeAll ? "&scope=all" : ""}`;
+  const hrefScope = (all: boolean) => `/inbox?view=${view}${all ? "&scope=all" : ""}`;
   const [selectedId, setSelectedId] = useState(initialSelectedId);
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -117,10 +129,15 @@ export function InboxClient({
     setBusy(false); setConfirmTrash(false);
     if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "triage fallito"}`, prev: {} }); return; }
     const verb = state === "keep" ? "tenuti" : state === "discard" ? "scartati" : state === "trash" ? "cestinati" : "ripristinati";
+    // AUTO-ADVANCE: salta alla prossima mail in coda NON triata (le triate spariscono al refresh).
+    const curIdx = items.findIndex((i) => i.id === selectedId);
+    const after = items.slice(curIdx + 1).find((i) => !idset.has(i.id));
+    const remaining = items.filter((i) => !idset.has(i.id));
+    setSelectedId(after ? after.id : remaining.length ? remaining[remaining.length - 1].id : 0);
     setChecked(new Set());
     setSnack({ text: `${ids.length} ${verb}`, prev });
     router.refresh();
-  }, [targetIds, items, router]);
+  }, [targetIds, items, router, selectedId]);
 
   const doMarkRead = useCallback(async (isRead: boolean) => {
     const ids = targetIds();
@@ -197,17 +214,23 @@ export function InboxClient({
     <>
       {/* Pane 2: lista */}
       <div style={{ width: 270, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--paper)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "9px 12px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
-          <strong style={{ flex: 1 }}>{view === "trash" ? "Cestino" : "Inbox"}</strong>
-          <Link href={view === "trash" ? "/inbox" : "/inbox?view=trash"} className="muted" style={{ fontSize: 11 }}>{view === "trash" ? "← Inbox" : "Cestino"}</Link>
+        {/* bucket selector: Coda / Tenute / Scartate / Cestino */}
+        <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 11 }}>
+          {VIEW_TABS.map((t) => (
+            <Link key={t.key} href={hrefView(t.key)} style={{ flex: 1, textAlign: "center", padding: "7px 0", textDecoration: "none", background: view === t.key ? "var(--accent-t)" : "transparent", color: view === t.key ? "var(--accent)" : "var(--muted)", fontWeight: view === t.key ? 600 : 400 }}>{t.label}</Link>
+          ))}
         </div>
-        {view === "inbox" ? (
-          <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 11 }}>
-            {(["date", "casella"] as GroupMode[]).map((g) => (
-              <button key={g} onClick={() => setGroupMode(g)} style={{ flex: 1, padding: "6px 0", border: "none", cursor: "pointer", background: groupMode === g ? "var(--accent-t)" : "transparent", color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 600 : 400 }}>{g === "date" ? "Per data" : "Per casella"}</button>
-            ))}
-          </div>
-        ) : null}
+        {/* scope per-operatore: Solo me (default) / Tutte (toggle esplicito) */}
+        <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 10, alignItems: "center", padding: "4px 8px", gap: 6 }}>
+          <span className="muted">Casella:</span>
+          <Link href={hrefScope(false)} style={{ textDecoration: "none", fontWeight: !scopeAll ? 700 : 400, color: !scopeAll ? "var(--accent)" : "var(--muted)" }}>Solo me</Link>
+          <span className="muted">·</span>
+          <Link href={hrefScope(true)} style={{ textDecoration: "none", fontWeight: scopeAll ? 700 : 400, color: scopeAll ? "var(--accent)" : "var(--muted)" }}>Tutte</Link>
+          <span style={{ flex: 1 }} />
+          {(["date", "casella"] as GroupMode[]).map((g) => (
+            <button key={g} onClick={() => setGroupMode(g)} style={{ border: "none", cursor: "pointer", background: "none", color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 700 : 400 }}>{g === "date" ? "data" : "casella"}</button>
+          ))}
+        </div>
         <div style={{ overflowY: "auto", flex: 1 }}>
           {groups.map(([label, its]) => {
             const groupIds = its.map((i) => i.id);
@@ -244,7 +267,7 @@ export function InboxClient({
               </div>
             );
           })}
-          {items.length === 0 ? <div className="muted" style={{ padding: 16, fontSize: 12 }}>{view === "trash" ? "Cestino vuoto." : "Inbox vuota."}</div> : null}
+          {items.length === 0 ? <div className="muted" style={{ padding: 16, fontSize: 12 }}>{isQueue ? "Coda vuota: tutto triato." : "Vuoto."}</div> : null}
         </div>
       </div>
 
@@ -257,8 +280,8 @@ export function InboxClient({
             <span style={{ fontSize: 12, fontWeight: 600 }}>{checked.size ? `${checked.size} selezionate` : item ? "mail aperta" : "—"}</span>
             <button className="btn" style={btn()} onClick={selectAll}>{allChecked ? "Deseleziona" : "Seleziona tutto"}</button>
             <span style={{ width: 1, height: 18, background: "var(--line)", margin: "0 2px" }} />
-            {view === "trash" ? (
-              <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("review")}>↩ Ripristina</button>
+            {!isQueue ? (
+              <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("review")}>↩ Ripristina in coda</button>
             ) : (
               <>
                 <button className="btn" style={btn({ background: "var(--ok-t)", color: "var(--ok)" })} disabled={triageDisabled} onClick={() => doTriage("keep")}>★ Tieni</button>
@@ -295,7 +318,7 @@ export function InboxClient({
         {/* corpo mail (senza tasti in fondo: vivono in Bar A) */}
         {!item || !m ? (
           <div className="card" style={{ padding: "14px 16px" }}>
-            <div className="empty-honest"><span>{view === "trash" ? "Cestino vuoto." : "Nessuna mail aperta."}</span></div>
+            <div className="empty-honest"><span>{isQueue ? "Nessuna mail aperta." : "Vuoto."}</span></div>
           </div>
         ) : (
           <div className="card" style={{ padding: "14px 16px" }}>

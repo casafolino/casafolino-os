@@ -232,21 +232,41 @@ function mapInboxRow(r: Record<string, unknown>): InboxData["items"][number] {
   };
 }
 
-/** Inbox 3-pane. Mock-first. Odoo: casafolino.mail.message inbound da gestire. */
-export async function getInbox(): Promise<InboxData> {
+// Scope per-operatore: il filtro casella è calcolato SERVER-SIDE da operator_uid (sessione).
+// Default = solo le caselle dell'operatore (responsible_user_id == operator_uid). scopeAll
+// (toggle esplicito "Tutte") rimuove il filtro. Il client non può forzare operator_uid.
+export interface InboxScope { operatorUid?: number; scopeAll?: boolean }
+
+async function operatorAccountDomain(scope: InboxScope): Promise<unknown[]> {
+  if (scope.scopeAll || !scope.operatorUid) return [];
+  const accs = await searchRead<{ id: number }>("casafolino.mail.account",
+    [["responsible_user_id", "=", scope.operatorUid]], { fields: ["id"] });
+  const ids = accs.map((a) => a.id);
+  // nessuna casella mappata → nessuna mail (mai fallback a "tutte").
+  return [["account_id", "in", ids.length ? ids : [-1]]];
+}
+
+// Triage-queue: inbox = SOLO stati non-triati. keep/discard/trash escono dalla coda e
+// finiscono nei bucket (Tenute/Scartate/Cestino), recuperabili, mai più in coda.
+const QUEUE_STATES = ["new", "review"];
+
+/** Inbox = coda di triage scoped all'operatore. Mock-first. */
+export async function getInbox(scope: InboxScope = {}): Promise<InboxData> {
   if (shouldUseMock()) return mockInbox();
+  const accDomain = await operatorAccountDomain(scope);
   const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
-    [["direction", "=", "inbound"], ["state", "in", ["new", "review", "keep", "auto_keep"]], ["is_deleted", "=", false]],
+    [["direction", "=", "inbound"], ["state", "in", QUEUE_STATES], ["is_deleted", "=", false], ...accDomain],
     { fields: INBOX_FIELDS, order: "email_date desc", limit: 200 });
   const items = rows.map(mapInboxRow);
   return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
 }
 
-/** Cestino: messaggi in stato 'trash' (soft, recuperabili). NESSUN unlink. */
-export async function getTrash(): Promise<InboxData> {
+/** Bucket triato (keep/discard/trash), scoped all'operatore. Recuperabile. NESSUN unlink. */
+export async function getBucket(state: "keep" | "discard" | "trash", scope: InboxScope = {}): Promise<InboxData> {
   if (shouldUseMock()) return { items: [], selectedId: 0, source: "mock" };
+  const accDomain = await operatorAccountDomain(scope);
   const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message",
-    [["state", "=", "trash"], ["is_deleted", "=", false]],
+    [["state", "=", state], ["is_deleted", "=", false], ...accDomain],
     { fields: INBOX_FIELDS, order: "email_date desc", limit: 200 });
   const items = rows.map(mapInboxRow);
   return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
