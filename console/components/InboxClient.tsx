@@ -28,6 +28,15 @@ function toneStyle(t: Tone): React.CSSProperties {
 function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
 }
+// Etichetta/tono dello stato triage per riga (così nei risultati sai dov'è la mail).
+function stateChip(state: string): { label: string; tone: Tone } {
+  switch (state) {
+    case "keep": case "auto_keep": return { label: "Tenuta", tone: "ok" };
+    case "discard": case "auto_discard": return { label: "Scartata", tone: "neutral" };
+    case "trash": return { label: "Cestino", tone: "danger" };
+    default: return { label: "Coda", tone: "warn" };
+  }
+}
 
 type Snack = { text: string; prev: Record<number, string> } | null;
 type GroupMode = "date" | "casella";
@@ -64,8 +73,11 @@ function More({ children }: { children: React.ReactNode }) {
   );
 }
 
+export type SearchState = { q: string; sender: string; partner: number | null; active: boolean };
+
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
+  search = { q: "", sender: "", partner: null, active: false },
 }: {
   items: InboxItem[];
   bundles: Record<number, PartnerBundle>;
@@ -73,12 +85,18 @@ export function InboxClient({
   view?: InboxView;
   scopeAll?: boolean;
   queueCount?: number;
+  search?: SearchState;
 }) {
   const router = useRouter();
-  const isQueue = view === "queue";              // Coda (to-do): i triati spariscono
-  const isTriage = view === "queue" || view === "all"; // triage/azioni mail attive qui
-  const hrefView = (v: InboxView) => `/inbox?view=${v}${scopeAll ? "&scope=all" : ""}`;
-  const hrefScope = (all: boolean) => `/inbox?view=${view}${all ? "&scope=all" : ""}`;
+  const isQueue = view === "queue" && !search.active;   // Coda (to-do): i triati spariscono
+  const isTriage = (view === "queue" || view === "all") || search.active; // triage attivo anche sui risultati
+  const sp = scopeAll ? "&scope=all" : "";
+  const hrefView = (v: InboxView) => `/inbox?view=${v}${sp}`;          // pulisce anche la ricerca
+  const hrefScope = (all: boolean) => `/inbox?view=${view}${all ? "&scope=all" : ""}${search.q ? `&q=${encodeURIComponent(search.q)}` : ""}${search.sender ? `&sender=${encodeURIComponent(search.sender)}` : ""}${search.partner ? `&partner=${search.partner}` : ""}`;
+  const hrefSearch = (q: string) => `/inbox?view=${view}${sp}&q=${encodeURIComponent(q)}`;
+  const hrefSender = (email: string) => `/inbox?view=${view}${sp}&sender=${encodeURIComponent(email)}`;
+  const hrefPartner = (id: number) => `/inbox?view=${view}${sp}&partner=${id}`;
+  const [searchInput, setSearchInput] = useState(search.q);
   const [selectedId, setSelectedId] = useState(initialSelectedId);
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -246,6 +264,22 @@ export function InboxClient({
             <button key={g} onClick={() => setGroupMode(g)} style={{ border: "none", cursor: "pointer", background: "none", color: groupMode === g ? "var(--accent)" : "var(--muted)", fontWeight: groupMode === g ? 700 : 400 }}>{g === "date" ? "data" : "casella"}</button>
           ))}
         </div>
+        {/* barra ricerca full-record scoped (server-side, paginata) */}
+        <form onSubmit={(e) => { e.preventDefault(); router.push(searchInput.trim() ? hrefSearch(searchInput.trim()) : hrefView(view)); }}
+          style={{ display: "flex", gap: 6, padding: "6px 8px", borderBottom: "1px solid var(--line)" }}>
+          <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Cerca in tutto il record…"
+            style={{ flex: 1, padding: "5px 8px", border: "1px solid var(--line)", borderRadius: 6, fontSize: 12 }} />
+          <button type="submit" className="btn" style={{ fontSize: 12 }}>🔍</button>
+        </form>
+        {/* chip ricerca/mittente attivo → x torna al tab */}
+        {search.active ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderBottom: "1px solid var(--line)", background: "var(--accent-t)", fontSize: 11 }}>
+            <span className="grow" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {search.partner ? "Partner selezionato" : search.sender ? `Mittente: ${search.sender}` : `Ricerca: "${search.q}"`} · {items.length} risultati
+            </span>
+            <Link href={hrefView(view)} onClick={() => setSearchInput("")} style={{ textDecoration: "none", color: "var(--accent)", fontWeight: 700 }}>✕</Link>
+          </div>
+        ) : null}
         <div style={{ overflowY: "auto", flex: 1 }}>
           {groups.map(([label, its]) => {
             const groupIds = its.map((i) => i.id);
@@ -274,7 +308,11 @@ export function InboxClient({
                         <div className="muted" style={{ fontSize: 11, margin: "2px 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {groupMode === "date" && it.accountName ? <span title="casella">{it.accountName} · </span> : null}{it.message.subject}
                         </div>
-                        {it.badgeLabel ? <span className="chip" style={toneStyle(it.badgeTone)}>{it.badgeLabel}</span> : null}
+                        <span className="row" style={{ gap: 4 }}>
+                          {/* stato della mail (così nei risultati/Inbox sai dov'è) */}
+                          {(search.active || !isQueue) ? (() => { const c = stateChip(it.state); return <span className="chip" style={toneStyle(c.tone)}>{c.label}</span>; })() : null}
+                          {it.badgeLabel ? <span className="chip" style={toneStyle(it.badgeTone)}>{it.badgeLabel}</span> : null}
+                        </span>
                       </div>
                     </div>
                   );
@@ -341,6 +379,9 @@ export function InboxClient({
             <div className="muted" style={{ fontSize: 12, marginBottom: 11 }}>
               <span style={{ color: "var(--ink)", fontWeight: 600 }}>{m.senderName}</span> · {m.senderEmail} · {m.timeLabel}
               {item.accountName ? <span> · casella <b>{item.accountName}</b></span> : null}
+              {/* filtro per mittente/partner: tutte le mail di questo contatto */}
+              <Link href={item.partnerId ? hrefPartner(item.partnerId) : hrefSender(m.senderEmail || item.senderEmail)}
+                style={{ marginLeft: 8, color: "var(--accent)", textDecoration: "none" }} title="Tutte le mail di questo mittente/partner">⛓ tutte di questo mittente</Link>
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.6, maxHeight: 420, overflowY: "auto", borderTop: "1px solid var(--line)", paddingTop: 10 }}>
               {bodyLoading ? <span className="muted">caricamento corpo…</span> : bodyHtml ? <div dangerouslySetInnerHTML={{ __html: bodyHtml }} /> : <span>{m.body || "(nessun corpo)"}</span>}

@@ -283,6 +283,32 @@ export async function getInboxAll(scope: InboxScope = {}): Promise<InboxData> {
   return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
 }
 
+/** Ricerca full-record (tutti gli stati, INCLUSO cestino), scoped all'operatore, paginata.
+ * Filtri: q (oggetto/mittente/nome/snippet/partner) e/o senderEmail/partnerId. Mai bypassa lo scope. */
+export async function searchInbox(
+  scope: InboxScope,
+  opts: { q?: string; senderEmail?: string; partnerId?: number; limit?: number; offset?: number },
+): Promise<InboxData> {
+  if (shouldUseMock()) return mockInbox();
+  const accDomain = await operatorAccountDomain(scope);
+  const domain: unknown[] = [["direction", "=", "inbound"], ["is_deleted", "=", false], ...accDomain];
+  if (opts.partnerId) domain.push(["partner_id", "=", opts.partnerId]);
+  else if (opts.senderEmail) domain.push(["sender_email", "=ilike", opts.senderEmail]);
+  const q = (opts.q ?? "").trim();
+  if (q) {
+    // OR su campi affidabili (no body_html: pesante sui volumi → snippet come proxy del corpo).
+    const leaves: unknown[][] = [
+      ["subject", "ilike", q], ["sender_email", "ilike", q], ["sender_name", "ilike", q],
+      ["snippet", "ilike", q], ["partner_id.name", "ilike", q],
+    ];
+    domain.push(...Array(leaves.length - 1).fill("|"), ...leaves);
+  }
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.message", domain,
+    { fields: INBOX_FIELDS, order: "email_date desc", limit: opts.limit ?? 50, offset: opts.offset ?? 0 });
+  const items = rows.map(mapInboxRow);
+  return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
+}
+
 /** Conteggio coda (non-triate) per il badge della tab Coda. Scoped all'operatore. */
 export async function getQueueCount(scope: InboxScope = {}): Promise<number> {
   if (shouldUseMock()) return 0;
