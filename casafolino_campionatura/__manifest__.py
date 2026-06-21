@@ -1,0 +1,26 @@
+{
+    'name': 'CasaFolino Campionatura',
+    'version': '18.0.1.0.0',
+    'summary': 'Campionatura sul motore cf.task: ordine campione + task 3 ruoli + spedizione tracciata',
+    'category': 'CasaFolino',
+    'author': 'CasaFolino',
+    'depends': [
+        'base',
+        'mail',
+        'crm',
+        'sale',
+        'casafolino_task',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+        'data/ir_sequence_data.xml',
+        'data/ir_config_parameter_data.xml',
+        'data/mail_template_data.xml',
+        'views/cf_shipment_views.xml',
+        'views/sale_order_views.xml',
+        'views/menus.xml',
+    ],
+    'installable': True,
+    'application': False,
+    'license': 'LGPL-3',
+}

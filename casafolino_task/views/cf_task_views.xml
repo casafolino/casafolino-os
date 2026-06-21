@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- LIST task -->
+    <record id="view_cf_task_list" model="ir.ui.view">
+        <field name="name">cf.task.list</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="traffic_light == 'red'" decoration-warning="traffic_light == 'yellow'" decoration-muted="state in ['chiuso','annullato']">
+                <field name="name"/>
+                <field name="originator_id"/>
+                <field name="partner_id" optional="show"/>
+                <field name="step_count" string="Step"/>
+                <field name="current_step_id" optional="show"/>
+                <field name="traffic_light" widget="badge" decoration-success="traffic_light == 'green'" decoration-warning="traffic_light == 'yellow'" decoration-danger="traffic_light == 'red'"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM task -->
+    <record id="view_cf_task_form" model="ir.ui.view">
+        <field name="name">cf.task.form</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start" string="Avvia" type="object" class="btn-primary" invisible="state != 'bozza'"/>
+                    <button name="action_cancel" string="Annulla" type="object" invisible="state in ['annullato','chiuso']"/>
+                    <button name="action_draft" string="Riporta in bozza" type="object" invisible="state == 'bozza'"/>
+                    <field name="traffic_light" widget="badge" decoration-success="traffic_light == 'green'" decoration-warning="traffic_light == 'yellow'" decoration-danger="traffic_light == 'red'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="bozza,in_corso,chiuso"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Titolo task"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="originator_id"/>
+                            <field name="partner_id"/>
+                            <field name="lead_id"/>
+                        </group>
+                        <group>
+                            <field name="parallel"/>
+                            <field name="template_key"/>
+                            <field name="current_step_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Step" name="steps">
+                            <field name="step_ids">
+                                <list editable="bottom" decoration-danger="traffic_light == 'red'" decoration-warning="traffic_light == 'yellow'" decoration-muted="state in ['confermato','saltato']">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="role"/>
+                                    <field name="name"/>
+                                    <field name="user_id"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="traffic_light" widget="badge" decoration-success="traffic_light == 'green'" decoration-warning="traffic_light == 'yellow'" decoration-danger="traffic_light == 'red'"/>
+                                    <field name="elapsed_work_hours" string="Ore lav."/>
+                                    <field name="activated_dt" optional="hide"/>
+                                    <field name="checkin_dt" optional="hide"/>
+                                    <field name="checkout_dt" optional="hide"/>
+                                    <button name="action_checkin" string="Check-in" type="object" icon="fa-sign-in" invisible="state != 'da_fare' or not activated_dt"/>
+                                    <button name="action_confirm" string="Conferma" type="object" icon="fa-check" invisible="state not in ['da_fare','in_corso'] or not activated_dt"/>
+                                    <button name="action_skip" string="Salta" type="object" icon="fa-forward" invisible="state in ['confermato','saltato']"/>
+                                    <button name="action_remind" string="Sollecita" type="object" icon="fa-bell" invisible="state in ['confermato','saltato'] or not activated_dt"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH task -->
+    <record id="view_cf_task_search" model="ir.ui.view">
+        <field name="name">cf.task.search</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="originator_id"/>
+                <filter name="f_in_corso" string="In corso" domain="[('state','=','in_corso')]"/>
+                <filter name="f_chiuso" string="Chiusi" domain="[('state','=','chiuso')]"/>
+                <separator/>
+                <filter name="f_red" string="Rossi" domain="[('traffic_light','=','red')]"/>
+                <filter name="f_yellow" string="Gialli" domain="[('traffic_light','=','yellow')]"/>
+                <separator/>
+                <filter name="f_mine" string="Miei (originatore)" domain="[('originator_id','=',uid)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="g_state" string="Stato" context="{'group_by':'state'}"/>
+                    <filter name="g_orig" string="Originatore" context="{'group_by':'originator_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_cf_task" model="ir.actions.act_window">
+        <field name="name">Task</field>
+        <field name="res_model">cf.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cf_task_search"/>
+        <field name="context">{'search_default_f_in_corso': 1}</field>
+    </record>
+
+</odoo>

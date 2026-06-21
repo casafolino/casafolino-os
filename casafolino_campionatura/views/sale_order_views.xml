@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Campi campione sul form ordine -->
+    <record id="view_order_form_campione" model="ir.ui.view">
+        <field name="name">sale.order.form.campione</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='client_order_ref']" position="after">
+                <field name="is_campione"/>
+                <field name="sample_code" readonly="1" invisible="not is_campione"/>
+                <field name="campione_lead_id" readonly="1" invisible="not is_campione"/>
+                <field name="campione_shipment_id" readonly="1" invisible="not is_campione"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Filtro Campionature nella ricerca ordini -->
+    <record id="view_sales_order_filter_campione" model="ir.ui.view">
+        <field name="name">sale.order.search.campione</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="f_campione" string="Campionature" domain="[('is_campione','=',True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Azione dedicata ordini campione -->
+    <record id="action_sale_campione" model="ir.actions.act_window">
+        <field name="name">Campionature (ordini)</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_campione','=',True)]</field>
+        <field name="context">{'search_default_f_campione': 1}</field>
+    </record>
+
+</odoo>

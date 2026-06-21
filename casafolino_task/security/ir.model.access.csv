@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cf_task_user,cf.task user,model_cf_task,base.group_user,1,1,1,1
+access_cf_task_step_user,cf.task.step user,model_cf_task_step,base.group_user,1,1,1,1
+access_cf_task_time_log_user,cf.task.time.log user,model_cf_task_time_log,base.group_user,1,1,1,1

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_campionatura_root" name="Campionatura" sequence="56"/>
+    <menuitem id="menu_campionatura_shipment" name="Spedizioni" parent="menu_campionatura_root"
+              action="action_cf_shipment" sequence="10"/>
+    <menuitem id="menu_campionatura_orders" name="Ordini campione" parent="menu_campionatura_root"
+              action="action_sale_campione" sequence="20"/>
+</odoo>

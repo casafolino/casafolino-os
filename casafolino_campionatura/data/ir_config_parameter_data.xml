@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Assegnatari di default per ruolo (override via arg assignees).
+             coordinazione=Maria(9), logistica=Teresa(11).
+             creazione=Anna NON esiste come utente -> placeholder Antonio(2):
+             aggiornare quando l'utente Anna sarà creato. -->
+        <record id="param_user_coordinazione" model="ir.config_parameter">
+            <field name="key">casafolino_campionatura.user_coordinazione</field>
+            <field name="value">9</field>
+        </record>
+        <record id="param_user_creazione" model="ir.config_parameter">
+            <field name="key">casafolino_campionatura.user_creazione</field>
+            <field name="value">2</field>
+        </record>
+        <record id="param_user_logistica" model="ir.config_parameter">
+            <field name="key">casafolino_campionatura.user_logistica</field>
+            <field name="value">11</field>
+        </record>
+    </data>
+</odoo>
