@@ -11,6 +11,7 @@ const NAV: NavItem[] = [
   { key: "regia", label: "Regia", href: "/", icon: "home" },
   { key: "inbox", label: "Inbox", href: "/inbox", icon: "inbox", count: 7 },
   { key: "pipeline", label: "Pipeline", href: "/pipeline", icon: "kanban" },
+  { key: "lavorazioni", label: "Lavorazioni", href: "/lavorazioni", icon: "check" },
   { key: "followup", label: "Follow-up", href: "/follow-up", icon: "clock" },
   { key: "fiere", label: "Fiere", href: "/fiere", icon: "fair" },
   { key: "dossier", label: "Dossier", href: "/dossier", icon: "folders" },

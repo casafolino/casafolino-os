@@ -7,6 +7,7 @@ import { PartnerMailThread } from "@/components/PartnerMailThread";
 import { RelationshipTimeline } from "@/components/RelationshipTimeline";
 import { EmptyHonest, money, moneyCompact, dateLabel } from "@/components/Honest";
 import { operatorColor } from "@/lib/theme";
+import { CampionaturaButton } from "@/components/CampionaturaButton";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,9 @@ export default async function PartnerHub({ params }: { params: Promise<{ id: str
     <div className="app">
       <Sidebar active="dossier" variant="rail" />
       <main className="main">
-        <div style={{ marginBottom: 12 }}>
+        <div className="row" style={{ marginBottom: 12, justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/inbox" className="muted" style={{ fontSize: 12 }}>← Inbox</Link>
+          {bundle ? <CampionaturaButton partnerId={bundle.partner.id} leadId={bundle.leads[0]?.id ?? null} small label="Campionatura" /> : null}
         </div>
         {!bundle ? (
           <EmptyHonest label="Partner non trovato." actionLabel="Torna all'inbox" />

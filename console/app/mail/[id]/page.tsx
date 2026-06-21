@@ -5,6 +5,7 @@ import { getMailMessage, getPartnerBundle } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
 import { EmptyHonest, dateLabel, moneyCompact } from "@/components/Honest";
 import { operatorColor, operatorLabel } from "@/lib/theme";
+import { CampionaturaButton } from "@/components/CampionaturaButton";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,10 @@ export default async function MailDetailPage({ params }: { params: Promise<{ id:
                   <div style={{ fontWeight: 600 }}>
                     <Link href={`/partner/${bundle.partner.id}`} style={{ color: "var(--accent)" }}>{bundle.partner.name} →</Link>
                   </div>
-                  <span className="chip" style={{ background: "var(--ok-t)", color: "var(--ok)" }}>collegato</span>
+                  <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <CampionaturaButton partnerId={bundle.partner.id} leadId={lead?.id ?? null} small label="Campionatura" />
+                    <span className="chip" style={{ background: "var(--ok-t)", color: "var(--ok)" }}>collegato</span>
+                  </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                   <Ctx label="Azienda" value={bundle.partner.name} />

@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
 import { EmptyHonest, moneyCompact } from "@/components/Honest";
 import { operatorColor, operatorTint } from "@/lib/theme";
+import { CampionaturaButton } from "@/components/CampionaturaButton";
 import type { Tone, PipelineCard } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,14 @@ function Card({ c }: { c: PipelineCard }) {
       ) : null}
     </div>
   );
-  return c.partnerId ? <Link href={`/partner/${c.partnerId}`} style={{ display: "block" }}>{inner}</Link> : inner;
+  return (
+    <div style={{ marginBottom: 8 }}>
+      {c.partnerId ? <Link href={`/partner/${c.partnerId}`} style={{ display: "block" }}>{inner}</Link> : inner}
+      <div style={{ marginTop: 4 }}>
+        <CampionaturaButton partnerId={c.partnerId} leadId={c.id} small label="+ Campionatura" />
+      </div>
+    </div>
+  );
 }
 
 export default async function Pipeline() {

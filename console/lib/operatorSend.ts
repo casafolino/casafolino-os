@@ -8,6 +8,32 @@ import { shouldUseMock, callKw } from "@/lib/odoo";
 
 type GatewayMethod = "console_send" | "console_reply";
 
+/**
+ * Forwarder GENERICO verso un metodo gateway su un modello qualsiasi, con la STESSA
+ * garanzia anti-spoof: operator_uid preso dalla sessione (auth()), quello del client
+ * scartato. Usato per la campionatura (cf.shipment / cf.task.step). payload → [payload].
+ */
+export async function forwardOperatorCall(model: string, method: string, req: Request): Promise<NextResponse> {
+  const session = await auth();
+  const operatorUid = session?.operatorUid;
+  if (!operatorUid) {
+    return NextResponse.json({ ok: false, message: "unauthorized" }, { status: 401 });
+  }
+  const raw = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const { operator_uid: _ignored, ...clean } = raw;
+  const payload = { ...clean, operator_uid: operatorUid };
+
+  if (shouldUseMock()) {
+    return NextResponse.json({ ok: true, simulated: true, model, method, operator_uid: operatorUid });
+  }
+  try {
+    const result = await callKw(model, method, [payload]);
+    return NextResponse.json(result as Record<string, unknown>);
+  } catch (e) {
+    return NextResponse.json({ ok: false, message: (e as Error).message }, { status: 500 });
+  }
+}
+
 export async function forwardToGateway(method: GatewayMethod, req: Request): Promise<NextResponse> {
   const session = await auth();
   const operatorUid = session?.operatorUid;
