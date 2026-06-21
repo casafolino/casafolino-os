@@ -164,17 +164,56 @@ class CasafolinoMailMessageGateway(models.Model):
         # 4. delega al SEND CORE condiviso (kill-switch, ir.mail_server, build/send, audit).
         return self._console_outbound(account, to, subject, body,
                                       int(src_id) if src_id else False, 'send',
-                                      operator=operator)
+                                      operator=operator, attachments=payload.get('attachments'))
+
+    # ── Allegati: SOLO upload nuovi dal composer. ANTI-EXFILTRATION. ──
+    _MAX_ATTACHMENTS = 10
+    _MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024  # 10MB/file
+
+    def _console_attachments(self, attachments, action):
+        """Crea ir.attachment FRESCHI dagli upload del composer ({filename, content(b64), mimetype}).
+        ANTI-EXFILTRATION: rifiuta qualsiasi riferimento a ir.attachment esistenti (id/res_id/...):
+        non si deve poter allegare per id un documento interno e spedirlo fuori. Ritorna recordset."""
+        import base64
+        Att = self.env['ir.attachment'].sudo()
+        out = Att.browse()
+        if not attachments:
+            return out
+        if len(attachments) > self._MAX_ATTACHMENTS:
+            raise UserError(_("Troppi allegati (max %s).") % self._MAX_ATTACHMENTS)
+        for a in attachments:
+            if not isinstance(a, dict):
+                raise UserError(_("Allegato non valido."))
+            if any(k in a for k in ('id', 'attachment_id', 'res_id', 'res_model')):
+                raise UserError(_("Riferimenti ad allegati esistenti non ammessi (solo upload nuovi)."))
+            fname = (a.get('filename') or '').strip()
+            content = a.get('content')
+            if not fname or not content:
+                raise UserError(_("Allegato senza nome o contenuto."))
+            try:
+                raw = base64.b64decode(content, validate=True)
+            except Exception:
+                raise UserError(_("Allegato %s: base64 non valido.") % fname)
+            if len(raw) > self._MAX_ATTACHMENT_BYTES:
+                raise UserError(_("Allegato %s troppo grande (max 10MB).") % fname)
+            out |= Att.create({
+                'name': fname, 'datas': content,
+                'mimetype': a.get('mimetype') or 'application/octet-stream',
+                'res_model': 'casafolino.mail.outbox', 'res_id': 0,  # scoped al path console
+                'description': 'console %s upload' % action,
+            })
+        return out
 
     # ── SEND CORE — UNICO, security-critical. Usato da console_send E console_reply (no fork). ──
     def _console_outbound(self, account, to, subject, body, source_id, action,
                           in_reply_to=None, references=None, parent_msg=None, guards=True,
-                          operator=None):
+                          operator=None, attachments=None):
         """Invio centralizzato. kill-switch CONDIVISO casafolino.console_send_enabled:
         False → bozza outbox (state='draft', nessun invio); True → invio reale via ir.mail_server
-        (mai smtplib raw, mai stato 'queued')."""
+        (mai smtplib raw, mai stato 'queued'). attachments = SOLO upload nuovi (anti-exfiltration)."""
         enabled = self.env['ir.config_parameter'].sudo().get_param('casafolino.console_send_enabled', 'False')
         live = str(enabled).strip().lower() in ('true', '1', 'yes')
+        att_recs = self._console_attachments(attachments, action)  # ir.attachment freschi (o vuoto)
 
         common = {
             'account_id': account.id,
@@ -190,9 +229,13 @@ class CasafolinoMailMessageGateway(models.Model):
 
         if not live:
             draft = self.env['casafolino.mail.outbox'].sudo().create(dict(common, state='draft'))
+            if att_recs:
+                draft.write({'attachment_ids': [(6, 0, att_recs.ids)]})
+                att_recs.write({'res_id': draft.id})
             self._console_audit_outbound(draft.id, '%s:draft' % action, to, account, None, parent_id, operator)
             return {'ok': True, 'phase': 'A', 'draft_id': draft.id, 'account': account.name,
-                    'state': 'draft', 'to': to, 'parent_msg_id': parent_id, 'in_reply_to': in_reply_to}
+                    'state': 'draft', 'to': to, 'parent_msg_id': parent_id, 'in_reply_to': in_reply_to,
+                    'attachments': len(att_recs)}
 
         # S4 SPONDE: cap giornaliero + dedup + burst PRIMA dell'invio reale.
         # Bloccato → ricade su bozza (state='draft', nessun invio) + audit del blocco.
@@ -214,14 +257,20 @@ class CasafolinoMailMessageGateway(models.Model):
         message_id = '<%s@casafolino.com>' % _uuid.uuid4().hex[:20]
         IMS = self.env['ir.mail_server'].sudo()
         headers = {'In-Reply-To': in_reply_to} if in_reply_to else None
+        import base64
+        att_tuples = [(a.name, base64.b64decode(a.datas)) for a in att_recs]  # (name, content) bytes
         message = IMS.build_email(
             email_from=account.email_address, email_to=[to], subject=subject,
             body=body or '', subtype='html', message_id=message_id,
             references=references or False, headers=headers,
+            attachments=att_tuples or None,
         )
         IMS.send_email(message, mail_server_id=server.id)
         rec = self.env['casafolino.mail.outbox'].sudo().create(
             dict(common, state='sent', sent_at=fields.Datetime.now(), message_id_rfc=message_id))
+        if att_recs:
+            rec.write({'attachment_ids': [(6, 0, att_recs.ids)]})
+            att_recs.write({'res_id': rec.id})
         # thread-link dell'outbound nel thread originale (parent_id + thread)
         if parent_msg:
             try:
@@ -278,7 +327,7 @@ class CasafolinoMailMessageGateway(models.Model):
         ref = orig.message_id_rfc or None
         return self._console_outbound(account, sender, subject, body, orig.id, 'reply',
                                       in_reply_to=ref, references=ref, parent_msg=orig,
-                                      operator=operator)
+                                      operator=operator, attachments=payload.get('attachments'))
 
     def _console_audit_outbound(self, outbox_id, action, to, account, server_id, parent_msg_id=None,
                                 operator=None):
