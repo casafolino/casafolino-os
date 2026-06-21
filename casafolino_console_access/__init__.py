@@ -33,11 +33,39 @@ def _ensure_console_operators(env):
             _logger.warning("[console S5] utente %s non trovato: assegnare a mano.", login)
 
 
+# Brief 5 — manager Console (accesso pieno CRM). Sottoinsieme degli operatori.
+CONSOLE_MANAGER_LOGINS = (
+    'antonio@casafolino.com',
+    'martina.sinopoli@casafolino.com',
+    'josefina.lazzaro@casafolino.com',
+)
+
+
+def _ensure_console_managers(env):
+    """Aggiunge i manager al group_console_manager. Idempotente. Non rimuove membri."""
+    import logging
+    _logger = logging.getLogger(__name__)
+    group = env.ref('casafolino_console_access.group_console_manager', raise_if_not_found=False)
+    if not group:
+        _logger.warning("[console B5] group_console_manager assente: skip membri.")
+        return
+    for login in CONSOLE_MANAGER_LOGINS:
+        user = env['res.users'].sudo().search([('login', '=', login)], limit=1)
+        if not user:
+            user = env['res.users'].sudo().search([('email', '=ilike', login)], limit=1)
+        if user:
+            user.sudo().write({'groups_id': [(4, group.id)]})
+            _logger.info("[console B5] %s aggiunto a group_console_manager.", login)
+        else:
+            _logger.warning("[console B5] manager %s non trovato: assegnare a mano.", login)
+
+
 def post_init_hook(env):
     """Install: assegna gli operatori e crea il cron digest invii (idempotente).
     Evita model_id ref in XML (ParseError Odoo 18)."""
     from odoo import fields
     _ensure_console_operators(env)
+    _ensure_console_managers(env)
     Cron = env['ir.cron'].sudo()
     if Cron.search([('cron_name', '=', 'CasaFolino Console: digest invii')], limit=1):
         return

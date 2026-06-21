@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Brief 5 — separazione accessi. group_console_manager = console PIENO
+         (Antonio/Martina/Josefina). I manager sono ANCHE in group_console_operator
+         (servono per i task). Gli operatori (Maria/Anna/Teresa/Valentina) restano SOLO
+         in group_console_operator → scopati a "Le mie lavorazioni".
+         NON dà permessi dati: i dati passano sempre da console_api. È un tag di ruolo
+         usato dal gating UI (middleware) + dai gateway CRM. Membri assegnati dal
+         post_init_hook / migration (idempotente). -->
+    <record id="group_console_manager" model="res.groups">
+        <field name="name">Console Manager (CRM pieno)</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+        <field name="comment">Manager Console: accesso pieno (lead/pipeline/inbox/mail). Distinto dagli operatori (solo lavorazioni). Non dà permessi dati diretti: i dati passano da console_api.</field>
+    </record>
+</odoo>

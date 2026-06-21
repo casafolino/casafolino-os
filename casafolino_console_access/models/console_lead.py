@@ -9,6 +9,17 @@ from .console_campionatura import _operator
 
 _logger = logging.getLogger(__name__)
 
+CONSOLE_MANAGER_GROUP = 'casafolino_console_access.group_console_manager'
+
+
+def _require_manager(env, operator):
+    """Brief 5 — difesa in profondità: i dati CRM sono SOLO per i manager.
+    L'operatore (Maria/Anna/Teresa/Valentina) è in group_console_operator ma NON manager
+    → negato anche se aggirasse la UI. operator è già validato in allowlist da _operator."""
+    group = env.ref(CONSOLE_MANAGER_GROUP, raise_if_not_found=False)
+    if not group or operator not in group.sudo().users:
+        raise AccessError(_("Solo i manager Console possono accedere ai dati CRM."))
+
 
 class CrmLeadConsoleRead(models.Model):
     """Gateway READ per la scheda lead ricca (Brief 4). Solo letture, audited, gated.
@@ -31,6 +42,7 @@ class CrmLeadConsoleRead(models.Model):
         if not _is_console(self.env):
             raise AccessError(_("Solo console_api."))
         operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
         lead = self._console_scoped_lead((payload or {}).get('leadId'))
 
         # stage stepper: fasi reali da Odoo (non inventate)
@@ -108,6 +120,7 @@ class CrmLeadConsoleRead(models.Model):
         if not _is_console(self.env):
             raise AccessError(_("Solo console_api."))
         operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
         lead = self._console_scoped_lead((payload or {}).get('leadId'))
         partner = lead.partner_id
         items = []
