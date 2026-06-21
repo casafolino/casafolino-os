@@ -141,7 +141,7 @@ export function InboxClient({
 
   const composerTarget = useCallback((): ComposerTarget | null => {
     if (!item || !m) return null;
-    return { id: item.id, subject: m.subject, senderEmail: m.senderEmail || item.senderEmail, senderName: m.senderName };
+    return { id: item.id, subject: m.subject, senderEmail: m.senderEmail || item.senderEmail, senderName: m.senderName, accountId: item.accountId };
   }, [item, m]);
   const openReply = useCallback(() => { const t = composerTarget(); if (t) setComposer({ mode: "reply", target: t }); }, [composerTarget]);
   const openForward = useCallback(() => { const t = composerTarget(); if (t) setComposer({ mode: "forward", target: t }); }, [composerTarget]);
