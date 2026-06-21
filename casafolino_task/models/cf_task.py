@@ -185,12 +185,14 @@ class CfTask(models.Model):
         if not user.email:
             return
         subject, body = self._cf_render_event(event, context)
+        # Crea in coda (stato 'outgoing'): l'invio reale lo fa il cron coda mail
+        # di Odoo (mai smtplib, mai send sincrono).
         self.env['mail.mail'].sudo().create({
             'subject': subject,
             'body_html': body,
             'email_to': user.email,
             'auto_delete': True,
-        }).send()
+        })
 
     def _cf_notify_inapp(self, user, event, context):
         if not user.partner_id:
