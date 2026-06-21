@@ -1,95 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-        <!-- Calendario lavorativo task: 9-16 Lun-Ven, Europe/Rome -->
+        <!-- Calendario lavorativo task: 9-16 Lun-Ven, Europe/Rome.
+             Attendance INLINE con (5,0,0) per evitare che Odoo inietti il set
+             di default (8-17) sopra al nostro. -->
         <record id="cf_task_work_calendar_916" model="resource.calendar">
             <field name="name">CasaFolino Task — 9-16 Lun-Ven</field>
             <field name="tz">Europe/Rome</field>
-        </record>
-
-        <record id="cf_task_att_mon_am" model="resource.calendar.attendance">
-            <field name="name">Lunedì mattina</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">0</field>
-            <field name="hour_from">9.0</field>
-            <field name="hour_to">13.0</field>
-            <field name="day_period">morning</field>
-        </record>
-        <record id="cf_task_att_mon_pm" model="resource.calendar.attendance">
-            <field name="name">Lunedì pomeriggio</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">0</field>
-            <field name="hour_from">13.0</field>
-            <field name="hour_to">16.0</field>
-            <field name="day_period">afternoon</field>
-        </record>
-
-        <record id="cf_task_att_tue_am" model="resource.calendar.attendance">
-            <field name="name">Martedì mattina</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">1</field>
-            <field name="hour_from">9.0</field>
-            <field name="hour_to">13.0</field>
-            <field name="day_period">morning</field>
-        </record>
-        <record id="cf_task_att_tue_pm" model="resource.calendar.attendance">
-            <field name="name">Martedì pomeriggio</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">1</field>
-            <field name="hour_from">13.0</field>
-            <field name="hour_to">16.0</field>
-            <field name="day_period">afternoon</field>
-        </record>
-
-        <record id="cf_task_att_wed_am" model="resource.calendar.attendance">
-            <field name="name">Mercoledì mattina</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">2</field>
-            <field name="hour_from">9.0</field>
-            <field name="hour_to">13.0</field>
-            <field name="day_period">morning</field>
-        </record>
-        <record id="cf_task_att_wed_pm" model="resource.calendar.attendance">
-            <field name="name">Mercoledì pomeriggio</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">2</field>
-            <field name="hour_from">13.0</field>
-            <field name="hour_to">16.0</field>
-            <field name="day_period">afternoon</field>
-        </record>
-
-        <record id="cf_task_att_thu_am" model="resource.calendar.attendance">
-            <field name="name">Giovedì mattina</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">3</field>
-            <field name="hour_from">9.0</field>
-            <field name="hour_to">13.0</field>
-            <field name="day_period">morning</field>
-        </record>
-        <record id="cf_task_att_thu_pm" model="resource.calendar.attendance">
-            <field name="name">Giovedì pomeriggio</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">3</field>
-            <field name="hour_from">13.0</field>
-            <field name="hour_to">16.0</field>
-            <field name="day_period">afternoon</field>
-        </record>
-
-        <record id="cf_task_att_fri_am" model="resource.calendar.attendance">
-            <field name="name">Venerdì mattina</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">4</field>
-            <field name="hour_from">9.0</field>
-            <field name="hour_to">13.0</field>
-            <field name="day_period">morning</field>
-        </record>
-        <record id="cf_task_att_fri_pm" model="resource.calendar.attendance">
-            <field name="name">Venerdì pomeriggio</field>
-            <field name="calendar_id" ref="cf_task_work_calendar_916"/>
-            <field name="dayofweek">4</field>
-            <field name="hour_from">13.0</field>
-            <field name="hour_to">16.0</field>
-            <field name="day_period">afternoon</field>
+            <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Lun mattina', 'dayofweek': '0', 'hour_from': 9.0, 'hour_to': 13.0, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Lun pomeriggio', 'dayofweek': '0', 'hour_from': 13.0, 'hour_to': 16.0, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Mar mattina', 'dayofweek': '1', 'hour_from': 9.0, 'hour_to': 13.0, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Mar pomeriggio', 'dayofweek': '1', 'hour_from': 13.0, 'hour_to': 16.0, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Mer mattina', 'dayofweek': '2', 'hour_from': 9.0, 'hour_to': 13.0, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Mer pomeriggio', 'dayofweek': '2', 'hour_from': 13.0, 'hour_to': 16.0, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Gio mattina', 'dayofweek': '3', 'hour_from': 9.0, 'hour_to': 13.0, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Gio pomeriggio', 'dayofweek': '3', 'hour_from': 13.0, 'hour_to': 16.0, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Ven mattina', 'dayofweek': '4', 'hour_from': 9.0, 'hour_to': 13.0, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Ven pomeriggio', 'dayofweek': '4', 'hour_from': 13.0, 'hour_to': 16.0, 'day_period': 'afternoon'})
+            ]"/>
         </record>
     </data>
 </odoo>
