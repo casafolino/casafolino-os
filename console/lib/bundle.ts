@@ -347,6 +347,14 @@ export async function searchInbox(
   return { items, selectedId: items[0]?.id ?? 0, source: "odoo" };
 }
 
+/** Caselle dell'operatore (per il picker mittente del composer "Nuova mail"). Scoped. */
+export async function getOperatorAccounts(scope: InboxScope = {}): Promise<{ id: number; name: string; email: string }[]> {
+  if (shouldUseMock()) return [{ id: 1, name: "Antonio", email: "antonio@casafolino.com" }];
+  const domain: unknown[] = (!scope.scopeAll && scope.operatorUid) ? [["responsible_user_id", "=", scope.operatorUid]] : [];
+  const rows = await searchRead<Record<string, unknown>>("casafolino.mail.account", domain, { fields: ["name", "email_address"], order: "id" });
+  return rows.map((r) => ({ id: r.id as number, name: str(r.name) ?? "", email: str(r.email_address) ?? "" }));
+}
+
 /** Conteggio coda (non-triate) per il badge della tab Coda. Scoped all'operatore. */
 export async function getQueueCount(scope: InboxScope = {}): Promise<number> {
   if (shouldUseMock()) return 0;

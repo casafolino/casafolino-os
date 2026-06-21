@@ -11,7 +11,7 @@ import { PartnerMailThread } from "./PartnerMailThread";
 import { AiDraftButton } from "./AiDraftButton";
 import { CreateLeadButton } from "./CreateLeadButton";
 import { LinkLeadButton } from "./LinkLeadButton";
-import { Composer, type ComposerTarget } from "./Composer";
+import { Composer, type ComposerTarget, type ComposerMode, type Account } from "./Composer";
 import { money, moneyCompact, dateLabel } from "./Honest";
 import { operatorColor } from "@/lib/theme";
 import { BP } from "@/lib/basePath";
@@ -43,10 +43,10 @@ type GroupMode = "date" | "casella" | "mittente";
 type GroupRec = { key: string; label: string; items: InboxItem[]; lastDate: string };
 export type InboxView = "queue" | "all" | "keep" | "discard" | "trash";
 
-// Nav primaria: Coda (to-do) + Inbox (record completo). Bucket nel menu "Altro".
+// UNA sola vista nel flusso: Inbox = solo non-gestite (new/review). Tenute/Scartate/Cestino
+// solo dal menu "Altro" (mai nel flusso primario).
 const PRIMARY_TABS: { key: InboxView; label: string }[] = [
-  { key: "queue", label: "Coda" },
-  { key: "all", label: "Inbox" },
+  { key: "queue", label: "Inbox" },
 ];
 const BUCKET_TABS: { key: InboxView; label: string }[] = [
   { key: "keep", label: "Tenute" },
@@ -80,7 +80,7 @@ type SenderTarget = { partnerId?: number; senderEmail?: string; label: string; c
 
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
-  search = { q: "", sender: "", partner: null, active: false }, senderCounts = {},
+  search = { q: "", sender: "", partner: null, active: false }, senderCounts = {}, accounts = [],
 }: {
   items: InboxItem[];
   bundles: Record<number, PartnerBundle>;
@@ -90,6 +90,7 @@ export function InboxClient({
   queueCount?: number;
   search?: SearchState;
   senderCounts?: Record<string, number>;
+  accounts?: Account[];
 }) {
   const router = useRouter();
   const isQueue = view === "queue" && !search.active;   // Coda (to-do): i triati spariscono
@@ -112,7 +113,8 @@ export function InboxClient({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [bodyHtml, setBodyHtml] = useState<string>("");
   const [bodyLoading, setBodyLoading] = useState(false);
-  const [composer, setComposer] = useState<{ mode: "reply" | "forward"; target: ComposerTarget } | null>(null);
+  const [composer, setComposer] = useState<{ mode: ComposerMode; target: ComposerTarget } | null>(null);
+  const EMPTY_TARGET: ComposerTarget = { id: 0, subject: "", senderEmail: "", senderName: "" };
 
   const item = items.find((i) => i.id === selectedId) ?? items[0];
   const bundle = item?.partnerId ? bundles[item.partnerId] : null;
@@ -396,6 +398,8 @@ export function InboxClient({
               </>
             )}
             <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doMarkRead(true)}>✉ Segna lette</button>
+            {/* Nuova mail SEMPRE disponibile (compose da zero) */}
+            <button className="btn pri" style={btn()} onClick={() => setComposer({ mode: "new", target: EMPTY_TARGET })}>✎ Nuova mail</button>
             <span style={{ flex: 1 }} />
             <More>
               {item ? <CreateLeadButton name={`Nuovo contatto · ${m?.senderName || m?.senderEmail || ""}`} emailFrom={m?.senderEmail} /> : null}
@@ -479,7 +483,7 @@ export function InboxClient({
         ) : null}
       </main>
 
-      {composer ? <Composer mode={composer.mode} target={composer.target} onClose={() => setComposer(null)} /> : null}
+      {composer ? <Composer mode={composer.mode} target={composer.target} accounts={accounts} onClose={() => setComposer(null)} /> : null}
 
       {confirmTrash ? (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmTrash(null)}>
