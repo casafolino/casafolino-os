@@ -165,6 +165,7 @@ class CfTaskStepConsole(models.Model):
         steps = self.sudo().search([
             ('user_id', '=', operator.id),
             ('state', 'in', ['da_fare', 'in_corso']),
+            ('activated_dt', '!=', False),  # solo step già affidati (handoff raggiunto)
             ('task_id.state', '=', 'in_corso'),
         ], order='task_id, sequence')
         out = []
