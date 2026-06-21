@@ -3,19 +3,41 @@
 // Esclusi: /api/auth (NextAuth), /login, asset statici. Next prefissa il matcher col basePath.
 import { auth } from "@/lib/auth";
 
+// Brief 5 — superficie consentita all'OPERATORE (non-manager). Tutto il resto = manager-only.
+// I path sono SENZA basePath (Next rimuove /console prima del middleware).
+const OPERATOR_ALLOWED = ["/lavorazioni", "/api/console/steps"];
+function isOperatorAllowed(pathname: string): boolean {
+  return OPERATOR_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p));
+}
+
 export default auth((req) => {
-  if (req.auth) return; // sessione valida → passa
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/api/")) {
-    return Response.json({ ok: false, message: "unauthorized" }, { status: 401 });
+  // 1) Nessuna sessione → 401 (api) / redirect login (pagine).
+  if (!req.auth) {
+    if (pathname.startsWith("/api/")) {
+      return Response.json({ ok: false, message: "unauthorized" }, { status: 401 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("callbackUrl", pathname);
+    return Response.redirect(url);
   }
-  // clone() preserva il basePath (/console dietro nginx): redirect a /console/login, non /login.
-  const url = req.nextUrl.clone();
-  url.pathname = "/login";
-  url.search = "";
-  url.searchParams.set("callbackUrl", pathname);
-  return Response.redirect(url);
+
+  // 2) Sessione valida ma OPERATORE su superficie manager → nega (difesa in profondità,
+  //    non solo UI). Manager → passa ovunque.
+  const role = (req.auth as { role?: string }).role;
+  if (role !== "manager" && !isOperatorAllowed(pathname)) {
+    if (pathname.startsWith("/api/")) {
+      return Response.json({ ok: false, message: "forbidden: operatore" }, { status: 403 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/lavorazioni";
+    url.search = "";
+    return Response.redirect(url);
+  }
+  return; // ok
 });
 
 export const config = {

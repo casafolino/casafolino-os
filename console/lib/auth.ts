@@ -26,8 +26,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = String(creds?.password ?? "");
         const op = await verifyOperator(email, password);
         if (!op) return null; // credenziali errate OPPURE non in Console Operator
-        // l'oggetto user finisce nel JWT (callback sotto): solo identità, mai segreti.
-        return { id: String(op.uid), name: op.name, email: email.trim() };
+        // l'oggetto user finisce nel JWT (callback sotto): solo identità+ruolo, mai segreti.
+        return { id: String(op.uid), name: op.name, email: email.trim(), role: op.role };
       },
     }),
   ],
@@ -36,12 +36,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.uid = Number(user.id);
         token.allowed = true;
+        token.role = (user as { role?: "manager" | "operator" }).role ?? "operator";
       }
       return token;
     },
     session: ({ session, token }) => {
       session.operatorUid = typeof token.uid === "number" ? token.uid : undefined;
       session.allowed = Boolean(token.allowed);
+      session.role = token.role === "manager" ? "manager" : "operator";
       return session;
     },
   },

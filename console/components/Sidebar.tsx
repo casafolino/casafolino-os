@@ -26,22 +26,27 @@ export function Sidebar({
   active,
   source,
   variant = "full",
+  role = "manager",
 }: {
   active: string;
   source?: string;
   variant?: "full" | "rail";
+  role?: "manager" | "operator";
 }) {
+  // Brief 5 — operatore: vede SOLO Lavorazioni (le altre route gli sono negate dal middleware).
+  const nav = role === "operator" ? NAV.filter((n) => n.key === "lavorazioni") : NAV;
+  const navSecondary = role === "operator" ? [] : NAV_SECONDARY;
   if (variant === "rail") {
     return (
       <nav className="side rail">
-        {NAV.map((n) => (
+        {nav.map((n) => (
           <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""} title={n.label}>
             <Icon name={n.icon} color={n.key === active ? "var(--accent)" : "var(--faint)"} size={20} />
           </Link>
         ))}
         {/* overflow "Altro" — separato, dimmato */}
         <div style={{ height: 1, background: "var(--line)", margin: "6px 8px", opacity: 0.6 }} />
-        {NAV_SECONDARY.map((n) => (
+        {navSecondary.map((n) => (
           <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""} title={`${n.label} (Altro)`} style={{ opacity: 0.55 }}>
             <Icon name={n.icon} color={n.key === active ? "var(--accent)" : "var(--faint)"} size={18} />
           </Link>
@@ -53,7 +58,7 @@ export function Sidebar({
   return (
     <nav className="side">
       <div className="brand">CasaFolino</div>
-      {NAV.map((n) => (
+      {nav.map((n) => (
         <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""}>
           <Icon name={n.icon} />
           {n.label}
@@ -62,7 +67,7 @@ export function Sidebar({
       ))}
       {/* sezione secondaria "Altro" */}
       <div style={{ margin: "10px 0 4px", padding: "0 12px", fontSize: 10, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--faint)" }}>Altro</div>
-      {NAV_SECONDARY.map((n) => (
+      {navSecondary.map((n) => (
         <Link key={n.key} href={n.href} className={n.key === active ? "on" : ""} style={{ opacity: 0.7 }}>
           <Icon name={n.icon} />
           {n.label}

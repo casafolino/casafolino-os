@@ -9,10 +9,15 @@ const DB = process.env.ODOO_DB ?? "";
 
 // Allowlist unica: stesso gruppo usato dal gateway per validare operator_uid (Phase 2).
 const OPERATOR_GROUP = "casafolino_console_access.group_console_operator";
+// Brief 5 — ruolo: manager (console pieno) vs operator (solo lavorazioni).
+const MANAGER_GROUP = "casafolino_console_access.group_console_manager";
+
+export type ConsoleRole = "manager" | "operator";
 
 export interface Operator {
   uid: number;
   name: string;
+  role: ConsoleRole;
 }
 
 async function rpc(params: Record<string, unknown>): Promise<unknown> {
@@ -40,9 +45,9 @@ export async function verifyOperator(login: string, password: string): Promise<O
   const l = (login || "").trim();
   if (!l || !password) return null;
 
-  // Dev/mock: nessun Odoo raggiungibile → operatore fittizio (qualsiasi credenziale non vuota).
+  // Dev/mock: nessun Odoo raggiungibile → manager fittizio (qualsiasi credenziale non vuota).
   if (shouldUseMock()) {
-    return { uid: 2, name: `${l} (mock operator)` };
+    return { uid: 2, name: `${l} (mock manager)`, role: "manager" };
   }
 
   // 1. authenticate COME L'UMANO (verifica credenziali → uid)
@@ -63,6 +68,19 @@ export async function verifyOperator(login: string, password: string): Promise<O
   })) as boolean;
   if (!inGroup) return null; // utente Odoo valido ma NON Console Operator → negato
 
+  // 2b. ruolo: manager se anche in group_console_manager (Brief 5). Default operator.
+  let role: ConsoleRole = "operator";
+  try {
+    const isManager = (await rpc({
+      service: "object",
+      method: "execute_kw",
+      args: [DB, uid, password, "res.users", "has_group", [[uid], MANAGER_GROUP]],
+    })) as boolean;
+    if (isManager) role = "manager";
+  } catch {
+    /* in caso di errore resta operator (fail-closed: meno privilegi) */
+  }
+
   // 3. name (con le credenziali umane: legge il proprio record)
   let name = l;
   try {
@@ -76,6 +94,6 @@ export async function verifyOperator(login: string, password: string): Promise<O
     /* name è cosmetico: in caso di errore resta il login */
   }
 
-  // sessione/credenziale umana scartata qui — si conserva solo uid+name.
-  return { uid, name };
+  // sessione/credenziale umana scartata qui — si conserva solo uid+name+role.
+  return { uid, name, role };
 }

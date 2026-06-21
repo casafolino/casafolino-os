@@ -8,6 +8,8 @@ declare module "next-auth" {
     operatorUid?: number;
     /** true se l'utente è in group_console_operator. */
     allowed?: boolean;
+    /** Brief 5 — ruolo: manager (console pieno) vs operator (solo lavorazioni). */
+    role?: "manager" | "operator";
   }
 }
 
@@ -15,5 +17,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     uid?: number;
     allowed?: boolean;
+    role?: "manager" | "operator";
   }
 }

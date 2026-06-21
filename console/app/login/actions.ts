@@ -2,7 +2,7 @@
 // Sign-in via server action: la signIn server-side gestisce basePath/redirect senza
 // dipendere dall'URL del client (robusto sotto /console dietro nginx).
 import { redirect } from "next/navigation";
-import { signIn } from "@/lib/auth";
+import { signIn, auth } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
 export async function authenticate(
@@ -26,8 +26,11 @@ export async function authenticate(
     }
     throw e;
   }
+  // Brief 5 — landing per ruolo: operatore → SEMPRE /lavorazioni (ignora callbackUrl verso
+  // superfici manager); manager → callbackUrl (Regia di default).
+  const session = await auth();
+  const target = session?.role === "manager" ? callbackUrl : "/lavorazioni";
   // redirect() di Next aggiunge GIÀ il basePath /console → NON prefissarlo a mano (causava
-  // /console/console → 404). Path interno: redirect("/") → Next → /console/.
-  // Fuori dal try: lancia NEXT_REDIRECT, non va scambiato per errore di login.
-  redirect(callbackUrl);
+  // /console/console → 404). Fuori dal try: lancia NEXT_REDIRECT, non va scambiato per errore.
+  redirect(target);
 }
