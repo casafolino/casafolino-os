@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_shipment_spedito" model="mail.template">
+            <field name="name">Campionatura: campione spedito</field>
+            <field name="model_id" ref="model_cf_shipment"/>
+            <field name="subject">CasaFolino — Il tuo campione è in viaggio</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+                <div style="font-family:Arial,sans-serif;">
+                    <p>Gentile {{ object.partner_id.name }},</p>
+                    <p>il tuo campione CasaFolino è stato spedito.</p>
+                    <p><strong>Corriere:</strong> {{ object.carrier or '—' }}<br/>
+                       <strong>Tracking:</strong> {{ object.tracking_code or '—' }}</p>
+                    <p>Grazie,<br/>Il team CasaFolino</p>
+                </div>
+            </field>
+        </record>
+
+        <record id="mail_template_shipment_consegnato" model="mail.template">
+            <field name="name">Campionatura: campione consegnato</field>
+            <field name="model_id" ref="model_cf_shipment"/>
+            <field name="subject">CasaFolino — Il tuo campione è stato consegnato</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+                <div style="font-family:Arial,sans-serif;">
+                    <p>Gentile {{ object.partner_id.name }},</p>
+                    <p>il tuo campione CasaFolino risulta consegnato. Speriamo apprezzerai i nostri prodotti!</p>
+                    <p>Per qualsiasi riscontro siamo a disposizione.</p>
+                    <p>Grazie,<br/>Il team CasaFolino</p>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

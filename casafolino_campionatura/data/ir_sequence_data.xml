@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_campionatura" model="ir.sequence">
+            <field name="name">Campionature</field>
+            <field name="code">casafolino.campionatura</field>
+            <field name="prefix">SMP/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_shipment" model="ir.sequence">
+            <field name="name">Spedizioni campione</field>
+            <field name="code">casafolino.shipment</field>
+            <field name="prefix">SPED/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>
