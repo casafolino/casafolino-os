@@ -26,8 +26,10 @@ done
 docker image prune -f >/dev/null 2>&1 && echo "[$(TS)] dangling pruned"
 docker builder prune -f --keep-storage 2GB >/dev/null 2>&1 && echo "[$(TS)] build cache capped 2GB"
 
-# 2) BACKUP ROTATION — tiene gli ultimi 3 pg_dump, cancella i più vecchi.
-mapfile -t OLD < <(ls -1t /tmp/backup*.sql 2>/dev/null | tail -n +4)
+# 2) BACKUP ROTATION — tiene gli ultimi 7 pg_dump, cancella i più vecchi.
+# FIX incidente ENOSPC 2026-06-21: i pg_dump vivono in /home/ubuntu/, NON /tmp → la
+# rotazione non scattava mai e i backup si accumulavano (~684M l'uno). Path corretto qui.
+mapfile -t OLD < <(ls -1t /home/ubuntu/backup_folinofood_*.sql 2>/dev/null | tail -n +8)
 for f in "${OLD[@]}"; do rm -f "$f" && echo "[$(TS)] rm backup $f"; done
 
 # 3) DISK CHECK — df log + ALERT >80%.
