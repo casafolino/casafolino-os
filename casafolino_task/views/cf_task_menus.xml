@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_cf_task_root" name="Task" sequence="55"/>
+    <menuitem id="menu_cf_task_main" name="Task" parent="menu_cf_task_root"
+              action="action_cf_task" sequence="10"/>
+</odoo>
