@@ -12,6 +12,7 @@ import { AiDraftButton } from "./AiDraftButton";
 import { CreateLeadButton } from "./CreateLeadButton";
 import { LinkLeadButton } from "./LinkLeadButton";
 import { Composer, type ComposerTarget, type ComposerMode, type Account } from "./Composer";
+import type { LibraryItem, MailTemplate } from "@/lib/bundle";
 import { money, moneyCompact, dateLabel } from "./Honest";
 import { operatorColor } from "@/lib/theme";
 import { BP } from "@/lib/basePath";
@@ -80,7 +81,7 @@ type SenderTarget = { partnerId?: number; senderEmail?: string; label: string; c
 
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
-  search = { q: "", sender: "", partner: null, active: false }, senderCounts = {}, accounts = [],
+  search = { q: "", sender: "", partner: null, active: false }, senderCounts = {}, accounts = [], library = [], templates = [],
 }: {
   items: InboxItem[];
   bundles: Record<number, PartnerBundle>;
@@ -91,6 +92,8 @@ export function InboxClient({
   search?: SearchState;
   senderCounts?: Record<string, number>;
   accounts?: Account[];
+  library?: LibraryItem[];
+  templates?: MailTemplate[];
 }) {
   const router = useRouter();
   const isQueue = view === "queue" && !search.active;   // Coda (to-do): i triati spariscono
@@ -483,7 +486,7 @@ export function InboxClient({
         ) : null}
       </main>
 
-      {composer ? <Composer mode={composer.mode} target={composer.target} accounts={accounts} onClose={() => setComposer(null)} /> : null}
+      {composer ? <Composer mode={composer.mode} target={composer.target} accounts={accounts} library={library} templates={templates} onClose={() => setComposer(null)} /> : null}
 
       {confirmTrash ? (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmTrash(null)}>

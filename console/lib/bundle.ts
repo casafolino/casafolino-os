@@ -355,6 +355,21 @@ export async function getOperatorAccounts(scope: InboxScope = {}): Promise<{ id:
   return rows.map((r) => ({ id: r.id as number, name: str(r.name) ?? "", email: str(r.email_address) ?? "", signature: (r.signature_html as string) || "" }));
 }
 
+export interface LibraryItem { id: number; name: string; category: string; language: string; fileName: string }
+export interface MailTemplate { id: number; name: string; description: string; subject: string; bodyHtml: string; language: string }
+
+/** Libreria invii curata (materiali approvati) per gli allegati sicuri del composer. */
+export async function getLibrary(): Promise<LibraryItem[]> {
+  if (shouldUseMock()) return [{ id: 1, name: "Catalogo 2026", category: "catalog", language: "it", fileName: "catalogo.pdf" }];
+  return callKw<LibraryItem[]>("casafolino.mail.message", "console_library", []);
+}
+
+/** Template mail multilingua inseribili nel composer. */
+export async function getTemplates(): Promise<MailTemplate[]> {
+  if (shouldUseMock()) return [{ id: 1, name: "Intro IT", description: "", subject: "Presentazione CasaFolino", bodyHtml: "<p>Buongiorno…</p>", language: "it" }];
+  return callKw<MailTemplate[]>("casafolino.mail.message", "console_templates", []);
+}
+
 /** Conteggio coda (non-triate) per il badge della tab Coda. Scoped all'operatore. */
 export async function getQueueCount(scope: InboxScope = {}): Promise<number> {
   if (shouldUseMock()) return 0;

@@ -1,7 +1,7 @@
 // Inbox: viste Coda/Inbox + bucket (Altro) + RICERCA full-record scoped e filtro mittente/partner.
 // Tutto server-side, scope per-operatore (operator_uid dalla sessione). Ricerca paginata.
 import { auth } from "@/lib/auth";
-import { getInbox, getInboxAll, getBucket, getQueueCount, getSenderCounts, getOperatorAccounts, searchInbox, getPartnerBundle } from "@/lib/bundle";
+import { getInbox, getInboxAll, getBucket, getQueueCount, getSenderCounts, getOperatorAccounts, getLibrary, getTemplates, searchInbox, getPartnerBundle } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
 import { InboxClient, type InboxView } from "@/components/InboxClient";
 import type { PartnerBundle } from "@/lib/types";
@@ -31,7 +31,7 @@ export default async function Inbox({ searchParams }: {
     // conteggi VERI per mittente (read_group) — solo per le viste non-ricerca.
     searching ? Promise.resolve({}) : getSenderCounts(sc, v),
   ]);
-  const accounts = await getOperatorAccounts(sc); // caselle per il composer "Nuova mail"
+  const [accounts, library, templates] = await Promise.all([getOperatorAccounts(sc), getLibrary(), getTemplates()]);
 
   const ids = [...new Set(data.items.map((i) => i.partnerId).filter((x): x is number => x != null))].slice(0, 12);
   const bundles: Record<number, PartnerBundle> = {};
@@ -42,7 +42,7 @@ export default async function Inbox({ searchParams }: {
       <Sidebar active="inbox" variant="rail" />
       <InboxClient
         items={data.items} bundles={bundles} initialSelectedId={data.selectedId}
-        view={v} scopeAll={scopeAll} queueCount={queueCount} senderCounts={senderCounts} accounts={accounts}
+        view={v} scopeAll={scopeAll} queueCount={queueCount} senderCounts={senderCounts} accounts={accounts} library={library} templates={templates}
         search={{ q: q ?? "", sender: sender ?? "", partner: partnerId ?? null, active: searching }}
       />
     </div>
