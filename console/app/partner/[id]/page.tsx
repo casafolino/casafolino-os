@@ -35,13 +35,13 @@ export default async function PartnerHub({ params }: { params: Promise<{ id: str
                 <p className="sec-title">Lead · {bundle.leads.length}</p>
                 {bundle.leads.length === 0 ? <EmptyHonest label="Nessun lead." actionLabel="Crea lead" /> : (
                   bundle.leads.map((l) => (
-                    <Link key={l.id} href={l.dossierId ? `/dossier` : `/pipeline`} style={{ display: "block" }}>
+                    <Link key={l.id} href={`/lead/${l.id}`} style={{ display: "block" }}>
                       <div className="card" style={{ borderLeft: `3px solid ${operatorColor[l.operator]}`, padding: 10, marginBottom: 8 }}>
                         <div className="row" style={{ justifyContent: "space-between" }}>
                           <span style={{ fontWeight: 600, fontSize: 13 }}>{l.name}</span>
                           <span className="muted" style={{ fontSize: 12 }}>{l.expectedRevenue != null ? moneyCompact(l.expectedRevenue) : "da stimare"}</span>
                         </div>
-                        <div className="muted" style={{ fontSize: 11 }}>{l.stage ?? "senza stage"} · score {l.score ?? "n/d"} {l.dossierId ? "· apri dossier →" : "· apri pipeline →"}</div>
+                        <div className="muted" style={{ fontSize: 11 }}>{l.stage ?? "senza stage"} · score {l.score ?? "n/d"} · apri scheda →</div>
                       </div>
                     </Link>
                   ))
