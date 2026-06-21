@@ -112,36 +112,48 @@ class CasafolinoMailMessageGateway(models.Model):
         src_id = payload.get('sourceMessageId')
         lead_id = payload.get('leadId')
         partner_id = payload.get('partnerId')
+        account_explicit = payload.get('accountId')
         operator = self._resolve_operator(payload.get('operator_uid'))  # S5 attribution
         if not to or '@' not in to:
             raise UserError(_("Destinatario non valido."))
 
+        # COMPOSE (Nuova mail da zero): casella scelta esplicitamente, nessuna source.
+        # Destinatario nuovo deliberato → niente allowlist (resta bozza con kill-switch False;
+        # cap/dedup/burst restano quando live). Diverso dal reply: il guard anti-arbitrario
+        # serve a non far deragliare le risposte, non a vietare un compose intenzionale.
+        compose = bool(account_explicit) and not src_id
+
         # 1-2. email ammesse dal record linkato + account mittente
         allowed = set()
         account = self.env['casafolino.mail.account']
-        if src_id:
-            src = self.sudo().browse(int(src_id))
-            if not src.exists():
-                raise UserError(_("Messaggio sorgente inesistente."))
-            if src.sender_email:
-                allowed.add(src.sender_email.strip().lower())
-            if src.partner_id and src.partner_id.email:
-                allowed.add(src.partner_id.email.strip().lower())
-            account = src.account_id
-        if partner_id:
-            p = self.env['res.partner'].sudo().browse(int(partner_id))
-            if p.exists() and p.email:
-                allowed.add(p.email.strip().lower())
-        if lead_id:
-            lead = self.env['crm.lead'].sudo().browse(int(lead_id))
-            if lead.exists():
-                if lead.email_from:
-                    allowed.add(lead.email_from.strip().lower())
-                if lead.partner_id and lead.partner_id.email:
-                    allowed.add(lead.partner_id.email.strip().lower())
-        if to not in allowed:
-            raise UserError(_("Destinatario %s fuori dal record linkato (ammessi: %s).")
-                            % (to, ', '.join(sorted(allowed)) or 'nessuno'))
+        if compose:
+            account = self.env['casafolino.mail.account'].sudo().browse(int(account_explicit))
+            if not account.exists():
+                raise UserError(_("Casella mittente inesistente."))
+        else:
+            if src_id:
+                src = self.sudo().browse(int(src_id))
+                if not src.exists():
+                    raise UserError(_("Messaggio sorgente inesistente."))
+                if src.sender_email:
+                    allowed.add(src.sender_email.strip().lower())
+                if src.partner_id and src.partner_id.email:
+                    allowed.add(src.partner_id.email.strip().lower())
+                account = src.account_id
+            if partner_id:
+                p = self.env['res.partner'].sudo().browse(int(partner_id))
+                if p.exists() and p.email:
+                    allowed.add(p.email.strip().lower())
+            if lead_id:
+                lead = self.env['crm.lead'].sudo().browse(int(lead_id))
+                if lead.exists():
+                    if lead.email_from:
+                        allowed.add(lead.email_from.strip().lower())
+                    if lead.partner_id and lead.partner_id.email:
+                        allowed.add(lead.partner_id.email.strip().lower())
+            if to not in allowed:
+                raise UserError(_("Destinatario %s fuori dal record linkato (ammessi: %s).")
+                                % (to, ', '.join(sorted(allowed)) or 'nessuno'))
 
         # 3. account mittente + responsible_user_id mappato
         if not account:
