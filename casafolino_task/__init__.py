@@ -31,7 +31,6 @@ def post_init_hook(env):
                 'code': 'model._cron_escalation_check()',
                 'interval_number': 1,
                 'interval_type': 'hours',
-                'numbercall': -1,
                 'active': True,
                 'priority': 5,
             })
