@@ -97,6 +97,63 @@ class CasafolinoMailMessageGateway(models.Model):
         return user
 
     @api.model
+    def console_library(self):
+        """Libreria invii CURATA: materiali approvati (cataloghi/brochure/listini) allegabili in
+        sicurezza dal composer. Sudo+gated: nessun ACL nuovo a console_api."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        mats = self.env['casafolino.mail.material'].sudo().search([
+            ('state', '=', 'approved'), ('active', '=', True),
+            ('delivery_type', '=', 'file'), ('file_data', '!=', False),
+        ], order='category, name')
+        return [{'id': m.id, 'name': m.name, 'category': m.category,
+                 'language': m.language, 'fileName': m.file_name or m.name} for m in mats]
+
+    @api.model
+    def console_templates(self):
+        """Template mail multilingua (oggetto+corpo) inseribili nel composer."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        tpls = self.env['casafolino.mail.template'].sudo().search([], order='language, name')
+        return [{'id': t.id, 'name': t.name, 'description': t.description or '',
+                 'subject': t.subject or '', 'bodyHtml': t.body_html or '',
+                 'language': t.language} for t in tpls]
+
+    def _console_material_attachments(self, material_ids):
+        """Allegati DALLA LIBRERIA CURATA: solo materiali approvati. Legge file_data (no ref
+        arbitrario a ir.attachment) → crea attachment freschi. Anti-exfiltration mantenuto."""
+        Att = self.env['ir.attachment'].sudo()
+        out = Att.browse()
+        if not material_ids:
+            return out
+        Mat = self.env['casafolino.mail.material'].sudo()
+        for mid in material_ids:
+            m = Mat.browse(int(mid))
+            if not m.exists() or m.state != 'approved' or not m.active or not m.file_data:
+                raise UserError(_("Materiale %s non in libreria invii (approvato).") % mid)
+            out |= Att.create({
+                'name': m.file_name or (m.name + '.pdf'), 'datas': m.file_data,
+                'mimetype': 'application/octet-stream',
+                'res_model': 'casafolino.mail.outbox', 'res_id': 0,
+                'description': 'console library material %s' % m.id,
+            })
+        return out
+
+    @staticmethod
+    def _console_emails(raw):
+        """Normalizza CC/BCC (stringa o lista) → lista email valide, dedup."""
+        if not raw:
+            return []
+        import re
+        parts = re.split(r'[,;\s]+', raw) if isinstance(raw, str) else list(raw)
+        out = []
+        for p in parts:
+            e = (p or '').strip().lower()
+            if e and '@' in e and e not in out:
+                out.append(e)
+        return out
+
+    @api.model
     def console_send(self, payload):
         """Gateway SEND. PHASE A = SOLO DRAFT (nessun invio reale).
         - valida il destinatario contro l'email del record linkato (no destinatari arbitrari)
@@ -164,7 +221,9 @@ class CasafolinoMailMessageGateway(models.Model):
         # 4. delega al SEND CORE condiviso (kill-switch, ir.mail_server, build/send, audit).
         return self._console_outbound(account, to, subject, body,
                                       int(src_id) if src_id else False, 'send',
-                                      operator=operator, attachments=payload.get('attachments'))
+                                      operator=operator, attachments=payload.get('attachments'),
+                                      material_ids=payload.get('materialIds'),
+                                      cc=payload.get('cc'), bcc=payload.get('bcc'))
 
     # ── Allegati: SOLO upload nuovi dal composer. ANTI-EXFILTRATION. ──
     _MAX_ATTACHMENTS = 10
@@ -207,18 +266,24 @@ class CasafolinoMailMessageGateway(models.Model):
     # ── SEND CORE — UNICO, security-critical. Usato da console_send E console_reply (no fork). ──
     def _console_outbound(self, account, to, subject, body, source_id, action,
                           in_reply_to=None, references=None, parent_msg=None, guards=True,
-                          operator=None, attachments=None):
+                          operator=None, attachments=None, material_ids=None, cc=None, bcc=None):
         """Invio centralizzato. kill-switch CONDIVISO casafolino.console_send_enabled:
         False → bozza outbox (state='draft', nessun invio); True → invio reale via ir.mail_server
-        (mai smtplib raw, mai stato 'queued'). attachments = SOLO upload nuovi (anti-exfiltration)."""
+        (mai smtplib raw, mai stato 'queued'). attachments = upload nuovi; material_ids = libreria
+        curata; cc/bcc = recipienti aggiuntivi (anti-exfiltration mantenuto)."""
         enabled = self.env['ir.config_parameter'].sudo().get_param('casafolino.console_send_enabled', 'False')
         live = str(enabled).strip().lower() in ('true', '1', 'yes')
-        att_recs = self._console_attachments(attachments, action)  # ir.attachment freschi (o vuoto)
+        # upload nuovi + libreria curata (entrambi → ir.attachment freschi, mai ref per id arbitrario)
+        att_recs = self._console_attachments(attachments, action) | self._console_material_attachments(material_ids)
+        cc_list = self._console_emails(cc)
+        bcc_list = self._console_emails(bcc)
 
         common = {
             'account_id': account.id,
             'user_id': account.responsible_user_id.id,
             'to_emails': to,
+            'cc_emails': ', '.join(cc_list),
+            'bcc_emails': ', '.join(bcc_list),
             'subject': subject,
             'body_html': body,
             'source_message_id': source_id or False,
@@ -262,6 +327,7 @@ class CasafolinoMailMessageGateway(models.Model):
         message = IMS.build_email(
             email_from=account.email_address, email_to=[to], subject=subject,
             body=body or '', subtype='html', message_id=message_id,
+            email_cc=cc_list or None, email_bcc=bcc_list or None,
             references=references or False, headers=headers,
             attachments=att_tuples or None,
         )
@@ -327,7 +393,9 @@ class CasafolinoMailMessageGateway(models.Model):
         ref = orig.message_id_rfc or None
         return self._console_outbound(account, sender, subject, body, orig.id, 'reply',
                                       in_reply_to=ref, references=ref, parent_msg=orig,
-                                      operator=operator, attachments=payload.get('attachments'))
+                                      operator=operator, attachments=payload.get('attachments'),
+                                      material_ids=payload.get('materialIds'),
+                                      cc=payload.get('cc'), bcc=payload.get('bcc'))
 
     def _console_audit_outbound(self, outbox_id, action, to, account, server_id, parent_msg_id=None,
                                 operator=None):
