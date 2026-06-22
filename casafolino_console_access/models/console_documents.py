@@ -58,29 +58,53 @@ class ResPartnerConsoleDocs(models.Model):
         subject = _clean_str((payload or {}).get('subject')) or _("Documenti CasaFolino")
         body = (payload or {}).get('body') or _("<p>In allegato i documenti richiesti.</p>")
 
-        # size-guard: Gmail SMTP rifiuta >25MB (552). Blocca prima con messaggio chiaro
-        # (es. cataloghi pesanti → meglio un link/delivery_type=link, non allegato).
-        import base64 as _b64
+        # Brief 12 — split attach-vs-link per dimensione. Item <= soglia → allegato 3-tuple
+        # (path esistente). Item > soglia → URL tokenizzato (access_token, per-file, non
+        # enumerabile) nel body. SOLO libreria curata (ogni id validato approved+file).
+        ICP = self.env['ir.config_parameter'].sudo()
+        max_mb = float(ICP.get_param('casafolino.console_doc_attach_max_mb', 20) or 20)
+        threshold = int(max_mb * 1024 * 1024)
+        base_url = ICP.get_param('web.base.url') or ''
         Mat = self.env['casafolino.mail.material'].sudo()
-        total = 0
+        Att = self.env['ir.attachment'].sudo()
+
+        attach_ids, links, total_attach = [], [], 0
         for mid in material_ids:
             m = Mat.browse(int(mid))
-            if m.exists() and m.file_data:
-                try:
-                    total += len(_b64.b64decode(m.file_data))
-                except Exception:
-                    pass
-        if total > 20 * 1024 * 1024:
-            raise UserError(_("Documenti troppo grandi per l'email (%.1f MB, max ~20MB). "
-                              "Usa un link di download per i materiali pesanti.") % (total / 1024 / 1024))
+            # anti-exfiltration: SOLO materiali di libreria approvati (anche per il path link)
+            if not m.exists() or m.state != 'approved' or not m.active or not m.file_data:
+                raise UserError(_("Materiale %s non in libreria invii (approvato).") % mid)
+            att = Att.search([('res_model', '=', 'casafolino.mail.material'),
+                              ('res_field', '=', 'file_data'), ('res_id', '=', m.id)], limit=1)
+            size = att.file_size if att else 0
+            if att and size and size > threshold:
+                if not att.access_token:
+                    att.generate_access_token()
+                url = '%s/web/content/%s?access_token=%s&download=true' % (base_url, att.id, att.access_token)
+                links.append((m.file_name or m.name, url))
+            else:
+                attach_ids.append(m.id)
+                total_attach += size
 
-        # core outbound condiviso: material_ids = SOLO libreria curata (safe-attach valida gli id;
-        # un attachment id arbitrario non è ammesso → _console_material_attachments lo rifiuta).
+        if total_attach > 25 * 1024 * 1024:
+            raise UserError(_("Allegati troppo grandi (%.1f MB > 25MB Gmail). Riduci la selezione.")
+                            % (total_attach / 1024 / 1024))
+
+        if links:
+            body += '<p><b>Scarica:</b></p><ul>'
+            for name, url in links:
+                body += '<li><a href="%s">%s</a></li>' % (url, name)
+            body += '</ul>'
+
+        # core outbound condiviso: material_ids (attach) = SOLO libreria curata (safe-attach).
         res = self.env['casafolino.mail.message']._console_outbound(
             account, to, subject, body, False, 'documents',
-            operator=operator, material_ids=material_ids)
+            operator=operator, material_ids=attach_ids)
         _audit(self.env, 'casafolino.mail.material', [int(m) for m in material_ids],
-               'send_documents:%s' % res.get('state', '?'), None, operator)
+               'send_documents:%s:attach%d:link%d' % (res.get('state', '?'), len(attach_ids), len(links)),
+               None, operator)
+        res['attached'] = len(attach_ids)
+        res['linked'] = len(links)
         return res
 
     @api.model

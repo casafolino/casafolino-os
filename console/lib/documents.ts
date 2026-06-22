@@ -1,8 +1,8 @@
 // Brief 10 — tipi + helper client per Invia documenti (libreria curata) + Ricetta (cf.task R&D).
 import { BP } from "@/lib/basePath";
 
-export type LibraryDoc = { id: number; name: string; category: string; language: string; fileName: string };
-export type SendDocsResult = { ok?: boolean; state?: string; phase?: string; to?: string; message?: string };
+export type LibraryDoc = { id: number; name: string; category: string; language: string; fileName: string; sizeMb?: number; asLink?: boolean };
+export type SendDocsResult = { ok?: boolean; state?: string; phase?: string; to?: string; attached?: number; linked?: number; message?: string };
 export type RicettaStep = { stepId: number; role: string; name: string; assignee: string; state: string; trafficLight: string };
 export type RicettaResult = { ok?: boolean; taskId?: number; name?: string; taskState?: string; trafficLight?: string; steps?: RicettaStep[]; message?: string };
 

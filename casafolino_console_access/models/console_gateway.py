@@ -106,8 +106,19 @@ class CasafolinoMailMessageGateway(models.Model):
             ('state', '=', 'approved'), ('active', '=', True),
             ('delivery_type', '=', 'file'), ('file_data', '!=', False),
         ], order='category, name')
-        return [{'id': m.id, 'name': m.name, 'category': m.category,
-                 'language': m.language, 'fileName': m.file_name or m.name} for m in mats]
+        # Brief 12 — dimensione + flag asLink (item oltre soglia → inviato come link, non allegato).
+        ICP = self.env['ir.config_parameter'].sudo()
+        threshold = int(float(ICP.get_param('casafolino.console_doc_attach_max_mb', 20) or 20) * 1024 * 1024)
+        Att = self.env['ir.attachment'].sudo()
+        out = []
+        for m in mats:
+            att = Att.search([('res_model', '=', 'casafolino.mail.material'),
+                              ('res_field', '=', 'file_data'), ('res_id', '=', m.id)], limit=1)
+            size = att.file_size if att else 0
+            out.append({'id': m.id, 'name': m.name, 'category': m.category,
+                        'language': m.language, 'fileName': m.file_name or m.name,
+                        'sizeMb': round((size or 0) / 1024 / 1024, 1), 'asLink': bool(size and size > threshold)})
+        return out
 
     @api.model
     def console_templates(self):

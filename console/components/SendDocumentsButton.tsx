@@ -33,7 +33,7 @@ function Panel({ leadId, partnerId, onClose }: { leadId?: number | null; partner
     setBusy(true); setErr(null);
     try {
       const r = await sendDocuments({ leadId: leadId ?? undefined, partnerId: partnerId ?? undefined, materialIds: [...sel], subject });
-      if (r.ok) setDone(r.state === "sent" ? `Inviato a ${r.to}` : `In bozza (${r.state})`); else setErr(r.message ?? "errore");
+      if (r.ok) setDone(`${r.state === "sent" ? "Inviato a " + r.to : "In bozza (" + r.state + ")"} · ${r.attached ?? 0} allegati, ${r.linked ?? 0} link`); else setErr(r.message ?? "errore");
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -63,7 +63,8 @@ function Panel({ leadId, partnerId, onClose }: { leadId?: number | null; partner
                   {docs.map((d) => (
                     <div key={d.id} onClick={() => toggle(d.id)} className="hover-row" style={{ padding: "6px 8px", cursor: "pointer", borderRadius: 6, display: "flex", gap: 8, alignItems: "center" }}>
                       <input type="checkbox" readOnly checked={sel.has(d.id)} />
-                      <span style={{ fontSize: 13 }}>{d.name} <span className="muted">· {d.category} · {d.language}</span></span>
+                      <span style={{ fontSize: 13, flex: 1 }}>{d.name} <span className="muted">· {d.category} · {d.language}{d.sizeMb ? ` · ${d.sizeMb}MB` : ""}</span></span>
+                      {d.asLink ? <span className="chip" style={{ fontSize: 9, background: "var(--warn-t)", color: "var(--warn)" }}>→ link</span> : null}
                     </div>
                   ))}
                 </div>
