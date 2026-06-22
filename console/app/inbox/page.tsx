@@ -33,9 +33,11 @@ export default async function Inbox({ searchParams }: {
   ]);
   const [accounts, library, templates] = await Promise.all([getOperatorAccounts(sc), getLibrary(), getTemplates()]);
 
-  const ids = [...new Set(data.items.map((i) => i.partnerId).filter((x): x is number => x != null))].slice(0, 12);
+  // Brief B perf: pre-carica SOLO il bundle del primo selezionato (~82ms) invece di 12 (~1s, ~60 RPC).
+  // Gli altri si caricano on-demand alla selezione (InboxClient → /api/console/partner-bundle).
+  const firstPid = data.items.find((i) => i.partnerId != null)?.partnerId ?? null;
   const bundles: Record<number, PartnerBundle> = {};
-  await Promise.all(ids.map(async (id) => { const b = await getPartnerBundle(id); if (b) bundles[id] = b; }));
+  if (firstPid != null) { const b = await getPartnerBundle(firstPid); if (b) bundles[firstPid] = b; }
 
   return (
     <div className="app">

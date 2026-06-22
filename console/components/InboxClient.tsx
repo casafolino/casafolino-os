@@ -120,8 +120,22 @@ export function InboxClient({
   const EMPTY_TARGET: ComposerTarget = { id: 0, subject: "", senderEmail: "", senderName: "" };
 
   const item = items.find((i) => i.id === selectedId) ?? items[0];
-  const bundle = item?.partnerId ? bundles[item.partnerId] : null;
+  // Brief B perf: bundle lazy. Il server pre-carica solo il selezionato; gli altri si
+  // caricano on-demand alla selezione (prima si prefetchavano 12 = ~1s sprecato a ogni apertura inbox).
+  const [bundleMap, setBundleMap] = useState<Record<number, PartnerBundle>>(bundles);
+  const bundle = item?.partnerId ? (bundleMap[item.partnerId] ?? null) : null;
   const m = item?.message;
+
+  useEffect(() => {
+    const pid = item?.partnerId;
+    if (!pid || bundleMap[pid]) return;
+    let alive = true;
+    fetch(`${BP}/api/console/partner-bundle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partnerId: pid }) })
+      .then((r) => r.json())
+      .then((b) => { if (alive && b && b.partner) setBundleMap((prev) => ({ ...prev, [pid]: b })); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [item?.partnerId, bundleMap]);
 
   // TARGET azioni Bar B: selezione se ≥1, altrimenti la mail aperta.
   const targetIds = useCallback((): number[] => {
