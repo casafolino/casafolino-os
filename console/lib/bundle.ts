@@ -11,6 +11,19 @@ import { operatorFromLogin, operatorFromName } from "./theme";
 // Baseline vista Mail (modificabile). ISO. La posta più vecchia resta in Odoo, solo non mostrata.
 const MAIL_SINCE = "2026-04-01";
 
+// Brief 16 — domini free/pubblici: per questi NON si aggrega/risolve per dominio (sennò un
+// partner gmail diventa il bucket di tutta la posta gmail). Mirror di _GENERIC_EMAIL_DOMAINS
+// (casafolino_mail). Il dominio vale per il match solo se aziendale.
+const FREE_DOMAINS = new Set([
+  "gmail.com", "googlemail.com", "yahoo.com", "hotmail.com", "outlook.com",
+  "aol.com", "icloud.com", "mail.com", "protonmail.com", "live.com", "msn.com",
+  "gmx.de", "web.de", "libero.it", "virgilio.it", "alice.it", "tiscali.it",
+  "t-online.de", "wanadoo.fr", "orange.fr", "free.fr", "laposte.net",
+]);
+function isFreeDomain(d: string | null | undefined): boolean {
+  return !!d && FREE_DOMAINS.has(d.toLowerCase().trim());
+}
+
 function stripHtml(h: string | null): string | null {
   if (!h) return null;
   return h.replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ").trim() || null;
@@ -421,7 +434,7 @@ export async function resolveBySender(email: string): Promise<SenderResolution> 
     "res.partner", [["email", "=ilike", e]], { fields: ["id", "name"], limit: 1 },
   );
   if (exact[0]) return { partnerId: exact[0].id, matchType: "exact", guessName: exact[0].name };
-  if (domain) {
+  if (domain && !isFreeDomain(domain)) {
     const dom = await searchRead<{ id: number; name: string }>(
       "res.partner", [["email", "=ilike", `%@${domain}`], ["is_company", "=", true]],
       { fields: ["id", "name"], limit: 1 },
@@ -466,7 +479,9 @@ async function fetchFromOdoo(partnerId: number): Promise<PartnerBundle | null> {
       [["partner_id", "=", partnerId], ["state", "not in", ["draft", "cancel"]]],
       { fields: ["name", "amount_total", "state", "date_order", "cf_is_sample_order"], order: "date_order desc" }),
     searchRead<Record<string, unknown>>("casafolino.mail.message",
-      ["|", ["partner_id", "=", partnerId], ...(domain ? [["sender_domain", "=", domain]] : [["id", "=", -1]]),
+      // Brief 16 — aggrega per dominio SOLO se aziendale: un partner su dominio free non
+      // deve raccogliere tutta la posta di quel dominio (bucket). Free → solo partner_id.
+      ["|", ["partner_id", "=", partnerId], ...(domain && !isFreeDomain(domain) ? [["sender_domain", "=", domain]] : [["id", "=", -1]]),
        ["state", "not in", ["auto_discard", "discard"]]],
       { fields: ["subject", "sender_email", "sender_name", "email_date", "direction", "is_read", "match_type", "snippet", "lead_id", "ai_category", "ai_urgency", "intent_detected"], order: "email_date desc", limit: 100 }),
   ]);

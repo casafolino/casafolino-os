@@ -5,7 +5,7 @@ from odoo.exceptions import AccessError, UserError
 
 from .console_gateway import _is_console, _audit
 from .console_campionatura import _operator
-from .console_lead import _require_manager
+from .console_lead import _require_manager, _is_free_domain
 from .console_enrich import _clean_str
 
 _logger = logging.getLogger(__name__)
@@ -40,7 +40,9 @@ class CrmLeadConsoleCockpit(models.Model):
         company = self.env['res.partner']
         if partner:
             company = partner.commercial_partner_id if partner.commercial_partner_id != partner else partner.parent_id
-        if not partner and domain:
+        if not partner and domain and not _is_free_domain(domain):
+            # Brief 16 — mai risolvere l'azienda per dominio free (sennò ogni mittente gmail
+            # finirebbe sotto la stessa "azienda" gmail).
             company = Partner.search([('email', '=ilike', '%@' + domain), ('is_company', '=', True)], limit=1)
 
         # 2) lead: opportunità del partner (più recente per valore)

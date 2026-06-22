@@ -11,6 +11,22 @@ _logger = logging.getLogger(__name__)
 
 CONSOLE_MANAGER_GROUP = 'casafolino_console_access.group_console_manager'
 
+# Brief 16 — riusa la lista canonica dei domini free/pubblici di casafolino_mail
+# (ingestion la usa già): per questi il match per dominio è VIETATO (anti-bucket).
+try:
+    from odoo.addons.casafolino_mail.models.casafolino_mail_message_staging import _GENERIC_EMAIL_DOMAINS
+except Exception:  # pragma: no cover - fallback se il modulo cambia
+    _GENERIC_EMAIL_DOMAINS = {
+        'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+        'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 'live.com', 'msn.com',
+        'gmx.de', 'web.de', 'libero.it', 'virgilio.it', 'alice.it', 'tiscali.it',
+        't-online.de', 'wanadoo.fr', 'orange.fr', 'free.fr', 'laposte.net',
+    }
+
+
+def _is_free_domain(domain):
+    return (domain or '').lower().strip() in _GENERIC_EMAIL_DOMAINS
+
 
 def _require_manager(env, operator):
     """Brief 5 — difesa in profondità: i dati CRM sono SOLO per i manager.
@@ -132,7 +148,9 @@ class CrmLeadConsoleRead(models.Model):
         if partner:
             mail_domain += [('partner_id', '=', partner.id)]
             dom = (partner.email or '').split('@')[1].lower() if (partner.email and '@' in partner.email) else False
-            mail_domain += [('sender_domain', '=', dom)] if dom else [('id', '=', -1)]
+            # Brief 16 — aggrega per dominio SOLO se aziendale: partner su dominio free non
+            # raccoglie tutta la posta di quel dominio (bucket).
+            mail_domain += [('sender_domain', '=', dom)] if (dom and not _is_free_domain(dom)) else [('id', '=', -1)]
         else:
             mail_domain += [('id', '=', -1), ('id', '=', -1)]
         for m in Msg.search(mail_domain, order='email_date desc', limit=80):
