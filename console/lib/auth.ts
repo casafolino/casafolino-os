@@ -5,6 +5,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { verifyOperator } from "@/lib/odooAuth";
+import { callKw, shouldUseMock } from "@/lib/odoo";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Self-host dietro nginx: fidati dell'host inoltrato (Host/X-Forwarded-Proto).
@@ -32,11 +33,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt: ({ token, user }) => {
+    jwt: async ({ token, user }) => {
       if (user) {
         token.uid = Number(user.id);
         token.allowed = true;
         token.role = (user as { role?: "manager" | "operator" }).role ?? "operator";
+      } else if (token.uid && !token.role) {
+        // HOTFIX: token stale (sessione pre-Brief 5, senza role) → NON declassare un manager.
+        // Ricalcola il ruolo da Odoo (group_console_manager) e persistilo sul token.
+        if (shouldUseMock()) {
+          token.role = "manager";
+        } else {
+          try {
+            token.role = await callKw<"manager" | "operator">("res.partner", "console_user_role", [token.uid]);
+          } catch {
+            /* fallita: lascia role assente → riprova al prossimo giro, mai declassamento definitivo */
+          }
+        }
       }
       return token;
     },

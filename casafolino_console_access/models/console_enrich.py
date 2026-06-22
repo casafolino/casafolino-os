@@ -57,10 +57,31 @@ def _clean_str(v):
     return s[:200]
 
 
+CONSOLE_MANAGER_GROUP_X = 'casafolino_console_access.group_console_manager'
+
+
 class ResPartnerConsoleEnrich(models.Model):
     """Brief 8 — crea contatto/azienda da mail con arricchimento IA + dedup. Manager-only.
     enrich NON scrive (propone), create scrive SOLO dati revisionati dal manager."""
     _inherit = 'res.partner'
+
+    @api.model
+    def console_user_role(self, uid):
+        """HOTFIX role-stale: ritorna 'manager'/'operator' per uno uid, leggendo l'appartenenza
+        a group_console_manager (sudo). Usato dal jwt callback per RICALCOLARE il ruolo quando il
+        token è privo del campo role (sessione creata prima di Brief 5) → niente declassamento di
+        un manager per token stale. Gate solo _is_console (serve a DETERMINARE il ruolo, non a
+        concedere CRM)."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        try:
+            u = self.env['res.users'].sudo().browse(int(uid))
+        except (TypeError, ValueError):
+            return 'operator'
+        group = self.env.ref(CONSOLE_MANAGER_GROUP_X, raise_if_not_found=False)
+        if u.exists() and group and u in group.sudo().users:
+            return 'manager'
+        return 'operator'
 
     @api.model
     def console_enrich_contact(self, payload):
