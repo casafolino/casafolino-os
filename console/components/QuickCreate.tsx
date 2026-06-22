@@ -3,6 +3,7 @@
 // niente auto-save). Manager-only (gateway). Da mail → titolo lead suggerito IA (editabile).
 import { useEffect, useState } from "react";
 import { suggestLead, createLeadRich, createDossier } from "@/lib/create";
+import { createCompany } from "@/lib/cockpit";
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
@@ -23,22 +24,24 @@ function inputStyle(): React.CSSProperties {
 }
 
 // ── Crea lead ───────────────────────────────────────────────────────────────
-export function QuickCreateLead({ partnerId, fromMailId, small = true, label = "Crea lead" }: {
-  partnerId?: number | null; fromMailId?: number; small?: boolean; label?: string;
+export type Stage = { id: number; name: string };
+export function QuickCreateLead({ partnerId, fromMailId, stages, small = true, label = "Crea lead" }: {
+  partnerId?: number | null; fromMailId?: number; stages?: Stage[]; small?: boolean; label?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button className={small ? "btn-mini" : "btn-secondary"} onClick={() => setOpen(true)}>{label}</button>
-      {open ? <LeadModal partnerId={partnerId} fromMailId={fromMailId} onClose={() => setOpen(false)} /> : null}
+      {open ? <LeadModal partnerId={partnerId} fromMailId={fromMailId} stages={stages} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
 
-function LeadModal({ partnerId, fromMailId, onClose }: { partnerId?: number | null; fromMailId?: number; onClose: () => void }) {
+function LeadModal({ partnerId, fromMailId, stages, onClose }: { partnerId?: number | null; fromMailId?: number; stages?: Stage[]; onClose: () => void }) {
   const [name, setName] = useState("");
   const [emailFrom, setEmailFrom] = useState("");
   const [pid, setPid] = useState<number | null>(partnerId ?? null);
+  const [stageId, setStageId] = useState<number | null>(stages?.[0]?.id ?? null);
   const [aiUsed, setAiUsed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -55,11 +58,12 @@ function LeadModal({ partnerId, fromMailId, onClose }: { partnerId?: number | nu
   }, [fromMailId]);
 
   function onName(e: React.ChangeEvent<HTMLInputElement>) { setName(e.target.value); }
+  function onStage(e: React.ChangeEvent<HTMLSelectElement>) { setStageId(Number(e.target.value)); }
 
   async function save() {
     setBusy(true); setErr(null);
     try {
-      const r = await createLeadRich({ data: { name, emailFrom: emailFrom || undefined }, partnerId: pid ?? undefined, fromMailId });
+      const r = await createLeadRich({ data: { name, emailFrom: emailFrom || undefined }, partnerId: pid ?? undefined, stageId: stageId ?? undefined, fromMailId });
       if (r.ok) setDone(`Lead creato: ${r.name} (${r.stageName})`); else setErr(r.message ?? "errore");
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
@@ -78,7 +82,15 @@ function LeadModal({ partnerId, fromMailId, onClose }: { partnerId?: number | nu
             <label className="muted" style={{ fontSize: 11 }}>Titolo {aiUsed && name ? <span className="chip" style={{ fontSize: 9, padding: "0 5px" }}>IA</span> : null}</label>
             <input value={name} onChange={onName} placeholder="Titolo opportunità" style={inputStyle()} />
           </div>
-          <div className="muted" style={{ fontSize: 12 }}>Stage: <b>Primo Contatto</b> (default) · Owner: tu</div>
+          {stages && stages.length ? (
+            <div>
+              <label className="muted" style={{ fontSize: 11 }}>Fase</label>
+              <select value={stageId ?? undefined} onChange={onStage} style={inputStyle()}>
+                {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          ) : <div className="muted" style={{ fontSize: 12 }}>Stage: <b>Primo Contatto</b> (default)</div>}
+          <div className="muted" style={{ fontSize: 12 }}>Owner: tu</div>
           <button className="btn-primary" onClick={save} disabled={busy || !name.trim()} style={{ alignSelf: "flex-end" }}>
             {busy ? "Creo…" : "Crea lead"}
           </button>
@@ -134,6 +146,64 @@ function DossierModal({ partnerId, leadId, defaultName, onClose }: { partnerId?:
           <div className="muted" style={{ fontSize: 12 }}>Status: <b>Esplorativo</b> · {partnerId ? "collegato al contatto" : leadId ? "collegato al lead" : "nessun collegamento"}</div>
           <button className="btn-primary" onClick={save} disabled={busy || !name.trim()} style={{ alignSelf: "flex-end" }}>
             {busy ? "Creo…" : "Crea dossier"}
+          </button>
+        </>
+      )}
+    </Modal>
+  );
+}
+
+// ── Crea azienda standalone (Brief 15) ───────────────────────────────────────
+export function QuickCreateCompany({ defaultName, defaultDomain, mailId, small = true, label = "Crea azienda" }: {
+  defaultName?: string; defaultDomain?: string; mailId?: number; small?: boolean; label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button className={small ? "btn-mini" : "btn-secondary"} onClick={() => setOpen(true)}>{label}</button>
+      {open ? <CompanyModal defaultName={defaultName} defaultDomain={defaultDomain} mailId={mailId} onClose={() => setOpen(false)} /> : null}
+    </>
+  );
+}
+
+function CompanyModal({ defaultName, defaultDomain, mailId, onClose }: { defaultName?: string; defaultDomain?: string; mailId?: number; onClose: () => void }) {
+  const [nome, setNome] = useState(defaultName ?? "");
+  const [dominio, setDominio] = useState(defaultDomain ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  function onNome(e: React.ChangeEvent<HTMLInputElement>) { setNome(e.target.value); }
+  function onDom(e: React.ChangeEvent<HTMLInputElement>) { setDominio(e.target.value); }
+
+  async function save() {
+    setBusy(true); setErr(null);
+    try {
+      const r = await createCompany({ data: { nome, dominio: dominio || undefined }, mailId });
+      if (r.ok) setDone(`Azienda creata: ${r.name}`); else setErr(r.message ?? "errore");
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+
+  return (
+    <Modal title="Crea azienda" onClose={onClose}>
+      {err ? <div style={{ color: "var(--danger)", fontSize: 13 }}>{err}</div> : null}
+      {done ? (
+        <>
+          <div className="chip" style={{ background: "var(--ok-t)", color: "var(--ok)", alignSelf: "flex-start" }}>{done} ✓</div>
+          <button className="btn-primary" onClick={onClose} style={{ alignSelf: "flex-end" }}>Chiudi</button>
+        </>
+      ) : (
+        <>
+          <div>
+            <label className="muted" style={{ fontSize: 11 }}>Nome azienda</label>
+            <input value={nome} onChange={onNome} placeholder="Ragione sociale" style={inputStyle()} />
+          </div>
+          <div>
+            <label className="muted" style={{ fontSize: 11 }}>Dominio (opzionale)</label>
+            <input value={dominio} onChange={onDom} placeholder="esempio.com" style={inputStyle()} />
+          </div>
+          <button className="btn-primary" onClick={save} disabled={busy || !nome.trim()} style={{ alignSelf: "flex-end" }}>
+            {busy ? "Creo…" : "Crea azienda"}
           </button>
         </>
       )}

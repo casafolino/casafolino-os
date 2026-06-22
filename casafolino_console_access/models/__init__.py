@@ -6,3 +6,4 @@ from . import console_pipeline
 from . import console_enrich
 from . import console_create
 from . import console_documents
+from . import console_cockpit

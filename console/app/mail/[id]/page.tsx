@@ -1,21 +1,17 @@
-// Dettaglio mail (read-only): corpo + box contesto del partner risolto.
-// sender → dossier (/partner/[id]). Nessun bottone azione.
+// Dettaglio mail (read-only): corpo + cruscotto relazione (Brief 15).
+// Il cruscotto risolve il mittente per email (partner/lead/dossier) + create rapidi (Apri/Crea).
 import Link from "next/link";
-import { getMailMessage, getPartnerBundle } from "@/lib/bundle";
+import { getMailMessage } from "@/lib/bundle";
 import { Sidebar } from "@/components/Sidebar";
-import { EmptyHonest, dateLabel, moneyCompact } from "@/components/Honest";
-import { operatorColor, operatorLabel } from "@/lib/theme";
-import { CampionaturaButton } from "@/components/CampionaturaButton";
-import { CreateContactButton } from "@/components/CreateContactButton";
-import { QuickCreateLead } from "@/components/QuickCreate";
+import { EmptyHonest, dateLabel } from "@/components/Honest";
+import { operatorColor } from "@/lib/theme";
+import { MailCockpit } from "@/components/MailCockpit";
 
 export const dynamic = "force-dynamic";
 
 export default async function MailDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const m = await getMailMessage(Number(id));
-  const bundle = m?.partnerId ? await getPartnerBundle(m.partnerId) : null;
-  const lead = bundle?.leads[0] ?? null;
 
   return (
     <div className="app">
@@ -40,53 +36,11 @@ export default async function MailDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
 
-            {/* box contesto: Azienda / Owner / Pipeline */}
-            {bundle ? (
-              <div className="card" style={{ padding: "14px 16px" }}>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontWeight: 600 }}>
-                    <Link href={`/partner/${bundle.partner.id}`} style={{ color: "var(--accent)" }}>{bundle.partner.name} →</Link>
-                  </div>
-                  <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                    <CreateContactButton mailId={Number(id)} />
-                    <QuickCreateLead partnerId={bundle.partner.id} fromMailId={Number(id)} />
-                    <CampionaturaButton partnerId={bundle.partner.id} leadId={lead?.id ?? null} small label="Campionatura" />
-                    <span className="chip" style={{ background: "var(--ok-t)", color: "var(--ok)" }}>collegato</span>
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                  <Ctx label="Azienda" value={bundle.partner.name} />
-                  <Ctx label="Owner" value={lead ? operatorLabel[lead.operator] : null} empty="non assegnato" color={lead ? operatorColor[lead.operator] : undefined} />
-                  <Ctx label="Pipeline" value={lead ? `${lead.stage ?? "senza stage"}${lead.expectedRevenue != null ? ` · ${moneyCompact(lead.expectedRevenue)}` : ""}` : null} empty="nessun lead" />
-                </div>
-              </div>
-            ) : (
-              <div className="card" style={{ padding: "14px 16px" }}>
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                  <span className="muted" style={{ fontSize: 13 }}>Mittente <b>{m.senderEmail || m.senderName}</b> non collegato a nessun partner.</span>
-                  <div className="row" style={{ gap: 8 }}>
-                    <CreateContactButton mailId={Number(id)} small={false} />
-                    <QuickCreateLead fromMailId={Number(id)} small={false} />
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* cruscotto relazione + create rapidi */}
+            <MailCockpit mailId={Number(id)} />
           </>
         )}
       </main>
-    </div>
-  );
-}
-
-function Ctx({ label, value, empty, color }: { label: string; value: string | null; empty?: string; color?: string }) {
-  return (
-    <div>
-      <div className="muted" style={{ fontSize: 11 }}>{label}</div>
-      {value
-        ? <div className="row" style={{ gap: 6, fontWeight: 600, fontSize: 13 }}>
-            {color ? <span className="opdot" style={{ background: color }} /> : null}{value}
-          </div>
-        : <div style={{ fontSize: 12, color: "var(--muted)" }}>{empty ?? "non disponibile"}</div>}
     </div>
   );
 }
