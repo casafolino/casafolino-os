@@ -323,7 +323,10 @@ class CasafolinoMailMessageGateway(models.Model):
         IMS = self.env['ir.mail_server'].sudo()
         headers = {'In-Reply-To': in_reply_to} if in_reply_to else None
         import base64
-        att_tuples = [(a.name, base64.b64decode(a.datas)) for a in att_recs]  # (name, content) bytes
+        # Odoo 18 build_email itera (fname, fcontent, mime) → 3-tuple obbligatoria (la docstring
+        # dice "pairs" ma il codice no). Bug latente dal Brief 3, emerso col primo invio LIVE+allegati.
+        att_tuples = [(a.name, base64.b64decode(a.datas), a.mimetype or 'application/octet-stream')
+                      for a in att_recs]
         message = IMS.build_email(
             email_from=account.email_address, email_to=[to], subject=subject,
             body=body or '', subtype='html', message_id=message_id,
