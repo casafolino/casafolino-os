@@ -156,6 +156,40 @@ class CasafolinoMailAccount(models.Model):
             except Exception:
                 pass
 
+    def fetch_address_history(self, address):
+        """Brief 21 — recupero ON-DEMAND di TUTTA la storia mail di un indirizzo (anche pre-cutoff).
+        Riusa l'ingestion (_fetch_folder) con criterio per indirizzo e SENZA SINCE. Dedup su
+        message_id_rfc invariato. NON aggiorna last_fetch_datetime (non sposta il cutoff della
+        sync schedulata). Ritorna il numero di mail NUOVE ingerite per questo account."""
+        self.ensure_one()
+        addr = (address or '').strip().lower()
+        if not addr or '@' not in addr:
+            return 0
+        # Quoting IMAP: indirizzo tra apici doppi. OR FROM/TO → ricevute e inviate verso il contatto.
+        criteria = '(OR (FROM "%s") (TO "%s"))' % (addr, addr)
+        imap = self._get_imap_connection()
+        total_new = 0
+        try:
+            folders = []
+            if self.fetch_inbox:
+                folders.append(('INBOX', 'inbound'))
+            if self.fetch_sent and self.sent_folder:
+                folders.append((self.sent_folder, 'outbound'))
+            for folder_name, direction in folders:
+                try:
+                    new, _skip, _bl = self._fetch_folder(imap, folder_name, direction, search_override=criteria)
+                    total_new += new
+                except Exception as e:
+                    _logger.warning("[%s] address-history folder %s error: %s", self.email_address, folder_name, e)
+            _logger.info("[%s] address-history %s: %d nuove", self.email_address, addr, total_new)
+        finally:
+            try:
+                imap.logout()
+            except Exception:
+                pass
+        # NB: niente write su last_fetch_datetime → il cutoff della sync schedulata resta intatto.
+        return total_new
+
     def _build_account_email_map(self):
         """Costruisce mappa email→account_id per tutti gli account attivi. Chiamare UNA volta per sync."""
         accounts = self.env['casafolino.mail.account'].search([('active', '=', True)])
@@ -230,8 +264,11 @@ class CasafolinoMailAccount(models.Model):
                     body_text = dec
         return body_html, body_text
 
-    def _fetch_folder(self, imap, folder_name, direction):
-        """Fetch di una singola cartella IMAP."""
+    def _fetch_folder(self, imap, folder_name, direction, search_override=None):
+        """Fetch di una singola cartella IMAP.
+        search_override: criterio IMAP custom (es. recupero on-demand per indirizzo SENZA SINCE).
+        Se None → comportamento storico (SINCE dal cutoff). Tutto il resto (BODY.PEEK, dedup
+        message_id_rfc, ingestion, partner match) invariato."""
         Message = self.env['casafolino.mail.message']
 
         new_count = 0
@@ -255,7 +292,8 @@ class CasafolinoMailAccount(models.Model):
         else:
             since_date = self.sync_start_date.strftime('%d-%b-%Y')
 
-        search_criteria = '(SINCE %s)' % since_date
+        # Recupero on-demand (per indirizzo, no cutoff) → override; sennò SINCE storico.
+        search_criteria = search_override or ('(SINCE %s)' % since_date)
         status, msg_ids = imap.search(None, search_criteria)
 
         if status != 'OK' or not msg_ids[0]:

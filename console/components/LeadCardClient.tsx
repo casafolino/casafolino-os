@@ -12,6 +12,7 @@ import { LeadTimeline } from "@/components/LeadTimeline";
 import { QuickCreateDossier } from "@/components/QuickCreate";
 import { SendDocumentsButton } from "@/components/SendDocumentsButton";
 import { RicettaButton } from "@/components/RicettaButton";
+import { SyncMailButton } from "@/components/SyncMailButton";
 
 function initials(name: string): string {
   return (name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "·";
@@ -142,6 +143,11 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
       </div>
 
       {/* ── TIMELINE (free-domain guarded, Brief 16) ── */}
+      {lead.partner ? (
+        <div className="row" style={{ justifyContent: "flex-end", marginBottom: -6 }}>
+          <SyncMailButton partnerId={lead.partner.id} onDone={() => getLeadTimeline(leadId).then((t) => { if (t?.items) setItems(t.items); }).catch(() => {})} />
+        </div>
+      ) : null}
       <LeadTimeline items={items} activeShipmentId={activeShipmentId} />
 
       {composeOpen ? <Composer mode="new" target={composeTarget} accounts={accounts} onClose={() => setComposeOpen(false)} /> : null}

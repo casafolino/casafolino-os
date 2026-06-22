@@ -3,7 +3,9 @@
 // header + 4 metric card + barra azioni + pannelli con inviti + timeline identica. Solo dati reali
 // dal bundle (nessun gateway nuovo). Estetica console: superfici chiare, bordi 0.5px, no gradienti/ombre.
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { SyncMailButton } from "@/components/SyncMailButton";
 import type { PartnerBundle } from "@/lib/types";
 import { moneyCompact, money, dateLabel } from "@/components/Honest";
 import { operatorLabel } from "@/lib/theme";
@@ -37,6 +39,7 @@ function buildTimeline(b: PartnerBundle): LeadTimelineItem[] {
 }
 
 export function PartnerClient({ bundle, accounts }: { bundle: PartnerBundle; accounts: Account[] }) {
+  const router = useRouter();
   const [composeOpen, setComposeOpen] = useState(false);
   const p = bundle.partner;
   const lead0 = bundle.leads[0] ?? null;
@@ -162,6 +165,9 @@ export function PartnerClient({ bundle, accounts }: { bundle: PartnerBundle; acc
       </div>
 
       {/* ── TIMELINE (identica alla lead, free-domain guarded) ── */}
+      <div className="row" style={{ justifyContent: "flex-end", marginBottom: -6 }}>
+        <SyncMailButton partnerId={p.id} onDone={() => router.refresh()} />
+      </div>
       <LeadTimeline items={tl} />
 
       {composeOpen ? <Composer mode="new" target={composeTarget} accounts={accounts} onClose={() => setComposeOpen(false)} /> : null}
