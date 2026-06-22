@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { EmptyHonest, dateLabel, moneyCompact } from "@/components/Honest";
 import { operatorColor, operatorLabel } from "@/lib/theme";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
+import { CreateContactButton } from "@/components/CreateContactButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function MailDetailPage({ params }: { params: Promise<{ id:
                     <Link href={`/partner/${bundle.partner.id}`} style={{ color: "var(--accent)" }}>{bundle.partner.name} →</Link>
                   </div>
                   <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <CreateContactButton mailId={Number(id)} />
                     <CampionaturaButton partnerId={bundle.partner.id} leadId={lead?.id ?? null} small label="Campionatura" />
                     <span className="chip" style={{ background: "var(--ok-t)", color: "var(--ok)" }}>collegato</span>
                   </div>
@@ -58,8 +60,9 @@ export default async function MailDetailPage({ params }: { params: Promise<{ id:
               </div>
             ) : (
               <div className="card" style={{ padding: "14px 16px" }}>
-                <div className="empty-honest">
-                  <span>Mittente <b>{m.senderEmail || m.senderName}</b> non collegato a nessun partner.</span>
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>Mittente <b>{m.senderEmail || m.senderName}</b> non collegato a nessun partner.</span>
+                  <CreateContactButton mailId={Number(id)} small={false} />
                 </div>
               </div>
             )}
