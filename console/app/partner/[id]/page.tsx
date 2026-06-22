@@ -8,6 +8,7 @@ import { RelationshipTimeline } from "@/components/RelationshipTimeline";
 import { EmptyHonest, money, moneyCompact, dateLabel } from "@/components/Honest";
 import { operatorColor } from "@/lib/theme";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
+import { QuickCreateLead, QuickCreateDossier } from "@/components/QuickCreate";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,13 @@ export default async function PartnerHub({ params }: { params: Promise<{ id: str
       <main className="main">
         <div className="row" style={{ marginBottom: 12, justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/inbox" className="muted" style={{ fontSize: 12 }}>← Inbox</Link>
-          {bundle ? <CampionaturaButton partnerId={bundle.partner.id} leadId={bundle.leads[0]?.id ?? null} small label="Campionatura" /> : null}
+          {bundle ? (
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <QuickCreateLead partnerId={bundle.partner.id} />
+              <QuickCreateDossier partnerId={bundle.partner.id} defaultName={`Dossier ${bundle.partner.name}`} />
+              <CampionaturaButton partnerId={bundle.partner.id} leadId={bundle.leads[0]?.id ?? null} small label="Campionatura" />
+            </div>
+          ) : null}
         </div>
         {!bundle ? (
           <EmptyHonest label="Partner non trovato." actionLabel="Torna all'inbox" />

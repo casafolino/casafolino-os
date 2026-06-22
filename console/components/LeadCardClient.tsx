@@ -9,6 +9,7 @@ import { moneyCompact, dateLabel } from "@/components/Honest";
 import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
 import { LeadTimeline } from "@/components/LeadTimeline";
+import { QuickCreateDossier } from "@/components/QuickCreate";
 
 export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts: Account[] }) {
   const [lead, setLead] = useState<LeadDetail | null>(null);
@@ -98,7 +99,7 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button className="btn-primary" onClick={() => setComposeOpen(true)} disabled={!lead.emailFrom}>✉ Scrivi mail</button>
           <CampionaturaButton partnerId={lead.partner ? lead.partner.id : null} leadId={lead.id} label="📦 Campionatura" />
-          <button className="btn-secondary" disabled title="Brief successivo">Dossier</button>
+          <QuickCreateDossier partnerId={lead.partner ? lead.partner.id : null} leadId={lead.id} defaultName={`Dossier ${lead.partner ? lead.partner.name : lead.name}`} small={false} label="Dossier" />
           <button className="btn-secondary" disabled title="Brief successivo">Invia documenti</button>
           <button className="btn-secondary" disabled title="Brief successivo">Ricetta</button>
         </div>
