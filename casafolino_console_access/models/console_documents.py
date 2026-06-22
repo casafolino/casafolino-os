@@ -58,6 +58,22 @@ class ResPartnerConsoleDocs(models.Model):
         subject = _clean_str((payload or {}).get('subject')) or _("Documenti CasaFolino")
         body = (payload or {}).get('body') or _("<p>In allegato i documenti richiesti.</p>")
 
+        # size-guard: Gmail SMTP rifiuta >25MB (552). Blocca prima con messaggio chiaro
+        # (es. cataloghi pesanti → meglio un link/delivery_type=link, non allegato).
+        import base64 as _b64
+        Mat = self.env['casafolino.mail.material'].sudo()
+        total = 0
+        for mid in material_ids:
+            m = Mat.browse(int(mid))
+            if m.exists() and m.file_data:
+                try:
+                    total += len(_b64.b64decode(m.file_data))
+                except Exception:
+                    pass
+        if total > 20 * 1024 * 1024:
+            raise UserError(_("Documenti troppo grandi per l'email (%.1f MB, max ~20MB). "
+                              "Usa un link di download per i materiali pesanti.") % (total / 1024 / 1024))
+
         # core outbound condiviso: material_ids = SOLO libreria curata (safe-attach valida gli id;
         # un attachment id arbitrario non è ammesso → _console_material_attachments lo rifiuta).
         res = self.env['casafolino.mail.message']._console_outbound(
