@@ -363,11 +363,25 @@ function MetricInline({ label, raw, display, canEdit, onSave }: {
 }
 
 // ── Composer note/task inline (note = mail.message; task = mail.activity con data) ──
+// Phase C ha verificato che message_post / mail.activity NON sono scrivibili come console_api
+// (AccessError: serve un metodo gateway con sudo = addon change, fuori dallo scope di questo
+// deploy → brief gateway dedicato). Finché il metodo non esiste, il composer è disabilitato
+// (empty-state onesto) per non esporre in prod un bottone che fallisce. Flip a true col gateway.
+const NOTE_TASK_ENABLED = false;
+
 function NoteTaskComposer({ leadId, onDone }: { leadId: number; onDone: (t: { msg: string; tone: Tone }) => void }) {
   const [mode, setMode] = useState<"note" | "task">("note");
   const [body, setBody] = useState("");
   const [due, setDue] = useState("");
   const [busy, setBusy] = useState(false);
+
+  if (!NOTE_TASK_ENABLED) {
+    return (
+      <div className="empty-honest">
+        <span>Note e task in arrivo: richiedono un metodo gateway dedicato (in lavorazione). Per ora usa Email o Campionatura.</span>
+      </div>
+    );
+  }
 
   async function submit() {
     if (busy) return;
