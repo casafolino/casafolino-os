@@ -6,6 +6,15 @@ export type LeadStage = { id: number; name: string; sequence: number; isWon: boo
 export type LeadPartner = {
   id: number; name: string; email: string; phone: string;
   city: string; country: string; isCompany: boolean; role: string;
+  function?: string; website?: string; vat?: string; // S3 — arricchimento contatto
+};
+
+// S3 — card Azienda arricchita (standard Odoo + Agente 007).
+export type LeadCompany = {
+  id: number; name: string;
+  vat?: string; website?: string; country?: string; city?: string; phone?: string;
+  channel?: string; sector?: string; certifications?: string; revenue?: string; employees?: string;
+  enriched?: boolean;
 };
 
 export type LeadDetail = {
@@ -26,7 +35,7 @@ export type LeadDetail = {
   daysOpen: number | null;
   nextAction: { date: string | null; summary: string } | null;
   partner: LeadPartner | false;
-  company: { id: number; name: string } | false;
+  company: LeadCompany | false;
   dossier: { id: number; name: string; status: string; valueEstimate: number | null } | false;
   emailFrom: string;
   message?: string;

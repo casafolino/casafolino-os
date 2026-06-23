@@ -10,6 +10,7 @@ import { Icon } from "./Icons";
 import { PartnerMailThread } from "./PartnerMailThread";
 import { AiDraftButton } from "./AiDraftButton";
 import { CreateLeadButton } from "./CreateLeadButton";
+import { CreateContactButton } from "./CreateContactButton";
 import { LinkLeadButton } from "./LinkLeadButton";
 import { Composer, type ComposerTarget, type ComposerMode, type Account } from "./Composer";
 import type { LibraryItem, MailTemplate } from "@/lib/bundle";
@@ -495,6 +496,11 @@ export function InboxClient({
         ) : item && m ? (
           <div className="card" style={{ padding: "14px 16px" }}>
             <div className="empty-honest"><span>Mittente non riconosciuto: nessun partner collegato.</span></div>
+            {/* S3 — crea contatto (+azienda da dominio, con IA/dedup) o lead direttamente dalla mail */}
+            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <CreateContactButton mailId={item.id} small={false} />
+              <CreateLeadButton name={`Nuovo contatto · ${m.senderName || m.senderEmail || ""}`} emailFrom={m.senderEmail} />
+            </div>
             <div style={{ marginTop: 10 }}><PartnerMailThread messages={[]} title="Mail con questo partner" /></div>
           </div>
         ) : null}

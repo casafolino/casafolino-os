@@ -19,6 +19,12 @@ function initials(name: string): string {
   return (name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "·";
 }
 
+// S3 — il sito può arrivare come "dominio.com" senza schema: normalizza per un link valido.
+function normalizeUrl(url: string): string {
+  const u = (url || "").trim();
+  return /^https?:\/\//i.test(u) ? u : `https://${u}`;
+}
+
 // Urgenza prossima azione: scaduta (rosso) / imminente ≤3g (giallo) / futura.
 function actionTone(date: string | null): { color: string; label: string } | null {
   if (!date) return null;
@@ -137,7 +143,7 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
         </div>
       </div>
 
-      {/* ── 2 PANNELLI ── */}
+      {/* ── PANNELLI: Contatto + Azienda (S3 — campi arricchiti, standard + Agente 007) ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         {/* Contatto */}
         <div className="card" style={{ padding: 16 }}>
@@ -145,17 +151,34 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
           {lead.partner ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Row label="Nome" v={<Link href={`/partner/${lead.partner.id}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{lead.partner.name}</Link>} />
-              <Row label="Ruolo" v={lead.partner.role || <span className="muted">—</span>} />
+              {lead.partner.role || lead.partner.function ? <Row label="Ruolo" v={lead.partner.role || lead.partner.function} /> : null}
               <Row label="Email" v={<InlineText value={lead.emailFrom || lead.partner.email || ""} placeholder="email@…" onSave={(s) => save({ email_from: s })} />} />
-              {lead.company ? <Row label="Azienda" v={<Link href={`/partner/${lead.company.id}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{lead.company.name}</Link>} /> : null}
+              {lead.partner.phone ? <Row label="Telefono" v={lead.partner.phone} /> : null}
             </div>
           ) : <div className="muted" style={{ fontSize: 13 }}>Nessun contatto collegato.</div>}
         </div>
 
-        {/* Prossima azione */}
+        {/* Azienda (S3 — arricchita) */}
         <div className="card" style={{ padding: 16 }}>
-          <p className="sec-title">Prossima azione</p>
-          {lead.nextAction ? (
+          <p className="sec-title">Azienda{lead.company && lead.company.enriched ? <span className="chip" style={{ marginLeft: 6, fontSize: 10, background: "var(--accent-t)", color: "var(--accent)" }}>007</span> : null}</p>
+          {lead.company ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <Row label="Nome" v={<Link href={`/partner/${lead.company.id}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{lead.company.name}</Link>} />
+              {lead.company.vat ? <Row label="P.IVA" v={lead.company.vat} /> : null}
+              {lead.company.website ? <Row label="Sito" v={<a href={normalizeUrl(lead.company.website)} target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>{lead.company.website}</a>} /> : null}
+              {lead.company.country || lead.company.city ? <Row label="Paese" v={[lead.company.city, lead.company.country].filter(Boolean).join(", ")} /> : null}
+              {lead.company.channel ? <Row label="Canale" v={lead.company.channel} /> : null}
+              {lead.company.sector ? <Row label="Settore" v={lead.company.sector} /> : null}
+              {lead.company.certifications ? <Row label="Certificazioni" v={lead.company.certifications} /> : null}
+            </div>
+          ) : <div className="muted" style={{ fontSize: 13 }}>Nessuna azienda collegata.</div>}
+        </div>
+      </div>
+
+      {/* ── Prossima azione (full width) ── */}
+      <div className="card" style={{ padding: 16 }}>
+        <p className="sec-title">Prossima azione</p>
+        {lead.nextAction ? (
             <div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{lead.nextAction.summary}</div>
               <div className="row" style={{ gap: 8, marginTop: 6, alignItems: "center" }}>
@@ -171,7 +194,6 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
                 style={{ fontSize: 12, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--accent)" }} />
             </div>
           )}
-        </div>
       </div>
 
       {/* ── TIMELINE (free-domain guarded, Brief 16) ── */}

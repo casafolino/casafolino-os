@@ -71,6 +71,29 @@ class CrmLeadConsoleRead(models.Model):
             raise UserError(_("Lead non trovato o fuori dal tuo scope."))
         return lead
 
+    def _console_company_card(self, rec):
+        """S3 — campi arricchiti azienda (standard Odoo + Agente 007), con guardie sull'esistenza.
+        Niente nome custom hardcodato senza verifica: ogni cf_007_* è protetto da `in rec._fields`."""
+        if not rec:
+            return False
+        def g(f):
+            return (rec[f] if (f in rec._fields and rec[f]) else '')
+        return {
+            'id': rec.id,
+            'name': rec.name or '',
+            'vat': rec.vat or g('cf_007_piva') or '',
+            'website': rec.website or g('cf_007_sito_web') or '',
+            'country': (rec.country_id.name if rec.country_id else '') or g('cf_007_paese') or '',
+            'city': rec.city or g('cf_007_citta') or '',
+            'phone': rec.phone or g('cf_007_telefono') or '',
+            'channel': g('cf_007_canali_vendita'),
+            'sector': g('cf_007_settore'),
+            'certifications': g('cf_007_certificazioni'),
+            'revenue': g('cf_007_fatturato'),
+            'employees': g('cf_007_dipendenti'),
+            'enriched': bool(rec.cf_007_enriched) if 'cf_007_enriched' in rec._fields else False,
+        }
+
     @api.model
     def console_get_lead(self, payload):
         """Record lead completo: campi+metriche, partner/azienda, dossier, stage stepper,
@@ -159,8 +182,14 @@ class CrmLeadConsoleRead(models.Model):
                 'city': partner.city or '', 'country': partner.country_id.name or '',
                 'isCompany': partner.is_company,
                 'role': partner.cf_partner_role if (partner and 'cf_partner_role' in partner._fields) else '',
+                'function': partner.function or '',
+                'website': partner.website or '',
+                'vat': partner.vat or '',
             } if partner else False,
-            'company': {'id': company.id, 'name': company.name or ''} if (company and company != partner) else False,
+            # S3 — card Azienda arricchita: azienda commerciale se distinta, altrimenti il partner
+            # stesso se è azienda (es. Narima/Jusami partner=azienda).
+            'company': self._console_company_card(company) if (company and company != partner)
+                       else (self._console_company_card(partner) if (partner and partner.is_company) else False),
             'dossier': dossier,
             'emailFrom': lead.email_from or (partner.email if partner else '') or '',
         }
