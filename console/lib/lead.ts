@@ -40,8 +40,17 @@ export type LeadTimelineItem = {
   subtitle: string;
   direction?: "inbound" | "outbound";
   shipmentId?: number;
+  messageId?: number; // S1/S2 — mail navigabile (link a /mail/[id])
 };
 export type LeadTimeline = { leadId: number; items: LeadTimelineItem[]; message?: string };
+
+// S1 — mail storiche del partner NON assegnate a questa trattativa (pannello collassabile).
+export type OtherMail = {
+  id: number; date: string | null; title: string; subtitle: string;
+  direction?: "inbound" | "outbound";
+};
+export type OtherMails = { leadId: number; partnerId: number | false; items: OtherMail[]; message?: string };
+export type AssignMailResult = { ok?: boolean; leadId?: number; assigned?: number[]; count?: number; message?: string };
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BP}${path}`, {
@@ -54,6 +63,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 export const getLead = (leadId: number) => post<LeadDetail>("/api/console/lead/get", { leadId });
 export const getLeadTimeline = (leadId: number) => post<LeadTimeline>("/api/console/lead/timeline", { leadId });
+
+// S1 — pannello "Altre mail con questo partner" + assegnazione (thread-assist server-side).
+export const getLeadOtherMails = (leadId: number) => post<OtherMails>("/api/console/lead/other-mails", { leadId });
+export const assignMailToLead = (leadId: number, messageId: number) =>
+  post<AssignMailResult>("/api/console/lead/assign-mail", { leadId, messageId });
 
 // Brief 20 P2 — modifica inline (whitelist: name/expected_revenue/probability/stage_id/email_from/cf_date_next_followup).
 export type UpdateLeadResult = { ok?: boolean; leadId?: number; stageId?: number; stageName?: string; expectedRevenue?: number; probability?: number; name?: string; emailFrom?: string; message?: string };

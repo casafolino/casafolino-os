@@ -9,6 +9,7 @@ import { moneyCompact, dateLabel } from "@/components/Honest";
 import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
 import { LeadTimeline } from "@/components/LeadTimeline";
+import { LeadOtherMails } from "@/components/LeadOtherMails";
 import { QuickCreateDossier } from "@/components/QuickCreate";
 import { SendDocumentsButton } from "@/components/SendDocumentsButton";
 import { RicettaButton } from "@/components/RicettaButton";
@@ -41,6 +42,11 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
     getLeadTimeline(leadId).then((t) => { if (alive && t?.items) setItems(t.items); }).catch(() => {});
     return () => { alive = false; };
   }, [leadId]);
+
+  // S1 — refetch timeline dopo un'assegnazione mail→lead (la mail compare qui, sparisce da "Altre mail").
+  function refreshTimeline() {
+    getLeadTimeline(leadId).then((t) => { if (t?.items) setItems(t.items); }).catch(() => {});
+  }
 
   // Brief 20 P2 — salva un campo whitelisted; ottimistico (merge subito) + rollback se il server nega.
   async function save(values: Record<string, unknown>) {
@@ -175,6 +181,9 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
         </div>
       ) : null}
       <LeadTimeline items={items} activeShipmentId={activeShipmentId} />
+
+      {/* ── S1 — Altre mail con questo partner (non assegnate): assegnabili a mano + thread-assist ── */}
+      <LeadOtherMails leadId={leadId} hasPartner={!!lead.partner} onAssigned={refreshTimeline} />
 
       {composeOpen ? <Composer mode="new" target={composeTarget} accounts={accounts} onClose={() => setComposeOpen(false)} /> : null}
     </div>

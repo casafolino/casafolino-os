@@ -168,8 +168,9 @@ class CrmLeadConsoleRead(models.Model):
     @api.model
     def console_get_lead_timeline(self, payload):
         """Timeline cronologica tipizzata: mail console + eventi campionatura/cf.task + attività/note.
-        Sorgente: lead.partner_id (+sender_domain) UNION lead_id diretto (il link diretto è
-        quasi vuoto in prod → il partner è la fonte reale). payload: {leadId, operator_uid}."""
+        S1 (lead-scoping) — le MAIL in timeline sono SOLO quelle di questa trattativa (lead_id).
+        Lo storico del partner non assegnato vive nel pannello console_get_lead_other_mails.
+        payload: {leadId, operator_uid}."""
         if not _is_console(self.env):
             raise AccessError(_("Solo console_api."))
         operator = _operator(self.env, (payload or {}).get('operator_uid'))
@@ -178,21 +179,15 @@ class CrmLeadConsoleRead(models.Model):
         partner = lead.partner_id
         items = []
 
-        # 1) MAIL del console (per lead_id diretto OR partner OR dominio mittente)
+        # 1) MAIL del console — SOLO QUESTA trattativa (lead_id). Niente più union su partner/dominio:
+        # le mail del partner non collegate restano in "Altre mail" e si assegnano a mano (thread-assist).
         Msg = self.env['casafolino.mail.message'].sudo()
-        mail_domain = ['&', ('state', 'not in', ['auto_discard', 'discard']),
-                       '|', '|', ('lead_id', '=', lead.id)]
-        if partner:
-            mail_domain += [('partner_id', '=', partner.id)]
-            dom = (partner.email or '').split('@')[1].lower() if (partner.email and '@' in partner.email) else False
-            # Brief 16 — aggrega per dominio SOLO se aziendale: partner su dominio free non
-            # raccoglie tutta la posta di quel dominio (bucket).
-            mail_domain += [('sender_domain', '=', dom)] if (dom and not _is_free_domain(dom)) else [('id', '=', -1)]
-        else:
-            mail_domain += [('id', '=', -1), ('id', '=', -1)]
+        mail_domain = [('lead_id', '=', lead.id),
+                       ('state', 'not in', ['auto_discard', 'discard'])]
         for m in Msg.search(mail_domain, order='email_date desc', limit=80):
             items.append({
                 'type': 'mail',
+                'messageId': m.id,
                 'date': fields.Datetime.to_string(m.email_date) if m.email_date else None,
                 'title': m.subject or _("(senza oggetto)"),
                 'subtitle': (m.sender_name or m.sender_email or ''),
@@ -238,3 +233,69 @@ class CrmLeadConsoleRead(models.Model):
         items.sort(key=lambda i: i['date'] or '', reverse=True)
         _audit(self.env, 'crm.lead', [lead.id], 'get_lead_timeline', None, operator)
         return {'leadId': lead.id, 'items': items[:120]}
+
+    @api.model
+    def console_get_lead_other_mails(self, payload):
+        """S1 — mail del partner NON ancora assegnate a questa trattativa (lead_id vuoto).
+        Alimenta il pannello collassabile 'Altre mail con questo partner'.
+        payload: {leadId, operator_uid}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
+        lead = self._console_scoped_lead((payload or {}).get('leadId'))
+        partner = lead.partner_id
+        if not partner:
+            return {'leadId': lead.id, 'partnerId': False, 'items': []}
+        Msg = self.env['casafolino.mail.message'].sudo()
+        domain = [('partner_id', '=', partner.id), ('lead_id', '=', False),
+                  ('state', 'not in', ['auto_discard', 'discard'])]
+        items = []
+        for m in Msg.search(domain, order='email_date desc', limit=80):
+            items.append({
+                'id': m.id,
+                'date': fields.Datetime.to_string(m.email_date) if m.email_date else None,
+                'title': m.subject or _("(senza oggetto)"),
+                'subtitle': (m.sender_name or m.sender_email or ''),
+                'direction': 'outbound' if m.direction == 'outbound' else 'inbound',
+            })
+        _audit(self.env, 'crm.lead', [lead.id], 'get_lead_other_mails', None, operator)
+        return {'leadId': lead.id, 'partnerId': partner.id, 'items': items}
+
+    @api.model
+    def console_assign_mail_to_lead(self, payload):
+        """S1 — assegna una mail a questa trattativa scrivendo lead_id sulla casafolino.mail.message.
+        Thread-assist: propaga lead_id a tutte le mail con stesso partner e stesso thread
+        (thread_key = oggetto normalizzato, oppure thread_id V3). Nessuna euristica sullo storico
+        oltre il thread esplicito. payload: {leadId, messageId, operator_uid}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
+        lead = self._console_scoped_lead((payload or {}).get('leadId'))
+        try:
+            msg_id = int((payload or {}).get('messageId'))
+        except (TypeError, ValueError):
+            raise UserError(_("messageId non valido."))
+        Msg = self.env['casafolino.mail.message'].sudo()
+        msg = Msg.browse(msg_id)
+        if not msg.exists():
+            raise UserError(_("Mail non trovata."))
+
+        targets = msg
+        # sorelle del thread: stesso partner, ancora non assegnate, stesso oggetto-normalizzato o thread V3
+        if msg.partner_id and (msg.thread_key or msg.thread_id):
+            base = [('partner_id', '=', msg.partner_id.id), ('lead_id', '=', False)]
+            if msg.thread_key and msg.thread_id:
+                base = ['|', ('thread_key', '=', msg.thread_key),
+                        ('thread_id', '=', msg.thread_id.id)] + base
+            elif msg.thread_key:
+                base = [('thread_key', '=', msg.thread_key)] + base
+            else:
+                base = [('thread_id', '=', msg.thread_id.id)] + base
+            targets |= Msg.search(base)
+
+        targets.write({'lead_id': lead.id})
+        _audit(self.env, 'casafolino.mail.message', targets.ids,
+               'assign_lead:%s' % lead.id, {'lead_id'}, operator)
+        return {'ok': True, 'leadId': lead.id, 'assigned': targets.ids, 'count': len(targets)}
