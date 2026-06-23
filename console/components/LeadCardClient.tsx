@@ -243,9 +243,10 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
               <SignalRow label="Prossima azione"
                 value={lead.nextAction ? dateLabel(lead.nextAction.date) : "non pianificata"}
                 pill={aUrg ? <Pill tone={aUrg.tone} style={{ fontSize: 10 }}>{aUrg.label}</Pill> : null} />
+              {/* SLA da cf.task NON ancora cablato in questa vista → empty-state, mai semaforo finto. */}
               <SignalRow label="SLA (cf.task)"
-                value={bundle?.signals.overdueFollowup ? "follow-up scaduto" : bundle ? "nei tempi" : "—"}
-                pill={bundle ? <Pill tone={bundle.signals.overdueFollowup ? "danger" : "success"} dot style={{ fontSize: 10 }}>{bundle.signals.overdueFollowup ? "rosso" : "verde"}</Pill> : null} />
+                value="n/d"
+                pill={<Pill tone="neutral" style={{ fontSize: 10 }}>non collegato</Pill>} />
             </div>
           </RailCard>
 
