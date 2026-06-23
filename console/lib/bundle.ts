@@ -394,17 +394,19 @@ export async function getQueueCount(scope: InboxScope = {}): Promise<number> {
 /** Dati Regia (home). Mock-first; path Odoo best-effort via conteggi. */
 export async function getRegia(): Promise<RegiaData> {
   if (shouldUseMock()) return mockRegia();
-  const [hotLeads, overdueFollowups, blockedDossiers] = await Promise.all([
+  // Brief 20 E — fix dashboard: totalLeads era HARDCODED 0 → "nessun lead" con 120+ in pipeline.
+  const [hotLeads, overdueFollowups, blockedDossiers, totalLeads] = await Promise.all([
     callKw<number>("crm.lead", "search_count", [[["cf_lead_score", ">=", 70], ["type", "=", "opportunity"]]]),
     callKw<number>("crm.lead", "search_count", [[["cf_rotting_state", "in", ["danger", "dead"]], ["type", "=", "opportunity"]]]),
     callKw<number>("project.project", "search_count", [[["cf_status_dossier", "=", "on_hold"]]]),
+    callKw<number>("crm.lead", "search_count", [[["type", "=", "opportunity"], ["active", "=", true]]]),
   ]);
   return {
     greetingName: "Antonio",
     subtitle: "",
     kpis: { hotLeads, overdueFollowups, blockedDossiers, monthRevenue: 0 },
     queue: [],
-    pipeline: { totalLeads: 0, segments: [] },
+    pipeline: { totalLeads, segments: [] },
     source: "odoo",
   };
 }

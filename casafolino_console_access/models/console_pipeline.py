@@ -5,9 +5,12 @@ from odoo.exceptions import AccessError, UserError
 
 from .console_gateway import _is_console, _audit
 from .console_campionatura import _operator
-from .console_lead import _require_manager  # Brief 5 — manager-only
+from .console_lead import _require_manager, _activity_state  # Brief 5/20
 
 _logger = logging.getLogger(__name__)
+
+# Brief 20 — campi modificabili inline dalla scheda lead (whitelist: niente scrittura fuori da qui).
+_LEAD_EDITABLE = {'name', 'expected_revenue', 'probability', 'stage_id', 'email_from', 'cf_date_next_followup'}
 
 
 class CrmLeadConsolePipeline(models.Model):
@@ -26,30 +29,57 @@ class CrmLeadConsolePipeline(models.Model):
 
         stages = self.env['crm.stage'].sudo().search([('fold', '=', False)], order='sequence, id')
         stage_ids = stages.ids
-        leads = self.sudo().search([
-            ('type', '=', 'opportunity'), ('active', '=', True),
-            ('stage_id', 'in', stage_ids),
-        ], order='expected_revenue desc', limit=1000)
+
+        # PERF (Brief 20): search_read in UNA query con campi scalari + m2o display → niente N+1
+        # (prima: browse 1000 lead + walk partner_id.commercial_partner_id.name = ~1700ms).
+        # A: ordina per create_date desc (ultimi creati in cima).
+        has_score = 'cf_lead_score' in self._fields
+        flds = ['name', 'partner_id', 'expected_revenue', 'user_id', 'stage_id',
+                'date_last_stage_update', 'create_date']
+        if has_score:
+            flds.append('cf_lead_score')
+        rows = self.sudo().search_read(
+            [('type', '=', 'opportunity'), ('active', '=', True), ('stage_id', 'in', stage_ids)],
+            flds, order='create_date desc', limit=800)
+        lead_ids = [r['id'] for r in rows]
+
+        # B: ATTIVITÀ REALE (batch, no N+1) = MAX(date_last_stage_update, ultima nota chatter).
+        # Il rosso non deve più venire da cf_rotting_state (stale, basato su create_date).
+        chatter = {}
+        if lead_ids:
+            for g in self.env['mail.message'].sudo().read_group(
+                    [('model', '=', 'crm.lead'), ('res_id', 'in', lead_ids),
+                     ('message_type', 'in', ['comment', 'notification'])],
+                    ['res_id', 'date:max'], ['res_id']):
+                rid = g['res_id'] if isinstance(g['res_id'], int) else (g['res_id'][0] if g['res_id'] else None)
+                if rid and g.get('date'):
+                    chatter[rid] = g['date']
 
         today = fields.Date.context_today(self)
+
+        def _relid(v):
+            return v[0] if isinstance(v, (list, tuple)) and v else None
+
+        def _relname(v):
+            return v[1] if isinstance(v, (list, tuple)) and len(v) > 1 else ''
+
         by_stage = {sid: [] for sid in stage_ids}
         CAP = 60
-        for l in leads:
-            sid = l.stage_id.id
+        for r in rows:
+            sid = _relid(r['stage_id'])
             if sid not in by_stage or len(by_stage[sid]) >= CAP:
                 continue
-            dls = l.date_last_stage_update
-            days = (today - dls.date()).days if dls else None
+            state, days = _activity_state(today, r.get('date_last_stage_update'), chatter.get(r['id']))
             by_stage[sid].append({
-                'id': l.id,
-                'name': l.name or 'Lead',
-                'partnerId': l.partner_id.id if l.partner_id else None,
-                'company': l.partner_id.commercial_partner_id.name if l.partner_id else '',
-                'value': l.expected_revenue,
-                'owner': l.user_id.name or '',
-                'score': l.cf_lead_score if 'cf_lead_score' in l._fields else None,
-                'rottingState': l.cf_rotting_state if 'cf_rotting_state' in l._fields else None,
-                'daysInStage': days,
+                'id': r['id'],
+                'name': r['name'] or 'Lead',
+                'partnerId': _relid(r['partner_id']),
+                'company': _relname(r['partner_id']),
+                'value': r['expected_revenue'],
+                'owner': _relname(r['user_id']),
+                'score': r.get('cf_lead_score') if has_score else None,
+                'activityState': state,
+                'daysInactive': days,
             })
 
         columns = [{
@@ -139,3 +169,49 @@ class CrmLeadConsolePipeline(models.Model):
 
         _audit(self.env, 'crm.lead', [], 'universal_search', None, operator)
         return {'query': q, 'groups': groups}
+
+    @api.model
+    def console_update_lead(self, payload):
+        """Brief 20 P2 — modifica inline dei campi della scheda lead. SOLO whitelist (_LEAD_EDITABLE),
+        mai campi fuori. Lascia ricalcolare scoring/rotting a Odoo. payload: {leadId, values:{...}}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
+        lead = self.search([('id', '=', int((payload or {}).get('leadId') or 0))], limit=1)
+        if not lead:
+            raise UserError(_("Lead non trovato o fuori scope."))
+
+        raw = (payload or {}).get('values') or {}
+        vals = {}
+        for k, v in raw.items():
+            if k not in _LEAD_EDITABLE:
+                continue  # mai scrivere fuori dalla whitelist
+            if k == 'stage_id':
+                sid = int(v or 0)
+                if sid and self.env['crm.stage'].sudo().browse(sid).exists():
+                    vals['stage_id'] = sid
+            elif k in ('expected_revenue', 'probability'):
+                try:
+                    vals[k] = float(v) if v not in (None, '') else 0.0
+                except (TypeError, ValueError):
+                    raise UserError(_("Valore numerico non valido per %s.") % k)
+            elif k == 'cf_date_next_followup':
+                vals[k] = v or False
+            else:  # name, email_from
+                s = (v or '').strip() if isinstance(v, str) else v
+                if k == 'name' and not s:
+                    raise UserError(_("Il titolo non può essere vuoto."))
+                vals[k] = s or False
+        if not vals:
+            raise UserError(_("Nessun campo modificabile fornito."))
+        # cf_date_next_followup potrebbe non esistere su tutte le installazioni
+        if 'cf_date_next_followup' in vals and 'cf_date_next_followup' not in lead._fields:
+            vals.pop('cf_date_next_followup')
+
+        lead.sudo().write(vals)
+        _audit(self.env, 'crm.lead', [lead.id], 'update_lead', set(vals.keys()), operator)
+        return {'ok': True, 'leadId': lead.id,
+                'stageId': lead.stage_id.id, 'stageName': lead.stage_id.name or '',
+                'expectedRevenue': lead.expected_revenue, 'probability': lead.probability,
+                'name': lead.name, 'emailFrom': lead.email_from or ''}

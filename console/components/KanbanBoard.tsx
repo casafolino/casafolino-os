@@ -4,7 +4,7 @@
 // (stage terminali → la card esce dalla board). Card → /lead/[id]. Lancio campionatura conservato.
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getBoard, setLeadStage, type Board, type BoardCard, rottingColor } from "@/lib/pipeline";
+import { getBoard, setLeadStage, type Board, type BoardCard, activityColor } from "@/lib/pipeline";
 import { moneyCompact } from "@/components/Honest";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
 
@@ -103,8 +103,11 @@ function KanbanCard({ card, fromStage, terminals, onDragStart, onMarkTerminal }:
   onMarkTerminal: (leadId: number, stageId: number, label: string) => void;
 }) {
   const [menu, setMenu] = useState(false);
-  const rot = card.rottingState ? rottingColor[card.rottingState] : null;
-  const stuck = card.daysInStage != null && card.daysInStage >= 7;
+  // Brief 20 B — rotting da attività reale; neutral (grigio) = nessuna attività, MAI rosso falso.
+  const st = card.activityState || "neutral";
+  const rot = st !== "neutral" ? activityColor[st] : null;
+  const danger = st === "danger";
+  const warn = st === "warning";
   void fromStage;
   return (
     <div className="card" draggable onDragStart={onDragStart}
@@ -119,11 +122,13 @@ function KanbanCard({ card, fromStage, terminals, onDragStart, onMarkTerminal }:
         {card.score != null ? <span className="chip" style={{ fontSize: 10 }}>{card.score}</span> : null}
       </div>
       <div className="row" style={{ justifyContent: "space-between", marginTop: 6 }}>
-        {card.daysInStage != null ? (
-          <span className="chip" style={{ fontSize: 10, background: stuck ? "var(--danger-t)" : "var(--panel-2)", color: stuck ? "var(--danger)" : "var(--muted)" }}>
-            {stuck ? `ferma ${card.daysInStage}g` : `${card.daysInStage}g`}
+        {card.daysInactive != null ? (
+          <span className="chip" style={{ fontSize: 10,
+            background: danger ? "var(--danger-t)" : warn ? "var(--warn-t)" : "var(--panel-2)",
+            color: danger ? "var(--danger)" : warn ? "var(--warn)" : "var(--muted)" }}>
+            {danger ? `ferma ${card.daysInactive}g` : `${card.daysInactive}g`}
           </span>
-        ) : <span />}
+        ) : <span className="chip" style={{ fontSize: 10, background: "var(--panel-2)", color: "var(--faint)" }}>nessuna attività</span>}
         <span className="muted" style={{ fontSize: 10 }}>{card.owner}</span>
       </div>
       <div style={{ marginTop: 6 }}>

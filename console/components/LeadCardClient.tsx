@@ -4,7 +4,7 @@
 // → 4 metriche → azioni → pannelli → timeline. Solo dati reali da console_get_lead. Nessun gateway nuovo.
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLead, getLeadTimeline, rottingLabel, type LeadDetail, type LeadTimelineItem } from "@/lib/lead";
+import { getLead, getLeadTimeline, updateLead, activityLabel, type LeadDetail, type LeadTimelineItem } from "@/lib/lead";
 import { moneyCompact, dateLabel } from "@/components/Honest";
 import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
@@ -42,12 +42,25 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
     return () => { alive = false; };
   }, [leadId]);
 
+  // Brief 20 P2 — salva un campo whitelisted; ottimistico (merge subito) + rollback se il server nega.
+  async function save(values: Record<string, unknown>) {
+    if (!lead) return;
+    const snapshot = lead;
+    setLead({ ...lead, ...mapOptimistic(values) });
+    try {
+      const r = await updateLead(leadId, values);
+      if (r.ok) setLead((cur) => cur ? { ...cur, name: r.name ?? cur.name, expectedRevenue: r.expectedRevenue ?? cur.expectedRevenue, probability: r.probability ?? cur.probability, stageId: r.stageId ?? cur.stageId, stageName: r.stageName ?? cur.stageName, emailFrom: r.emailFrom ?? cur.emailFrom } : cur);
+      else { setLead(snapshot); setErr(r.message ?? "salvataggio negato"); }
+    } catch (e) { setLead(snapshot); setErr((e as Error).message); }
+  }
+
   if (err) return <div className="card" style={{ padding: 16, color: "var(--danger)" }}>Errore: {err}</div>;
   if (!lead) return <div className="muted" style={{ padding: 16 }}>Carico scheda…</div>;
 
-  const rot = lead.rottingState ? rottingLabel[lead.rottingState] : null;
-  const danger = lead.rottingState === "danger" || lead.rottingState === "dead";
-  const warn = lead.rottingState === "warning";
+  // Brief 20 B — rotting da ATTIVITÀ REALE (neutral = grigio, mai rosso falso).
+  const act = lead.activityState ? activityLabel[lead.activityState] : null;
+  const danger = lead.activityState === "danger";
+  const warn = lead.activityState === "warning";
   const activeShipmentId = items.find((i) => i.type === "campionatura" && i.shipmentId)?.shipmentId;
   const composeTarget = { id: 0, subject: "", senderEmail: lead.emailFrom, senderName: lead.partner ? lead.partner.name : "" };
 
@@ -76,21 +89,32 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
         </div>
       </div>
 
-      {/* ── STEPPER ── */}
+      {/* ── STEPPER + Fase editabile ── */}
       <div className="card" style={{ padding: "14px 18px" }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <span className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>Fase</span>
+          <select value={lead.stageId} onChange={(e) => save({ stage_id: Number(e.target.value) })}
+            style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--line)", fontSize: 12 }}>
+            {lead.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
         <StageStepper stages={lead.stages} currentId={lead.stageId} />
       </div>
 
-      {/* ── 4 METRICHE ── */}
+      {/* ── 4 METRICHE (Valore/Probabilità editabili inline) ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        <Metric label="Valore" value={lead.expectedRevenue != null ? moneyCompact(lead.expectedRevenue) : "—"} />
-        <Metric label="Probabilità" value={lead.probability != null ? `${Math.round(lead.probability)}%` : "—"} />
+        <Metric label="Valore" editValue={lead.expectedRevenue}
+          display={lead.expectedRevenue != null ? moneyCompact(lead.expectedRevenue) : "—"}
+          onSave={(v) => save({ expected_revenue: v })} />
+        <Metric label="Probabilità" editValue={lead.probability} suffix="%"
+          display={lead.probability != null ? `${Math.round(lead.probability)}%` : "—"}
+          onSave={(v) => save({ probability: v })} />
         <Metric
-          label="Giorni aperto"
-          value={lead.daysOpen != null ? String(lead.daysOpen) : "—"}
-          color={danger ? "var(--danger)" : warn ? "var(--warn)" : undefined}
-          foot={rot ? rot.label : undefined}
-          footColor={rot ? rot.color : undefined}
+          label="Inattivo da"
+          value={lead.daysInactive != null ? `${lead.daysInactive}g` : "—"}
+          color={danger ? "var(--danger)" : warn ? "var(--warn)" : act ? "var(--ink)" : "var(--muted)"}
+          foot={act ? act.label : "nessuna attività"}
+          footColor={act ? act.color : undefined}
           alarm={danger}
         />
         <Metric label="Dossier" value={lead.dossier ? "1" : "0"} foot={lead.dossier ? lead.dossier.name : "nessuno"} />
@@ -116,7 +140,7 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Row label="Nome" v={<Link href={`/partner/${lead.partner.id}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{lead.partner.name}</Link>} />
               <Row label="Ruolo" v={lead.partner.role || <span className="muted">—</span>} />
-              <Row label="Email" v={lead.partner.email || <span className="muted">—</span>} />
+              <Row label="Email" v={<InlineText value={lead.emailFrom || lead.partner.email || ""} placeholder="email@…" onSave={(s) => save({ email_from: s })} />} />
               {lead.company ? <Row label="Azienda" v={<Link href={`/partner/${lead.company.id}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{lead.company.name}</Link>} /> : null}
             </div>
           ) : <div className="muted" style={{ fontSize: 13 }}>Nessun contatto collegato.</div>}
@@ -129,14 +153,16 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             <div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{lead.nextAction.summary}</div>
               <div className="row" style={{ gap: 8, marginTop: 6, alignItems: "center" }}>
-                <span style={{ fontSize: 13, color: aTone ? aTone.color : "var(--muted)", fontWeight: aTone ? 600 : 400 }}>{dateLabel(lead.nextAction.date)}</span>
+                <input type="date" defaultValue={(lead.nextAction.date || "").slice(0, 10)} onChange={(e) => save({ cf_date_next_followup: e.target.value })}
+                  style={{ fontSize: 12, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--line)", color: aTone ? aTone.color : "var(--muted)" }} />
                 {aTone ? <span className="chip" style={{ fontSize: 10, background: aTone.color === "var(--danger)" ? "var(--danger-t)" : "var(--warn-t)", color: aTone.color }}>{aTone.label}</span> : null}
               </div>
             </div>
           ) : (
             <div className="empty-honest" style={{ justifyContent: "space-between" }}>
               <span>Nessuna azione pianificata.</span>
-              <span className="empty-action" onClick={() => setComposeOpen(true)}>+ Pianifica</span>
+              <input type="date" onChange={(e) => e.target.value && save({ cf_date_next_followup: e.target.value })}
+                style={{ fontSize: 12, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--accent)" }} />
             </div>
           )}
         </div>
@@ -194,17 +220,55 @@ function StageStepper({ stages, currentId }: { stages: LeadDetail["stages"]; cur
   );
 }
 
-// ── Metric card: numero grosso, colore solo per significato, foot opzionale ──
-function Metric({ label, value, color, foot, footColor, alarm }: {
-  label: string; value: string; color?: string; foot?: string; footColor?: string; alarm?: boolean;
+// optimistic merge: nomi campo gateway → chiavi LeadDetail
+function mapOptimistic(values: Record<string, unknown>): Partial<LeadDetail> {
+  const m: Partial<LeadDetail> = {};
+  if ("name" in values) m.name = String(values.name ?? "");
+  if ("expected_revenue" in values) m.expectedRevenue = Number(values.expected_revenue) || 0;
+  if ("probability" in values) m.probability = Number(values.probability) || 0;
+  if ("email_from" in values) m.emailFrom = String(values.email_from ?? "");
+  return m;
+}
+
+// ── Metric card: numero grosso; se editValue/onSave → click-to-edit inline (Brief 20 P2) ──
+function Metric({ label, value, display, editValue, suffix, onSave, color, foot, footColor, alarm }: {
+  label: string; value?: string; display?: string; editValue?: number | null; suffix?: string;
+  onSave?: (v: number) => void; color?: string; foot?: string; footColor?: string; alarm?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [raw, setRaw] = useState("");
+  const editable = !!onSave;
+  function begin() { setRaw(editValue != null ? String(editValue) : ""); setEditing(true); }
+  function commit() { setEditing(false); if (onSave) { const n = parseFloat(raw.replace(",", ".")); if (!isNaN(n)) onSave(n); } }
   return (
     <div className="card" style={{ padding: "14px 16px", borderColor: alarm ? "var(--danger)" : undefined }}>
-      <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</div>
-      <div style={{ fontSize: 23, fontWeight: 700, lineHeight: 1.1, marginTop: 4, color: color ?? "var(--ink)" }}>{value}</div>
+      <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}{editable ? " ✎" : ""}</div>
+      {editing ? (
+        <input autoFocus value={raw} onChange={(e) => setRaw(e.target.value)} onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
+          style={{ fontSize: 20, fontWeight: 700, marginTop: 4, width: "100%", border: "1px solid var(--accent)", borderRadius: 6, padding: "2px 6px" }} />
+      ) : (
+        <div onClick={editable ? begin : undefined}
+          style={{ fontSize: 23, fontWeight: 700, lineHeight: 1.1, marginTop: 4, color: color ?? "var(--ink)", cursor: editable ? "text" : "default" }}>
+          {display ?? value}{suffix && (display ?? value) !== "—" ? "" : ""}
+        </div>
+      )}
       {foot ? <div style={{ fontSize: 11, marginTop: 4, color: footColor ?? "var(--muted)", fontWeight: footColor ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{foot}</div> : null}
     </div>
   );
+}
+
+// ── Edit inline testo (email) ──
+function InlineText({ value, placeholder, onSave }: { value: string; placeholder?: string; onSave: (s: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [raw, setRaw] = useState(value);
+  if (editing) {
+    return <input autoFocus value={raw} placeholder={placeholder} onChange={(e) => setRaw(e.target.value)}
+      onBlur={() => { setEditing(false); if (raw !== value) onSave(raw.trim()); }}
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setRaw(value); setEditing(false); } }}
+      style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--accent)", width: "100%" }} />;
+  }
+  return <span onClick={() => { setRaw(value); setEditing(true); }} style={{ cursor: "text" }}>{value || <span className="muted">+ aggiungi</span>}</span>;
 }
 
 function Row({ label, v }: { label: string; v: React.ReactNode }) {

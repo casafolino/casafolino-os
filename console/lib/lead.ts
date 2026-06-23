@@ -20,6 +20,8 @@ export type LeadDetail = {
   probability: number | null;
   score: number | null;
   rottingState: string | null;
+  activityState: string | null; // Brief 20 B — da attività reale
+  daysInactive: number | null;
   createDate: string | null;
   daysOpen: number | null;
   nextAction: { date: string | null; summary: string } | null;
@@ -52,6 +54,19 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 export const getLead = (leadId: number) => post<LeadDetail>("/api/console/lead/get", { leadId });
 export const getLeadTimeline = (leadId: number) => post<LeadTimeline>("/api/console/lead/timeline", { leadId });
+
+// Brief 20 P2 — modifica inline (whitelist: name/expected_revenue/probability/stage_id/email_from/cf_date_next_followup).
+export type UpdateLeadResult = { ok?: boolean; leadId?: number; stageId?: number; stageName?: string; expectedRevenue?: number; probability?: number; name?: string; emailFrom?: string; message?: string };
+export const updateLead = (leadId: number, values: Record<string, unknown>) =>
+  post<UpdateLeadResult>("/api/console/lead/update", { leadId, values });
+
+// Brief 20 B — stato attività reale (neutral = grigio, mai rosso falso).
+export const activityLabel: Record<string, { label: string; color: string }> = {
+  fresh: { label: "Attivo", color: "#2F6B4F" },
+  warning: { label: "Da seguire", color: "#C8A43A" },
+  danger: { label: "Fermo", color: "#B23B3B" },
+  neutral: { label: "Nessuna attività", color: "#8A8A8A" },
+};
 
 export const rottingLabel: Record<string, { label: string; color: string }> = {
   fresh: { label: "Fresco", color: "#2F6B4F" },

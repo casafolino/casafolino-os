@@ -9,8 +9,13 @@ export type BoardCard = {
   value: number | null;
   owner: string;
   score: number | null;
-  rottingState: string | null;
-  daysInStage: number | null;
+  activityState: string | null; // Brief 20 B — da attività reale (fresh/warning/danger/neutral)
+  daysInactive: number | null;
+};
+
+// colore stato attività (rotting reale): neutral = grigio (niente rosso falso)
+export const activityColor: Record<string, string> = {
+  fresh: "#2F6B4F", warning: "#C8A43A", danger: "#B23B3B", neutral: "#C4C6CB",
 };
 
 export type BoardColumn = {

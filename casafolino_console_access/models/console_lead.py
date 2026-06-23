@@ -28,6 +28,26 @@ def _is_free_domain(domain):
     return (domain or '').lower().strip() in _GENERIC_EMAIL_DOMAINS
 
 
+def _activity_state(today, stage_dt, chatter_dt, extra_dt=None):
+    """Brief 20 B — stato rotting da ATTIVITÀ REALE (MAX di stage-update / nota / mail), NON da
+    create_date. Ritorna (state, days). Nessuna attività → 'neutral' (mai rosso falso).
+    Definito qui (console_lead, caricato prima) per evitare l'import circolare con console_pipeline."""
+    acts = []
+    for d in (stage_dt, chatter_dt, extra_dt):
+        if d:
+            dd = fields.Datetime.to_datetime(d)
+            if dd:
+                acts.append(dd)
+    if not acts:
+        return 'neutral', None
+    days = (today - max(acts).date()).days
+    if days > 30:
+        return 'danger', days
+    if days > 14:
+        return 'warning', days
+    return 'fresh', days
+
+
 def _require_manager(env, operator):
     """Brief 5 — difesa in profondità: i dati CRM sono SOLO per i manager.
     L'operatore (Maria/Anna/Teresa/Valentina) è in group_console_operator ma NON manager
@@ -100,6 +120,21 @@ class CrmLeadConsoleRead(models.Model):
         create_dt = lead.create_date
         days_open = (fields.Datetime.now() - create_dt).days if create_dt else None
 
+        # Brief 20 B — rotting da ATTIVITÀ REALE (stage-update / ultima nota chatter / ultima mail
+        # console del partner), NON da create_date. Niente attività → neutro (mai rosso falso).
+        chatter = self.env['mail.message'].sudo().search(
+            [('model', '=', 'crm.lead'), ('res_id', '=', lead.id),
+             ('message_type', 'in', ['comment', 'notification'])], order='date desc', limit=1)
+        last_mail = self.env['casafolino.mail.message']
+        if lead.partner_id:
+            last_mail = self.env['casafolino.mail.message'].sudo().search(
+                [('partner_id', '=', lead.partner_id.id)], order='email_date desc', limit=1)
+        today = fields.Date.context_today(self)
+        activity_state, days_inactive = _activity_state(
+            today, lead.date_last_stage_update,
+            chatter.date if chatter else None,
+            last_mail.email_date if last_mail else None)
+
         _audit(self.env, 'crm.lead', [lead.id], 'get_lead', None, operator)
         return {
             'id': lead.id,
@@ -113,6 +148,8 @@ class CrmLeadConsoleRead(models.Model):
             'probability': lead.probability,
             'score': lead.cf_lead_score if 'cf_lead_score' in lead._fields else None,
             'rottingState': lead.cf_rotting_state if 'cf_rotting_state' in lead._fields else None,
+            'activityState': activity_state,
+            'daysInactive': days_inactive,
             'createDate': fields.Datetime.to_string(create_dt) if create_dt else None,
             'daysOpen': days_open,
             'nextAction': next_action,
