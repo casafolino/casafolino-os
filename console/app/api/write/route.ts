@@ -20,10 +20,11 @@ export async function POST(req: Request) {
         result = await sendMail(payload as { to: string; subject: string; bodyHtml: string });
         break;
       case "postLeadNote":
-        result = await postLeadNote(payload as { leadId: number; body: string });
+        // operatorUid dalla sessione (non dal client): autore/attribution affidabili.
+        result = await postLeadNote({ ...(payload as { leadId: number; body: string }), operatorUid: session.operatorUid });
         break;
       case "createLeadActivity":
-        result = await createLeadActivity(payload as { leadId: number; summary: string; dueDate: string });
+        result = await createLeadActivity({ ...(payload as { leadId: number; summary: string; dueDate: string }), operatorUid: session.operatorUid });
         break;
       default:
         return NextResponse.json({ ok: false, message: `azione sconosciuta: ${action}` }, { status: 400 });
