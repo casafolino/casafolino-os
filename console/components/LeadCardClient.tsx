@@ -4,7 +4,7 @@
 // → 4 metriche → azioni → pannelli → timeline. Solo dati reali da console_get_lead. Nessun gateway nuovo.
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLead, getLeadTimeline, updateLead, activityLabel, type LeadDetail, type LeadTimelineItem } from "@/lib/lead";
+import { getLead, getLeadTimeline, updateLead, activityLabel, LEAD_EDITABLE_BY_ROLE, type LeadDetail, type LeadTimelineItem } from "@/lib/lead";
 import { moneyCompact, dateLabel } from "@/components/Honest";
 import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
@@ -41,6 +41,14 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
   const [items, setItems] = useState<LeadTimelineItem[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  // S4 — vista read-only di default; un solo "Modifica" → bozza locale → Salva/Annulla.
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  function loadLead() {
+    getLead(leadId).then((d) => { if (d && d.id) setLead(d); else setErr(d?.message ?? "lead non trovato"); }).catch((e) => setErr((e as Error).message));
+  }
 
   useEffect(() => {
     let alive = true;
@@ -54,16 +62,53 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
     getLeadTimeline(leadId).then((t) => { if (t?.items) setItems(t.items); }).catch(() => {});
   }
 
-  // Brief 20 P2 — salva un campo whitelisted; ottimistico (merge subito) + rollback se il server nega.
-  async function save(values: Record<string, unknown>) {
+  // S4 — whitelist effettiva per ruolo (manager pieno; operatore ridotto — comunque gated lato server).
+  function editableFields(l: LeadDetail): Set<string> {
+    return new Set(LEAD_EDITABLE_BY_ROLE[l.role ?? "manager"] ?? LEAD_EDITABLE_BY_ROLE.manager);
+  }
+  function canEdit(field: string): boolean { return !!lead && editableFields(lead).has(field); }
+  function df(k: string): string { return draft[k] ?? ""; }
+  function setField(k: string, v: string) { setDraft((d) => ({ ...d, [k]: v })); }
+
+  function beginEdit() {
     if (!lead) return;
-    const snapshot = lead;
-    setLead({ ...lead, ...mapOptimistic(values) });
+    setErr(null);
+    setDraft({
+      name: lead.name ?? "",
+      stage_id: String(lead.stageId ?? ""),
+      expected_revenue: lead.expectedRevenue != null ? String(lead.expectedRevenue) : "",
+      probability: lead.probability != null ? String(lead.probability) : "",
+      email_from: lead.emailFrom ?? "",
+      cf_date_next_followup: (lead.nextAction?.date || "").slice(0, 10),
+    });
+    setEditing(true);
+  }
+  function cancelEdit() { setEditing(false); setDraft({}); setErr(null); }
+
+  // S4 — Salva: invia SOLO i campi whitelisted e realmente cambiati; il server è l'autorità finale.
+  async function saveEdits() {
+    if (!lead) return;
+    const wl = editableFields(lead);
+    const current: Record<string, string> = {
+      name: lead.name ?? "", stage_id: String(lead.stageId ?? ""),
+      expected_revenue: lead.expectedRevenue != null ? String(lead.expectedRevenue) : "",
+      probability: lead.probability != null ? String(lead.probability) : "",
+      email_from: lead.emailFrom ?? "", cf_date_next_followup: (lead.nextAction?.date || "").slice(0, 10),
+    };
+    const values: Record<string, unknown> = {};
+    for (const k of wl) {
+      if ((draft[k] ?? "") !== (current[k] ?? "")) {
+        values[k] = k === "stage_id" ? Number(draft[k]) : draft[k];
+      }
+    }
+    if (Object.keys(values).length === 0) { setEditing(false); setDraft({}); return; }
+    setSaving(true);
     try {
       const r = await updateLead(leadId, values);
-      if (r.ok) setLead((cur) => cur ? { ...cur, name: r.name ?? cur.name, expectedRevenue: r.expectedRevenue ?? cur.expectedRevenue, probability: r.probability ?? cur.probability, stageId: r.stageId ?? cur.stageId, stageName: r.stageName ?? cur.stageName, emailFrom: r.emailFrom ?? cur.emailFrom } : cur);
-      else { setLead(snapshot); setErr(r.message ?? "salvataggio negato"); }
-    } catch (e) { setLead(snapshot); setErr((e as Error).message); }
+      if (r.ok) { setEditing(false); setDraft({}); loadLead(); } // ricarica canonico (rotting/nextAction ricalcolati)
+      else setErr(r.message ?? "salvataggio negato");
+    } catch (e) { setErr((e as Error).message); }
+    finally { setSaving(false); }
   }
 
   if (err) return <div className="card" style={{ padding: 16, color: "var(--danger)" }}>Errore: {err}</div>;
@@ -92,6 +137,15 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             {subtitle ? <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{subtitle}</div> : null}
           </div>
           <div className="row" style={{ gap: 9, alignItems: "center", flexShrink: 0 }}>
+            {/* S4 — un solo bottone Modifica; in edit mode → Salva/Annulla */}
+            {editing ? (
+              <>
+                <button className="btn-primary" onClick={saveEdits} disabled={saving}>{saving ? "Salvo…" : "Salva"}</button>
+                <button className="btn" onClick={cancelEdit} disabled={saving}>Annulla</button>
+              </>
+            ) : (
+              <button className="btn" onClick={beginEdit} title="Modifica i campi consentiti">✎ Modifica</button>
+            )}
             <span style={{ width: 32, height: 32, borderRadius: 999, background: "var(--accent-t)", color: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12 }}>{initials(lead.owner)}</span>
             <div style={{ textAlign: "right" }}>
               <div className="muted" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>Owner</div>
@@ -99,28 +153,33 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             </div>
           </div>
         </div>
+        {editing ? <div className="muted" style={{ fontSize: 11, marginTop: 8 }}>Modalità modifica — editabili solo i campi consentiti dal tuo ruolo.</div> : null}
       </div>
 
       {/* ── STEPPER + Fase editabile ── */}
       <div className="card" style={{ padding: "14px 18px" }}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <span className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>Fase</span>
-          <select value={lead.stageId} onChange={(e) => save({ stage_id: Number(e.target.value) })}
-            style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--line)", fontSize: 12 }}>
-            {lead.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          {editing && canEdit("stage_id") ? (
+            <select value={df("stage_id")} onChange={(e) => setField("stage_id", e.target.value)}
+              style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--accent)", fontSize: 12 }}>
+              {lead.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          ) : (
+            <span style={{ fontSize: 12, fontWeight: 600 }}>{lead.stageName}</span>
+          )}
         </div>
-        <StageStepper stages={lead.stages} currentId={lead.stageId} />
+        <StageStepper stages={lead.stages} currentId={editing && df("stage_id") ? Number(df("stage_id")) : lead.stageId} />
       </div>
 
-      {/* ── 4 METRICHE (Valore/Probabilità editabili inline) ── */}
+      {/* ── 4 METRICHE — Valore/Probabilità editabili SOLO in edit mode (S4) ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        <Metric label="Valore" editValue={lead.expectedRevenue}
+        <Metric label="Valore"
           display={lead.expectedRevenue != null ? moneyCompact(lead.expectedRevenue) : "—"}
-          onSave={(v) => save({ expected_revenue: v })} />
-        <Metric label="Probabilità" editValue={lead.probability} suffix="%"
+          editing={editing && canEdit("expected_revenue")} editVal={df("expected_revenue")} onEdit={(v) => setField("expected_revenue", v)} />
+        <Metric label="Probabilità" suffix="%"
           display={lead.probability != null ? `${Math.round(lead.probability)}%` : "—"}
-          onSave={(v) => save({ probability: v })} />
+          editing={editing && canEdit("probability")} editVal={df("probability")} onEdit={(v) => setField("probability", v)} />
         <Metric
           label="Inattivo da"
           value={lead.daysInactive != null ? `${lead.daysInactive}g` : "—"}
@@ -152,7 +211,10 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Row label="Nome" v={<Link href={`/partner/${lead.partner.id}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{lead.partner.name}</Link>} />
               {lead.partner.role || lead.partner.function ? <Row label="Ruolo" v={lead.partner.role || lead.partner.function} /> : null}
-              <Row label="Email" v={<InlineText value={lead.emailFrom || lead.partner.email || ""} placeholder="email@…" onSave={(s) => save({ email_from: s })} />} />
+              <Row label="Email" v={editing && canEdit("email_from")
+                ? <input value={df("email_from")} placeholder="email@…" onChange={(e) => setField("email_from", e.target.value)}
+                    style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--accent)", width: "100%" }} />
+                : (lead.emailFrom || lead.partner.email || <span className="muted">—</span>)} />
               {lead.partner.phone ? <Row label="Telefono" v={lead.partner.phone} /> : null}
             </div>
           ) : <div className="muted" style={{ fontSize: 13 }}>Nessun contatto collegato.</div>}
@@ -182,17 +244,23 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             <div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{lead.nextAction.summary}</div>
               <div className="row" style={{ gap: 8, marginTop: 6, alignItems: "center" }}>
-                <input type="date" defaultValue={(lead.nextAction.date || "").slice(0, 10)} onChange={(e) => save({ cf_date_next_followup: e.target.value })}
-                  style={{ fontSize: 12, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--line)", color: aTone ? aTone.color : "var(--muted)" }} />
+                {editing && canEdit("cf_date_next_followup") ? (
+                  <input type="date" value={df("cf_date_next_followup")} onChange={(e) => setField("cf_date_next_followup", e.target.value)}
+                    style={{ fontSize: 12, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--accent)" }} />
+                ) : (
+                  <span style={{ fontSize: 12, color: aTone ? aTone.color : "var(--muted)" }}>{dateLabel(lead.nextAction.date)}</span>
+                )}
                 {aTone ? <span className="chip" style={{ fontSize: 10, background: aTone.color === "var(--danger)" ? "var(--danger-t)" : "var(--warn-t)", color: aTone.color }}>{aTone.label}</span> : null}
               </div>
             </div>
-          ) : (
+          ) : editing && canEdit("cf_date_next_followup") ? (
             <div className="empty-honest" style={{ justifyContent: "space-between" }}>
               <span>Nessuna azione pianificata.</span>
-              <input type="date" onChange={(e) => e.target.value && save({ cf_date_next_followup: e.target.value })}
+              <input type="date" value={df("cf_date_next_followup")} onChange={(e) => setField("cf_date_next_followup", e.target.value)}
                 style={{ fontSize: 12, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--accent)" }} />
             </div>
+          ) : (
+            <div className="empty-honest"><span>Nessuna azione pianificata.</span></div>
           )}
       </div>
 
@@ -251,55 +319,26 @@ function StageStepper({ stages, currentId }: { stages: LeadDetail["stages"]; cur
   );
 }
 
-// optimistic merge: nomi campo gateway → chiavi LeadDetail
-function mapOptimistic(values: Record<string, unknown>): Partial<LeadDetail> {
-  const m: Partial<LeadDetail> = {};
-  if ("name" in values) m.name = String(values.name ?? "");
-  if ("expected_revenue" in values) m.expectedRevenue = Number(values.expected_revenue) || 0;
-  if ("probability" in values) m.probability = Number(values.probability) || 0;
-  if ("email_from" in values) m.emailFrom = String(values.email_from ?? "");
-  return m;
-}
-
-// ── Metric card: numero grosso; se editValue/onSave → click-to-edit inline (Brief 20 P2) ──
-function Metric({ label, value, display, editValue, suffix, onSave, color, foot, footColor, alarm }: {
-  label: string; value?: string; display?: string; editValue?: number | null; suffix?: string;
-  onSave?: (v: number) => void; color?: string; foot?: string; footColor?: string; alarm?: boolean;
+// ── Metric card: numero grosso; in edit mode (S4) diventa input controllato dalla bozza ──
+function Metric({ label, value, display, editing, editVal, suffix, onEdit, color, foot, footColor, alarm }: {
+  label: string; value?: string; display?: string; editing?: boolean; editVal?: string; suffix?: string;
+  onEdit?: (v: string) => void; color?: string; foot?: string; footColor?: string; alarm?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [raw, setRaw] = useState("");
-  const editable = !!onSave;
-  function begin() { setRaw(editValue != null ? String(editValue) : ""); setEditing(true); }
-  function commit() { setEditing(false); if (onSave) { const n = parseFloat(raw.replace(",", ".")); if (!isNaN(n)) onSave(n); } }
+  const editable = !!onEdit; // questa metrica è whitelisted
   return (
-    <div className="card" style={{ padding: "14px 16px", borderColor: alarm ? "var(--danger)" : undefined }}>
-      <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}{editable ? " ✎" : ""}</div>
-      {editing ? (
-        <input autoFocus value={raw} onChange={(e) => setRaw(e.target.value)} onBlur={commit}
-          onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
+    <div className="card" style={{ padding: "14px 16px", borderColor: alarm ? "var(--danger)" : editing && editable ? "var(--accent)" : undefined }}>
+      <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</div>
+      {editing && editable ? (
+        <input autoFocus={false} value={editVal ?? ""} onChange={(e) => onEdit!(e.target.value)}
           style={{ fontSize: 20, fontWeight: 700, marginTop: 4, width: "100%", border: "1px solid var(--accent)", borderRadius: 6, padding: "2px 6px" }} />
       ) : (
-        <div onClick={editable ? begin : undefined}
-          style={{ fontSize: 23, fontWeight: 700, lineHeight: 1.1, marginTop: 4, color: color ?? "var(--ink)", cursor: editable ? "text" : "default" }}>
+        <div style={{ fontSize: 23, fontWeight: 700, lineHeight: 1.1, marginTop: 4, color: color ?? "var(--ink)" }}>
           {display ?? value}{suffix && (display ?? value) !== "—" ? "" : ""}
         </div>
       )}
       {foot ? <div style={{ fontSize: 11, marginTop: 4, color: footColor ?? "var(--muted)", fontWeight: footColor ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{foot}</div> : null}
     </div>
   );
-}
-
-// ── Edit inline testo (email) ──
-function InlineText({ value, placeholder, onSave }: { value: string; placeholder?: string; onSave: (s: string) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [raw, setRaw] = useState(value);
-  if (editing) {
-    return <input autoFocus value={raw} placeholder={placeholder} onChange={(e) => setRaw(e.target.value)}
-      onBlur={() => { setEditing(false); if (raw !== value) onSave(raw.trim()); }}
-      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setRaw(value); setEditing(false); } }}
-      style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--accent)", width: "100%" }} />;
-  }
-  return <span onClick={() => { setRaw(value); setEditing(true); }} style={{ cursor: "text" }}>{value || <span className="muted">+ aggiungi</span>}</span>;
 }
 
 function Row({ label, v }: { label: string; v: React.ReactNode }) {

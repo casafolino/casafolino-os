@@ -192,6 +192,9 @@ class CrmLeadConsoleRead(models.Model):
                        else (self._console_company_card(partner) if (partner and partner.is_company) else False),
             'dossier': dossier,
             'emailFrom': lead.email_from or (partner.email if partner else '') or '',
+            # S4 — il chiamante ha passato _require_manager: per i dati CRM è sempre manager
+            # (l'operatore è gated fuori, Brief 5). La UI usa il ruolo per la whitelist edit.
+            'role': 'manager',
         }
 
     @api.model

@@ -38,7 +38,16 @@ export type LeadDetail = {
   company: LeadCompany | false;
   dossier: { id: number; name: string; status: string; valueEstimate: number | null } | false;
   emailFrom: string;
+  role?: "manager" | "operator"; // S4 — ruolo del chiamante (whitelist edit differenziata)
   message?: string;
+};
+
+// S4 — whitelist campi editabili per ruolo. Il server (console_update_lead) è l'autorità finale;
+// qui la UI mostra solo ciò che il ruolo può toccare. CRM è manager-only (Brief 5): l'operatore
+// non raggiunge nemmeno la scheda → whitelist ridotta puramente difensiva.
+export const LEAD_EDITABLE_BY_ROLE: Record<string, string[]> = {
+  manager: ["stage_id", "expected_revenue", "probability", "email_from", "cf_date_next_followup", "name"],
+  operator: ["cf_date_next_followup"],
 };
 
 export type TimelineKind = "mail" | "campionatura" | "note";
