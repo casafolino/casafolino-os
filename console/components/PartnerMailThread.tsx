@@ -1,5 +1,6 @@
 // PartnerMailThread — "mail ovunque": stesso thread del bundle in contatto,
 // lead, card pipeline, dossier. Riceve i messaggi dal bundle (un'unica fonte).
+import Link from "next/link";
 import type { MailMessage } from "@/lib/types";
 import { EmptyHonest, dateLabel } from "./Honest";
 
@@ -21,7 +22,7 @@ export function PartnerMailThread({
       ) : (
         <div>
           {list.map((m) => (
-            <div key={m.id} className={`mail-item ${m.direction === "inbound" ? "mail-dir-in" : "mail-dir-out"}`}>
+            <Link key={m.id} href={`/mail/${m.id}`} className={`mail-item ${m.direction === "inbound" ? "mail-dir-in" : "mail-dir-out"}`} style={{ display: "block", color: "inherit", textDecoration: "none" }}>
               <div className="mail-meta">
                 <span className={!m.isRead && m.direction === "inbound" ? "mail-unread" : ""}>
                   {m.direction === "inbound" ? "← " : "→ "}
@@ -35,7 +36,7 @@ export function PartnerMailThread({
               </div>
               {m.snippet ? <div style={{ color: "var(--muted)", fontSize: 13 }}>{m.snippet}</div> : null}
               {m.aiUrgency === "high" ? <span className="chip chip-hot" style={{ marginTop: 4 }}>urgenza alta</span> : null}
-            </div>
+            </Link>
           ))}
         </div>
       )}

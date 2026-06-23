@@ -2,6 +2,7 @@
 // Timeline attività del lead: voci tipizzate (mail / campionatura / nota) con icona+colore.
 // Le mail del console emergono qui (sorgente partner+lead_id). Empty state onesto.
 // La campionatura in corso mostra il semaforo (riusa CampionaturaTimeline).
+import Link from "next/link";
 import { dateLabel } from "@/components/Honest";
 import { CampionaturaTimeline } from "@/components/CampionaturaTimeline";
 import { timelineMeta, type LeadTimelineItem } from "@/lib/lead";
@@ -33,7 +34,11 @@ export function LeadTimeline({ items, activeShipmentId }: { items: LeadTimelineI
                     {dateLabel(i.date)} · <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
                     {i.direction ? ` · ${i.direction === "inbound" ? "ricevuta" : "inviata"}` : ""}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.title}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {i.type === "mail" && i.messageId
+                      ? <Link href={`/mail/${i.messageId}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{i.title}</Link>
+                      : i.title}
+                  </div>
                   {i.subtitle ? <div className="muted" style={{ fontSize: 12 }}>{i.subtitle}</div> : null}
                 </div>
               </div>
