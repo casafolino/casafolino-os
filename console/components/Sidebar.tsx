@@ -3,6 +3,7 @@
 // "Mail" demotata in un gruppo secondario "Altro" (overflow): raggiungibile, non in primo piano.
 import Link from "next/link";
 import { Icon } from "./Icons";
+import { DensityToggle } from "./DensityToggle";
 
 type NavItem = { key: string; label: string; href: string; icon: string; count?: number };
 
@@ -73,7 +74,10 @@ export function Sidebar({
           {n.label}
         </Link>
       ))}
-      <div className="me" style={{ marginTop: "auto" }}>
+      <div style={{ marginTop: "auto", padding: "0 8px 6px" }}>
+        <DensityToggle />
+      </div>
+      <div className="me">
         <span className="av">AF</span>
         <span>Antonio</span>
       </div>

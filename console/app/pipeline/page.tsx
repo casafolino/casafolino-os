@@ -5,10 +5,13 @@ import { Sidebar } from "@/components/Sidebar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { SearchBar } from "@/components/SearchBar";
 import { QuickCreateLead, QuickCreateDossier } from "@/components/QuickCreate";
+import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default function Pipeline() {
+export default async function Pipeline() {
+  const session = await auth();
+  const me = session?.user?.name ?? "";
   return (
     <div className="app">
       <Sidebar active="pipeline" variant="rail" />
@@ -21,7 +24,7 @@ export default function Pipeline() {
           </div>
           <SearchBar />
         </div>
-        <KanbanBoard />
+        <KanbanBoard me={me} />
       </main>
     </div>
   );

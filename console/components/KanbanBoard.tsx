@@ -9,6 +9,7 @@ import { getBoard, setLeadStage, type Board, type BoardCard } from "@/lib/pipeli
 import { moneyCompact } from "@/components/Honest";
 import { Pill, Avatar, Toast } from "@/components/ds";
 import { activityTone, type Tone } from "@/lib/tokens";
+import { SavedViewBar, useSavedView, type SavedView } from "@/components/SavedViewBar";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
 
 type SortKey = "value" | "rotting" | "activity";
@@ -19,6 +20,22 @@ const SORT_LABEL: Record<SortKey, string> = {
 };
 const ROT_RANK: Record<string, number> = { danger: 0, warning: 1, fresh: 2, neutral: 3 };
 
+// F3 — viste salvate per la pipeline. "Campionature in corso" richiederebbe un flag campione
+// sulla card (non presente in BoardCard → lettura gateway aggiuntiva): rinviata, non finta.
+const VIEWS: SavedView[] = [
+  { key: "all", label: "tutte" },
+  { key: "mine", label: "le mie aperte" },
+  { key: "rotting", label: "in marcire" },
+  { key: "no-next", label: "senza prossima attività" },
+];
+
+function matchesView(card: BoardCard, view: string, me: string): boolean {
+  if (view === "mine") return !!me && (card.owner || "").toLowerCase().includes(me.toLowerCase());
+  if (view === "rotting") return card.activityState === "danger" || card.activityState === "warning";
+  if (view === "no-next") return !card.activityState || card.activityState === "neutral" || card.daysInactive == null;
+  return true;
+}
+
 function sortCards(cards: BoardCard[], key: SortKey): BoardCard[] {
   const arr = [...cards];
   if (key === "value") arr.sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
@@ -28,13 +45,14 @@ function sortCards(cards: BoardCard[], key: SortKey): BoardCard[] {
   return arr;
 }
 
-export function KanbanBoard() {
+export function KanbanBoard({ me = "" }: { me?: string }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ leadId: number; fromStage: number } | null>(null);
   const [overStage, setOverStage] = useState<number | null>(null);
   const [toast, setToast] = useState<{ msg: string; tone: Tone } | null>(null);
   const [sort, setSort] = useState<SortKey>("value");
+  const [view, setView] = useSavedView("cf.console.pipeline.view", "all");
 
   const load = useCallback(async () => {
     try {
@@ -115,10 +133,18 @@ export function KanbanBoard() {
     }
   }
 
-  const columns = useMemo(
-    () => board?.columns.map((c) => ({ ...c, cards: sortCards(c.cards, sort), sum: c.cards.reduce((a, x) => a + (x.value ?? 0), 0) })) ?? [],
-    [board, sort]
-  );
+  const columns = useMemo(() => {
+    if (!board) return [];
+    return board.columns.map((c) => {
+      const filtered = c.cards.filter((x) => matchesView(x, view, me));
+      return {
+        ...c,
+        cards: sortCards(filtered, sort),
+        count: filtered.length,
+        sum: filtered.reduce((a, x) => a + (x.value ?? 0), 0),
+      };
+    });
+  }, [board, sort, view, me]);
 
   if (err)
     return (
@@ -130,6 +156,12 @@ export function KanbanBoard() {
 
   return (
     <>
+      {/* viste salvate (persistite) */}
+      <div className="row" style={{ gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+        <span className="muted" style={{ fontSize: 12 }}>Vista</span>
+        <SavedViewBar views={VIEWS} active={view} onChange={setView} />
+      </div>
+
       {/* barra ordinamento */}
       <div className="row" style={{ gap: 6, marginBottom: 4 }}>
         <span className="muted" style={{ fontSize: 12 }}>Ordina per</span>
