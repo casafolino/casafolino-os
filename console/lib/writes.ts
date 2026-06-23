@@ -1,6 +1,6 @@
 // Scritture — SOLO via Odoo (server-side). Mai SMTP raw: la mail passa da mail.mail.
 // Mock-safe: senza credenziali simula l'esito senza toccare Odoo.
-import { shouldUseMock, callKw } from "./odoo";
+import { shouldUseMock, callKw, searchRead } from "./odoo";
 import { invalidatePartner } from "./bundle";
 
 export interface WriteResult { ok: boolean; id?: number; simulated?: boolean; message: string; }
@@ -23,6 +23,46 @@ export async function linkMessageToLead(input: { messageId: number; leadId: numb
   if (shouldUseMock()) return { ok: true, simulated: true, message: `Mail ${input.messageId} collegata al lead ${input.leadId} (mock)` };
   await callKw<boolean>("casafolino.mail.message", "write", [[input.messageId], { lead_id: input.leadId }]);
   return { ok: true, message: "Mail collegata al lead" };
+}
+
+/** Nota interna su un lead (chatter nativo: mail.message via message_post). Nessun campo custom. */
+export async function postLeadNote(input: { leadId: number; body: string }): Promise<WriteResult> {
+  const body = (input.body || "").trim();
+  if (!body) return { ok: false, message: "Nota vuota." };
+  if (shouldUseMock()) return { ok: true, simulated: true, message: "Nota registrata (mock)" };
+  const msgId = await callKw<number>("crm.lead", "message_post", [[input.leadId]], {
+    body,
+    message_type: "comment",
+    subtype_xmlid: "mail.mt_note",
+  });
+  return { ok: true, id: msgId, message: "Nota registrata" };
+}
+
+/** Attività futura su un lead (mail.activity nativo, con scadenza). Nessun campo custom. */
+export async function createLeadActivity(input: {
+  leadId: number;
+  summary: string;
+  dueDate: string; // YYYY-MM-DD
+}): Promise<WriteResult> {
+  const summary = (input.summary || "").trim();
+  if (!summary) return { ok: false, message: "Descrizione attività mancante." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)) return { ok: false, message: "Data attività non valida." };
+  if (shouldUseMock()) return { ok: true, simulated: true, message: `Attività "${summary}" pianificata (mock)` };
+  const [modelRow] = await searchRead<{ id: number }>("ir.model", [["model", "=", "crm.lead"]], { fields: ["id"], limit: 1 });
+  if (!modelRow) return { ok: false, message: "Modello crm.lead non risolto." };
+  const [todoRow] = await searchRead<{ res_id: number }>(
+    "ir.model.data",
+    [["module", "=", "mail"], ["name", "=", "mail_activity_data_todo"]],
+    { fields: ["res_id"], limit: 1 }
+  );
+  const id = await callKw<number>("mail.activity", "create", [{
+    res_model_id: modelRow.id,
+    res_id: input.leadId,
+    summary,
+    date_deadline: input.dueDate,
+    ...(todoRow?.res_id ? { activity_type_id: todoRow.res_id } : {}),
+  }]);
+  return { ok: true, id, message: "Attività pianificata" };
 }
 
 /** Invia email tramite Odoo (mail.mail.create + send). MAI SMTP diretto. */

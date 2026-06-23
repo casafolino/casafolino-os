@@ -1,9 +1,12 @@
 // POST /api/write { action, payload } → scritture via Odoo (server). Mai SMTP raw.
 import { NextResponse } from "next/server";
-import { createLead, linkMessageToLead, sendMail } from "@/lib/writes";
+import { auth } from "@/lib/auth";
+import { createLead, linkMessageToLead, sendMail, postLeadNote, createLeadActivity } from "@/lib/writes";
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.operatorUid) return NextResponse.json({ ok: false, message: "unauthorized" }, { status: 401 });
     const { action, payload } = (await req.json()) as { action: string; payload: Record<string, unknown> };
     let result;
     switch (action) {
@@ -15,6 +18,12 @@ export async function POST(req: Request) {
         break;
       case "sendMail":
         result = await sendMail(payload as { to: string; subject: string; bodyHtml: string });
+        break;
+      case "postLeadNote":
+        result = await postLeadNote(payload as { leadId: number; body: string });
+        break;
+      case "createLeadActivity":
+        result = await createLeadActivity(payload as { leadId: number; summary: string; dueDate: string });
         break;
       default:
         return NextResponse.json({ ok: false, message: `azione sconosciuta: ${action}` }, { status: 400 });

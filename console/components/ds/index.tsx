@@ -4,7 +4,7 @@
 // sentence case, colore solo per significato.
 "use client";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t, toneStyle, colorFor, initials, type Tone } from "@/lib/tokens";
 import { moneyCompact } from "@/components/Honest";
 
@@ -139,4 +139,116 @@ export function Toast({
       {message}
     </div>
   );
+}
+
+export type InlineOption = { value: string; label: string };
+
+/**
+ * Campo a modifica inline (no modale): click sul valore → input/select in place →
+ * Invio o blur salva, Esc annulla. Il salvataggio è delegato a onSave(value):
+ * il chiamante fa il write ottimistico + rollback + toast. Se non editabile,
+ * mostra solo il valore. Sentence case, bordi 0.5px, colore solo per significato.
+ */
+export function InlineEditField({
+  value,
+  display,
+  editable = true,
+  type = "text",
+  options,
+  placeholder,
+  onSave,
+  valueStyle,
+}: {
+  value: string;
+  display?: ReactNode;
+  editable?: boolean;
+  type?: "text" | "number" | "select" | "date" | "email";
+  options?: InlineOption[];
+  placeholder?: string;
+  onSave: (next: string) => Promise<boolean> | boolean;
+  valueStyle?: React.CSSProperties;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(value);
+      inputRef.current?.focus();
+    }
+  }, [editing, value]);
+
+  async function commit() {
+    if (busy) return;
+    if (draft === value) {
+      setEditing(false);
+      return;
+    }
+    setBusy(true);
+    const ok = await onSave(draft);
+    setBusy(false);
+    if (ok) setEditing(false);
+  }
+  function cancel() {
+    setDraft(value);
+    setEditing(false);
+  }
+
+  if (!editable) {
+    return <span style={valueStyle}>{display ?? value ?? placeholder}</span>;
+  }
+
+  if (!editing) {
+    const empty = value === "" || value == null;
+    return (
+      <span
+        onClick={() => setEditing(true)}
+        title="Clic per modificare"
+        style={{
+          cursor: "text",
+          borderBottom: "1px dashed var(--line-2)",
+          paddingBottom: 1,
+          color: empty ? "var(--muted)" : undefined,
+          ...valueStyle,
+        }}
+      >
+        {empty ? placeholder ?? "imposta" : display ?? value}
+      </span>
+    );
+  }
+
+  const common = {
+    ref: inputRef as never,
+    value: draft,
+    disabled: busy,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setDraft(e.target.value),
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && type !== "select") commit();
+      if (e.key === "Escape") cancel();
+    },
+    onBlur: commit,
+    style: {
+      fontSize: "inherit",
+      fontWeight: "inherit" as const,
+      padding: "2px 6px",
+      borderRadius: t.rSm,
+      border: "1px solid var(--accent)",
+      maxWidth: "100%",
+    },
+  };
+
+  if (type === "select") {
+    return (
+      <select {...common}>
+        {(options ?? []).map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  return <input {...common} type={type} placeholder={placeholder} />;
 }

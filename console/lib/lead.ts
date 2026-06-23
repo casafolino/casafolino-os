@@ -1,5 +1,6 @@
 // Tipi + client helpers per la scheda lead ricca (Brief 4). operator_uid sempre dalla sessione.
 import { BP } from "@/lib/basePath";
+import type { PartnerBundle } from "@/lib/types";
 
 export type LeadStage = { id: number; name: string; sequence: number; isWon: boolean; isLost: boolean };
 
@@ -112,3 +113,37 @@ export const timelineMeta: Record<TimelineKind, { label: string; color: string; 
   campionatura: { label: "Campionatura", color: "#2F6B4F", icon: "📦" },
   note: { label: "Nota", color: "#8A8A8A", icon: "•" },
 };
+
+// ── F1 — bundle relazione per il right-rail (lente: read-only, link ai record nativi). Lazy. ──
+export const fetchPartnerBundle = (partnerId: number) =>
+  post<PartnerBundle | null>("/api/console/partner-bundle", { partnerId });
+
+// ── F1 — scritture native via /api/write (chatter + attività). Nessun campo custom. ──
+async function postWrite<T>(action: string, payload: unknown): Promise<T> {
+  const res = await fetch(`${BP}/api/write`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, payload }),
+  });
+  return (await res.json()) as T;
+}
+export type WriteAck = { ok: boolean; id?: number; message: string };
+export const postLeadNote = (leadId: number, body: string) =>
+  postWrite<WriteAck>("postLeadNote", { leadId, body });
+export const createLeadActivity = (leadId: number, summary: string, dueDate: string) =>
+  postWrite<WriteAck>("createLeadActivity", { leadId, summary, dueDate });
+
+// ── F1 — Next-best-action per fase (mappa statica iniziale, da affinare). Match per frammento nome. ──
+const STAGE_NBA: { match: RegExp; hint: string }[] = [
+  { match: /nuov|new|lead/i, hint: "qualifica il contatto e fissa una prima call." },
+  { match: /qualif/i, hint: "invia campionatura o materiale e proponi una data." },
+  { match: /campion|sample/i, hint: "raccogli il feedback sui campioni e prepara l'offerta." },
+  { match: /offert|propos|quot/i, hint: "concorda prezzo e condizioni, poi chiedi conferma." },
+  { match: /negoz|tratt/i, hint: "rimuovi gli ultimi blocchi e fissa la chiusura." },
+  { match: /chius|closing|order|ordin/i, hint: "conferma l'ordine e avvia l'onboarding." },
+];
+export function nbaForStage(stageName: string | null | undefined): string {
+  const n = stageName || "";
+  for (const r of STAGE_NBA) if (r.match.test(n)) return r.hint;
+  return "registra il prossimo passo concreto con questo cliente.";
+}
