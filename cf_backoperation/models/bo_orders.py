@@ -30,6 +30,11 @@ class BoWorkday(models.Model):
     check_in = fields.Datetime(string="Inizio", required=True)
     check_out = fields.Datetime(string="Fine")
     worked_hours = fields.Float(compute='_compute_hours', store=True)
+    # firma digitale: l'attestazione è identità autenticata + timestamp (no autografa)
+    firma_metodo = fields.Char(string="Metodo firma", default='digitale')
+    firmatario = fields.Char(string="Firmatario")
+    firma_at = fields.Datetime(string="Data firma")
+    sessione_ref = fields.Char(string="Riferimento sessione/dispositivo")
 
     @api.depends('check_in', 'check_out')
     def _compute_hours(self):
@@ -275,14 +280,27 @@ class CfTaskOrders(models.Model):
 
     # ------------------------------------------------------ inizio/fine giornata
     @api.model
-    def bo_day_start(self, employee_id):
+    def bo_day_start(self, employee_id, sessione_ref=False):
+        """Inizio giornata = firma digitale: check_in + operatore + metodo + timestamp.
+        Idempotente: se già aperta non crea né doppia giornata né doppia firma."""
         emp = self._bo_check_employee(employee_id)
         WD = self.env['bo.workday']
         openw = WD.search([('employee_id', '=', emp.id), ('check_out', '=', False)], limit=1)
         if openw:
-            return {'ok': True, 'already_open': True, 'workday_id': openw.id}
-        wd = WD.create({'employee_id': emp.id, 'check_in': fields.Datetime.now()})
-        return {'ok': True, 'workday_id': wd.id, 'check_in': fields.Datetime.to_string(wd.check_in)}
+            return {'ok': True, 'already_open': True, 'workday_id': openw.id,
+                    'firmatario': openw.firmatario or emp.name,
+                    'firma_at': openw.firma_at and fields.Datetime.to_string(openw.firma_at) or False,
+                    'firma_metodo': openw.firma_metodo or 'digitale'}
+        now = fields.Datetime.now()
+        wd = WD.create({
+            'employee_id': emp.id, 'check_in': now,
+            'firma_metodo': 'digitale', 'firmatario': emp.name,
+            'firma_at': now, 'sessione_ref': (sessione_ref or '')[:120],
+        })
+        return {'ok': True, 'workday_id': wd.id,
+                'check_in': fields.Datetime.to_string(now),
+                'firmatario': emp.name, 'firma_at': fields.Datetime.to_string(now),
+                'firma_metodo': 'digitale'}
 
     @api.model
     def bo_day_end(self, employee_id):
