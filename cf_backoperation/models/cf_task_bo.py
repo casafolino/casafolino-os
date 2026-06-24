@@ -83,7 +83,7 @@ class CfTaskBackOperation(models.Model):
             task.bo_titolare_id = emp.id
             if task.state == BO_DONE_STATE:
                 task.state = BO_TODO_STATE
-            task.message_post(body=_("Presa in carico da %s.") % emp.name)
+            task._message_log(body=_("Presa in carico da %s.") % emp.name)
         return self._bo_serialize(self.ids)
 
     def bo_action_to_pool(self):
@@ -91,7 +91,7 @@ class CfTaskBackOperation(models.Model):
         for task in self:
             task.bo_titolare_id = False
             task.bo_assegnata_da_id = False
-            task.message_post(body=_("Rimessa nel pool."))
+            task._message_log(body=_("Rimessa nel pool."))
         return self._bo_serialize(self.ids)
 
     def bo_action_checkin(self, employee_id):
@@ -105,7 +105,7 @@ class CfTaskBackOperation(models.Model):
             task.bo_checkin_at = now
             task.bo_checkout_at = False
             task.state = BO_WIP_STATE
-            task.message_post(body=_("Check-in di %s.") % emp.name)
+            task._message_log(body=_("Check-in di %s.") % emp.name)
         return self._bo_serialize(self.ids)
 
     def bo_action_checkout(self):
@@ -116,7 +116,7 @@ class CfTaskBackOperation(models.Model):
                 delta = (now - task.bo_checkin_at).total_seconds()
                 task.bo_worked_seconds = (task.bo_worked_seconds or 0) + max(0, int(delta))
                 task.bo_checkout_at = now
-                task.message_post(body=_("Check-out (sessione %ds).") % int(delta))
+                task._message_log(body=_("Check-out (sessione %ds).") % int(delta))
         return self._bo_serialize(self.ids)
 
     def bo_action_sign(self, employee_id, firma_b64=False):
@@ -141,7 +141,7 @@ class CfTaskBackOperation(models.Model):
                 except Exception:
                     _logger.warning("Firma non valida per task %s, ignorata.", task.id)
             task.state = BO_DONE_STATE
-            task.message_post(body=_("Firmata e chiusa da %s.") % emp.name)
+            task._message_log(body=_("Firmata e chiusa da %s.") % emp.name)
         return self._bo_serialize(self.ids)
 
     # --------------------------------------------------- claim da MO produzione
@@ -156,14 +156,17 @@ class CfTaskBackOperation(models.Model):
         if existing:
             existing.bo_titolare_id = emp.id
             return self._bo_serialize(existing.ids)[0]
-        task = self.create({
+        task = self.with_context(
+            mail_create_nolog=True, mail_create_nosubscribe=True,
+            mail_notify_force_send=False,
+        ).create({
             'name': _("Produzione %s — %s") % (mo.name, mo.product_id.display_name or ''),
             'bo_kind': 'produzione',
             'bo_production_id': mo.id,
             'bo_titolare_id': emp.id,
             'state': BO_TODO_STATE,
         })
-        task.message_post(body=_("Creata da MO %s, presa in carico da %s.") % (mo.name, emp.name))
+        task._message_log(body=_("Creata da MO %s, presa in carico da %s.") % (mo.name, emp.name))
         return self._bo_serialize(task.ids)[0]
 
     # ----------------------------------------------------------- serialization
