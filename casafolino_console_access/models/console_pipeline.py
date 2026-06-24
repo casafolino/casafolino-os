@@ -35,13 +35,30 @@ class CrmLeadConsolePipeline(models.Model):
         # A: ordina per create_date desc (ultimi creati in cima).
         has_score = 'cf_lead_score' in self._fields
         flds = ['name', 'partner_id', 'expected_revenue', 'user_id', 'stage_id',
-                'date_last_stage_update', 'create_date']
+                'date_last_stage_update', 'create_date', 'tag_ids']
         if has_score:
             flds.append('cf_lead_score')
         rows = self.sudo().search_read(
             [('type', '=', 'opportunity'), ('active', '=', True), ('stage_id', 'in', stage_ids)],
             flds, order='create_date desc', limit=800)
         lead_ids = [r['id'] for r in rows]
+
+        # M6 — tag (nomi) + flag campionatura attiva (lead con cf.shipment in transito). Batch, no N+1.
+        tag_names = {}
+        all_tag_ids = {t for r in rows for t in (r.get('tag_ids') or [])}
+        if all_tag_ids:
+            for t in self.env['crm.tag'].sudo().browse(list(all_tag_ids)):
+                if t.exists():
+                    tag_names[t.id] = t.name
+        campione_leads = set()
+        if lead_ids:
+            for sh in self.env['cf.shipment'].sudo().search_read(
+                    [('lead_id', 'in', lead_ids),
+                     ('state', 'in', ['creato', 'preparazione', 'etichetta', 'spedito'])],
+                    ['lead_id']):
+                lid = sh['lead_id'][0] if sh.get('lead_id') else None
+                if lid:
+                    campione_leads.add(lid)
 
         # B: ATTIVITÀ REALE (batch, no N+1) = MAX(date_last_stage_update, ultima nota chatter).
         # Il rosso non deve più venire da cf_rotting_state (stale, basato su create_date).
@@ -80,6 +97,8 @@ class CrmLeadConsolePipeline(models.Model):
                 'score': r.get('cf_lead_score') if has_score else None,
                 'activityState': state,
                 'daysInactive': days,
+                'tags': [tag_names[t] for t in (r.get('tag_ids') or []) if t in tag_names],
+                'hasCampione': r['id'] in campione_leads,
             })
 
         columns = [{
