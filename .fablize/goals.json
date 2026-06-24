@@ -1,0 +1,34 @@
+{
+ "brief": "CRM Console v2 restyling: F0 discovery+DS, F1 dossier, F2 kanban, F3 cross-surface",
+ "created": "2026-06-23T20:13:29.952212+00:00",
+ "goals": [
+  {
+   "id": "G001",
+   "title": "F0 Discovery+DS",
+   "objective": "inventory committed + centralized DS module (tokens+atoms) adopted by surfaces",
+   "status": "complete",
+   "evidence": "build green; committed (5ade1e4/117732f/51954c4)"
+  },
+  {
+   "id": "G002",
+   "title": "F1 Dossier",
+   "objective": "header/StagePath/QuickActionBar/true-inline-edit/timeline/right-rail context",
+   "status": "complete",
+   "evidence": "build green; committed (5ade1e4/117732f/51954c4)"
+  },
+  {
+   "id": "G003",
+   "title": "F2 Kanban",
+   "objective": "card metrics + column count+€ sum + optimistic DnD + sort/filter",
+   "status": "complete",
+   "evidence": "build green; committed (5ade1e4/117732f/51954c4)"
+  },
+  {
+   "id": "G004",
+   "title": "F3 Cross-surface",
+   "objective": "SavedViewBar + DensityToggle + CommandPalette",
+   "status": "complete",
+   "evidence": "commit 51954c4: CommandPalette + DensityToggle + SavedViewBar; build green"
+  }
+ ]
+}

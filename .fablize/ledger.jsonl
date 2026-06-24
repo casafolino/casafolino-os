@@ -1,0 +1,9 @@
+{"ts": "2026-06-23T20:13:29.953136+00:00", "event": "plan_created", "brief": "CRM Console v2 restyling: F0 discovery+DS, F1 dossier, F2 kanban, F3 cross-surface", "count": 4}
+{"ts": "2026-06-23T20:29:59.696104+00:00", "event": "story_started", "id": "G001", "title": "F0 Discovery+DS"}
+{"ts": "2026-06-23T20:29:59.730498+00:00", "event": "checkpoint", "id": "G001", "status": "complete", "evidence": "build green; committed (5ade1e4/117732f/51954c4)", "verify_cmd": "", "verify_evidence": ""}
+{"ts": "2026-06-23T20:29:59.764236+00:00", "event": "story_started", "id": "G002", "title": "F1 Dossier"}
+{"ts": "2026-06-23T20:29:59.797115+00:00", "event": "checkpoint", "id": "G002", "status": "complete", "evidence": "build green; committed (5ade1e4/117732f/51954c4)", "verify_cmd": "", "verify_evidence": ""}
+{"ts": "2026-06-23T20:29:59.830118+00:00", "event": "story_started", "id": "G003", "title": "F2 Kanban"}
+{"ts": "2026-06-23T20:29:59.863018+00:00", "event": "checkpoint", "id": "G003", "status": "complete", "evidence": "build green; committed (5ade1e4/117732f/51954c4)", "verify_cmd": "", "verify_evidence": ""}
+{"ts": "2026-06-23T20:29:59.895412+00:00", "event": "story_started", "id": "G004", "title": "F3 Cross-surface"}
+{"ts": "2026-06-23T20:30:50.947754+00:00", "event": "checkpoint", "id": "G004", "status": "complete", "evidence": "commit 51954c4: CommandPalette + DensityToggle + SavedViewBar; build green", "verify_cmd": "cd console && npm run build", "verify_evidence": "Compiled successfully — 14 route compilano, 0 errori TS, /lead/[id] 7.52kB"}

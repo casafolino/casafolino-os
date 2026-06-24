@@ -16,6 +16,9 @@ class CfTaskPhase(models.Model):
         'cf.task', string="Task", required=True, ondelete='cascade', index=True)
     seq = fields.Integer(string="Sequenza", default=10)
     name = fields.Char(string="Fase", required=True)
+    bo_workorder_id = fields.Many2one(
+        'mrp.workorder', string="Work order (Livello B)", ondelete='set null',
+        help="WO MRP collegato: B1 vi sincronizza avvio/fine. Nullo a Livello A.")
     operatore_id = fields.Many2one('hr.employee', string="Operatore")
     started_at = fields.Datetime(string="Inizio")
     ended_at = fields.Datetime(string="Fine")

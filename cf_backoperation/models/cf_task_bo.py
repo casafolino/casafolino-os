@@ -128,8 +128,20 @@ class CfTaskBackOperation(models.Model):
                 'seq': seq,
                 'name': wo.operation_id.name or wo.name or _("Fase"),
                 'state': 'da_fare',
+                'bo_workorder_id': wo.id,
             })
             seq += 10
+
+    def _bo_resolve_workorder(self, phase):
+        """WO collegato alla fase: id esplicito o fallback per nome nella MO."""
+        if phase.bo_workorder_id:
+            return phase.bo_workorder_id
+        task = phase.task_id
+        if not task.bo_production_id:
+            return self.env['mrp.workorder']
+        wo = task.bo_production_id.workorder_ids.filtered(
+            lambda w: (w.operation_id.name or w.name) == phase.name)
+        return wo[:1]
 
     @api.model
     def bo_phase_start(self, phase_id, employee_id):
@@ -143,9 +155,49 @@ class CfTaskBackOperation(models.Model):
             'started_at': phase.started_at or fields.Datetime.now(),
             'ended_at': False,
         })
+        self._bo_sync_wo_start(phase)
         phase.task_id._message_log(
             body=_("Fase '%s' iniziata da %s.") % (phase.name, emp.name))
         return phase._bo_serialize()[0]
+
+    # --------------------------------------------- Livello B: sync workorder
+    def _bo_sync_wo_start(self, phase):
+        """B1: avvia il WO reale. Idempotente, degrada senza rompere l'app."""
+        wo = self._bo_resolve_workorder(phase)
+        if not wo:
+            return
+        try:
+            if wo.state not in ('progress', 'done'):
+                wo.button_start()
+        except Exception as e:
+            _logger.warning("WO %s button_start fallito (%s): scrivo date_start soft.",
+                            wo.id, e)
+            try:
+                if not wo.date_start:
+                    wo.date_start = fields.Datetime.now()
+            except Exception:
+                _logger.exception("WO %s date_start soft fallito.", wo.id)
+
+    def _bo_sync_wo_finish(self, phase):
+        """B1: chiude il WO reale. Idempotente, degrada senza rompere l'app."""
+        wo = self._bo_resolve_workorder(phase)
+        if not wo:
+            return
+        try:
+            if wo.state == 'done':
+                return
+            if wo.state != 'progress':
+                # serve essere in progress per finire pulito
+                wo.button_start()
+            wo.button_finish()
+        except Exception as e:
+            _logger.warning("WO %s button_finish fallito (%s): scrivo date_finished soft.",
+                            wo.id, e)
+            try:
+                if not wo.date_finished:
+                    wo.date_finished = fields.Datetime.now()
+            except Exception:
+                _logger.exception("WO %s date_finished soft fallito.", wo.id)
 
     @api.model
     def bo_phase_end(self, phase_id, employee_id=False):
@@ -157,6 +209,7 @@ class CfTaskBackOperation(models.Model):
             emp = self._bo_check_employee(employee_id)
             vals['operatore_id'] = phase.operatore_id.id or emp.id
         phase.write(vals)
+        self._bo_sync_wo_finish(phase)
         phase.task_id._message_log(body=_("Fase '%s' terminata.") % phase.name)
         return phase._bo_serialize()[0]
 
