@@ -327,12 +327,36 @@ class CfTaskBackOperation(models.Model):
                 break
         return res
 
+    def _bo_complete_workorders(self, mo):
+        """Rete di sicurezza pre-mark_done: porta a 'done' i WO non ancora chiusi
+        (avvio se serve, passa i quality check, finish). Necessario perché
+        button_mark_done esige tutti i WO completati coi loro check."""
+        for wo in mo.workorder_ids:
+            if wo.state == 'done':
+                continue
+            try:
+                if wo.state in ('waiting', 'pending', 'ready'):
+                    wo.button_start()
+                # passa i quality check pendenti generati all'avvio
+                if 'check_ids' in wo._fields:
+                    for c in wo.check_ids.filtered(lambda x: x.quality_state == 'none'):
+                        if hasattr(c, 'do_pass'):
+                            try:
+                                c.do_pass()
+                            except Exception:
+                                if hasattr(c, 'do_measure'):
+                                    c.do_measure()
+                wo.button_finish()
+            except Exception as e:
+                _logger.warning("WO %s completamento fallito (%s).", wo.id, e)
+
     def _bo_b2_close_mo(self, task, lot_name, qty_done, qty_scrap):
         """Chiusura magazzino reale: lotto finito + qty + consumo + mark_done.
         Idempotente: se MO già done, no-op."""
         mo = task.bo_production_id
         if not mo or mo.state == 'done':
             return False
+        self._bo_complete_workorders(mo)
         qty = qty_done or mo.product_qty
         if mo.product_id.tracking != 'none':
             self._bo_validate_lot(mo, lot_name)
