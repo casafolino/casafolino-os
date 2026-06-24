@@ -327,36 +327,132 @@ class CfTaskBackOperation(models.Model):
                 break
         return res
 
-    def _bo_complete_workorders(self, mo):
-        """Rete di sicurezza pre-mark_done: porta a 'done' i WO non ancora chiusi
-        (avvio se serve, passa i quality check, finish). Necessario perché
-        button_mark_done esige tutti i WO completati coi loro check."""
+    # ------------------------------------------------ quality check (B2, reali)
+    @api.model
+    def bo_get_close_checks(self, task_id):
+        """Elenco quality check REALI da compilare alla chiusura produzione.
+        Avvia i WO per materializzare i check. Nessun do_pass automatico."""
+        task = self.browse(int(task_id))
+        if not task.exists() or not task.bo_production_id:
+            return {'applies': False}
+        mo = task.bo_production_id
+        if not self._bo_b2_enabled():
+            return {'applies': True, 'b2_enabled': False, 'checks': []}
+        for wo in mo.workorder_ids:
+            if wo.state in ('waiting', 'pending', 'ready'):
+                try:
+                    wo.button_start()
+                except Exception:
+                    pass
+        checks = []
+        for wo in mo.workorder_ids:
+            if 'check_ids' not in wo._fields:
+                continue
+            for c in wo.check_ids.filtered(lambda x: x.quality_state == 'none'):
+                pt = c.point_id
+                checks.append({
+                    'check_id': c.id,
+                    'wo': wo.operation_id.name or wo.name or '',
+                    'title': c.title or (pt.title if pt else '') or c.name or _("Controllo"),
+                    'test_type': c.test_type,
+                    'tolerance_min': (pt.tolerance_min if pt and 'tolerance_min' in pt._fields else 0.0),
+                    'tolerance_max': (pt.tolerance_max if pt and 'tolerance_max' in pt._fields else 0.0),
+                    'norm_unit': (pt.norm_unit if pt and 'norm_unit' in pt._fields else '') or '',
+                })
+        return {'applies': True, 'b2_enabled': True, 'checks': checks}
+
+    def _bo_apply_checks(self, checks_payload, emp):
+        """Applica i risultati REALI ai quality.check. Ritorna i check falliti.
+        Mai do_pass cieco: ogni esito viene dall'input dell'operatrice."""
+        QC = self.env['quality.check'].sudo()
+        fails = QC
+        muser = self.env['res.users'].browse(emp.user_id.id) if emp.user_id else None
+        for cd in (checks_payload or []):
+            c = QC.browse(int(cd.get('check_id') or 0))
+            if not c.exists() or c.quality_state != 'none':
+                continue
+            tt = c.test_type
+            if muser and 'user_id' in c._fields:
+                try:
+                    c.user_id = muser.id
+                except Exception:
+                    pass
+            if tt == 'measure':
+                val = cd.get('value')
+                if val is None:
+                    c.do_fail()
+                    fails |= c
+                    continue
+                c.measure = float(val)
+                c.do_measure()
+                if c.quality_state == 'fail':
+                    fails |= c
+            elif tt == 'passfail':
+                if cd.get('ok'):
+                    c.do_pass()
+                else:
+                    c.do_fail()
+                    fails |= c
+            else:  # instruction / print_label: conferma esecuzione operatrice
+                if cd.get('ok', True):
+                    c.do_pass()
+                else:
+                    c.do_fail()
+                    fails |= c
+        return fails
+
+    def _bo_create_nc(self, task, fails, emp):
+        """Apre cf.haccp.nc per i controlli falliti e notifica Maria (RAQ)."""
+        mo = task.bo_production_id
+        NC = self.env['cf.haccp.nc'].sudo()
+        maria = self.env['res.users'].browse(9)
+        titles = ", ".join(
+            (c.title or (c.point_id.title if c.point_id else '') or 'check') for c in fails)
+        desc = _("Controllo qualità FALLITO alla chiusura MO %s (operatore %s): %s. "
+                 "Finito NON versato a magazzino.") % (mo.name, emp.name, titles)
+        vals = {
+            'reference': _("NC-%s-%s") % (mo.name, fields.Date.context_today(self)),
+            'state': 'open', 'severity': 'high', 'origin': 'ccp',
+            'description': desc,
+        }
+        if 'product_id' in NC._fields:
+            vals['product_id'] = mo.product_id.id
+        for f in ('assigned_to', 'responsabile_id', 'reported_by'):
+            if f in NC._fields and NC._fields[f].comodel_name == 'res.users' and maria.exists():
+                vals[f] = maria.id
+        nc = NC.create(vals)
+        try:
+            partner = maria.partner_id if maria.exists() else False
+            if partner:
+                nc.message_subscribe(partner_ids=[partner.id])
+            kw = {'body': desc, 'subject': _("NC produzione %s") % mo.name}
+            if partner:
+                kw['partner_ids'] = [partner.id]
+            nc.message_post(**kw)
+        except Exception:
+            _logger.exception("Notifica NC %s a Maria fallita", nc.id)
+        return nc
+
+    def _bo_finish_workorders(self, mo):
+        """Chiude i WO (start se serve + finish). NESSUN do_pass: i check sono
+        già stati applicati coi risultati reali da _bo_apply_checks."""
         for wo in mo.workorder_ids:
             if wo.state == 'done':
                 continue
             try:
                 if wo.state in ('waiting', 'pending', 'ready'):
                     wo.button_start()
-                # passa i quality check pendenti generati all'avvio
-                if 'check_ids' in wo._fields:
-                    for c in wo.check_ids.filtered(lambda x: x.quality_state == 'none'):
-                        if hasattr(c, 'do_pass'):
-                            try:
-                                c.do_pass()
-                            except Exception:
-                                if hasattr(c, 'do_measure'):
-                                    c.do_measure()
                 wo.button_finish()
             except Exception as e:
-                _logger.warning("WO %s completamento fallito (%s).", wo.id, e)
+                _logger.warning("WO %s finish fallito (%s).", wo.id, e)
 
     def _bo_b2_close_mo(self, task, lot_name, qty_done, qty_scrap):
         """Chiusura magazzino reale: lotto finito + qty + consumo + mark_done.
-        Idempotente: se MO già done, no-op."""
+        Presuppone i quality check già applicati e passati. Idempotente."""
         mo = task.bo_production_id
         if not mo or mo.state == 'done':
             return False
-        self._bo_complete_workorders(mo)
+        self._bo_finish_workorders(mo)
         qty = qty_done or mo.product_qty
         if mo.product_id.tracking != 'none':
             self._bo_validate_lot(mo, lot_name)
@@ -376,23 +472,41 @@ class CfTaskBackOperation(models.Model):
         return mo.state == 'done'
 
     def bo_action_close(self, employee_id, firma_b64=False,
-                        lot_name=False, qty_done=False, qty_scrap=0.0):
-        """Chiusura task produzione: firma (sempre) + B2 (se abilitato e produzione).
-        Con flag B2 OFF: equivale alla firma Livello A (nessun movimento stock)."""
+                        lot_name=False, qty_done=False, qty_scrap=0.0, checks=False):
+        """Chiusura task produzione.
+        - Flag B2 OFF / non-produzione: firma Livello A (nessuno stock).
+        - B2 ON + produzione: applica i quality check REALI.
+          * ≥1 fail → mark_done BLOCCATO, NC aperta + Maria notificata, MO resta
+            aperta, task resta in_corso (NON firmata/chiusa).
+          * tutti pass → firma + consumo + mark_done."""
         emp = self._bo_check_employee(employee_id)
+        blocked_ids = []
         for task in self:
+            is_prod_b2 = (task.bo_kind == 'produzione' and task.bo_production_id
+                          and self._bo_b2_enabled())
+            if is_prod_b2:
+                fails = self._bo_apply_checks(checks, emp)
+                if fails:
+                    nc = self._bo_create_nc(task, fails, emp)
+                    task._message_log(body=_(
+                        "Chiusura BLOCCATA: %d controllo/i fallito/i. "
+                        "NC %s aperta, Maria notificata. Finito NON a magazzino.")
+                        % (len(fails), nc.reference))
+                    blocked_ids.append(task.id)
+                    continue  # niente firma-chiusura, niente mark_done
+            # esito pass / non-B2
             self._bo_sign_one(task, emp, firma_b64)
             did_b2 = False
-            if (task.bo_kind == 'produzione' and task.bo_production_id
-                    and self._bo_b2_enabled()):
+            if is_prod_b2:
                 did_b2 = self._bo_b2_close_mo(task, lot_name, qty_done, qty_scrap)
-            if did_b2:
-                task._message_log(body=_(
-                    "Chiusa da %s — magazzino allineato (lotto %s, MO done).")
-                    % (emp.name, lot_name or ''))
-            else:
-                task._message_log(body=_("Firmata e chiusa da %s.") % emp.name)
-        return self._bo_serialize(self.ids)
+            task._message_log(body=(
+                _("Chiusa da %s — magazzino allineato (lotto %s, MO done).")
+                % (emp.name, lot_name or '')) if did_b2
+                else _("Firmata e chiusa da %s.") % emp.name)
+        out = self._bo_serialize(self.ids)
+        for r in out:
+            r['blocked'] = r['id'] in blocked_ids
+        return out
 
     # --------------------------------------------------- claim da MO produzione
     @api.model
