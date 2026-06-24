@@ -416,7 +416,11 @@ class CfTaskBackOperation(models.Model):
             'description': desc,
         }
         if 'product_id' in NC._fields:
-            vals['product_id'] = mo.product_id.id
+            com = NC._fields['product_id'].comodel_name
+            if com == 'product.template':
+                vals['product_id'] = mo.product_id.product_tmpl_id.id
+            elif com == 'product.product':
+                vals['product_id'] = mo.product_id.id
         for f in ('assigned_to', 'responsabile_id', 'reported_by'):
             if f in NC._fields and NC._fields[f].comodel_name == 'res.users' and maria.exists():
                 vals[f] = maria.id
