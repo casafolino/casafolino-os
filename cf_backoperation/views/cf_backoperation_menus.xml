@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_backoperation_root" name="BackOperation"
+              web_icon="cf_backoperation,static/description/icon.png"
+              sequence="56"/>
+    <menuitem id="menu_backoperation_tasks" name="Task"
+              parent="menu_backoperation_root"
+              action="action_bo_task" sequence="10"/>
+</odoo>

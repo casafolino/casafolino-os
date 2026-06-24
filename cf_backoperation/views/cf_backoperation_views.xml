@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- SEARCH -->
+    <record id="view_bo_task_search" model="ir.ui.view">
+        <field name="name">cf.task.bo.search</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="bo_titolare_id"/>
+                <field name="bo_operatore_id"/>
+                <field name="bo_production_id"/>
+                <filter name="f_bo_pool" string="Pool (libere)" domain="[('bo_is_pool','=',True),('state','=','bozza')]"/>
+                <filter name="f_bo_assigned" string="Assegnate" domain="[('bo_titolare_id','!=',False),('state','=','bozza')]"/>
+                <filter name="f_bo_wip" string="In corso" domain="[('state','=','in_corso')]"/>
+                <filter name="f_bo_done" string="Fatte" domain="[('state','=','chiuso')]"/>
+                <separator/>
+                <filter name="f_bo_firmate" string="Firmate" domain="[('bo_firmata','=',True)]"/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="g_bo_kind" string="Tipo" context="{'group_by':'bo_kind'}"/>
+                    <filter name="g_bo_state" string="Stato" context="{'group_by':'state'}"/>
+                    <filter name="g_bo_titolare" string="Titolare" context="{'group_by':'bo_titolare_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- KANBAN supervisione -->
+    <record id="view_bo_task_kanban" model="ir.ui.view">
+        <field name="name">cf.task.bo.kanban</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="bo_kind"/>
+                <field name="bo_titolare_id"/>
+                <field name="bo_operatore_id"/>
+                <field name="bo_firmata"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_title">
+                                <strong><field name="name"/></strong>
+                            </div>
+                            <div class="o_kanban_record_subtitle">
+                                <span class="badge text-bg-secondary"><field name="bo_kind"/></span>
+                                <t t-if="record.bo_firmata.raw_value">
+                                    <span class="badge text-bg-success ms-1">Firmata</span>
+                                </t>
+                            </div>
+                            <div class="o_kanban_record_bottom mt-2">
+                                <span t-if="record.bo_titolare_id.raw_value">
+                                    Titolare: <field name="bo_titolare_id"/>
+                                </span>
+                                <span t-else="" class="text-muted">Pool</span>
+                            </div>
+                            <div t-if="record.bo_operatore_id.raw_value" class="text-muted">
+                                Operatore: <field name="bo_operatore_id"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- LIST -->
+    <record id="view_bo_task_list" model="ir.ui.view">
+        <field name="name">cf.task.bo.list</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ['chiuso','annullato']" decoration-success="bo_firmata == True">
+                <field name="name"/>
+                <field name="bo_kind" widget="badge"/>
+                <field name="bo_production_id" optional="show"/>
+                <field name="bo_titolare_id"/>
+                <field name="bo_operatore_id" optional="show"/>
+                <field name="bo_worked_seconds" string="Sec. lav." optional="hide"/>
+                <field name="bo_firmata" widget="boolean_toggle" readonly="1"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM supervisione (assegna + monitora) -->
+    <record id="view_bo_task_form" model="ir.ui.view">
+        <field name="name">cf.task.bo.form</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="bozza,in_corso,chiuso"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Titolo task"/></h1>
+                    </div>
+                    <group>
+                        <group string="Assegnazione">
+                            <field name="bo_kind"/>
+                            <field name="bo_titolare_id"/>
+                            <field name="bo_assegnata_da_id"/>
+                            <field name="bo_is_pool" readonly="1"/>
+                        </group>
+                        <group string="Collegamenti">
+                            <field name="bo_production_id"/>
+                            <field name="bo_sale_order_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Esecuzione / Firma (audit)">
+                            <field name="bo_operatore_id" readonly="1"/>
+                            <field name="bo_checkin_at" readonly="1"/>
+                            <field name="bo_checkout_at" readonly="1"/>
+                            <field name="bo_worked_seconds" readonly="1"/>
+                        </group>
+                        <group string="Firma">
+                            <field name="bo_firmata" readonly="1"/>
+                            <field name="bo_firma_at" readonly="1"/>
+                            <field name="bo_firma_image" widget="image" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACTION (prima del menuitem) -->
+    <record id="action_bo_task" model="ir.actions.act_window">
+        <field name="name">Task BackOperation</field>
+        <field name="res_model">cf.task</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_bo_task_search"/>
+        <field name="context">{}</field>
+    </record>
+
+</odoo>
