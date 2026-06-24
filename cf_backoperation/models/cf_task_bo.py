@@ -1,10 +1,15 @@
 import base64
 import logging
+import re
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+
+# Parametro che abilita la chiusura magazzino (B2) su questo DB. Default False:
+# il flusso B2 NON tocca nulla finché Antonio non lo abilita (secondo gate).
+B2_FLAG_PARAM = 'casafolino.bo_b2_enabled'
 
 # Stati cf.task riusati (modulo casafolino_task): bozza / in_corso / chiuso / annullato.
 # Mapping lifecycle BackOperation:
@@ -231,29 +236,138 @@ class CfTaskBackOperation(models.Model):
                 task._message_log(body=_("Check-out (sessione %ds).") % int(delta))
         return self._bo_serialize(self.ids)
 
-    def bo_action_sign(self, employee_id, firma_b64=False):
-        """Firma e chiudi: operatore + timestamp + firma. Stato -> fatta (chiuso)."""
-        emp = self._bo_check_employee(employee_id)
+    def _bo_sign_one(self, task, emp, firma_b64):
+        """Logica firma su una task (riusata da sign e close)."""
         now = fields.Datetime.now()
+        if task.bo_checkin_at and not task.bo_checkout_at:
+            delta = (now - task.bo_checkin_at).total_seconds()
+            task.bo_worked_seconds = (task.bo_worked_seconds or 0) + max(0, int(delta))
+            task.bo_checkout_at = now
+        task.bo_operatore_id = emp.id
+        task.bo_firmata = True
+        task.bo_firma_at = now
+        if firma_b64:
+            raw = firma_b64.split(',', 1)[-1] if ',' in firma_b64 else firma_b64
+            try:
+                base64.b64decode(raw)
+                task.bo_firma_image = raw
+            except Exception:
+                _logger.warning("Firma non valida per task %s, ignorata.", task.id)
+        task.state = BO_DONE_STATE
+
+    def bo_action_sign(self, employee_id, firma_b64=False):
+        """Firma e chiudi (Livello A): operatore + timestamp + firma."""
+        emp = self._bo_check_employee(employee_id)
         for task in self:
-            # chiusura implicita del timer se ancora aperto
-            if task.bo_checkin_at and not task.bo_checkout_at:
-                delta = (now - task.bo_checkin_at).total_seconds()
-                task.bo_worked_seconds = (task.bo_worked_seconds or 0) + max(0, int(delta))
-                task.bo_checkout_at = now
-            task.bo_operatore_id = emp.id
-            task.bo_firmata = True
-            task.bo_firma_at = now
-            if firma_b64:
-                # accetta sia data-url che base64 puro
-                raw = firma_b64.split(',', 1)[-1] if ',' in firma_b64 else firma_b64
-                try:
-                    base64.b64decode(raw)
-                    task.bo_firma_image = raw
-                except Exception:
-                    _logger.warning("Firma non valida per task %s, ignorata.", task.id)
-            task.state = BO_DONE_STATE
+            self._bo_sign_one(task, emp, firma_b64)
             task._message_log(body=_("Firmata e chiusa da %s.") % emp.name)
+        return self._bo_serialize(self.ids)
+
+    # ============================================================ B2 (gated)
+    @api.model
+    def _bo_b2_enabled(self):
+        return self.env['ir.config_parameter'].sudo().get_param(
+            B2_FLAG_PARAM, 'False') in ('True', 'true', '1')
+
+    @api.model
+    def _bo_lot_sku(self, mo):
+        return (mo.product_id.default_code or mo.product_id.name or '').strip()
+
+    @api.model
+    def bo_get_lot_default(self, task_id):
+        """Default lotto finito = {SKU}-{DDD}-{YY} (giorno dell'anno, anno 2 cifre).
+        Ritorna anche regex SKU e se il lotto esiste già (avviso duplicato)."""
+        task = self.browse(int(task_id))
+        if not task.exists() or not task.bo_production_id:
+            return {'applies': False}
+        mo = task.bo_production_id
+        finito_lot = mo.product_id.tracking == 'lot'
+        sku = self._bo_lot_sku(mo)
+        today = fields.Date.context_today(self)
+        ddd = today.timetuple().tm_yday
+        default = "%s-%03d-%02d" % (sku, ddd, today.year % 100)
+        exists = bool(self.env['stock.lot'].search_count([
+            ('name', '=', default), ('product_id', '=', mo.product_id.id)]))
+        return {
+            'applies': True,
+            'b2_enabled': self._bo_b2_enabled(),
+            'requires_lot': finito_lot,
+            'sku': sku,
+            'default': default,
+            'pattern': '^%s-[0-9]{3}-[0-9]{2}$' % re.escape(sku),
+            'default_exists': exists,
+            'qty': mo.product_qty,
+            'uom': mo.product_uom_id.name or '',
+        }
+
+    def _bo_validate_lot(self, mo, lot_name):
+        sku = self._bo_lot_sku(mo)
+        if not re.match(r'^%s-\d{3}-\d{2}$' % re.escape(sku), lot_name or ''):
+            raise UserError(_("Lotto '%s' non valido: atteso %s-DDD-YY.") % (lot_name, sku))
+
+    def _bo_force_mark_done(self, mo):
+        """button_mark_done gestendo i wizard (consumption warning / immediate)."""
+        res = mo.with_context(skip_redirection=True).button_mark_done()
+        # Odoo può restituire un'azione-wizard: confermala.
+        guard = 0
+        while isinstance(res, dict) and res.get('res_model') and guard < 4:
+            guard += 1
+            model = res['res_model']
+            ctx = dict(res.get('context') or {})
+            Wiz = self.env[model].with_context(ctx)
+            wiz = Wiz.create({})
+            done = False
+            for meth in ('action_confirm', 'process', 'action_done',
+                         'action_generate_serial', 'do_produce'):
+                if hasattr(wiz, meth):
+                    res = getattr(wiz, meth)()
+                    done = True
+                    break
+            if not done:
+                break
+        return res
+
+    def _bo_b2_close_mo(self, task, lot_name, qty_done, qty_scrap):
+        """Chiusura magazzino reale: lotto finito + qty + consumo + mark_done.
+        Idempotente: se MO già done, no-op."""
+        mo = task.bo_production_id
+        if not mo or mo.state == 'done':
+            return False
+        qty = qty_done or mo.product_qty
+        if mo.product_id.tracking != 'none':
+            self._bo_validate_lot(mo, lot_name)
+            Lot = self.env['stock.lot']
+            lot = Lot.search([
+                ('name', '=', lot_name), ('product_id', '=', mo.product_id.id),
+                ('company_id', '=', mo.company_id.id)], limit=1)
+            if not lot:
+                lot = Lot.create({
+                    'name': lot_name, 'product_id': mo.product_id.id,
+                    'company_id': mo.company_id.id})
+            mo.lot_producing_id = lot.id
+        mo.qty_producing = qty
+        if qty_scrap:
+            task._message_log(body=_("Scarto dichiarato: %s") % qty_scrap)
+        self._bo_force_mark_done(mo)
+        return mo.state == 'done'
+
+    def bo_action_close(self, employee_id, firma_b64=False,
+                        lot_name=False, qty_done=False, qty_scrap=0.0):
+        """Chiusura task produzione: firma (sempre) + B2 (se abilitato e produzione).
+        Con flag B2 OFF: equivale alla firma Livello A (nessun movimento stock)."""
+        emp = self._bo_check_employee(employee_id)
+        for task in self:
+            self._bo_sign_one(task, emp, firma_b64)
+            did_b2 = False
+            if (task.bo_kind == 'produzione' and task.bo_production_id
+                    and self._bo_b2_enabled()):
+                did_b2 = self._bo_b2_close_mo(task, lot_name, qty_done, qty_scrap)
+            if did_b2:
+                task._message_log(body=_(
+                    "Chiusa da %s — magazzino allineato (lotto %s, MO done).")
+                    % (emp.name, lot_name or ''))
+            else:
+                task._message_log(body=_("Firmata e chiusa da %s.") % emp.name)
         return self._bo_serialize(self.ids)
 
     # --------------------------------------------------- claim da MO produzione
