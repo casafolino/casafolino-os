@@ -118,20 +118,27 @@ export const timelineMeta: Record<TimelineKind, { label: string; color: string; 
 export const fetchPartnerBundle = (partnerId: number) =>
   post<PartnerBundle | null>("/api/console/partner-bundle", { partnerId });
 
-// ── F1 — scritture native via /api/write (chatter + attività). Nessun campo custom. ──
-async function postWrite<T>(action: string, payload: unknown): Promise<T> {
-  const res = await fetch(`${BP}/api/write`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, payload }),
-  });
-  return (await res.json()) as T;
-}
-export type WriteAck = { ok: boolean; id?: number; message: string };
+// ── R2 — nota/task via gateway sudo (operator_uid iniettato dal route dalla sessione). ──
+// Il gateway attribuisce la nota all'operatore loggato (author_id) e valida l'allowlist
+// (anti-spoofing): console_api da solo non potrebbe scrivere chatter/attività.
+export type WriteAck = { ok?: boolean; id?: number; message?: string };
 export const postLeadNote = (leadId: number, body: string) =>
-  postWrite<WriteAck>("postLeadNote", { leadId, body });
+  post<WriteAck>("/api/console/lead/note", { res_model: "crm.lead", res_id: leadId, body });
 export const createLeadActivity = (leadId: number, summary: string, dueDate: string) =>
-  postWrite<WriteAck>("createLeadActivity", { leadId, summary, dueDate });
+  post<WriteAck>("/api/console/lead/activity", { res_model: "crm.lead", res_id: leadId, summary, date_deadline: dueDate });
+
+// ── R2 — semaforo SLA reale dai cf.task del lead (M5). ──
+export type LeadSla = { ok?: boolean; leadId?: number; hasTasks?: boolean; openCount?: number; totalCount?: number; semaforo?: "green" | "yellow" | "red" | null; message?: string };
+export const getLeadSla = (leadId: number) => post<LeadSla>("/api/console/lead/sla", { leadId });
+
+// ── R2 — Ordini + Campionature reali del partner (M3) + stato shipment (M4). ──
+export type PartnerOrder = { id: number; name: string; amountTotal: number; state: string; dateOrder: string | null; isCampione: boolean };
+export type PartnerOrders = { ok?: boolean; partnerId?: number; orders?: PartnerOrder[]; message?: string };
+export const getPartnerOrders = (partnerId: number) => post<PartnerOrders>("/api/console/partner/orders", { partnerId });
+
+export type PartnerShipment = { id: number; name: string; state: string; stateLabel: string; inTransit: boolean; carrier: string | null; tracking: string | null; saleOrderId: number | null; leadId: number | null };
+export type PartnerShipments = { ok?: boolean; partnerId?: number; shipments?: PartnerShipment[]; message?: string };
+export const getPartnerShipments = (partnerId: number) => post<PartnerShipments>("/api/console/partner/shipments", { partnerId });
 
 // ── F1 — Next-best-action per fase (mappa statica iniziale, da affinare). Match per frammento nome. ──
 const STAGE_NBA: { match: RegExp; hint: string }[] = [

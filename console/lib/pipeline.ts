@@ -11,6 +11,8 @@ export type BoardCard = {
   score: number | null;
   activityState: string | null; // Brief 20 B — da attività reale (fresh/warning/danger/neutral)
   daysInactive: number | null;
+  tags?: string[]; // M6 — nomi tag_ids del lead
+  hasCampione?: boolean; // M6 — campionatura attiva (cf.shipment in transito)
 };
 
 // colore stato attività (rotting reale): neutral = grigio (niente rosso falso)

@@ -20,19 +20,20 @@ const SORT_LABEL: Record<SortKey, string> = {
 };
 const ROT_RANK: Record<string, number> = { danger: 0, warning: 1, fresh: 2, neutral: 3 };
 
-// F3 — viste salvate per la pipeline. "Campionature in corso" richiederebbe un flag campione
-// sulla card (non presente in BoardCard → lettura gateway aggiuntiva): rinviata, non finta.
+// F3/R2 — viste salvate per la pipeline. "Campionature in corso" cablata via M6 (hasCampione).
 const VIEWS: SavedView[] = [
   { key: "all", label: "tutte" },
   { key: "mine", label: "le mie aperte" },
   { key: "rotting", label: "in marcire" },
   { key: "no-next", label: "senza prossima attività" },
+  { key: "campione", label: "campionature in corso" },
 ];
 
 function matchesView(card: BoardCard, view: string, me: string): boolean {
   if (view === "mine") return !!me && (card.owner || "").toLowerCase().includes(me.toLowerCase());
   if (view === "rotting") return card.activityState === "danger" || card.activityState === "warning";
   if (view === "no-next") return !card.activityState || card.activityState === "neutral" || card.daysInactive == null;
+  if (view === "campione") return !!card.hasCampione;
   return true;
 }
 
@@ -287,6 +288,15 @@ function KanbanCard({
         )}
         <Avatar name={card.owner} size={20} title={card.owner} />
       </div>
+
+      {(card.hasCampione || (card.tags && card.tags.length > 0)) ? (
+        <div className="row" style={{ flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+          {card.hasCampione ? <Pill tone="info" style={{ fontSize: 10 }}>campione</Pill> : null}
+          {(card.tags ?? []).slice(0, 3).map((tg) => (
+            <Pill key={tg} tone="neutral" style={{ fontSize: 10 }}>{tg}</Pill>
+          ))}
+        </div>
+      ) : null}
 
       <div style={{ marginTop: 6 }}>
         <CampionaturaButton partnerId={card.partnerId} leadId={card.id} small label="+ Campionatura" />

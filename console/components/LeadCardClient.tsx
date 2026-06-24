@@ -8,7 +8,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   getLead, getLeadTimeline, updateLead, fetchPartnerBundle, postLeadNote, createLeadActivity,
-  nbaForStage, activityLabel, LEAD_EDITABLE_BY_ROLE, type LeadDetail, type LeadTimelineItem,
+  getLeadSla, getPartnerOrders, getPartnerShipments,
+  nbaForStage, activityLabel, LEAD_EDITABLE_BY_ROLE,
+  type LeadDetail, type LeadTimelineItem, type LeadSla, type PartnerOrder, type PartnerShipment,
 } from "@/lib/lead";
 import type { PartnerBundle } from "@/lib/types";
 import { moneyCompact, dateLabel } from "@/components/Honest";
@@ -28,10 +30,17 @@ function normalizeUrl(url: string): string {
   return /^https?:\/\//i.test(u) ? u : `https://${u}`;
 }
 
+// Semaforo SLA (M5) → tono DS + etichetta.
+const SLA_TONE: Record<"green" | "yellow" | "red", Tone> = { green: "success", yellow: "warning", red: "danger" };
+const SLA_LABEL: Record<"green" | "yellow" | "red", string> = { green: "verde", yellow: "ambra", red: "rosso" };
+
 export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts: Account[] }) {
   const [lead, setLead] = useState<LeadDetail | null>(null);
   const [items, setItems] = useState<LeadTimelineItem[]>([]);
   const [bundle, setBundle] = useState<PartnerBundle | null>(null);
+  const [sla, setSla] = useState<LeadSla | null>(null);
+  const [orders, setOrders] = useState<PartnerOrder[] | null>(null);
+  const [shipments, setShipments] = useState<PartnerShipment[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; tone: Tone } | null>(null);
@@ -52,14 +61,19 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
     return () => { alive = false; };
   }, [leadId]);
 
-  // Right-rail lazy: carica il bundle solo quando conosciamo il partner.
+  // Right-rail lazy: bundle (Opportunità) + R2 gateway (Ordini/Campionature/SLA reali).
   useEffect(() => {
-    const pid = lead?.partner ? lead.partner.id : null;
-    if (!pid) return;
     let alive = true;
-    fetchPartnerBundle(pid).then((b) => { if (alive) setBundle(b); }).catch(() => {});
+    // SLA del lead (M5) — indipendente dal partner.
+    getLeadSla(leadId).then((s) => { if (alive) setSla(s); }).catch(() => {});
+    const pid = lead?.partner ? lead.partner.id : null;
+    if (pid) {
+      fetchPartnerBundle(pid).then((b) => { if (alive) setBundle(b); }).catch(() => {});
+      getPartnerOrders(pid).then((r) => { if (alive) setOrders(r?.orders ?? []); }).catch(() => { if (alive) setOrders([]); });
+      getPartnerShipments(pid).then((r) => { if (alive) setShipments(r?.shipments ?? []); }).catch(() => { if (alive) setShipments([]); });
+    }
     return () => { alive = false; };
-  }, [lead?.partner ? lead.partner.id : null]);
+  }, [leadId, lead?.partner ? lead.partner.id : null]);
 
   function editableFields(l: LeadDetail): Set<string> {
     return new Set(LEAD_EDITABLE_BY_ROLE[l.role ?? "manager"] ?? LEAD_EDITABLE_BY_ROLE.manager);
@@ -243,10 +257,12 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
               <SignalRow label="Prossima azione"
                 value={lead.nextAction ? dateLabel(lead.nextAction.date) : "non pianificata"}
                 pill={aUrg ? <Pill tone={aUrg.tone} style={{ fontSize: 10 }}>{aUrg.label}</Pill> : null} />
-              {/* SLA da cf.task NON ancora cablato in questa vista → empty-state, mai semaforo finto. */}
+              {/* SLA reale dai cf.task del lead (M5). */}
               <SignalRow label="SLA (cf.task)"
-                value="n/d"
-                pill={<Pill tone="neutral" style={{ fontSize: 10 }}>non collegato</Pill>} />
+                value={!sla ? "carico…" : sla.hasTasks ? `${sla.openCount} task aperti` : "nessun task"}
+                pill={!sla ? null : sla.semaforo
+                  ? <Pill tone={SLA_TONE[sla.semaforo]} dot style={{ fontSize: 10 }}>{SLA_LABEL[sla.semaforo]}</Pill>
+                  : <Pill tone="neutral" style={{ fontSize: 10 }}>{sla.hasTasks ? "in regola" : "nessun task"}</Pill>} />
             </div>
           </RailCard>
 
@@ -269,20 +285,33 @@ export function LeadCardClient({ leadId, accounts }: { leadId: number; accounts:
             )}
           </RailCard>
 
-          <RailCard title="Campionature" count={bundle?.orders.filter((o) => o.isSample).length}>
-            {!bundle ? <Skeleton /> : (() => {
-              const s = bundle.orders.filter((o) => o.isSample);
+          <RailCard title="Campionature" count={orders ? orders.filter((o) => o.isCampione).length : undefined}>
+            {!orders ? <Skeleton /> : (() => {
+              const s = orders.filter((o) => o.isCampione);
+              const byOrder = new Map((shipments ?? []).filter((sh) => sh.saleOrderId).map((sh) => [sh.saleOrderId as number, sh]));
               return s.length === 0 ? <Empty text="Nessuna campionatura." /> : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                  {s.map((o) => <OrderRow key={o.id} name={o.name} amount={o.amountTotal} state={o.state} date={o.dateOrder} />)}
+                  {s.map((o) => {
+                    const sh = byOrder.get(o.id);
+                    return (
+                      <div key={o.id} className="row" style={{ justifyContent: "space-between", gap: 8 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="ell" style={{ fontSize: 12, fontWeight: 600 }}>{o.name}</div>
+                          <div className="muted" style={{ fontSize: 11 }}>{o.dateOrder ? dateLabel(o.dateOrder) : o.state}</div>
+                        </div>
+                        {sh ? <Pill tone={sh.inTransit ? "info" : "success"} style={{ fontSize: 10 }}>{sh.stateLabel}</Pill>
+                          : <span style={{ fontSize: 12, fontWeight: 600 }}>{moneyCompact(o.amountTotal)}</span>}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })()}
           </RailCard>
 
-          <RailCard title="Ordini" count={bundle?.orders.filter((o) => !o.isSample).length}>
-            {!bundle ? <Skeleton /> : (() => {
-              const o = bundle.orders.filter((x) => !x.isSample).slice(0, 6);
+          <RailCard title="Ordini" count={orders ? orders.filter((o) => !o.isCampione).length : undefined}>
+            {!orders ? <Skeleton /> : (() => {
+              const o = orders.filter((x) => !x.isCampione).slice(0, 6);
               return o.length === 0 ? <Empty text="Nessun ordine." /> : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   {o.map((x) => <OrderRow key={x.id} name={x.name} amount={x.amountTotal} state={x.state} date={x.dateOrder} />)}
@@ -363,11 +392,9 @@ function MetricInline({ label, raw, display, canEdit, onSave }: {
 }
 
 // ── Composer note/task inline (note = mail.message; task = mail.activity con data) ──
-// Phase C ha verificato che message_post / mail.activity NON sono scrivibili come console_api
-// (AccessError: serve un metodo gateway con sudo = addon change, fuori dallo scope di questo
-// deploy → brief gateway dedicato). Finché il metodo non esiste, il composer è disabilitato
-// (empty-state onesto) per non esporre in prod un bottone che fallisce. Flip a true col gateway.
-const NOTE_TASK_ENABLED = false;
+// R2 — il gateway sudo (console_post_note/console_schedule_activity) esiste e attribuisce
+// nota/task all'operatore loggato (anti-spoofing lato gateway). Composer ATTIVO.
+const NOTE_TASK_ENABLED = true;
 
 function NoteTaskComposer({ leadId, onDone }: { leadId: number; onDone: (t: { msg: string; tone: Tone }) => void }) {
   const [mode, setMode] = useState<"note" | "task">("note");
@@ -390,8 +417,8 @@ function NoteTaskComposer({ leadId, onDone }: { leadId: number; onDone: (t: { ms
       const r = mode === "note"
         ? await postLeadNote(leadId, body)
         : await createLeadActivity(leadId, body, due);
-      if (r.ok) { setBody(""); setDue(""); onDone({ msg: r.message, tone: "success" }); }
-      else onDone({ msg: r.message, tone: "danger" });
+      if (r.ok) { setBody(""); setDue(""); onDone({ msg: r.message ?? (mode === "note" ? "Nota registrata." : "Attività pianificata."), tone: "success" }); }
+      else onDone({ msg: r.message ?? "Operazione non riuscita.", tone: "danger" });
     } catch (e) {
       onDone({ msg: (e as Error).message, tone: "danger" });
     } finally { setBusy(false); }
