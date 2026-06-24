@@ -24,5 +24,6 @@ NON consuma componenti né chiude l'MO in Odoo (round 2).
     ],
     'installable': True,
     'application': True,
+    'post_init_hook': 'post_init_hook',
     'license': 'LGPL-3',
 }

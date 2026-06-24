@@ -670,9 +670,15 @@ class CfTaskBackOperation(models.Model):
             mo_domain.append(('id', 'not in', linked))
         mos = self.env['mrp.production'].search(mo_domain, order='date_start asc', limit=100)
 
+        # ordini + campionature da lavorare (sale.order non ancora in task)
+        orders, camps = self._bo_order_pool()
+
         return {
             'employee': {'id': eid, 'name': emp.name},
-            'pool': self._bo_serialize(pool_tasks.ids) + self._bo_serialize_mo(mos),
+            'pool': (self._bo_serialize(pool_tasks.ids)
+                     + self._bo_serialize_mo(mos)
+                     + self._bo_serialize_so(orders, 'ordine')
+                     + self._bo_serialize_so(camps, 'campionatura')),
             'assigned_to_me': self._bo_serialize(assigned.ids),
             'in_progress': self._bo_serialize(in_progress.ids),
             'done_today': self._bo_serialize(done_today.ids),
