@@ -169,6 +169,38 @@ class CfTaskBackOperation(models.Model):
         task._message_log(body=_("Creata da MO %s, presa in carico da %s.") % (mo.name, emp.name))
         return self._bo_serialize(task.ids)[0]
 
+    # ----------------------------------------------------------- floor plan
+    @api.model
+    def bo_get_floorplan(self, task_id):
+        """Scheda produzione (floor plan) della task: ricetta (distinta) + fasi.
+
+        Restituita al check-in di una produzione. Le operative non hanno
+        accesso Odoo: il contenuto viene renderizzato in-app.
+        """
+        task = self.browse(int(task_id))
+        if not task.exists() or not task.bo_production_id:
+            return {'has': False}
+        mo = task.bo_production_id
+        recipe = []
+        for line in (mo.bom_id.bom_line_ids if mo.bom_id else []):
+            recipe.append({
+                'name': line.product_id.display_name or '',
+                'qty': line.product_qty,
+                'uom': line.product_uom_id.name or '',
+            })
+        phases = []
+        for wo in mo.workorder_ids:
+            phases.append(wo.operation_id.name or wo.name or '')
+        return {
+            'has': True,
+            'mo_ref': mo.name,
+            'product': mo.product_id.display_name or '',
+            'qty': mo.product_qty,
+            'uom': mo.product_uom_id.name or '',
+            'recipe': recipe,
+            'phases': phases,
+        }
+
     # ----------------------------------------------------------- serialization
     def _bo_serialize(self, ids):
         recs = self.browse(ids)
