@@ -122,6 +122,18 @@
                             <field name="bo_firma_image" widget="image" readonly="1"/>
                         </group>
                     </group>
+                    <group string="Fasi (esecuzione)" invisible="not bo_phase_ids">
+                        <field name="bo_phase_ids" nolabel="1" readonly="1">
+                            <list>
+                                <field name="seq"/>
+                                <field name="name"/>
+                                <field name="state" widget="badge"/>
+                                <field name="operatore_id"/>
+                                <field name="started_at"/>
+                                <field name="ended_at"/>
+                            </list>
+                        </field>
+                    </group>
                 </sheet>
                 <chatter/>
             </form>

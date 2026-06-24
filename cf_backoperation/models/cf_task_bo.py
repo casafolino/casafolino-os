@@ -62,6 +62,8 @@ class CfTaskBackOperation(models.Model):
     bo_firma_at = fields.Datetime(string="Data firma")
     bo_firma_image = fields.Binary(string="Firma", attachment=True)
 
+    bo_phase_ids = fields.One2many('cf.task.phase', 'task_id', string="Fasi")
+
     # ------------------------------------------------------------- computes
     @api.depends('bo_titolare_id', 'bo_assegnata_da_id')
     def _compute_bo_is_pool(self):
@@ -105,8 +107,65 @@ class CfTaskBackOperation(models.Model):
             task.bo_checkin_at = now
             task.bo_checkout_at = False
             task.state = BO_WIP_STATE
+            task._bo_materialize_phases()
             task._message_log(body=_("Check-in di %s.") % emp.name)
         return self._bo_serialize(self.ids)
+
+    # --------------------------------------------------------------- fasi
+    def _bo_materialize_phases(self):
+        """Snapshot delle operazioni MO -> cf.task.phase al primo check-in.
+        Idempotente: non ricrea se già presenti. Solo per produzioni."""
+        self.ensure_one()
+        if self.bo_kind != 'produzione' or not self.bo_production_id:
+            return
+        if self.bo_phase_ids:
+            return
+        Phase = self.env['cf.task.phase']
+        seq = 10
+        for wo in self.bo_production_id.workorder_ids:
+            Phase.create({
+                'task_id': self.id,
+                'seq': seq,
+                'name': wo.operation_id.name or wo.name or _("Fase"),
+                'state': 'da_fare',
+            })
+            seq += 10
+
+    @api.model
+    def bo_phase_start(self, phase_id, employee_id):
+        emp = self._bo_check_employee(employee_id)
+        phase = self.env['cf.task.phase'].browse(int(phase_id))
+        if not phase.exists():
+            raise UserError(_("Fase %s inesistente.") % phase_id)
+        phase.write({
+            'state': 'in_corso',
+            'operatore_id': emp.id,
+            'started_at': phase.started_at or fields.Datetime.now(),
+            'ended_at': False,
+        })
+        phase.task_id._message_log(
+            body=_("Fase '%s' iniziata da %s.") % (phase.name, emp.name))
+        return phase._bo_serialize()[0]
+
+    @api.model
+    def bo_phase_end(self, phase_id, employee_id=False):
+        phase = self.env['cf.task.phase'].browse(int(phase_id))
+        if not phase.exists():
+            raise UserError(_("Fase %s inesistente.") % phase_id)
+        vals = {'state': 'fatta', 'ended_at': fields.Datetime.now()}
+        if employee_id:
+            emp = self._bo_check_employee(employee_id)
+            vals['operatore_id'] = phase.operatore_id.id or emp.id
+        phase.write(vals)
+        phase.task_id._message_log(body=_("Fase '%s' terminata.") % phase.name)
+        return phase._bo_serialize()[0]
+
+    @api.model
+    def bo_get_phases(self, task_id):
+        task = self.browse(int(task_id))
+        if not task.exists():
+            return []
+        return task.bo_phase_ids._bo_serialize()
 
     def bo_action_checkout(self):
         """Ferma il timer, accumula i secondi della sessione."""
@@ -188,9 +247,23 @@ class CfTaskBackOperation(models.Model):
                 'qty': line.product_qty,
                 'uom': line.product_uom_id.name or '',
             })
-        phases = []
-        for wo in mo.workorder_ids:
-            phases.append(wo.operation_id.name or wo.name or '')
+        # Fasi: se materializzate (post check-in) ritorna quelle eseguibili,
+        # altrimenti anteprima sola-lettura dai nomi operazione MO.
+        if task.bo_phase_ids:
+            phases = task.bo_phase_ids._bo_serialize()
+            materialized = True
+        else:
+            phases = []
+            seq = 10
+            for wo in mo.workorder_ids:
+                phases.append({
+                    'id': False, 'seq': seq,
+                    'name': wo.operation_id.name or wo.name or '',
+                    'state': 'da_fare', 'operatore_id': False,
+                    'operatore_name': False, 'started_at': False, 'ended_at': False,
+                })
+                seq += 10
+            materialized = False
         return {
             'has': True,
             'mo_ref': mo.name,
@@ -199,6 +272,7 @@ class CfTaskBackOperation(models.Model):
             'uom': mo.product_uom_id.name or '',
             'recipe': recipe,
             'phases': phases,
+            'phases_materialized': materialized,
         }
 
     # ----------------------------------------------------------- serialization
