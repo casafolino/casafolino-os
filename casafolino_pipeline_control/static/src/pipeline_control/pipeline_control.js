@@ -212,9 +212,17 @@ export class CFPipelineControl extends Component {
     }
 
     async triggerBulkAction(actionType) {
-        const ids = Object.keys(this.state.selectedMessageIds).filter(id => this.state.selectedMessageIds[id]).map(Number);
+        const selectedIds = Object.keys(this.state.selectedMessageIds).filter(id => this.state.selectedMessageIds[id]).map(Number);
+        // Guard: agire ESCLUSIVAMENTE sugli id esplicitamente selezionati e visibili.
+        // Mai sul complemento, mai un dominio inverso.
+        const visibleIds = new Set(this.asArray(this.allInboxRows).map(r => r.id));
+        const ids = selectedIds.filter(id => visibleIds.has(id));
+        console.log(`[scarta] action=${actionType} target_ids=[${ids.join(',')}] count=${ids.length} selected=${selectedIds.length}`);
+        if (ids.length !== selectedIds.length) {
+            console.warn(`[scarta] guard: scartati ${selectedIds.length - ids.length} id non visibili`);
+        }
         if (!ids.length) {
-            this.notification.add(_t("Nessun messaggio selezionato"), { type: "warning" });
+            this.notification.add(_t("Nessuna email selezionata"), { type: "warning" });
             return;
         }
         try {

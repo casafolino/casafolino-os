@@ -601,7 +601,9 @@ class CfPipelineControl(models.AbstractModel):
 
     @api.model
     def mass_discard(self, message_ids):
+        # Guard: agisce ESCLUSIVAMENTE sugli id passati (selezionati). Mai complemento/dominio inverso.
         msgs = self.env['casafolino.mail.message'].browse([int(mid) for mid in message_ids]).exists()
+        _logger.info("[scarta] target_ids=%s count=%s user=%s", msgs.ids, len(msgs), self.env.uid)
         now = fields.Datetime.now()
         if msgs:
             msgs.write({
