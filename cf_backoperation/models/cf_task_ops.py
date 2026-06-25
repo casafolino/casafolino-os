@@ -76,6 +76,9 @@ class CfTaskOps(models.Model):
     ops_overdue = fields.Boolean(
         string="In ritardo", compute='_compute_ops_overdue',
         help="True se aperto e oltre la scadenza.")
+    ops_overdue_notified = fields.Boolean(
+        string="Ritardo notificato", default=False,
+        help="Dedup: una sola notifica di ritardo per task.")
 
     @api.depends('date_deadline', 'state')
     def _compute_ops_overdue(self):
@@ -124,7 +127,7 @@ class CfTaskOps(models.Model):
                 'time_due': t.time_due or '',
                 'assigned_id': t.user_assigned_id.id or False,
                 'assigned_name': t.user_assigned_id.name or False,
-                'created_by': t.create_uid.name or False,
+                'created_by': (t.bo_assegnata_da_id.name or t.create_uid.name) or False,
                 'deadline': t.date_deadline and fields.Datetime.to_string(t.date_deadline) or False,
                 'acknowledged': t.acknowledged_date and fields.Datetime.to_string(t.acknowledged_date) or False,
                 'overdue': overdue,
@@ -174,6 +177,10 @@ class CfTaskOps(models.Model):
         }
         if not clean['name']:
             raise UserError(_("Il task deve avere un titolo."))
+        # Il service account (uid 26) scrive: il creatore REALE arriva esplicito
+        # e viene tracciato su bo_assegnata_da_id (res.users "Assegnata da").
+        if vals.get('created_by'):
+            clean['bo_assegnata_da_id'] = int(vals['created_by'])
         task = self.with_context(
             mail_create_nolog=True, mail_create_nosubscribe=True,
             mail_notify_force_send=False,
@@ -234,8 +241,28 @@ class CfTaskOps(models.Model):
     # ------------------------------------------------------------- notifica
     def _ops_notify_assigned(self):
         """Notifica 'nuovo task assegnato a me'. Riusa _cf_notify (mail+inapp);
-        il canale push si aggancia in SLICE 4 via _cf_notify_push."""
+        il canale push si aggancia via _cf_notify_push (transport web-push)."""
         for task in self:
             if task.user_assigned_id:
                 task._cf_notify(task.user_assigned_id, 'step_assigned',
                                 {'role': task.category or _("task")})
+
+    @api.model
+    def _cron_ops_overdue_notify(self):
+        """Cron: notifica i task aperti scaduti, una sola volta (idempotente).
+        Usa i canali _cf_notify esistenti (mail+inapp; push se attivo)."""
+        now = fields.Datetime.now()
+        overdue = self.search([
+            ('state', 'in', list(OPS_OPEN_STATES)),
+            ('date_deadline', '!=', False),
+            ('date_deadline', '<', now),
+            ('ops_overdue_notified', '=', False),
+            ('user_assigned_id', '!=', False),
+        ], limit=200)
+        for task in overdue:
+            task._cf_notify(task.user_assigned_id, 'task_reminder',
+                            {'role': task.category or _("task")})
+            task.ops_overdue_notified = True
+        if overdue:
+            _logger.info("cf.task ops: %d notifiche ritardo inviate.", len(overdue))
+        return len(overdue)
