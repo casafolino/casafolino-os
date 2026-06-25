@@ -147,6 +147,13 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_bo_task_search"/>
         <field name="context">{}</field>
+        <!-- Isolamento: la board BackOp mostra solo task con aggancio bo_*;
+             i task generici/routine del sistema Operations restano nella Console. -->
+        <field name="domain">['|', '|', '|',
+            ('bo_titolare_id', '!=', False),
+            ('bo_operatore_id', '!=', False),
+            ('bo_production_id', '!=', False),
+            ('bo_sale_order_id', '!=', False)]</field>
     </record>
 
 </odoo>
