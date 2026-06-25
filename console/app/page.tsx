@@ -5,6 +5,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
 import { operatorColor } from "@/lib/theme";
 import { moneyCompact, EmptyHonest } from "@/components/Honest";
+import { QuickTaskBar } from "@/components/QuickTaskBar";
+import { PreventivoWizard } from "@/components/PreventivoWizard";
 import type { Tone } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +31,13 @@ export default async function Regia() {
         <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
           {r.subtitle || `${r.queue.length} elementi ti aspettano`}
         </div>
+
+        {/* Barra azioni rapide — plancia operativa (Fase 1/2) */}
+        <div className="row" style={{ gap: 10, marginBottom: 12 }}>
+          <PreventivoWizard />
+          <span className="muted" style={{ fontSize: 12 }}>da una chiamata: azienda → contatto → opportunità → preventivo</span>
+        </div>
+        <QuickTaskBar />
 
         {/* 4 KPI */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
