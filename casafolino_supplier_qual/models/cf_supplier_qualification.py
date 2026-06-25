@@ -80,13 +80,33 @@ class CfSupplierQualification(models.Model):
 
 class ResPartnerSupplierQual(models.Model):
     _inherit = "res.partner"
-    supplier_qual_id = fields.Many2one("casafolino.supplier.qualification", compute="_compute_supplier_qual", store=False, compute_sudo=True)
-    supplier_qual_status = fields.Selection(related="supplier_qual_id.status", readonly=True)
-    supplier_traffic_light = fields.Selection(related="supplier_qual_id.traffic_light", readonly=True)
+    supplier_qualification_ids = fields.One2many(
+        "casafolino.supplier.qualification",
+        "partner_id",
+        string="Qualifiche fornitore",
+    )
+    supplier_qual_id = fields.Many2one(
+        "casafolino.supplier.qualification",
+        compute="_compute_supplier_qual",
+        store=True,
+        compute_sudo=True,
+        string="Qualifica fornitore",
+    )
+    supplier_qual_status = fields.Selection(
+        related="supplier_qual_id.status",
+        readonly=True,
+        string="Stato qualifica fornitore",
+    )
+    supplier_traffic_light = fields.Selection(
+        related="supplier_qual_id.traffic_light",
+        readonly=True,
+        string="Semaforo qualifica fornitore",
+    )
 
+    @api.depends("supplier_qualification_ids")
     def _compute_supplier_qual(self):
         for rec in self:
-            rec.supplier_qual_id = self.env["casafolino.supplier.qualification"].search([("partner_id","=",rec.id)], limit=1)
+            rec.supplier_qual_id = rec.supplier_qualification_ids[:1]
 
     def action_open_qualification(self):
         self.ensure_one()
