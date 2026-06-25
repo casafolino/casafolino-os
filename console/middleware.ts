@@ -43,5 +43,7 @@ export default auth((req) => {
 export const config = {
   // "/" copre la root sotto basePath (bare /console): il catch-all richiede /console/<x>
   // e da solo lascerebbe passare /console senza sessione. Entrambi → root + sotto-path protetti.
-  matcher: ["/", "/((?!api/auth|login|_next/static|_next/image|favicon.ico|.*\\.css$).*)"],
+  // ESCLUSI dal login NextAuth: /wallboard (scene kiosk) e /api/wb (endpoint wallboard),
+  // che usano l'auth per token-scena (lib/wb/scope.ts), non la sessione umana.
+  matcher: ["/", "/((?!api/auth|api/wb|wallboard|login|_next/static|_next/image|favicon.ico|.*\\.css$).*)"],
 };

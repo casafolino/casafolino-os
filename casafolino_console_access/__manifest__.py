@@ -1,6 +1,6 @@
 {
     "name": "CasaFolino Console — Access (scoped service user)",
-    "version": "18.0.6.19.0",
+    "version": "18.0.6.20.0",
     "summary": "Service-user Console scoped: console_api (portal, no seat) read+write via ACL + gateway triage sudo + audit. console_prod_rw (S0) dormiente.",
     "description": """
 Foundation ACL per l'app Console (Next /console) che autentica via JSON-RPC.
@@ -10,15 +10,24 @@ Crea:
   - ir.model.access: WRITE/CREATE su crm.lead e res.partner (unlink=0)
   - ir.rule group-based: READ tutte le mail (supera 'caselle proprie') + READ/WRITE triage,
     READ/WRITE/CREATE tutti i lead. Nessun perm_unlink → unlink bloccato dalle record-rule.
-NEGATO per design: unlink (nessun perm_unlink), account.move/contabilità (nessun ACL),
+NEGATO per design: unlink (nessun perm_unlink),
 config res.users/res.company/ir.* (nessun ACL, group_user non scrive).
 NB: la write su mail.message è a livello modello (include body): il blocco scrittura-body
 è applicato a livello APP (la console scrive solo i campi di triage).
+
+WALLBOARD (v18.0.6.20.0): aggiunto READ-ONLY a console_api su stock.picking, mrp.production,
+cf.export.fair, res.country e — deroga consapevole al divieto storico — account.move (SOLO read,
+nessun write/create/unlink) per il tile "Fatturato mese" del wallboard ufficio. Nessuna scrittura
+contabile è concessa: solo lettura aggregata di amount_total su fatture postate.
 """,
     "category": "Technical",
     "author": "CasaFolino",
     "license": "LGPL-3",
-    "depends": ["base", "crm", "sale", "sales_team", "casafolino_mail", "casafolino_campionatura"],
+    "depends": [
+        "base", "crm", "sale", "sales_team", "casafolino_mail", "casafolino_campionatura",
+        # Wallboard: modelli letti in read-only dal gruppo console_api.
+        "stock", "mrp", "account", "casafolino_crm_export",
+    ],
     "data": [
         "security/console_access_groups.xml",
         "security/console_api_groups.xml",

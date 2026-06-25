@@ -1,0 +1,217 @@
+/* Wallboard CasaFolino — palette CHIARA (token ESATTI dal brief), scoped sotto .wb
+   per non collidere con i token della console (app/globals.css). Niente ombre/gradienti. */
+.wb {
+  --bg: #FBF4E6; /* sfondo pagina, panna chiaro */
+  --card: #FFFFFF; /* card neutra */
+  --brown: #6B4A1E; /* testo principale / titoli */
+  --brown-soft: #8A6A3E; /* testo secondario */
+  --gold: #C8A43A; /* accento, numeri chiave, barre */
+  --cream: #F5E6C8; /* fasce, badge neutri */
+  --line: rgba(107, 74, 30, 0.14); /* bordi */
+  /* bento pastello */
+  --sage: #E4ECDD; --sage-tx: #4A5C3E;
+  --blush: #F4E4DF; --blush-tx: #8A4A3E;
+  --sky: #E0EAF2; --sky-tx: #3E5A72;
+  --butter: #F7EFD2; --butter-tx: #8A6A1E;
+  --clay: #F0E2D6; --clay-tx: #6B4A2E;
+  /* stati */
+  --ok: #5E8E4E; --warn: #C8843A; --alert: #C24A3A;
+
+  --wb-serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --wb-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  color: var(--brown);
+  font-family: var(--wb-sans);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* kiosk: nessuno scroll */
+  padding: clamp(16px, 1.6vw, 28px);
+  gap: clamp(12px, 1.4vw, 20px);
+}
+
+/* Header */
+.wb-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.wb-brand {
+  font-family: var(--wb-serif);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  font-size: clamp(20px, 2vw, 34px);
+  color: var(--brown);
+}
+.wb-scene {
+  font-size: clamp(12px, 1vw, 16px);
+  color: var(--brown-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+.wb-clock {
+  font-family: var(--wb-serif);
+  font-size: clamp(16px, 1.5vw, 26px);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Griglia bento responsive che riempie il viewport */
+.wb-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: clamp(12px, 1.2vw, 20px);
+  grid-auto-rows: 1fr;
+}
+
+/* Card / tile */
+.wb-tile {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: clamp(14px, 1.2vw, 22px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.wb-tile.tint-sage { background: var(--sage); color: var(--sage-tx); }
+.wb-tile.tint-blush { background: var(--blush); color: var(--blush-tx); }
+.wb-tile.tint-sky { background: var(--sky); color: var(--sky-tx); }
+.wb-tile.tint-butter { background: var(--butter); color: var(--butter-tx); }
+.wb-tile.tint-clay { background: var(--clay); color: var(--clay-tx); }
+
+.wb-tile-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(11px, 0.95vw, 15px);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-bottom: clamp(8px, 0.8vw, 14px);
+  flex-shrink: 0;
+}
+.wb-tile-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Numero chiave grande */
+.wb-big {
+  font-family: var(--wb-serif);
+  font-weight: 600;
+  font-size: clamp(40px, 6vw, 110px);
+  line-height: 1;
+  color: var(--gold);
+}
+.wb-big.ink { color: var(--brown); }
+.wb-sub { font-size: clamp(12px, 1vw, 17px); color: var(--brown-soft); margin-top: 6px; }
+
+/* Liste righe */
+.wb-list { display: flex; flex-direction: column; gap: clamp(4px, 0.5vw, 9px); overflow: hidden; }
+.wb-li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(13px, 1.05vw, 19px);
+  padding: clamp(4px, 0.4vw, 8px) 0;
+  border-bottom: 1px solid var(--line);
+}
+.wb-li:last-child { border-bottom: none; }
+.wb-li .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-li .num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--brown); }
+.wb-li .flag { font-size: 1.2em; }
+
+/* Barra avanzamento */
+.wb-bar { height: clamp(8px, 0.8vw, 14px); border-radius: 999px; background: var(--cream); overflow: hidden; min-width: 80px; }
+.wb-bar > i { display: block; height: 100%; background: var(--gold); border-radius: 999px; }
+.wb-bar > i.done { background: var(--ok); }
+
+/* Badge / pill */
+.wb-pill {
+  font-size: clamp(11px, 0.85vw, 14px);
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--brown);
+  white-space: nowrap;
+}
+.wb-pill.ok { background: rgba(94, 142, 78, 0.16); color: var(--ok); }
+.wb-pill.warn { background: rgba(200, 132, 58, 0.16); color: var(--warn); }
+.wb-pill.alert { background: rgba(194, 74, 58, 0.16); color: var(--alert); }
+
+.wb-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.wb-dot.green { background: var(--ok); }
+.wb-dot.yellow { background: var(--warn); }
+.wb-dot.red { background: var(--alert); }
+
+/* Stato verde "tutto a posto" */
+.wb-allgood {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ok);
+}
+.wb-allgood .mark { font-size: clamp(40px, 5vw, 80px); line-height: 1; }
+.wb-allgood .lbl { font-size: clamp(13px, 1.1vw, 19px); font-weight: 600; }
+
+/* Certificazioni */
+.wb-certs { display: flex; flex-wrap: wrap; gap: clamp(8px, 1vw, 16px); align-content: center; flex: 1; }
+.wb-cert {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: clamp(8px, 1vw, 16px) clamp(12px, 1.4vw, 22px);
+  font-family: var(--wb-serif);
+  font-weight: 600;
+  font-size: clamp(16px, 1.6vw, 28px);
+  color: var(--brown);
+  background: var(--cream);
+}
+
+/* Ticker */
+.wb-ticker {
+  flex-shrink: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: clamp(8px, 0.8vw, 14px) clamp(14px, 1.4vw, 24px);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.wb-ticker-track {
+  display: inline-flex;
+  gap: 48px;
+  animation: wb-marquee 36s linear infinite;
+}
+.wb-ticker-item { font-size: clamp(13px, 1.1vw, 19px); color: var(--brown-soft); }
+.wb-ticker-item b { color: var(--brown); font-weight: 600; }
+@keyframes wb-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Stato caricamento / errore tile */
+.wb-state { font-size: clamp(12px, 1vw, 16px); color: var(--brown-soft); opacity: 0.7; }
+.wb-state.err { color: var(--alert); opacity: 1; }
+
+/* Countdown fiera */
+.wb-count { display: flex; align-items: baseline; gap: 10px; }
+.wb-count .n { font-family: var(--wb-serif); font-size: clamp(40px, 5vw, 90px); color: var(--gold); line-height: 1; }
+.wb-count .u { font-size: clamp(13px, 1.1vw, 19px); color: var(--brown-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-ticker-track { animation: none; }
+}

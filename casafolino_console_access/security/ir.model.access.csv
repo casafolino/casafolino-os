@@ -21,3 +21,8 @@ access_console_api_cf_task,console_api.cf.task,casafolino_task.model_cf_task,cas
 access_console_api_cf_task_step,console_api.cf.task.step,casafolino_task.model_cf_task_step,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_product_product,console_api.product.product,product.model_product_product,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_product_template,console_api.product.template,product.model_product_template,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_stock_picking,console_api.stock.picking,stock.model_stock_picking,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_mrp_production,console_api.mrp.production,mrp.model_mrp_production,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_account_move,console_api.account.move,account.model_account_move,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_cf_export_fair,console_api.cf.export.fair,casafolino_crm_export.model_cf_export_fair,casafolino_console_access.group_console_api,1,0,0,0
+access_console_api_res_country,console_api.res.country,base.model_res_country,casafolino_console_access.group_console_api,1,0,0,0
