@@ -17,6 +17,14 @@ const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
   requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 25000),
   outboundPollIntervalMs: Number(process.env.OUTBOUND_POLL_INTERVAL_MS || 30000),
+  // OpenAI Realtime: model + voice from env (were hardcoded before)
+  openaiRealtimeModel: process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2',
+  openaiVoice: process.env.OPENAI_VOICE || 'coral',
+  // Server VAD / barge-in tuning (env-driven; previously ignored -> OpenAI defaults)
+  vadThreshold: Number(process.env.OPENAI_VAD_THRESHOLD || 0.5),
+  vadPrefixPaddingMs: Number(process.env.OPENAI_VAD_PREFIX_PADDING_MS || 300),
+  vadSilenceDurationMs: Number(process.env.OPENAI_VAD_SILENCE_DURATION_MS || 500),
+  bargeInMinIntervalMs: Number(process.env.BARGE_IN_MIN_INTERVAL_MS || 0),
 };
 
 const activeCalls = new Map();
@@ -207,14 +215,15 @@ async function handleTwilioInbound(req, res) {
   log('info', 'Received Twilio inbound call webhook', { callSid: body.CallSid, from: body.From });
   
   const streamUrl = `wss://${config.publicBridgeUrl.replace(/^https?:\/\//, '')}/media-stream`;
+  // No <Say> pre-roll: it produced a robotic Polly voice + ~4s dead time before
+  // the AI greeting. Connect straight to the media stream so Viola speaks first.
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say language="it-IT" voice="Polly.Giorgio">Connessione all'assistente vocale CasaFolino...</Say>
   <Connect>
     <Stream url="${streamUrl}" />
   </Connect>
 </Response>`;
-  
+
   sendTwiML(res, twiml);
 }
 
@@ -336,6 +345,7 @@ wss.on('connection', (ws, req) => {
   let openAiWs = null;
   let callState = 'connecting';
   let transcript = [];
+  let lastBargeInAt = 0;
   
   log('info', 'New Twilio WebSocket media-stream connection established', { jobId });
   
@@ -408,7 +418,7 @@ wss.on('connection', (ws, req) => {
         }
         
         // 2. Connect immediately to OpenAI Realtime WebSocket (GA)
-        const model = 'gpt-realtime-2';
+        const model = config.openaiRealtimeModel;
         log('info', 'Connecting immediately to OpenAI Realtime WebSocket (GA)...', { model });
         
         openAiWs = new WebSocket(`wss://api.openai.com/v1/realtime?model=${model}`, {
@@ -425,9 +435,17 @@ wss.on('connection', (ws, req) => {
           const baseInstructionsForSession = agentPayload?.instructions
             ? `${BASE_INSTRUCTIONS}\n\nISTRUZIONI DINAMICHE DA ODOO:\n${agentPayload.instructions}`
             : BASE_INSTRUCTIONS;
-          const initialVoice = agentPayload?.voice || config.openaiVoice || 'shimmer';
+          // Voice: Odoo agent voice wins, else env OPENAI_VOICE (no more hardcoded 'shimmer')
+          const initialVoice = agentPayload?.voice || config.openaiVoice;
           const initialTools = agentPayload?.tools || [];
-          
+          const turnDetection = {
+            type: 'server_vad',
+            threshold: config.vadThreshold,
+            prefix_padding_ms: config.vadPrefixPaddingMs,
+            silence_duration_ms: config.vadSilenceDurationMs
+          };
+          log('info', 'Configuring OpenAI session', { model, voice: initialVoice, turn_detection: turnDetection });
+
           const sessionUpdate = {
             type: 'session.update',
             session: {
@@ -437,7 +455,8 @@ wss.on('connection', (ws, req) => {
                 input: {
                   format: {
                     type: 'audio/pcmu'
-                  }
+                  },
+                  turn_detection: turnDetection
                 },
                 output: {
                   format: {
@@ -509,16 +528,22 @@ wss.on('connection', (ws, req) => {
           }
 
           if (openAiMsg.type === 'input_audio_buffer.speech_started') {
-            log('info', 'Detected user barge-in / speech started. Interrupting agent response...');
-            if (streamSid) {
-              ws.send(JSON.stringify({
-                event: 'clear',
-                streamSid: streamSid
+            const now = Date.now();
+            if (config.bargeInMinIntervalMs > 0 && now - lastBargeInAt < config.bargeInMinIntervalMs) {
+              log('debug', 'Barge-in ignored (within BARGE_IN_MIN_INTERVAL_MS)', { sinceLastMs: now - lastBargeInAt });
+            } else {
+              lastBargeInAt = now;
+              log('info', 'Detected user barge-in / speech started. Interrupting agent response...');
+              if (streamSid) {
+                ws.send(JSON.stringify({
+                  event: 'clear',
+                  streamSid: streamSid
+                }));
+              }
+              openAiWs.send(JSON.stringify({
+                type: 'response.cancel'
               }));
             }
-            openAiWs.send(JSON.stringify({
-              type: 'response.cancel'
-            }));
           }
           
           if ((openAiMsg.type === 'response.audio.delta' || openAiMsg.type === 'response.output_audio.delta') && openAiMsg.delta && streamSid) {
