@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Ruolo manager Operations: vede/arbitra tutti i task (Console CEO). -->
+    <record id="group_ops_manager" model="res.groups">
+        <field name="name">Operations · Manager (Console CEO)</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+    </record>
+</odoo>

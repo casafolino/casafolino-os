@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================ cf.task.template ============================ -->
+    <record id="view_cf_task_template_list" model="ir.ui.view">
+        <field name="name">cf.task.template.list</field>
+        <field name="model">cf.task.template</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="active == False">
+                <field name="name"/>
+                <field name="user_assigned_id"/>
+                <field name="category" widget="badge"/>
+                <field name="recurrence_type"/>
+                <field name="time_due"/>
+                <field name="priority" widget="badge"/>
+                <field name="task_count" string="Istanze"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_task_template_form" model="ir.ui.view">
+        <field name="name">cf.task.template.form</field>
+        <field name="model">cf.task.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Es. Controllo ordini sito"/></h1>
+                    </div>
+                    <group>
+                        <group string="Assegnazione">
+                            <field name="user_assigned_id"/>
+                            <field name="category"/>
+                            <field name="priority"/>
+                            <field name="time_due" placeholder="11:00"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Ricorrenza">
+                            <field name="recurrence_type"/>
+                            <div class="o_row" invisible="recurrence_type != 'weekly'">
+                                <field name="mon"/><field name="tue"/><field name="wed"/>
+                                <field name="thu"/><field name="fri"/><field name="sat"/><field name="sun"/>
+                            </div>
+                            <field name="day_of_month" invisible="recurrence_type != 'monthly'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Dettagli routine…"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cf_task_template" model="ir.actions.act_window">
+        <field name="name">Routine (template)</field>
+        <field name="res_model">cf.task.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============================ Console CEO (board task) ==================== -->
+    <record id="view_cf_task_ops_search" model="ir.ui.view">
+        <field name="name">cf.task.ops.search</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="user_assigned_id"/>
+                <filter name="f_ops_open" string="Aperti"
+                        domain="[('state','in',['bozza','taken','in_corso','blocked'])]"/>
+                <filter name="f_ops_overdue" string="In ritardo"
+                        domain="[('date_deadline','&lt;',context_today().strftime('%Y-%m-%d %H:%M:%S')),('state','in',['bozza','taken','in_corso','blocked'])]"/>
+                <filter name="f_ops_routine" string="Routine" domain="[('is_routine','=',True)]"/>
+                <separator/>
+                <group expand="0" string="Raggruppa per">
+                    <filter name="g_ops_user" string="Responsabile" context="{'group_by':'user_assigned_id'}"/>
+                    <filter name="g_ops_cat" string="Categoria" context="{'group_by':'category'}"/>
+                    <filter name="g_ops_prio" string="Priorità" context="{'group_by':'priority'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cf_task_ops_list" model="ir.ui.view">
+        <field name="name">cf.task.ops.list</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="overdue == True" decoration-muted="state in ['chiuso','annullato']">
+                <field name="overdue" column_invisible="1"/>
+                <field name="priority" widget="priority"/>
+                <field name="name"/>
+                <field name="user_assigned_id"/>
+                <field name="category" widget="badge" optional="show"/>
+                <field name="is_routine" widget="boolean_toggle" optional="hide"/>
+                <field name="time_due" optional="hide"/>
+                <field name="date_deadline"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cf_task_ops_form" model="ir.ui.view">
+        <field name="name">cf.task.ops.form</field>
+        <field name="model">cf.task</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="bozza,taken,in_corso,chiuso"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Oggetto del task"/></h1>
+                    </div>
+                    <group>
+                        <group string="Assegnazione">
+                            <field name="user_assigned_id"/>
+                            <field name="category"/>
+                            <field name="priority" widget="priority"/>
+                        </group>
+                        <group string="Tempistica">
+                            <field name="date_deadline"/>
+                            <field name="time_due" placeholder="11:00"/>
+                            <field name="is_routine" readonly="1"/>
+                            <field name="template_id" readonly="1" invisible="not is_routine"/>
+                            <field name="task_date" readonly="1" invisible="not is_routine"/>
+                            <field name="acknowledged_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Dettagli…"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cf_task_ops_board" model="ir.actions.act_window">
+        <field name="name">Console task (CEO)</field>
+        <field name="res_model">cf.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cf_task_ops_search"/>
+        <field name="context">{'search_default_f_ops_open': 1, 'search_default_g_ops_user': 1}</field>
+    </record>
+
+</odoo>

@@ -18,8 +18,10 @@ NON consuma componenti né chiude l'MO in Odoo (round 2).
         'sale',
     ],
     'data': [
+        'security/ops_security.xml',
         'security/ir.model.access.csv',
         'views/cf_backoperation_views.xml',
+        'views/cf_task_ops_views.xml',
         'views/cf_backoperation_menus.xml',
     ],
     'installable': True,

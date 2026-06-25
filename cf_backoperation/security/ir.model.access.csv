@@ -2,3 +2,5 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_cf_task_phase_user,cf.task.phase user,model_cf_task_phase,base.group_user,1,1,1,1
 access_bo_prep_line_user,bo.prep.line user,model_bo_prep_line,base.group_user,1,1,1,1
 access_bo_workday_user,bo.workday user,model_bo_workday,base.group_user,1,1,1,1
+access_cf_task_template_user,cf.task.template user,model_cf_task_template,base.group_user,1,0,0,0
+access_cf_task_template_manager,cf.task.template manager,model_cf_task_template,cf_backoperation.group_ops_manager,1,1,1,1

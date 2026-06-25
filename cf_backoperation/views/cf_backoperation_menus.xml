@@ -6,4 +6,14 @@
     <menuitem id="menu_backoperation_tasks" name="Task"
               parent="menu_backoperation_root"
               action="action_bo_task" sequence="10"/>
+    <menuitem id="menu_ops_console" name="Console task"
+              parent="menu_backoperation_root"
+              action="action_cf_task_ops_board"
+              groups="cf_backoperation.group_ops_manager"
+              sequence="20"/>
+    <menuitem id="menu_ops_routine" name="Routine"
+              parent="menu_backoperation_root"
+              action="action_cf_task_template"
+              groups="cf_backoperation.group_ops_manager"
+              sequence="30"/>
 </odoo>
