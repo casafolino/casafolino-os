@@ -79,6 +79,7 @@ function More({ children }: { children: React.ReactNode }) {
 export type SearchState = { q: string; sender: string; partner: number | null; active: boolean };
 
 type SenderTarget = { partnerId?: number; senderEmail?: string; label: string; count: number };
+type BlockInfo = { ok: boolean; sender_email: string; domain: string; is_free_domain: boolean; queue_count_domain: number; queue_count_email: number };
 
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
@@ -112,6 +113,7 @@ export function InboxClient({
   const [snack, setSnack] = useState<Snack>(null);
   const [confirmTrash, setConfirmTrash] = useState<number[] | null>(null); // ids da cestinare (sel/gruppo caricati)
   const [confirmSender, setConfirmSender] = useState<SenderTarget | null>(null); // cestina-mittente server-side
+  const [confirmBlock, setConfirmBlock] = useState<{ info: BlockInfo; messageId: number } | null>(null); // blocca mittente (policy auto_discard)
   const [groupMode, setGroupMode] = useState<GroupMode>("date");
   const [groupSort, setGroupSort] = useState<"recency" | "volume">("recency");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -213,6 +215,29 @@ export function InboxClient({
     setSnack({ text: `${r.count ?? 0} ${verb} (${t.label})`, prev: r.prev ?? {} });
     router.refresh();
   }, [view, scopeAll, router]);
+
+  // Blocca mittente: apre il dialog di conferma con dominio + conteggio in coda.
+  const openBlockSender = useCallback(async () => {
+    if (!item) return;
+    setBusy(true);
+    const r = await postJson("/api/console/block-sender", { mode: "info", messageId: item.id }) as unknown as BlockInfo;
+    setBusy(false);
+    if (!r || !r.ok) { setSnack({ text: `Errore: ${(r && (r as { message?: string }).message) ?? "info mittente fallita"}`, prev: {} }); return; }
+    setConfirmBlock({ info: r, messageId: item.id });
+  }, [item]);
+
+  const doBlockSender = useCallback(async () => {
+    if (!confirmBlock) return;
+    const { info, messageId } = confirmBlock;
+    const scope = info.is_free_domain ? "email_exact" : "domain";
+    setBusy(true);
+    const r = await postJson("/api/console/block-sender", { mode: "block", messageIds: [messageId], scope }) as unknown as { ok: boolean; message?: string; retro_total?: number };
+    setBusy(false); setConfirmBlock(null);
+    if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "blocco fallito"}`, prev: {} }); return; }
+    setChecked(new Set());
+    setSnack({ text: `Mittente bloccato · ${r.retro_total ?? 0} in coda scartate`, prev: {} });
+    router.refresh();
+  }, [confirmBlock, router]);
 
   async function undo() {
     if (!snack || !Object.keys(snack.prev).length) { setSnack(null); return; }
@@ -421,7 +446,7 @@ export function InboxClient({
             <span style={{ flex: 1 }} />
             <More>
               {item ? <CreateLeadButton name={`Nuovo contatto · ${m?.senderName || m?.senderEmail || ""}`} emailFrom={m?.senderEmail} /> : null}
-              <button className="btn" style={btn()} disabled title="Prossimamente">⛔ Blocca mittente</button>
+              <button className="btn" style={btn()} disabled={!item || busy} title="Crea regola: scarta sempre questo mittente + svuota la coda" onClick={openBlockSender}>⛔ Blocca mittente</button>
             </More>
           </div>
 
@@ -530,6 +555,34 @@ export function InboxClient({
             <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
               <button className="btn" onClick={() => setConfirmSender(null)}>Annulla</button>
               <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={() => triageSender("trash", confirmSender)}>🗑 Cestina tutto</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* conferma Blocca mittente: crea sender_policy auto_discard + sweep retroattivo */}
+      {confirmBlock ? (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setConfirmBlock(null)}>
+          <div className="card" style={{ padding: 22, width: 360 }} onClick={(e) => e.stopPropagation()}>
+            {confirmBlock.info.is_free_domain ? (
+              <>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>⚠️ Dominio libero: blocco solo l'indirizzo</div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
+                  <b>{confirmBlock.info.domain}</b> è un provider libero (es. gmail): non si blocca l'intero dominio.
+                  Bloccare solo <b>{confirmBlock.info.sender_email}</b>? {confirmBlock.info.queue_count_email} in coda da questo indirizzo verranno scartate, e le prossime in automatico.
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>Bloccare tutte le mail da {confirmBlock.info.domain}?</div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
+                  Crea una regola "scarta sempre": {confirmBlock.info.queue_count_domain} in coda verranno scartate ora, e le prossime in automatico. Recuperabili dal Cestino/Scartate.
+                </div>
+              </>
+            )}
+            <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn" onClick={() => setConfirmBlock(null)}>Annulla</button>
+              <button className="btn" disabled={busy} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={doBlockSender}>⛔ Blocca</button>
             </div>
           </div>
         </div>
