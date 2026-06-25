@@ -31,7 +31,7 @@ const activeCalls = new Map();
 let outboundPollRunning = false;
 
 const BASE_INSTRUCTIONS = `
-Sei Viola di CasaFolino, l'assistente virtuale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
+Sei Giulia di CasaFolino, l'assistente virtuale ufficiale di CasaFolino Srls (Folino Food), azienda fondata nel 1962 a Lamezia Terme (CZ) dai fratelli Antonio e Guido Folino.
 Rileva dinamicamente la lingua parlata dal cliente fin dal primo turno di conversazione e rispondi fluidamente nella stessa lingua (italiano, inglese, francese, spagnolo, tedesco, ecc.) adattandoti all'istante con tono estremamente naturale, amichevole, professionale e caloroso. Rispondi in modo conciso e naturale per facilitare la conversazione telefonica (massimo 1-2 frasi brevi per risposta).
 
 Il tuo scopo è assistere i clienti che chiamano, rispondere alle loro domande sui prodotti di CasaFolino, verificare lo stato dell'ordine, gestire contatti e richieste commerciali (lead), o aprire segnalazioni di assistenza.
@@ -54,7 +54,7 @@ KNOWLEDGE BASE (INFORMAZIONI AZIENDALI):
    - Se il cliente fa richieste complesse o chiede di parlare con una persona reale (come Antonio Folino), usa il tool 'transfer_to_human' specificando il reparto generale e il motivo.
 
 COMPORTAMENTO DIALOGO:
-- Presentati all'inizio come "Viola di CasaFolino".
+- Presentati all'inizio come "Giulia di CasaFolino".
 - Sii sempre educata, spigliata e mantieni le risposte brevi per non annoiare il cliente al telefono.
 `;
 
@@ -216,7 +216,7 @@ async function handleTwilioInbound(req, res) {
   
   const streamUrl = `wss://${config.publicBridgeUrl.replace(/^https?:\/\//, '')}/media-stream`;
   // No <Say> pre-roll: it produced a robotic Polly voice + ~4s dead time before
-  // the AI greeting. Connect straight to the media stream so Viola speaks first.
+  // the AI greeting. Connect straight to the media stream so Giulia speaks first.
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
@@ -471,9 +471,21 @@ wss.on('connection', (ws, req) => {
           };
           openAiWs.send(JSON.stringify(sessionUpdate));
           
-          // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio
-          const greetingText = agentPayload?.first_message || "Buongiorno! Sono Viola di CasaFolino, l'assistente virtuale. Come posso aiutarti oggi?";
-          const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Viola di CasaFolino, l'assistente virtuale, con questa esatta frase: "${greetingText}"`;
+          // Trigger the greeting immediately using a hidden user prompt so the model synthesizes natural assistant audio.
+          // Queue announcement is conditional: clean welcome when there is no real wait,
+          // a "please hold" line only when the caller is actually queued (position > 1).
+          const WELCOME_GREETING = agentPayload?.first_message || "Buongiorno, CasaFolino, sono Giulia. Come posso aiutarla?";
+          const WAITING_GREETING = "Buongiorno, CasaFolino, sono Giulia. In questo momento c'è una breve attesa, resti in linea, la seguo tra pochissimo.";
+          // Queue position: explicit override (Twilio customParameters.queue_position) wins;
+          // otherwise estimate from concurrent inbound calls already in progress (+1 for this call).
+          let queuePosition = Number(msg.start.customParameters?.queue_position);
+          if (!Number.isFinite(queuePosition) || queuePosition < 1) {
+            const concurrentInbound = Array.from(activeCalls.values()).filter(c => c.direction === 'inbound').length;
+            queuePosition = concurrentInbound + 1;
+          }
+          const greetingText = queuePosition > 1 ? WAITING_GREETING : WELCOME_GREETING;
+          log('info', 'Selecting inbound greeting', { queuePosition, waiting: queuePosition > 1 });
+          const greetingPrompt = `Greeting trigger: saluta il cliente presentandoti come Giulia di CasaFolino, l'assistente virtuale, con questa esatta frase: "${greetingText}"`;
           openAiWs.send(JSON.stringify({
             type: 'conversation.item.create',
             item: {
