@@ -87,8 +87,8 @@
         <field name="name">cf.task.ops.list</field>
         <field name="model">cf.task</field>
         <field name="arch" type="xml">
-            <list decoration-danger="overdue == True" decoration-muted="state in ['chiuso','annullato']">
-                <field name="overdue" column_invisible="1"/>
+            <list decoration-danger="ops_overdue == True" decoration-muted="state in ['chiuso','annullato']">
+                <field name="ops_overdue" column_invisible="1"/>
                 <field name="priority" widget="priority"/>
                 <field name="name"/>
                 <field name="user_assigned_id"/>

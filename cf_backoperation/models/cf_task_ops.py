@@ -73,6 +73,17 @@ class CfTaskOps(models.Model):
         string="Giorno", index=True,
         help="Giorno a cui appartiene l'istanza (chiave idempotenza routine).")
 
+    ops_overdue = fields.Boolean(
+        string="In ritardo", compute='_compute_ops_overdue',
+        help="True se aperto e oltre la scadenza.")
+
+    @api.depends('date_deadline', 'state')
+    def _compute_ops_overdue(self):
+        now = fields.Datetime.now()
+        for t in self:
+            t.ops_overdue = bool(
+                t.date_deadline and t.state in OPS_OPEN_STATES and t.date_deadline < now)
+
     # --------------------------------------------------------------- helpers
     @api.model
     def _ops_user(self, user_id):
