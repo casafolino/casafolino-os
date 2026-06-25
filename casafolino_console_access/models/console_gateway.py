@@ -192,15 +192,25 @@ class CasafolinoMailMessageGateway(models.Model):
         groups.sort(key=lambda g: -g['queue_count'])
         return {'ok': True, 'groups': groups}
 
+    @api.model
     def console_block_patterns(self, patterns, operator_uid=None):
         """Esegue il blocco SOLO sui pattern confermati nel dialog di massa.
-        patterns = [{'pattern_type','pattern_value'}, ...] (domini despuntati esclusi a monte)."""
+        patterns = [{'pattern_type','pattern_value'}, ...] (domini despuntati esclusi a monte).
+        @api.model: NON è un metodo su recordset → call_kw passa gli args diretti (patterns,
+        operator_uid), senza interpretare patterns come ids da fare browse()."""
         if not _is_console(self.env):
             raise AccessError(_("Solo l'utente Console può usare console_block_patterns."))
         operator = self._resolve_operator(operator_uid)
         never = self._console_never_block()
+        # Guard difensivo: accetta sia un singolo dict che una lista; mai iterare uno scalare.
+        if isinstance(patterns, dict):
+            patterns = [patterns]
+        elif not isinstance(patterns, (list, tuple)):
+            patterns = []
         pmap = {}
-        for p in (patterns or []):
+        for p in patterns:
+            if not isinstance(p, dict):
+                continue
             ptype = 'email_exact' if p.get('pattern_type') == 'email_exact' else 'domain'
             pvalue = (p.get('pattern_value') or '').lower().strip()
             if not pvalue:
