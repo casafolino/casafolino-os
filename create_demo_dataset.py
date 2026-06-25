@@ -55,20 +55,16 @@ today = date.today()
 
 
 def find_or_create(model, domain, vals, label=''):
-    """Find existing or create, returns record. Uses savepoint to isolate errors."""
+    """Find existing or create, returns record. Logs errors."""
     try:
         rec = model.search(domain, limit=1)
         if rec:
             print(f"  [SKIP] {label or vals.get('name', '?')} already exists (id={rec.id})")
             return rec
-        sp = f"sp_{model._name.replace('.','_')}_{id(vals)}"
-        env.cr.execute(f"SAVEPOINT {sp}")
         rec = model.create(vals)
-        env.cr.execute(f"RELEASE SAVEPOINT {sp}")
         print(f"  [OK] {label or vals.get('name', '?')} created (id={rec.id})")
         return rec
     except Exception as e:
-        env.cr.execute(f"ROLLBACK TO SAVEPOINT {sp}")
         msg = f"[ERR] {label or vals.get('name', '?')}: {e}"
         print(msg)
         errors.append(msg)
@@ -197,7 +193,7 @@ DOSSIER_DATA = [
         'target_date': today + timedelta(days=90),
         'broker': 'DEMO- BROKER Mario Rossi', 'broker_role': 'broker',
         'broker_basis': 'revenue', 'broker_value': 3.0,
-        'priority': 'medium',
+        'priority': 'normal',
     },
     {
         'name': 'DEMO- AKSAL — Halal range',
@@ -217,7 +213,7 @@ DOSSIER_DATA = [
         'target_date': today + timedelta(days=180),
         'broker': 'DEMO- BROKER Pierre Dubois', 'broker_role': 'agent',
         'broker_basis': 'margin', 'broker_value': 5.0,
-        'priority': 'medium',
+        'priority': 'normal',
     },
     {
         'name': 'DEMO- BILLA AT — GDO Branded',
@@ -256,7 +252,7 @@ DOSSIER_DATA = [
         'next_action_date': today + timedelta(days=30),
         'target_date': today + timedelta(days=45),
         'broker': None,
-        'priority': 'medium',
+        'priority': 'normal',
     },
     {
         'name': 'DEMO- Amazon EU — Honey range',
@@ -294,7 +290,7 @@ DOSSIER_DATA = [
         'next_action_date': today + timedelta(days=15),
         'target_date': today + timedelta(days=150),
         'broker': None,
-        'priority': 'medium',
+        'priority': 'normal',
     },
 ]
 
@@ -328,6 +324,7 @@ for dd in DOSSIER_DATA:
             'date': dd['target_date'].isoformat(),
             'cf_target_date': dd['target_date'].isoformat(),
             'cf_dossier_priority': dd['priority'],
+            'cf_project_type': dd['template_code'].lower() if dd['template_code'] in ('PL_EU', 'GDO_BRANDED', 'IMPORT_DISTR', 'MARKETPLACE') else False,
         }
         if dd['incoterms']:
             vals['cf_incoterms'] = dd['incoterms']
@@ -396,8 +393,6 @@ LEADS_DATA = [
      'revenue': 65000, 'probability': 70, 'stage': 'trattativa', 'deadline_days': 60},
     {'name': 'DEMO- Amazon EU crispy chili launch', 'dossier': 'DEMO- Amazon EU — Honey range',
      'revenue': 22000, 'probability': 10, 'stage': 'primo_contatto', 'deadline_days': 120},
-    {'name': 'DEMO- Tuttofood crema pistacchio lancio', 'dossier': 'DEMO- Tuttofood 2026 Lancio Pistacchio',
-     'revenue': 0, 'probability': 10, 'stage': 'primo_contatto', 'deadline_days': 150},
 ]
 
 leads = {}
@@ -492,7 +487,7 @@ SAMPLES_DATA = [
     },
     {
         'reference': 'DEMO- Crispy chili 90g',
-        'lead_name': 'DEMO- Tuttofood crema pistacchio lancio',
+        'lead_name': None,
         'partner_name': None,
         'stage_id': SAMPLE_STAGES['preparazione'],
     },
