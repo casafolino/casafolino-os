@@ -238,7 +238,8 @@ class MailV3Controller(http.Controller):
                 'partner_name': m.partner_id.name if m.partner_id else '',
                 'lead_id': m.lead_id.id if m.lead_id else False,
                 'lead_name': m.lead_id.name if m.lead_id else '',
-                'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''}
+                'attachment_ids': [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or '',
+                                     'size': a.file_size or 0}
                                     for a in m.attachment_ids],
                 'message_id_rfc': m.message_id_rfc or '',
             })
