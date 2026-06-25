@@ -153,21 +153,21 @@ class AccountMoveLineExt(models.Model):
 
     cf_vendor_bill_quantity_six_decimals = fields.Float(
         string='Quantita',
-        compute='_compute_cf_vendor_bill_decimal_fields',
+        compute='_compute_cf_vbq_six',
         inverse='_inverse_cf_vendor_bill_quantity_six_decimals',
         digits=(16, 6),
         readonly=False,
     )
     cf_vendor_bill_price_unit_six_decimals = fields.Float(
         string='Prezzo',
-        compute='_compute_cf_vendor_bill_decimal_fields',
+        compute='_compute_cf_vbp_six',
         inverse='_inverse_cf_vendor_bill_price_unit_six_decimals',
         digits=(16, 6),
         readonly=False,
     )
     cf_vendor_bill_discount_six_decimals = fields.Float(
         string='Sconto %',
-        compute='_compute_cf_vendor_bill_decimal_fields',
+        compute='_compute_cf_vbd_six',
         inverse='_inverse_cf_vendor_bill_discount_six_decimals',
         digits=(16, 6),
         readonly=False,
@@ -179,12 +179,34 @@ class AccountMoveLineExt(models.Model):
         readonly=True,
     )
 
-    @api.depends('quantity', 'price_unit', 'discount')
-    def _compute_cf_vendor_bill_decimal_fields(self):
+    @api.depends('quantity')
+    def _compute_cf_vbq_six(self):
         for line in self:
             line.cf_vendor_bill_quantity_six_decimals = line.quantity
+
+    @api.depends('price_unit')
+    def _compute_cf_vbp_six(self):
+        for line in self:
             line.cf_vendor_bill_price_unit_six_decimals = line.price_unit
+
+    @api.depends('discount')
+    def _compute_cf_vbd_six(self):
+        for line in self:
             line.cf_vendor_bill_discount_six_decimals = line.discount
+
+    @api.onchange(
+        'cf_vendor_bill_quantity_six_decimals',
+        'cf_vendor_bill_price_unit_six_decimals',
+        'cf_vendor_bill_discount_six_decimals',
+    )
+    def _onchange_cf_vendor_bill_decimal_fields(self):
+        for line in self:
+            if line.move_id.move_type not in ('in_invoice', 'in_refund'):
+                continue
+            line.quantity = line.cf_vendor_bill_quantity_six_decimals
+            line.price_unit = line.cf_vendor_bill_price_unit_six_decimals
+            line.discount = line.cf_vendor_bill_discount_six_decimals
+            line._compute_cf_price_subtotal_six_decimals()
 
     def _inverse_cf_vendor_bill_quantity_six_decimals(self):
         for line in self:
@@ -201,8 +223,11 @@ class AccountMoveLineExt(models.Model):
     @api.depends('quantity', 'price_unit', 'discount', 'display_type')
     def _compute_cf_price_subtotal_six_decimals(self):
         for line in self:
-            if line.display_type:
+            if line.display_type in ('line_section', 'line_note'):
                 line.cf_price_subtotal_six_decimals = 0.0
+                continue
+            if line.cf_fatturapa_xml_price_total:
+                line.cf_price_subtotal_six_decimals = line.cf_fatturapa_xml_price_total
                 continue
             try:
                 quantity = Decimal(str(line.quantity or 0.0))
@@ -213,4 +238,5 @@ class AccountMoveLineExt(models.Model):
                 continue
 
             subtotal = quantity * price_unit * (Decimal("1.0") - (discount / Decimal("100.0")))
+            subtotal = subtotal.quantize(Decimal("0.000001"))
             line.cf_price_subtotal_six_decimals = float(subtotal)

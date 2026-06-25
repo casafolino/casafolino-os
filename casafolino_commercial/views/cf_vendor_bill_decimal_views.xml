@@ -9,6 +9,8 @@
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='quantity']" position="after">
                 <field name="cf_vendor_bill_quantity_six_decimals"
                        string="Quantita"
+                       optional="show"
+                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='quantity']" position="attributes">
@@ -17,6 +19,8 @@
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_unit']" position="after">
                 <field name="cf_vendor_bill_price_unit_six_decimals"
                        string="Prezzo"
+                       optional="show"
+                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_unit']" position="attributes">
@@ -26,7 +30,8 @@
                 <field name="cf_vendor_bill_discount_six_decimals"
                        string="Disc.%"
                        width="50px"
-                       optional="hide"
+                       optional="show"
+                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='discount']" position="attributes">
@@ -35,6 +40,8 @@
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_subtotal']" position="after">
                 <field name="cf_price_subtotal_six_decimals"
                        string="Imponibile"
+                       optional="show"
+                       digits="[16, 6]"
                        column_invisible="parent.move_type not in ['in_invoice', 'in_refund']"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='price_subtotal']" position="attributes">
