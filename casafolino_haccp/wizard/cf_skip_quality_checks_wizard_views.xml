@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cf_skip_quality_checks_wizard_form" model="ir.ui.view">
+        <field name="name">cf.skip.quality.checks.wizard.form</field>
+        <field name="model">cf.skip.quality.checks.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Saltare controlli qualita?">
+                <group>
+                    <field name="production_id"/>
+                    <field name="workorder_id" invisible="not workorder_id"/>
+                    <field name="confirm_skip"/>
+                    <field name="note" placeholder="Spiega perche stai producendo a ritroso..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm_skip" type="object" string="Salta e produci" class="btn-primary" invisible="not confirm_skip"/>
+                    <button string="Annulla" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
