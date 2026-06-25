@@ -4,6 +4,7 @@ import { Component, markup, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { ComposeWizardDialog } from "@casafolino_mail/js/mail_v3/compose_wizard_dialog";
 
 export class CFPipelineControl extends Component {
@@ -31,6 +32,9 @@ export class CFPipelineControl extends Component {
             selectedMessageId: null,
             selectedMessageBody: "",
             selectedMessageIds: {},
+            showTrash: false,
+            discardedRows: [],
+            triageConfig: { discard_confirm: true, never_block_domains: [] },
             messageContext: null,
             partnerSearchQuery: "",
             leadSearchQuery: "",
@@ -54,7 +58,21 @@ export class CFPipelineControl extends Component {
                 dossiers: [],
             },
         });
-        onWillStart(this.loadData.bind(this));
+        onWillStart(async () => {
+            await this.loadTriageConfig();
+            await this.loadData();
+        });
+    }
+
+    async loadTriageConfig() {
+        try {
+            const cfg = await this.orm.call("cf.pipeline.control", "get_triage_config", []);
+            if (cfg) {
+                this.state.triageConfig = cfg;
+            }
+        } catch (error) {
+            // default già impostato in state
+        }
     }
 
     async loadData(section = this.state.activeView, force = false) {
@@ -235,6 +253,9 @@ export class CFPipelineControl extends Component {
             } else if (actionType === 'delete') {
                 const res = await this.orm.call("cf.pipeline.control", "mass_delete", [ids]);
                 this.notification.add(_t("%s email cancellate").replace("%s", res.count || ids.length), { type: "success" });
+            } else if (actionType === 'restore') {
+                const res = await this.orm.call("cf.pipeline.control", "mass_restore", [ids]);
+                this.notification.add(_t("%s email ripristinate").replace("%s", res.count || ids.length), { type: "success" });
             } else if (actionType === 'link_lead') {
                 if (this.selectedMessage && this.selectedMessage.lead_id) {
                     await this.orm.call("cf.pipeline.control", "mass_link_lead", [ids, this.selectedMessage.lead_id]);
@@ -248,6 +269,135 @@ export class CFPipelineControl extends Component {
             this.state.selectedMessageId = null;
             this.state.selectedMessageBody = "";
             this.state.messageContext = null;
+            this.state.loadedSections.inbox = false;
+            this.state.loadedSections.control = false;
+            await this.loadData(this.state.activeView, true);
+            if (this.state.showTrash) {
+                await this.loadDiscarded();
+            }
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    // ── Cestino / Ripristino ────────────────────────────────────────
+
+    async toggleTrash() {
+        this.state.showTrash = !this.state.showTrash;
+        this.state.selectedMessageIds = {};
+        this.state.selectedMessageId = null;
+        if (this.state.showTrash) {
+            await this.loadDiscarded();
+        }
+    }
+
+    async loadDiscarded() {
+        try {
+            const rows = await this.orm.call("cf.pipeline.control", "get_discarded_messages", []);
+            this.state.discardedRows = this.asArray(rows);
+        } catch (error) {
+            this.state.discardedRows = [];
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    async restoreMessage(row) {
+        if (!row || !row.id) return;
+        try {
+            const res = await this.orm.call("cf.pipeline.control", "restore_message", [row.id]);
+            this.notification.add(
+                res.count ? _t("Email ripristinata in inbox") : _t("Nessun ripristino (già in inbox)"),
+                { type: res.count ? "success" : "warning" });
+            await this.loadDiscarded();
+            this.state.loadedSections.inbox = false;
+            delete this.state.selectedMessageIds[row.id];
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+        }
+    }
+
+    // Conferma prima dello scarto di massa (config discard_confirm)
+    bulkDiscardConfirm() {
+        const selectedIds = Object.keys(this.state.selectedMessageIds).filter(id => this.state.selectedMessageIds[id]);
+        if (!selectedIds.length) {
+            this.notification.add(_t("Nessuna email selezionata"), { type: "warning" });
+            return;
+        }
+        if (!this.state.triageConfig.discard_confirm) {
+            return this.triggerBulkAction('discard');
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: _t("Conferma scarto"),
+            body: _t("Scartare %s email?").replace("%s", selectedIds.length),
+            confirmLabel: _t("Sì, scarta"),
+            cancelLabel: _t("Annulla"),
+            confirm: () => this.triggerBulkAction('discard'),
+            cancel: () => {},
+        });
+    }
+
+    // ── Blocca mittente ─────────────────────────────────────────────
+
+    async blockSenderRow(row) {
+        const target = row || this.selectedMessage;
+        if (!target || !target.id) {
+            this.notification.add(_t("Seleziona una email"), { type: "warning" });
+            return;
+        }
+        let info;
+        try {
+            info = await this.orm.call("cf.pipeline.control", "block_sender_info", [target.id]);
+        } catch (error) {
+            this.notification.add(error.message || String(error), { type: "danger" });
+            return;
+        }
+        if (!info || !info.ok) {
+            this.notification.add(_t("Email non disponibile"), { type: "warning" });
+            return;
+        }
+        let body, scope;
+        if (info.is_free_domain) {
+            scope = 'email_exact';
+            body = _t("⚠️ %d è un dominio libero (es. gmail): NON si può bloccare l'intero dominio. Bloccare solo l'indirizzo esatto %e? %n email in coda da questo indirizzo verranno scartate.")
+                .replace("%d", info.domain).replace("%e", info.sender_email).replace("%n", info.queue_count_email);
+        } else {
+            scope = 'domain';
+            body = _t("Bloccare tutte le mail da %d? %n email in coda verranno scartate.")
+                .replace("%d", info.domain).replace("%n", info.queue_count_domain);
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: _t("Blocca mittente"),
+            body: body,
+            confirmLabel: _t("Sì, blocca"),
+            cancelLabel: _t("Annulla"),
+            confirm: () => this._doBlockSender([target.id], scope),
+            cancel: () => {},
+        });
+    }
+
+    blockSenderBulk() {
+        const selectedIds = Object.keys(this.state.selectedMessageIds).filter(id => this.state.selectedMessageIds[id]).map(Number);
+        if (!selectedIds.length) {
+            this.notification.add(_t("Nessuna email selezionata"), { type: "warning" });
+            return;
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: _t("Blocca mittenti"),
+            body: _t("Bloccare i mittenti delle %s email selezionate? I domini liberi verranno bloccati solo come indirizzo esatto. Le email in coda corrispondenti verranno scartate.").replace("%s", selectedIds.length),
+            confirmLabel: _t("Sì, blocca"),
+            cancelLabel: _t("Annulla"),
+            confirm: () => this._doBlockSender(selectedIds, 'domain'),
+            cancel: () => {},
+        });
+    }
+
+    async _doBlockSender(ids, scope) {
+        try {
+            const res = await this.orm.call("cf.pipeline.control", "block_sender", [ids, scope]);
+            const retro = res && res.retro_total ? res.retro_total : 0;
+            this.notification.add(_t("Mittente bloccato. %s email in coda scartate.").replace("%s", retro), { type: "success" });
+            this.state.selectedMessageIds = {};
+            this.state.selectedMessageId = null;
             this.state.loadedSections.inbox = false;
             this.state.loadedSections.control = false;
             await this.loadData(this.state.activeView, true);
@@ -904,6 +1054,9 @@ export class CFPipelineControl extends Component {
     }
 
     get allInboxRows() {
+        if (this.state.showTrash) {
+            return this.asArray(this.state.discardedRows);
+        }
         return [
             ...this.asArray(this.state.data.inbox?.to_reply),
             ...this.asArray(this.state.data.inbox?.waiting_customer),

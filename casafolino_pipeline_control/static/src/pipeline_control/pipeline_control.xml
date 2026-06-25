@@ -585,11 +585,17 @@
                                 <i class="fa fa-paperclip"/> Materiali
                             </button>
                             <span class="cf-pc-inbox-command-spacer"/>
-                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDiscard(selectedMessage)">
+                            <button t-if="selectedMessage and !state.showTrash" class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDiscard(selectedMessage)">
                                 Scarta
                             </button>
-                            <button t-if="selectedMessage" class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDelete(selectedMessage)">
+                            <button t-if="selectedMessage and !state.showTrash" class="btn btn-outline-danger btn-sm" t-on-click="() => this.messageDelete(selectedMessage)">
                                 Cancella
+                            </button>
+                            <button t-if="selectedMessage and !state.showTrash" class="btn btn-warning btn-sm" t-on-click="() => this.blockSenderRow(selectedMessage)">
+                                Blocca mittente
+                            </button>
+                            <button t-if="selectedMessage and state.showTrash" class="btn btn-success btn-sm" t-on-click="() => this.restoreMessage(selectedMessage)">
+                                ↩ Ripristina
                             </button>
                             <div class="cf-pc-inbox-mode">
                                 <button class="btn btn-sm btn-light">Rapida</button>
@@ -633,11 +639,21 @@
                                         <strong t-out="selectedMessageCount"/>
                                         selezionate
                                     </span>
-                                    <button class="btn btn-sm btn-outline-danger" t-if="selectedMessageCount" t-on-click="() => this.triggerBulkAction('discard')">
+                                    <button t-if="!state.showTrash and selectedMessageCount" class="btn btn-sm btn-outline-danger" t-on-click="bulkDiscardConfirm">
                                         Scarta
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger" t-if="selectedMessageCount" t-on-click="() => this.triggerBulkAction('delete')">
+                                    <button t-if="!state.showTrash and selectedMessageCount" class="btn btn-sm btn-outline-danger" t-on-click="() => this.triggerBulkAction('delete')">
                                         Cancella
+                                    </button>
+                                    <button t-if="!state.showTrash and selectedMessageCount" class="btn btn-sm btn-warning" t-on-click="blockSenderBulk">
+                                        Blocca mittente
+                                    </button>
+                                    <button t-if="state.showTrash and selectedMessageCount" class="btn btn-sm btn-success" t-on-click="() => this.triggerBulkAction('restore')">
+                                        Ripristina selezionati
+                                    </button>
+                                    <button class="btn btn-sm cf-pc-trash-toggle" t-att-class="state.showTrash ? 'btn-secondary' : 'btn-light'" t-on-click="toggleTrash">
+                                        <t t-if="!state.showTrash">🗑 Cestino</t>
+                                        <t t-else="">← Torna all'inbox</t>
                                     </button>
                                 </div>
 
@@ -675,12 +691,18 @@
                                                         <span t-if="row.lead" t-out="row.lead"/>
                                                         <span t-if="!row.lead">senza lead</span>
                                                     </div>
+                                                    <div t-if="state.showTrash" class="cf-pc-vc-row-actions">
+                                                        <button class="btn btn-sm btn-success" t-on-click.stop="() => this.restoreMessage(row)">
+                                                            ↩ Ripristina
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </article>
                                         </t>
                                     </t>
                                     <div class="cf-pc-empty" t-if="!inboxDateGroups.length">
-                                        Nessuna email commerciale da lavorare.
+                                        <t t-if="state.showTrash">Cestino vuoto: nessuna email scartata.</t>
+                                        <t t-else="">Nessuna email commerciale da lavorare.</t>
                                     </div>
                                 </div>
                             </aside>

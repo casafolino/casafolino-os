@@ -632,6 +632,157 @@ class CfPipelineControl(models.AbstractModel):
                     lead.partner_id = msg.partner_id
         return True
 
+    # ── Triage: Cestino / Ripristino / Blocca mittente ──────────────
+
+    DEFAULT_NEVER_BLOCK = 'gmail.com,outlook.com,hotmail.com,yahoo.com,casafolino.com'
+
+    @api.model
+    def get_triage_config(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        confirm = ICP.get_param('casafolino_pipeline_control.discard_confirm', 'True')
+        return {
+            'discard_confirm': str(confirm).strip().lower() not in ('false', '0', 'no', ''),
+            'never_block_domains': self._never_block_domains(),
+        }
+
+    def _never_block_domains(self):
+        raw = self.env['ir.config_parameter'].sudo().get_param(
+            'casafolino_pipeline_control.never_block_domains', self.DEFAULT_NEVER_BLOCK)
+        return [d.strip().lower() for d in (raw or '').split(',') if d.strip()]
+
+    def _discarded_scope_domain(self):
+        """Scartate visibili: discard dell'account dell'utente loggato (admin = tutti)."""
+        domain = [('state', '=', 'discard')]
+        user = self.env.user
+        if not user.has_group('base.group_system'):
+            domain += [('account_id.responsible_user_id', '=', user.id)]
+        return domain
+
+    @api.model
+    def get_discarded_messages(self):
+        if 'casafolino.mail.message' not in self.env:
+            return []
+        M = self.env['casafolino.mail.message'].sudo()
+        msgs = M.search(self._discarded_scope_domain(), order='write_date desc', limit=300)
+        return [self._format_mail_row(m) for m in msgs]
+
+    def _restore_vals(self):
+        vals = {'state': 'review', 'is_archived': False, 'triage_user_id': False, 'triage_date': False}
+        if 'active' in self.env['casafolino.mail.message']._fields:
+            vals['active'] = True
+        return vals
+
+    @api.model
+    def restore_message(self, message_id):
+        m = self.env['casafolino.mail.message'].sudo().browse(int(message_id)).exists()
+        if not m or m.state != 'discard':
+            return {'success': True, 'count': 0}  # idempotente
+        m.write(self._restore_vals())
+        _logger.info("[ripristina] id=%s user=%s", m.id, self.env.uid)
+        return {'success': True, 'count': 1}
+
+    @api.model
+    def mass_restore(self, message_ids):
+        ids = [int(i) for i in message_ids]
+        msgs = self.env['casafolino.mail.message'].sudo().browse(ids).exists().filtered(
+            lambda m: m.state == 'discard')
+        _logger.info("[ripristina] target_ids=%s count=%s user=%s", msgs.ids, len(msgs), self.env.uid)
+        if msgs:
+            msgs.write(self._restore_vals())
+        return {'success': True, 'count': len(msgs), 'restored_ids': msgs.ids}
+
+    def _sender_domain_of(self, msg):
+        email = (msg.sender_email or '').lower().strip()
+        return email.split('@')[-1] if '@' in email else ''
+
+    @api.model
+    def block_sender_info(self, message_id):
+        """Info per il dialog di conferma: dominio, se libero (denylist), conteggio in coda."""
+        m = self.env['casafolino.mail.message'].sudo().browse(int(message_id)).exists()
+        if not m:
+            return {'ok': False}
+        email = (m.sender_email or '').lower().strip()
+        domain = self._sender_domain_of(m)
+        is_free = domain in self._never_block_domains()
+        M = self.env['casafolino.mail.message'].sudo()
+        queue = [('state', 'in', ['new', 'review'])]
+        q_domain = M.search_count(queue + [('sender_email', '=ilike', '%@' + domain)]) if domain else 0
+        q_email = M.search_count(queue + [('sender_email', '=ilike', email)]) if email else 0
+        return {
+            'ok': True, 'sender_email': email, 'domain': domain,
+            'is_free_domain': is_free, 'queue_count_domain': q_domain, 'queue_count_email': q_email,
+        }
+
+    @api.model
+    def block_sender(self, message_ids, scope='domain'):
+        """Crea/riusa sender_policy auto_discard (idempotente), sweep retroattivo, scarta i selezionati."""
+        ids = [int(i) for i in message_ids]
+        msgs = self.env['casafolino.mail.message'].sudo().browse(ids).exists()
+        if not msgs:
+            return {'success': False, 'error': 'Nessun messaggio'}
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        M = self.env['casafolino.mail.message'].sudo()
+        never = self._never_block_domains()
+        results = []
+        # raggruppa i selezionati per pattern da bloccare
+        patterns = {}  # (ptype, pvalue) -> set msg ids da scartare
+        for m in msgs:
+            email = (m.sender_email or '').lower().strip()
+            domain = self._sender_domain_of(m)
+            if scope == 'domain' and domain and domain not in never:
+                key = ('domain', domain)
+            else:
+                # dominio libero o scope email_exact → blocca solo l'indirizzo
+                key = ('email_exact', email)
+            if not key[1]:
+                continue
+            patterns.setdefault(key, set()).add(m.id)
+
+        total_retro = 0
+        for (ptype, pvalue), sel_ids in patterns.items():
+            existing = Policy.search([
+                ('action', '=', 'auto_discard'),
+                ('pattern_type', '=', ptype),
+                ('pattern_value', '=ilike', pvalue),
+            ], limit=1)
+            if existing:
+                policy = existing
+                created = False
+                if not policy.active:
+                    policy.active = True
+            else:
+                policy = Policy.create({
+                    'name': 'Blocco %s' % pvalue,
+                    'pattern_type': ptype,
+                    'pattern_value': pvalue,
+                    'action': 'auto_discard',
+                    'priority': 90,
+                    'active': True,
+                })
+                created = True
+            # sweep retroattivo: tutte le new/review che matchano
+            if ptype == 'domain':
+                match_domain = [('sender_email', '=ilike', '%@' + pvalue)]
+            else:
+                match_domain = [('sender_email', '=ilike', pvalue)]
+            retro = M.search([('state', 'in', ['new', 'review'])] + match_domain)
+            # includi anche i selezionati esplicitamente
+            retro = retro | M.browse(list(sel_ids)).exists()
+            retro = retro.filtered(lambda x: x.state in ('new', 'review'))
+            if retro:
+                retro.write({
+                    'state': 'discard', 'is_archived': True,
+                    'policy_applied_id': policy.id,
+                    'triage_user_id': self.env.uid,
+                    'triage_date': fields.Datetime.now(),
+                })
+            total_retro += len(retro)
+            _logger.info("[blocca-mittente] pattern=%s:%s creata=%s scartate_retroattive=%s user=%s",
+                         ptype, pvalue, created, len(retro), self.env.uid)
+            results.append({'pattern_type': ptype, 'pattern_value': pvalue,
+                            'created': created, 'retro': len(retro), 'policy_id': policy.id})
+        return {'success': True, 'results': results, 'retro_total': total_retro}
+
     @api.model
     def quick_create_partner(self, message_id):
         msg = self.env['casafolino.mail.message'].browse(int(message_id)).exists()
