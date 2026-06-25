@@ -43,6 +43,7 @@ docker restart odoo-app
 - **`casafolino_task`** form/list base: dropdown stato ora elenca taken/blocked → **cosmetico**.
 - **`cf_backoperation` `cf.task.bo.kanban`** (action "Task BackOperation"): era `group_by=state` senza dominio → potenziale crossover. **Isolato**: aggiunto dominio (solo task con `bo_titolare_id`/`bo_operatore_id`/`bo_production_id`/`bo_sale_order_id`). Console ops = dominio complementare (`user_assigned_id` set OR `is_routine`).
 - **Da ri-verificare in UI su stage prima di prod** (gate): aprire viste Produzione/Console esistenti, confermare assenza colonne/filtri taken/blocked indesiderati LIVE.
+- **Evidenza prod (read-only):** `folinofood` ha 4 record cf_task totali — `in_corso`(3) + `bozza`(1), **zero in taken/blocked**. `selection_add` e' additivo → nessun record retro-riempie i nuovi stati al deploy → nessuna colonna a sorpresa nelle viste prod. I nuovi stati appaiono solo quando gira il flusso ops. (Stage cf_task = 0 record.)
 
 ### Notifiche
 - Eventi: (1) nuovo task assegnato (`op_create_task`→`_ops_notify_assigned`), (2) ritardo (`_cron_ops_overdue_notify`).
