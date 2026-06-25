@@ -3,7 +3,7 @@ from html import escape
 from email.utils import getaddresses
 from datetime import timedelta
 
-from odoo import api, fields, models
+from odoo import api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
 
@@ -651,11 +651,13 @@ class CfPipelineControl(models.AbstractModel):
         return [d.strip().lower() for d in (raw or '').split(',') if d.strip()]
 
     def _discarded_scope_domain(self):
-        """Scartate visibili: discard dell'account dell'utente loggato (admin = tutti)."""
+        """Scartate visibili: SOLO discard dell'account di cui l'utente è responsabile.
+        Scoping per-account per OGNI utente (anche admin/group_system): Antonio e Martina
+        sono entrambi group_system ma devono vedere solo il proprio account. Bypass solo
+        per il superuser tecnico (uid 1), usato da cron/supporto."""
         domain = [('state', '=', 'discard')]
-        user = self.env.user
-        if not user.has_group('base.group_system'):
-            domain += [('account_id.responsible_user_id', '=', user.id)]
+        if self.env.uid != SUPERUSER_ID:
+            domain += [('account_id.responsible_user_id', '=', self.env.uid)]
         return domain
 
     @api.model
