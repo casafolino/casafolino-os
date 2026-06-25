@@ -46,13 +46,15 @@
                         t-att-srcdoc="msg.body_html || msg.body_plain || '(nessun contenuto)'"/>
               </div>
               <div class="mv3-message__attachments" t-if="msg.attachment_ids and msg.attachment_ids.length > 0">
-                <t t-foreach="msg.attachment_ids" t-as="att" t-key="att.id">
-                  <a class="mv3-message__attachment"
-                     t-att-href="'/web/content/' + att.id + '?download=true'"
-                     target="_blank">
-                    <i class="fa fa-paperclip"/> <t t-out="att.name"/>
-                  </a>
-                </t>
+                <a t-foreach="msg.attachment_ids" t-as="att" t-key="att.id"
+                   class="mv3-message__attachment"
+                   t-att-href="'/web/content/' + att.id + '?download=true'"
+                   t-att-title="att.name"
+                   target="_blank">
+                  <i class="fa fa-paperclip"/>
+                  <span class="mv3-message__attachment-name" t-out="att.name"/>
+                  <span t-if="att.size" class="mv3-message__attachment-size" t-out="this.formatSize(att.size)"/>
+                </a>
               </div>
               <div class="mv3-message__actions">
                 <button t-if="msg.state !== 'keep' and msg.state !== 'auto_keep'"
