@@ -83,19 +83,10 @@ class CasafolinoMailMessageGateway(models.Model):
             'is_free_domain': is_free, 'queue_count_domain': q_domain, 'queue_count_email': q_email,
         }
 
-    def console_block_sender(self, scope='domain', operator_uid=None):
-        """browse(ids).console_block_sender(scope, operator_uid): crea sender_policy
-        auto_discard (idempotente) per il dominio/indirizzo dei messaggi, poi sweep
-        retroattivo new/review → discard. Domini liberi → solo email_exact."""
-        if not _is_console(self.env):
-            raise AccessError(_("Solo l'utente Console può usare console_block_sender."))
-        if not self.ids:
-            return {'ok': False, 'error': 'no records'}
-        operator = self._resolve_operator(operator_uid)
-        Policy = self.env['casafolino.mail.sender_policy'].sudo()
-        M = self.env['casafolino.mail.message'].sudo()
-        never = self._console_never_block()
-        patterns = {}  # (ptype, pvalue) -> set(msg ids selezionati)
+    def _console_patterns_from_records(self, scope, never):
+        """Raggruppa i messaggi (self) in pattern bloccabili. domain salvo dominio libero
+        o scope=email_exact → email_exact. Ritorna {(ptype,pvalue): set(seed msg ids)}."""
+        patterns = {}
         for m in self.sudo():
             email = (m.sender_email or '').lower().strip()
             domain = email.split('@')[-1] if '@' in email else ''
@@ -105,12 +96,19 @@ class CasafolinoMailMessageGateway(models.Model):
                 key = ('email_exact', email)
             if key[1]:
                 patterns.setdefault(key, set()).add(m.id)
-        if not patterns:
-            return {'ok': False, 'error': 'mittente mancante'}
+        return patterns
+
+    def _console_apply_block(self, patterns, operator, action_tag='block_sender'):
+        """patterns = {(ptype,pvalue): set(seed_ids)} → crea/riusa policy auto_discard
+        idempotente + sweep retroattivo new/review → discard. Ritorna dict risultati."""
+        Policy = self.env['casafolino.mail.sender_policy'].sudo()
+        M = self.env['casafolino.mail.message'].sudo()
         results = []
         total_retro = 0
         swept_ids = []
         for (ptype, pvalue), sel in patterns.items():
+            if not pvalue:
+                continue
             existing = Policy.search([
                 ('action', '=', 'auto_discard'),
                 ('pattern_type', '=', ptype),
@@ -133,7 +131,9 @@ class CasafolinoMailMessageGateway(models.Model):
                 created = True
             match = [('sender_email', '=ilike', '%@' + pvalue)] if ptype == 'domain' \
                 else [('sender_email', '=ilike', pvalue)]
-            retro = M.search([('state', 'in', ['new', 'review'])] + match) | M.browse(list(sel)).exists()
+            retro = M.search([('state', 'in', ['new', 'review'])] + match)
+            if sel:
+                retro = retro | M.browse(list(sel)).exists()
             retro = retro.filtered(lambda x: x.state in ('new', 'review'))
             if retro:
                 retro.write({
@@ -144,13 +144,74 @@ class CasafolinoMailMessageGateway(models.Model):
                 })
                 swept_ids += retro.ids
             total_retro += len(retro)
-            _logger.info("[blocca-mittente] pattern=%s:%s creata=%s scartate_retroattive=%s operator=%s",
-                         ptype, pvalue, created, len(retro), operator.id if operator else False)
+            _logger.info("[%s] pattern=%s:%s creata=%s scartate_retroattive=%s operator=%s",
+                         action_tag, ptype, pvalue, created, len(retro), operator.id if operator else False)
             results.append({'pattern_type': ptype, 'pattern_value': pvalue,
                             'created': created, 'retro': len(retro)})
         _audit(self.env, 'casafolino.mail.message', swept_ids,
-               'block_sender:%s' % scope, {'state', 'policy_applied_id'}, operator)
+               '%s' % action_tag, {'state', 'policy_applied_id'}, operator)
         return {'ok': True, 'results': results, 'retro_total': total_retro, 'swept_ids': swept_ids}
+
+    def console_block_sender(self, scope='domain', operator_uid=None):
+        """browse(ids).console_block_sender(scope, operator_uid): crea sender_policy
+        auto_discard (idempotente) per il dominio/indirizzo dei messaggi, poi sweep
+        retroattivo new/review → discard. Domini liberi → solo email_exact."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console può usare console_block_sender."))
+        if not self.ids:
+            return {'ok': False, 'error': 'no records'}
+        operator = self._resolve_operator(operator_uid)
+        patterns = self._console_patterns_from_records(scope, self._console_never_block())
+        if not patterns:
+            return {'ok': False, 'error': 'mittente mancante'}
+        return self._console_apply_block(patterns, operator, 'blocca-mittente')
+
+    def console_block_sender_preview(self, operator_uid=None):
+        """Anteprima per il dialog di massa: domini distinti dalla selezione (self),
+        con guardrail dominio libero e conteggio mail in coda per pattern. Nessuna scrittura."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console può usare console_block_sender_preview."))
+        self._resolve_operator(operator_uid)
+        never = self._console_never_block()
+        M = self.env['casafolino.mail.message'].sudo()
+        groups = []
+        seen = set()
+        for (ptype, pvalue), sel in self._console_patterns_from_records('domain', never).items():
+            if pvalue in seen:
+                continue
+            seen.add(pvalue)
+            if ptype == 'domain':
+                qn = M.search_count([('state', 'in', ['new', 'review']), ('sender_email', '=ilike', '%@' + pvalue)])
+            else:
+                qn = M.search_count([('state', 'in', ['new', 'review']), ('sender_email', '=ilike', pvalue)])
+            groups.append({
+                'pattern_type': ptype, 'pattern_value': pvalue,
+                'is_free_domain': ptype == 'email_exact',
+                'queue_count': qn, 'selected_count': len(sel),
+            })
+        groups.sort(key=lambda g: -g['queue_count'])
+        return {'ok': True, 'groups': groups}
+
+    def console_block_patterns(self, patterns, operator_uid=None):
+        """Esegue il blocco SOLO sui pattern confermati nel dialog di massa.
+        patterns = [{'pattern_type','pattern_value'}, ...] (domini despuntati esclusi a monte)."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console può usare console_block_patterns."))
+        operator = self._resolve_operator(operator_uid)
+        never = self._console_never_block()
+        pmap = {}
+        for p in (patterns or []):
+            ptype = 'email_exact' if p.get('pattern_type') == 'email_exact' else 'domain'
+            pvalue = (p.get('pattern_value') or '').lower().strip()
+            if not pvalue:
+                continue
+            # guardrail server-side: dominio libero non bloccabile come 'domain'
+            if ptype == 'domain' and pvalue in never:
+                ptype = 'email_exact'
+            pmap.setdefault((ptype, pvalue), set())
+        if not pmap:
+            return {'ok': False, 'error': 'nessun pattern confermato'}
+        return self._console_apply_block(pmap, operator, 'blocca-massa')
 
     def console_mark_read(self, is_read, operator_uid=None):
         """Segna letto/non-letto in bulk. Scrive SOLO is_read via sudo, audita con operatore.

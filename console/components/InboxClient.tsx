@@ -80,6 +80,7 @@ export type SearchState = { q: string; sender: string; partner: number | null; a
 
 type SenderTarget = { partnerId?: number; senderEmail?: string; label: string; count: number };
 type BlockInfo = { ok: boolean; sender_email: string; domain: string; is_free_domain: boolean; queue_count_domain: number; queue_count_email: number };
+type BlockGroup = { pattern_type: string; pattern_value: string; is_free_domain: boolean; queue_count: number; selected_count: number };
 
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
@@ -114,6 +115,7 @@ export function InboxClient({
   const [confirmTrash, setConfirmTrash] = useState<number[] | null>(null); // ids da cestinare (sel/gruppo caricati)
   const [confirmSender, setConfirmSender] = useState<SenderTarget | null>(null); // cestina-mittente server-side
   const [confirmBlock, setConfirmBlock] = useState<{ info: BlockInfo; messageId: number } | null>(null); // blocca mittente (policy auto_discard)
+  const [massBlock, setMassBlock] = useState<{ groups: BlockGroup[]; checked: Set<string> } | null>(null); // blocca mittenti selezionati (dialog checkbox per-dominio)
   const [groupMode, setGroupMode] = useState<GroupMode>("date");
   const [groupSort, setGroupSort] = useState<"recency" | "volume">("recency");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -238,6 +240,40 @@ export function InboxClient({
     setSnack({ text: `Mittente bloccato · ${r.retro_total ?? 0} in coda scartate`, prev: {} });
     router.refresh();
   }, [confirmBlock, router]);
+
+  // Blocca mittenti selezionati (massa): anteprima domini distinti → dialog checkbox.
+  const openMassBlock = useCallback(async () => {
+    const ids = targetIds();
+    if (!ids.length) return;
+    setBusy(true);
+    const r = await postJson("/api/console/block-sender", { mode: "preview", messageIds: ids }) as unknown as { ok: boolean; message?: string; groups?: BlockGroup[] };
+    setBusy(false);
+    if (!r.ok || !r.groups) { setSnack({ text: `Errore: ${r.message ?? "anteprima fallita"}`, prev: {} }); return; }
+    if (!r.groups.length) { setSnack({ text: "Nessun mittente bloccabile nella selezione", prev: {} }); return; }
+    setMassBlock({ groups: r.groups, checked: new Set(r.groups.map((g) => g.pattern_value)) });
+  }, [targetIds]);
+
+  const toggleMassDomain = (pv: string) => setMassBlock((mb) => {
+    if (!mb) return mb;
+    const n = new Set(mb.checked);
+    if (n.has(pv)) n.delete(pv); else n.add(pv);
+    return { ...mb, checked: n };
+  });
+
+  const doMassBlock = useCallback(async () => {
+    if (!massBlock) return;
+    const patterns = massBlock.groups
+      .filter((g) => massBlock.checked.has(g.pattern_value))
+      .map((g) => ({ pattern_type: g.pattern_type, pattern_value: g.pattern_value }));
+    if (!patterns.length) { setMassBlock(null); return; }
+    setBusy(true);
+    const r = await postJson("/api/console/block-sender", { mode: "block-patterns", patterns }) as unknown as { ok: boolean; message?: string; retro_total?: number; results?: unknown[] };
+    setBusy(false); setMassBlock(null);
+    if (!r.ok) { setSnack({ text: `Errore: ${r.message ?? "blocco massa fallito"}`, prev: {} }); return; }
+    setChecked(new Set());
+    setSnack({ text: `${patterns.length} mittenti bloccati · ${r.retro_total ?? 0} in coda scartate`, prev: {} });
+    router.refresh();
+  }, [massBlock, router]);
 
   async function undo() {
     if (!snack || !Object.keys(snack.prev).length) { setSnack(null); return; }
@@ -438,6 +474,9 @@ export function InboxClient({
                 <button className="btn" style={btn({ background: "var(--ok-t)", color: "var(--ok)" })} disabled={triageDisabled} onClick={() => doTriage("keep")}>★ Tieni</button>
                 <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doTriage("discard")}>✕ Scarta</button>
                 <button className="btn" style={btn({ background: "var(--danger-t)", color: "var(--danger)" })} disabled={triageDisabled} onClick={() => setConfirmTrash(targetIds())}>🗑 Cestina</button>
+                {checked.size > 0 ? (
+                  <button className="btn" style={btn()} disabled={busy} title="Crea regole scarta-sempre per i mittenti selezionati" onClick={openMassBlock}>⛔ Blocca mittenti</button>
+                ) : null}
               </>
             )}
             <button className="btn" style={btn()} disabled={triageDisabled} onClick={() => doMarkRead(true)}>✉ Segna lette</button>
@@ -587,6 +626,48 @@ export function InboxClient({
           </div>
         </div>
       ) : null}
+
+      {/* blocca mittenti selezionati: dialog con checkbox per-dominio + totale dinamico */}
+      {massBlock ? (() => {
+        const dominiBlock = massBlock.groups.filter((g) => !g.is_free_domain);
+        const liberi = massBlock.groups.filter((g) => g.is_free_domain);
+        const total = massBlock.groups.filter((g) => massBlock.checked.has(g.pattern_value)).reduce((s, g) => s + g.queue_count, 0);
+        const nChecked = massBlock.groups.filter((g) => massBlock.checked.has(g.pattern_value)).length;
+        const Row = (g: BlockGroup) => (
+          <label key={g.pattern_value} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
+            <input type="checkbox" checked={massBlock.checked.has(g.pattern_value)} onChange={() => toggleMassDomain(g.pattern_value)} />
+            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{g.pattern_value}</span>
+            <span className="muted" style={{ fontSize: 12 }}>({g.queue_count})</span>
+          </label>
+        );
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "grid", placeItems: "center", zIndex: 50 }} onClick={() => setMassBlock(null)}>
+            <div className="card" style={{ padding: 22, width: 420, maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Blocca i mittenti selezionati</div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>Spunta i domini da bloccare per sempre. Le mail in coda dei domini spuntati verranno scartate (recuperabili dal Cestino/Scartate).</div>
+              <div style={{ overflowY: "auto", maxHeight: "44vh", paddingRight: 4 }}>
+                {dominiBlock.length ? (
+                  <div style={{ marginBottom: 10 }}>
+                    <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Domini</div>
+                    {dominiBlock.map(Row)}
+                  </div>
+                ) : null}
+                {liberi.length ? (
+                  <div>
+                    <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>⚠️ Domini liberi — solo indirizzo esatto</div>
+                    {liberi.map(Row)}
+                  </div>
+                ) : null}
+              </div>
+              <div style={{ marginTop: 12, fontSize: 13 }}>Verranno scartate <b>{total}</b> mail in coda · <b>{nChecked}</b> regole.</div>
+              <div className="row" style={{ gap: 8, justifyContent: "flex-end", marginTop: 14 }}>
+                <button className="btn" onClick={() => setMassBlock(null)}>Annulla</button>
+                <button className="btn" disabled={busy || nChecked === 0} style={{ background: "var(--danger-t)", color: "var(--danger)" }} onClick={doMassBlock}>⛔ Blocca {nChecked}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
 
       {snack ? (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--ink)", color: "#fff", padding: "10px 14px", borderRadius: 8, display: "flex", gap: 14, alignItems: "center", zIndex: 60, boxShadow: "0 4px 16px rgba(0,0,0,.25)" }}>
