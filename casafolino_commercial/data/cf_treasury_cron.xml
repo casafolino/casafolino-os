@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <!-- Cron configurati via UI Odoo per evitare problemi con model_id search= -->
-    <!-- Metodi disponibili: model.create_daily_snapshot() e model.cron_liquidity_alert() -->
-</odoo>
