@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_workspace.WorkspaceMail">
+    <div class="cf-mail-section">
+        <t t-if="state.loading">
+            <div class="cf-ws-loading"><div class="spinner-border text-secondary"/><span>Caricamento mail...</span></div>
+        </t>
+        <t t-elif="state.error">
+            <div class="cf-ws-error"><i class="fa fa-exclamation-triangle"/><span t-esc="state.error"/></div>
+        </t>
+        <t t-elif="state.data">
+            <!-- BREADCRUMB -->
+            <div class="cf-lead-breadcrumb">
+                <span class="cf-lead-bc-link" t-on-click="onGoHome">Scrivania</span>
+                <span class="cf-lead-bc-sep">›</span>
+                <span class="cf-lead-bc-current">Mail hub</span>
+            </div>
+
+            <!-- HERO -->
+            <div class="cf-hero">
+                <div class="cf-hero-left">
+                    <div class="cf-hero-avatar" style="border-color:#3B82F6">
+                        <i class="fa fa-envelope" style="font-size:20px;color:#6B4A1E;"/>
+                    </div>
+                    <div class="cf-hero-text">
+                        <h2 class="cf-hero-greet" t-esc="state.data.hero.greet"/>
+                        <p class="cf-hero-sub" t-esc="state.data.hero.sub"/>
+                    </div>
+                </div>
+                <div class="cf-hero-right">
+                    <div class="cf-hero-tip">
+                        <i class="fa fa-lightbulb-o cf-hero-tip-icon"/>
+                        <span class="cf-hero-tip-text" t-esc="state.data.hero.tip.text"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="cf-kpis">
+                <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.id">
+                    <div class="cf-kpi-card">
+                        <div class="cf-kpi-icon-wrap"><i t-attf-class="fa #{kpi.icon}"/></div>
+                        <div class="cf-kpi-info">
+                            <span class="cf-kpi-value" t-esc="kpi.value"/>
+                            <span class="cf-kpi-label" t-esc="kpi.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- MACRO -->
+            <div class="cf-macro-grid">
+                <t t-foreach="state.data.macro" t-as="m" t-key="m.id">
+                    <div class="cf-macro-tile" t-att-style="'background:' + m.color">
+                        <div class="cf-macro-tile-top">
+                            <i t-attf-class="fa #{m.icon} cf-macro-tile-icon"/>
+                            <span class="cf-macro-tile-count" t-esc="m.count"/>
+                        </div>
+                        <span class="cf-macro-tile-label" t-esc="m.label"/>
+                    </div>
+                </t>
+            </div>
+
+            <!-- WORK AREA -->
+            <div class="cf-ws-two-col">
+                <div class="cf-ws-two-col-main">
+                    <div class="cf-work">
+                        <div class="cf-work-header">
+                            <h3 class="cf-work-title">Mail</h3>
+                            <div class="cf-work-tabs">
+                                <button t-attf-class="cf-work-tab #{state.view === 'inbox' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('inbox')">Inbox</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'threads' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('threads')">Thread</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'triage' ? 'active' : ''}"
+                                        t-on-click="() => this.onViewChange('triage')">Triage rapido</button>
+                            </div>
+                        </div>
+
+                        <!-- FILTERS -->
+                        <t t-if="state.view === 'inbox' and state.data.filters">
+                            <div class="cf-lead-filters">
+                                <t t-foreach="state.data.filters" t-as="f" t-key="f">
+                                    <button t-attf-class="cf-lead-chip #{state.filter === this.getFilterKey(f) ? 'active' : ''}"
+                                            t-on-click="() => this.onFilterChange(this.getFilterKey(f))" t-esc="f"/>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- INBOX VIEW -->
+                        <t t-if="state.view === 'inbox'">
+                            <t t-if="state.mailsLoading">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-elif="state.mails.length === 0">
+                                <p class="cf-work-empty">Nessuna mail trovata.</p>
+                            </t>
+                            <t t-else="">
+                                <t t-foreach="state.mails" t-as="mail" t-key="mail.id">
+                                    <div t-attf-class="cf-mail-card #{mail.unread ? 'unread' : ''}" t-on-click="() => this.onSelectMail(mail)">
+                                        <div class="cf-mail-avatar cf-mail-avatar-blue">
+                                            <span t-esc="(mail.from_name || '?').substring(0,2).toUpperCase()"/>
+                                        </div>
+                                        <div class="cf-mail-body">
+                                            <div class="cf-mail-top">
+                                                <span class="cf-mail-from" t-esc="mail.from_name"/>
+                                                <span class="cf-mail-when" t-esc="mail.when_relative"/>
+                                            </div>
+                                            <div class="cf-mail-subject" t-esc="mail.subject"/>
+                                            <div class="cf-mail-preview" t-esc="mail.preview"/>
+                                            <div class="cf-mail-meta">
+                                                <span class="cf-mail-tag" t-att-style="'background:' + mail.tag_bg + ';color:' + mail.tag_fg" t-esc="mail.tag_label"/>
+                                                <t t-if="mail.thread_count > 1">
+                                                    <span class="cf-mail-thread-cnt"><i class="fa fa-comments"/> <t t-esc="mail.thread_count"/></span>
+                                                </t>
+                                                <span t-attf-class="cf-lead-pill cf-lead-pill-#{mail.pill_status}" t-esc="mail.pill_label"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+
+                        <!-- THREADS VIEW -->
+                        <t t-if="state.view === 'threads'">
+                            <t t-if="!state.threads">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-elif="state.threads.length === 0">
+                                <p class="cf-work-empty">Nessun thread attivo.</p>
+                            </t>
+                            <t t-else="">
+                                <t t-foreach="state.threads" t-as="t" t-key="t.id">
+                                    <div class="cf-mail-thread-row">
+                                        <div class="cf-mail-avatar cf-mail-avatar-purple"><span t-esc="t.avatar"/></div>
+                                        <div class="cf-mail-thread-info">
+                                            <div class="cf-mail-thread-top">
+                                                <strong t-esc="t.contact_name"/>
+                                                <span class="cf-mail-thread-cnt-badge" t-esc="t.count"/>
+                                            </div>
+                                            <div class="cf-mail-thread-sub">
+                                                <t t-esc="t.company"/> · <t t-esc="t.last_message"/>
+                                            </div>
+                                        </div>
+                                        <span class="cf-mail-thread-status"
+                                              t-att-style="'background:' + (t.status_color === 'green' ? '#D1FAE5' : '#F3F4F6') + ';color:' + (t.status_color === 'green' ? '#065F46' : '#6B7280')"
+                                              t-esc="t.status"/>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+
+                        <!-- TRIAGE VIEW -->
+                        <t t-if="state.view === 'triage'">
+                            <t t-if="!state.triage">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-elif="state.triage.length === 0">
+                                <p class="cf-work-empty">Nessuna mail da triagare.</p>
+                            </t>
+                            <t t-else="">
+                                <t t-foreach="state.triage" t-as="mail" t-key="mail.id">
+                                    <div class="cf-mail-card unread">
+                                        <div class="cf-mail-avatar cf-mail-avatar-amber">
+                                            <span t-esc="(mail.from_name || '?').substring(0,2).toUpperCase()"/>
+                                        </div>
+                                        <div class="cf-mail-body">
+                                            <div class="cf-mail-top">
+                                                <span class="cf-mail-from" t-esc="mail.from_name"/>
+                                                <span class="cf-mail-when" t-esc="mail.when_relative"/>
+                                            </div>
+                                            <div class="cf-mail-subject" t-esc="mail.subject"/>
+                                            <div class="cf-mail-meta">
+                                                <span class="cf-mail-tag" t-att-style="'background:' + mail.tag_bg + ';color:' + mail.tag_fg" t-esc="mail.tag_label"/>
+                                            </div>
+                                            <div class="cf-mail-actions">
+                                                <button class="cf-mail-action-btn" t-on-click.stop="() => this.onAction(mail.id, 'to_lead')"><i class="fa fa-bullseye"/> Lead</button>
+                                                <button class="cf-mail-action-btn" t-on-click.stop="() => this.onAction(mail.id, 'to_task')"><i class="fa fa-tasks"/> Task</button>
+                                                <button class="cf-mail-action-btn" t-on-click.stop="() => this.onAction(mail.id, 'archive')"><i class="fa fa-archive"/> Archivia</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+                    </div>
+
+                    <!-- ACTION TOAST -->
+                    <t t-if="state.actionMsg">
+                        <div class="cf-mail-toast"><i class="fa fa-check-circle"/> <t t-esc="state.actionMsg"/></div>
+                    </t>
+
+                    <!-- DETAIL PANEL -->
+                    <t t-if="state.selectedMail and state.detailData and state.detailData.mail">
+                        <div class="cf-detail">
+                            <div class="cf-detail-header">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="cf-mail-avatar cf-mail-avatar-blue">
+                                        <span t-esc="(state.detailData.mail.from_name || '?').substring(0,2).toUpperCase()"/>
+                                    </div>
+                                    <div>
+                                        <h4 class="cf-detail-title" style="margin-bottom:2px" t-esc="state.detailData.mail.from_name"/>
+                                        <div style="font-size:11px;color:var(--cf-text-muted)" t-esc="state.detailData.mail.from_email"/>
+                                    </div>
+                                </div>
+                                <button class="cf-detail-close" t-on-click="onCloseDetail"><i class="fa fa-times"/></button>
+                            </div>
+                            <div class="cf-detail-body">
+                                <div style="font-size:14px;font-weight:700;color:var(--cf-text);margin-bottom:8px" t-esc="state.detailData.mail.subject"/>
+                                <div class="cf-mail-meta" style="margin-bottom:10px">
+                                    <span class="cf-mail-tag" t-att-style="'background:' + state.detailData.mail.tag_bg + ';color:' + state.detailData.mail.tag_fg" t-esc="state.detailData.mail.tag_label"/>
+                                    <span style="font-size:11px;color:var(--cf-text-muted)" t-esc="state.detailData.mail.when_relative"/>
+                                </div>
+                                <div class="cf-mail-detail-body" t-esc="state.detailData.mail.body"/>
+
+                                <!-- Suggested reply -->
+                                <div class="cf-mail-suggested">
+                                    <span class="cf-mail-suggested-label">Risposta suggerita</span>
+                                    <t t-esc="state.detailData.suggested_reply"/>
+                                </div>
+
+                                <!-- Thread history -->
+                                <t t-if="state.detailData.thread_history and state.detailData.thread_history.length > 0">
+                                    <div class="cf-mail-history">
+                                        <h5 style="font-size:12px;font-weight:700;color:var(--cf-text-muted);margin:0 0 6px">Cronologia thread</h5>
+                                        <t t-foreach="state.detailData.thread_history" t-as="h" t-key="h.id">
+                                            <div class="cf-mail-history-item">
+                                                <span t-attf-class="cf-mail-history-dir #{h.direction}" t-esc="h.direction === 'inbound' ? 'IN' : 'OUT'"/>
+                                                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" t-esc="h.from_name + ' · ' + h.subject"/>
+                                                <span style="flex-shrink:0" t-esc="h.when"/>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+
+                                <!-- Chain -->
+                                <t t-if="state.detailData.chain and state.detailData.chain.length > 0">
+                                    <div class="cf-lead-chain">
+                                        <t t-foreach="state.detailData.chain" t-as="c" t-key="c.label">
+                                            <div class="cf-lead-chain-chip"><i t-attf-class="fa #{c.icon}"/><span t-esc="c.label"/></div>
+                                        </t>
+                                    </div>
+                                </t>
+
+                                <!-- Actions -->
+                                <div class="cf-mail-actions" style="margin-top:12px">
+                                    <button class="cf-mail-action-btn" t-on-click="() => this.onAction(state.detailData.mail.id, 'to_lead')"><i class="fa fa-bullseye"/> Crea lead</button>
+                                    <button class="cf-mail-action-btn" t-on-click="() => this.onAction(state.detailData.mail.id, 'to_task')"><i class="fa fa-tasks"/> Crea task</button>
+                                    <button class="cf-mail-action-btn" t-on-click="() => this.onAction(state.detailData.mail.id, 'archive')"><i class="fa fa-archive"/> Archivia</button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- FEED -->
+                <div class="cf-ws-two-col-side">
+                    <div class="cf-feed">
+                        <h3 class="cf-feed-title">Attività mail</h3>
+                        <t t-if="!state.data.feed or state.data.feed.length === 0">
+                            <p class="cf-feed-empty">Nessuna attività recente.</p>
+                        </t>
+                        <t t-foreach="state.data.feed" t-as="f" t-key="f.id">
+                            <div class="cf-feed-item">
+                                <div class="cf-feed-avatar"><span t-esc="f.initials"/></div>
+                                <div class="cf-feed-content">
+                                    <div class="cf-feed-author">
+                                        <strong t-esc="f.author"/>
+                                        <span class="cf-feed-time" t-esc="this.getRelativeTime(f.date)"/>
+                                    </div>
+                                    <p class="cf-feed-body" t-esc="f.body"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

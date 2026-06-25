@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="casafolino_workspace.WorkspaceInv">
+    <div class="cf-inv-section">
+        <t t-if="state.loading">
+            <div class="cf-ws-loading"><div class="spinner-border text-secondary"/><span>Caricamento investor...</span></div>
+        </t>
+        <t t-elif="state.error">
+            <div class="cf-ws-error"><i class="fa fa-exclamation-triangle"/><span t-esc="state.error"/></div>
+        </t>
+        <t t-elif="state.data and state.data.hero and !state.data.error">
+            <div class="cf-lead-breadcrumb">
+                <span class="cf-lead-bc-link" t-on-click="onGoHome">Scrivania</span>
+                <span class="cf-lead-bc-sep">&#8250;</span>
+                <span class="cf-lead-bc-current">Investor &amp; CdA</span>
+            </div>
+
+            <div class="cf-hero">
+                <div class="cf-hero-left">
+                    <div class="cf-hero-avatar" style="border-color:#C8A43A">
+                        <i class="fa fa-briefcase" style="font-size:20px;color:#6B4A1E;"/>
+                    </div>
+                    <div class="cf-hero-text">
+                        <h2 class="cf-hero-greet" t-esc="state.data.hero.greet"/>
+                        <p class="cf-hero-sub" t-esc="state.data.hero.sub"/>
+                    </div>
+                </div>
+                <div class="cf-hero-right">
+                    <div class="cf-hero-tip"><i class="fa fa-lightbulb-o cf-hero-tip-icon"/><span class="cf-hero-tip-text" t-esc="state.data.hero.tip.text"/></div>
+                </div>
+            </div>
+
+            <div class="cf-kpis">
+                <t t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.id">
+                    <div class="cf-kpi-card">
+                        <div class="cf-kpi-icon-wrap"><i t-attf-class="fa #{kpi.icon}"/></div>
+                        <div class="cf-kpi-info"><span class="cf-kpi-value" t-esc="kpi.value"/><span class="cf-kpi-label" t-esc="kpi.label"/></div>
+                    </div>
+                </t>
+            </div>
+
+            <div class="cf-macro-grid">
+                <t t-foreach="state.data.macro" t-as="m" t-key="m.id">
+                    <div class="cf-macro-tile" t-att-style="'background:' + m.color">
+                        <div class="cf-macro-tile-top"><i t-attf-class="fa #{m.icon} cf-macro-tile-icon"/><span class="cf-macro-tile-count" t-esc="m.count"/></div>
+                        <span class="cf-macro-tile-label" t-esc="m.label"/>
+                    </div>
+                </t>
+            </div>
+
+            <div class="cf-ws-two-col">
+                <div class="cf-ws-two-col-main">
+                    <div class="cf-work">
+                        <div class="cf-work-header">
+                            <h3 class="cf-work-title">Investor &amp; CdA</h3>
+                            <div class="cf-work-tabs">
+                                <button t-attf-class="cf-work-tab #{state.view === 'eventi' ? 'active' : ''}" t-on-click="() => this.onViewChange('eventi')">Eventi</button>
+                                <button t-attf-class="cf-work-tab #{state.view === 'comunicazioni' ? 'active' : ''}" t-on-click="() => this.onViewChange('comunicazioni')">Comunicazioni</button>
+                            </div>
+                        </div>
+
+                        <t t-if="state.view === 'eventi' and state.data.filters">
+                            <div class="cf-lead-filters">
+                                <t t-foreach="state.data.filters" t-as="f" t-key="f">
+                                    <button t-attf-class="cf-lead-chip #{state.filter === this.getFilterKey(f) ? 'active' : ''}"
+                                            t-on-click="() => this.onFilterChange(this.getFilterKey(f))" t-esc="f"/>
+                                </t>
+                            </div>
+                        </t>
+
+                        <!-- EVENTI VIEW -->
+                        <t t-if="state.view === 'eventi'">
+                            <t t-if="state.itemsLoading">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-elif="state.items.length === 0">
+                                <div class="cf-qa-empty"><i class="fa fa-calendar-check-o"/><p>Nessun evento in programma.</p></div>
+                            </t>
+                            <t t-else="">
+                                <t t-foreach="state.items" t-as="item" t-key="item.type + '_' + item.id">
+                                    <div class="cf-qa-item" t-att-style="'border-left-color:' + item.icon_color" t-on-click="() => this.onSelectItem(item)">
+                                        <div class="cf-qa-item-icon" t-att-style="'background:' + item.icon_color + '15; color:' + item.icon_color">
+                                            <i t-attf-class="fa #{item.icon}"/>
+                                        </div>
+                                        <div class="cf-qa-item-body">
+                                            <div class="cf-qa-item-top">
+                                                <span class="cf-qa-item-title" t-esc="item.title"/>
+                                                <span t-attf-class="cf-lead-pill cf-lead-pill-#{item.pill_status}" t-esc="item.pill_label"/>
+                                            </div>
+                                            <div class="cf-qa-item-sub">
+                                                <t t-if="item.subtitle" t-esc="item.subtitle"/>
+                                                <t t-if="item.attendee_count"> · <t t-esc="item.attendee_count"/> partecipanti</t>
+                                            </div>
+                                            <div class="cf-qa-item-cat" t-esc="item.cat"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+
+                        <!-- COMUNICAZIONI VIEW -->
+                        <t t-if="state.view === 'comunicazioni'">
+                            <t t-if="state.itemsLoading">
+                                <div class="cf-lead-list-loading"><div class="spinner-border spinner-border-sm text-secondary"/></div>
+                            </t>
+                            <t t-elif="!state.comms or state.comms.length === 0">
+                                <div class="cf-qa-empty"><i class="fa fa-envelope-o"/><p>Nessuna comunicazione recente.</p></div>
+                            </t>
+                            <t t-else="">
+                                <t t-foreach="state.comms" t-as="item" t-key="item.type + '_' + item.id">
+                                    <div class="cf-qa-item" t-att-style="'border-left-color:' + item.icon_color" t-on-click="() => this.onSelectItem(item)">
+                                        <div class="cf-qa-item-icon" t-att-style="'background:' + item.icon_color + '15; color:' + item.icon_color">
+                                            <i t-attf-class="fa #{item.icon}"/>
+                                        </div>
+                                        <div class="cf-qa-item-body">
+                                            <div class="cf-qa-item-top">
+                                                <span class="cf-qa-item-title" t-esc="item.title"/>
+                                                <span t-attf-class="cf-lead-pill cf-lead-pill-#{item.pill_status}" t-esc="item.pill_label"/>
+                                            </div>
+                                            <div class="cf-qa-item-sub" t-esc="item.subtitle"/>
+                                            <div class="cf-qa-item-cat" t-esc="this.getRelativeTime(item.date)"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+                    </div>
+
+                    <!-- DETAIL -->
+                    <t t-if="state.selectedItem and state.detailData and state.detailData.item">
+                        <div class="cf-detail">
+                            <div class="cf-detail-header">
+                                <h4 class="cf-detail-title" t-esc="state.detailData.item.title"/>
+                                <button class="cf-detail-close" t-on-click="onCloseDetail"><i class="fa fa-times"/></button>
+                            </div>
+                            <div class="cf-detail-body">
+                                <div class="cf-lead-detail-grid">
+                                    <div class="cf-detail-meta"><span class="cf-detail-meta-label">Tipo:</span><span t-esc="state.detailData.item.type"/></div>
+                                    <t t-if="state.detailData.item.status"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Stato:</span><span t-esc="state.detailData.item.status"/></div></t>
+                                    <t t-if="state.detailData.item.start"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Inizio:</span><span t-esc="state.detailData.item.start"/></div></t>
+                                    <t t-if="state.detailData.item.stop"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Fine:</span><span t-esc="state.detailData.item.stop"/></div></t>
+                                    <t t-if="state.detailData.item.subtitle"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Luogo:</span><span t-esc="state.detailData.item.subtitle"/></div></t>
+                                    <t t-if="state.detailData.item.description"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Descrizione:</span><span t-esc="state.detailData.item.description"/></div></t>
+                                    <t t-if="state.detailData.item.body"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Contenuto:</span><span t-esc="state.detailData.item.body"/></div></t>
+                                    <t t-if="state.detailData.item.date"><div class="cf-detail-meta"><span class="cf-detail-meta-label">Data:</span><span t-esc="state.detailData.item.date"/></div></t>
+                                </div>
+                                <t t-if="state.detailData.item.attendees and state.detailData.item.attendees.length > 0">
+                                    <div class="cf-inv-attendees">
+                                        <h5 class="cf-inv-attendees-title">Partecipanti</h5>
+                                        <t t-foreach="state.detailData.item.attendees" t-as="att" t-key="att.id">
+                                            <div class="cf-inv-attendee">
+                                                <i class="fa fa-user-circle-o"/>
+                                                <span t-esc="att.name"/>
+                                                <t t-if="att.email"><span class="cf-inv-attendee-email" t-esc="att.email"/></t>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <div class="cf-ws-two-col-side">
+                    <div class="cf-feed">
+                        <h3 class="cf-feed-title">Attività investor</h3>
+                        <t t-if="!state.data.feed or state.data.feed.length === 0">
+                            <p class="cf-feed-empty">Nessuna attività recente.</p>
+                        </t>
+                        <t t-foreach="state.data.feed" t-as="f" t-key="f.id">
+                            <div class="cf-feed-item">
+                                <div class="cf-feed-avatar"><span t-esc="f.initials"/></div>
+                                <div class="cf-feed-content">
+                                    <div class="cf-feed-author"><strong t-esc="f.author"/><span class="cf-feed-time" t-esc="this.getRelativeTime(f.date)"/></div>
+                                    <p class="cf-feed-body" t-esc="f.body"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

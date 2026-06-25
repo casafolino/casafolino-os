@@ -1,0 +1,13 @@
+/* ═══════ Investor & CdA Section ═══════ */
+.cf-inv-section { padding: 0; }
+
+/* Attendees list in detail */
+.cf-inv-attendees { margin-top: 16px; }
+.cf-inv-attendees-title { font-size: 13px; font-weight: 700; color: var(--cf-text); margin-bottom: 8px; }
+.cf-inv-attendee {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; font-size: 13px; color: var(--cf-text);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.cf-inv-attendee i { color: var(--cf-text-muted); font-size: 14px; }
+.cf-inv-attendee-email { color: var(--cf-text-muted); font-size: 11px; margin-left: auto; }
