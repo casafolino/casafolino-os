@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <function model="res.company" name="write">
+        <value model="res.company" search="[('id', '=', ref('base.main_company'))]"/>
+        <value eval="{
+            'name': &quot;CasaFolino Srl Societa' Benefit&quot;,
+            'phone': '+39 0968 18 88 076',
+            'email': 'info@casafolino.com',
+            'website': 'https://casafolino.com',
+        }"/>
+    </function>
+
+    <function model="res.partner" name="write">
+        <value model="res.partner" search="[('id', '=', ref('base.main_partner'))]"/>
+        <value eval="{
+            'name': &quot;CasaFolino Srl Societa' Benefit&quot;,
+            'phone': '+39 0968 18 88 076',
+            'email': 'info@casafolino.com',
+            'website': 'https://casafolino.com',
+            'street': 'Via Prunia, 1',
+            'zip': '88046',
+            'city': 'Lamezia Terme',
+            'vat': 'IT03783120797',
+        }"/>
+    </function>
+</odoo>
