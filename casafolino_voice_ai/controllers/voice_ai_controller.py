@@ -3,6 +3,9 @@ import html
 import hmac
 import urllib.error
 import urllib.request
+from datetime import datetime, time
+from markupsafe import Markup
+import pytz
 
 from odoo import fields, http
 from odoo.http import request
@@ -28,8 +31,229 @@ class CasaFolinoVoiceAIController(http.Controller):
     def health(self):
         return request.make_json_response({'ok': True, 'service': 'casafolino_voice_ai'})
 
+    def _today_domain_bounds(self):
+        tz_name = request.env.context.get('tz') or request.env.user.tz or 'UTC'
+        tz = pytz.timezone(tz_name)
+        local_today = fields.Date.context_today(request.env.user)
+        local_start = tz.localize(datetime.combine(local_today, time.min))
+        local_end = tz.localize(datetime.combine(local_today, time.max))
+        return (
+            local_start.astimezone(pytz.UTC).replace(tzinfo=None),
+            local_end.astimezone(pytz.UTC).replace(tzinfo=None),
+        )
+
+    def _format_call_time(self, value):
+        if not value:
+            return ''
+        return fields.Datetime.context_timestamp(request.env.user, value).strftime('%H:%M')
+
+    def _format_duration(self, seconds):
+        seconds = int(seconds or 0)
+        minutes, sec = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        if hours:
+            return '%d:%02d:%02d' % (hours, minutes, sec)
+        return '%d:%02d' % (minutes, sec)
+
+    def _call_duration_seconds(self, call):
+        if call.duration_seconds:
+            return call.duration_seconds
+        if not call.started_at:
+            return 0
+        end_at = call.ended_at or fields.Datetime.now()
+        return max(0, int((end_at - call.started_at).total_seconds()))
+
+    def _call_reason(self, call):
+        text = (call.summary or call.next_action or '').strip()
+        if text:
+            return text[:140] + ('...' if len(text) > 140 else '')
+        if call.outcome:
+            return dict(call._fields['outcome'].selection).get(call.outcome, call.outcome)
+        if call.route_action:
+            return dict(call._fields['route_action'].selection).get(call.route_action, call.route_action)
+        return 'In attesa di riepilogo'
+
+    def _dashboard_payload(self):
+        Call = request.env['casafolino.voice.call'].sudo()
+        start, end = self._today_domain_bounds()
+        domain = [('started_at', '>=', start), ('started_at', '<=', end)]
+        calls = Call.search(domain, order='started_at desc, id desc', limit=80)
+        active_calls = calls.filtered(lambda call: call.state == 'active')
+        completed_calls = calls.filtered(lambda call: call.state == 'completed')
+        failed_calls = calls.filtered(lambda call: call.state == 'failed')
+        transferred_calls = calls.filtered(lambda call: call.state == 'transferred')
+        inbound_calls = calls.filtered(lambda call: call.direction == 'inbound')
+        call_durations = {call.id: self._call_duration_seconds(call) for call in calls}
+        durations = [duration for duration in call_durations.values() if duration]
+        total_duration = sum(durations)
+        avg_duration = round(total_duration / len(durations)) if durations else 0
+        rows = []
+        for call in calls:
+            caller = call.partner_id.display_name or call.phone or 'Sconosciuto'
+            rows.append({
+                'id': call.id,
+                'name': call.name,
+                'time': self._format_call_time(call.started_at),
+                'caller': caller,
+                'phone': call.phone or '',
+                'direction': dict(call._fields['direction'].selection).get(call.direction, call.direction or ''),
+                'state': dict(call._fields['state'].selection).get(call.state, call.state or ''),
+                'state_key': call.state or '',
+                'outcome': dict(call._fields['outcome'].selection).get(call.outcome, call.outcome or ''),
+                'agent': call.agent_id.display_name or '',
+                'reason': self._call_reason(call),
+                'duration': self._format_duration(call_durations.get(call.id, 0)),
+                'next_action': (call.next_action or '').strip(),
+                'url': '/web#id=%s&model=casafolino.voice.call&view_type=form' % call.id,
+            })
+        return {
+            'generated_at': fields.Datetime.context_timestamp(request.env.user, fields.Datetime.now()).strftime('%H:%M:%S'),
+            'date': fields.Date.context_today(request.env.user).strftime('%d/%m/%Y'),
+            'stats': {
+                'total': len(calls),
+                'active': len(active_calls),
+                'completed': len(completed_calls),
+                'failed': len(failed_calls),
+                'transferred': len(transferred_calls),
+                'inbound': len(inbound_calls),
+                'avg_duration': self._format_duration(avg_duration),
+                'total_duration': self._format_duration(total_duration),
+            },
+            'calls': rows,
+        }
+
+    @http.route('/voice_ai/dashboard/data', type='http', auth='user', methods=['GET'], csrf=False)
+    def voice_ai_dashboard_data(self, **kwargs):
+        return request.make_json_response(self._dashboard_payload())
+
+    @http.route('/voice_ai/dashboard', type='http', auth='user', methods=['GET'], csrf=False)
+    def voice_ai_dashboard(self, **kwargs):
+        payload = self._dashboard_payload()
+        html_page = """
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dashboard Voice AI CasaFolino</title>
+  <style>
+    :root { --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f8fafc; --brand:#0f766e; --warm:#b45309; --bad:#b91c1c; --ok:#15803d; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .wrap { max-width:1440px; margin:0 auto; padding:20px; }
+    .top { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; }
+    h1 { margin:0; font-size:26px; line-height:1.2; }
+    .sub { color:var(--muted); margin-top:5px; font-size:14px; }
+    .actions { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; box-shadow:0 0 0 4px rgba(34,197,94,.14); }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+    .stat { background:white; border:1px solid var(--line); border-radius:8px; padding:15px; min-height:92px; }
+    .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .value { font-size:30px; font-weight:700; margin-top:8px; }
+    .value.small { font-size:24px; }
+    .panel { background:white; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line); }
+    .panel-title { font-size:17px; font-weight:650; }
+    table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:13px; }
+    th { color:var(--muted); font-weight:600; background:#fbfdff; }
+    tbody tr:hover { background:#f9fafb; }
+    a { color:#0f766e; text-decoration:none; font-weight:600; }
+    .pill { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; font-size:12px; font-weight:600; background:#f3f4f6; color:#374151; white-space:nowrap; }
+    .active { background:#dcfce7; color:var(--ok); }
+    .failed { background:#fee2e2; color:var(--bad); }
+    .transferred { background:#e0f2fe; color:#0369a1; }
+    .completed { background:#ecfdf5; color:#047857; }
+    .reason { color:#374151; line-height:1.35; }
+    .muted { color:var(--muted); }
+    .empty { padding:32px; text-align:center; color:var(--muted); }
+    @media (max-width: 1000px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .hide-sm { display:none; } }
+    @media (max-width: 720px) { .wrap { padding:12px; } .top { align-items:flex-start; flex-direction:column; } .grid { grid-template-columns:1fr; } table { min-width:900px; } .panel { overflow:auto; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Dashboard Voice AI</h1>
+        <div class="sub">Chiamate del giorno <span id="dash-date"></span></div>
+      </div>
+      <div class="actions"><span class="dot"></span><span>Live, aggiornamento ogni 5 secondi</span><span id="updated"></span></div>
+    </div>
+    <div class="grid">
+      <div class="stat"><div class="label">Chiamate oggi</div><div class="value" id="stat-total">0</div></div>
+      <div class="stat"><div class="label">In corso</div><div class="value" id="stat-active">0</div></div>
+      <div class="stat"><div class="label">Trasferite</div><div class="value" id="stat-transferred">0</div></div>
+      <div class="stat"><div class="label">Durata media</div><div class="value small" id="stat-avg">0:00</div></div>
+      <div class="stat"><div class="label">Inbound</div><div class="value" id="stat-inbound">0</div></div>
+      <div class="stat"><div class="label">Completate</div><div class="value" id="stat-completed">0</div></div>
+      <div class="stat"><div class="label">Fallite</div><div class="value" id="stat-failed">0</div></div>
+      <div class="stat"><div class="label">Tempo totale</div><div class="value small" id="stat-total-duration">0:00</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Chiamate recenti di oggi</div>
+        <div class="muted" id="row-count"></div>
+      </div>
+      <div id="table-wrap"></div>
+    </div>
+  </div>
+  <script>
+    const initialData = __PAYLOAD__;
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function render(data) {
+      document.getElementById('dash-date').textContent = data.date || '';
+      document.getElementById('updated').textContent = 'Aggiornato ' + (data.generated_at || '');
+      document.getElementById('stat-total').textContent = data.stats.total;
+      document.getElementById('stat-active').textContent = data.stats.active;
+      document.getElementById('stat-transferred').textContent = data.stats.transferred;
+      document.getElementById('stat-avg').textContent = data.stats.avg_duration;
+      document.getElementById('stat-inbound').textContent = data.stats.inbound;
+      document.getElementById('stat-completed').textContent = data.stats.completed;
+      document.getElementById('stat-failed').textContent = data.stats.failed;
+      document.getElementById('stat-total-duration').textContent = data.stats.total_duration;
+      document.getElementById('row-count').textContent = data.calls.length + ' righe';
+      if (!data.calls.length) {
+        document.getElementById('table-wrap').innerHTML = '<div class="empty">Nessuna chiamata registrata oggi.</div>';
+        return;
+      }
+      const rows = data.calls.map(call => `
+        <tr>
+          <td style="width:82px">${esc(call.time)}</td>
+          <td style="width:120px"><a href="${esc(call.url)}">${esc(call.name)}</a></td>
+          <td style="width:220px"><strong>${esc(call.caller)}</strong><br><span class="muted">${esc(call.phone)}</span></td>
+          <td style="width:110px"><span class="pill ${esc(call.state_key)}">${esc(call.state)}</span></td>
+          <td class="hide-sm" style="width:100px">${esc(call.direction)}</td>
+          <td style="width:105px">${esc(call.duration)}</td>
+          <td><div class="reason">${esc(call.reason)}</div>${call.next_action ? `<div class="muted">${esc(call.next_action)}</div>` : ''}</td>
+          <td class="hide-sm" style="width:135px">${esc(call.outcome || call.agent)}</td>
+        </tr>`).join('');
+      document.getElementById('table-wrap').innerHTML = `
+        <table>
+          <thead><tr><th>Ora</th><th>Chiamata</th><th>Da chi</th><th>Stato</th><th class="hide-sm">Tipo</th><th>Durata</th><th>Motivo / riepilogo</th><th class="hide-sm">Esito</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+    async function refresh() {
+      try {
+        const res = await fetch('/voice_ai/dashboard/data', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        render(await res.json());
+      } catch (err) {}
+    }
+    render(initialData);
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
+        """
+        return request.make_response(
+            Markup(html_page.replace('__PAYLOAD__', json.dumps(payload))),
+            headers=[('Content-Type', 'text/html; charset=utf-8')],
+        )
+
     @http.route('/voice_ai/config', type='http', auth='public', methods=['GET'], csrf=False)
-    def bridge_config(self):
+    def bridge_config(self, **kwargs):
         if not self._check_token():
             return request.make_json_response({'error': 'unauthorized'}, status=401)
         params = request.env['ir.config_parameter'].sudo()
@@ -62,6 +286,268 @@ class CasaFolinoVoiceAIController(http.Controller):
         elif name:
             domain = [('name', 'ilike', name)]
         return Partner.search(domain, limit=1) if domain else Partner.browse()
+
+    def _inbound_contact_tags(self):
+        Tag = request.env.get('cf.contact.tag')
+        if Tag is None:
+            return []
+        tag_ids = []
+        for name in ['Centralino telefonico', 'Telefonate inbound']:
+            tag = Tag.sudo().search([('name', '=', name)], limit=1)
+            if not tag:
+                vals = {'name': name}
+                if 'color' in Tag._fields:
+                    vals['color'] = '#3B82F6'
+                tag = Tag.sudo().create(vals)
+            tag_ids.append(tag.id)
+        return tag_ids
+
+    def _save_inbound_contact(self, payload):
+        Partner = request.env['res.partner'].sudo()
+        partner = self._find_partner(payload)
+        first_name = (payload.get('first_name') or '').strip()
+        last_name = (payload.get('last_name') or '').strip()
+        full_name = (payload.get('name') or payload.get('customer_name') or ' '.join([first_name, last_name]).strip()).strip()
+        company_name = (payload.get('company_name') or '').strip()
+        email = (payload.get('email') or '').strip()
+        phone = (payload.get('phone') or '').strip()
+        vals = {}
+        if full_name:
+            vals['name'] = full_name
+        elif company_name:
+            vals['name'] = company_name
+        if email:
+            vals['email'] = email
+        if phone:
+            vals['phone'] = phone
+            vals['mobile'] = phone
+        if company_name:
+            company = Partner.search([('is_company', '=', True), ('name', '=ilike', company_name)], limit=1)
+            if not company:
+                company = Partner.create({'name': company_name, 'is_company': True})
+            vals['parent_id'] = company.id
+            vals['company_name'] = company_name
+        if not partner:
+            partner = Partner.create(vals or {'name': full_name or company_name or phone or email or 'Contatto centralino'})
+        else:
+            safe_vals = {key: value for key, value in vals.items() if value}
+            if safe_vals:
+                partner.write(safe_vals)
+        tag_ids = self._inbound_contact_tags()
+        if tag_ids and 'cf_tag_ids' in partner._fields:
+            partner.write({'cf_tag_ids': [(4, tag_id) for tag_id in tag_ids]})
+        call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
+        if call.exists():
+            call.write({'partner_id': partner.id})
+            call.message_post(
+                body='Contatto centralino salvato/aggiornato: %s<br/>Telefono: %s<br/>Email: %s<br/>Azienda: %s' % (
+                    html.escape(partner.display_name or ''),
+                    html.escape(phone or partner.phone or partner.mobile or ''),
+                    html.escape(email or partner.email or ''),
+                    html.escape(company_name or getattr(partner, 'company_name', '') or ''),
+                ),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        return partner
+
+    def _find_catalog_template(self, payload=None):
+        payload = payload or {}
+        lang = payload.get('language') or payload.get('detected_language') or 'it_IT'
+        lang = 'en_US' if str(lang).lower().startswith('en') else 'it_IT'
+        template_name = 'Catalogue attached' if lang == 'en_US' else 'Catalogo allegato'
+        template = request.env['casafolino.mail.template'].sudo().search([('name', '=', template_name)], limit=1)
+        if not template:
+            template = request.env['casafolino.mail.template'].sudo().search([
+                ('default_attachment_policy', '=', 'catalog'),
+                ('language', '=', lang),
+            ], limit=1)
+        return template
+
+    def _find_catalog_attachment(self, payload=None):
+        payload = payload or {}
+        lang = payload.get('language') or payload.get('detected_language') or 'it_IT'
+        is_en = str(lang).lower().startswith('en')
+        terms = ['catalog', 'catalogue'] if is_en else ['catalogo', 'catalog']
+        Attachment = request.env['ir.attachment'].sudo()
+        if 'documents.document' in request.env.registry:
+            Document = request.env['documents.document'].sudo()
+            for term in terms:
+                docs = Document.search([('name', 'ilike', term)], limit=12, order='write_date desc')
+                for doc in docs:
+                    att = doc.attachment_id
+                    if att and att.exists() and ((att.mimetype or '').lower() == 'application/pdf' or (att.name or '').lower().endswith('.pdf')):
+                        return att
+        for term in terms:
+            atts = Attachment.search([('name', 'ilike', term)], limit=12, order='write_date desc')
+            for att in atts:
+                if (att.mimetype or '').lower() == 'application/pdf' or (att.name or '').lower().endswith('.pdf'):
+                    return att
+        return Attachment.browse()
+
+    def _classify_request_area(self, payload=None):
+        payload = payload or {}
+        fields_to_scan = [
+            'department', 'request_type', 'category', 'intent', 'summary',
+            'next_action', 'outcome', 'reason', 'subject', 'description', 'interest',
+        ]
+        text = ' '.join(str(payload.get(field) or '') for field in fields_to_scan).lower()
+        explicit_commercial = ['commerciale', 'catalogo', 'catalog', 'listino', 'campionatura', 'campione', 'campioni', 'sample']
+        explicit_backoffice = ['assistenza', 'backoffice', 'supporto', 'ticket', 'problema', 'reclamo', 'fattura', 'amministrazione']
+        if any(term in text for term in explicit_commercial):
+            return 'commerciale'
+        if any(term in text for term in explicit_backoffice):
+            return 'backoffice'
+        backoffice_terms = [
+            'problema ordine', 'problemi ordine', 'problema con un ordine', 'problemi con un ordine',
+            'stato ordine', 'consegna', 'spedizione', 'merce mancante', 'danneggiato',
+            'fattura', 'fatture', 'pagamento', 'amministrazione', 'documento', 'documenti',
+        ]
+        commercial_terms = [
+            'nuovo ordine', 'fare ordine', 'fare un ordine', 'ordine nuovo', 'commerciale',
+            'catalogo', 'catalog', 'listino', 'prezzo', 'prezzi', 'campionatura',
+            'campione', 'campioni', 'sample', 'private label', 'preventivo',
+            'fornitura', 'rivenditore', 'gdo', 'export', 'lead',
+        ]
+        if any(term in text for term in backoffice_terms):
+            return 'backoffice'
+        if any(term in text for term in commercial_terms):
+            return 'commerciale'
+        return 'commerciale'
+
+    def _dedupe_emails(self, emails, exclude=None):
+        exclude = {email.strip().lower() for email in (exclude or []) if email}
+        seen = set()
+        cleaned = []
+        for email in emails:
+            email = (email or '').strip()
+            key = email.lower()
+            if not email or key in exclude or key in seen:
+                continue
+            cleaned.append(email)
+            seen.add(key)
+        return cleaned
+
+    def _route_recipients(self, payload=None, caller_email=None):
+        area = self._classify_request_area(payload)
+        responsible = 'martina.sinopoli@casafolino.com' if area == 'backoffice' else 'antonio@casafolino.com'
+        copy_to = ['antonio@casafolino.com'] if area == 'backoffice' else ['martina.sinopoli@casafolino.com']
+        email_to = (caller_email or '').strip() or responsible
+        cc = copy_to + ([responsible] if caller_email and responsible.lower() != caller_email.lower() else [])
+        return {'area': area, 'to': email_to, 'cc': self._dedupe_emails(cc, exclude=[email_to])}
+
+    def _send_catalog_email(self, payload):
+        partner = self._save_inbound_contact(payload)
+        email_to = payload.get('email') or partner.email
+        if not email_to:
+            raise ValueError('email destinatario mancante per invio catalogo')
+        template = self._find_catalog_template(payload)
+        if template:
+            rendered = request.env['casafolino.mail.template'].sudo().render_template(
+                template.id,
+                partner.id,
+                context_extra={
+                    'partner_first_name': (payload.get('first_name') or (partner.name or '').split(' ')[0] or ''),
+                    'partner_name': partner.display_name or payload.get('customer_name') or payload.get('name') or '',
+                },
+            )
+            subject = rendered.get('subject') or 'Catalogo CasaFolino'
+            body_html = rendered.get('body_html') or template.body_html or ''
+        else:
+            subject = 'Catalogo CasaFolino'
+            body_html = '<p>Buongiorno,</p><p>le invio in allegato il catalogo CasaFolino con la nostra selezione prodotti.</p><p>Resto a disposizione.</p><p>Cordiali saluti,<br/>CasaFolino</p>'
+        attachment = self._find_catalog_attachment(payload)
+        if not attachment:
+            raise ValueError('allegato catalogo non trovato')
+        route = self._route_recipients({**payload, 'request_type': 'commerciale catalogo'}, email_to)
+        cc_emails = route['cc']
+        mail = request.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body_html,
+            'email_to': email_to,
+            'email_cc': ','.join(cc_emails),
+            'email_from': 'Antonio Folino <antonio@casafolino.com>',
+            'reply_to': 'antonio@casafolino.com',
+            'attachment_ids': [(6, 0, [attachment.id])],
+            'auto_delete': False,
+        })
+        mail.send()
+        call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
+        if call.exists():
+            call.write({'partner_id': partner.id})
+            call.message_post(
+                body='Catalogo inviato a %s con allegato %s, cc %s' % (
+                    html.escape(email_to),
+                    html.escape(attachment.name or ''),
+                    html.escape(', '.join(cc_emails)),
+                ),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        return {
+            'ok': True,
+            'partner_id': partner.id,
+            'mail_id': mail.id,
+            'template_id': template.id if template else None,
+            'attachment_id': attachment.id,
+            'attachment_name': attachment.name,
+            'email_to': email_to,
+        }
+
+    def _send_inbound_call_email(self, call, payload=None):
+        payload = payload or {}
+        partner = call.partner_id
+        caller_email = payload.get('email') or (partner.email if partner else '')
+        route = self._route_recipients(payload, caller_email)
+        email_to = route['to']
+        cc_emails = route['cc']
+        company = payload.get('company_name') or ''
+        if not company and partner:
+            company = partner.parent_id.display_name or getattr(partner, 'company_name', '') or ''
+        contact = (partner.display_name if partner else '') or payload.get('customer_name') or payload.get('name') or 'N/D'
+        phone = payload.get('phone') or call.phone or (partner.phone if partner else '') or (partner.mobile if partner else '') or 'N/D'
+        subject = 'Riepilogo chiamata centralino CasaFolino - %s' % (call.name or 'nuova chiamata')
+        body_html = """
+            <p>Buongiorno,</p>
+            <p>grazie per aver contattato CasaFolino. Di seguito trova il riepilogo della chiamata appena gestita dal centralino telefonico.</p>
+            <table cellpadding="6" style="border-collapse: collapse;">
+                <tr><td><b>Chiamata</b></td><td>%s</td></tr>
+                <tr><td><b>Contatto</b></td><td>%s</td></tr>
+                <tr><td><b>Azienda</b></td><td>%s</td></tr>
+                <tr><td><b>Telefono</b></td><td>%s</td></tr>
+                <tr><td><b>Email</b></td><td>%s</td></tr>
+                <tr><td><b>Referente interno</b></td><td>%s</td></tr>
+                <tr><td><b>Riepilogo</b></td><td>%s</td></tr>
+                <tr><td><b>Prossima azione</b></td><td>%s</td></tr>
+            </table>
+            <p>Il team CasaFolino dara seguito alla richiesta quando necessario.</p>
+            <p>Grazie,<br/>CasaFolino</p>
+        """ % (
+            html.escape(call.name or ''),
+            html.escape(contact),
+            html.escape(company or 'N/D'),
+            html.escape(phone),
+            html.escape(caller_email or 'N/D'),
+            html.escape('Martina / backoffice' if route['area'] == 'backoffice' else 'Antonio / commerciale'),
+            html.escape(payload.get('summary') or call.summary or 'Nessun riepilogo disponibile'),
+            html.escape(payload.get('next_action') or call.next_action or 'Nessuna azione indicata'),
+        )
+        mail = request.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body_html,
+            'email_to': email_to,
+            'email_cc': ','.join(cc_emails),
+            'email_from': 'Antonio Folino <antonio@casafolino.com>',
+            'reply_to': 'antonio@casafolino.com',
+            'auto_delete': False,
+        })
+        mail.send()
+        call.message_post(
+            body='Email riepilogo centralino inviata a %s, cc %s' % (html.escape(email_to), html.escape(', '.join(cc_emails))),
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+        return mail
 
     def _lookup_voice_knowledge(self, payload, limit=6):
         Knowledge = request.env['casafolino.voice.knowledge'].sudo()
@@ -103,6 +589,22 @@ class CasaFolinoVoiceAIController(http.Controller):
             return request.make_json_response({'error': 'unauthorized'}, status=401)
         payload = self._json_body()
         partner = self._find_partner(payload)
+
+        if tool_name == 'save_inbound_contact':
+            partner = self._save_inbound_contact(payload)
+            return request.make_json_response({
+                'ok': True,
+                'partner_id': partner.id,
+                'name': partner.display_name,
+                'email': partner.email,
+                'phone': partner.phone or partner.mobile,
+            })
+
+        if tool_name == 'send_catalog_email':
+            try:
+                return request.make_json_response(self._send_catalog_email(payload))
+            except Exception as exc:
+                return request.make_json_response({'ok': False, 'error': str(exc)}, status=500)
 
         if tool_name == 'lookup_customer':
             if not partner:
@@ -223,17 +725,30 @@ class CasaFolinoVoiceAIController(http.Controller):
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
             if not call.exists():
                 return request.make_json_response({'error': 'call not found'}, status=404)
+            if payload.get('email') or payload.get('phone') or payload.get('customer_name') or payload.get('name') or payload.get('company_name'):
+                partner = self._save_inbound_contact(payload)
             call.write({
                 'state': 'completed' if payload.get('outcome') != 'transferred' else 'transferred',
                 'outcome': payload.get('outcome') or 'other',
                 'summary': payload.get('summary'),
                 'next_action': payload.get('next_action'),
                 'ended_at': fields.Datetime.now(),
+                'partner_id': partner.id if partner else call.partner_id.id,
             })
             detected_language = payload.get('detected_language')
             if detected_language and call.partner_id and detected_language in ['it-IT', 'en-US', 'fr-FR', 'es-ES', 'de-DE']:
                 call.partner_id.voice_ai_language = detected_language
-            return request.make_json_response({'ok': True})
+            mail_sent = False
+            try:
+                self._send_inbound_call_email(call, payload)
+                mail_sent = True
+            except Exception as exc:
+                call.message_post(
+                    body='Errore invio email riepilogo centralino: %s' % html.escape(str(exc)),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_note',
+                )
+            return request.make_json_response({'ok': True, 'partner_id': call.partner_id.id if call.partner_id else None, 'mail_sent': mail_sent})
 
         if tool_name == 'opt_out_customer':
             phone = payload.get('phone')
@@ -328,8 +843,10 @@ class CasaFolinoVoiceAIController(http.Controller):
 
     def _send_notification_email(self, tool_name, payload):
         try:
+            route = self._route_recipients({'request_type': 'commerciale'} if tool_name == 'create_crm_lead' else {'request_type': 'backoffice assistenza'})
+            greeting_name = 'Martina' if route['area'] == 'backoffice' else 'Antonio'
             subject_text = "Notifica Voice AI: Nuovo Lead creato" if tool_name == 'create_crm_lead' else "Notifica Voice AI: Nuova Segnalazione creata"
-            body_html = "<p>Ciao Antonio,<br><br>L'assistente vocale Viola ha gestito una richiesta e ha creato un record in Odoo:</p>"
+            body_html = "<p>Ciao %s,<br><br>Giulia ha gestito una richiesta e ha creato un record in Odoo:</p>" % greeting_name
             if tool_name == 'create_crm_lead':
                 body_html += """
                 <ul>
@@ -373,7 +890,10 @@ class CasaFolinoVoiceAIController(http.Controller):
             mail_values = {
                 'subject': subject_text,
                 'body_html': body_html,
-                'email_to': 'antonio@casafolino.com',
+                'email_to': route['to'],
+                'email_cc': ','.join(route['cc']),
+                'email_from': 'Antonio Folino <antonio@casafolino.com>',
+                'reply_to': 'antonio@casafolino.com',
             }
             request.env['mail.mail'].sudo().create(mail_values).send()
         except Exception as e:
@@ -549,6 +1069,22 @@ class CasaFolinoVoiceAIController(http.Controller):
     def _execute_voice_tool(self, tool_name, payload):
         partner = self._find_partner(payload)
 
+        if tool_name == 'save_inbound_contact':
+            partner = self._save_inbound_contact(payload)
+            return {
+                'ok': True,
+                'partner_id': partner.id,
+                'name': partner.display_name,
+                'email': partner.email,
+                'phone': partner.phone or partner.mobile,
+            }
+
+        if tool_name == 'send_catalog_email':
+            try:
+                return self._send_catalog_email(payload)
+            except Exception as exc:
+                return {'ok': False, 'error': str(exc)}
+
         if tool_name == 'lookup_customer':
             if not partner:
                 return {'ok': True, 'customer': None}
@@ -666,14 +1202,23 @@ class CasaFolinoVoiceAIController(http.Controller):
             call = request.env['casafolino.voice.call'].sudo().browse(payload.get('call_id'))
             if not call.exists():
                 return {'error': 'call not found'}
+            if payload.get('email') or payload.get('phone') or payload.get('customer_name') or payload.get('name') or payload.get('company_name'):
+                partner = self._save_inbound_contact(payload)
             call.write({
                 'state': 'completed' if payload.get('outcome') != 'transferred' else 'transferred',
                 'outcome': payload.get('outcome') or 'other',
                 'summary': payload.get('summary'),
                 'next_action': payload.get('next_action'),
                 'ended_at': fields.Datetime.now(),
+                'partner_id': partner.id if partner else call.partner_id.id,
             })
-            return {'ok': True}
+            mail_sent = False
+            try:
+                self._send_inbound_call_email(call, payload)
+                mail_sent = True
+            except Exception as exc:
+                call.message_post(body='Errore invio email riepilogo centralino: %s' % html.escape(str(exc)), message_type='comment', subtype_xmlid='mail.mt_note')
+            return {'ok': True, 'partner_id': call.partner_id.id if call.partner_id else None, 'mail_sent': mail_sent}
 
         if tool_name == 'create_ticket':
             partner = partner or self._find_partner(payload)
@@ -1332,7 +1877,7 @@ class CasaFolinoVoiceAIController(http.Controller):
         return request.make_json_response({'ok': True, 'job_id': job.id, 'state': job.state})
 
     @http.route('/voice_ai/outbound/next', type='http', auth='public', methods=['GET'], csrf=False)
-    def outbound_next(self):
+    def outbound_next(self, **kwargs):
         if not self._check_token():
             return request.make_json_response({'error': 'unauthorized'}, status=401)
         payload = request.env['casafolino.voice.outbound.queue'].sudo().get_next_ready_job_payload()
