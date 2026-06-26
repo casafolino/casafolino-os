@@ -1,15 +1,13 @@
 "use client";
-// Fase 1 — Wizard "da chiamata a preventivo". 4 step, uscita anticipata a ogni step.
-// Step1 Azienda (P.IVA dedup+VIES / Email / Nome) → Step2 Contatto → Step3 Opportunità → Step4 Azione.
+// Fase 1 — Wizard "da chiamata a preventivo". Ora consuma il componente condiviso PartnerPicker
+// come primo step (azienda+contatto), poi Opportunità → Azione. La logica partner NON vive più qui.
 // Ogni scrittura passa dai metodi gated (manager-only + audit). console_api non scrive mai in diretta.
 import { useState } from "react";
-import { vatLookup, enrich007, createQuotation, type VatLookup } from "@/lib/wizard";
-import { createCompany } from "@/lib/cockpit";
-import { createContact } from "@/lib/enrich";
+import { createQuotation } from "@/lib/wizard";
 import { createLeadRich } from "@/lib/create";
-import { universalSearch } from "@/lib/pipeline";
 import { searchProducts, type ProductHit } from "@/lib/campionatura";
 import { CatalogModal } from "@/components/CatalogModal";
+import { PartnerPicker } from "@/components/PartnerPicker";
 import { BP } from "@/lib/basePath";
 
 function inp(bad = false): React.CSSProperties {
@@ -28,14 +26,14 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
 }
 
 function Steps({ step }: { step: number }) {
-  const labels = ["Azienda", "Contatto", "Opportunità", "Azione"];
+  const labels = ["Partner", "Opportunità", "Azione"];
   return (
     <div className="row" style={{ gap: 6 }}>
       {labels.map((l, i) => (
         <div key={i} className="row" style={{ gap: 6, opacity: i + 1 === step ? 1 : 0.45 }}>
           <span className="opdot" style={{ background: i + 1 <= step ? "var(--accent)" : "var(--line)" }} />
           <span style={{ fontSize: 12, fontWeight: i + 1 === step ? 700 : 500 }}>{l}</span>
-          {i < 3 ? <span className="muted" style={{ fontSize: 12 }}>›</span> : null}
+          {i < 2 ? <span className="muted" style={{ fontSize: 12 }}>›</span> : null}
         </div>
       ))}
     </div>
@@ -53,7 +51,7 @@ export function PreventivoWizard({ label = "Nuovo preventivo" }: { label?: strin
 }
 
 function WizardModal({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1 = PartnerPicker, 2 = Opportunità, 3 = Azione
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -77,28 +75,24 @@ function WizardModal({ onClose }: { onClose: () => void }) {
       {err ? <div style={{ fontSize: 12, color: "var(--danger)" }}>{err}</div> : null}
 
       {step === 1 ? (
-        <Step1
-          busy={busy} guard={guard}
-          onDone={(id, name) => { setCompanyId(id); setCompanyName(name); setStep(2); }}
+        <PartnerPicker
+          intro="Chi è il cliente? Trova o crea azienda e contatto."
+          onCancel={onClose}
+          onResolved={({ companyId, companyName }) => {
+            setCompanyId(companyId); setCompanyName(companyName); setStep(2);
+          }}
         />
       ) : null}
 
       {step === 2 ? (
-        <Step2
+        <Step3
           busy={busy} guard={guard} companyId={companyId} companyName={companyName}
-          onBack={() => setStep(1)} onSkip={() => setStep(3)} onDone={() => setStep(3)}
+          interest={interest} setInterest={setInterest}
+          onBack={() => setStep(1)} onDone={(lid) => { setLeadId(lid); setStep(3); }}
         />
       ) : null}
 
       {step === 3 ? (
-        <Step3
-          busy={busy} guard={guard} companyId={companyId} companyName={companyName}
-          interest={interest} setInterest={setInterest}
-          onBack={() => setStep(2)} onDone={(lid) => { setLeadId(lid); setStep(4); }}
-        />
-      ) : null}
-
-      {step === 4 ? (
         <Step4
           busy={busy} guard={guard} companyId={companyId} leadId={leadId} interest={interest}
           onClose={onClose}
@@ -108,135 +102,7 @@ function WizardModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Step 1 — Azienda ──────────────────────────────────────────────────────────
-function Step1({ busy, guard, onDone }: { busy: boolean; guard: <T>(f: () => Promise<T>) => Promise<T>; onDone: (id: number, name: string) => void }) {
-  const [mode, setMode] = useState<"piva" | "email" | "nome">("piva");
-  const [vat, setVat] = useState("");
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [lk, setLk] = useState<VatLookup | null>(null);
-  const [enr, setEnr] = useState<string>("");
-
-  async function doLookup() {
-    const r = await guard(() => vatLookup({ vat }));
-    setLk(r);
-    if (r.prefill?.name) setName(r.prefill.name);
-  }
-  async function doEnrich() {
-    const r = await guard(() => enrich007({ name: name || lk?.prefill?.name || "", vat }));
-    setEnr([r.enrichment.settore, r.enrichment.dimensione, r.enrichment.sito].filter(Boolean).join(" · "));
-  }
-  async function doCreate(nm: string, dom?: string, citta?: string) {
-    const r = await guard(() => createCompany({ data: { nome: nm, dominio: dom, citta } }));
-    if (r.partnerId) onDone(r.partnerId, r.name || nm);
-  }
-  async function doEmailSearch() {
-    const r = await guard(() => universalSearch(email));
-    const p = r.groups.find((g) => g.type === "partner")?.items[0];
-    if (p) onDone(p.id, p.title);
-    else setMode("nome"); // nessun match → crea per nome
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div className="row" style={{ gap: 6 }}>
-        {(["piva", "email", "nome"] as const).map((m) => (
-          <button key={m} className={mode === m ? "btn-secondary" : "btn-mini"} onClick={() => { setMode(m); setLk(null); }}>
-            {m === "piva" ? "P.IVA" : m === "email" ? "Email" : "Nome azienda"}
-          </button>
-        ))}
-      </div>
-
-      {mode === "piva" ? (
-        <>
-          <div className="row" style={{ gap: 8 }}>
-            <input value={vat} onChange={(e) => setVat(e.target.value)} placeholder="P.IVA (es. IT03687990790)" style={inp()} />
-            <button className="btn-secondary" disabled={busy || !vat.trim()} onClick={doLookup}>Verifica</button>
-          </div>
-          {lk && !lk.isNew ? (
-            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-              <div className="muted" style={{ padding: "6px 10px", fontSize: 12 }}>Già presenti — seleziona per evitare doppioni</div>
-              {lk.existing.map((e) => (
-                <button key={e.id} className="row" style={{ width: "100%", padding: "8px 10px", textAlign: "left", borderTop: "1px solid var(--line)", background: "transparent" }}
-                  onClick={() => onDone(e.id, e.name)}>
-                  <span style={{ fontWeight: 600 }}>{e.name}</span>
-                  <span className="muted grow ell" style={{ fontSize: 12 }}>{e.vat} · {e.city} {e.country}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {lk && lk.isNew ? (
-            <div className="card" style={{ padding: 12, display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12 }} className="muted">
-                Nuova azienda {lk.vies?.valid ? "· VIES valida" : lk.formatValid ? "· formato valido" : "· verifica manuale"}
-              </div>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ragione sociale" style={inp(!name.trim())} />
-              {lk.prefill?.city || lk.prefill?.street ? (
-                <div className="muted" style={{ fontSize: 12 }}>{[lk.prefill.street, lk.prefill.zip, lk.prefill.city].filter(Boolean).join(" ")}</div>
-              ) : null}
-              {enr ? <div className="muted" style={{ fontSize: 12 }}>007: {enr}</div> : null}
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <button className="btn-mini" disabled={busy} onClick={doEnrich}>Arricchisci 007</button>
-                <button className="btn-primary" disabled={busy || !name.trim()} onClick={() => doCreate(name)}>Crea azienda</button>
-              </div>
-            </div>
-          ) : null}
-        </>
-      ) : null}
-
-      {mode === "email" ? (
-        <div className="row" style={{ gap: 8 }}>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email del contatto" style={inp()} />
-          <button className="btn-secondary" disabled={busy || !email.trim()} onClick={doEmailSearch}>Cerca</button>
-        </div>
-      ) : null}
-
-      {mode === "nome" ? (
-        <div className="row" style={{ gap: 8 }}>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome azienda (extra-UE / manuale)" style={inp(!name.trim())} />
-          <button className="btn-primary" disabled={busy || !name.trim()} onClick={() => doCreate(name)}>Crea</button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// ── Step 2 — Contatto ─────────────────────────────────────────────────────────
-function Step2({ busy, guard, companyId, companyName, onBack, onSkip, onDone }: {
-  busy: boolean; guard: <T>(f: () => Promise<T>) => Promise<T>; companyId: number | null; companyName: string;
-  onBack: () => void; onSkip: () => void; onDone: () => void;
-}) {
-  const [nome, setNome] = useState("");
-  const [ruolo, setRuolo] = useState("");
-  const [email, setEmail] = useState("");
-  const [tel, setTel] = useState("");
-
-  async function save() {
-    await guard(() => createContact({
-      data: { contatto: { nome, ruolo, email, telefono: tel }, azienda: { nome: "", dominio: "" }, indirizzo: { via: "", cap: "", citta: "", paese: "" } },
-      linkCompanyId: companyId ?? undefined,
-    }));
-    onDone();
-  }
-  return (
-    <div style={{ display: "grid", gap: 10 }}>
-      <div className="muted" style={{ fontSize: 12 }}>Contatto in {companyName || "azienda"}</div>
-      <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome e cognome" style={inp(!nome.trim())} />
-      <input value={ruolo} onChange={(e) => setRuolo(e.target.value)} placeholder="Ruolo (es. Buyer)" style={inp()} />
-      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inp()} />
-      <input value={tel} onChange={(e) => setTel(e.target.value)} placeholder="Telefono" style={inp()} />
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <button className="btn-mini" onClick={onBack}>‹ Indietro</button>
-        <div className="row" style={{ gap: 8 }}>
-          <button className="btn-mini" onClick={onSkip}>Salta</button>
-          <button className="btn-primary" disabled={busy || !nome.trim()} onClick={save}>Salva e continua</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Step 3 — Opportunità ──────────────────────────────────────────────────────
+// ── Step Opportunità ──────────────────────────────────────────────────────────
 function Step3({ busy, guard, companyId, companyName, interest, setInterest, onBack, onDone }: {
   busy: boolean; guard: <T>(f: () => Promise<T>) => Promise<T>; companyId: number | null; companyName: string;
   interest: ProductHit[]; setInterest: (p: ProductHit[]) => void; onBack: () => void; onDone: (leadId: number) => void;
@@ -285,7 +151,7 @@ function Step3({ busy, guard, companyId, companyName, interest, setInterest, onB
   );
 }
 
-// ── Step 4 — Azione commerciale ───────────────────────────────────────────────
+// ── Step Azione commerciale ───────────────────────────────────────────────────
 function Step4({ busy, guard, companyId, leadId, interest, onClose }: {
   busy: boolean; guard: <T>(f: () => Promise<T>) => Promise<T>; companyId: number | null; leadId: number | null;
   interest: ProductHit[]; onClose: () => void;

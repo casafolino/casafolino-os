@@ -1,5 +1,5 @@
 // Brief 6 — tipi + helper client per kanban + ricerca universale. operator_uid dalla sessione.
-import { BP } from "@/lib/basePath";
+import { postJSON } from "@/lib/http";
 
 export type BoardCard = {
   id: number;
@@ -35,13 +35,8 @@ export type SearchItem = { id: number; title: string; subtitle: string };
 export type SearchGroup = { type: "lead" | "partner" | "mail" | "dossier"; label: string; items: SearchItem[] };
 export type SearchResult = { query: string; groups: SearchGroup[]; message?: string };
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BP}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body ?? {}),
-  });
-  return (await res.json()) as T;
+function post<T>(path: string, body: unknown): Promise<T> {
+  return postJSON<T>(path, body);
 }
 
 export const getBoard = () => post<Board>("/api/console/pipeline/board", {});

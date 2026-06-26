@@ -1,5 +1,5 @@
 // Brief 15 — tipi + helper client per il cruscotto mail. operator_uid dalla sessione (manager-only).
-import { BP } from "@/lib/basePath";
+import { postJSON } from "@/lib/http";
 
 export type Resolved = { exists: boolean; id: number | false; name: string };
 export type CockpitData = {
@@ -15,11 +15,8 @@ export type CockpitData = {
 
 export type CreateCompanyResult = { ok?: boolean; partnerId?: number; name?: string; message?: string };
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BP}${path}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
-  });
-  return (await res.json()) as T;
+function post<T>(path: string, body: unknown): Promise<T> {
+  return postJSON<T>(path, body);
 }
 
 export const getMailCockpit = (mailId: number) => post<CockpitData>("/api/console/mail/cockpit", { mailId });

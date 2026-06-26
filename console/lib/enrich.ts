@@ -1,6 +1,6 @@
 // Brief 8 — tipi + helper client per crea contatto/azienda da mail con IA + dedup.
 // operator_uid sempre dalla sessione (manager-only nei gateway).
-import { BP } from "@/lib/basePath";
+import { postJSON } from "@/lib/http";
 
 export type Contatto = { nome: string; ruolo: string; email: string; telefono: string };
 export type Azienda = { nome: string; dominio: string };
@@ -21,13 +21,8 @@ export type EnrichResult = {
 
 export type CreateResult = { ok?: boolean; linked?: boolean; partnerId?: number; name?: string; companyId?: number | false; message?: string };
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BP}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body ?? {}),
-  });
-  return (await res.json()) as T;
+function post<T>(path: string, body: unknown): Promise<T> {
+  return postJSON<T>(path, body);
 }
 
 export const enrichContact = (mailId: number) => post<EnrichResult>("/api/console/enrich/contact", { mailId });
