@@ -15,6 +15,17 @@ def _emails_of(partner):
     return out
 
 
+def _cf_clean_sender_email(vals):
+    """Normalizza sender_email in-place: trim whitespace ai bordi (no lowercase, preserva display).
+    Garantisce che il match esatto `=ilike` dei sibling/retro-link non venga rotto da spazi spurî."""
+    se = vals.get('sender_email')
+    if isinstance(se, str):
+        stripped = se.strip()
+        if stripped != se:
+            vals['sender_email'] = stripped
+    return vals
+
+
 def _orphan_domain(emails):
     """Domain ORM: messaggi orfani (partner_id vuoto) con sender_email in `emails` (case-insensitive)."""
     leaves = [('sender_email', '=ilike', e) for e in emails]
@@ -73,6 +84,16 @@ class CasafolinoMailMessageRetroMatch(models.Model):
     """Fix Bug 1 — backfill on-demand degli orfani + collegamento manuale a partner con
     aggancio dei siblings + timeline fallback per mittente."""
     _inherit = 'casafolino.mail.message'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            _cf_clean_sender_email(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        _cf_clean_sender_email(vals)
+        return super().write(vals)
 
     @api.model
     def action_backfill_orphan_partners(self):
