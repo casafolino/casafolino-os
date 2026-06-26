@@ -381,3 +381,142 @@ class SaleOrderConsoleQuote(models.Model):
                {'partner_id', 'order_line'}, operator)
         return {'ok': True, 'orderId': order.id, 'name': order.name,
                 'state': order.state, 'amountTotal': order.amount_total}
+
+
+# Fase 2 WI-A — catalogo: template per lingua + allegato dalla libreria curata (mai ref ir.attachment
+# arbitrario → anti-exfiltration mantenuto), invio via _console_outbound (ir.mail_server, audit, outbox).
+_CATALOG_TEMPLATES = {
+    'it': {'subject': "Catalogo CasaFolino — %s",
+           'body': "<p>Gentile %s,</p><p>in allegato il nostro catalogo prodotti. "
+                   "Restiamo a disposizione per qualsiasi informazione.</p>"
+                   "<p>Un cordiale saluto,<br/>CasaFolino</p>"},
+    'en': {'subject': "CasaFolino Catalogue — %s",
+           'body': "<p>Dear %s,</p><p>please find attached our product catalogue. "
+                   "We remain at your disposal for any information.</p>"
+                   "<p>Best regards,<br/>CasaFolino</p>"},
+    'es': {'subject': "Catálogo CasaFolino — %s",
+           'body': "<p>Estimado %s,</p><p>adjuntamos nuestro catálogo de productos. "
+                   "Quedamos a su disposición para cualquier información.</p>"
+                   "<p>Un cordial saludo,<br/>CasaFolino</p>"},
+    'de': {'subject': "CasaFolino Katalog — %s",
+           'body': "<p>Sehr geehrte Damen und Herren (%s),</p><p>anbei unser Produktkatalog. "
+                   "Für Rückfragen stehen wir gerne zur Verfügung.</p>"
+                   "<p>Mit freundlichen Grüßen,<br/>CasaFolino</p>"},
+}
+
+
+class CasafolinoMailConsoleCatalog(models.Model):
+    """Fase 2 WI-A — Step 4 'Invia catalogo' reale. Riusa il SEND CORE _console_outbound
+    (ir.mail_server, kill-switch, audit, outbox) e la LIBRERIA CURATA casafolino.mail.material
+    (category=catalogo, language=X) per l'allegato. Niente nuovo modello di mappatura."""
+    _inherit = 'casafolino.mail.message'
+
+    def _console_catalog_recipient(self, partner_id, lead_id):
+        """Risolve (to_email, display_name, partner_record) da partner_id o lead_id."""
+        Partner = self.env['res.partner'].sudo()
+        partner = Partner.browse(int(partner_id)) if partner_id else Partner.browse()
+        to = (partner.email or '') if partner.exists() else ''
+        name = (partner.name or '') if partner.exists() else ''
+        if lead_id and not to:
+            lead = self.env['crm.lead'].sudo().browse(int(lead_id))
+            if lead.exists():
+                to = lead.email_from or (lead.partner_id.email or '')
+                name = lead.partner_id.name or lead.contact_name or lead.name or ''
+                if not partner.exists() and lead.partner_id:
+                    partner = lead.partner_id
+        return (to or '').strip().lower(), name, partner
+
+    def _console_catalog_material(self, language):
+        """Catalogo approvato per lingua dalla libreria curata. None se mancante (→ invio senza allegato)."""
+        Mat = self.env['casafolino.mail.material'].sudo()
+        m = Mat.search([('category', '=', 'catalogo'), ('language', '=', language),
+                        ('state', '=', 'approved'), ('active', '=', True)], limit=1)
+        if not m:  # fallback: catalogo approvato senza lingua specifica
+            m = Mat.search([('category', '=', 'catalogo'), ('state', '=', 'approved'),
+                            ('active', '=', True)], limit=1)
+        return m
+
+    def _console_catalog_accounts(self):
+        """Caselle mittente utilizzabili (con responsible_user_id mappato)."""
+        accts = self.env['casafolino.mail.account'].sudo().search([('responsible_user_id', '!=', False)])
+        return [{'id': a.id, 'name': a.name or a.email_address, 'email': a.email_address} for a in accts]
+
+    @api.model
+    def console_catalog_init(self, payload):
+        """Precompila il modale catalogo: destinatario, caselle, template lingua, allegato risolto.
+        SOLO lettura. payload: {partnerId?, leadId?, language?, operator_uid}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
+        lang = (_clean_str((payload or {}).get('language')) or 'it').lower()
+        if lang not in _CATALOG_TEMPLATES:
+            lang = 'it'
+        to, name, partner = self._console_catalog_recipient(
+            (payload or {}).get('partnerId'), (payload or {}).get('leadId'))
+        tmpl = _CATALOG_TEMPLATES[lang]
+        mat = self._console_catalog_material(lang)
+        return {
+            'ok': True, 'language': lang, 'to': to, 'toName': name,
+            'accounts': self._console_catalog_accounts(),
+            'subject': tmpl['subject'] % (name or 'CasaFolino'),
+            'body': tmpl['body'] % (name or ''),
+            'material': ({'id': mat.id, 'name': mat.name, 'fileName': mat.file_name or '',
+                          'language': mat.language or ''} if mat else None),
+            'hasAttachment': bool(mat),
+            'warn': None if mat else _("Nessun catalogo approvato per la lingua %s — invio senza allegato.") % lang.upper(),
+            'languages': list(_CATALOG_TEMPLATES.keys()),
+        }
+
+    @api.model
+    def console_send_catalog(self, payload):
+        """Fase 2 WI-A — invia il catalogo via ir.mail_server (SEND CORE), allegato dalla libreria
+        curata (per lingua), registra l'invio nel thread del partner. Mai SMTP esterno.
+        payload: {partnerId?, leadId?, accountId, language, subject, body, operator_uid}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        _require_manager(self.env, operator)
+
+        to, name, partner = self._console_catalog_recipient(
+            (payload or {}).get('partnerId'), (payload or {}).get('leadId'))
+        if not to or '@' not in to:
+            raise UserError(_("Destinatario senza email valida."))
+        account = self.env['casafolino.mail.account'].sudo().browse(int((payload or {}).get('accountId') or 0))
+        if not account.exists():
+            raise UserError(_("Casella mittente non valida."))
+        if not account.responsible_user_id:
+            raise UserError(_("Account %s senza responsible_user_id mappato.") % account.name)
+
+        lang = (_clean_str((payload or {}).get('language')) or 'it').lower()
+        subject = _clean_str((payload or {}).get('subject')) or (_CATALOG_TEMPLATES.get(lang, _CATALOG_TEMPLATES['it'])['subject'] % (name or 'CasaFolino'))
+        body = (payload or {}).get('body') or (_CATALOG_TEMPLATES.get(lang, _CATALOG_TEMPLATES['it'])['body'] % (name or ''))
+        mat = self._console_catalog_material(lang)
+
+        # SEND CORE condiviso: kill-switch, guardie, ir.mail_server, outbox, audit. material_ids =
+        # libreria curata (anti-exfiltration). Compose (source_id=False).
+        res = self.env['casafolino.mail.message'].sudo()._console_outbound(
+            account, to, subject, body, False, 'catalog',
+            operator=operator, material_ids=([mat.id] if mat else None))
+
+        # Registra l'invio nel thread del partner (compose non passa da parent → lo creiamo qui).
+        if partner and partner.exists() and res.get('ok') and res.get('state') == 'sent':
+            try:
+                self.env['casafolino.mail.message'].sudo().create({
+                    'account_id': account.id,
+                    'message_id_rfc': res.get('message_id') or False,
+                    'direction': 'outbound', 'sender_email': account.email_address,
+                    'sender_name': account.name, 'recipient_emails': to, 'subject': subject,
+                    'email_date': fields.Datetime.now(), 'body_html': body,
+                    'body_downloaded': True, 'state': 'keep', 'fetch_state': 'done',
+                    'is_read': True, 'partner_id': partner.id,
+                    **({'lead_id': int(payload['leadId'])} if (payload or {}).get('leadId') else {}),
+                })
+            except Exception as e:
+                _logger.warning("[console catalog] thread-link error: %s", e)
+
+        _audit(self.env, 'res.partner', [partner.id] if partner.exists() else [],
+               'send_catalog:%s' % lang, {'material:%s' % (mat.id if mat else 'none')}, operator)
+        res['catalogLanguage'] = lang
+        res['attachmentSent'] = bool(mat)
+        return res
