@@ -429,10 +429,10 @@ class CasafolinoMailConsoleCatalog(models.Model):
     def _console_catalog_material(self, language):
         """Catalogo approvato per lingua dalla libreria curata. None se mancante (→ invio senza allegato)."""
         Mat = self.env['casafolino.mail.material'].sudo()
-        m = Mat.search([('category', '=', 'catalogo'), ('language', '=', language),
+        m = Mat.search([('category', '=', 'catalog'), ('language', '=', language),
                         ('state', '=', 'approved'), ('active', '=', True)], limit=1)
         if not m:  # fallback: catalogo approvato senza lingua specifica
-            m = Mat.search([('category', '=', 'catalogo'), ('state', '=', 'approved'),
+            m = Mat.search([('category', '=', 'catalog'), ('state', '=', 'approved'),
                             ('active', '=', True)], limit=1)
         return m
 
