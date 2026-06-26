@@ -89,3 +89,34 @@ location /wallboard {
 Con `NEXT_PUBLIC_BASE_PATH=/console` usare invece `/console/wallboard/...` (già coperto
 dalla location `/console` esistente) — la location `/wallboard` separata serve solo se si
 vogliono URL puliti, e va accoppiata a un `rewrite ^/wallboard(.*)$ /console/wallboard$1`.
+
+---
+
+## V2 — Azionabilità + scene logistica/direzione
+
+### Nuove scene
+
+| URL (dev) | Scope | Token env | Economici |
+|---|---|---|---|
+| `/wallboard/logistica?k=…` | `logistica` | `WB_TOKEN_LOGISTICA` | **mai** |
+| `/wallboard/direzione?k=…` | `direzione` | `WB_TOKEN_DIREZIONE` | sì (fatturato) |
+
+Genera i token: `openssl rand -hex 24`.
+
+### Da tarare (confermare con Antonio)
+- **`lib/wb/cutoffs.ts`** — orari ritiro corrieri (placeholder DHL 16:00 / GLS 15:30 / BRT 16:30). Match per substring sul nome `carrier_id`.
+- **`lib/wb/thresholds.ts`** — soglie ritardo ordini, raccolta cut-off (warn 60min / alert 20min), raffreddamento follow-up (warn 5g / alert 7g), lotti non avviati. Pacing obiettivo: giornata lavorativa 08:00–18:00 (`workdayFraction`).
+- **Obiettivo del giorno** — di default da Odoo: produzione = `mrp.production.date_start` di oggi; logistica = `stock.picking` outgoing `scheduled_date` di oggi. Nessun override manuale per ora (si può aggiungere via `ir.config_parameter`).
+
+### Meccanismi trasversali
+- **Soglie semaforiche**: un tile è colorato (warn/alert) solo se supera soglia; stato normale resta pastello.
+- **FreshnessBadge** in header: secondi dall'ultimo fetch; giallo se fallito o > 90s.
+- **Coda priorità**: ordini per scadenza più vicina poi dimensione; max 5 righe + "+N altri"; ritardi evidenziati.
+- **Feedback completamenti**: flash verde 3s sull'incremento del contatore (disattivo con `prefers-reduced-motion`, contatore comunque aggiornato).
+- **Rotazione viste**: `?rotate=20` cicla le sotto-viste ogni 20s; si blocca sulla vista critica se c'è un alert.
+
+### Nuovi endpoint
+`/api/wb/daily-goal?dept=produzione|logistica` · `/api/wb/cutoffs` · `/api/wb/exceptions` (scope direzione/ufficio, solo item warn/alert).
+
+### ACL
+Nessuna nuova ACL Odoo rispetto a v18.0.6.20.0: tutte le letture V2 (stock.picking, mrp.production, crm.lead) sono già concesse a `console_api`.
