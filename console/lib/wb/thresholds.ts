@@ -12,9 +12,11 @@ export const THRESHOLDS = {
   // Ordini in ritardo: scheduled_date < oggi e non spediti.
   lateOrders: { warnAt: 1, alertAt: 3 }, // n. ordini in ritardo
   // Cut-off corriere a rischio: minuti rimanenti con ordini ancora aperti.
-  cutoff: { warnMin: 60, alertMin: 20 },
+  // Finestra volutamente stretta: ordini piccoli (1-2 pezzi) si chiudono in pochi minuti.
+  cutoff: { warnMin: 30, alertMin: 10 },
   // Follow-up post-fiera che si raffredda: giorni dall'ultimo contatto.
-  followupCooling: { warnDays: 5, alertDays: 7 },
+  // Brief cut-off (2c): valore atteso warn 3 / alert 7 (V2 era warn 5 → allineato).
+  followupCooling: { warnDays: 3, alertDays: 7 },
   // QC bloccanti presenti.
   qcBlocks: { alertAt: 1 },
   // Lotti pianificati oggi ma non avviati (entro fine mattina ~ metà giornata).
@@ -40,11 +42,17 @@ export function notStartedLotsStatus(n: number): Status {
   return byCount(n, THRESHOLDS.notStartedLots.warnAt, THRESHOLDS.notStartedLots.alertAt);
 }
 
-/** Cut-off: minuti rimanenti + ordini ancora aperti per quel corriere. */
+/**
+ * Cut-off: minuti rimanenti + ordini ancora aperti per quel corriere.
+ * - 0 ordini da chiudere → neutro (anche dentro la finestra: niente allarme inutile).
+ * - ritiro già passato (minutesLeft < 0) → neutro (no rumore dalle 13 alle 18).
+ * - altrimenti: < alertMin → alert, < warnMin → warn (soglie strette).
+ */
 export function cutoffStatus(minutesLeft: number, openOrders: number): Status {
   if (openOrders <= 0) return "ok";
-  if (minutesLeft <= THRESHOLDS.cutoff.alertMin) return "alert";
-  if (minutesLeft <= THRESHOLDS.cutoff.warnMin) return "warn";
+  if (minutesLeft < 0) return "ok"; // ritiro odierno completato
+  if (minutesLeft < THRESHOLDS.cutoff.alertMin) return "alert";
+  if (minutesLeft < THRESHOLDS.cutoff.warnMin) return "warn";
   return "ok";
 }
 

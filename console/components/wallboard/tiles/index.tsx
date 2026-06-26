@@ -13,7 +13,7 @@ import {
   pillClass,
   type Status,
 } from "@/lib/wb/thresholds";
-import { cutoffFor, minutesToCutoff, fmtCountdown } from "@/lib/wb/cutoffs";
+import { cutoffFor, fmtCountdown, pickupInfo, COMPANY_PICKUP } from "@/lib/wb/cutoffs";
 
 // Intervalli (ms) da brief.
 const R = {
@@ -363,36 +363,53 @@ export function DailyGoalTile({ token, dept }: Props & { dept: "produzione" | "l
   );
 }
 
-/** Countdown cut-off corrieri (faro logistica). */
+/** Countdown cut-off corrieri (faro logistica). Ritiro unico aziendale alle 13:00. */
 export function CutoffTile({ token }: Props) {
   const s = usePoll<{ rows: { carrier: string; open: number }[] }>("cutoffs", token, R.cutoffs);
   // re-render del countdown ogni 30s.
-  const [, tick] = useTick(30_000);
+  useTick(30_000);
+  const pi = pickupInfo(COMPANY_PICKUP);
   const rows = (s.data?.rows ?? [])
     .map((r) => {
       const cfg = cutoffFor(r.carrier);
-      const mins = cfg ? minutesToCutoff(cfg.pickup) : null;
-      const st: Status = cfg && mins != null ? cutoffStatus(mins, r.open) : "ok";
-      return { ...r, cfg, mins, st };
+      // dopo il cut-off lo status è neutro (cutoffStatus → ok per minsToday < 0).
+      const st: Status = cfg ? cutoffStatus(pi.minsToday, r.open) : "ok";
+      return { ...r, cfg, st };
     })
-    .filter((r) => r.cfg) // mostra solo corrieri con orario configurato
-    .sort((a, b) => (a.mins ?? 0) - (b.mins ?? 0));
+    .filter((r) => r.cfg)
+    .sort((a, b) => b.open - a.open);
+  const totalOpen = rows.reduce((acc, r) => acc + r.open, 0);
   const anyAlert = rows.some((r) => r.st === "alert");
   useReportAlert("cutoff", anyAlert);
-  void tick;
+
+  // pill header: countdown al ritiro (oggi se aperto, altrimenti domani).
+  const headerStatus: Status = pi.passedToday ? "ok" : cutoffStatus(pi.minsToday, totalOpen);
   return (
-    <TileShell title="Cut-off corrieri" tint="sky">
+    <TileShell
+      title="Cut-off ritiro"
+      tint="sky"
+      right={<span className={`wb-pill ${pillClass(headerStatus)}`}>{fmtCountdown(pi.passedToday ? pi.minsNext : pi.minsToday)}</span>}
+    >
       <PollBody state={s} emptyWhen={() => rows.length === 0} emptyLabel="Nessun corriere configurato">
         {() => (
-          <div className="wb-list">
-            {rows.map((r, i) => (
-              <div className={`wb-li${r.st === "alert" ? " late" : ""}`} key={i}>
-                <span className="grow"><b>{r.cfg!.label}</b> · ritiro {r.cfg!.pickup}</span>
-                <span className={`wb-pill ${pillClass(r.st)}`}>{r.mins != null ? fmtCountdown(r.mins) : "—"}</span>
-                <span className="num">{r.open}</span>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="wb-sub" style={{ marginBottom: 8 }}>
+              {pi.passedToday
+                ? "Ritiro di oggi completato · prossimo domani 13:00"
+                : `Ritiro unico oggi ${COMPANY_PICKUP} · ${totalOpen} da chiudere`}
+            </div>
+            <div className="wb-list">
+              {rows.map((r, i) => (
+                <div className={`wb-li${r.st === "alert" ? " late" : ""}`} key={i}>
+                  <span className="grow"><b>{r.cfg!.label}</b></span>
+                  {!pi.passedToday && r.open > 0 && r.st !== "ok" && (
+                    <span className={`wb-pill ${pillClass(r.st)}`}>{r.st === "alert" ? "chiudere ora" : "a rischio"}</span>
+                  )}
+                  <span className="num">{r.open}</span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </PollBody>
     </TileShell>
