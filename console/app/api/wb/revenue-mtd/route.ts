@@ -29,8 +29,9 @@ async function sumInvoiced(fromISO: string, toExclusiveISO?: string): Promise<nu
   ];
   if (toExclusiveISO) domain.push(["invoice_date", "<", toExclusiveISO]);
   const groups = await readGroup("account.move", domain, ["amount_total:sum"], []);
-  const row = groups[0] as { amount_total?: number } | undefined;
-  return row?.amount_total ?? 0;
+  const row = groups[0] as { amount_total?: number | false } | undefined;
+  // Odoo ritorna `false` per la somma di un insieme vuoto: ?? non lo intercetta.
+  return typeof row?.amount_total === "number" ? row.amount_total : 0;
 }
 
 export const GET = wbHandler("revenue-mtd", async ({ scope }) => {
@@ -45,8 +46,14 @@ export const GET = wbHandler("revenue-mtd", async ({ scope }) => {
     amount = await sumInvoiced(firstOfMonthISO());
     const pm = prevMonthRange();
     prev = await sumInvoiced(pm.start, pm.end);
-    const tParam = await getConfigParam("casafolino.wb_revenue_target");
-    target = tParam ? Number(tParam) || 0 : 0;
+    // Target opzionale: console_api non ha read su ir.config_parameter → degrada a 0
+    // senza far fallire l'endpoint (l'importo + crescita restano validi).
+    try {
+      const tParam = await getConfigParam("casafolino.wb_revenue_target");
+      target = tParam ? Number(tParam) || 0 : 0;
+    } catch {
+      target = 0;
+    }
   }
   const growthPct = prev > 0 ? Math.round(((amount - prev) / prev) * 100) : null;
   const targetPct = target > 0 ? Math.round((amount / target) * 100) : null;
