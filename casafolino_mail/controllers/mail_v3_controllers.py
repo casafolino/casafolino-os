@@ -298,6 +298,49 @@ class MailV3Controller(http.Controller):
             })
         return response
 
+    # ── Fix Bug 1 — retro-match mittente: collega partner, fratelli per mittente, backfill ──
+    @http.route('/cf/mail/v3/message/<int:msg_id>/link_partner', type='json', auth='user')
+    def message_link_partner(self, msg_id, partner_id=None, **kw):
+        """Collega manualmente la mail a un partner + aggancia i siblings con stesso sender_email."""
+        msg = request.env['casafolino.mail.message'].browse(msg_id)
+        if not msg.exists():
+            return {'success': False, 'error': 'Message not found'}
+        if not partner_id:
+            return {'success': False, 'error': 'partner_id mancante'}
+        res = msg.cf_link_partner(int(partner_id))
+        return {'success': bool(res.get('ok')), **res}
+
+    @http.route('/cf/mail/v3/message/<int:msg_id>/sender_mails', type='json', auth='user')
+    def message_sender_mails(self, msg_id, **kw):
+        """Timeline fallback: mail correlate per partner_id se presente, altrimenti per sender_email."""
+        msg = request.env['casafolino.mail.message'].browse(msg_id)
+        if not msg.exists():
+            return {'mode': 'none', 'count': 0, 'items': []}
+        return msg.cf_sibling_mails()
+
+    @http.route('/cf/mail/v3/backfill_orphans', type='json', auth='user')
+    def backfill_orphans(self, **kw):
+        """Backfill on-demand di tutti i mittenti orfani (admin/manager)."""
+        return request.env['casafolino.mail.message'].action_backfill_orphan_partners()
+
+    @http.route('/cf/mail/v3/partner/search', type='json', auth='user')
+    def partner_search(self, query='', limit=10, **kw):
+        """Ricerca partner per il collegamento manuale (nome o email)."""
+        q = (query or '').strip()
+        if len(q) < 2:
+            return {'results': []}
+        Partner = request.env['res.partner'].sudo()
+        partners = Partner.search(
+            ['|', ('name', 'ilike', q), ('email', 'ilike', q)],
+            limit=int(limit), order='name')
+        return {'results': [{
+            'id': p.id,
+            'name': p.name or '',
+            'email': p.email or '',
+            'is_company': p.is_company,
+            'parent_name': p.parent_id.name if p.parent_id else '',
+        } for p in partners]}
+
     @http.route('/cf/mail/v3/desk/summary', type='json', auth='user')
     def desk_summary(self, **kw):
         Message = request.env['casafolino.mail.message']
