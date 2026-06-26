@@ -1,9 +1,52 @@
 /** @odoo-module **/
-import { Component } from "@odoo/owl";
+import { Component, useState } from "@odoo/owl";
 
 export class ReadingPane extends Component {
     static template = "casafolino_mail.ReadingPane";
     static props = ["*"];
+
+    setup() {
+        this.linkUi = useState({ openFor: null, query: '', results: [], loading: false });
+        this._linkSearchTimer = null;
+    }
+
+    // ── Collega a partner (ricerca + link manuale con siblings) ──
+    openLinkPartner(msgId) {
+        if (this.linkUi.openFor === msgId) { this.closeLinkPartner(); return; }
+        this.linkUi.openFor = msgId;
+        this.linkUi.query = '';
+        this.linkUi.results = [];
+        this.linkUi.loading = false;
+    }
+
+    closeLinkPartner() {
+        this.linkUi.openFor = null;
+        this.linkUi.query = '';
+        this.linkUi.results = [];
+        this.linkUi.loading = false;
+    }
+
+    onLinkSearchInput(ev) {
+        this.linkUi.query = ev.target.value;
+        const q = this.linkUi.query.trim();
+        if (this._linkSearchTimer) clearTimeout(this._linkSearchTimer);
+        if (q.length < 2) { this.linkUi.results = []; this.linkUi.loading = false; return; }
+        this.linkUi.loading = true;
+        this._linkSearchTimer = setTimeout(async () => {
+            const results = this.props.onSearchPartners ? await this.props.onSearchPartners(q) : [];
+            if (this.linkUi.openFor !== null) {
+                this.linkUi.results = results;
+                this.linkUi.loading = false;
+            }
+        }, 300);
+    }
+
+    async chooseLinkPartner(partnerId, msgId) {
+        if (this.props.onLinkPartner) {
+            await this.props.onLinkPartner(msgId, partnerId);
+        }
+        this.closeLinkPartner();
+    }
 
     getTimeGap() {
         const messages = this.props.messages || [];

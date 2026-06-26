@@ -323,6 +323,24 @@ class MailV3Controller(http.Controller):
         """Backfill on-demand di tutti i mittenti orfani (admin/manager)."""
         return request.env['casafolino.mail.message'].action_backfill_orphan_partners()
 
+    @http.route('/cf/mail/v3/partner/search', type='json', auth='user')
+    def partner_search(self, query='', limit=10, **kw):
+        """Ricerca partner per il collegamento manuale (nome o email)."""
+        q = (query or '').strip()
+        if len(q) < 2:
+            return {'results': []}
+        Partner = request.env['res.partner'].sudo()
+        partners = Partner.search(
+            ['|', ('name', 'ilike', q), ('email', 'ilike', q)],
+            limit=int(limit), order='name')
+        return {'results': [{
+            'id': p.id,
+            'name': p.name or '',
+            'email': p.email or '',
+            'is_company': p.is_company,
+            'parent_name': p.parent_id.name if p.parent_id else '',
+        } for p in partners]}
+
     @http.route('/cf/mail/v3/desk/summary', type='json', auth='user')
     def desk_summary(self, **kw):
         Message = request.env['casafolino.mail.message']

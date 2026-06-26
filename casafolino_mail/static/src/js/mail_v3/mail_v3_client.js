@@ -30,6 +30,7 @@ export class MailV3Client extends Component {
             messages: [],
             selectedPartner: null,
             sidebar360Data: null,
+            senderTimeline: null,
             loading: { threads: false, messages: false, sidebar: false },
             totalThreads: 0,
             // Search
@@ -169,10 +170,51 @@ export class MailV3Client extends Component {
         );
         const partnerId = inbound ? inbound.partner_id : null;
         if (partnerId) {
+            this.state.senderTimeline = null;
             this._loadSidebar360(partnerId);
         } else {
             this.state.sidebar360Data = null;
             this.state.selectedPartner = null;
+            this._loadSenderTimeline();
+        }
+    }
+
+    async _loadSenderTimeline() {
+        // Fallback timeline per mittente quando la mail aperta non ha partner collegato.
+        const first = this.state.messages[0];
+        if (!first) { this.state.senderTimeline = null; return; }
+        try {
+            const res = await rpc('/cf/mail/v3/message/' + first.id + '/sender_mails');
+            this.state.senderTimeline = (res && res.count) ? res : null;
+        } catch (e) {
+            console.error('[mail v3] sender timeline error:', e);
+            this.state.senderTimeline = null;
+        }
+    }
+
+    async searchPartnersForLink(query) {
+        try {
+            const res = await rpc('/cf/mail/v3/partner/search', { query: query, limit: 10 });
+            return (res && res.results) || [];
+        } catch (e) {
+            console.error('[mail v3] partner search error:', e);
+            return [];
+        }
+    }
+
+    async linkMessageToPartner(msgId, partnerId) {
+        try {
+            const res = await rpc('/cf/mail/v3/message/' + msgId + '/link_partner', { partner_id: partnerId });
+            if (res && res.success) {
+                if (this.state.selectedThreadId) {
+                    await this.selectThread(this.state.selectedThreadId);
+                }
+                await this.loadThreads();
+            }
+            return res;
+        } catch (e) {
+            console.error('[mail v3] link partner error:', e);
+            return { success: false };
         }
     }
 

@@ -190,6 +190,8 @@
           onReplyAll.bind="openReplyAll"
           onForward.bind="openForward"
           onAiReply.bind="openReplyAssistant"
+          onSearchPartners.bind="searchPartnersForLink"
+          onLinkPartner.bind="linkMessageToPartner"
           onSnooze.bind="openSnoozePopup"/>
       </div>
 
@@ -203,6 +205,29 @@
           onSaveNotes.bind="saveNotes"
           onFeedback.bind="logFeedback"
           onDoAction.bind="doAction"/>
+      </div>
+
+      <!-- Sidebar fallback: timeline per mittente quando non c'è partner -->
+      <div class="mv3-client__sidebar-360" t-elif="state.senderTimeline">
+        <div class="mv3-sender-timeline">
+          <div class="mv3-sender-timeline__header">
+            <i class="fa fa-clock-o"/> Storico mittente
+            <span class="mv3-sender-timeline__count" t-out="state.senderTimeline.count + ' mail'"/>
+          </div>
+          <div class="mv3-sender-timeline__list">
+            <div class="mv3-sender-timeline__item"
+                 t-foreach="state.senderTimeline.items" t-as="it" t-key="it.id">
+              <div class="mv3-sender-timeline__top">
+                <span class="mv3-sender-timeline__dir" t-out="it.direction === 'outbound' ? '↗' : '↙'"/>
+                <span class="mv3-sender-timeline__subject" t-out="it.subject || '(senza oggetto)'"/>
+              </div>
+              <div class="mv3-sender-timeline__meta">
+                <span t-out="it.sender_name || it.sender_email"/>
+                <span t-if="it.email_date" class="mv3-sender-timeline__date" t-out="it.email_date"/>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Reply Assistant Modal -->
