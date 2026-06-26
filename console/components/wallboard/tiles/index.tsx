@@ -1,8 +1,19 @@
 "use client";
 // Registry dei tile del wallboard. Ogni tile = componente + endpoint + intervallo refresh.
 // Le scene (produzione/vetrina/ufficio) si limitano a dichiarare quali key montano.
-import { usePoll, flagEmoji } from "@/components/wallboard/usePoll";
+import { useEffect, useState } from "react";
+import { usePoll, flagEmoji, useFlashOnIncrease } from "@/components/wallboard/usePoll";
 import { TileShell, PollBody } from "@/components/wallboard/Tile";
+import { useReportAlert } from "@/components/wallboard/freshness";
+import {
+  lateOrdersStatus,
+  pacingStatus,
+  cutoffStatus,
+  workdayFraction,
+  pillClass,
+  type Status,
+} from "@/lib/wb/thresholds";
+import { cutoffFor, minutesToCutoff, fmtCountdown } from "@/lib/wb/cutoffs";
 
 // Intervalli (ms) da brief.
 const R = {
@@ -17,6 +28,9 @@ const R = {
   fiera: 3_600_000,
   certs: 86_400_000, // di fatto mai
   pipeline: 60_000,
+  goal: 30_000,
+  cutoffs: 60_000,
+  exceptions: 30_000,
 } as const;
 
 const eur = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -30,22 +44,41 @@ interface Props {
 
 /* ---------------------------------------------------------------- PRODUZIONE */
 
+type QueueRow = { partner: string; countryCode: string | null; colli: number; due: string | null; late: boolean };
+
 export function OrdiniDaEvadere({ token }: Props) {
-  const s = usePoll<{ rows: { partner: string; countryCode: string | null; country: string | null; colli: number }[]; total: number }>(
-    "production-queue", token, R.ordini,
-  );
+  const s = usePoll<{ rows: QueueRow[]; total: number; late: number }>("production-queue", token, R.ordini);
+  const late = s.data?.late ?? 0;
+  const st = lateOrdersStatus(late);
+  // Coda priorità: max 5 righe, "+N altri".
+  const rows = s.data?.rows ?? [];
+  const shown = rows.slice(0, 5);
+  const more = rows.length - shown.length;
+  useReportAlert("ordini-ritardo", st === "alert");
   return (
-    <TileShell title="Ordini da evadere" tint="clay" right={<span className="wb-pill">{s.data?.total ?? 0} colli</span>}>
+    <TileShell
+      title="Ordini da evadere"
+      tint="clay"
+      right={
+        late > 0 ? (
+          <span className={`wb-pill ${pillClass(st)}`}>{late} in ritardo</span>
+        ) : (
+          <span className="wb-pill">{s.data?.total ?? 0} colli</span>
+        )
+      }
+    >
       <PollBody state={s} emptyWhen={(d) => !d.rows.length} emptyLabel="Nessun ordine in coda">
-        {(d) => (
+        {() => (
           <div className="wb-list">
-            {d.rows.slice(0, 7).map((r, i) => (
-              <div className="wb-li" key={i}>
+            {shown.map((r, i) => (
+              <div className={`wb-li${i === 0 ? " next" : ""}${r.late ? " late" : ""}`} key={i}>
                 <span className="flag">{flagEmoji(r.countryCode)}</span>
                 <span className="grow">{r.partner}</span>
+                {r.late && <span className="wb-pill alert">ritardo</span>}
                 <span className="num">{r.colli}</span>
               </div>
             ))}
+            {more > 0 && <div className="wb-more">+{more} altri</div>}
           </div>
         )}
       </PollBody>
@@ -297,4 +330,191 @@ export function Pipeline({ token }: Props) {
       </PollBody>
     </TileShell>
   );
+}
+
+/* ------------------------------------------------------ V2 — AZIONABILITÀ */
+
+/** Obiettivo giornaliero + pacing (faro scene operative). */
+export function DailyGoalTile({ token, dept }: Props & { dept: "produzione" | "logistica" }) {
+  const s = usePoll<{ label: string; done: number; goal: number; unit: string }>(
+    `daily-goal?dept=${dept}`, token, R.goal,
+  );
+  const done = s.data?.done ?? 0;
+  const goal = s.data?.goal ?? 0;
+  const flash = useFlashOnIncrease(s.data?.done);
+  const st: Status = pacingStatus(done, goal, workdayFraction());
+  const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0;
+  useReportAlert(`goal-${dept}`, st === "alert");
+  return (
+    <TileShell
+      title={s.data?.label ?? "Obiettivo del giorno"}
+      tint="butter"
+      right={<span className={`wb-pill ${pillClass(st)}`}>{st === "ok" ? "in pari" : st === "warn" ? "rallenta" : "in ritardo"}</span>}
+    >
+      <div className={`wb-goal${flash ? " flash" : ""}`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }}>
+        <div className="wb-count">
+          <span className="n">{done}</span>
+          <span className="u">/ {goal} {s.data?.unit ?? ""}</span>
+        </div>
+        <div className="wb-bar big"><i className={st === "ok" ? "done" : st === "alert" ? "alert" : ""} style={{ width: `${pct}%` }} /></div>
+        <div className="wb-sub">completati oggi: <b>{done}</b></div>
+      </div>
+    </TileShell>
+  );
+}
+
+/** Countdown cut-off corrieri (faro logistica). */
+export function CutoffTile({ token }: Props) {
+  const s = usePoll<{ rows: { carrier: string; open: number }[] }>("cutoffs", token, R.cutoffs);
+  // re-render del countdown ogni 30s.
+  const [, tick] = useTick(30_000);
+  const rows = (s.data?.rows ?? [])
+    .map((r) => {
+      const cfg = cutoffFor(r.carrier);
+      const mins = cfg ? minutesToCutoff(cfg.pickup) : null;
+      const st: Status = cfg && mins != null ? cutoffStatus(mins, r.open) : "ok";
+      return { ...r, cfg, mins, st };
+    })
+    .filter((r) => r.cfg) // mostra solo corrieri con orario configurato
+    .sort((a, b) => (a.mins ?? 0) - (b.mins ?? 0));
+  const anyAlert = rows.some((r) => r.st === "alert");
+  useReportAlert("cutoff", anyAlert);
+  void tick;
+  return (
+    <TileShell title="Cut-off corrieri" tint="sky">
+      <PollBody state={s} emptyWhen={() => rows.length === 0} emptyLabel="Nessun corriere configurato">
+        {() => (
+          <div className="wb-list">
+            {rows.map((r, i) => (
+              <div className={`wb-li${r.st === "alert" ? " late" : ""}`} key={i}>
+                <span className="grow"><b>{r.cfg!.label}</b> · ritiro {r.cfg!.pickup}</span>
+                <span className={`wb-pill ${pillClass(r.st)}`}>{r.mins != null ? fmtCountdown(r.mins) : "—"}</span>
+                <span className="num">{r.open}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </PollBody>
+    </TileShell>
+  );
+}
+
+/* ------------------------------------------------------------- LOGISTICA */
+
+export function ProntiVsImballare({ token }: Props) {
+  const s = usePoll<{ ready: number; toPack: number }>("shipments-today", token, R.spedizioni);
+  return (
+    <TileShell title="Pronti vs da imballare" tint="sage">
+      <PollBody state={s}>
+        {(d) => (
+          <div className="wb-split">
+            <div className="wb-split-h">
+              <div className="wb-big ink">{d.ready ?? 0}</div>
+              <div className="wb-sub">pronti</div>
+            </div>
+            <div className="wb-split-h">
+              <div className="wb-big">{d.toPack ?? 0}</div>
+              <div className="wb-sub">da imballare</div>
+            </div>
+          </div>
+        )}
+      </PollBody>
+    </TileShell>
+  );
+}
+
+export function InRitardo({ token }: Props) {
+  const s = usePoll<{ lateRows: { partner: string; due: string | null }[]; late: number }>("shipments-today", token, R.spedizioni);
+  const late = s.data?.late ?? 0;
+  useReportAlert("logistica-ritardo", late > 0);
+  return (
+    <TileShell title="In ritardo" tint={late > 0 ? "blush" : "sage"} right={<span className={`wb-pill ${late > 0 ? "alert" : "ok"}`}>{late}</span>}>
+      <PollBody state={s}>
+        {(d) =>
+          (d.late ?? 0) === 0 ? (
+            <div className="wb-allgood"><div className="mark">✓</div><div className="lbl">Nessun ritardo</div></div>
+          ) : (
+            <div className="wb-list">
+              {d.lateRows.map((r, i) => (
+                <div className="wb-li late" key={i} style={{ color: "var(--alert)" }}>
+                  <span className="grow">{r.partner}</span>
+                  <span className="wb-pill alert">{r.due ?? "—"}</span>
+                </div>
+              ))}
+            </div>
+          )
+        }
+      </PollBody>
+    </TileShell>
+  );
+}
+
+export function SpedizioniPartite({ token }: Props) {
+  const s = usePoll<{ total: number; rows: { carrier: string; count: number }[] }>("shipments-today", token, R.spedizioni);
+  const flash = useFlashOnIncrease(s.data?.total);
+  return (
+    <TileShell title="Spedizioni di oggi" tint="sky" right={<span className="wb-pill">{s.data?.total ?? 0}</span>}>
+      <PollBody state={s} emptyWhen={(d) => !d.rows.length} emptyLabel="Nessuna spedizione">
+        {(d) => (
+          <div className={`wb-list${flash ? " flash" : ""}`}>
+            {d.rows.map((r, i) => (
+              <div className="wb-li" key={i}>
+                <span className="grow">{r.carrier}</span>
+                <span className="num">{r.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </PollBody>
+    </TileShell>
+  );
+}
+
+/* ------------------------------------------------------------- DIREZIONE */
+
+export function PannelloEccezioni({ token }: Props) {
+  const s = usePoll<{
+    exceptions: { kind: string; label: string; detail: string; status: Status; count: number }[];
+    summary: { lateOrders: number; qcBlocks: number; notStartedLots: number };
+  }>("exceptions", token, R.exceptions);
+  const exc = s.data?.exceptions ?? [];
+  useReportAlert("direzione-exc", exc.some((e) => e.status === "alert"));
+  return (
+    <TileShell title="Eccezioni da gestire" tint={exc.length ? "blush" : "sage"} span={3}>
+      <PollBody state={s}>
+        {(d) =>
+          d.exceptions.length === 0 ? (
+            <div className="wb-allgood">
+              <div className="mark">✓</div>
+              <div className="lbl">Tutto in linea</div>
+              <div className="wb-sub">
+                ritardi {d.summary.lateOrders} · QC {d.summary.qcBlocks} · lotti fermi {d.summary.notStartedLots}
+              </div>
+            </div>
+          ) : (
+            <div className="wb-list">
+              {d.exceptions.map((e, i) => (
+                <div className={`wb-li exc ${e.status}`} key={i}>
+                  <span className={`wb-dot ${e.status === "alert" ? "red" : "yellow"}`} />
+                  <span className="grow"><b>{e.label}</b> · {e.detail}</span>
+                  <span className={`wb-pill ${pillClass(e.status)}`}>{e.count}</span>
+                </div>
+              ))}
+            </div>
+          )
+        }
+      </PollBody>
+    </TileShell>
+  );
+}
+
+/* --------------------------------------------------------------- helpers */
+/** Forza un re-render ogni N ms (per countdown client-side). */
+function useTick(ms: number): [number, () => void] {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setN((x) => x + 1), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return [n, () => setN((x) => x + 1)];
 }

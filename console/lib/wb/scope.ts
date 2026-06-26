@@ -8,23 +8,27 @@
 // o pipeline nemmeno manipolando URL o devtools — il rifiuto è server-side, non cosmetico.
 import { shouldUseMock } from "@/lib/odoo";
 
-export type Scope = "production" | "vetrina" | "ufficio";
+export type Scope = "production" | "vetrina" | "ufficio" | "logistica" | "direzione";
 
-export const ALL_SCOPES: Scope[] = ["production", "vetrina", "ufficio"];
+export const ALL_SCOPES: Scope[] = ["production", "vetrina", "ufficio", "logistica", "direzione"];
 
 /** Endpoint → scope ammessi. Single source of truth lato server. */
 export const ENDPOINT_SCOPES: Record<string, Scope[]> = {
-  "production-queue": ["production", "ufficio"],
+  "production-queue": ["production", "ufficio", "logistica"],
   "mrp-active": ["production", "ufficio"],
   "tasks-today": ["production"],
-  "shipments-today": ["production", "vetrina"],
+  "shipments-today": ["production", "vetrina", "logistica"],
   "qc-blocks": ["production"],
   "export-countries": ["vetrina", "ufficio"],
   certifications: ["vetrina"],
   "next-fair": ["vetrina", "ufficio"],
   ticker: ["vetrina", "ufficio"],
-  "revenue-mtd": ["vetrina", "ufficio"], // MAI production
+  "revenue-mtd": ["vetrina", "ufficio", "direzione"], // MAI production/logistica
   pipeline: ["ufficio"], // SOLO ufficio
+  // V2 — azionabilità
+  "daily-goal": ["production", "logistica", "ufficio"],
+  cutoffs: ["logistica", "ufficio", "direzione"],
+  exceptions: ["direzione", "ufficio"], // pannello eccezioni — mai production/logistica/vetrina
 };
 
 /** token-scena (da env, generati casuali, mai committati) → scope. */
@@ -33,9 +37,13 @@ function tokenMap(): Record<string, Scope> {
   const prod = process.env.WB_TOKEN_PROD;
   const vetrina = process.env.WB_TOKEN_VETRINA;
   const ufficio = process.env.WB_TOKEN_UFFICIO;
+  const logistica = process.env.WB_TOKEN_LOGISTICA;
+  const direzione = process.env.WB_TOKEN_DIREZIONE;
   if (prod) map[prod] = "production";
   if (vetrina) map[vetrina] = "vetrina";
   if (ufficio) map[ufficio] = "ufficio";
+  if (logistica) map[logistica] = "logistica";
+  if (direzione) map[direzione] = "direzione";
   return map;
 }
 
@@ -52,7 +60,7 @@ export function scopeForToken(token: string | null | undefined): Scope | null {
   const map = tokenMap();
   if (map[tok]) return map[tok];
   if (Object.keys(map).length === 0 && shouldUseMock()) {
-    if (tok === "production" || tok === "vetrina" || tok === "ufficio") return tok;
+    if ((ALL_SCOPES as string[]).includes(tok)) return tok as Scope;
   }
   return null;
 }

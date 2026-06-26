@@ -51,8 +51,8 @@ export const GET = wbHandler("revenue-mtd", async ({ scope }) => {
   const growthPct = prev > 0 ? Math.round(((amount - prev) / prev) * 100) : null;
   const targetPct = target > 0 ? Math.round((amount / target) * 100) : null;
 
-  // Esposizione cifra: ufficio sempre, vetrina solo se flag attivo.
-  const exposeFigure = scope === "ufficio" || SHOW_FIGURE;
+  // Esposizione cifra: ufficio/direzione sempre, vetrina solo se flag attivo.
+  const exposeFigure = scope === "ufficio" || scope === "direzione" || SHOW_FIGURE;
   return {
     ...(exposeFigure ? { amount, target } : {}),
     growthPct,

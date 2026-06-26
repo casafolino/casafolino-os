@@ -215,3 +215,48 @@
 @media (prefers-reduced-motion: reduce) {
   .wb-ticker-track { animation: none; }
 }
+
+/* ---- V2 azionabilità ---- */
+
+/* Badge freschezza in header */
+.wb-fresh { display: inline-flex; align-items: center; gap: 6px; margin-left: 14px;
+  font-size: clamp(10px, 0.8vw, 13px); letter-spacing: 0.06em; color: var(--brown-soft); text-transform: none; }
+.wb-fresh-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); animation: wb-pulse 2s ease-in-out infinite; }
+.wb-fresh.stale { color: var(--warn); }
+.wb-fresh.stale .wb-fresh-dot { background: var(--warn); animation: none; }
+@keyframes wb-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* Coda priorità: prima riga = prossima azione; righe in ritardo */
+.wb-li.next { font-weight: 600; }
+.wb-li.next .grow { color: var(--brown); }
+.wb-li.late .grow { color: var(--alert); }
+.wb-more { font-size: clamp(11px, 0.9vw, 14px); color: var(--brown-soft); padding-top: 6px; }
+
+/* Barra obiettivo grande */
+.wb-bar.big { height: clamp(14px, 1.4vw, 24px); }
+.wb-bar > i.alert { background: var(--alert); }
+
+/* Flash verde completamento (3s) */
+.wb-goal.flash, .wb-list.flash { animation: wb-flash 3s ease-out 1; }
+@keyframes wb-flash {
+  0% { box-shadow: inset 0 0 0 9999px rgba(94,142,78,0.28); }
+  100% { box-shadow: inset 0 0 0 9999px rgba(94,142,78,0); }
+}
+
+/* Split pronti / da imballare */
+.wb-split { flex: 1; display: flex; align-items: center; justify-content: space-around; gap: 16px; }
+.wb-split-h { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+/* Pannello eccezioni (direzione) */
+.wb-li.exc { font-size: clamp(14px, 1.2vw, 22px); padding: clamp(6px, 0.6vw, 11px) 0; }
+.wb-li.exc.alert .grow b { color: var(--alert); }
+
+/* Dot rotazione viste */
+.wb-rot-dots { flex-shrink: 0; display: flex; gap: 8px; justify-content: center; padding-top: 4px; }
+.wb-rot-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.wb-rot-dot.on { background: var(--gold); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-fresh-dot { animation: none; }
+  .wb-goal.flash, .wb-list.flash { animation: none; }
+}
