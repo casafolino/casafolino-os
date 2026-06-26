@@ -9,6 +9,7 @@ import { createContact } from "@/lib/enrich";
 import { createLeadRich } from "@/lib/create";
 import { universalSearch } from "@/lib/pipeline";
 import { searchProducts, type ProductHit } from "@/lib/campionatura";
+import { CatalogModal } from "@/components/CatalogModal";
 import { BP } from "@/lib/basePath";
 
 function inp(bad = false): React.CSSProperties {
@@ -300,17 +301,20 @@ function Step4({ busy, guard, companyId, leadId, interest, onClose }: {
     setResult(r.orderId ? `Quotazione bozza ${r.name} creata (€${r.amountTotal ?? 0}).` : (r.message || "Errore."));
   }
 
+  const [catalogOpen, setCatalogOpen] = useState(false);
+
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div className="muted" style={{ fontSize: 12 }}>Opportunità creata. Scegli l'azione commerciale.</div>
       <div className="row" style={{ gap: 10 }}>
-        <a className="btn-secondary" href={`${BP}/partner/${companyId ?? ""}`} style={{ flex: 1, textAlign: "center" }}>
-          Invia catalogo (composer)
-        </a>
+        <button className="btn-secondary" style={{ flex: 1 }} disabled={!companyId && !leadId} onClick={() => setCatalogOpen(true)}>
+          Invia catalogo
+        </button>
         <button className="btn-primary" style={{ flex: 1 }} disabled={busy || !companyId || interest.length === 0} onClick={quote}>
           Crea quotazione
         </button>
       </div>
+      {catalogOpen ? <CatalogModal partnerId={companyId ?? undefined} leadId={leadId ?? undefined} onClose={() => setCatalogOpen(false)} /> : null}
       {interest.length === 0 ? <div className="muted" style={{ fontSize: 12 }}>Aggiungi prodotti allo step Opportunità per la quotazione.</div> : null}
       {result ? <div style={{ fontSize: 13, color: "var(--ok)" }}>{result}</div> : null}
       <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
