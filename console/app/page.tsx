@@ -6,7 +6,7 @@ import { Icon } from "@/components/Icons";
 import { operatorColor } from "@/lib/theme";
 import { moneyCompact, EmptyHonest } from "@/components/Honest";
 import { QuickTaskBar } from "@/components/QuickTaskBar";
-import { PreventivoWizard } from "@/components/PreventivoWizard";
+import { ActionBar } from "@/components/ActionBar";
 import { PipelineSnapshot } from "@/components/PipelineSnapshot";
 import type { Tone } from "@/lib/types";
 
@@ -33,11 +33,8 @@ export default async function Regia() {
           {r.subtitle || `${r.queue.length} elementi ti aspettano`}
         </div>
 
-        {/* Barra azioni rapide — plancia operativa (Fase 1/2) */}
-        <div className="row" style={{ gap: 10, marginBottom: 12 }}>
-          <PreventivoWizard />
-          <span className="muted" style={{ fontSize: 12 }}>da una chiamata: azienda → contatto → opportunità → preventivo</span>
-        </div>
+        {/* Barra azioni rapide (azione-first) — ogni verbo monta il PartnerPicker condiviso */}
+        <ActionBar />
         <QuickTaskBar />
 
         {/* 4 KPI */}
