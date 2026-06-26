@@ -431,9 +431,9 @@ class CasafolinoMailConsoleCatalog(models.Model):
         Mat = self.env['casafolino.mail.material'].sudo()
         m = Mat.search([('category', '=', 'catalog'), ('language', '=', language),
                         ('state', '=', 'approved'), ('active', '=', True)], limit=1)
-        if not m:  # fallback: catalogo approvato senza lingua specifica
-            m = Mat.search([('category', '=', 'catalog'), ('state', '=', 'approved'),
-                            ('active', '=', True)], limit=1)
+        if not m:  # solo fallback su catalogo 'multi' (multilingua) — MAI un'altra lingua specifica
+            m = Mat.search([('category', '=', 'catalog'), ('language', '=', 'multi'),
+                            ('state', '=', 'approved'), ('active', '=', True)], limit=1)
         return m
 
     def _console_catalog_accounts(self):
