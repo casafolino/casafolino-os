@@ -551,8 +551,11 @@ class CasafolinoMailAccount(models.Model):
         if not email_to_match:
             return False, 'none'
 
-        # 1. Match esatto per email
-        partner = Partner.search([('email', '=ilike', email_to_match)], limit=1)
+        # 1. Match esatto per email — robusto: email O email_normalized (lowercase/trim su
+        # entrambi i lati), include i contatti figli (la search standard non filtra parent_id).
+        e = (email_to_match or '').strip().lower()
+        partner = Partner.search(
+            ['|', ('email', '=ilike', e), ('email_normalized', '=ilike', e)], limit=1)
         if partner:
             return partner.id, 'exact'
 
