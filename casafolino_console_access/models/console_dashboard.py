@@ -65,7 +65,8 @@ class CrmLeadConsoleDashboard(models.Model):
         if not _vat_check_vies or not norm.get('compact') or not norm.get('country'):
             return None
         try:
-            res = _vat_check_vies(norm['compact'])
+            # Timeout duro: VIES SOAP è lento/instabile, mai un muro per la UI (best-effort).
+            res = _vat_check_vies(norm['compact'], timeout=5)
         except Exception as e:
             _logger.warning('[console vies] %s', e)
             return None
@@ -168,7 +169,7 @@ class CrmLeadConsoleDashboard(models.Model):
                     sr = requests.post(
                         SERPER_URL,
                         headers={'X-API-KEY': serper_key, 'Content-Type': 'application/json'},
-                        json={'q': q, 'num': 5, 'gl': 'it', 'hl': 'it'}, timeout=10)
+                        json={'q': q, 'num': 5, 'gl': 'it', 'hl': 'it'}, timeout=5)
                     if sr.ok:
                         for it in sr.json().get('organic', [])[:4]:
                             ctx += "- %s: %s (%s)\n" % (

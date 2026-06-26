@@ -32,7 +32,7 @@ def _console_groq_json(env, prompt):
             headers={'Authorization': 'Bearer %s' % key, 'Content-Type': 'application/json'},
             json={'model': model, 'max_tokens': 1024, 'temperature': 0,
                   'messages': [{'role': 'user', 'content': prompt}]},
-            timeout=60,
+            timeout=5,
         )
         if not resp.ok:
             _logger.warning('[console enrich] groq %s: %s', resp.status_code, resp.text[:300])

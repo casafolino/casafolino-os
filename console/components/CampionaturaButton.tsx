@@ -23,7 +23,7 @@ export function CampionaturaButton({
   );
 }
 
-function CampionaturaModal({ partnerId, leadId, onClose }: { partnerId?: number | null; leadId?: number | null; onClose: () => void }) {
+export function CampionaturaModal({ partnerId, leadId, onClose }: { partnerId?: number | null; leadId?: number | null; onClose: () => void }) {
   const [lines, setLines] = useState<WizardLine[]>([]);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<ProductHit[]>([]);
