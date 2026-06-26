@@ -9,3 +9,4 @@ from . import console_documents
 from . import console_cockpit
 from . import console_sync
 from . import console_gateway_r2
+from . import console_dashboard

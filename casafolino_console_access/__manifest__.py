@@ -1,6 +1,6 @@
 {
     "name": "CasaFolino Console — Access (scoped service user)",
-    "version": "18.0.6.19.0",
+    "version": "18.0.6.21.0",
     "summary": "Service-user Console scoped: console_api (portal, no seat) read+write via ACL + gateway triage sudo + audit. console_prod_rw (S0) dormiente.",
     "description": """
 Foundation ACL per l'app Console (Next /console) che autentica via JSON-RPC.
@@ -18,7 +18,7 @@ NB: la write su mail.message è a livello modello (include body): il blocco scri
     "category": "Technical",
     "author": "CasaFolino",
     "license": "LGPL-3",
-    "depends": ["base", "crm", "sale", "sales_team", "casafolino_mail", "casafolino_campionatura"],
+    "depends": ["base", "hr", "crm", "sale", "sales_team", "casafolino_mail", "casafolino_campionatura"],
     "data": [
         "security/console_access_groups.xml",
         "security/console_api_groups.xml",

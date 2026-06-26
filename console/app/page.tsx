@@ -5,6 +5,9 @@ import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
 import { operatorColor } from "@/lib/theme";
 import { moneyCompact, EmptyHonest } from "@/components/Honest";
+import { QuickTaskBar } from "@/components/QuickTaskBar";
+import { PreventivoWizard } from "@/components/PreventivoWizard";
+import { PipelineSnapshot } from "@/components/PipelineSnapshot";
 import type { Tone } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +32,13 @@ export default async function Regia() {
         <div className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
           {r.subtitle || `${r.queue.length} elementi ti aspettano`}
         </div>
+
+        {/* Barra azioni rapide — plancia operativa (Fase 1/2) */}
+        <div className="row" style={{ gap: 10, marginBottom: 12 }}>
+          <PreventivoWizard />
+          <span className="muted" style={{ fontSize: 12 }}>da una chiamata: azienda → contatto → opportunità → preventivo</span>
+        </div>
+        <QuickTaskBar />
 
         {/* 4 KPI */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
@@ -56,8 +66,8 @@ export default async function Regia() {
           )}
         </div>
 
-        {/* Barra pipeline */}
-        <div className="row">
+        {/* Barra pipeline (riassunto statico) */}
+        <div className="row" style={{ marginBottom: 14 }}>
           <h3 className="sec-title" style={{ margin: 0 }}>Pipeline</h3>
           {r.pipeline.segments.length === 0 ? (
             <span className="muted" style={{ fontSize: 12 }}>nessun lead in pipeline</span>
@@ -72,6 +82,9 @@ export default async function Regia() {
             </>
           )}
         </div>
+
+        {/* Fase 2 WI-D — snapshot pipeline azionabile (click stage → deal → avanza) */}
+        <PipelineSnapshot />
       </main>
     </div>
   );
