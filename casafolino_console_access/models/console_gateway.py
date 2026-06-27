@@ -56,6 +56,32 @@ class CasafolinoMailMessageGateway(models.Model):
         _audit(self.env, 'casafolino.mail.message', ids, 'triage:%s' % state, {'state'}, operator)
         return {'ok': True, 'count': len(ids), 'state': state}
 
+    # ── Allegati (read-only, gated) per il pannello mail del console ──
+
+    def console_mail_attachments(self, operator_uid=None):
+        """Lista allegati dei messaggi (self). Read-only, gated. Per il pannello mail console."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console."))
+        atts = self.env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'casafolino.mail.message'), ('res_id', 'in', self.ids)])
+        return {'ok': True, 'attachments': [{
+            'id': a.id, 'message_id': a.res_id, 'name': a.name or 'file',
+            'size': a.file_size or 0, 'mimetype': a.mimetype or '',
+        } for a in atts]}
+
+    @api.model
+    def console_attachment_blob(self, attachment_id, operator_uid=None):
+        """Datas base64 di UN allegato, SOLO se collegato a una casafolino.mail.message
+        (no lettura arbitraria di ir.attachment). Per il proxy download del console."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console."))
+        att = self.env['ir.attachment'].sudo().browse(int(attachment_id))
+        if not att.exists() or att.res_model != 'casafolino.mail.message':
+            raise UserError(_("Allegato non disponibile."))
+        return {'ok': True, 'name': att.name or 'file',
+                'mimetype': att.mimetype or 'application/octet-stream',
+                'datas': att.datas.decode() if att.datas else ''}
+
     # ── Blocca mittente / Scarta sempre (sender_policy auto_discard + sweep) ──
 
     _DEFAULT_NEVER_BLOCK = 'gmail.com,outlook.com,hotmail.com,yahoo.com,casafolino.com'
