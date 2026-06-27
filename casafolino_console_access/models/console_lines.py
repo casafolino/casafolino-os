@@ -66,7 +66,8 @@ class ResPartnerLines(models.Model):
                 'n_ordini': len(a['ord']), 'value': round(a['value'], 2), 'state': state,
             })
         lines.sort(key=lambda x: (-x['n_ordini'], -x['value'], x['name']))
-        return {'ok': True, 'partner_id': pid, 'lines': lines}
+        catalog = [{'category_id': c.id, 'name': c.name} for c in line_cats.sorted('name')]
+        return {'ok': True, 'partner_id': pid, 'lines': lines, 'catalog': catalog}
 
     @api.model
     def console_line_history(self, payload=None):
@@ -98,4 +99,8 @@ class ResPartnerLines(models.Model):
                 'amount': round(o.amount_total or 0.0, 2), 'state': o.state,
                 'sample_code': o.sample_code or '', 'model': 'sale.order',
             })
-        return {'ok': True, 'partner_id': pid, 'category_id': cid, 'count': len(items), 'items': items}
+        partner = self.env['res.partner'].sudo().browse(pid)
+        cat = self.env['product.category'].sudo().browse(cid)
+        return {'ok': True, 'partner_id': pid, 'category_id': cid,
+                'partner_name': partner.name or '', 'category_name': cat.name or '',
+                'count': len(items), 'items': items}
