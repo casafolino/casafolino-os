@@ -12,8 +12,9 @@ import { operatorLabel } from "@/lib/theme";
 import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
 import { SendDocumentsButton } from "@/components/SendDocumentsButton";
-import { QuickCreateDossier, QuickCreateLead } from "@/components/QuickCreate";
+import { QuickCreateLead } from "@/components/QuickCreate";
 import { DossierPin } from "@/components/DossierPin";
+import { PartnerLines } from "@/components/PartnerLines";
 import { LeadTimeline } from "@/components/LeadTimeline";
 import type { LeadTimelineItem } from "@/lib/lead";
 
@@ -44,7 +45,6 @@ export function PartnerClient({ bundle, accounts }: { bundle: PartnerBundle; acc
   const [composeOpen, setComposeOpen] = useState(false);
   const p = bundle.partner;
   const lead0 = bundle.leads[0] ?? null;
-  const dossier0 = bundle.dossiers[0] ?? null;
 
   const place = [p.city, p.country].filter(Boolean).join(", ");
   const subtitle = [p.isCompany ? "Azienda" : p.role, place].filter(Boolean).join("  ·  ");
@@ -87,7 +87,6 @@ export function PartnerClient({ bundle, accounts }: { bundle: PartnerBundle; acc
           <button className="btn-primary" onClick={() => setComposeOpen(true)} disabled={!p.email}>✉ Scrivi mail</button>
           <CampionaturaButton partnerId={p.id} leadId={lead0?.id ?? null} label="Campionatura" />
           <SendDocumentsButton partnerId={p.id} leadId={lead0?.id ?? null} label="Documenti" />
-          <QuickCreateDossier partnerId={p.id} defaultName={`Dossier ${p.name}`} small={false} label="Dossier" />
           <QuickCreateLead partnerId={p.id} small={false} label="Crea lead" />
           <DossierPin partnerId={p.id} initialIsDossier={p.isDossier} initialFolderId={p.dossierFolderId} />
         </div>
@@ -129,22 +128,9 @@ export function PartnerClient({ bundle, accounts }: { bundle: PartnerBundle; acc
         </div>
       </div>
 
-      {/* ── PANNELLI: Dossier + Ordini ── */}
+      {/* ── PANNELLI: Linee di prodotto (faldone) + Ordini ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <div className="card" style={{ padding: 16 }}>
-          <p className="sec-title">Dossier</p>
-          {dossier0 ? (
-            <Link href="/dossier" className="hover-row" style={{ display: "block", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--line)" }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--accent)" }}>{dossier0.name} →</div>
-              <div className="muted" style={{ fontSize: 11 }}>{dossier0.status ?? ""}{dossier0.valueEstimate != null ? ` · ${moneyCompact(dossier0.valueEstimate)}` : ""}</div>
-            </Link>
-          ) : (
-            <div className="empty-honest" style={{ justifyContent: "space-between" }}>
-              <span>Nessun dossier.</span>
-              <QuickCreateDossier partnerId={p.id} defaultName={`Dossier ${p.name}`} label="+ Crea dossier" />
-            </div>
-          )}
-        </div>
+        <PartnerLines partnerId={p.id} />
 
         <div className="card" style={{ padding: 16 }}>
           <p className="sec-title">Ordini · {bundle.orders.length}</p>
