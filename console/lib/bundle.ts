@@ -463,7 +463,7 @@ function num(v: unknown): number | null {
 async function fetchFromOdoo(partnerId: number): Promise<PartnerBundle | null> {
   const partnerRows = await searchRead<Record<string, unknown>>(
     "res.partner", [["id", "=", partnerId]],
-    { fields: ["name", "email", "phone", "country_id", "city", "cf_partner_role", "is_company"], limit: 1 },
+    { fields: ["name", "email", "phone", "country_id", "city", "cf_partner_role", "is_company", "is_dossier", "dossier_folder_id"], limit: 1 },
   );
   if (!partnerRows[0]) return null;
   const p = partnerRows[0];
@@ -532,6 +532,8 @@ async function fetchFromOdoo(partnerId: number): Promise<PartnerBundle | null> {
     id: partnerId, name: (str(p.name) ?? "Partner"), email, domain,
     phone: str(p.phone), country: relName(p.country_id), city: str(p.city),
     role: str(p.cf_partner_role), isCompany: p.is_company === true,
+    isDossier: p.is_dossier === true,
+    dossierFolderId: Array.isArray(p.dossier_folder_id) ? (p.dossier_folder_id[0] as number) : false,
   };
 
   return {

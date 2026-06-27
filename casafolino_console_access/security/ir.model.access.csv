@@ -21,3 +21,5 @@ access_console_api_cf_task,console_api.cf.task,casafolino_task.model_cf_task,cas
 access_console_api_cf_task_step,console_api.cf.task.step,casafolino_task.model_cf_task_step,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_product_product,console_api.product.product,product.model_product_product,casafolino_console_access.group_console_api,1,0,0,0
 access_console_api_product_template,console_api.product.template,product.model_product_template,casafolino_console_access.group_console_api,1,0,0,0
+access_cf_dossier_folder_admin,cf.dossier.folder.admin,casafolino_console_access.model_cf_dossier_folder,base.group_system,1,1,1,1
+access_cf_dossier_folder_console,cf.dossier.folder.console,casafolino_console_access.model_cf_dossier_folder,casafolino_console_access.group_console_api,1,0,0,0

@@ -1,32 +1,32 @@
 {
- "brief": "Scroll body 3 zone (header fisso/body scroll/pannello inferiore) su mail Odoo V3 + console; allegati visibili nel console (Odoo V3 gia ok)",
- "created": "2026-06-27T03:09:27.631587+00:00",
+ "brief": "Dossier curati: pin (is_dossier) + cartelle (cf.dossier.folder) su res.partner; pagina Dossier mostra solo pinnati raggruppati per cartella; fascicolo 360 riusato",
+ "created": "2026-06-27T10:30:14.292985+00:00",
  "goals": [
   {
    "id": "G001",
-   "title": "WI-A-V3",
-   "objective": "reading_pane Odoo V3 3-zone: header sticky, body scroll proprio, pannello inferiore fisso con allegati+collega",
+   "title": "WI-A",
+   "objective": "modello cf.dossier.folder + campi res.partner is_dossier/dossier_folder_id + security + metodi gated (toggle/folders/list)",
    "status": "pending",
    "evidence": null
   },
   {
    "id": "G002",
-   "title": "WI-A-console",
-   "objective": "InboxClient pane mail aperta: body scroll proprio, bar sticky gia presenti, pannello inferiore fisso",
+   "title": "WI-B",
+   "objective": "pin dal fascicolo PartnerClient (toggle + scegli/crea cartella) + route",
    "status": "pending",
    "evidence": null
   },
   {
    "id": "G003",
-   "title": "WI-B-console",
-   "objective": "allegati nel console: /api/console/message ritorna attachments + route proxy /api/console/attachment download + render lista nel pannello",
+   "title": "WI-C",
+   "objective": "pagina Dossier ricostruita: solo pinnati per cartella + gestione cartelle + ricerca + route",
    "status": "pending",
    "evidence": null
   },
   {
    "id": "G004",
    "title": "Deploy",
-   "objective": "casafolino_mail addon + console image, clear asset cache, swap -bak AUTH_SECRET, verify, stop pre/durante prod come standard",
+   "objective": "stage folinofood_stage + console :3100, non-regressione console vicine, build exit 0, stop pre-prod",
    "status": "pending",
    "evidence": null
   }
