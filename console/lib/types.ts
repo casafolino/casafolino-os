@@ -12,6 +12,8 @@ export interface Partner {
   city: string | null;
   role: string | null; // cf_partner_role
   isCompany: boolean;
+  isDossier?: boolean;            // pin dossier curato (console)
+  dossierFolderId?: number | false;
 }
 
 export interface MailMessage {

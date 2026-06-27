@@ -13,6 +13,7 @@ import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaButton } from "@/components/CampionaturaButton";
 import { SendDocumentsButton } from "@/components/SendDocumentsButton";
 import { QuickCreateDossier, QuickCreateLead } from "@/components/QuickCreate";
+import { DossierPin } from "@/components/DossierPin";
 import { LeadTimeline } from "@/components/LeadTimeline";
 import type { LeadTimelineItem } from "@/lib/lead";
 
@@ -88,6 +89,7 @@ export function PartnerClient({ bundle, accounts }: { bundle: PartnerBundle; acc
           <SendDocumentsButton partnerId={p.id} leadId={lead0?.id ?? null} label="Documenti" />
           <QuickCreateDossier partnerId={p.id} defaultName={`Dossier ${p.name}`} small={false} label="Dossier" />
           <QuickCreateLead partnerId={p.id} small={false} label="Crea lead" />
+          <DossierPin partnerId={p.id} initialIsDossier={p.isDossier} initialFolderId={p.dossierFolderId} />
         </div>
       </div>
 
