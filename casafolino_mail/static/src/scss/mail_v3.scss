@@ -44,8 +44,10 @@ $mv3-line-height: 1.45;
     background: $mv3-bg;
     height: 100%;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 .mv3-client__sidebar-360 {
@@ -495,6 +497,12 @@ $mv3-line-height: 1.45;
 
 // ── Reading Pane ──────────────────────────────────────────
 .mv3-reading-pane {
+    // 3 zone: header fisso · corpo (messaggi) con scroll proprio · (allegati inline per msg)
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+
     &__loading, &__empty {
         display: flex;
         flex-direction: column;
@@ -505,11 +513,17 @@ $mv3-line-height: 1.45;
         gap: 12px;
     }
 
+    &__content {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
     &__header {
+        flex: 0 0 auto;          // zona 1: header ancorato (non scorre)
         padding: 16px 20px;
         border-bottom: 1px solid $mv3-border;
-        position: sticky;
-        top: 0;
         z-index: 5;
         background: $mv3-bg;
     }
@@ -521,6 +535,9 @@ $mv3-line-height: 1.45;
     }
 
     &__messages {
+        flex: 1;                 // zona 2: solo il corpo mail scorre
+        min-height: 0;
+        overflow-y: auto;
         padding: 0 20px 20px;
     }
 }

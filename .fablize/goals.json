@@ -1,34 +1,34 @@
 {
- "brief": "CRM Console v2 restyling: F0 discovery+DS, F1 dossier, F2 kanban, F3 cross-surface",
- "created": "2026-06-23T20:13:29.952212+00:00",
+ "brief": "Scroll body 3 zone (header fisso/body scroll/pannello inferiore) su mail Odoo V3 + console; allegati visibili nel console (Odoo V3 gia ok)",
+ "created": "2026-06-27T03:09:27.631587+00:00",
  "goals": [
   {
    "id": "G001",
-   "title": "F0 Discovery+DS",
-   "objective": "inventory committed + centralized DS module (tokens+atoms) adopted by surfaces",
-   "status": "complete",
-   "evidence": "build green; committed (5ade1e4/117732f/51954c4)"
+   "title": "WI-A-V3",
+   "objective": "reading_pane Odoo V3 3-zone: header sticky, body scroll proprio, pannello inferiore fisso con allegati+collega",
+   "status": "pending",
+   "evidence": null
   },
   {
    "id": "G002",
-   "title": "F1 Dossier",
-   "objective": "header/StagePath/QuickActionBar/true-inline-edit/timeline/right-rail context",
-   "status": "complete",
-   "evidence": "build green; committed (5ade1e4/117732f/51954c4)"
+   "title": "WI-A-console",
+   "objective": "InboxClient pane mail aperta: body scroll proprio, bar sticky gia presenti, pannello inferiore fisso",
+   "status": "pending",
+   "evidence": null
   },
   {
    "id": "G003",
-   "title": "F2 Kanban",
-   "objective": "card metrics + column count+€ sum + optimistic DnD + sort/filter",
-   "status": "complete",
-   "evidence": "build green; committed (5ade1e4/117732f/51954c4)"
+   "title": "WI-B-console",
+   "objective": "allegati nel console: /api/console/message ritorna attachments + route proxy /api/console/attachment download + render lista nel pannello",
+   "status": "pending",
+   "evidence": null
   },
   {
    "id": "G004",
-   "title": "F3 Cross-surface",
-   "objective": "SavedViewBar + DensityToggle + CommandPalette",
-   "status": "complete",
-   "evidence": "commit 51954c4: CommandPalette + DensityToggle + SavedViewBar; build green"
+   "title": "Deploy",
+   "objective": "casafolino_mail addon + console image, clear asset cache, swap -bak AUTH_SECRET, verify, stop pre/durante prod come standard",
+   "status": "pending",
+   "evidence": null
   }
  ]
 }

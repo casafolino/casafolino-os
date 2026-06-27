@@ -81,6 +81,23 @@ export type SearchState = { q: string; sender: string; partner: number | null; a
 type SenderTarget = { partnerId?: number; senderEmail?: string; label: string; count: number };
 type BlockInfo = { ok: boolean; sender_email: string; domain: string; is_free_domain: boolean; queue_count_domain: number; queue_count_email: number };
 type BlockGroup = { pattern_type: string; pattern_value: string; is_free_domain: boolean; queue_count: number; selected_count: number };
+type MailAtt = { id: number; name: string; size: number; mimetype: string };
+
+function fmtSize(bytes: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+function attIcon(mime: string, name: string): string {
+  const m = (mime || "").toLowerCase(); const n = (name || "").toLowerCase();
+  if (m.includes("pdf") || n.endsWith(".pdf")) return "📄";
+  if (m.includes("image") || /\.(png|jpe?g|gif|webp|svg)$/.test(n)) return "🖼";
+  if (m.includes("spreadsheet") || /\.(xlsx?|csv|ods)$/.test(n)) return "📊";
+  if (m.includes("word") || /\.(docx?|odt)$/.test(n)) return "📝";
+  if (m.includes("zip") || /\.(zip|rar|7z|gz)$/.test(n)) return "🗜";
+  return "📎";
+}
 
 export function InboxClient({
   items, bundles, initialSelectedId, view = "queue", scopeAll = false, queueCount = 0,
@@ -121,6 +138,7 @@ export function InboxClient({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [bodyHtml, setBodyHtml] = useState<string>("");
   const [bodyLoading, setBodyLoading] = useState(false);
+  const [attachments, setAttachments] = useState<MailAtt[]>([]); // allegati della mail aperta
   const [composer, setComposer] = useState<{ mode: ComposerMode; target: ComposerTarget } | null>(null);
   const EMPTY_TARGET: ComposerTarget = { id: 0, subject: "", senderEmail: "", senderName: "" };
 
@@ -149,14 +167,14 @@ export function InboxClient({
   }, [checked, item]);
   const targetCount = checked.size || (item ? 1 : 0);
 
-  // corpo completo on-select.
+  // corpo completo + allegati on-select.
   useEffect(() => {
-    if (!item) { setBodyHtml(""); return; }
+    if (!item) { setBodyHtml(""); setAttachments([]); return; }
     let alive = true;
-    setBodyLoading(true); setBodyHtml("");
+    setBodyLoading(true); setBodyHtml(""); setAttachments([]);
     fetch(`${BP}/api/console/message?id=${item.id}`).then((r) => r.json())
-      .then((j) => { if (alive) setBodyHtml(j.ok ? (j.bodyHtml ?? "") : ""); })
-      .catch(() => { if (alive) setBodyHtml(""); })
+      .then((j) => { if (alive) { setBodyHtml(j.ok ? (j.bodyHtml ?? "") : ""); setAttachments(j.ok && Array.isArray(j.attachments) ? j.attachments : []); } })
+      .catch(() => { if (alive) { setBodyHtml(""); setAttachments([]); } })
       .finally(() => { if (alive) setBodyLoading(false); });
     return () => { alive = false; };
   }, [item]);
@@ -513,6 +531,7 @@ export function InboxClient({
             <div className="empty-honest"><span>{isTriage ? "Nessuna mail aperta." : "Vuoto."}</span></div>
           </div>
         ) : (
+          <>
           <div className="card" style={{ padding: "14px 16px" }}>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.subject || "(senza oggetto)"}</div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 11 }}>
@@ -526,6 +545,25 @@ export function InboxClient({
               {bodyLoading ? <span className="muted">caricamento corpo…</span> : bodyHtml ? <div dangerouslySetInnerHTML={{ __html: bodyHtml }} /> : <span>{m.body || "(nessun corpo)"}</span>}
             </div>
           </div>
+          {/* zona allegati — pannello con scroll proprio, non spinge il corpo */}
+          {attachments.length > 0 ? (
+            <div className="card" style={{ padding: "10px 14px" }}>
+              <div className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>📎 Allegati · {attachments.length}</div>
+              <div style={{ maxHeight: 180, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                {attachments.map((a) => (
+                  <a key={a.id} href={`${BP}/api/console/attachment?id=${a.id}`} download
+                    className="row" style={{ gap: 8, padding: "6px 8px", borderRadius: 6, textDecoration: "none", color: "var(--ink)", border: "1px solid var(--line)", alignItems: "center" }}
+                    title={`Scarica ${a.name}`}>
+                    <span style={{ fontSize: 16 }}>{attIcon(a.mimetype, a.name)}</span>
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{a.name}</span>
+                    {a.size ? <span className="muted" style={{ fontSize: 11, flexShrink: 0 }}>{fmtSize(a.size)}</span> : null}
+                    <span style={{ flexShrink: 0, color: "var(--accent)", fontSize: 12 }}>↓</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          </>
         )}
 
         {item && bundle ? (
