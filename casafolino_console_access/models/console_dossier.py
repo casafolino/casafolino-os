@@ -37,6 +37,10 @@ class ResPartnerDossier(models.Model):
     is_dossier = fields.Boolean('Dossier curato (console)', default=False, index=True)
     dossier_folder_id = fields.Many2one(
         'cf.dossier.folder', string='Cartella dossier', ondelete='set null', index=True)
+    dossier_origin = fields.Selection(
+        [('manual', 'Manuale'), ('import', 'Importato')], string='Origine dossier',
+        default='manual', index=True,
+        help="Distingue i pin manuali da quelli importati dai project.project (per undo selettivo).")
 
     # ── metodi gated console (payload-style, anti-spoof operator_uid dalla sessione) ──
 
@@ -59,6 +63,7 @@ class ResPartnerDossier(models.Model):
             if nm:
                 fid = self.env['cf.dossier.folder'].sudo().create({'name': nm}).id
             vals['dossier_folder_id'] = fid or False
+            vals['dossier_origin'] = 'manual'  # pin dal fascicolo = curatela manuale
         else:
             vals['dossier_folder_id'] = False
         partner.write(vals)
@@ -132,3 +137,68 @@ class ResPartnerDossier(models.Model):
         return {'id': p.id, 'name': p.name or '', 'email': p.email or '',
                 'city': p.city or '', 'country': p.country_id.name or '',
                 'is_company': p.is_company, 'folder_id': p.dossier_folder_id.id or False}
+
+    # ── Import additivo dei dossier-progetto (project.project) nel sistema pin ──
+
+    _STATUS_FOLDER = {'won': 'Vinti', 'active': 'Attivi', 'exploration': 'Esplorazione'}
+    _STATUS_PRIO = {'won': 0, 'active': 1, 'exploration': 2}  # stato più avanzato vince
+
+    @api.model
+    def console_import_project_dossiers(self, payload=None):
+        """Pinna i clienti dei project.project (partner_id valorizzato) nel nuovo sistema dossier,
+        cartella = stato (Attivi/Esplorazione/Vinti). ADDITIVO: non tocca i project.project.
+        Idempotente: i partner GIÀ is_dossier non vengono toccati (curatela manuale preservata).
+        payload: {dry_run?, operator_uid}. dry_run=True → solo anteprima, nessuna scrittura."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console."))
+        p = (payload or {})
+        operator = _operator(self.env, p.get('operator_uid'))
+        dry = bool(p.get('dry_run'))
+        Project = self.env['project.project'].sudo()
+        Partner = self.env['res.partner'].sudo()
+        Folder = self.env['cf.dossier.folder'].sudo()
+
+        projects = Project.search([('partner_id', '!=', False)])
+        ordered = projects.sorted(key=lambda pr: self._STATUS_PRIO.get(pr.cf_status_dossier, 9))
+        plan = {}  # partner_id -> folder_name (primo = stato più avanzato)
+        for pr in ordered:
+            pid = pr.partner_id.id
+            if pid not in plan:
+                plan[pid] = self._STATUS_FOLDER.get(pr.cf_status_dossier, 'Importati')
+        to_pin = {pid: fn for pid, fn in plan.items() if not Partner.browse(pid).is_dossier}
+        by_folder = {}
+        for fn in to_pin.values():
+            by_folder[fn] = by_folder.get(fn, 0) + 1
+        result = {
+            'ok': True, 'dry_run': dry,
+            'projects_with_partner': len(projects), 'distinct_partners': len(plan),
+            'to_pin': len(to_pin), 'already_pinned': len(plan) - len(to_pin),
+            'by_folder': by_folder,
+        }
+        if dry:
+            return result
+        folder_ids = {}
+        for fn in set(to_pin.values()):
+            f = Folder.search([('name', '=', fn)], limit=1) or Folder.create({'name': fn})
+            folder_ids[fn] = f.id
+        for pid, fn in to_pin.items():
+            Partner.browse(pid).write({
+                'is_dossier': True, 'dossier_folder_id': folder_ids[fn], 'dossier_origin': 'import'})
+        _audit(self.env, 'res.partner', list(to_pin.keys()), 'dossier_import',
+               {'is_dossier', 'dossier_folder_id', 'dossier_origin'}, operator)
+        result['pinned'] = len(to_pin)
+        return result
+
+    @api.model
+    def console_undo_import_dossiers(self, payload=None):
+        """Annulla in blocco SOLO i pin importati (dossier_origin='import'). I pin manuali
+        (origin='manual') restano intatti. payload: {operator_uid}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo l'utente Console."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        imported = self.env['res.partner'].sudo().search([
+            ('is_dossier', '=', True), ('dossier_origin', '=', 'import')])
+        ids = imported.ids
+        imported.write({'is_dossier': False, 'dossier_folder_id': False, 'dossier_origin': 'manual'})
+        _audit(self.env, 'res.partner', ids, 'dossier_import_undo', None, operator)
+        return {'ok': True, 'unpinned': len(ids)}
