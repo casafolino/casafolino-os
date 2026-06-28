@@ -364,8 +364,8 @@ export function InboxClient({
 
   return (
     <>
-      {/* Pane 2: lista */}
-      <div style={{ width: 270, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--paper)", display: "flex", flexDirection: "column" }}>
+      {/* Pane 2: lista — colonna ad altezza piena, scroll proprio (min-height:0 = la trappola) */}
+      <div style={{ width: 270, flexShrink: 0, height: "100%", minHeight: 0, borderRight: "1px solid var(--line)", background: "var(--paper)", display: "flex", flexDirection: "column" }}>
         {/* nav PRIMARIA: Coda (badge) + Inbox · bucket nel menu Altro */}
         <div style={{ display: "flex", borderBottom: "1px solid var(--line)", fontSize: 11, alignItems: "stretch" }}>
           {PRIMARY_TABS.map((t) => (
