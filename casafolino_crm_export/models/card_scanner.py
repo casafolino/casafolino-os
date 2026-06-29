@@ -5,8 +5,8 @@ from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
-SIAL_TAG_NAME = 'SIAL_MONTREAL_2026'
-SIAL_SOURCE_NAME = 'Fiera SIAL Canada 2026'
+SIAL_TAG_NAME = 'FANCY_FOOD_NY_2026'
+SIAL_SOURCE_NAME = 'Fiera Fancy Food NY 2026'
 
 
 class CrmLeadCardScanner(models.Model):
@@ -145,10 +145,11 @@ class CrmLeadCardScanner(models.Model):
     def _send_sial_followup(self, lead, partner, language, card_attachment):
         """Send SIAL follow-up email with fair attachments."""
         ICP = self.env['ir.config_parameter'].sudo()
+        # Fancy Food NY: template su res.partner, EN/IT per partner.lang (send su partner.id)
         template_xmlid = (
-            'casafolino_crm_export.email_template_sial_montreal_fr'
-            if language == 'fr_FR'
-            else 'casafolino_crm_export.email_template_sial_montreal_en'
+            'casafolino_crm_export.mail_template_fancy_food_ny_it'
+            if (partner.lang == 'it_IT' or language == 'it_IT')
+            else 'casafolino_crm_export.mail_template_fancy_food_ny_en'
         )
         template = self.env.ref(template_xmlid, raise_if_not_found=False)
         if not template:
@@ -156,7 +157,7 @@ class CrmLeadCardScanner(models.Model):
             return False
 
         try:
-            mail_id = template.send_mail(lead.id, force_send=False)
+            mail_id = template.send_mail(partner.id, force_send=False)
             mail = self.env['mail.mail'].browse(mail_id)
 
             # CC
