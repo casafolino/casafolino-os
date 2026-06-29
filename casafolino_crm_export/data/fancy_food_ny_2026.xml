@@ -139,14 +139,9 @@ for partner in records:
 ]]></field>
     </record>
 
-    <!-- Automazione: SOLO on_create di un partner già taggato FANCY_FOOD_NY_2026 (scanner/single).
-         Bulk-tagging di partner esistenti NON scatta (write) → controllo manuale, non auto-massivo. -->
-    <record id="automation_fancy_food_ny_oncreate" model="base.automation">
-        <field name="name">Fancy Food NY — invio follow-up alla creazione partner taggato</field>
-        <field name="model_id" ref="base.model_res_partner"/>
-        <field name="trigger">on_create</field>
-        <field name="filter_domain">[('category_id', 'in', [%(partner_category_fancy_food_ny_2026)d])]</field>
-        <field name="action_server_ids" eval="[(4, ref('server_action_fancy_food_ny_send'))]"/>
-    </record>
+    <!-- NB: nessuna base.automation. L'invio è SOLO manuale via il server action sopra
+         (azione "📧 Invia mail Fancy Food NY" su res.partner) → controllo pieno, non auto-massivo.
+         Un'automation su res.partner.create con filter_domain si è rivelata rischiosa (rompe la
+         create se il domain non valuta) e contraria al requisito "non auto-massivo": rimossa. -->
 
 </odoo>
