@@ -22,6 +22,7 @@
         'data/mail_template_sial_montreal_en.xml',
         'data/mail_template_sial_montreal_fr.xml',
         'data/mail_template_tuttofood_2026_it.xml',
+        'data/fancy_food_ny_2026.xml',
         'data/mail_template_tuttofood_2026_en.xml',
         'data/mail_template_tuttofood_2026_fr.xml',
         'data/cf_fair_mail_template_data.xml',

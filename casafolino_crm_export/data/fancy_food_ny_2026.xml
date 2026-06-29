@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Tag underscore: crm.tag E res.partner.category (l'automation cerca per underscore) -->
+    <record id="crm_tag_fancy_food_ny_2026" model="crm.tag">
+        <field name="name">FANCY_FOOD_NY_2026</field>
+    </record>
+    <record id="partner_category_fancy_food_ny_2026" model="res.partner.category">
+        <field name="name">FANCY_FOOD_NY_2026</field>
+    </record>
+
+    <!-- Template EN (su res.partner). Allegati: EN catalog 43423 + Company Profile EN 41871 -->
+    <record id="mail_template_fancy_food_ny_en" model="mail.template">
+        <field name="name">Fancy Food NY 2026 - Follow-up EN</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">🇮🇹 Great meeting you at the Summer Fancy Food Show — {{ (object.name or '').split(' ')[0] or 'there' }}</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="lang">en_US</field>
+        <field name="attachment_ids" eval="[(6, 0, [43423, 41871])]"/>
+        <field name="body_html" type="html">
+<div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; color: #2b2b2b; line-height: 1.6;">
+  <div style="background: #6B4A1E; padding: 24px; text-align: center;">
+    <span style="color: #C8A43A; font-size: 22px; letter-spacing: 2px;">CASAFOLINO</span>
+    <div style="color: #f5ecd9; font-size: 12px; letter-spacing: 1px; margin-top: 4px;">ARTISAN ITALIAN FOOD · SINCE 1962</div>
+  </div>
+  <div style="padding: 28px 24px;">
+    <p>Dear <t t-out="(object.name or '').split(' ')[0] or 'there'">there</t>,</p>
+    <p>It was a real pleasure meeting you at the <strong>Summer Fancy Food Show in New York</strong> 🗽 — the energy at the Italian Pavilion this year was fantastic, and I'm glad we connected at our booth.</p>
+    <p>As promised, here's a closer look at our family-run production based in Calabria, Southern Italy. CasaFolino has been crafting premium Italian artisan food <strong>since 1962</strong> — exactly the kind of authentic, specialty-grade story the Fancy Food crowd looks for.</p>
+    <p><strong>Our current range:</strong></p>
+    <ul style="list-style: none; padding-left: 0;">
+      <li>🫙 &amp;nbsp;Spreadable creams (sweet &amp; savory)</li>
+      <li>🍯 &amp;nbsp;Flavored honeys and honey mousse</li>
+      <li>🍚 &amp;nbsp;Ready-to-cook risottos</li>
+      <li>🌶️ &amp;nbsp;Crispy chili and spice blends</li>
+      <li>🍪 &amp;nbsp;Gluten-free cantuccini and biscuits</li>
+      <li>🍫 &amp;nbsp;Chocolates and derivatives</li>
+    </ul>
+    <p style="margin: 0;">✅ &amp;nbsp;Strongly export-oriented (90%+ of our volume, 20+ countries)<br/>
+    ✅ &amp;nbsp;Certified <strong>BRC, IFS, Kosher, Halal and EU Organic</strong><br/>
+    ✅ &amp;nbsp;A reliable partner for premium retail, specialty stores, Ho.Re.Ca. and private label</p>
+    <div style="background: #f5ecd9; border-left: 4px solid #C8A43A; padding: 16px 20px; margin: 24px 0; border-radius: 4px;">
+      <p style="margin: 0 0 10px 0;"><strong>🏷️ Private Label &amp; Co-Development</strong></p>
+      <p style="margin: 0 0 10px 0;">Beyond our branded range, a large part of what we do is building products <em>for</em> our partners. If you're looking to develop or expand your own private label line, we offer:</p>
+      <ul style="margin: 0; padding-left: 18px;">
+        <li>🔬 Custom recipe development for your market and price point</li>
+        <li>📐 Flexible formats, packaging and labeling (your brand, your specs)</li>
+        <li>🏭 Full certification coverage already in place</li>
+        <li>📦 Sustainable MOQs — we work with growing brands and established chains alike</li>
+      </ul>
+    </div>
+    <p>📎 I'm attaching our updated <strong>English catalogue</strong> and company profile.</p>
+    <p>The natural next step would be to send you <strong>samples</strong> 📦 of the references that best fit your assortment — branded or private label. Just tell me which categories matter most for your market and I'll arrange shipping this week.</p>
+    <p>Looking forward to turning a great show conversation into something concrete.</p>
+    <p style="margin-top: 24px;">Warm regards,</p>
+    <p style="margin: 0;"><strong>Antonio Folino</strong><br/>
+    CEO — CasaFolino S.r.l. Società Benefit<br/>
+    📍 Lamezia Terme (CZ), Italy<br/>
+    ✉️ antonio@casafolino.com</p>
+  </div>
+  <div style="background: #6B4A1E; height: 6px;"></div>
+</div>
+        </field>
+    </record>
+
+    <!-- Template IT (su res.partner). Allegati: IT catalog 41437 + Company Profile 41886 -->
+    <record id="mail_template_fancy_food_ny_it" model="mail.template">
+        <field name="name">Fancy Food NY 2026 - Follow-up IT</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">🇮🇹 È stato un piacere conoscerla al Summer Fancy Food — {{ (object.name or '').split(' ')[0] or '' }}</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="lang">it_IT</field>
+        <field name="attachment_ids" eval="[(6, 0, [41437, 41886])]"/>
+        <field name="body_html" type="html">
+<div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; color: #2b2b2b; line-height: 1.6;">
+  <div style="background: #6B4A1E; padding: 24px; text-align: center;">
+    <span style="color: #C8A43A; font-size: 22px; letter-spacing: 2px;">CASAFOLINO</span>
+    <div style="color: #f5ecd9; font-size: 12px; letter-spacing: 1px; margin-top: 4px;">ECCELLENZE ARTIGIANALI ITALIANE · DAL 1962</div>
+  </div>
+  <div style="padding: 28px 24px;">
+    <p>Gentile <t t-out="(object.name or '').split(' ')[0] or ''"/>,</p>
+    <p>è stato un vero piacere conoscerla al <strong>Summer Fancy Food di New York</strong> 🗽 — il Padiglione Italia quest'anno ha avuto un'energia notevole, e sono felice che ci siamo incontrati al nostro stand.</p>
+    <p>Come promesso, le racconto qualcosa in più sulla nostra produzione a conduzione familiare, con radici in Calabria. CasaFolino realizza eccellenze alimentari italiane <strong>dal 1962</strong>: esattamente quel tipo di storia autentica e specialty che il pubblico del Fancy Food cerca.</p>
+    <p><strong>La gamma attuale:</strong></p>
+    <ul style="list-style: none; padding-left: 0;">
+      <li>🫙 &amp;nbsp;Creme spalmabili (dolci e salate)</li>
+      <li>🍯 &amp;nbsp;Mieli aromatizzati e mousse di miele</li>
+      <li>🍚 &amp;nbsp;Risotti pronti</li>
+      <li>🌶️ &amp;nbsp;Crispy chili e miscele di spezie</li>
+      <li>🍪 &amp;nbsp;Cantuccini e biscotti gluten-free</li>
+      <li>🍫 &amp;nbsp;Cioccolati e derivati</li>
+    </ul>
+    <p style="margin: 0;">✅ &amp;nbsp;Forte vocazione export (oltre il 90% del volume, 20+ Paesi)<br/>
+    ✅ &amp;nbsp;Certificati <strong>BRC, IFS, Kosher, Halal ed EU Organic</strong><br/>
+    ✅ &amp;nbsp;Partner affidabile per retail premium, specialty store, Ho.Re.Ca. e private label</p>
+    <div style="background: #f5ecd9; border-left: 4px solid #C8A43A; padding: 16px 20px; margin: 24px 0; border-radius: 4px;">
+      <p style="margin: 0 0 10px 0;"><strong>🏷️ Private Label &amp; Co-Development</strong></p>
+      <p style="margin: 0 0 10px 0;">Oltre alla gamma a marchio, una parte importante del nostro lavoro è sviluppare prodotti <em>per</em> i nostri partner. Se sta cercando di creare o ampliare la sua linea private label, offriamo:</p>
+      <ul style="margin: 0; padding-left: 18px;">
+        <li>🔬 Sviluppo ricette su misura per il suo mercato e posizionamento di prezzo</li>
+        <li>📐 Formati, packaging ed etichettatura flessibili (il suo brand, le sue specifiche)</li>
+        <li>🏭 Copertura certificazioni completa già attiva</li>
+        <li>📦 MOQ sostenibili — lavoriamo con brand in crescita e catene strutturate</li>
+      </ul>
+    </div>
+    <p>📎 Le allego il <strong>catalogo aggiornato</strong> e il company profile.</p>
+    <p>Il passo naturale dopo la fiera è inviarle <strong>campioni</strong> 📦 dei prodotti più adatti al suo assortimento — a marchio o private label. Mi dica quali categorie sono più rilevanti e organizzo la spedizione questa settimana.</p>
+    <p>Trasformiamo una bella chiacchierata in fiera in qualcosa di concreto.</p>
+    <p style="margin-top: 24px;">Un caro saluto,</p>
+    <p style="margin: 0;"><strong>Antonio Folino</strong><br/>
+    CEO — CasaFolino S.r.l. Società Benefit<br/>
+    📍 Lamezia Terme (CZ), Italia<br/>
+    ✉️ antonio@casafolino.com</p>
+  </div>
+  <div style="background: #6B4A1E; height: 6px;"></div>
+</div>
+        </field>
+    </record>
+
+    <!-- Server action: invia EN/IT per partner.lang. Usata da azione manuale E automazione. -->
+    <record id="server_action_fancy_food_ny_send" model="ir.actions.server">
+        <field name="name">📧 Invia mail Fancy Food NY</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+for partner in records:
+    if not partner.email:
+        continue
+    xmlid = ('casafolino_crm_export.mail_template_fancy_food_ny_it'
+             if partner.lang == 'it_IT'
+             else 'casafolino_crm_export.mail_template_fancy_food_ny_en')
+    tmpl = env.ref(xmlid, raise_if_not_found=False)
+    if tmpl:
+        tmpl.send_mail(partner.id, force_send=True, email_layout_xmlid=False)
+]]></field>
+    </record>
+
+    <!-- Automazione: SOLO on_create di un partner già taggato FANCY_FOOD_NY_2026 (scanner/single).
+         Bulk-tagging di partner esistenti NON scatta (write) → controllo manuale, non auto-massivo. -->
+    <record id="automation_fancy_food_ny_oncreate" model="base.automation">
+        <field name="name">Fancy Food NY — invio follow-up alla creazione partner taggato</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="trigger">on_create</field>
+        <field name="filter_domain">[('category_id', 'in', [%(partner_category_fancy_food_ny_2026)d])]</field>
+        <field name="action_server_ids" eval="[(4, ref('server_action_fancy_food_ny_send'))]"/>
+    </record>
+
+</odoo>
