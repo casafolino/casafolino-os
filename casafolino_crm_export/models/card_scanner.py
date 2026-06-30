@@ -17,8 +17,32 @@ class CrmLeadCardScanner(models.Model):
     ai_extracted_data = fields.Text('AI Extracted Data')
 
     @api.model
-    def create_from_card_scan(self, form_data, image_data, language='en_US', send_email=True):
-        """Create partner + lead from card scan data, optionally send follow-up email."""
+    def create_from_card_scan(self, card_data, *legacy_args, **legacy_kwargs):
+        """Create partner + lead from card scan data, optionally send follow-up email.
+
+        Payload robusto a singolo dict (a prova di campi futuri):
+            card_data = {'form_data': {...}, 'image_data': str,
+                         'language': 'en_US', 'send_email': True}
+        Le chiavi di form_data restano quelle consumate dal widget:
+        first_name/last_name/company/email/phone/job_title/country(+country_code).
+
+        Back-compat: accetta anche la vecchia forma posizionale
+            create_from_card_scan(form_data, image_data, language, send_email)
+        e tollera argomenti posizionali/keyword extra (ignorati), così un
+        call site con conteggio argomenti errato non solleva più TypeError.
+        """
+        if isinstance(card_data, dict) and 'form_data' in card_data:
+            form_data = card_data.get('form_data') or {}
+            image_data = card_data.get('image_data') or ''
+            language = card_data.get('language') or 'en_US'
+            send_email = card_data.get('send_email', True)
+        else:
+            # Forma legacy posizionale: card_data È form_data.
+            form_data = card_data or {}
+            image_data = legacy_args[0] if len(legacy_args) > 0 else legacy_kwargs.get('image_data', '')
+            language = legacy_args[1] if len(legacy_args) > 1 else legacy_kwargs.get('language', 'en_US')
+            send_email = legacy_args[2] if len(legacy_args) > 2 else legacy_kwargs.get('send_email', True)
+
         # --- Partner ---
         partner_vals = {
             'name': ' '.join(filter(None, [

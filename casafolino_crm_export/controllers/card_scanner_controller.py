@@ -115,9 +115,12 @@ class CardScannerController(http.Controller):
     def confirm_card(self, form_data, image_data, language='en_US', send_email=True):
         """Create partner + lead + send follow-up email."""
         try:
-            result = request.env['crm.lead'].create_from_card_scan(
-                form_data, image_data, language, send_email,
-            )
+            result = request.env['crm.lead'].create_from_card_scan({
+                'form_data': form_data,
+                'image_data': image_data,
+                'language': language,
+                'send_email': send_email,
+            })
             return result
         except Exception as e:
             _logger.exception('Card confirm error')
