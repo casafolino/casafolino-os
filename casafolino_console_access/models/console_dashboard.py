@@ -339,9 +339,25 @@ class CrmLeadConsoleDashboard(models.Model):
             task_vals['partner_id'] = partner_id
         if lead_id:
             task_vals['lead_id'] = lead_id
+        if due and _DATE_RE.match(due):
+            task_vals['date_deadline'] = due
+        # Assegnazione esplicita (es. "Maria: fai X") → titolare + assegnata_da (NON pool).
+        # Nessun assegnatario nella frase → la task resta in pool (bo_is_pool=True),
+        # claimabile da qualsiasi operativa dalla board Lavorazioni.
+        if emp_id:
+            task_vals['bo_titolare_id'] = emp_id
+            task_vals['bo_assegnata_da_id'] = operator.id
+        elif user_id and user_id != operator.id:
+            task_vals['user_assigned_id'] = user_id
+            emp_u = self.env['hr.employee'].sudo().search(
+                [('user_id', '=', user_id)], limit=1)
+            if emp_u:
+                task_vals['bo_titolare_id'] = emp_u.id
+                task_vals['bo_assegnata_da_id'] = operator.id
         task = self.env['cf.task'].sudo().create(task_vals)
         _audit(self.env, 'cf.task', [task.id], 'quicktask:task', None, operator)
-        return {'ok': True, 'kind': 'task', 'id': task.id, 'name': task.name}
+        return {'ok': True, 'kind': 'task', 'id': task.id, 'name': task.name,
+                'isPool': task.bo_is_pool}
 
 
 class SaleOrderConsoleQuote(models.Model):
