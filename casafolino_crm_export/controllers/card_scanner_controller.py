@@ -1,6 +1,8 @@
 import base64
 import json
 import logging
+import os
+
 import requests
 
 from odoo import http
@@ -18,21 +20,47 @@ DEFAULT_LANG = 'en_US'
 
 class CardScannerController(http.Controller):
 
+    # Map base64 magic prefix → MIME (widget posts raw base64, no data-URL header).
+    _IMG_PREFIX_MIME = {
+        '/9j/': 'image/jpeg',
+        'iVBOR': 'image/png',
+        'R0lGOD': 'image/gif',
+        'UklGR': 'image/webp',
+    }
+
+    def _detect_media_type(self, image_data):
+        for prefix, mime in self._IMG_PREFIX_MIME.items():
+            if image_data.startswith(prefix):
+                return mime
+        return 'image/jpeg'
+
     @http.route('/casafolino/crm/card-scan', type='json', auth='user', methods=['POST'])
     def scan_card(self, image_data):
-        """OCR a business card image via Groq Vision. Returns extracted JSON."""
-        api_key = request.env['ir.config_parameter'].sudo().get_param(
-            'casafolino.groq_api_key', ''
-        )
+        """OCR a business card image via Anthropic Claude vision. Returns extracted JSON.
+        Allineato alla PWA scanner: provider Anthropic, modello claude-sonnet-4-6,
+        immagine base64 → JSON. Chiave da env ANTHROPIC_API_KEY (mai loggata),
+        fallback ir.config_parameter casafolino.anthropic_api_key."""
+        api_key = os.environ.get('ANTHROPIC_API_KEY') or request.env[
+            'ir.config_parameter'].sudo().get_param('casafolino.anthropic_api_key', '')
         if not api_key:
-            return {'error': 'Groq API key non configurata', 'data': {}}
+            return {'error': 'ANTHROPIC_API_KEY non configurata', 'data': {}}
 
         try:
             payload = {
-                'model': 'llama-3.2-90b-vision-preview',
+                'model': 'claude-sonnet-4-6',
+                'max_tokens': 1024,
+                'temperature': 0,
                 'messages': [{
                     'role': 'user',
                     'content': [
+                        {
+                            'type': 'image',
+                            'source': {
+                                'type': 'base64',
+                                'media_type': self._detect_media_type(image_data),
+                                'data': image_data,
+                            },
+                        },
                         {
                             'type': 'text',
                             'text': (
@@ -43,35 +71,30 @@ class CardScannerController(http.Controller):
                                 'Use null for missing fields. No markdown, no explanation.'
                             ),
                         },
-                        {
-                            'type': 'image_url',
-                            'image_url': {
-                                'url': f'data:image/jpeg;base64,{image_data}',
-                            },
-                        },
                     ],
                 }],
-                'temperature': 0.1,
-                'max_tokens': 500,
             }
             resp = requests.post(
-                'https://api.groq.com/openai/v1/chat/completions',
+                'https://api.anthropic.com/v1/messages',
                 json=payload,
-                headers={'Authorization': f'Bearer {api_key}'},
-                timeout=15,
+                headers={
+                    'x-api-key': api_key,
+                    'anthropic-version': '2023-06-01',
+                    'content-type': 'application/json',
+                },
+                timeout=45,
             )
             resp.raise_for_status()
-            raw = resp.json()['choices'][0]['message']['content']
+            raw = resp.json()['content'][0]['text'].strip()
             # Strip markdown fences if present
-            raw = raw.strip()
             if raw.startswith('```'):
                 raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
             data = json.loads(raw)
         except requests.Timeout:
-            _logger.warning('Groq Vision timeout')
+            _logger.warning('Anthropic Vision timeout')
             return {'error': 'timeout', 'data': {}}
         except Exception as e:
-            _logger.warning('Groq Vision error: %s', e)
+            _logger.warning('Anthropic Vision error: %s', e)
             return {'error': str(e), 'data': {}}
 
         # Guess language from country
