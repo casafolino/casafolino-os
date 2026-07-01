@@ -12,3 +12,4 @@ from . import console_gateway_r2
 from . import console_dashboard
 from . import console_dossier
 from . import console_lines
+from . import console_lavorazioni
