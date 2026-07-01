@@ -5,7 +5,7 @@
 // resta complementare: i verbi sono la via "clicco e il picker mi guida".
 import { useState } from "react";
 import Link from "next/link";
-import { PreventivoWizard } from "@/components/PreventivoWizard";
+import { CreaButton } from "@/components/CreaModal";
 import { PartnerPicker, type PartnerResolved } from "@/components/PartnerPicker";
 import { CatalogModal } from "@/components/CatalogModal";
 import { CampionaturaModal } from "@/components/CampionaturaButton";
@@ -124,11 +124,7 @@ export function ActionBar() {
   return (
     <div style={{ marginBottom: 12 }}>
       <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <PreventivoWizard label="Nuovo preventivo" />
-        <ActionLauncher verb="task" label="Assegna task" />
-        <ActionLauncher verb="mail" label="Scrivi mail" />
-        <ActionLauncher verb="campione" label="Registra campione" />
-        <ActionLauncher verb="followup" label="Aggiungi follow-up" />
+        <CreaButton />
         <ActionLauncher verb="dossier" label="Apri dossier" />
         <span className="muted" style={{ fontSize: 12, padding: "0 2px" }}>·</span>
         <Link href="/inbox" className="btn-mini">Inbox</Link>

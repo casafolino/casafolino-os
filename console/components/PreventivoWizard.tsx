@@ -50,7 +50,7 @@ export function PreventivoWizard({ label = "Nuovo preventivo" }: { label?: strin
   );
 }
 
-function WizardModal({ onClose }: { onClose: () => void }) {
+export function WizardModal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(1); // 1 = PartnerPicker, 2 = Opportunità, 3 = Azione
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
