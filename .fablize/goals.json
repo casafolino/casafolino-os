@@ -1,32 +1,46 @@
 {
- "brief": "Dossier curati: pin (is_dossier) + cartelle (cf.dossier.folder) su res.partner; pagina Dossier mostra solo pinnati raggruppati per cartella; fascicolo 360 riusato",
- "created": "2026-06-27T10:30:14.292985+00:00",
+ "brief": "Regia + Dossier unificati (Console :3200): sostituisci Lavagna+Cockpit+Dossier-v2 con Regia e Dossier cliente. Lens not container, read via console_api uid21, write via gateway casafolino_console_access. Occulta menu Lavagna/Cockpit dietro cf_legacy_access. Deploy prod pg_dump+rollback, crons 82/83/84/53218 off.",
+ "created": "2026-07-01T12:27:08.217987+00:00",
  "goals": [
   {
    "id": "G001",
-   "title": "WI-A",
-   "objective": "modello cf.dossier.folder + campi res.partner is_dossier/dossier_folder_id + security + metodi gated (toggle/folders/list)",
-   "status": "pending",
-   "evidence": null
+   "title": "Map",
+   "objective": "Mappa dossier/pipeline/write-gateway/mockup esistenti - baseline read-only",
+   "status": "complete",
+   "evidence": "4 Explore maps: read-layer lib/odoo.ts (callKw/searchRead/getPartnerBundle); pipeline console_pipeline.py console_pipeline_board + _activity_state console_lead.py:31-48; write-gateway forwardOperatorCall→cf.task/cf.shipment (NON cf.todo/cf.sample.request); mockup Regia 4KPI + Dossier timeline unica"
   },
   {
    "id": "G002",
-   "title": "WI-B",
-   "objective": "pin dal fascicolo PartnerClient (toggle + scegli/crea cartella) + route",
-   "status": "pending",
-   "evidence": null
+   "title": "API",
+   "objective": "API aggregazione read-only KPI Regia + timeline mista Dossier via console_api",
+   "status": "complete",
+   "evidence": "console_regia.py: 4 metodi gated read-only (console_regia_kpis, console_regia_pipeline, console_partner_dossier, console_partner_timeline) + 4 route proxy Next (regia/kpis, regia/pipeline, partner/dossier, partner/timeline). py_compile OK, next build ✓ Compiled successfully (route presenti)"
   },
   {
    "id": "G003",
-   "title": "WI-C",
-   "objective": "pagina Dossier ricostruita: solo pinnati per cartella + gestione cartelle + ricerca + route",
-   "status": "pending",
-   "evidence": null
+   "title": "Regia",
+   "objective": "Regia UI ricerca cliente + 4 azioni + 4 KPI + lista pipeline ordinata semaforo",
+   "status": "complete",
+   "evidence": "Regia home app/page.tsx: SearchBar wide (→/partner/[id]), RegiaActions 4 bottoni, RegiaKpiRow (4 KPI brief), RegiaPipelineList ordinata semaforo con click→Dossier. next build ✓"
   },
   {
    "id": "G004",
+   "title": "Dossier",
+   "objective": "Dossier UI header + 4 card + 4 azioni precompilate partner_id + timeline unica",
+   "status": "complete",
+   "evidence": "Dossier app/partner/[id]: DossierClient header+semaforo+tag, 4 metric card (ultimo ordine/fatturato12m/stage/task aperti), DossierActions 4 azioni precompilate partnerId, timeline unica paginata (Carica altri). next build ✓"
+  },
+  {
+   "id": "G005",
+   "title": "Menu",
+   "objective": "Occultamento menu Lavagna/Cockpit dietro cf_legacy_access non distruttivo",
+   "status": "in_progress",
+   "evidence": null
+  },
+  {
+   "id": "G006",
    "title": "Deploy",
-   "objective": "stage folinofood_stage + console :3100, non-regressione console vicine, build exit 0, stop pre-prod",
+   "objective": "Deploy prod Console pg_dump crons-off swap3200 verifica-curl rollback",
    "status": "pending",
    "evidence": null
   }

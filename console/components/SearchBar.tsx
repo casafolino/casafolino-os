@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { universalSearch, searchHref, type SearchResult } from "@/lib/pipeline";
 
-export function SearchBar() {
+export function SearchBar({ wide = false }: { wide?: boolean }) {
   const [q, setQ] = useState("");
   const [res, setRes] = useState<SearchResult | null>(null);
   const [open, setOpen] = useState(false);
@@ -33,9 +33,9 @@ export function SearchBar() {
   const empty = res && res.groups.length === 0;
 
   return (
-    <div ref={box} style={{ position: "relative", width: 320, maxWidth: "60vw" }}>
+    <div ref={box} style={{ position: "relative", width: wide ? "100%" : 320, maxWidth: wide ? "100%" : "60vw" }}>
       <input value={q} onChange={onChange} onFocus={() => res && setOpen(true)}
-        placeholder="Cerca lead, contatti, mail, dossier…"
+        placeholder={wide ? "Cerca cliente, azienda, deal…" : "Cerca lead, contatti, mail, dossier…"}
         style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--line)", fontSize: 13 }} />
       {open && (res || busy) ? (
         <div className="card" style={{ position: "absolute", top: 40, right: 0, width: "min(420px, 90vw)", maxHeight: "60vh", overflow: "auto", zIndex: 50, padding: 8, boxShadow: "0 6px 24px rgba(0,0,0,0.15)" }}>

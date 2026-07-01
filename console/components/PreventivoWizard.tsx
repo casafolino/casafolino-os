@@ -50,13 +50,14 @@ export function PreventivoWizard({ label = "Nuovo preventivo" }: { label?: strin
   );
 }
 
-export function WizardModal({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState(1); // 1 = PartnerPicker, 2 = Opportunità, 3 = Azione
+export function WizardModal({ onClose, initialCompany }: { onClose: () => void; initialCompany?: { id: number; name: string } }) {
+  // Dossier: partner già noto → salta il PartnerPicker e parte da "Opportunità" (step 2).
+  const [step, setStep] = useState(initialCompany ? 2 : 1); // 1 = PartnerPicker, 2 = Opportunità, 3 = Azione
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [companyId, setCompanyId] = useState<number | null>(null);
-  const [companyName, setCompanyName] = useState("");
+  const [companyId, setCompanyId] = useState<number | null>(initialCompany?.id ?? null);
+  const [companyName, setCompanyName] = useState(initialCompany?.name ?? "");
   const [leadId, setLeadId] = useState<number | null>(null);
   const [interest, setInterest] = useState<ProductHit[]>([]);
 

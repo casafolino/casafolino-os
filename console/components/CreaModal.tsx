@@ -183,7 +183,7 @@ function Done({ msg, onClose }: { msg: string; onClose: () => void }) {
 // Email = composer generico Odoo (gateway canonico console_send/reply), NON invio-catalogo.
 // Precompila il destinatario con l'email del cliente scelto; il campo resta editabile
 // (email generica / destinatario interno). Template nativi disponibili dal Composer.
-function EmailCompose({ companyId, companyName, accounts, library, templates, onClose }: {
+export function EmailCompose({ companyId, companyName, accounts, library, templates, onClose }: {
   companyId: number; companyName: string;
   accounts: Account[]; library: LibraryItem[]; templates: MailTemplate[]; onClose: () => void;
 }) {

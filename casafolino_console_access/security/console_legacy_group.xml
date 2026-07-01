@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Brief Regia+Dossier — dismissione soft dei sistemi legacy (Lavagna + Cockpit).
+         cf_legacy_access è un gruppo VUOTO (nessuno assegnato): i menu Lavagna/Cockpit
+         vengono riassegnati a questo gruppo → spariscono dal menu Odoo standard, ma i
+         moduli restano installati e i dati storici interrogabili. Reversibile: basta
+         riassegnare i menu ai gruppi originari o aggiungere utenti a cf_legacy_access.
+         Non dà alcun permesso dati. -->
+    <record id="group_cf_legacy_access" model="res.groups">
+        <field name="name">CasaFolino Legacy (menu occulti)</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+        <field name="comment">Gruppo vuoto: usato solo per occultare i menu dei sistemi dismessi (Lavagna casafolino_initiative/_dashboard, Cockpit casafolino_pipeline_control). Nessun membro, nessun permesso dati.</field>
+    </record>
+</odoo>

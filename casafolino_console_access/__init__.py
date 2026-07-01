@@ -60,12 +60,40 @@ def _ensure_console_managers(env):
             _logger.warning("[console B5] manager %s non trovato: assegnare a mano.", login)
 
 
+# Brief Regia+Dossier — dismissione soft: root menu dei sistemi legacy da occultare.
+# Riassegnati al gruppo vuoto cf_legacy_access → spariscono per tutti, moduli intatti.
+LEGACY_MENU_XMLIDS = (
+    'casafolino_initiative.menu_initiative_root',            # Lavagna (root "Iniziative")
+    'casafolino_pipeline_control.menu_cf_pipeline_control',       # Cockpit "Console CRM"
+    'casafolino_pipeline_control.menu_cf_pipeline_control_root',  # Cockpit "Console CRM" (root)
+)
+
+
+def _hide_legacy_menus(env):
+    """Occulta i menu Lavagna/Cockpit riassegnandoli a cf_legacy_access (gruppo vuoto).
+    Idempotente, non distruttivo (moduli restano installati). Reversibile."""
+    import logging
+    _logger = logging.getLogger(__name__)
+    group = env.ref('casafolino_console_access.group_cf_legacy_access', raise_if_not_found=False)
+    if not group:
+        _logger.warning("[legacy] group_cf_legacy_access assente: skip occultamento menu.")
+        return
+    for xid in LEGACY_MENU_XMLIDS:
+        menu = env.ref(xid, raise_if_not_found=False)
+        if menu:
+            menu.sudo().write({'groups_id': [(6, 0, [group.id])]})
+            _logger.info("[legacy] menu %s (id=%s) occultato → cf_legacy_access.", xid, menu.id)
+        else:
+            _logger.info("[legacy] menu %s non presente: nulla da occultare.", xid)
+
+
 def post_init_hook(env):
     """Install: assegna gli operatori e crea il cron digest invii (idempotente).
     Evita model_id ref in XML (ParseError Odoo 18)."""
     from odoo import fields
     _ensure_console_operators(env)
     _ensure_console_managers(env)
+    _hide_legacy_menus(env)
     Cron = env['ir.cron'].sudo()
     if Cron.search([('cron_name', '=', 'CasaFolino Console: digest invii')], limit=1):
         return
