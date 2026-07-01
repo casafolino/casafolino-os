@@ -1,47 +1,54 @@
 {
- "brief": "Regia + Dossier unificati (Console :3200): sostituisci Lavagna+Cockpit+Dossier-v2 con Regia e Dossier cliente. Lens not container, read via console_api uid21, write via gateway casafolino_console_access. Occulta menu Lavagna/Cockpit dietro cf_legacy_access. Deploy prod pg_dump+rollback, crons 82/83/84/53218 off.",
- "created": "2026-07-01T12:27:08.217987+00:00",
+ "brief": "Catalogo online strutturato /catalogue/en-2026 su company.casafolino.com (modulo Odoo casafolino_company_website) + tracking GA4/GTM + cookie consent reale",
+ "created": "2026-07-01T18:06:04.034655+00:00",
  "goals": [
   {
    "id": "G001",
-   "title": "Map",
-   "objective": "Mappa dossier/pipeline/write-gateway/mockup esistenti - baseline read-only",
+   "title": "Dataset prodotti",
+   "objective": "estrarre JSON strutturato (sku,nome,slug,categoria,formato,immagine) dalle 10 pagine categoria esistenti, script rigenerabile",
    "status": "complete",
-   "evidence": "4 Explore maps: read-layer lib/odoo.ts (callKw/searchRead/getPartnerBundle); pipeline console_pipeline.py console_pipeline_board + _activity_state console_lead.py:31-48; write-gateway forwardOperatorCall→cf.task/cf.shipment (NON cf.todo/cf.sample.request); mockup Regia 4KPI + Dossier timeline unica"
+   "evidence": "scripts/build_catalog_json.py parses 10 category index.html product-list-grid, wrote data/catalog_products.json: 90 products/10 categories/8 formats, sku verified against product_template.default_code (CRM02/03/08 confirmed in prod db)"
   },
   {
    "id": "G002",
-   "title": "API",
-   "objective": "API aggregazione read-only KPI Regia + timeline mista Dossier via console_api",
+   "title": "Route catalogue/en-2026",
+   "objective": "nuova route Odoo con griglia filtrabile categoria+formato, card prodotto, CTA request tech sheet/quote",
    "status": "complete",
-   "evidence": "console_regia.py: 4 metodi gated read-only (console_regia_kpis, console_regia_pipeline, console_partner_dossier, console_partner_timeline) + 4 route proxy Next (regia/kpis, regia/pipeline, partner/dossier, partner/timeline). py_compile OK, next build ✓ Compiled successfully (route presenti)"
+   "evidence": "controllers/catalogue_2026.py renders /catalogue/en-2026: 90 product cards, 11 category filter chips, 9 format filter chips, request dialog w/ tech-sheet+quote CTAs. Route registered in main.py (GET /catalogue/en-2026 + trailing slash). Verified via local dev server (dev_server.py): curl 200 on page+CSS+JS+product image, node --check passed on inline JS, structural counts match JSON (90 cards / cert badges 180 / div balance 0). Live browser screenshot not observable in this environment (no GUI display) — flagged for Antonio's device UAT per brief acceptance criterion."
   },
   {
    "id": "G003",
-   "title": "Regia",
-   "objective": "Regia UI ricerca cliente + 4 azioni + 4 KPI + lista pipeline ordinata semaforo",
+   "title": "Lead capture",
+   "objective": "endpoint POST che crea crm.lead con contesto prodotto, riuso pattern esistente company_contact_submit",
    "status": "complete",
-   "evidence": "Regia home app/page.tsx: SearchBar wide (→/partner/[id]), RegiaActions 4 bottoni, RegiaKpiRow (4 KPI brief), RegiaPipelineList ordinata semaforo con click→Dossier. next build ✓"
+   "evidence": "controllers/main.py company_catalogue_lead: POST /company/catalogue/lead, honeypot check, required name+email+privacy_consent, sudo() crm.lead.create with product sku/name/request_type in description, reuses exact team_id/referred/website field-detection pattern from existing company_contact_submit. py_compile OK. Real crm.lead row creation verified E2E during G007 stage deploy."
   },
   {
    "id": "G004",
-   "title": "Dossier",
-   "objective": "Dossier UI header + 4 card + 4 azioni precompilate partner_id + timeline unica",
+   "title": "Continuita URL",
+   "objective": "banner link verso nuovo catalogo su /en/catalog/ e le 10 pagine categoria, nessuna 404 nuova",
    "status": "complete",
-   "evidence": "Dossier app/partner/[id]: DossierClient header+semaforo+tag, 4 metric card (ultimo ordine/fatturato12m/stage/task aperti), DossierActions 4 azioni precompilate partnerId, timeline unica paginata (Carica altri). next build ✓"
+   "evidence": "Injected catalogue-2026-banner into /en/catalog/index.html + all 10 category index.html (11 files total), linking to /catalogue/en-2026. No existing route/markup removed, only <main> insertion. Verified all 11 files retain exactly one <main>/</main> and one banner instance (python structural check). CSS added to site.css, no other selectors touched."
   },
   {
    "id": "G005",
-   "title": "Menu",
-   "objective": "Occultamento menu Lavagna/Cockpit dietro cf_legacy_access non distruttivo",
-   "status": "in_progress",
-   "evidence": null
+   "title": "Cookie consent + GTM/GA4 plumbing",
+   "objective": "consent banner custom, gtag consent mode default denied GA4 G-B7V6TVHWT2, GTM loader gated con placeholder ID, injection su tutte le pagine EN/IT/ES/FR",
+   "status": "complete",
+   "evidence": "consent.js (custom banner, localStorage cf_consent, gtag consent mode: default all denied until accept, GA4 G-B7V6TVHWT2 loaded only after accept, GTM_ID placeholder empty=skipped) + head snippet (dataLayer/gtag default) injected into all 185 EN/IT/ES/FR static pages before existing language.js tag (bulk script, idempotent, verified 0/185 anomalies: consent.js count==1, language.js count==1, single <html>, ends </html>). catalogue_2026.py page has it inline natively. business_inquiry_submit event wired on all 4 locale contact forms (id=business-inquiry-form + submit listener). node --check passed on consent.js and both inline JS blocks. No tag fires before consent (verified: GA4/GTM script injection only inside grantConsent(), called only from accept-button handler or stored granted state)."
   },
   {
    "id": "G006",
-   "title": "Deploy",
-   "objective": "Deploy prod Console pg_dump crons-off swap3200 verifica-curl rollback",
-   "status": "pending",
+   "title": "Cookie policy reale",
+   "objective": "sostituire placeholder con policy vera EN",
+   "status": "complete",
+   "evidence": "en/cookie-policy/index.html: replaced placeholder hero with real cookie policy (what cookies/local storage, cookie table split strictly-necessary vs analytics with names/duration/purpose/provider, legal basis GDPR art 6.1.a, Manage cookie preferences button wired to new window.cfOpenConsentSettings() in consent.js which clears cf_consent and re-shows banner). Structural check passed (single main/html, no leftover placeholder text). IT/ES/FR cookie-policy left as-is (placeholder) per EN-only scope agreed in brief; flagged in changelog."
+  },
+  {
+   "id": "G007",
+   "title": "Deploy stage + verifica",
+   "objective": "deploy su folinofood_stage, curl/browser check tutte le route nuove e esistenti, poi richiesta confirm esplicita per prod",
+   "status": "in_progress",
    "evidence": null
   }
  ]
