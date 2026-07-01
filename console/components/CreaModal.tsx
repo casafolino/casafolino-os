@@ -11,11 +11,13 @@
 // "Apri dossier" resta bottone separato in ActionBar (non è creazione).
 import { useEffect, useState } from "react";
 import { PartnerPicker, type PartnerResolved } from "@/components/PartnerPicker";
-import { CatalogModal } from "@/components/CatalogModal";
+import { Composer, type Account } from "@/components/Composer";
 import { CampionaturaModal } from "@/components/CampionaturaButton";
 import { WizardModal } from "@/components/PreventivoWizard";
 import { commitQuicktask } from "@/lib/quicktask";
 import { getTaskBoard } from "@/lib/lavboard";
+import type { LibraryItem, MailTemplate } from "@/lib/bundle";
+import { BP } from "@/lib/basePath";
 
 type CreaType = "preventivo" | "task" | "email" | "campionatura" | "followup";
 
@@ -178,7 +180,31 @@ function Done({ msg, onClose }: { msg: string; onClose: () => void }) {
   );
 }
 
-export function CreaButton() {
+// Email = composer generico Odoo (gateway canonico console_send/reply), NON invio-catalogo.
+// Precompila il destinatario con l'email del cliente scelto; il campo resta editabile
+// (email generica / destinatario interno). Template nativi disponibili dal Composer.
+function EmailCompose({ companyId, companyName, accounts, library, templates, onClose }: {
+  companyId: number; companyName: string;
+  accounts: Account[]; library: LibraryItem[]; templates: MailTemplate[]; onClose: () => void;
+}) {
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`${BP}/api/console/partner-bundle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partnerId: companyId }) })
+      .then((r) => r.json())
+      .then((b) => { if (alive) setEmail((b?.email ?? b?.partner?.email ?? "") as string); })
+      .catch(() => { if (alive) setEmail(""); });
+    return () => { alive = false; };
+  }, [companyId]);
+  if (email === null) return null; // attesa breve email cliente
+  return (
+    <Composer mode="new"
+      target={{ id: 0, subject: "", senderEmail: email, senderName: companyName }}
+      accounts={accounts} library={library} templates={templates} onClose={onClose} />
+  );
+}
+
+export function CreaButton({ accounts, library, templates }: { accounts: Account[]; library: LibraryItem[]; templates: MailTemplate[] }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<CreaType | null>(null);
   const [partner, setPartner] = useState<PartnerResolved | null>(null);
@@ -192,7 +218,7 @@ export function CreaButton() {
       {!open ? null
         // Modali auto-contenute (hanno backdrop proprio): renderizzate standalone.
         : type === "preventivo" ? <WizardModal onClose={reset} />
-        : type === "email" && partner ? <CatalogModal partnerId={partner.companyId} onClose={reset} />
+        : type === "email" && partner ? <EmailCompose companyId={partner.companyId} companyName={partner.companyName} accounts={accounts} library={library} templates={templates} onClose={reset} />
         : type === "campionatura" && partner ? <CampionaturaModal partnerId={partner.companyId} onClose={reset} />
         : (
           <Modal title="Crea" onClose={reset}>
