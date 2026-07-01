@@ -46,6 +46,20 @@ for key, (path, name, mime, param) in FILES.items():
     att_ids[key] = att.id
     print("attachment", key, "->", att.id, "(%s bytes)" % att.file_size)
 
+# IT catalogue: reuse the existing Italian general catalogue attachment (41437),
+# only if present and not already configured. IT PDF route falls back to EN otherwise.
+IT_PARAM = "casafolino.fancyfood.catalogue_it_att_id"
+if not ICP.get_param(IT_PARAM):
+    it_att = Att.search(
+        [("name", "ilike", "Catalogo Generale%ITA%"), ("mimetype", "=", "application/pdf")],
+        order="id desc", limit=1,
+    )
+    if not it_att:
+        it_att = Att.browse(41437).exists()
+    if it_att:
+        ICP.set_param(IT_PARAM, str(it_att.id))
+        print("IT catalogue attachment ->", it_att.id)
+
 # wire Company Profile + Brochure onto both templates
 prof, broc = att_ids["profile"], att_ids["brochure"]
 for xmlid in ("casafolino_fancyfood.mail_template_fancyfood_en",

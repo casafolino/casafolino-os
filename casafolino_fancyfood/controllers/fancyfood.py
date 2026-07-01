@@ -86,7 +86,13 @@ class FancyFoodController(http.Controller):
                 partner.sudo()._fancyfood_register_click()
             except Exception:  # pragma: no cover
                 _logger.exception("Fancy Food: click activity failed for %s", partner.id)
-        att = self._config_attachment("casafolino.fancyfood.catalogue_att_id")
+        # EN → catalogo 300dpi (att 43423); IT → catalogo ITA esistente (att 41437).
+        is_it = request.httprequest.path.rsplit("/", 1)[-1].startswith("it-")
+        key = ("casafolino.fancyfood.catalogue_it_att_id" if is_it
+               else "casafolino.fancyfood.catalogue_att_id")
+        att = self._config_attachment(key)
+        if not att:
+            att = self._config_attachment("casafolino.fancyfood.catalogue_att_id")
         if not att:
             return request.not_found()
         data = att.raw
