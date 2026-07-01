@@ -132,6 +132,31 @@ class CfTaskConsoleBoard(models.Model):
         _audit(self.env, 'cf.task', [], 'task_board', None, operator)
         return {'ok': True, 'columns': columns}
 
+    @api.model
+    def console_task_operator_view(self, payload=None):
+        """Vista operatore: Pool (claimabile da chiunque) + le mie task (titolare io).
+        Qualsiasi operativa Console, NON manager-only. payload: {operator_uid}."""
+        if not _is_console(self.env):
+            raise AccessError(_("Solo console_api."))
+        operator = _operator(self.env, (payload or {}).get('operator_uid'))
+        emp = self._console_operator_employee(operator)
+        Task = self.sudo()
+        order = 'date_deadline asc, priority desc, create_date asc'
+        pool = Task.search(
+            [('bo_is_pool', '=', True), ('state', 'in', _OPEN_STATES)], order=order, limit=200)
+        mine = Task.browse()
+        if emp:
+            mine = Task.search(
+                [('bo_titolare_id', '=', emp.id), ('state', 'in', _OPEN_STATES)],
+                order=order, limit=200)
+        _audit(self.env, 'cf.task', [], 'task_operator_view', None, operator)
+        return {
+            'ok': True,
+            'employeeId': emp.id if emp else False,
+            'pool': [self._console_task_card(t) for t in pool],
+            'mine': [self._console_task_card(t) for t in mine],
+        }
+
     # ------------------------------------------------------------- claim
     @api.model
     def console_task_claim(self, payload):

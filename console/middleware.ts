@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 
 // Brief 5 — superficie consentita all'OPERATORE (non-manager). Tutto il resto = manager-only.
 // I path sono SENZA basePath (Next rimuove /console prima del middleware).
-const OPERATOR_ALLOWED = ["/lavorazioni", "/api/console/steps"];
+const OPERATOR_ALLOWED = ["/lavorazioni", "/api/console/steps", "/api/console/tasks"];
 function isOperatorAllowed(pathname: string): boolean {
   return OPERATOR_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p));
 }
