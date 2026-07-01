@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Automation: generate a token when a partner is tagged FANCY_FOOD_NY_2026
+         (create or tag-add). Idempotent. In Odoo 18 the server action belongs to
+         the automation via base_automation_id (action_server_ids is computed). -->
+    <record id="automation_fancyfood_token" model="base.automation">
+        <field name="name">Fancy Food NY — genera token su tag</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="trigger">on_create_or_write</field>
+        <field name="trigger_field_ids" eval="[(6, 0, [ref('base.field_res_partner__category_id')])]"/>
+        <field name="filter_domain">[('category_id', 'in', [ref('casafolino_fancyfood.tag_partner_fancyfood')])]</field>
+    </record>
+
+    <record id="server_fancyfood_ensure_token" model="ir.actions.server">
+        <field name="name">Fancy Food NY — ensure token</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="base_automation_id" ref="automation_fancyfood_token"/>
+        <field name="state">code</field>
+        <field name="code">records._ensure_fancyfood_token()</field>
+    </record>
+</odoo>

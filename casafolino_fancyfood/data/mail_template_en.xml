@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_fancyfood_en" model="mail.template">
+        <field name="name">Fancy Food NY 2026 — EN</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="email_from">Antonio Folino &lt;antonio@casafolino.com&gt;</field>
+        <field name="email_to">{{ object.email or '' }}</field>
+        <field name="email_cc">martina.sinopoli@casafolino.com</field>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="subject">🇮🇹 Great meeting you at the Summer Fancy Food Show — {{ (object.name or '').split(' ')[0] or 'there' }}</field>
+        <field name="auto_delete" eval="False"/>
+        <field name="body_html" type="html">
+<div style="font-family: Georgia, 'Times New Roman', serif; max-width: 620px; margin: 0 auto; color: #5f3511; line-height: 1.6;">
+
+  <div style="background: #6c3a00; padding: 20px 24px; text-align: center; border-radius: 6px 6px 0 0;">
+    <span style="color: #d7a028; font-size: 22px; letter-spacing: 3px;">CASAFOLINO</span>
+    <div style="color: #f0ead9; font-size: 11px; letter-spacing: 2px; margin-top: 4px;">ARTISAN ITALIAN FOOD · SINCE 1962</div>
+  </div>
+
+  <div style="padding: 26px 24px; background: #ffffff;">
+
+    <p>Dear <span style="color:#b84d26;"><t t-out="(object.name or '').split(' ')[0] or 'there'">there</t></span>,</p>
+
+    <p>It was a real pleasure meeting you at the <strong>Summer Fancy Food Show in New York</strong>. The energy at the Italian Pavilion this year was fantastic, and I'm glad we connected at our booth.</p>
+
+    <p>As promised, here's a closer look at our family-run production based in Calabria, Southern Italy. CasaFolino has been crafting premium Italian artisan food <strong>since 1962</strong> — exactly the kind of authentic, specialty-grade story the Fancy Food crowd looks for.</p>
+
+    <p style="margin-bottom: 6px;"><strong style="color:#6c3a00;">Our current range:</strong></p>
+    <table cellpadding="0" cellspacing="0" border="0" style="font-size:14px; color:#5f3511; line-height:1.9;">
+      <tr><td>🍿  Spreadable creams (sweet &amp; savory)</td></tr>
+      <tr><td>🍯  Flavored honeys and honey mousse</td></tr>
+      <tr><td>🍚  Ready-to-cook risottos</td></tr>
+      <tr><td>🌶  Crispy chili and spice blends</td></tr>
+      <tr><td>🍪  Gluten-free cantuccini and biscuits</td></tr>
+      <tr><td>🍬  Chocolates and derivatives</td></tr>
+    </table>
+
+    <p style="margin-top:16px;">
+    ✓  Strongly export-oriented (90%+ of our volume, 20+ countries)<br/>
+    ✓  Certified <strong>BRC, IFS, Kosher, Halal and EU Organic</strong><br/>
+    ✓  A reliable partner for premium retail, specialty stores, Ho.Re.Ca. and private label
+    </p>
+
+    <div style="background: #f7f0e2; border-left: 4px solid #d7a028; padding: 16px 20px; margin: 22px 0; border-radius: 0 4px 4px 0;">
+      <p style="margin: 0 0 10px 0;"><strong style="color:#6c3a00;">🏷  Private Label &amp; Co-Development</strong></p>
+      <p style="margin: 0 0 10px 0; font-size:14px;">Beyond our branded range, a large part of what we do is building products <em>for</em> our partners. If you're looking to develop or expand your own private label line, we offer:</p>
+      <table cellpadding="0" cellspacing="0" border="0" style="font-size:13.5px; color:#5f3511; line-height:1.7;">
+        <tr><td>🔬  Custom recipe development for your market and price point</td></tr>
+        <tr><td>📐  Flexible formats, packaging and labeling (your brand, your specs)</td></tr>
+        <tr><td>🏭  Full certification coverage already in place</td></tr>
+        <tr><td>📦  Sustainable MOQs — growing brands and established chains alike</td></tr>
+      </table>
+    </div>
+
+    <p style="margin: 22px 0 10px; font-size:14px;"><strong style="color:#6c3a00;">Your documents:</strong></p>
+    <table cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-bottom: 22px;">
+      <tr>
+        <td style="padding: 11px 16px; background:#f7f0e2; border-left:4px solid #6c3a00; border-radius:0 4px 4px 0;">
+          <a style="color:#6c3a00; font-family: Arial, sans-serif; font-size:14px; font-weight:bold; text-decoration:none;" t-att-href="'https://company.casafolino.com/catalogue/en-2026.pdf?t=' + (object.fancyfood_token or '')">📕  Product Catalogue 2026 — Spreads, Condiments &amp; First Courses</a>
+          <div style="font-family: Arial, sans-serif; font-size:11px; color:#7d6142; margin-top:2px;">Click to download · PDF</div>
+        </td>
+      </tr>
+      <tr><td style="height:8px; font-size:1px; line-height:1px;"> </td></tr>
+      <tr>
+        <td style="padding: 11px 16px; background:#f7f0e2; border-left:4px solid #d7a028; border-radius:0 4px 4px 0;">
+          <span style="color:#6c3a00; font-family: Arial, sans-serif; font-size:14px; font-weight:bold;">📄  Company Profile</span>
+          <div style="font-family: Arial, sans-serif; font-size:11px; color:#7d6142; margin-top:2px;">Attached · PDF — who we are, production capacity, certifications</div>
+        </td>
+      </tr>
+      <tr><td style="height:8px; font-size:1px; line-height:1px;"> </td></tr>
+      <tr>
+        <td style="padding: 11px 16px; background:#f7f0e2; border-left:4px solid #6f7b3f; border-radius:0 4px 4px 0;">
+          <span style="color:#6c3a00; font-family: Arial, sans-serif; font-size:14px; font-weight:bold;">📄  Company Brochure</span>
+          <div style="font-family: Arial, sans-serif; font-size:11px; color:#7d6142; margin-top:2px;">Attached · PDF — our range at a glance</div>
+        </td>
+      </tr>
+    </table>
+
+    <p style="font-size:14px;">The natural next step would be to send you <strong>samples</strong> of the references that best fit your assortment — branded or private label. Just tell me which categories matter most for your market and I'll arrange shipping this week.</p>
+
+    <p>Looking forward to turning a great show conversation into something concrete.</p>
+
+    <p style="margin-top: 20px;">Warm regards,</p>
+
+  </div>
+
+  <div style="padding: 8px 24px 24px; background: #ffffff;">
+<table cellpadding="0" cellspacing="0" border="0" style="font-family: Georgia, 'Times New Roman', serif; color: #5f3511; width: 620px; max-width: 620px; background: #ffffff;">
+    <tr>
+      <td style="padding: 14px 16px 12px; border: 1px solid #ead8bd;">
+        <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+          <tr>
+            <td width="112" style="vertical-align: top; padding-right: 18px;">
+              <img alt="CasaFolino" width="104" style="display: block; max-width: 104px; border: 0;" t-att-src="'https://company.casafolino.com/fancyfood/logo?t=' + (object.fancyfood_token or '')"/>
+            </td>
+            <td style="vertical-align: top;">
+              <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; font-family: Arial, Helvetica, sans-serif;">
+                <tr>
+                  <td style="vertical-align: top;">
+                    <div style="font-size: 10px; line-height: 14px; color: #f86295; font-weight: 700; text-transform: uppercase;">CasaFolino Srl Società Benefit</div>
+                    <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 20px; line-height: 25px; font-weight: 700; color: #5f3511;"><a href="https://www.linkedin.com/in/antoniofolino/" style="color: #5f3511; text-decoration: none;">Antonio Folino</a></div>
+                    <div style="font-size: 13px; line-height: 19px; color: #765027;">CEO</div>
+                  </td>
+                  <td align="right" style="vertical-align: middle; font-size: 11px; line-height: 15px; color: #6f7b3f; font-weight: 700; text-transform: uppercase;">Mediterranean<br/>Taste</td>
+                </tr>
+              </table>
+              <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px; font-family: Arial, Helvetica, sans-serif;">
+                <tr>
+                  <td style="font-size: 12px; line-height: 19px; color: #5f3511;"><a href="tel:+393351665306" style="color: #5f3511; text-decoration: none;">+39 335 166 5306</a></td>
+                  <td width="12"/>
+                  <td style="font-size: 12px; line-height: 19px; color: #5f3511;"><a href="mailto:antonio@casafolino.com" style="color: #5f3511; text-decoration: none;">antonio@casafolino.com</a></td>
+                </tr>
+                <tr>
+                  <td colspan="3" style="font-size: 12px; line-height: 19px; color: #5f3511;"><a href="https://casafolino.com/" style="color: #5f3511; text-decoration: none;">casafolino.com</a> | Via Prunia 1, Lamezia Terme (CZ)</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+          <tr>
+            <td width="28%" height="8" style="background: #6c3a00; font-size: 1px; line-height: 1px;"> </td>
+            <td width="18%" height="8" style="background: #d7a028; font-size: 1px; line-height: 1px;"> </td>
+            <td width="18%" height="8" style="background: #6f7b3f; font-size: 1px; line-height: 1px;"> </td>
+            <td width="18%" height="8" style="background: #f86295; font-size: 1px; line-height: 1px;"> </td>
+            <td width="18%" height="8" style="background: #b84d26; font-size: 1px; line-height: 1px;"> </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 9px 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 16px; color: #7d6142;">
+        <a href="https://www.facebook.com/CasaFolinoitaly/" style="color: #6c3a00; text-decoration: none;">Facebook</a>  | 
+        <a href="https://www.instagram.com/casafolino/" style="color: #6c3a00; text-decoration: none;">Instagram</a>  | 
+        <a href="https://www.linkedin.com/company/casafolino/" style="color: #6c3a00; text-decoration: none;">LinkedIn</a>
+      </td>
+    </tr>
+  </table>
+  </div>
+<img t-att-src="'https://company.casafolino.com/fancyfood/px?t=' + (object.fancyfood_token or '')" width="1" height="1" style="display:none;border:0" alt=""/></div>
+
+        </field>
+    </record>
+</odoo>

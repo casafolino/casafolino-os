@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ff_event_user,ff.event.user,model_casafolino_fancyfood_event,base.group_user,1,1,1,0
+access_ff_event_manager,ff.event.manager,model_casafolino_fancyfood_event,base.group_system,1,1,1,1
