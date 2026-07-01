@@ -51,6 +51,31 @@ class ResPartner(models.Model):
                 partner.fancyfood_token = uuid.uuid4().hex
         return True
 
+    @api.model
+    def _fancyfood_bind_tags(self):
+        """Bind i tag Fancy Food agli xmlid del modulo SENZA creare duplicati:
+        il tag esiste già in prod (crm.tag/res.partner.category "FANCY_FOOD_NY_2026").
+        find-or-create per nome, poi lega l'xmlid al record esistente. Idempotente.
+        Chiamato via <function> in data/fancyfood_tags.xml (prima di base_automation)."""
+        IMD = self.env["ir.model.data"].sudo()
+        Cat = self.env["res.partner.category"].sudo()
+        cat = Cat.search([("name", "=", "FANCY_FOOD_NY_2026")], limit=1)
+        if not cat:
+            cat = Cat.create({"name": "FANCY_FOOD_NY_2026", "color": 4})
+        IMD._update_xmlids([{
+            "xml_id": "casafolino_fancyfood.tag_partner_fancyfood",
+            "record": cat, "noupdate": True,
+        }])
+        Tag = self.env["crm.tag"].sudo()
+        tag = Tag.search([("name", "=", "FANCY_FOOD_NY_2026")], limit=1)
+        if not tag:
+            tag = Tag.create({"name": "FANCY_FOOD_NY_2026"})
+        IMD._update_xmlids([{
+            "xml_id": "casafolino_fancyfood.tag_crm_fancyfood",
+            "record": tag, "noupdate": True,
+        }])
+        return True
+
     def _fancyfood_owner_user(self):
         self.ensure_one()
         antonio = self.env["res.users"].sudo().search(

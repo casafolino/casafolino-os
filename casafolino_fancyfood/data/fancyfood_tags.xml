@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="tag_partner_fancyfood" model="res.partner.category">
-        <field name="name">FANCY_FOOD_NY_2026</field>
-        <field name="color">4</field>
-    </record>
-
-    <record id="tag_crm_fancyfood" model="crm.tag">
-        <field name="name">FANCY_FOOD_NY_2026</field>
-    </record>
+    <!-- Il tag FANCY_FOOD_NY_2026 esiste GIÀ in prod (crm.tag id 62 + res.partner.category
+         id 128). NON creare duplicati: find-or-create per nome e lega gli xmlid del modulo
+         ai record esistenti. Eseguito prima di base_automation.xml (che referenzia l'xmlid). -->
+    <function model="res.partner" name="_fancyfood_bind_tags"/>
 </odoo>
