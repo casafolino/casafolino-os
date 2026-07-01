@@ -109,6 +109,7 @@ def render_catalogue_2026():
     <section class="facts"><div class="fact"><strong>1962</strong><span>Founded by Antonio and Guido Folino</span></div><div class="fact"><strong>{len(products)}</strong><span>Products in this catalog</span></div><div class="fact"><strong>10</strong><span>Product categories</span></div><div class="fact"><strong>BRC</strong><span>IFS, Organic, Kosher, Halal certified facility</span></div></section>
 
     <section class="content-section">
+      <p class="section-lead">All products below are manufactured in our BRC &amp; IFS certified facility in Lamezia Terme, Italy. This is a facility-level certification, not a per-product claim — ask our commercial team for the certificate that applies to a specific order.</p>
       <div class="filter-bar" aria-label="Catalog filters">
         <div>
           <p class="kicker">Category</p>
