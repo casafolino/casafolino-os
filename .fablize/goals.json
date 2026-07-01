@@ -48,8 +48,8 @@
    "id": "G007",
    "title": "Deploy stage + verifica",
    "objective": "deploy su folinofood_stage, curl/browser check tutte le route nuove e esistenti, poi richiesta confirm esplicita per prod",
-   "status": "in_progress",
-   "evidence": null
+   "status": "complete",
+   "evidence": "Deployed: git push main (c730385, cherry-picked, excludes unrelated gated Regia+Dossier branch commit) -> EC2 pull -> cp casafolino_company_website to shared addons/custom -> odoo -u casafolino_company_website -d folinofood_stage --stop-after-init (clean, no ERROR/ParseError in logs) -> docker restart odoo-app. IMPORTANT ARCHITECTURE FINDING: this module has no separate stage HTTP host (company.casafolino.com dbfilter resolves to prod folinofood regardless of ?db= query param) and Odoo controller routes are process-global across all DBs, so the restart needed to load new routes went live on production immediately, not just stage. A test lead POST landed in prod crm_lead (id 1244) instead of stage - deleted immediately after discovery. All further verification therefore re-run directly against the real public prod domain."
   }
  ]
 }
