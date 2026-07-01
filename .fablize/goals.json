@@ -1,55 +1,41 @@
 {
- "brief": "Catalogo online strutturato /catalogue/en-2026 su company.casafolino.com (modulo Odoo casafolino_company_website) + tracking GA4/GTM + cookie consent reale",
- "created": "2026-07-01T18:06:04.034655+00:00",
+ "brief": "Fancy Food NY 2026 follow-up: nuovo modulo casafolino_fancyfood — template EN+IT v2 (body approvato tokenizzato, firma logo Odoo, CC Martina, allegati Profile_corretto+Brochure), catalogo=link diretto PDF tracciato (route redirect a attachment 43423 sostituito con 300dpi), tracking open(1 pixel)+click catalogo(→activity+badge)+logo-load(secondario), tag FANCY_FOOD_NY_2026 (esiste crm.tag62/cat128), server action manuale. Deploy prod immediato (no stage HTTP), mail solo ir.mail_server.",
+ "created": "2026-07-01T18:34:04.819672+00:00",
  "goals": [
   {
    "id": "G001",
-   "title": "Dataset prodotti",
-   "objective": "estrarre JSON strutturato (sku,nome,slug,categoria,formato,immagine) dalle 10 pagine categoria esistenti, script rigenerabile",
-   "status": "complete",
-   "evidence": "scripts/build_catalog_json.py parses 10 category index.html product-list-grid, wrote data/catalog_products.json: 90 products/10 categories/8 formats, sku verified against product_template.default_code (CRM02/03/08 confirmed in prod db)"
+   "title": "Core",
+   "objective": "Modulo skeleton + res.partner cf_fancyfood_token + modello evento tracking + accessi",
+   "status": "in_progress",
+   "evidence": null
   },
   {
    "id": "G002",
-   "title": "Route catalogue/en-2026",
-   "objective": "nuova route Odoo con griglia filtrabile categoria+formato, card prodotto, CTA request tech sheet/quote",
-   "status": "complete",
-   "evidence": "controllers/catalogue_2026.py renders /catalogue/en-2026: 90 product cards, 11 category filter chips, 9 format filter chips, request dialog w/ tech-sheet+quote CTAs. Route registered in main.py (GET /catalogue/en-2026 + trailing slash). Verified via local dev server (dev_server.py): curl 200 on page+CSS+JS+product image, node --check passed on inline JS, structural counts match JSON (90 cards / cert badges 180 / div balance 0). Live browser screenshot not observable in this environment (no GUI display) — flagged for Antonio's device UAT per brief acceptance criterion."
+   "title": "Routes",
+   "objective": "Controller /fancyfood/catalog(click→activity+badge→PDF) /logo(serve+log) /open(pixel)",
+   "status": "pending",
+   "evidence": null
   },
   {
    "id": "G003",
-   "title": "Lead capture",
-   "objective": "endpoint POST che crea crm.lead con contesto prodotto, riuso pattern esistente company_contact_submit",
-   "status": "complete",
-   "evidence": "controllers/main.py company_catalogue_lead: POST /company/catalogue/lead, honeypot check, required name+email+privacy_consent, sudo() crm.lead.create with product sku/name/request_type in description, reuses exact team_id/referred/website field-detection pattern from existing company_contact_submit. py_compile OK. Real crm.lead row creation verified E2E during G007 stage deploy."
+   "title": "Templates",
+   "objective": "mail.template EN+IT v2 da HTML approvato tokenizzato + firma logo Odoo + CC + allegati + server action manuale",
+   "status": "pending",
+   "evidence": null
   },
   {
    "id": "G004",
-   "title": "Continuita URL",
-   "objective": "banner link verso nuovo catalogo su /en/catalog/ e le 10 pagine categoria, nessuna 404 nuova",
-   "status": "complete",
-   "evidence": "Injected catalogue-2026-banner into /en/catalog/index.html + all 10 category index.html (11 files total), linking to /catalogue/en-2026. No existing route/markup removed, only <main> insertion. Verified all 11 files retain exactly one <main>/</main> and one banner instance (python structural check). CSS added to site.css, no other selectors touched."
+   "title": "Assets",
+   "objective": "Attachment 43423→300dpi (prod, id invariato) + logo ir.attachment pubblico + Profile/Brochure attachments",
+   "status": "pending",
+   "evidence": null
   },
   {
    "id": "G005",
-   "title": "Cookie consent + GTM/GA4 plumbing",
-   "objective": "consent banner custom, gtag consent mode default denied GA4 G-B7V6TVHWT2, GTM loader gated con placeholder ID, injection su tutte le pagine EN/IT/ES/FR",
-   "status": "complete",
-   "evidence": "consent.js (custom banner, localStorage cf_consent, gtag consent mode: default all denied until accept, GA4 G-B7V6TVHWT2 loaded only after accept, GTM_ID placeholder empty=skipped) + head snippet (dataLayer/gtag default) injected into all 185 EN/IT/ES/FR static pages before existing language.js tag (bulk script, idempotent, verified 0/185 anomalies: consent.js count==1, language.js count==1, single <html>, ends </html>). catalogue_2026.py page has it inline natively. business_inquiry_submit event wired on all 4 locale contact forms (id=business-inquiry-form + submit listener). node --check passed on consent.js and both inline JS blocks. No tag fires before consent (verified: GA4/GTM script injection only inside grantConsent(), called only from accept-button handler or stored granted state)."
-  },
-  {
-   "id": "G006",
-   "title": "Cookie policy reale",
-   "objective": "sostituire placeholder con policy vera EN",
-   "status": "complete",
-   "evidence": "en/cookie-policy/index.html: replaced placeholder hero with real cookie policy (what cookies/local storage, cookie table split strictly-necessary vs analytics with names/duration/purpose/provider, legal basis GDPR art 6.1.a, Manage cookie preferences button wired to new window.cfOpenConsentSettings() in consent.js which clears cf_consent and re-shows banner). Structural check passed (single main/html, no leftover placeholder text). IT/ES/FR cookie-policy left as-is (placeholder) per EN-only scope agreed in brief; flagged in changelog."
-  },
-  {
-   "id": "G007",
-   "title": "Deploy stage + verifica",
-   "objective": "deploy su folinofood_stage, curl/browser check tutte le route nuove e esistenti, poi richiesta confirm esplicita per prod",
-   "status": "complete",
-   "evidence": "Deployed: git push main (c730385, cherry-picked, excludes unrelated gated Regia+Dossier branch commit) -> EC2 pull -> cp casafolino_company_website to shared addons/custom -> odoo -u casafolino_company_website -d folinofood_stage --stop-after-init (clean, no ERROR/ParseError in logs) -> docker restart odoo-app. IMPORTANT ARCHITECTURE FINDING: this module has no separate stage HTTP host (company.casafolino.com dbfilter resolves to prod folinofood regardless of ?db= query param) and Odoo controller routes are process-global across all DBs, so the restart needed to load new routes went live on production immediately, not just stage. A test lead POST landed in prod crm_lead (id 1244) instead of stage - deleted immediately after discovery. All further verification therefore re-run directly against the real public prod domain."
+   "title": "Deploy",
+   "objective": "Deploy prod pg_dump+cron53218 off+install modulo+restart, verifica routes + test send Antonio + rollback",
+   "status": "pending",
+   "evidence": null
   }
  ]
 }

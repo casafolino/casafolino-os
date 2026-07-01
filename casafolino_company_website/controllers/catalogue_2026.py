@@ -54,10 +54,8 @@ def _chip(group, value, label, active=False):
 
 
 def _product_card(p):
-    badges = "".join(f'<span class="cert-badge">{escape(c)}</span>' for c in p["certifications"])
     return f'''<article class="product-list-card" data-category="{escape(p["category_slug"])}" data-format="{escape(p["format"])}">
         <a href="{escape(p["detail_url"])}"><img src="{escape(p["image"])}" alt="{escape(p["name"])}" loading="lazy"><h3>{escape(p["name"])}</h3><p>{escape(p["sku"])} &middot; {escape(p["format"])}</p></a>
-        <div class="cert-badge-row">{badges}</div>
         <div class="product-card-actions">
           <button type="button" data-request-type="techsheet" data-sku="{escape(p["sku"])}" data-name="{escape(p["name"])}">Tech sheet</button>
           <button type="button" class="primary" data-request-type="quote" data-sku="{escape(p["sku"])}" data-name="{escape(p["name"])}">Quote</button>
