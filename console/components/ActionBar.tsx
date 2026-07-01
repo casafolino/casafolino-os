@@ -11,6 +11,8 @@ import { CatalogModal } from "@/components/CatalogModal";
 import { CampionaturaModal } from "@/components/CampionaturaButton";
 import { commitQuicktask } from "@/lib/quicktask";
 import { BP } from "@/lib/basePath";
+import type { Account } from "@/components/Composer";
+import type { LibraryItem, MailTemplate } from "@/lib/bundle";
 
 type Verb = "task" | "mail" | "campione" | "dossier" | "followup";
 
@@ -120,11 +122,11 @@ function ActionLauncher({ verb, label }: { verb: Verb; label: string }) {
   );
 }
 
-export function ActionBar() {
+export function ActionBar({ accounts, library, templates }: { accounts: Account[]; library: LibraryItem[]; templates: MailTemplate[] }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <CreaButton />
+        <CreaButton accounts={accounts} library={library} templates={templates} />
         <ActionLauncher verb="dossier" label="Apri dossier" />
         <span className="muted" style={{ fontSize: 12, padding: "0 2px" }}>·</span>
         <Link href="/inbox" className="btn-mini">Inbox</Link>

@@ -1,6 +1,7 @@
 // Regia — command center (schermo 1 di console_reference_v4). Home della console.
 import Link from "next/link";
-import { getRegia } from "@/lib/bundle";
+import { getRegia, getOperatorAccounts, getLibrary, getTemplates } from "@/lib/bundle";
+import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icons";
 import { operatorColor } from "@/lib/theme";
@@ -22,7 +23,13 @@ function toneStyle(tone: Tone): React.CSSProperties {
 }
 
 export default async function Regia() {
-  const r = await getRegia();
+  const session = await auth();
+  const [r, accounts, library, templates] = await Promise.all([
+    getRegia(),
+    getOperatorAccounts({ operatorUid: session?.operatorUid }),
+    getLibrary(),
+    getTemplates(),
+  ]);
 
   return (
     <div className="app">
@@ -34,7 +41,7 @@ export default async function Regia() {
         </div>
 
         {/* Barra azioni rapide (azione-first) — ogni verbo monta il PartnerPicker condiviso */}
-        <ActionBar />
+        <ActionBar accounts={accounts} library={library} templates={templates} />
         <QuickTaskBar />
 
         {/* 4 KPI */}

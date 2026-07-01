@@ -36,7 +36,9 @@ export function Composer({ mode, target, accounts = [], library = [], templates 
   onClose: () => void;
 }) {
   const cleanSubj = (target.subject || "").replace(/^(re|fwd|fw):\s*/i, "");
-  const [to, setTo] = useState(mode === "reply" ? target.senderEmail : "");
+  // "new"/"reply" prefill destinatario da target.senderEmail (usato dal modal Crea → Email);
+  // "forward" resta vuoto. Il campo resta editabile (email generica / destinatario interno).
+  const [to, setTo] = useState(mode === "forward" ? "" : (target.senderEmail || ""));
   const [subject, setSubject] = useState(mode === "reply" ? "Re: " + cleanSubj : mode === "forward" ? "Fwd: " + cleanSubj : "");
   const [accountId, setAccountId] = useState<number>(mode === "new" ? (accounts[0]?.id ?? 0) : (target.accountId ?? accounts[0]?.id ?? 0));
   const [atts, setAtts] = useState<Attach[]>([]);
