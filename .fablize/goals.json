@@ -1,33 +1,54 @@
 {
- "brief": "Dossier curati: pin (is_dossier) + cartelle (cf.dossier.folder) su res.partner; pagina Dossier mostra solo pinnati raggruppati per cartella; fascicolo 360 riusato",
- "created": "2026-06-27T10:30:14.292985+00:00",
+ "brief": "Catalogo online strutturato /catalogue/en-2026 su company.casafolino.com (modulo Odoo casafolino_company_website) + tracking GA4/GTM + cookie consent reale",
+ "created": "2026-07-01T18:06:04.034655+00:00",
  "goals": [
   {
    "id": "G001",
-   "title": "WI-A",
-   "objective": "modello cf.dossier.folder + campi res.partner is_dossier/dossier_folder_id + security + metodi gated (toggle/folders/list)",
-   "status": "pending",
-   "evidence": null
+   "title": "Dataset prodotti",
+   "objective": "estrarre JSON strutturato (sku,nome,slug,categoria,formato,immagine) dalle 10 pagine categoria esistenti, script rigenerabile",
+   "status": "complete",
+   "evidence": "scripts/build_catalog_json.py parses 10 category index.html product-list-grid, wrote data/catalog_products.json: 90 products/10 categories/8 formats, sku verified against product_template.default_code (CRM02/03/08 confirmed in prod db)"
   },
   {
    "id": "G002",
-   "title": "WI-B",
-   "objective": "pin dal fascicolo PartnerClient (toggle + scegli/crea cartella) + route",
-   "status": "pending",
-   "evidence": null
+   "title": "Route catalogue/en-2026",
+   "objective": "nuova route Odoo con griglia filtrabile categoria+formato, card prodotto, CTA request tech sheet/quote",
+   "status": "complete",
+   "evidence": "controllers/catalogue_2026.py renders /catalogue/en-2026: 90 product cards, 11 category filter chips, 9 format filter chips, request dialog w/ tech-sheet+quote CTAs. Route registered in main.py (GET /catalogue/en-2026 + trailing slash). Verified via local dev server (dev_server.py): curl 200 on page+CSS+JS+product image, node --check passed on inline JS, structural counts match JSON (90 cards / cert badges 180 / div balance 0). Live browser screenshot not observable in this environment (no GUI display) — flagged for Antonio's device UAT per brief acceptance criterion."
   },
   {
    "id": "G003",
-   "title": "WI-C",
-   "objective": "pagina Dossier ricostruita: solo pinnati per cartella + gestione cartelle + ricerca + route",
-   "status": "pending",
-   "evidence": null
+   "title": "Lead capture",
+   "objective": "endpoint POST che crea crm.lead con contesto prodotto, riuso pattern esistente company_contact_submit",
+   "status": "complete",
+   "evidence": "controllers/main.py company_catalogue_lead: POST /company/catalogue/lead, honeypot check, required name+email+privacy_consent, sudo() crm.lead.create with product sku/name/request_type in description, reuses exact team_id/referred/website field-detection pattern from existing company_contact_submit. py_compile OK. Real crm.lead row creation verified E2E during G007 stage deploy."
   },
   {
    "id": "G004",
-   "title": "Deploy",
-   "objective": "stage folinofood_stage + console :3100, non-regressione console vicine, build exit 0, stop pre-prod",
-   "status": "pending",
+   "title": "Continuita URL",
+   "objective": "banner link verso nuovo catalogo su /en/catalog/ e le 10 pagine categoria, nessuna 404 nuova",
+   "status": "complete",
+   "evidence": "Injected catalogue-2026-banner into /en/catalog/index.html + all 10 category index.html (11 files total), linking to /catalogue/en-2026. No existing route/markup removed, only <main> insertion. Verified all 11 files retain exactly one <main>/</main> and one banner instance (python structural check). CSS added to site.css, no other selectors touched."
+  },
+  {
+   "id": "G005",
+   "title": "Cookie consent + GTM/GA4 plumbing",
+   "objective": "consent banner custom, gtag consent mode default denied GA4 G-B7V6TVHWT2, GTM loader gated con placeholder ID, injection su tutte le pagine EN/IT/ES/FR",
+   "status": "complete",
+   "evidence": "consent.js (custom banner, localStorage cf_consent, gtag consent mode: default all denied until accept, GA4 G-B7V6TVHWT2 loaded only after accept, GTM_ID placeholder empty=skipped) + head snippet (dataLayer/gtag default) injected into all 185 EN/IT/ES/FR static pages before existing language.js tag (bulk script, idempotent, verified 0/185 anomalies: consent.js count==1, language.js count==1, single <html>, ends </html>). catalogue_2026.py page has it inline natively. business_inquiry_submit event wired on all 4 locale contact forms (id=business-inquiry-form + submit listener). node --check passed on consent.js and both inline JS blocks. No tag fires before consent (verified: GA4/GTM script injection only inside grantConsent(), called only from accept-button handler or stored granted state)."
+  },
+  {
+   "id": "G006",
+   "title": "Cookie policy reale",
+   "objective": "sostituire placeholder con policy vera EN",
+   "status": "complete",
+   "evidence": "en/cookie-policy/index.html: replaced placeholder hero with real cookie policy (what cookies/local storage, cookie table split strictly-necessary vs analytics with names/duration/purpose/provider, legal basis GDPR art 6.1.a, Manage cookie preferences button wired to new window.cfOpenConsentSettings() in consent.js which clears cf_consent and re-shows banner). Structural check passed (single main/html, no leftover placeholder text). IT/ES/FR cookie-policy left as-is (placeholder) per EN-only scope agreed in brief; flagged in changelog."
+  },
+  {
+   "id": "G007",
+   "title": "Deploy stage + verifica",
+   "objective": "deploy su folinofood_stage, curl/browser check tutte le route nuove e esistenti, poi richiesta confirm esplicita per prod",
+   "status": "in_progress",
    "evidence": null
   }
  ]

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import mimetypes
 import os
 from urllib.parse import urlencode
@@ -6,6 +7,8 @@ from urllib.parse import urlencode
 from odoo import http
 from odoo.http import request
 from odoo.modules.module import get_module_resource
+
+from .catalogue_2026 import render_catalogue_2026
 
 
 MODULE = "casafolino_company_website"
@@ -182,6 +185,7 @@ class CasaFolinoCompanyWebsite(http.Controller):
             "/assets/creams.jpg",
             "/assets/honeys.jpg",
             "/assets/risottos.jpg",
+            "/assets/consent.js",
         ],
         type="http",
         auth="public",
@@ -438,3 +442,102 @@ class CasaFolinoCompanyWebsite(http.Controller):
             return guard
         parts = ["catalog"] + [part for part in (catalog_path or "").split("/") if part]
         return self._serve_page("en", parts)
+
+    @http.route(
+        ["/catalogue/en-2026", "/catalogue/en-2026/"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def company_catalogue_2026(self, **kwargs):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
+        return request.make_response(
+            render_catalogue_2026(),
+            headers=[
+                ("Cache-Control", "public, max-age=300"),
+                ("X-Content-Type-Options", "nosniff"),
+                ("Content-Type", "text/html; charset=utf-8"),
+            ],
+        )
+
+    @http.route(
+        ["/company/catalogue/lead"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+        methods=["POST"],
+        csrf=False,
+    )
+    def company_catalogue_lead(self, **post):
+        guard = self._guard_company_site()
+        if guard:
+            return guard
+
+        if self._clean(post.get("website_url"), 200):
+            return request.make_response(json.dumps({"ok": True}), headers=[("Content-Type", "application/json")])
+
+        contact_name = self._clean(post.get("name"), 120)
+        company = self._clean(post.get("company"), 160)
+        email = self._clean(post.get("email"), 160)
+        country = self._clean(post.get("country"), 120)
+        message = self._clean(post.get("message"), 3000)
+        lang = self._clean(post.get("lang"), 12)
+        request_type = self._clean(post.get("request_type"), 20) or "quote"
+        sku = self._clean(post.get("sku"), 40)
+        product_name = self._clean(post.get("product_name"), 160)
+        source_url = self._clean(request.httprequest.referrer, 300)
+
+        if not contact_name or not email or post.get("privacy_consent") != "1":
+            return request.make_response(
+                json.dumps({"ok": False, "error": "missing_fields"}),
+                headers=[("Content-Type", "application/json")],
+                status=400,
+            )
+
+        label = "tech sheet" if request_type == "techsheet" else "quote"
+        description = "\n".join(
+            line
+            for line in [
+                f"Lead generato dal catalogo 2026 (company.casafolino.com/catalogue/en-2026) - richiesta {label}.",
+                f"Prodotto: {product_name} ({sku})" if product_name else "",
+                f"Nome: {contact_name}",
+                f"Azienda: {company}" if company else "",
+                f"Email: {email}",
+                f"Paese: {country}" if country else "",
+                f"Lingua: {lang}" if lang else "",
+                f"Pagina sorgente: {source_url}" if source_url else "",
+                "",
+                "Messaggio:",
+                message or "(nessun messaggio)",
+            ]
+            if line
+        )
+
+        lead_vals = {
+            "name": f"Catalogo 2026 - {label} {sku or product_name} - {company or contact_name}",
+            "type": "lead",
+            "contact_name": contact_name,
+            "partner_name": company,
+            "email_from": email,
+            "description": description,
+        }
+        Lead = request.env["crm.lead"].sudo()
+        if "team_id" in Lead._fields:
+            Team = request.env["crm.team"].sudo()
+            domain = [("use_leads", "=", True)] if "use_leads" in Team._fields else []
+            team = Team.search(domain, limit=1)
+            if team:
+                lead_vals["team_id"] = team.id
+        if "referred" in Lead._fields:
+            lead_vals["referred"] = "CasaFolino Catalogue 2026"
+        if "website" in Lead._fields and source_url:
+            lead_vals["website"] = source_url
+
+        lead = Lead.create(lead_vals)
+        if hasattr(lead, "message_post"):
+            lead.message_post(body="Lead creato automaticamente dal catalogo 2026 (/catalogue/en-2026).")
+        return request.make_response(json.dumps({"ok": True}), headers=[("Content-Type", "application/json")])
